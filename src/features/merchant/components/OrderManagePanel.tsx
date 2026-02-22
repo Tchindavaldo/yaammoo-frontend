@@ -91,96 +91,91 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     { key: 'finish', label: 'Terminées', icon: 'checkmark-done-outline' },
   ];
 
+  const isToday = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  };
+
+  const getRelativeDateLabel = (dateKey: string | null) => {
+    if (!dateKey || dateKey === 'Aujourd\'hui') return "aujourd'hui";
+    return dateKey;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Résumé stats */}
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryBox}>
-          <Text style={styles.summaryLabel}>
-            {selectedDate || today}
-          </Text>
-          <Text style={styles.summaryDate}>{currentDate}</Text>
+      {/* Date Header Row */}
+      <View style={styles.dateHeader}>
+        <View style={styles.dateInfo}>
+          <Text style={styles.relativeDate}>{getRelativeDateLabel(selectedDate)}</Text>
+          <Text style={styles.fullDate}>{currentDate}</Text>
         </View>
-        <View style={styles.statPair}>
-          <View style={styles.miniStat}>
-            <Text style={styles.miniStatNum}>{dateFilteredOrders.length}</Text>
-            <Text style={styles.miniStatLabel}>Commandes</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
+          {availableDates.map((date, idx) => {
+            const isSelected = (selectedDate === null && date === today) || selectedDate === date;
+            return (
+              <TouchableOpacity
+                key={idx}
+                style={[styles.dateChip, isSelected && styles.dateChipActive]}
+                onPress={() => setSelectedDate(date)}
+              >
+                <Text style={[styles.dateChipText, isSelected && styles.dateChipTextActive]}>
+                  {date}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Stats Row (Component 1 Style) */}
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+             <Text style={styles.statVal}>{dateFilteredOrders.length}</Text>
+             <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>cmd</Text>
           </View>
-          <View style={styles.miniStat}>
-            <Text style={[styles.miniStatNum, { color: Theme.colors.success }]}>{totalAmount}F</Text>
-            <Text style={styles.miniStatLabel}>Montant</Text>
+          <Text style={styles.statLbl}>Commandes effectue</Text>
+        </View>
+        <View style={styles.statBox}>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text style={styles.statVal}>{totalAmount}</Text>
+            <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>fcfa</Text>
           </View>
+          <Text style={styles.statLbl}>Montant Total</Text>
         </View>
       </View>
 
-      {/* Filtre par date */}
-      {availableDates.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.dateScroll}
-          contentContainerStyle={styles.dateScrollContent}
-        >
-          {[null, ...availableDates].map((date, i) => (
+      {/* Status Chips Row */}
+      <View style={styles.statusScrollContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusScrollContent}>
+          {statusTabs.map((tab) => (
             <TouchableOpacity
-              key={i}
-              style={[
-                styles.dateChip,
-                (date === null ? selectedDate === null : selectedDate === date) && styles.dateChipActive,
-              ]}
-              onPress={() => setSelectedDate(date)}
+              key={tab.key}
+              style={[styles.statusTab, selectedStatus === tab.key && styles.statusTabActive]}
+              onPress={() => { setSelectedStatus(tab.key); setSelectedDate(null); }}
             >
-              <Text
-                style={[
-                  styles.dateChipText,
-                  (date === null ? selectedDate === null : selectedDate === date) && styles.dateChipTextActive,
-                ]}
-              >
-                {date || 'Toutes'}
+              <Ionicons
+                name={tab.icon as any}
+                size={14}
+                color={selectedStatus === tab.key ? 'white' : 'red'}
+              />
+              <Text style={[
+                styles.statusTabLabel,
+                { color: selectedStatus === tab.key ? 'white' : 'red' },
+              ]}>
+                {tab.label}
+              </Text>
+              <Text style={[
+                styles.statusTabLabel,
+                { fontWeight: '900', marginLeft: 4, color: selectedStatus === tab.key ? 'white' : 'red' },
+              ]}>
+                ({counts[tab.key]})
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-      )}
-
-      {/* Tabs statut */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.statusScroll}
-        contentContainerStyle={styles.statusScrollContent}
-      >
-        {statusTabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.statusTab, selectedStatus === tab.key && styles.statusTabActive]}
-            onPress={() => { setSelectedStatus(tab.key); setSelectedDate(null); }}
-          >
-            <Ionicons
-              name={tab.icon as any}
-              size={14}
-              color={selectedStatus === tab.key ? Theme.colors.primary : Theme.colors.gray[400]}
-            />
-            <Text style={[
-              styles.statusTabLabel,
-              selectedStatus === tab.key && styles.statusTabLabelActive,
-            ]}>
-              {tab.label}
-            </Text>
-            <View style={[
-              styles.countBadge,
-              selectedStatus === tab.key && styles.countBadgeActive,
-            ]}>
-              <Text style={[
-                styles.countBadgeText,
-                selectedStatus === tab.key && styles.countBadgeTextActive,
-              ]}>
-                ({counts[tab.key]})
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      </View>
 
       {/* Liste commandes */}
       <FlatList
@@ -225,129 +220,117 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.light,
+    backgroundColor: 'white',
   },
-  summaryRow: {
+  dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Theme.colors.white,
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[100],
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: 'white',
   },
-  summaryBox: {
-    flex: 1,
+  dateInfo: {
+    marginRight: 10,
+    minWidth: 100,
   },
-  summaryLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
+  relativeDate: {
+    fontSize: 18,
+    fontWeight: 'normal',
+    color: '#333',
     textTransform: 'capitalize',
   },
-  summaryDate: {
-    fontSize: 11,
-    color: Theme.colors.gray[500],
+  fullDate: {
+    fontSize: 12,
+    color: '#666',
     marginTop: 2,
   },
-  statPair: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  miniStat: {
-    alignItems: 'center',
-  },
-  miniStatNum: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Theme.colors.primary,
-  },
-  miniStatLabel: {
-    fontSize: 10,
-    color: Theme.colors.gray[500],
-  },
   dateScroll: {
-    backgroundColor: Theme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[50],
-  },
-  dateScrollContent: {
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.sm,
-    gap: 8,
+    gap: 10,
   },
   dateChip: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.gray[100],
+    borderRadius: 15,
+    backgroundColor: '#fff5f5',
     marginRight: 8,
+    minWidth: 50,
+    alignItems: 'center',
   },
   dateChipActive: {
-    backgroundColor: Theme.colors.primary,
-    shadowColor: Theme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: 'darkred',
   },
   dateChipText: {
     fontSize: 12,
-    color: Theme.colors.gray[600],
-    fontWeight: '600',
+    color: 'black',
+    fontWeight: 'bold',
   },
   dateChipTextActive: {
     color: 'white',
   },
-  statusScroll: {
-    backgroundColor: Theme.colors.white,
+  statsRow: {
+    flexDirection: 'row',
+    backgroundColor: 'white',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    gap: 15,
     borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[100],
+    borderBottomColor: '#f8f8f8',
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'flex-start',
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  statVal: {
+    fontSize: 31,
+    fontWeight: '900',
+    color: 'black',
+  },
+  statLbl: {
+    fontSize: 11,
+    color: 'rgba(0,0,0,0.44)',
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  statusScrollContainer: {
+    backgroundColor: 'white',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   statusScrollContent: {
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.sm,
-    gap: 6,
+    paddingHorizontal: 15,
+    gap: 8,
   },
   statusTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: Theme.colors.gray[200],
+    backgroundColor: '#fff5f5',
     marginRight: 8,
+    height: 32,
   },
   statusTabActive: {
-    borderColor: Theme.colors.primary,
-    backgroundColor: Theme.colors.primary + '10',
+    backgroundColor: 'darkred',
   },
   statusTabLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Theme.colors.gray[500],
+    fontSize: 10,
+    color: 'black',
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
   statusTabLabelActive: {
-    color: Theme.colors.primary,
-  },
-  countBadge: {
-    paddingHorizontal: 4,
-  },
-  countBadgeActive: {},
-  countBadgeText: {
-    fontSize: 11,
-    color: Theme.colors.gray[400],
-    fontWeight: 'bold',
-  },
-  countBadgeTextActive: {
-    color: Theme.colors.primary,
+    color: 'white',
   },
   listContent: {
-    padding: Theme.spacing.md,
-    paddingBottom: 80,
+    padding: 15,
+    paddingBottom: 100,
   },
   emptyState: {
     alignItems: 'center',

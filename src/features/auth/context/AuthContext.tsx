@@ -3,6 +3,8 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/src/services/firebase';
 import { storage } from '@/src/utils/storage';
 import { Users } from '@/src/types';
+import { jsonToUser } from '../utils/userMappers';
+import { userFirestore } from '../services/userFirestore';
 
 interface AuthContextType {
   user: User | null;
@@ -22,10 +24,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        const stored = await storage.get('user_data');
-        if (stored) setUserData(stored);
+        setLoading(true);
+        try {
+          // 1. Try fetching from API (freshest data)
+          const apiData = await userFirestore.getUser(firebaseUser.uid);
+          if (apiData) {
+            setUserData(apiData);
+            await storage.set('user_data', apiData);
+          } else {
+            // 2. Fallback to stored data if API fails or returns null
+            const stored = await storage.get('user_data');
+            if (stored) setUserData(stored);
+          }
+        } catch (error) {
+          console.error('Error in auth state change:', error);
+          const stored = await storage.get('user_data');
+          if (stored) setUserData(stored);
+        }
       } else {
         setUserData(null);
+        await storage.remove('user_data');
       }
       setLoading(false);
     });

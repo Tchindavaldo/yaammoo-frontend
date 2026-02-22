@@ -6,100 +6,82 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useMerchant } from '@/src/features/merchant/hooks/useMerchant';
 import { Theme } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { OrderManagePanel } from '@/src/features/merchant/components/OrderManagePanel';
 import { MenuManagePanel } from '@/src/features/merchant/components/MenuManagePanel';
 import { PorteFeuillePanel } from '@/src/features/merchant/components/PorteFeuillePanel';
-
-const StatCard = ({ label, value, icon, color }: any) => (
-  <View style={styles.statCard}>
-    <View style={[styles.iconCircle, { backgroundColor: color + '15' }]}>
-      <Ionicons name={icon} size={20} color={color} />
-    </View>
-    <View>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-    </View>
-  </View>
-);
+import { NoBoutiquePanel } from '@/src/features/merchant/components/NoBoutiquePanel';
 
 const TabItem = ({ label, active, onPress, count, icon }: any) => (
-  <TouchableOpacity
-    style={[styles.tab, active && styles.activeTab]}
-    onPress={onPress}
-  >
-    <Ionicons
-      name={icon}
-      size={16}
-      color={active ? Theme.colors.primary : Theme.colors.gray[400]}
-    />
-    <Text style={[styles.tabLabel, active && styles.activeTabLabel]}>{label}</Text>
-    {count > 0 && (
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>{count}</Text>
-      </View>
-    )}
-  </TouchableOpacity>
+  <View style={styles.colSegment}>
+    <TouchableOpacity
+      style={[styles.chip, active && styles.activeChip]}
+      onPress={onPress}
+    >
+      <Ionicons
+        name={icon}
+        size={12}
+        color={active ? 'white' : 'red'}
+      />
+      <Text style={[styles.label, active && styles.activeLabel]}>{label}</Text>
+      {count > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{count}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  </View>
 );
 
 type ActiveTab = 'commande' | 'menu' | 'historique';
 
 export default function BoutiqueScreen() {
-  const { orders, menus, transactions, loading, stats, refresh, updateStatus, addMenu } = useMerchant();
+  const { userData, loading: authLoading } = useAuth();
+  const { orders, menus, transactions, loading: merchantLoading, stats, refresh, updateStatus, addMenu } = useMerchant();
   const [activeTab, setActiveTab] = useState<ActiveTab>('commande');
 
   const handleAddMenu = async (newMenu: any) => {
     await addMenu(newMenu);
   };
 
+  const loading = authLoading || merchantLoading;
+
+  // If no fast food associated with account, show creation UI
+  if (!userData?.fastFoodId && !loading) {
+    return (
+     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+        <NoBoutiquePanel />
+     </SafeAreaView>
+    );
+  }
+
   const renderHeader = () => (
     <View style={styles.header}>
-      {/* Stats globales */}
-      <View style={styles.statsRow}>
-        <StatCard
-          label="Recettes"
-          value={`${(stats.totalRevenue || 0).toLocaleString('fr-FR')} F`}
-          icon="wallet-outline"
-          color={Theme.colors.success}
-        />
-        <StatCard
-          label="Commandes"
-          value={stats.totalOrders.toString()}
-          icon="receipt-outline"
-          color={Theme.colors.primary}
-        />
-        <StatCard
-          label="En attente"
-          value={stats.pendingOrders.toString()}
-          icon="time-outline"
-          color={Theme.colors.warning || '#f59e0b'}
-        />
-      </View>
-
-      {/* Onglets de navigation */}
-      <View style={styles.tabs}>
+      <View style={styles.rowSegment}>
         <TabItem
-          label="Commandes"
-          icon="cart-outline"
+          label="Mon porte feuille"
+          icon="wallet-outline"
+          active={activeTab === 'historique'}
+          onPress={() => setActiveTab('historique')}
+          count={0}
+        />
+        <TabItem
+          label="Commande"
+          icon="receipt-outline"
           active={activeTab === 'commande'}
           onPress={() => setActiveTab('commande')}
           count={stats.pendingOrders}
         />
         <TabItem
           label="Menu"
-          icon="fast-food-outline"
+          icon="restaurant-outline"
           active={activeTab === 'menu'}
           onPress={() => setActiveTab('menu')}
-          count={0}
-        />
-        <TabItem
-          label="Finances"
-          icon="bar-chart-outline"
-          active={activeTab === 'historique'}
-          onPress={() => setActiveTab('historique')}
           count={0}
         />
       </View>
@@ -159,74 +141,50 @@ export default function BoutiqueScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.light,
+    backgroundColor: 'white',
   },
   header: {
-    backgroundColor: Theme.colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[200],
+    paddingTop: Platform.OS === 'ios' ? 45 : (Platform.OS === 'android' ? 30 : 10),
+    backgroundColor: 'white',
+    paddingBottom: 10,
   },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.md,
-    gap: Theme.spacing.sm,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Theme.colors.gray[50],
-    padding: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.lg,
+  rowSegment: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Theme.spacing.xs || 4,
+    paddingHorizontal: 15,
   },
-  iconCircle: {
-    width: 32,
+  colSegment: {
+    paddingRight: 10,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff5f5',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    position: 'relative',
     height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    gap: 4,
   },
-  statLabel: {
-    fontSize: 10,
-    color: Theme.colors.gray[600],
-    marginBottom: 1,
+  activeChip: {
+    backgroundColor: 'darkred',
   },
-  statValue: {
-    fontSize: 13,
+  label: {
+    fontSize: 9,
+    color: 'black',
     fontWeight: 'bold',
   },
-  tabs: {
-    flexDirection: 'row',
-    paddingHorizontal: Theme.spacing.md,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Theme.spacing.md,
-    gap: 4,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: Theme.colors.primary,
-  },
-  tabLabel: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
-    fontWeight: '600',
-  },
-  activeTabLabel: {
-    color: Theme.colors.primary,
+  activeLabel: {
+    color: 'white',
+    fontWeight: 'normal',
   },
   badge: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: 'darkred',
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 8,
+    marginLeft: 4,
   },
   badgeText: {
     color: 'white',

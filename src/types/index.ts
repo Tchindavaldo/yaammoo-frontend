@@ -65,7 +65,8 @@ export class Users {
         public infos: UsersInfos,
         public isMarchand: boolean,
         public statistique: number,
-        public cmd: Commande[]
+        public cmd: Commande[],
+        public fastFoodId?: string
     ) { }
 }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
 
@@ -11,9 +11,9 @@ interface OrderHeaderProps {
 
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange, counts }) => {
   const tabs = [
-    { id: 'cart', label: 'Pannier', icon: 'cart-outline', count: counts.cart },
-    { id: 'status', label: 'Commandes', icon: 'checkmark-circle-outline', count: counts.status },
-    { id: 'bonus', label: 'Bonus', icon: 'gift-outline', count: counts.bonus },
+    { id: 'cart', label: 'Mon pannier', icon: 'cart-outline', count: counts.cart },
+    { id: 'status', label: 'Etat des commandes', icon: 'checkmark-circle-outline', count: counts.status },
+    { id: 'bonus', label: 'Mes Bonus', icon: 'gift-outline', count: counts.bonus },
   ];
 
   return (
@@ -55,7 +55,8 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 10,
+    paddingTop: Platform.OS === 'ios' ? 45 : (Platform.OS === 'android' ? 30 : 10), // Adjust for status bar
+    paddingBottom: 10,
     backgroundColor: 'white',
     borderBottomWidth: 0,
     elevation: 0,
@@ -65,7 +66,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 5,
-    marginTop: -5,
   },
   colSegment: {
     paddingHorizontal: 5,
@@ -73,18 +73,20 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f4f4f4',
-    paddingHorizontal: 12,
+    backgroundColor: '#fff5f5', // Light red for unselected chips
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 20, // Ionic mode="ios" is very rounded
     position: 'relative',
+    height: 32,
   },
   activeChip: {
     backgroundColor: 'darkred',
   },
   label: {
-    fontSize: 10,
+    fontSize: 9, // original was font-size: 8px or similar
     color: 'black',
+    fontWeight: 'bold',
   },
   activeLabel: {
     color: 'white',

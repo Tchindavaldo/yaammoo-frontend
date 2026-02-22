@@ -9,6 +9,7 @@ import {
   Switch,
   ActivityIndicator,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -161,42 +162,62 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     );
   };
 
+  const currentDate = new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
-    <>
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statNum}>{stats.total}</Text>
-          <Text style={styles.statLbl}>Total</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: Theme.colors.success }]}>{stats.available}</Text>
-          <Text style={styles.statLbl}>Disponible</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={[styles.statNum, { color: Theme.colors.danger }]}>{stats.unavailable}</Text>
-          <Text style={styles.statLbl}>Indisponible</Text>
+    <View style={styles.container}>
+      {/* Date Header Row */}
+      <View style={styles.dateHeader}>
+        <View style={styles.dateInfo}>
+          <Text style={styles.relativeDate}>aujourd'hui</Text>
+          <Text style={styles.fullDate}>{currentDate}</Text>
         </View>
       </View>
 
-      {/* Sub-tabs */}
-      <View style={styles.tabRow}>
-        {tabs.map((t) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.subTab, activeTab === t.key && styles.subTabActive]}
-            onPress={() => setActiveTab(t.key)}
-          >
-            <Ionicons
-              name={t.icon as any}
-              size={14}
-              color={activeTab === t.key ? Theme.colors.primary : Theme.colors.gray[400]}
-            />
-            <Text style={[styles.subTabLabel, activeTab === t.key && styles.subTabLabelActive]}>
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Stats Row (Component 1 Style - 3 columns) */}
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          <Text style={styles.statVal}>{stats.total}</Text>
+          <Text style={styles.statLbl}>Menu total</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={[styles.statVal, { color: '#2dd36f' }]}>{stats.available}</Text>
+          <Text style={styles.statLbl}>Menu disponible</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Text style={[styles.statVal, { color: 'darkred' }]}>{stats.unavailable}</Text>
+          <Text style={styles.statLbl}>Menu indisponible</Text>
+        </View>
+      </View>
+
+      {/* Action Chips Row */}
+      <View style={styles.tabRowContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
+          {tabs.map((t) => (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.subTab, activeTab === t.key && styles.subTabActive]}
+              onPress={() => setActiveTab(t.key)}
+            >
+              <Ionicons
+                name={t.icon as any}
+                size={14}
+                color={activeTab === t.key ? 'white' : 'red'}
+              />
+              <Text style={[
+                styles.subTabLabel,
+                { color: activeTab === t.key ? 'white' : 'red' }
+              ]}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Content */}
@@ -232,120 +253,146 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
         onSave={handleSave}
         existingMenu={editingMenu}
       />
-    </>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  dateHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: 'white',
+  },
+  dateInfo: {
+    marginRight: 10,
+  },
+  relativeDate: {
+    fontSize: 18,
+    color: '#333',
+  },
+  fullDate: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
   statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.sm,
-    gap: Theme.spacing.sm,
-    backgroundColor: Theme.colors.white,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    gap: 10,
+    backgroundColor: 'white',
   },
   statBox: {
     flex: 1,
-    alignItems: 'center',
-    padding: Theme.spacing.sm,
-    backgroundColor: Theme.colors.gray[50],
-    borderRadius: Theme.borderRadius.md,
+    alignItems: 'flex-start',
+    padding: 10,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
-  statNum: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
+  statVal: {
+    fontSize: 31,
+    fontWeight: '900',
+    color: 'black',
   },
   statLbl: {
     fontSize: 11,
-    color: Theme.colors.gray[500],
+    color: 'rgba(0,0,0,0.44)',
+    fontWeight: 'bold',
     marginTop: 2,
   },
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: Theme.colors.white,
+  tabRowContainer: {
+    backgroundColor: 'white',
     borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[100],
-    paddingHorizontal: Theme.spacing.sm,
+    borderBottomColor: '#f0f0f0',
+    paddingBottom: 10,
+  },
+  tabRow: {
+    paddingHorizontal: 15,
+    gap: 8,
   },
   subTab: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Theme.spacing.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#fff5f5',
     gap: 4,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    height: 32,
   },
   subTabActive: {
-    borderBottomColor: Theme.colors.primary,
+    backgroundColor: 'darkred',
   },
   subTabLabel: {
     fontSize: 10,
-    color: Theme.colors.gray[400],
-    fontWeight: '600',
+    color: 'black',
+    fontWeight: 'bold',
   },
   subTabLabelActive: {
-    color: Theme.colors.primary,
+    color: 'white',
   },
   listContent: {
-    padding: Theme.spacing.md,
-    paddingBottom: 90,
+    padding: 15,
+    paddingBottom: 100,
   },
   menuCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.white,
-    borderRadius: Theme.borderRadius.lg,
-    padding: Theme.spacing.md,
-    marginBottom: Theme.spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-    gap: Theme.spacing.md,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    gap: 12,
   },
   menuImg: {
-    width: 56,
-    height: 56,
-    borderRadius: Theme.borderRadius.md,
+    width: 60,
+    height: 60,
+    borderRadius: 8,
   },
   noImg: {
-    backgroundColor: Theme.colors.gray[100],
+    backgroundColor: '#f5f5f5',
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuInfo: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   menuName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Theme.colors.dark,
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333',
   },
   statusBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 20,
+    borderRadius: 10,
   },
   statusText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   actionBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.gray[50],
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f8f8f8',
     alignItems: 'center',
     justifyContent: 'center',
   },
   deleteBtn: {
-    backgroundColor: '#fdecea',
+    backgroundColor: '#fff5f5',
   },
   emptyState: {
     alignItems: 'center',
@@ -354,27 +401,27 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: Theme.colors.gray[500],
+    fontWeight: 'bold',
+    color: '#999',
   },
   emptySubText: {
     fontSize: 13,
-    color: Theme.colors.gray[400],
+    color: '#bbb',
   },
   fab: {
     position: 'absolute',
     bottom: 20,
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Theme.colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'darkred',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    elevation: 4,
+    shadowColor: 'black',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
 });

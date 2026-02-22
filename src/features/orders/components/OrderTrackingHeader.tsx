@@ -29,20 +29,15 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
   onStatusChange,
   counts
 }) => {
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const isToday = (date: Date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
   };
 
   const getRelativeDateLabel = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const target = new Date(date);
-    target.setHours(0, 0, 0, 0);
-    const diff = (target.getTime() - today.getTime()) / (1000 * 3600 * 24);
-    
-    if (diff === 0) return "Aujourd'hui";
-    if (diff === 1) return "Demain";
-    if (diff === -1) return "Hier";
+    if (isToday(date)) return "aujourd'hui";
     return date.toLocaleDateString('fr-FR', { weekday: 'long' });
   };
 
@@ -52,11 +47,14 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
       <View style={styles.dateHeader}>
         <View style={styles.dateInfo}>
           <Text style={styles.relativeDate}>{getRelativeDateLabel(selectedDate)}</Text>
-          <Text style={styles.fullDate}>{selectedDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+          <Text style={styles.fullDate}>{selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
           {availableDates.map((date, idx) => {
             const isSelected = date.toDateString() === selectedDate.toDateString();
+            const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
+            const formattedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1, 3); // "Dim"
+            
             return (
               <TouchableOpacity
                 key={idx}
@@ -64,7 +62,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
                 onPress={() => onDateChange(date)}
               >
                 <Text style={[styles.dateDay, isSelected && styles.activeDateText]}>
-                  {date.toLocaleDateString('fr-FR', { weekday: 'short' }).charAt(0).toUpperCase()}
+                  {formattedDay}
                 </Text>
                 <Text style={[styles.dateNum, isSelected && styles.activeDateText]}>
                   {date.getDate()}
@@ -78,12 +76,18 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
       {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
-          <Text style={styles.statVal}>{totalOrders}</Text>
-          <Text style={styles.statLbl}>Commandes</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+             <Text style={styles.statVal}>{totalOrders}</Text>
+             <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>cmd</Text>
+          </View>
+          <Text style={styles.statLbl}>Commandes effectue</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statBox}>
-          <Text style={[styles.statVal, { color: Theme.colors.success }]}>{totalAmount} F</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text style={styles.statVal}>{totalAmount}</Text>
+            <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>fcfa</Text>
+          </View>
           <Text style={styles.statLbl}>Montant Total</Text>
         </View>
       </View>
@@ -91,163 +95,170 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
       {/* Status Chips Row */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusScroll}>
         <StatusChip 
-          label="Attente" 
+          label="Cmds en Attente" 
           icon="time-outline" 
           count={counts.pending} 
           active={activeStatus === 'pending'} 
           onPress={() => onStatusChange('pending')}
         />
         <StatusChip 
-          label="En cours" 
+          label="Cmds en cours" 
           icon="restaurant-outline" 
           count={counts.processing} 
           active={activeStatus === 'active'} 
           onPress={() => onStatusChange('active')}
         />
         <StatusChip 
-          label="Terminer" 
+          label="Cmds en Terminer" 
           icon="checkmark-done-outline" 
           count={counts.finished} 
           active={activeStatus === 'finished'} 
           onPress={() => onStatusChange('finished')}
         />
         <StatusChip 
-          label="Livrées" 
+          label="Cmds Livrées" 
           icon="checkmark-circle-outline" 
           count={counts.delivered} 
           active={activeStatus === 'delivered'} 
           onPress={() => onStatusChange('delivered')}
-          color={Theme.colors.success}
+          activeColor="#2dd36f"
+          inactiveBg="#e8f5e9"
+          inactiveIconColor="#2dd36f"
         />
       </ScrollView>
     </View>
   );
 };
 
-const StatusChip = ({ label, icon, count, active, onPress, color = Theme.colors.primary }: any) => (
+const StatusChip = ({ 
+  label, icon, count, active, onPress, 
+  activeColor = 'darkred', 
+  inactiveBg = '#fff5f5',
+  inactiveIconColor = 'red' 
+}: any) => (
   <TouchableOpacity 
-    style={[styles.statusChip, active && { borderColor: color, backgroundColor: color + '10' }]}
+    style={[styles.statusChip, { backgroundColor: active ? activeColor : inactiveBg }]}
     onPress={onPress}
   >
-    <Ionicons name={icon} size={16} color={active ? color : Theme.colors.gray[400]} />
-    <Text style={[styles.statusLabel, active && { color: color }]}>{label}</Text>
-    <Text style={[styles.statusCount, active && { color: color }]}>({count})</Text>
+    <Ionicons name={icon as any} size={14} color={active ? 'white' : inactiveIconColor} />
+    <Text style={[styles.statusLabel, { color: active ? 'white' : inactiveIconColor }]}>{label}</Text>
+    <Text style={[styles.statusCount, { color: active ? 'white' : inactiveIconColor }]}>({count})</Text>
   </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Theme.colors.white,
-    paddingTop: Theme.spacing.md,
+    paddingTop: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[100],
+    borderBottomColor: '#f0f0f0',
   },
   dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Theme.spacing.md,
-    marginBottom: Theme.spacing.md,
+    paddingHorizontal: 15,
+    marginBottom: 5,
   },
   dateInfo: {
-    marginRight: Theme.spacing.md,
-    minWidth: 100,
+    marginRight: 10,
+    minWidth: 80,
   },
   relativeDate: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
+    fontWeight: 'normal',
+    color: '#333',
     textTransform: 'capitalize',
   },
   fullDate: {
     fontSize: 12,
-    color: Theme.colors.gray[500],
+    color: '#666',
+    marginTop: 2,
   },
   dateScroll: {
-    gap: 10,
+    gap: 5,
+    paddingRight: 15,
   },
   dateChip: {
-    width: 45,
-    height: 55,
-    borderRadius: 12,
-    backgroundColor: Theme.colors.gray[50],
+    width: 60,
+    height: 30, // Small screen height
+    borderRadius: 10,
+    backgroundColor: '#fff5f5',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Theme.colors.gray[100],
+    paddingHorizontal: 4,
   },
   activeDateChip: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
-    shadowColor: Theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    backgroundColor: 'darkred',
+    shadowColor: 'darkred',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
     shadowRadius: 8,
     elevation: 4,
   },
   dateDay: {
     fontSize: 10,
-    color: Theme.colors.gray[500],
-    fontWeight: '600',
-    marginBottom: 4,
+    color: '#8b0000bf',
+    marginRight: 2,
   },
   dateNum: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
+    fontSize: 10,
+    fontWeight: '300',
+    color: 'darkred',
   },
   activeDateText: {
     color: 'white',
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: Theme.colors.gray[50],
-    marginHorizontal: Theme.spacing.md,
-    borderRadius: 16,
-    padding: Theme.spacing.md,
-    marginBottom: Theme.spacing.md,
+    backgroundColor: 'white',
+    marginHorizontal: 15,
+    paddingVertical: 10,
+    marginBottom: 5,
+    marginTop: -5,
   },
   statBox: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   statDivider: {
-    width: 1,
-    height: '100%',
-    backgroundColor: Theme.colors.gray[200],
+    width: 0,
   },
   statVal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
+    fontSize: 31,
+    fontWeight: '900',
+    color: 'black',
   },
   statLbl: {
     fontSize: 11,
-    color: Theme.colors.gray[500],
-    marginTop: 2,
+    color: 'rgba(0,0,0,0.44)',
+    fontWeight: 'bold',
+    marginTop: -2,
   },
   statusScroll: {
-    paddingHorizontal: Theme.spacing.md,
-    paddingBottom: Theme.spacing.md,
+    paddingHorizontal: 15,
+    paddingBottom: 15,
     gap: 8,
   },
   statusChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Theme.colors.gray[200],
+    backgroundColor: '#fff5f5',
     gap: 6,
+    height: 28,
   },
   statusLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Theme.colors.gray[500],
+    fontSize: 10,
+    color: 'black',
+    fontWeight: 'bold',
   },
   statusCount: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: Theme.colors.gray[400],
+    fontWeight: '900',
+    color: 'black',
+    marginLeft: 2,
   },
 });

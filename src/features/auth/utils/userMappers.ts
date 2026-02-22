@@ -55,5 +55,5 @@ export const jsonToUser = (data: any): Users => {
         );
     });
 
-    return new Users(infos, data.isMarchand, data.statistique, commande);
+    return new Users(infos, data.isMarchand, data.statistique, commande, data.fastFoodId);
 };

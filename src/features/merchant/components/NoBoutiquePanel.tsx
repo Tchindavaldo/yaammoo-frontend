@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Modal,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
@@ -39,6 +40,22 @@ export const NoBoutiquePanel = () => {
   // Picker states
   const [showOpenPicker, setShowOpenPicker] = useState(false);
   const [showClosePicker, setShowClosePicker] = useState(false);
+
+  // Animations
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Pulsing icon animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.12, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ])
+    ).start();
+    // Fade-in for chips
+    Animated.timing(fadeAnim, { toValue: 1, duration: 800, delay: 200, useNativeDriver: true }).start();
+  }, []);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -105,26 +122,70 @@ export const NoBoutiquePanel = () => {
     );
   }
 
+  const features = [
+    { icon: 'receipt-outline', label: 'Commandes' },
+    { icon: 'bicycle-outline', label: 'Livraisons' },
+    { icon: 'cash-outline', label: 'Paiements' },
+  ];
+
   return (
     <View style={styles.overlay}>
       <LinearGradient
-        colors={['#911818', '#4a0606', '#000000']}
+        colors={['#911818', '#c0392b', '#e8d5d5']}
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
+      />
+
+      {/* Full-screen flex column: hero on top, card on bottom */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <TouchableOpacity 
-          style={styles.dismissArea} 
-          activeOpacity={1} 
-          onPress={() => setShowCreateCard(false)} 
-        />
-        
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.cardContainer}
+        {/* ===== TOP: Hero area ===== */}
+        <TouchableOpacity
+          style={styles.heroArea}
+          activeOpacity={1}
+          onPress={() => setShowCreateCard(false)}
         >
+          {/* Decorative blobs */}
+          <View style={styles.blobTopRight} />
+          <View style={styles.blobBottomLeft} />
+
+          {/* Animated icon */}
+          <Animated.View style={{ transform: [{ scale: pulseAnim }], marginBottom: 10 }}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="fast-food" size={52} color="#fff" />
+            </View>
+          </Animated.View>
+
+          {/* Headline */}
+          <Text style={styles.heroTitle}>Lancez votre Fast-Food</Text>
+          <Text style={styles.heroSub}>Gérez commandes, livraisons et paiements{"\n"}depuis un seul endroit</Text>
+
+          {/* Feature chips */}
+          <Animated.View style={[styles.chipsRow, { opacity: fadeAnim }]}>
+            {features.map((f) => (
+              <View key={f.label} style={styles.featureChip}>
+                <Ionicons name={f.icon as any} size={15} color="#fff" />
+                <Text style={styles.featureChipText}>{f.label}</Text>
+              </View>
+            ))}
+          </Animated.View>
+        </TouchableOpacity>
+
+        {/* ===== BOTTOM: Card ===== */}
+        <View style={styles.cardContainer}>
           <View style={styles.cardWrapper}>
-            {/* The actual card from rudafood */}
-            <BlurView intensity={70} tint="dark" style={styles.glassCard}>
+            <BlurView intensity={55} tint="dark" style={styles.glassCard}>
+              {/* Premium red-to-dark gradient overlay */}
+              <LinearGradient
+                colors={['rgba(145,24,24,0.55)', 'rgba(60,10,10,0.30)', 'rgba(0,0,0,0.0)']}
+                locations={[0, 0.45, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
               <ScrollView contentContainerStyle={styles.cardGrid} showsVerticalScrollIndicator={false}>
                 <View style={[styles.formRow, { alignItems: 'center' }]}>
                   {/* Left avatar placeholder */}
@@ -140,7 +201,7 @@ export const NoBoutiquePanel = () => {
                         style={[styles.glassInput, { borderRadius: 20 }]}
                         value={name}
                         onChangeText={setName}
-                        placeholder="Entrer le  nom de votre boutique"
+                        placeholder="Entrer le nom de votre boutique"
                         placeholderTextColor="#999"
                       />
                     </View>
@@ -148,8 +209,8 @@ export const NoBoutiquePanel = () => {
                     <View style={[styles.formRow, { marginTop: 10 }]}>
                       <View style={{ flex: 1, marginRight: 5 }}>
                         <Text style={styles.floatingLabel}>Ouverture</Text>
-                        <TouchableOpacity 
-                          style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]} 
+                        <TouchableOpacity
+                          style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]}
                           onPress={() => setShowOpenPicker(true)}
                         >
                           <Text style={styles.timeText}>{formatTime(openTime)}</Text>
@@ -157,8 +218,8 @@ export const NoBoutiquePanel = () => {
                       </View>
                       <View style={{ flex: 1, marginLeft: 5 }}>
                         <Text style={styles.floatingLabel}>Fermeture</Text>
-                        <TouchableOpacity 
-                          style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]} 
+                        <TouchableOpacity
+                          style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]}
                           onPress={() => setShowClosePicker(true)}
                         >
                           <Text style={styles.timeText}>{formatTime(closeTime)}</Text>
@@ -170,29 +231,29 @@ export const NoBoutiquePanel = () => {
 
                 {/* Number input */}
                 <View style={[styles.inputGroup, { marginTop: 15 }]}>
-                    <Text style={styles.floatingLabel}>Numero (OM)</Text>
-                    <TextInput
-                        style={[styles.glassInput, { borderRadius: 20 }]}
-                        value={number}
-                        onChangeText={setNumber}
-                        keyboardType="numeric"
-                        placeholder="Entrer le numero de paiment (Orange Money)"
-                        placeholderTextColor="#999"
-                    />
+                  <Text style={styles.floatingLabel}>Numero (OM)</Text>
+                  <TextInput
+                    style={[styles.glassInput, { borderRadius: 20 }]}
+                    value={number}
+                    onChangeText={setNumber}
+                    keyboardType="numeric"
+                    placeholder="Entrer le numero (Orange Money)"
+                    placeholderTextColor="#999"
+                  />
                 </View>
 
                 {/* Buttons row */}
                 <View style={[styles.actionRow, { justifyContent: 'flex-end' }]}>
-                  <TouchableOpacity 
-                    style={styles.chipBtn} 
+                  <TouchableOpacity
+                    style={styles.chipBtn}
                     onPress={() => setShowCreateCard(false)}
                   >
-                    <Ionicons name="options" size={14} color="white" />
+                    <Ionicons name="close-outline" size={14} color="white" />
                     <Text style={styles.chipText}>Annuler</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity 
-                    style={[styles.chipBtn, { marginLeft: 10 }]} 
+                  <TouchableOpacity
+                    style={[styles.chipBtn, { marginLeft: 10 }]}
                     onPress={handleCreate}
                     disabled={loading}
                   >
@@ -200,7 +261,7 @@ export const NoBoutiquePanel = () => {
                       <ActivityIndicator size="small" color="white" />
                     ) : (
                       <>
-                        <Ionicons name="options" size={14} color="white" />
+                        <Ionicons name="checkmark-outline" size={14} color="white" />
                         <Text style={styles.chipText}>Creer</Text>
                       </>
                     )}
@@ -209,81 +270,81 @@ export const NoBoutiquePanel = () => {
               </ScrollView>
             </BlurView>
 
-            {/* Back card gradient simulation - Red to White transition */}
-            <View style={styles.cardBack} />
+            {/* Subtle border-glow flare */}
+            <View style={styles.cardBorder} />
           </View>
-        </KeyboardAvoidingView>
+        </View>
+      </KeyboardAvoidingView>
 
-        {/* --- GLOBAL TIME PICKERS (Outside layout to prevent displacement) --- */}
-        
-        {/* Open Time Picker */}
-        {showOpenPicker && (
-          Platform.OS === 'ios' ? (
-            <Modal transparent={true} visible={true} animationType="fade">
-              <View style={styles.modalOverlay}>
-                <BlurView intensity={90} tint="dark" style={styles.iosPickerContainer}>
-                  <TouchableOpacity style={styles.iosPickerDone} onPress={() => setShowOpenPicker(false)}>
-                    <Text style={{ color: 'white', fontWeight: 'bold' }}>Terminer</Text>
-                  </TouchableOpacity>
-                  <DateTimePicker
-                    value={openTime}
-                    mode="time"
-                    is24Hour={true}
-                    display="spinner"
-                    textColor="white"
-                    onChange={(e, d) => d && setOpenTime(d)}
-                  />
-                </BlurView>
-              </View>
-            </Modal>
-          ) : (
-            <DateTimePicker
-              value={openTime}
-              mode="time"
-              is24Hour={true}
-              display="clock"
-              onChange={(e, d) => {
-                setShowOpenPicker(false);
-                if (d) setOpenTime(d);
-              }}
-            />
-          )
-        )}
+      {/* --- GLOBAL TIME PICKERS --- */}
 
-        {/* Close Time Picker */}
-        {showClosePicker && (
-          Platform.OS === 'ios' ? (
-            <Modal transparent={true} visible={true} animationType="fade">
-              <View style={styles.modalOverlay}>
-                <BlurView intensity={90} tint="dark" style={styles.iosPickerContainer}>
-                  <TouchableOpacity style={styles.iosPickerDone} onPress={() => setShowClosePicker(false)}>
-                    <Text style={{ color: 'white', fontWeight: 'bold' }}>Terminer</Text>
-                  </TouchableOpacity>
-                  <DateTimePicker
-                    value={closeTime}
-                    mode="time"
-                    is24Hour={true}
-                    display="spinner"
-                    textColor="white"
-                    onChange={(e, d) => d && setCloseTime(d)}
-                  />
-                </BlurView>
-              </View>
-            </Modal>
-          ) : (
-            <DateTimePicker
-              value={closeTime}
-              mode="time"
-              is24Hour={true}
-              display="clock"
-              onChange={(e, d) => {
-                setShowClosePicker(false);
-                if (d) setCloseTime(d);
-              }}
-            />
-          )
-        )}
-      </LinearGradient>
+      {/* Open Time Picker */}
+      {showOpenPicker && (
+        Platform.OS === 'ios' ? (
+          <Modal transparent={true} visible={true} animationType="fade">
+            <View style={styles.modalOverlay}>
+              <BlurView intensity={90} tint="dark" style={styles.iosPickerContainer}>
+                <TouchableOpacity style={styles.iosPickerDone} onPress={() => setShowOpenPicker(false)}>
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Terminer</Text>
+                </TouchableOpacity>
+                <DateTimePicker
+                  value={openTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="spinner"
+                  textColor="white"
+                  onChange={(e, d) => d && setOpenTime(d)}
+                />
+              </BlurView>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={openTime}
+            mode="time"
+            is24Hour={true}
+            display="clock"
+            onChange={(e, d) => {
+              setShowOpenPicker(false);
+              if (d) setOpenTime(d);
+            }}
+          />
+        )
+      )}
+
+      {/* Close Time Picker */}
+      {showClosePicker && (
+        Platform.OS === 'ios' ? (
+          <Modal transparent={true} visible={true} animationType="fade">
+            <View style={styles.modalOverlay}>
+              <BlurView intensity={90} tint="dark" style={styles.iosPickerContainer}>
+                <TouchableOpacity style={styles.iosPickerDone} onPress={() => setShowClosePicker(false)}>
+                  <Text style={{ color: 'white', fontWeight: 'bold' }}>Terminer</Text>
+                </TouchableOpacity>
+                <DateTimePicker
+                  value={closeTime}
+                  mode="time"
+                  is24Hour={true}
+                  display="spinner"
+                  textColor="white"
+                  onChange={(e, d) => d && setCloseTime(d)}
+                />
+              </BlurView>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={closeTime}
+            mode="time"
+            is24Hour={true}
+            display="clock"
+            onChange={(e, d) => {
+              setShowClosePicker(false);
+              if (d) setCloseTime(d);
+            }}
+          />
+        )
+      )}
     </View>
   );
 };
@@ -341,16 +402,83 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 1000,
   },
-  dismissArea: {
+  heroArea: {
     flex: 1,
-  },
-  cardContainer: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
+    paddingHorizontal: 24,
+    paddingBottom: 10,
+    overflow: 'hidden',
+  },
+  blobTopRight: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  blobBottomLeft: {
+    position: 'absolute',
+    bottom: 80,
+    left: -80,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.35)',
+    marginBottom: 4,
+  },
+  heroTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 8,
+    letterSpacing: 0.3,
+  },
+  heroSub: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  featureChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  featureChipText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  cardContainer: {
+    width: '100%',
+    alignItems: 'center',
+    paddingBottom: 90,
+    paddingHorizontal: 8,
   },
   cardWrapper: {
     width: '96%',
@@ -363,19 +491,20 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.88)',
+    backgroundColor: 'rgba(0,0,0,0.72)',
     borderRadius: 30,
     zIndex: 10,
     padding: 20,
+    overflow: 'hidden',
   },
-  cardBack: {
+  cardBorder: {
     position: 'absolute',
     zIndex: 5,
-    backgroundColor: 'red', // Approx gradient with red bg
     width: '100%',
     height: '100%',
     borderRadius: 30,
-    opacity: 0.3,
+    borderWidth: 1,
+    borderColor: 'rgba(180,50,50,0.4)',
   },
   cardGrid: {
     flexGrow: 1,

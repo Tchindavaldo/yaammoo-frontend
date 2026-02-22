@@ -12,7 +12,7 @@ export const useMerchant = () => {
     const [error, setError] = useState<string | null>(null);
 
     const fastFoodId = (userData as any)?.fastFoodId;
-    const userId = userData?.infos.uid;
+    const userId = userData?.infos?.uid;
 
     const fetchData = useCallback(async () => {
         if (!fastFoodId || !userId) return;
@@ -48,6 +48,17 @@ export const useMerchant = () => {
         }
     };
 
+    const addMenu = async (menu: Menu) => {
+        if (!fastFoodId) return;
+        try {
+            await merchantService.addMenu(fastFoodId, menu);
+            await fetchData();
+        } catch (err) {
+            console.error('Failed to add menu:', err);
+            throw err;
+        }
+    };
+
     return {
         orders,
         menus,
@@ -56,10 +67,14 @@ export const useMerchant = () => {
         error,
         refresh: fetchData,
         updateStatus,
+        addMenu,
         stats: {
             totalOrders: orders.length,
             pendingOrders: orders.filter(o => o.staut === 'pending').length,
             completedOrders: orders.filter(o => o.staut === 'completed').length,
+            totalRevenue: orders
+                .filter(o => o.staut === 'completed')
+                .reduce((acc, o) => acc + o.prixTotal, 0),
         }
     };
 };

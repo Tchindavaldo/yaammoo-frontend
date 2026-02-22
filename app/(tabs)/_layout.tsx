@@ -13,50 +13,52 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#FF3B30', // Danger color
+        tabBarActiveTintColor: 'darkred',
+        tabBarInactiveTintColor: 'gray',
         headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
-          },
-          default: {},
-        }),
+        tabBarShowLabel: false, // In Ionic SCSS: ion-label { display: none }
+        tabBarStyle: {
+          height: 40, // Strict height from original SCSS line 3
+          borderTopLeftRadius: 20, // Strict radius from original SCSS line 4
+          borderTopRightRadius: 20,
+          backgroundColor: 'white',
+          borderTopWidth: 0,
+          elevation: 5,
+          position: 'absolute', // To allow the borderRadius effect over content
+          bottom: 0,
+          left: 0,
+          right: 0,
+          paddingBottom: 0,
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Accueil',
-          tabBarIcon: ({ color }) => <Ionicons size={24} name="home" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={14} name="grid-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="cart"
         options={{
-          title: 'Panier',
-          tabBarIcon: ({ color }) => <Ionicons size={24} name="cart" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={14} name="cart-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="boutique"
         options={{
-          title: 'Boutique',
-          tabBarIcon: ({ color }) => <Ionicons size={24} name="storefront" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={14} name="storefront-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Notifs',
-          tabBarIcon: ({ color }) => <Ionicons size={24} name="notifications" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={14} name="notifications-outline" color={color} />,
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Paramètres',
-          tabBarIcon: ({ color }) => <Ionicons size={24} name="settings" color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons size={14} name="cog-outline" color={color} />,
         }}
       />
     </Tabs>

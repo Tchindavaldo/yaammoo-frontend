@@ -1,175 +1,202 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ImageBackground,
+  Dimensions,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { usePhoneAuth } from '@/src/features/auth/hooks/usePhoneAuth';
-import { AuthInput } from '@/src/features/auth/components/AuthInput';
-import { AuthButton } from '@/src/features/auth/components/AuthButton';
-import { Theme } from '@/src/theme';
-import { userFirestore } from '@/src/features/auth/services/userFirestore';
-import { generalDataService } from '@/src/features/auth/services/generalDataService';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { userFirestore } from '@/src/features/auth/services/userFirestore';
 import { Users, UsersInfos } from '@/src/types';
 
+const { width, height } = Dimensions.get('window');
+
+/**
+ * EXACT MIGRATION OF auth-with-number.page.html / auth-with-number.page.scss
+ */
 export default function PhoneAuthScreen() {
   const router = useRouter();
   const { setUserData } = useAuth();
-  const { loading, error, verifyCode, setError } = usePhoneAuth();
-  
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [smsSent, setSmsSent] = useState(false);
-  const [verificationId, setVerificationId] = useState('');
+  const { loading, verifyCode } = usePhoneAuth();
 
-  const handleSendCode = async () => {
-    if (!phone) {
-      setError('Veuiller entrer le numero de telephone');
-      return;
-    }
-    // Logic for sending code would go here. 
-    // In Expo, this typically requires a Firebase Recaptcha setup.
-    // For this migration, we assume the hook handles the ID.
-    console.log('Sending code to:', phone);
-    setSmsSent(true);
-    // setVerificationId(res.verificationId)
-  };
+  const [numero, setNumero] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [smsIsSend, setSmsIsSend] = useState(false);
+  const [connect, setConnect] = useState(false);
 
-  const handleVerify = async () => {
-    if (!code) {
-      setError('Veuiller entrer le code envoyer');
-      return;
-    }
-
-    const firebaseUser = await verifyCode(code);
-    if (firebaseUser) {
-      // Handle User database logic
-      const generalData = await generalDataService.getUserData();
-      if (generalData) {
-        const existingUser = await userFirestore.findUserByPhoneAndUid(
-          generalData.nbrTotalUser, 
-          parseInt(phone), 
-          firebaseUser.uid
-        );
-
-        if (existingUser) {
-          setUserData(existingUser);
-        } else {
-          const newUser = new Users(
-            new UsersInfos('', '', 0, parseInt(phone), firebaseUser.uid, '', ''),
-            false,
-            100,
-            []
-          );
-          const newIdx = generalData.nbrTotalUser.toString();
-          await userFirestore.saveUser(newUser, newIdx);
-          await generalDataService.updateUserData({
-            ...generalData,
-            nbrTotalUser: generalData.nbrTotalUser + 1
-          });
-          setUserData(newUser);
-        }
+  const connectUser = async () => {
+    if (!smsIsSend) {
+      if (numero !== '') {
+        setSmsIsSend(true);
+      } else {
+        Alert.alert('Erreur', 'veuiller entrer le numero de telephone');
       }
-      router.replace('/(tabs)');
+    } else {
+      if (verificationCode !== '') {
+        setConnect(true);
+        try {
+          const firebaseUser = await verifyCode(verificationCode);
+          if (firebaseUser) {
+            // 1. Recherche PRO par UID
+            let userFound = await userFirestore.getUser(firebaseUser.uid);
+
+            if (!userFound) {
+              // 2. Si pas trouvé, on crée le profil
+              userFound = new Users(
+                new UsersInfos('', '', 0, parseInt(numero), firebaseUser.uid, '', ''),
+                false,
+                100,
+                []
+              );
+              await userFirestore.saveUser(userFound, firebaseUser.uid);
+            }
+
+            setUserData(userFound);
+            router.replace('/(tabs)');
+          }
+        } catch (error: any) {
+          setConnect(false);
+          Alert.alert('Erreur', 'Code incorrect ou expiré');
+        }
+      } else {
+        Alert.alert('Erreur', 'veuiller entrer le code envoyer');
+      }
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
-      >
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <TouchableOpacity 
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={Theme.colors.dark} />
-          </TouchableOpacity>
+    <View style={styles.el}>
+      <ImageBackground source={require('@/assets/blur3.jpg')} style={styles.cardBack} resizeMode="cover">
+         <View style={styles.cardBlack}>
+            <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+         </View>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              {smsSent ? 'Vérification du code' : 'Connexion via numéro'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {smsSent 
-                ? 'Entrer le code envoyer au numero' 
-                : 'Veuiller entrer votre numero de telephone'}
-            </Text>
-          </View>
+         <View style={styles.cardGrid}>
+            <SafeAreaView style={{ width: '100%' }}>
+               <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                  <View style={styles.ionGrid}>
+                     
+                     {/* Row 1: Title (row-title) */}
+                     <View style={[styles.ionRow, styles.rowTitle]}>
+                        <Text style={styles.titleText}>
+                           {smsIsSend ? 'verification du code' : 'connexion via numero de telephone'}
+                        </Text>
+                     </View>
 
-          <View style={styles.form}>
-            {!smsSent ? (
-              <AuthInput
-                icon="call-outline"
-                placeholder="Numéro de téléphone"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="number-pad"
-                prefix="+237"
-              />
-            ) : (
-              <AuthInput
-                icon="lock-closed-outline"
-                placeholder="Code de vérification"
-                value={code}
-                onChangeText={setCode}
-                keyboardType="number-pad"
-              />
-            )}
+                     {/* Subtitle / Instructions */}
+                     <View style={[styles.ionRow, { marginTop: 20 }]}>
+                        <Text style={{ color: 'white', fontSize: 13 }}>
+                           {smsIsSend ? 'code' : 'veuiller entrer votre numero de telephone et valider le captcha qui sera afficher'}
+                        </Text>
+                     </View>
 
-            {error && <Text style={styles.errorText}>{error}</Text>}
+                     {/* Row Input (nth-child(3) or (5/6)) */}
+                     <View style={[styles.ionRow, { marginTop: 20 }]}>
+                        <View style={styles.ionCol}>
+                           <Ionicons name={smsIsSend ? "lock-closed" : "person"} size={20} color="#a65757" style={styles.ico1} />
+                           {!smsIsSend ? (
+                              <View style={styles.inputStack}>
+                                 <Text style={styles.prefix}>+237</Text>
+                                 <TextInput
+                                    style={[styles.ionInput, { paddingLeft: 60 }]}
+                                    placeholder="Entrer votre numero de telephone"
+                                    placeholderTextColor="#a3a3a3"
+                                    value={numero}
+                                    onChangeText={setNumero}
+                                    keyboardType="phone-pad"
+                                 />
+                              </View>
+                           ) : (
+                              <TextInput
+                                 style={styles.ionInput}
+                                 placeholder="Entrer le code envoyer au numero"
+                                 placeholderTextColor="#a3a3a3"
+                                 value={verificationCode}
+                                 onChangeText={setVerificationCode}
+                                 keyboardType="number-pad"
+                              />
+                           )}
+                        </View>
+                     </View>
 
-            <AuthButton
-              title={smsSent ? 'Vérifier' : 'Suivant'}
-              onPress={smsSent ? handleVerify : handleSendCode}
-              loading={loading}
-              style={styles.button}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+                     {/* Action Row */}
+                     <View style={[styles.ionRow, { marginTop: 9, justifyContent: 'center' }]}>
+                        <TouchableOpacity style={styles.ionButton} onPress={connectUser} disabled={connect}>
+                           {connect ? <ActivityIndicator size="small" color="white" /> : <Ionicons name="arrow-forward-outline" size={20} color="white" />}
+                        </TouchableOpacity>
+                     </View>
+
+                     {/* Back Button */}
+                     <TouchableOpacity style={styles.fixedBack} onPress={() => router.replace('/(auth)')}>
+                        <Ionicons name="arrow-back-outline" size={30} color="white" />
+                     </TouchableOpacity>
+
+                  </View>
+               </KeyboardAvoidingView>
+            </SafeAreaView>
+         </View>
+      </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Theme.colors.white,
+  el: { flex: 1 },
+  cardBack: { flex: 1, width: width, height: height },
+  cardBlack: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.57)',
+    zIndex: 10,
   },
-  flex: {
-    flex: 1,
+  cardGrid: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5000,
+    backgroundColor: 'transparent',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  scroll: {
-    padding: Theme.spacing.lg,
-    flexGrow: 1,
+  ionGrid: { width: '100%', paddingHorizontal: 15, zIndex: 500 },
+  ionRow: { flexDirection: 'row' },
+  ionCol: { flex: 1, position: 'relative', justifyContent: 'center' },
+  rowTitle: { top: 25, right: 8, marginBottom: 20 },
+  titleText: {
+    color: '#a3a3a3',
+    fontSize: width > 400 ? 48 : 35, // 3rem is ~48px
+    fontWeight: '200',
+    textTransform: 'lowercase',
   },
-  backBtn: {
-    marginBottom: Theme.spacing.xl,
-  },
-  header: {
-    marginBottom: Theme.spacing.xl,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
-    marginBottom: Theme.spacing.sm,
-  },
-  subtitle: {
+  ico1: { position: 'absolute', left: 15, zIndex: 101 },
+  prefix: { position: 'absolute', left: 42, zIndex: 101, color: 'white', fontSize: 14 },
+  ionInput: {
+    height: 60,
+    borderBottomWidth: 0.001,
+    borderBottomColor: '#ffffff59',
+    paddingLeft: 40,
+    color: 'whitesmoke',
     fontSize: 16,
-    color: Theme.colors.gray[600],
+    backgroundColor: 'transparent',
   },
-  form: {
-    marginTop: Theme.spacing.lg,
+  ionButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 10,
+    backgroundColor: 'darkred',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  button: {
-    marginTop: Theme.spacing.md,
-  },
-  errorText: {
-    color: Theme.colors.danger,
-    marginBottom: Theme.spacing.md,
-    fontSize: 14,
-  },
+  fixedBack: { position: 'absolute', top: 10, left: 10, zIndex: 1000 },
+  inputStack: { flex: 1, flexDirection: 'row', alignItems: 'center' },
 });

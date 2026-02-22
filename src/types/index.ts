@@ -19,7 +19,14 @@ export class Boisson {
 }
 
 export class Livraison {
-    constructor(public statut: boolean, public prix: number) { }
+    constructor(
+        public statut: boolean,
+        public prix: number,
+        public type: 'express' | 'standard' | 'aucune' = 'aucune',
+        public hour: string = '',
+        public date: string = '',
+        public address: string = ''
+    ) { }
 }
 
 export class Menu {

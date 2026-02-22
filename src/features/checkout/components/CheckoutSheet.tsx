@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
-import { Menu, Embalage, Boisson } from '@/src/types';
+import { Menu, Embalage, Boisson, Livraison } from '@/src/types';
 import { useCheckout } from '../hooks/useCheckout';
 
 interface CheckoutSheetProps {
@@ -13,32 +23,64 @@ interface CheckoutSheetProps {
   onConfirm: (order: any) => void;
 }
 
+type CheckoutStep = 'detail' | 'extra' | 'drink' | 'delivery';
+
 export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, menu, onConfirm }) => {
   const {
     quantity, setQuantity,
     selectedPackaging, setSelectedPackaging,
-    selectedDrink, setSelectedDrink,
+    selectedDrinks, setSelectedDrinks,
     delivery, setDelivery,
+    availablePackaging,
+    availableDrinks,
+    availableHours,
     total, createOrder
   } = useCheckout(menu);
 
-  const [step, setStep] = useState<'details' | 'extras' | 'delivery'>('details');
+  const [activeTab, setActiveTab] = useState<CheckoutStep>('detail');
 
   if (!menu) return null;
 
   const handlePackagingToggle = (pkg: Embalage) => {
-    setSelectedPackaging(prev => 
-      prev.find(p => p.type === pkg.type) 
+    setSelectedPackaging(prev =>
+      prev.find(p => p.type === pkg.type)
         ? prev.filter(p => p.type !== pkg.type)
         : [...prev, pkg]
     );
   };
+
+  const handleDrinkToggle = (drink: Boisson) => {
+    setSelectedDrinks(prev =>
+      prev.find(d => d.type === drink.type)
+        ? prev.filter(d => d.type !== drink.type)
+        : [...prev, drink]
+    );
+  };
+
+  const updateDelivery = (updates: Partial<Livraison>) => {
+    setDelivery(prev => ({ ...prev, ...updates } as Livraison));
+  };
+
+  const renderTab = (key: CheckoutStep, label: string, icon: string) => (
+    <TouchableOpacity
+      style={[styles.tab, activeTab === key && styles.activeTab]}
+      onPress={() => setActiveTab(key)}
+    >
+      <Ionicons
+        name={icon as any}
+        size={18}
+        color={activeTab === key ? Theme.colors.primary : Theme.colors.gray[400]}
+      />
+      <Text style={[styles.tabLabel, activeTab === key && styles.activeTabLabel]}>{label}</Text>
+    </TouchableOpacity>
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <TouchableOpacity style={styles.dismiss} onPress={onClose} />
         <View style={styles.sheet}>
+          {/* Header */}
           <View style={styles.header}>
             <View style={styles.handle} />
             <Text style={styles.title}>{menu.titre}</Text>
@@ -47,66 +89,200 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
             </TouchableOpacity>
           </View>
 
-          <ScrollView contentContainerStyle={styles.content}>
-            {step === 'details' && (
-              <View>
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Quantité</Text>
-                  <View style={styles.qtyContainer}>
-                    <TouchableOpacity 
-                      onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                      style={styles.qtyBtn}
-                    >
-                      <Ionicons name="remove" size={24} color={Theme.colors.dark} />
-                    </TouchableOpacity>
-                    <Text style={styles.qtyText}>{quantity}</Text>
-                    <TouchableOpacity 
-                      onPress={() => setQuantity(quantity + 1)}
-                      style={styles.qtyBtn}
-                    >
-                      <Ionicons name="add" size={24} color={Theme.colors.dark} />
-                    </TouchableOpacity>
+          {/* Body Content */}
+          <View style={styles.body}>
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+              {/* PANNEAU DETAIL */}
+              {activeTab === 'detail' && (
+                <View style={styles.panel}>
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Quantité</Text>
+                    <View style={styles.qtyRow}>
+                      <TouchableOpacity
+                        onPress={() => setQuantity(Math.max(1, quantity - 1))}
+                        style={styles.qtyBtn}
+                      >
+                        <Ionicons name="remove" size={24} color="white" />
+                      </TouchableOpacity>
+                      <View style={styles.qtyDisplay}>
+                        <Text style={styles.qtyNum}>{quantity}</Text>
+                        <Text style={styles.qtyLbl}>portion{quantity > 1 ? 's' : ''}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => setQuantity(quantity + 1)}
+                        style={styles.qtyBtn}
+                      >
+                        <Ionicons name="add" size={24} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.infoRow}>
+                    <View style={styles.infoBox}>
+                      <Text style={styles.infoVal}>{menu.prix1} F</Text>
+                      <Text style={styles.infoLbl}>Prix Unitaire</Text>
+                    </View>
+                    <View style={styles.infoBox}>
+                      <Text style={[styles.infoVal, { color: Theme.colors.primary }]}>{total} F</Text>
+                      <Text style={styles.infoLbl}>Sous-total</Text>
+                    </View>
                   </View>
                 </View>
+              )}
 
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Emballage</Text>
-                  <View style={styles.optionsRow}>
-                    {[new Embalage('Sac', 100), new Embalage('Boîte', 200)].map(pkg => (
-                      <TouchableOpacity 
+              {/* PANNEAU EXTRAS (Packaging) */}
+              {activeTab === 'extra' && (
+                <View style={styles.panel}>
+                  <Text style={styles.sectionTitle}>Emballage & Suppléments</Text>
+                  <View style={styles.optionsList}>
+                    {availablePackaging.map(pkg => (
+                      <TouchableOpacity
                         key={pkg.type}
                         style={[
-                          styles.optionBtn,
-                          selectedPackaging.find(p => p.type === pkg.type) && styles.selectedOption
+                          styles.optionCard,
+                          selectedPackaging.find(p => p.type === pkg.type) && styles.selectedCard
                         ]}
                         onPress={() => handlePackagingToggle(pkg)}
                       >
-                        <Text style={[
-                          styles.optionText,
-                          selectedPackaging.find(p => p.type === pkg.type) && styles.selectedOptionText
-                        ]}>{pkg.type} (+{pkg.prix} F)</Text>
+                        <View style={styles.optionInfo}>
+                          <Text style={[
+                            styles.optionName,
+                            selectedPackaging.find(p => p.type === pkg.type) && styles.selectedText
+                          ]}>{pkg.type}</Text>
+                          <Text style={styles.optionPrice}>+{pkg.prix} F</Text>
+                        </View>
+                        <Ionicons
+                          name={selectedPackaging.find(p => p.type === pkg.type) ? "checkbox" : "square-outline"}
+                          size={24}
+                          color={selectedPackaging.find(p => p.type === pkg.type) ? Theme.colors.primary : Theme.colors.gray[300]}
+                        />
                       </TouchableOpacity>
                     ))}
                   </View>
                 </View>
-              </View>
-            )}
+              )}
 
-            {/* Additional steps can be added here for Drinks and Delivery */}
-          </ScrollView>
+              {/* PANNEAU BOISSONS */}
+              {activeTab === 'drink' && (
+                <View style={styles.panel}>
+                  <Text style={styles.sectionTitle}>Boissons fraîches</Text>
+                  <View style={styles.drinkGrid}>
+                    {availableDrinks.map(drink => (
+                      <TouchableOpacity
+                        key={drink.type}
+                        style={[
+                          styles.drinkCard,
+                          selectedDrinks.find(d => d.type === drink.type) && styles.selectedDrinkCard
+                        ]}
+                        onPress={() => handleDrinkToggle(drink)}
+                      >
+                        <View style={styles.drinkIcon}>
+                          <Ionicons
+                            name="wine-outline"
+                            size={20}
+                            color={selectedDrinks.find(d => d.type === drink.type) ? "white" : Theme.colors.gray[400]}
+                          />
+                        </View>
+                        <Text style={[
+                          styles.drinkName,
+                          selectedDrinks.find(d => d.type === drink.type) && styles.selectedDrinkText
+                        ]}>{drink.type}</Text>
+                        <Text style={styles.drinkPrice}>{drink.prix} F</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
 
-          <View style={styles.footer}>
-            <View style={styles.totalContainer}>
-              <Text style={styles.totalLabel}>Total</Text>
-              <Text style={styles.totalValue}>{total} FCFA</Text>
-            </View>
-            <TouchableOpacity 
-              style={styles.confirmBtn}
-              onPress={() => onConfirm(createOrder())}
-            >
-              <Text style={styles.confirmBtnText}>Ajouter au panier</Text>
-            </TouchableOpacity>
+              {/* PANNEAU LIVRAISON */}
+              {activeTab === 'delivery' && (
+                <View style={styles.panel}>
+                  <Text style={styles.sectionTitle}>Options de Livraison</Text>
+
+                  {/* Type */}
+                  <View style={styles.deliveryTypes}>
+                    {[
+                      { key: 'standard', label: 'Standard (500F)', icon: 'bicycle-outline' },
+                      { key: 'express', label: 'Express (1000F)', icon: 'flash-outline' },
+                      { key: 'aucune', label: 'Sur place', icon: 'restaurant-outline' },
+                    ].map(t => (
+                      <TouchableOpacity
+                        key={t.key}
+                        style={[
+                          styles.typeCard,
+                          delivery.type === t.key && styles.selectedTypeCard
+                        ]}
+                        onPress={() => updateDelivery({ type: t.key as any, statut: t.key !== 'aucune' })}
+                      >
+                        <Ionicons
+                          name={t.icon as any}
+                          size={18}
+                          color={delivery.type === t.key ? "white" : Theme.colors.gray[500]}
+                        />
+                        <Text style={[styles.typeText, delivery.type === t.key && styles.selectedTypeText]}>
+                          {t.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Heure */}
+                  {delivery.type !== 'aucune' && (
+                    <>
+                      <Text style={styles.subTitle}>Heure souhaitée</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hourScroll}>
+                        {availableHours.map(h => (
+                          <TouchableOpacity
+                            key={h}
+                            style={[styles.hourChip, delivery.hour === h && styles.selectedHour]}
+                            onPress={() => updateDelivery({ hour: h })}
+                          >
+                            <Text style={[styles.hourText, delivery.hour === h && styles.selectedText]}>{h}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+
+                      <Text style={styles.subTitle}>Adresse de livraison</Text>
+                      <TextInput
+                        style={styles.addressInput}
+                        placeholder="Ex: Quartier Nkomo, immeuble bleu porte 204..."
+                        multiline
+                        numberOfLines={3}
+                        value={delivery.address}
+                        onChangeText={(text) => updateDelivery({ address: text })}
+                      />
+                    </>
+                  )}
+                </View>
+              )}
+            </ScrollView>
           </View>
+
+          {/* Tabs Navigation */}
+          <View style={styles.tabsContainer}>
+            {renderTab('detail', 'Détail', 'list-outline')}
+            {renderTab('extra', 'Extra', 'add-circle-outline')}
+            {renderTab('drink', 'Boisson', 'wine-outline')}
+            {renderTab('delivery', 'Livraison', 'bicycle-outline')}
+          </View>
+
+          {/* Footer - Final confirm */}
+          <BlurView intensity={80} tint="light" style={styles.footer}>
+            <View style={styles.totalBlock}>
+              <Text style={styles.totalLbl}>Total à payer</Text>
+              <Text style={styles.totalVal}>{total} F</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.confirmBtn}
+              onPress={() => {
+                const order = createOrder();
+                if (order) onConfirm(order);
+              }}
+            >
+              <Text style={styles.confirmBtnText}>Commander</Text>
+              <Ionicons name="arrow-forward" size={18} color="white" />
+            </TouchableOpacity>
+          </BlurView>
         </View>
       </View>
     </Modal>
@@ -116,7 +292,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
   },
   dismiss: {
@@ -124,10 +300,10 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: Theme.colors.white,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    minHeight: '60%',
-    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    height: '85%',
+    overflow: 'hidden',
   },
   header: {
     padding: Theme.spacing.md,
@@ -137,100 +313,281 @@ const styles = StyleSheet.create({
   },
   handle: {
     width: 40,
-    height: 5,
-    backgroundColor: Theme.colors.gray[300],
-    borderRadius: 2.5,
-    marginBottom: Theme.spacing.sm,
+    height: 4,
+    backgroundColor: Theme.colors.gray[200],
+    borderRadius: 2,
+    marginBottom: 10,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: Theme.colors.dark,
   },
   closeBtn: {
     position: 'absolute',
-    right: Theme.spacing.md,
-    top: Theme.spacing.md + 10,
+    right: 20,
+    top: 25,
   },
-  content: {
+  body: {
+    flex: 1,
+  },
+  scrollContent: {
     padding: Theme.spacing.lg,
   },
+  panel: {
+    flex: 1,
+  },
   section: {
-    marginBottom: Theme.spacing.xl,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Theme.colors.gray[800],
-    marginBottom: Theme.spacing.md,
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: Theme.colors.dark,
+    marginBottom: 16,
   },
-  qtyContainer: {
+  subTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.colors.gray[600],
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.gray[100],
-    borderRadius: Theme.borderRadius.md,
-    alignSelf: 'center',
+    justifyContent: 'center',
+    gap: 30,
+    marginTop: 10,
   },
   qtyBtn: {
-    padding: Theme.spacing.md,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
   },
-  qtyText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    paddingHorizontal: Theme.spacing.xl,
-  },
-  optionsRow: {
-    flexDirection: 'row',
-    gap: Theme.spacing.md,
-  },
-  optionBtn: {
-    flex: 1,
-    padding: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: Theme.colors.gray[300],
+  qtyDisplay: {
     alignItems: 'center',
   },
-  selectedOption: {
+  qtyNum: {
+    fontSize: 42,
+    fontWeight: 'bold',
+    color: Theme.colors.primary,
+  },
+  qtyLbl: {
+    fontSize: 14,
+    color: Theme.colors.gray[500],
+    marginTop: -5,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  infoBox: {
+    flex: 1,
+    backgroundColor: Theme.colors.gray[50],
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  infoVal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Theme.colors.dark,
+  },
+  infoLbl: {
+    fontSize: 11,
+    color: Theme.colors.gray[500],
+    marginTop: 4,
+    textTransform: 'uppercase',
+  },
+  optionsList: {
+    gap: 12,
+  },
+  optionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Theme.colors.gray[50],
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  selectedCard: {
+    borderColor: Theme.colors.primary,
+    backgroundColor: Theme.colors.primary + '05',
+  },
+  optionInfo: {
+    flex: 1,
+  },
+  optionName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Theme.colors.dark,
+  },
+  selectedText: {
+    color: Theme.colors.primary,
+  },
+  optionPrice: {
+    fontSize: 12,
+    color: Theme.colors.gray[500],
+    marginTop: 2,
+  },
+  drinkGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  drinkCard: {
+    width: '31%',
+    backgroundColor: Theme.colors.gray[50],
+    padding: 12,
+    borderRadius: 16,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+  },
+  selectedDrinkCard: {
     backgroundColor: Theme.colors.primary,
     borderColor: Theme.colors.primary,
   },
-  optionText: {
-    fontSize: 14,
-    color: Theme.colors.gray[600],
+  drinkIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
-  selectedOptionText: {
-    color: Theme.colors.white,
-    fontWeight: 'bold',
+  drinkName: {
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    color: Theme.colors.gray[700],
   },
-  footer: {
-    padding: Theme.spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Theme.colors.gray[100],
+  selectedDrinkText: {
+    color: 'white',
+  },
+  drinkPrice: {
+    fontSize: 10,
+    color: Theme.colors.gray[400],
+    marginTop: 4,
+  },
+  deliveryTypes: {
+    gap: 10,
+  },
+  typeCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+    backgroundColor: Theme.colors.gray[50],
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Theme.colors.gray[200],
   },
-  totalContainer: {
+  selectedTypeCard: {
+    backgroundColor: Theme.colors.primary,
+    borderColor: Theme.colors.primary,
+  },
+  typeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Theme.colors.gray[700],
+  },
+  selectedTypeText: {
+    color: 'white',
+  },
+  hourScroll: {
+    marginTop: 4,
+  },
+  hourChip: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: Theme.colors.gray[100],
+    marginRight: 10,
+  },
+  selectedHour: {
+    backgroundColor: Theme.colors.primary,
+  },
+  hourText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: Theme.colors.gray[600],
+  },
+  addressInput: {
+    backgroundColor: Theme.colors.gray[50],
+    borderWidth: 1,
+    borderColor: Theme.colors.gray[200],
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    textAlignVertical: 'top',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: Theme.colors.gray[100],
+    paddingVertical: 10,
+  },
+  tab: {
     flex: 1,
+    alignItems: 'center',
+    gap: 4,
   },
-  totalLabel: {
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: Theme.colors.primary,
+    paddingBottom: 4,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Theme.colors.gray[400],
+  },
+  activeTabLabel: {
+    color: Theme.colors.primary,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    paddingBottom: Platform.OS === 'ios' ? 35 : 20,
+    borderTopWidth: 1,
+    borderTopColor: Theme.colors.gray[100],
+  },
+  totalBlock: {
+    gap: 2,
+  },
+  totalLbl: {
     fontSize: 12,
     color: Theme.colors.gray[500],
   },
-  totalValue: {
-    fontSize: 20,
+  totalVal: {
+    fontSize: 24,
     fontWeight: 'bold',
     color: Theme.colors.primary,
   },
   confirmBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: Theme.colors.primary,
-    paddingHorizontal: Theme.spacing.xl,
-    paddingVertical: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.lg,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 16,
+    elevation: 4,
   },
   confirmBtnText: {
-    color: Theme.colors.white,
-    fontWeight: 'bold',
+    color: 'white',
     fontSize: 16,
+    fontWeight: 'bold',
   },
 });

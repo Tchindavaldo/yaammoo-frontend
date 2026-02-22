@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Theme } from '../../../theme';
@@ -10,6 +10,8 @@ interface RestaurantHeaderProps {
   location: string;
   searchVisible: boolean;
   onSearchToggle: () => void;
+  searchQuery?: string;
+  onSearchChange?: (text: string) => void;
 }
 
 export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
@@ -18,101 +20,141 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   location,
   searchVisible,
   onSearchToggle,
+  searchQuery,
+  onSearchChange,
 }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.topRow}>
-        <View style={styles.profileContainer}>
-          <Image
-            source={{ uri: userPhoto || 'https://via.placeholder.com/35' }}
-            style={styles.profilePic}
-          />
+      {/* Première Barre d'outils (Icons & Location) - Equivalent ion-toolbar baseline */}
+      <View style={styles.toolbar1}>
+        <View style={styles.colAvatar}>
+          <View style={styles.imgProfile}>
+            <Image
+              source={userPhoto ? { uri: userPhoto } : require('../../../../assets/images/user.png')}
+              style={styles.avatarImg}
+              contentFit="cover"
+            />
+          </View>
         </View>
-        <View style={styles.locationContainer}>
-          <TouchableOpacity style={styles.locationBtn}>
-            <Ionicons name="location-sharp" size={16} color={Theme.colors.white} />
-            <Text style={styles.locationText}>{location}</Text>
+        
+        <View style={styles.colLocation}>
+          <TouchableOpacity style={styles.chipLocalisation}>
+            <Ionicons name="location-sharp" size={12} color="white" />
+            <Text style={styles.localisationLabel}>{location}</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.notifBtn}>
-          <Ionicons name="notifications-outline" size={24} color={Theme.colors.primary} />
-        </TouchableOpacity>
+
+        <View style={styles.colNotification}>
+          <TouchableOpacity style={styles.notifBtn}>
+            <Ionicons name="notifications-outline" size={12} color="darkred" />
+          </TouchableOpacity>
+        </View>
       </View>
       
-      <View style={styles.greetingRow}>
-        <Text style={styles.greetingText}>Good morning, {userName}!</Text>
-      </View>
-
-      {searchVisible && (
-        <View style={styles.searchRow}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Rechercher..."
-            placeholderTextColor={Theme.colors.gray[500]}
-          />
+      {/* Deuxième Barre d'outils (Greeting & Search) */}
+      <View style={styles.toolbar2}>
+        <View style={styles.rowGreat}>
+          <Text style={styles.greatLabel}>Hello, {userName}</Text>
         </View>
-      )}
+
+        {searchVisible && (
+          <View style={styles.rowSearchBar}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Custom Placeholder"
+              placeholderTextColor="#999"
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              autoFocus
+            />
+          </View>
+        )}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: Theme.spacing.md,
-    paddingTop: Theme.spacing.sm,
-    backgroundColor: Theme.colors.white,
+    backgroundColor: 'white',
+    paddingTop: Platform.OS === 'ios' ? 44 : 10, // Safe area minimaliste pour le haut
   },
-  topRow: {
+  toolbar1: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Theme.spacing.md,
+    justifyContent: 'space-between',
+    paddingVertical: 5,
+    backgroundColor: 'white',
   },
-  profileContainer: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
+  colAvatar: {
+    paddingLeft: 8,
+    paddingRight: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imgProfile: {
+    height: 33,
+    width: 33,
+    borderRadius: 16.5,
     overflow: 'hidden',
+    backgroundColor: '#eee',
   },
-  profilePic: {
+  avatarImg: {
     width: '100%',
     height: '100%',
   },
-  locationContainer: {
+  colLocation: {
     flex: 1,
+    height: 33,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  locationBtn: {
+  chipLocalisation: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.primary,
-    paddingHorizontal: Theme.spacing.sm,
-    paddingVertical: Theme.spacing.xs,
-    borderRadius: Theme.borderRadius.xl,
+    backgroundColor: 'darkred',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    borderRadius: 25,
+    height: 33, // Pour forcer la cohérence de taille avec l'avatar
   },
-  locationText: {
-    color: Theme.colors.white,
-    fontSize: 12,
-    marginLeft: 5,
+  localisationLabel: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '900',
+    marginLeft: 4,
+  },
+  colNotification: {
+    paddingLeft: 5,
+    paddingRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   notifBtn: {
-    padding: Theme.spacing.xs,
+    padding: 2,
   },
-  greetingRow: {
-    marginBottom: Theme.spacing.sm,
+  toolbar2: {
+    backgroundColor: 'white',
   },
-  greetingText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
+  rowGreat: {
+    marginTop: 16,
+    marginBottom: 12,
+    paddingHorizontal: 15,
   },
-  searchRow: {
-    marginBottom: Theme.spacing.md,
+  greatLabel: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: 'black',
+  },
+  rowSearchBar: {
+    marginBottom: 12,
+    paddingHorizontal: 15,
   },
   searchInput: {
-    backgroundColor: Theme.colors.gray[100],
-    padding: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.md,
+    backgroundColor: '#efefef',
+    height: 40,
+    borderRadius: 40,
+    paddingHorizontal: 15,
     fontSize: 14,
   },
 });

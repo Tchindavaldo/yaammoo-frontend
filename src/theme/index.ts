@@ -1,9 +1,9 @@
 export const Theme = {
     colors: {
-        primary: '#FF3B30',
+        primary: '#8B0000',
         secondary: '#5856D6',
         success: '#34C759',
-        danger: '#FF3B30',
+        danger: '#8B0000',
         warning: '#FF9500',
         info: '#007AFF',
         light: '#F2F2F7',
@@ -18,6 +18,8 @@ export const Theme = {
             400: '#C7C7CC',
             500: '#AEAEB2',
             600: '#8E8E93',
+            700: '#636366',
+            800: '#48484A',
         }
     },
     spacing: {

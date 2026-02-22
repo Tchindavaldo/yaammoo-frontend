@@ -1,24 +1,41 @@
+import { useEffect } from 'react';
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import { useAuth } from '../../auth/context/AuthContext';
+import axios from 'axios';
+import { Config } from '@/src/api/config';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/src/features/auth/context/AuthContext';
-import { userFirestore } from '@/src/features/auth/services/userFirestore';
 import { storage } from '@/src/utils/storage';
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
         shouldPlaySound: true,
-        shouldSetBadge: false,
+        shouldSetBadge: true,
+        shouldShowBanner: true,
+        shouldShowList: true,
     }),
 });
 
 export const useNotificationSetup = () => {
-    const { userData, setUserData } = useAuth();
+    const { userData } = useAuth();
     const router = useRouter();
 
+    useEffect(() => {
+        const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+            // Action au clic sur la notification : redirection vers Tab 4
+            router.push('/notifications');
+        });
+
+        return () => subscription.remove();
+    }, []);
+
     const registerForPushNotificationsAsync = async () => {
-        let token;
+        if (!Device.isDevice) {
+            console.log('Must use physical device for Push Notifications');
+            return null;
+        }
 
         const { status: existingStatus } = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
@@ -28,18 +45,19 @@ export const useNotificationSetup = () => {
         }
         if (finalStatus !== 'granted') {
             console.log('Failed to get push token for push notification!');
-            return;
+            return null;
         }
 
-        token = (await Notifications.getExpoPushTokenAsync()).data;
-        console.log('FCM Token:', token);
+        const token = (await Notifications.getExpoPushTokenAsync()).data;
+        console.log('Expo Push Token:', token);
 
         if (Platform.OS === 'android') {
-            Notifications.setNotificationChannelAsync('default', {
-                name: 'default',
+            Notifications.setNotificationChannelAsync('high_priority_channel', {
+                name: 'high_priority_channel',
                 importance: Notifications.AndroidImportance.MAX,
                 vibrationPattern: [0, 250, 250, 250],
                 lightColor: '#FF231F7C',
+                sound: 'default',
             });
         }
 
@@ -49,29 +67,34 @@ export const useNotificationSetup = () => {
     const setup = async () => {
         if (!userData) return;
 
-        const token = await registerForPushNotificationsAsync();
-        if (token) {
+        // Tenter de renvoyer un token précédemment échoué
+        const unsentToken = await storage.get('unsentFcmToken');
+        if (unsentToken) {
             try {
-                const userId = await storage.get('user_idx');
-                if (userId && (userData as any).fcmToken !== token) {
-                    const updatedUser = { ...userData };
-                    (updatedUser as any).fcmToken = token;
-                    await userFirestore.saveUser(updatedUser, userId.toString());
-                    setUserData(updatedUser);
-                }
-            } catch (error) {
-                console.error('Error saving FCM token:', error);
+                await syncToken(unsentToken);
+                await storage.remove('unsentFcmToken');
+            } catch (e) {
+                console.warn('Retry sync token failed');
             }
         }
 
-        const responseListener = Notifications.addNotificationResponseReceivedListener((response: Notifications.NotificationResponse) => {
-            console.log('Notification clicked:', response);
-            router.push('/(tabs)/notifications');
-        });
+        const token = await registerForPushNotificationsAsync();
+        if (token && token !== (userData as any).fcmToken) {
+            await syncToken(token);
+        }
+    };
 
-        return () => {
-            responseListener.remove();
-        };
+    const syncToken = async (token: string) => {
+        if (!userData) return;
+        try {
+            await axios.put(`${Config.apiUrl}/user/update/${userData?.infos?.uid}`, {
+                fcmToken: token
+            });
+            console.log('FCM Token synced with backend');
+        } catch (error) {
+            console.error('Error syncing FCM token:', error);
+            await storage.set('unsentFcmToken', token);
+        }
     };
 
     return { setup };

@@ -9,6 +9,7 @@ export const useFastFoods = () => {
     const [error, setError] = useState<string | null>(null);
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('Fast Food');
 
     const fetchFastFoods = async () => {
         try {
@@ -45,6 +46,8 @@ export const useFastFoods = () => {
         error,
         searchQuery,
         setSearchQuery,
+        selectedCategory,
+        setSelectedCategory,
         refresh: fetchFastFoods
     };
 };

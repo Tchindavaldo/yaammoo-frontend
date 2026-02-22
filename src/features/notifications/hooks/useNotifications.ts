@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Config } from '../../../api/config';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -10,6 +10,7 @@ export interface Notification {
     isRead: boolean;
     createdAt: string;
     idGroup?: string;
+    type?: string;
 }
 
 export const useNotifications = () => {
@@ -18,13 +19,20 @@ export const useNotifications = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         if (!userData) return;
 
         try {
             setLoading(true);
             setError(null);
-            const response = await axios.get(`${Config.apiUrl}/notifications/user/${userData.infos.uid}`);
+            // Match Ionic endpoint: /notification/user?userId=...
+            const endpoint = (userData as any).fastFoodId !== undefined
+                ? `/notification/user?userId=${userData?.infos?.uid}&fastFoodId=${(userData as any).fastFoodId}`
+                : `/notification/user?userId=${userData?.infos?.uid}`;
+
+            const response = await axios.get(`${Config.apiUrl}${endpoint}`, {
+                headers: { 'ngrok-skip-browser-warning': 'true' }
+            });
 
             if (response.data && response.data.data) {
                 setNotifications(response.data.data);
@@ -35,20 +43,32 @@ export const useNotifications = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [userData]);
 
     const markAsRead = async (id: string, idGroup?: string) => {
         try {
+            // Optimistic update
             setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-            await axios.put(`${Config.apiUrl}/notifications/read/${id}`, { idGroup });
+            // Match Ionic service: markNotificationAsRead
+            await axios.put(`${Config.apiUrl}/notification/read/${id}`, { idGroup });
         } catch (err) {
             console.error('Error marking as read:', err);
+            // Rollback if needed (optional)
         }
     };
 
     useEffect(() => {
         fetchNotifications();
-    }, [userData]);
+    }, [fetchNotifications]);
 
-    return { notifications, loading, error, refresh: fetchNotifications, markAsRead };
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    return {
+        notifications,
+        loading,
+        error,
+        refresh: fetchNotifications,
+        markAsRead,
+        unreadCount
+    };
 };

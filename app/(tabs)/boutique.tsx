@@ -1,109 +1,18 @@
 import React, { useState } from 'react';
-import { StyleSheet, FlatList, SafeAreaView, ActivityIndicator, View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+  View,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import { useMerchant } from '@/src/features/merchant/hooks/useMerchant';
 import { Theme } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
-import { OrderCard } from '@/src/features/orders/components/OrderCard';
-import { MenuItem } from '@/src/features/menu/components/MenuItem';
-import { TransactionItem } from '@/src/features/merchant/components/TransactionItem';
-import { AddMenuSheet } from '@/src/features/merchant/components/AddMenuSheet';
-
-export default function BoutiqueScreen() {
-  const { orders, menus, transactions, loading, stats, refresh } = useMerchant();
-  const [activeTab, setActiveTab] = useState<'commande' | 'menu' | 'historique'>('commande');
-  const [showAddMenu, setShowAddMenu] = useState(false);
-
-  const handleAddMenu = async (newMenu: any) => {
-    // Logic to call merchantService.addMenu will go here
-    setShowAddMenu(false);
-    refresh();
-  };
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <View style={styles.statsRow}>
-        <StatCard label="Recettes" value={`${stats.completedOrders * 2000} F`} icon="wallet-outline" color={Theme.colors.success} />
-        <StatCard label="Commandes" value={stats.totalOrders.toString()} icon="receipt-outline" color={Theme.colors.primary} />
-      </View>
-      
-      <View style={styles.tabs}>
-        <TabItem 
-          label="Commandes" 
-          active={activeTab === 'commande'} 
-          onPress={() => setActiveTab('commande')} 
-          count={stats.pendingOrders}
-        />
-        <TabItem 
-          label="Menu" 
-          active={activeTab === 'menu'} 
-          onPress={() => setActiveTab('menu')} 
-        />
-        <TabItem 
-          label="Finances" 
-          active={activeTab === 'historique'} 
-          onPress={() => setActiveTab('historique')} 
-        />
-      </View>
-    </View>
-  );
-
-  const renderContent = () => {
-    if (loading && orders.length === 0) {
-      return <ActivityIndicator style={{ marginTop: 50 }} color={Theme.colors.primary} />;
-    }
-
-    switch (activeTab) {
-      case 'commande':
-        return (
-          <FlatList
-            data={orders}
-            renderItem={({ item }) => <OrderCard order={item} />}
-            keyExtractor={(item) => item.idCmd}
-            refreshing={loading}
-            onRefresh={refresh}
-            ListEmptyComponent={<EmptyState message="Aucune commande reçue" />}
-          />
-        );
-      case 'menu':
-        return (
-          <FlatList
-            data={menus}
-            renderItem={({ item }) => <MenuItem menu={item} />}
-            keyExtractor={(item, index) => index.toString()}
-            ListEmptyComponent={<EmptyState message="Votre menu est vide" />}
-          />
-        );
-      case 'historique':
-        return (
-          <FlatList
-            data={transactions}
-            renderItem={({ item }) => <TransactionItem transaction={item} />}
-            keyExtractor={(item) => item.id}
-            ListEmptyComponent={<EmptyState message="Aucune transaction trouvée" />}
-          />
-        );
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      {renderHeader()}
-      <View style={{ flex: 1 }}>
-        {renderContent()}
-      </View>
-      {activeTab === 'menu' && (
-        <TouchableOpacity style={styles.fab} onPress={() => setShowAddMenu(true)}>
-          <Ionicons name="add" size={30} color={Theme.colors.white} />
-        </TouchableOpacity>
-      )}
-      <AddMenuSheet 
-        visible={showAddMenu} 
-        onClose={() => setShowAddMenu(false)} 
-        onSave={handleAddMenu} 
-      />
-    </SafeAreaView>
-  );
-}
+import { OrderManagePanel } from '@/src/features/merchant/components/OrderManagePanel';
+import { MenuManagePanel } from '@/src/features/merchant/components/MenuManagePanel';
+import { PorteFeuillePanel } from '@/src/features/merchant/components/PorteFeuillePanel';
 
 const StatCard = ({ label, value, icon, color }: any) => (
   <View style={styles.statCard}>
@@ -117,11 +26,16 @@ const StatCard = ({ label, value, icon, color }: any) => (
   </View>
 );
 
-const TabItem = ({ label, active, onPress, count }: any) => (
-  <TouchableOpacity 
-    style={[styles.tab, active && styles.activeTab]} 
+const TabItem = ({ label, active, onPress, count, icon }: any) => (
+  <TouchableOpacity
+    style={[styles.tab, active && styles.activeTab]}
     onPress={onPress}
   >
+    <Ionicons
+      name={icon}
+      size={16}
+      color={active ? Theme.colors.primary : Theme.colors.gray[400]}
+    />
     <Text style={[styles.tabLabel, active && styles.activeTabLabel]}>{label}</Text>
     {count > 0 && (
       <View style={styles.badge}>
@@ -131,12 +45,116 @@ const TabItem = ({ label, active, onPress, count }: any) => (
   </TouchableOpacity>
 );
 
-const EmptyState = ({ message }: { message: string }) => (
-  <View style={styles.empty}>
-    <Ionicons name="document-text-outline" size={50} color={Theme.colors.gray[300]} />
-    <Text style={styles.emptyText}>{message}</Text>
-  </View>
-);
+type ActiveTab = 'commande' | 'menu' | 'historique';
+
+export default function BoutiqueScreen() {
+  const { orders, menus, transactions, loading, stats, refresh, updateStatus, addMenu } = useMerchant();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('commande');
+
+  const handleAddMenu = async (newMenu: any) => {
+    await addMenu(newMenu);
+  };
+
+  const renderHeader = () => (
+    <View style={styles.header}>
+      {/* Stats globales */}
+      <View style={styles.statsRow}>
+        <StatCard
+          label="Recettes"
+          value={`${(stats.totalRevenue || 0).toLocaleString('fr-FR')} F`}
+          icon="wallet-outline"
+          color={Theme.colors.success}
+        />
+        <StatCard
+          label="Commandes"
+          value={stats.totalOrders.toString()}
+          icon="receipt-outline"
+          color={Theme.colors.primary}
+        />
+        <StatCard
+          label="En attente"
+          value={stats.pendingOrders.toString()}
+          icon="time-outline"
+          color={Theme.colors.warning || '#f59e0b'}
+        />
+      </View>
+
+      {/* Onglets de navigation */}
+      <View style={styles.tabs}>
+        <TabItem
+          label="Commandes"
+          icon="cart-outline"
+          active={activeTab === 'commande'}
+          onPress={() => setActiveTab('commande')}
+          count={stats.pendingOrders}
+        />
+        <TabItem
+          label="Menu"
+          icon="fast-food-outline"
+          active={activeTab === 'menu'}
+          onPress={() => setActiveTab('menu')}
+          count={0}
+        />
+        <TabItem
+          label="Finances"
+          icon="bar-chart-outline"
+          active={activeTab === 'historique'}
+          onPress={() => setActiveTab('historique')}
+          count={0}
+        />
+      </View>
+    </View>
+  );
+
+  const renderContent = () => {
+    if (loading && orders.length === 0 && menus.length === 0) {
+      return (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Theme.colors.primary} />
+          <Text style={styles.loadingText}>Chargement de votre boutique...</Text>
+        </View>
+      );
+    }
+
+    switch (activeTab) {
+      case 'commande':
+        return (
+          <OrderManagePanel
+            orders={orders}
+            loading={loading}
+            onRefresh={refresh}
+            onUpdateStatus={(id, status) => updateStatus(id, status)}
+          />
+        );
+      case 'menu':
+        return (
+          <MenuManagePanel
+            menus={menus}
+            onRefresh={refresh}
+            onAddMenu={handleAddMenu}
+            loading={loading}
+          />
+        );
+      case 'historique':
+        return (
+          <PorteFeuillePanel
+            transactions={transactions}
+            loading={loading}
+            onRefresh={refresh}
+          />
+        );
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {renderHeader()}
+      <View style={{ flex: 1 }}>
+        {renderContent()}
+      </View>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -145,108 +163,84 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Theme.colors.white,
-    padding: Theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.gray[200],
   },
   statsRow: {
     flexDirection: 'row',
-    gap: Theme.spacing.md,
-    marginBottom: Theme.spacing.lg,
+    paddingHorizontal: Theme.spacing.md,
+    paddingVertical: Theme.spacing.md,
+    gap: Theme.spacing.sm,
   },
   statCard: {
     flex: 1,
+    backgroundColor: Theme.colors.gray[50],
+    padding: Theme.spacing.sm,
+    borderRadius: Theme.borderRadius.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Theme.spacing.md,
-    backgroundColor: Theme.colors.gray[50],
-    borderRadius: Theme.borderRadius.lg,
-    gap: Theme.spacing.sm,
+    gap: Theme.spacing.xs || 4,
   },
   iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
+    fontSize: 10,
+    color: Theme.colors.gray[600],
+    marginBottom: 1,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: Theme.colors.gray[100],
-    borderRadius: Theme.borderRadius.pill,
-    padding: 4,
+    paddingHorizontal: Theme.spacing.md,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: Theme.borderRadius.pill,
+    paddingVertical: Theme.spacing.md,
+    gap: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
   activeTab: {
-    backgroundColor: Theme.colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomColor: Theme.colors.primary,
   },
   tabLabel: {
-    fontSize: 13,
+    fontSize: 12,
+    color: Theme.colors.gray[500],
     fontWeight: '600',
-    color: Theme.colors.gray[600],
   },
   activeTabLabel: {
     color: Theme.colors.primary,
   },
   badge: {
-    backgroundColor: Theme.colors.danger,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 6,
+    backgroundColor: Theme.colors.primary,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 8,
   },
   badgeText: {
-    color: Theme.colors.white,
-    fontSize: 10,
+    color: 'white',
+    fontSize: 9,
     fontWeight: 'bold',
   },
-  empty: {
+  centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 100,
+    gap: 12,
   },
-  emptyText: {
-    marginTop: Theme.spacing.md,
+  loadingText: {
     color: Theme.colors.gray[500],
-    fontSize: 16,
+    fontSize: 14,
   },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    backgroundColor: Theme.colors.primary,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  }
 });

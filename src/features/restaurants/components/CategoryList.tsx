@@ -29,7 +29,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
         >
           <Ionicons 
             name={item.icon as any} 
-            size={16} 
+            size={8} 
             color={selectedCategory === item.name ? Theme.colors.white : Theme.colors.primary} 
           />
           <Text style={[
@@ -49,31 +49,32 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Theme.spacing.lg,
+    marginBottom: 5,
   },
   contentContainer: {
-    paddingHorizontal: Theme.spacing.md,
+    paddingHorizontal: 15,
   },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.xl,
-    borderWidth: 1,
-    borderColor: Theme.colors.primary,
-    marginRight: Theme.spacing.sm,
+    paddingHorizontal: 10,
+    backgroundColor: 'transparent',
+    borderRadius: 20,
+    marginRight: 0,
+    height: 32,
   },
   chipSelected: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: '#8b0000',
   },
   text: {
     color: Theme.colors.primary,
-    fontSize: 13,
-    marginLeft: Theme.spacing.xs,
-    fontWeight: '500',
+    fontSize: 10,
+    marginLeft: 4,
   },
   textSelected: {
-    color: Theme.colors.white,
+    color: 'white',
   },
+  icon: {
+    fontSize: 8,
+  }
 });

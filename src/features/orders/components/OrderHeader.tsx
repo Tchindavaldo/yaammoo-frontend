@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
 
 interface OrderHeaderProps {
@@ -10,30 +11,42 @@ interface OrderHeaderProps {
 
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange, counts }) => {
   const tabs = [
-    { id: 'cart', label: 'Mon pannier', icon: 'cart-outline', count: counts.cart },
-    { id: 'status', label: 'État', icon: 'checkmark-circle-outline', count: counts.status },
-    { id: 'bonus', label: 'Mes Bonus', icon: 'gift-outline', count: counts.bonus },
+    { id: 'cart', label: 'Pannier', icon: 'cart-outline', count: counts.cart },
+    { id: 'status', label: 'Commandes', icon: 'checkmark-circle-outline', count: counts.status },
+    { id: 'bonus', label: 'Bonus', icon: 'gift-outline', count: counts.bonus },
   ];
 
   return (
     <View style={styles.container}>
-      <View style={styles.segmentedContainer}>
+      <View style={styles.rowSegment}>
         {tabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.id}
-            style={[
-              styles.tab,
-              activeTab === tab.id && styles.activeTab
-            ]}
-            onPress={() => onTabChange(tab.id)}
-          >
-            <Text style={[
-              styles.tabLabel,
-              activeTab === tab.id && styles.activeTabLabel
-            ]}>
-              {tab.label} {tab.count > 0 && `(${tab.count})`}
-            </Text>
-          </TouchableOpacity>
+          <View key={tab.id} style={styles.colSegment}>
+            <TouchableOpacity
+              style={[
+                styles.chip,
+                activeTab === tab.id && styles.activeChip
+              ]}
+              onPress={() => onTabChange(tab.id)}
+            >
+              <Ionicons 
+                name={tab.icon as any} 
+                size={16} 
+                color={activeTab === tab.id ? 'white' : 'red'} 
+                style={{ marginRight: 5 }}
+              />
+              <Text style={[
+                styles.label,
+                activeTab === tab.id && styles.activeLabel
+              ]}>
+                {tab.label}
+              </Text>
+
+              {/* Badge absolu conforme au SCSS original (top -7, right -7) */}
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{tab.count}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         ))}
       </View>
     </View>
@@ -42,36 +55,57 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange
 
 const styles = StyleSheet.create({
   container: {
-    padding: Theme.spacing.md,
-    backgroundColor: Theme.colors.white,
+    paddingVertical: 10,
+    backgroundColor: 'white',
+    borderBottomWidth: 0,
+    elevation: 0,
+    shadowOpacity: 0,
   },
-  segmentedContainer: {
+  rowSegment: {
     flexDirection: 'row',
-    backgroundColor: Theme.colors.gray[100],
-    borderRadius: Theme.borderRadius.lg,
-    padding: 2,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: Theme.spacing.sm,
     alignItems: 'center',
-    borderRadius: Theme.borderRadius.md,
+    paddingHorizontal: 5,
+    marginTop: -5,
   },
-  activeTab: {
-    backgroundColor: Theme.colors.white,
-    shadowColor: Theme.colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+  colSegment: {
+    paddingHorizontal: 5,
   },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: Theme.colors.gray[600],
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f4f4f4',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    position: 'relative',
   },
-  activeTabLabel: {
-    color: Theme.colors.primary,
+  activeChip: {
+    backgroundColor: 'darkred',
+  },
+  label: {
+    fontSize: 10,
+    color: 'black',
+  },
+  activeLabel: {
+    color: 'white',
+    fontWeight: 'normal',
+  },
+  badge: {
+    position: 'absolute',
+    top: -7,
+    right: -7,
+    backgroundColor: 'darkred',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'white',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 9,
     fontWeight: 'bold',
   },
 });

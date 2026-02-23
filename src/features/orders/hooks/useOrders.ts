@@ -16,7 +16,7 @@ export const useOrders = () => {
             setLoading(true);
             setError(null);
             // Match Ionic endpoint: /order/user/all/${user.uid}
-            const response = await axios.get(`${Config.apiUrl}/order/user/all/${userData?.infos?.uid}`, {
+            const response = await axios.get(`${Config.apiUrl}/order/user/all/${(userData as any)?.uid}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             });
             if (response.data && response.data.data) {
@@ -30,10 +30,10 @@ export const useOrders = () => {
         }
     }, [userData]);
 
-    const addOrder = async (orderData: Partial<Commande>) => {
+    const addOrder = async (orderData: any) => {
         try {
             setLoading(true);
-            const response = await axios.post(`${Config.apiUrl}/order/add`, orderData);
+            const response = await axios.post(`${Config.apiUrl}/order`, orderData);
             if (response.data) {
                 await fetchOrders();
                 return true;
@@ -60,7 +60,7 @@ export const useOrders = () => {
     const updateQuantity = async (id: string, newQty: number) => {
         try {
             setOrders(prev => prev.map(o => o.idCmd === id ? { ...o, quantite: newQty } : o));
-            await axios.put(`${Config.apiUrl}/order/update/${id}`, { quantite: newQty });
+            await axios.put(`${Config.apiUrl}/order`, { id, quantite: newQty });
             return true;
         } catch (err) {
             console.error('Update quantity error:', err);
@@ -73,8 +73,8 @@ export const useOrders = () => {
         if (!userData) return false;
         try {
             setLoading(true);
-            const ordersWithUserId = ordersToBuy.map(o => ({ ...o, userId: userData?.infos?.uid }));
-            const response = await axios.put(`${Config.apiUrl}/order/tabs/${userData?.infos?.uid}`, ordersWithUserId);
+            const ordersWithUserId = ordersToBuy.map(o => ({ ...o, userId: (userData as any)?.uid }));
+            const response = await axios.put(`${Config.apiUrl}/order/tabs/${(userData as any)?.uid}`, ordersWithUserId);
             if (response.data) {
                 await fetchOrders();
                 return true;
@@ -88,7 +88,7 @@ export const useOrders = () => {
     };
 
     const getOrdersByStatus = (statusList: string[]) => {
-        return orders.filter(o => statusList.includes(o.staut));
+        return orders.filter(o => statusList.includes((o as any).status || o.staut));
     };
 
     const orderStats = useMemo(() => {
@@ -100,10 +100,10 @@ export const useOrders = () => {
             delivered: getOrdersByStatus(['delivered']).length,
         };
         const amounts = {
-            pending: getOrdersByStatus(['pending']).reduce((a, b) => a + b.prixTotal, 0),
-            processing: getOrdersByStatus(['processing', 'active', 'in_progress']).reduce((a, b) => a + b.prixTotal, 0),
-            finished: getOrdersByStatus(['finished', 'delivering']).reduce((a, b) => a + b.prixTotal, 0),
-            delivered: getOrdersByStatus(['delivered']).reduce((a, b) => a + b.prixTotal, 0),
+            pending: getOrdersByStatus(['pending']).reduce((a, b) => a + ((b as any).total || b.prixTotal || 0), 0),
+            processing: getOrdersByStatus(['processing', 'active', 'in_progress']).reduce((a, b) => a + ((b as any).total || b.prixTotal || 0), 0),
+            finished: getOrdersByStatus(['finished', 'delivering']).reduce((a, b) => a + ((b as any).total || b.prixTotal || 0), 0),
+            delivered: getOrdersByStatus(['delivered']).reduce((a, b) => a + ((b as any).total || b.prixTotal || 0), 0),
         };
         return { counts, amounts };
     }, [orders]);

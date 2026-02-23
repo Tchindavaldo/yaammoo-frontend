@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
@@ -40,22 +41,120 @@ export const NoBoutiquePanel = () => {
   // Picker states
   const [showOpenPicker, setShowOpenPicker] = useState(false);
   const [showClosePicker, setShowClosePicker] = useState(false);
+  const [isEntering, setIsEntering] = useState(false);
 
-  // Animations
+  // Animation values
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const heroFadeAnim = useRef(new Animated.Value(0)).current; 
+  const heroSlideAnim = useRef(new Animated.Value(-40)).current; 
+  const chipsEntryAnim = useRef(new Animated.Value(0)).current; 
+  const cardSlideAnim = useRef(new Animated.Value(250)).current; 
+  const cardScaleAnim = useRef(new Animated.Value(0.96)).current;
+  const cardFadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current; 
 
+  // Toast Anim
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastConfig, setToastConfig] = useState({ message: '', type: 'success' });
+  const toastAnimY = useRef(new Animated.Value(-100)).current;
+
+  // Helpers
+  const showToast = (message: string, type: 'success' | 'error' = 'success', duration = 3000) => {
+    setToastConfig({ message, type });
+    setToastVisible(true);
+    Animated.sequence([
+      Animated.spring(toastAnimY, { toValue: Platform.OS === 'ios' ? 60 : 40, useNativeDriver: true, tension: 60, friction: 8 }),
+      Animated.delay(duration),
+      Animated.timing(toastAnimY, { toValue: -100, duration: 300, useNativeDriver: true })
+    ]).start(() => {
+      setToastVisible(false);
+    });
+  };
+
+  const resetAnims = () => {
+    heroFadeAnim.setValue(0);
+    heroSlideAnim.setValue(-40);
+    chipsEntryAnim.setValue(0);
+    cardSlideAnim.setValue(250);
+    cardScaleAnim.setValue(0.96);
+    cardFadeAnim.setValue(0);
+    fadeAnim.setValue(0);
+  };
+
+  const closeCard = () => {
+    setIsEntering(false);
+    setShowCreateCard(false);
+    resetAnims();
+  };
+
+  // Pulsing icon (runs always)
   useEffect(() => {
-    // Pulsing icon animation
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.12, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.12, duration: 1000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
       ])
     ).start();
-    // Fade-in for chips
-    Animated.timing(fadeAnim, { toValue: 1, duration: 800, delay: 200, useNativeDriver: true }).start();
   }, []);
+
+  // Entry animations sequence
+  useEffect(() => {
+    if (showCreateCard) {
+      setIsEntering(true);
+      resetAnims();
+
+      Animated.parallel([
+        // Stage 1: Hero area
+        Animated.parallel([
+          Animated.timing(heroFadeAnim, {
+            toValue: 1,
+            duration: 700,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.spring(heroSlideAnim, {
+            toValue: 0,
+            tension: 20,
+            friction: 8,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Stage 2: Card (starts with a bit more delay)
+        Animated.sequence([
+          Animated.delay(250),
+          Animated.parallel([
+            Animated.timing(cardFadeAnim, {
+              toValue: 1,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+            Animated.spring(cardSlideAnim, {
+              toValue: 0,
+              tension: 18,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+            Animated.spring(cardScaleAnim, {
+              toValue: 1,
+              tension: 18,
+              friction: 8,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
+        // Stage 3: Feature chips (appears later)
+        Animated.sequence([
+          Animated.delay(600),
+          Animated.timing(chipsEntryAnim, {
+            toValue: 1,
+            duration: 900,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start(() => setIsEntering(false));
+    }
+  }, [showCreateCard]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -63,34 +162,37 @@ export const NoBoutiquePanel = () => {
 
   const handleCreate = async () => {
     if (!name || !number) {
-      Alert.alert('Erreur', 'Veuillez remplir les champs obligatoires');
+      showToast('Veuillez remplir les champs obligatoires', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      const userId = userData?.infos?.uid;
-      const response = await axios.post(`${Config.apiUrl}/fast-food/add`, {
-        nom: name,
+      const userId = (userData as any)?.uid;
+      const response = await axios.post(`${Config.apiUrl}/fastFood`, {
+        name,
         openTime: formatTime(openTime),
         closeTime: formatTime(closeTime),
         userId,
-        numero: number,
+        number,
         image: '' 
       });
 
       if (response.data && response.data.success) {
-        Alert.alert('Succès', 'Votre boutique a été créée !');
+        // Mise à jour immédiate → le parent boutique.tsx bascule instantanément vers l'interface marchande
         if (userData) {
-          const updatedUser = { ...userData, fastFoodId: response.data.data.id };
+          const updatedUser = { ...userData, fastFoodId: response.data.data.id, isMarchand: true };
           setUserData(updatedUser);
         }
+        // Le toast s'affiche en parallèle (il sera visible pendant la transition)
+        showToast('Votre boutique a été créée avec succès !', 'success', 2000);
       } else {
-        Alert.alert('Erreur', 'Impossible de créer la boutique');
+        showToast('Impossible de créer la boutique', 'error');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating boutique:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de la création');
+      const errorMessage = error?.response?.data?.error || 'Une erreur est survenue lors de la création';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -106,9 +208,9 @@ export const NoBoutiquePanel = () => {
 
         {/* Titre et Description */}
         <View style={styles.textCtn}>
-          <Text style={styles.titre}>Creer votre boutique et{"\n"}recever vos cammande</Text>
+          <Text style={styles.titre}>Créez votre boutique et{"\n"}recevez vos commandes</Text>
           <Text style={styles.description}>
-            Gerer facillement vos comades vos livraisons{"\n"}vos transactions avec votre Boutique
+            Gérez facilement vos commandes, vos livraisons{"\n"}et vos transactions avec votre Boutique
           </Text>
         </View>
 
@@ -142,39 +244,53 @@ export const NoBoutiquePanel = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* ===== TOP: Hero area ===== */}
-        <TouchableOpacity
-          style={styles.heroArea}
-          activeOpacity={1}
-          onPress={() => setShowCreateCard(false)}
-        >
-          {/* Decorative blobs */}
-          <View style={styles.blobTopRight} />
-          <View style={styles.blobBottomLeft} />
+        <Animated.View style={[
+          styles.heroArea,
+          { opacity: heroFadeAnim, transform: [{ translateY: heroSlideAnim }] }
+        ]}>
+          <TouchableOpacity
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}
+            activeOpacity={1}
+            onPress={closeCard}
+          >
+            {/* Decorative blobs */}
+            <View style={styles.blobTopRight} />
+            <View style={styles.blobBottomLeft} />
 
-          {/* Animated icon */}
-          <Animated.View style={{ transform: [{ scale: pulseAnim }], marginBottom: 10 }}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="fast-food" size={52} color="#fff" />
-            </View>
-          </Animated.View>
-
-          {/* Headline */}
-          <Text style={styles.heroTitle}>Lancez votre Fast-Food</Text>
-          <Text style={styles.heroSub}>Gérez commandes, livraisons et paiements{"\n"}depuis un seul endroit</Text>
-
-          {/* Feature chips */}
-          <Animated.View style={[styles.chipsRow, { opacity: fadeAnim }]}>
-            {features.map((f) => (
-              <View key={f.label} style={styles.featureChip}>
-                <Ionicons name={f.icon as any} size={15} color="#fff" />
-                <Text style={styles.featureChipText}>{f.label}</Text>
+            {/* Animated icon — pulse */}
+            <Animated.View style={{ transform: [{ scale: pulseAnim }], marginBottom: 10 }}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="fast-food" size={52} color="#fff" />
               </View>
-            ))}
-          </Animated.View>
-        </TouchableOpacity>
+            </Animated.View>
 
-        {/* ===== BOTTOM: Card ===== */}
-        <View style={styles.cardContainer}>
+            {/* Headline */}
+            <Text style={styles.heroTitle}>Lancez votre Fast-Food</Text>
+            <Text style={styles.heroSub}>Gérez vos commandes, livraisons et paiements{"\n"}depuis un seul endroit</Text>
+
+            {/* Feature chips — staggered last */}
+            <Animated.View style={[styles.chipsRow, { opacity: chipsEntryAnim }]}>
+              {features.map((f) => (
+                <View key={f.label} style={styles.featureChip}>
+                  <Ionicons name={f.icon as any} size={15} color="#fff" />
+                  <Text style={styles.featureChipText}>{f.label}</Text>
+                </View>
+              ))}
+            </Animated.View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* ===== BOTTOM: Card — slides up from bottom ===== */}
+        <Animated.View style={[
+          styles.cardContainer,
+          { 
+            opacity: cardFadeAnim,
+            transform: [
+              { translateY: cardSlideAnim },
+              { scale: cardScaleAnim }
+            ] 
+          }
+        ]}>
           <View style={styles.cardWrapper}>
             <BlurView intensity={55} tint="dark" style={styles.glassCard}>
               {/* Premium red-to-dark gradient overlay */}
@@ -246,7 +362,8 @@ export const NoBoutiquePanel = () => {
                 <View style={[styles.actionRow, { justifyContent: 'flex-end' }]}>
                   <TouchableOpacity
                     style={styles.chipBtn}
-                    onPress={() => setShowCreateCard(false)}
+                    onPress={closeCard} // Use closeCard here
+                    disabled={isEntering} // Disable interaction during animation
                   >
                     <Ionicons name="close-outline" size={14} color="white" />
                     <Text style={styles.chipText}>Annuler</Text>
@@ -273,7 +390,7 @@ export const NoBoutiquePanel = () => {
             {/* Subtle border-glow flare */}
             <View style={styles.cardBorder} />
           </View>
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
 
       {/* --- GLOBAL TIME PICKERS --- */}
@@ -344,6 +461,24 @@ export const NoBoutiquePanel = () => {
             }}
           />
         )
+      )}
+
+      {/* Global Toast */}
+      {toastVisible && (
+        <Animated.View
+          style={[
+            styles.toastContainer,
+            toastConfig.type === 'error' ? styles.toastError : styles.toastSuccess,
+            { transform: [{ translateY: toastAnimY }] },
+          ]}
+        >
+          <Ionicons 
+            name={toastConfig.type === 'success' ? 'checkmark-circle' : 'alert-circle'} 
+            size={24} 
+            color="white" 
+          />
+          <Text style={styles.toastText}>{toastConfig.message}</Text>
+        </Animated.View>
       )}
     </View>
   );
@@ -590,5 +725,35 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     padding: 15,
     backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  // Toast Styles
+  toastContainer: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    top: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 8,
+    gap: 12,
+    zIndex: 9999,
+  },
+  toastSuccess: {
+    backgroundColor: Theme.colors.success || '#28a745',
+  },
+  toastError: {
+    backgroundColor: Theme.colors.danger || '#dc3545',
+  },
+  toastText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    flexShrink: 1,
   },
 });

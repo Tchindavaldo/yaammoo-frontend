@@ -24,7 +24,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, onPress }
           <Text style={styles.v1Price}>{menu.prix1} F</Text>
         </View>
         <Image
-          source={{ uri: menu.image || 'https://via.placeholder.com/100' }}
+          source={menu.image ? { uri: menu.image } : require('@/assets/blur3.jpg')}
           style={styles.v1Image}
         />
       </TouchableOpacity>
@@ -35,7 +35,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, onPress }
     return (
       <TouchableOpacity style={styles.v2Container} onPress={onPress} activeOpacity={0.8}>
         <Image
-          source={{ uri: menu.image || 'https://via.placeholder.com/150' }}
+          source={menu.image ? { uri: menu.image } : require('@/assets/blur3.jpg')}
           style={styles.v2Image}
         />
         <View style={styles.v2Content}>
@@ -49,7 +49,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, onPress }
   return (
     <TouchableOpacity style={styles.v4Container} onPress={onPress} activeOpacity={0.9}>
       <Image
-        source={{ uri: menu.image || 'https://via.placeholder.com/300' }}
+        source={menu.image ? { uri: menu.image } : require('@/assets/blur3.jpg')}
         style={styles.v4Image}
       />
       <View style={styles.v4Overlay}>

@@ -12,7 +12,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({ menu }) => {
   return (
     <TouchableOpacity style={styles.container} activeOpacity={0.7}>
       <Image
-        source={{ uri: menu.image || 'https://via.placeholder.com/80' }}
+        source={menu.image ? { uri: menu.image } : require('@/assets/blur3.jpg')}
         style={styles.image}
       />
       <View style={styles.content}>

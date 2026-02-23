@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { Config } from '@/src/api/config';
-import { jsonToUser } from '../utils/userMappers';
 
 export const authService = {
     async getUserById(userId: string) {
@@ -9,7 +8,7 @@ export const authService = {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             });
             const data = response.data.data;
-            return data && data.user ? jsonToUser(data.user) : null;
+            return data && data.infos ? data : null;
         } catch (error) {
             console.error('Error fetching user by ID:', error);
             throw error;

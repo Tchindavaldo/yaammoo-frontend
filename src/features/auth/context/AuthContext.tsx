@@ -3,7 +3,6 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/src/services/firebase';
 import { storage } from '@/src/utils/storage';
 import { Users } from '@/src/types';
-import { jsonToUser } from '../utils/userMappers';
 import { userFirestore } from '../services/userFirestore';
 
 interface AuthContextType {

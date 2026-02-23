@@ -27,8 +27,8 @@ export const useNotifications = () => {
             setError(null);
             // Match Ionic endpoint: /notification/user?userId=...
             const endpoint = (userData as any).fastFoodId !== undefined
-                ? `/notification/user?userId=${userData?.infos?.uid}&fastFoodId=${(userData as any).fastFoodId}`
-                : `/notification/user?userId=${userData?.infos?.uid}`;
+                ? `/notification/user?userId=${(userData as any)?.uid}&fastFoodId=${(userData as any).fastFoodId}`
+                : `/notification/user?userId=${(userData as any)?.uid}`;
 
             const response = await axios.get(`${Config.apiUrl}${endpoint}`, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }

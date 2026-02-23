@@ -33,7 +33,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
       form.optionPrix1,
       form.optionPrix2,
       form.optionPrix3,
-      form.image || 'https://via.placeholder.com/150',
+      form.image || require('@/assets/blur3.jpg'),
       form.disponibilite
     );
     onSave(menu);

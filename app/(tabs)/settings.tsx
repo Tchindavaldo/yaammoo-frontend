@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Modal,
   Switch,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SettingItem } from '@/src/features/profile/components/SettingItem';
@@ -17,6 +18,9 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
 
+import { useRouter } from 'expo-router';
+
+// ... (in SettingsScreen)
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
 );
@@ -25,27 +29,42 @@ export default function SettingsScreen() {
   const { userData, setUserData } = useAuth();
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const router = useRouter();
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter ?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Déconnecter',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut(auth);
-            setUserData(null);
+    const performLogout = async () => {
+      await signOut(auth);
+      setUserData(null);
+      router.replace('/(auth)');
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
+      if (confirmed) {
+        performLogout();
+      }
+    } else {
+      Alert.alert(
+        'Déconnexion',
+        'Êtes-vous sûr de vouloir vous déconnecter ?',
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Déconnecter',
+            style: 'destructive',
+            onPress: performLogout,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const handleComingSoon = (label: string) => {
-    Alert.alert('Bientôt disponible', `La section "${label}" sera disponible dans une prochaine version.`);
+    if (Platform.OS === 'web') {
+      window.alert(`La section "${label}" sera disponible dans une prochaine version.`);
+    } else {
+      Alert.alert('Bientôt disponible', `La section "${label}" sera disponible dans une prochaine version.`);
+    }
   };
 
   const initiales = userData?.infos.nom?.charAt(0)?.toUpperCase() || 'U';

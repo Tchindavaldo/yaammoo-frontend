@@ -6,13 +6,12 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  Platform,
   TextInput,
-  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { Theme } from '@/src/theme';
+import { Image } from 'expo-image';
 import { Menu, Embalage, Boisson, Livraison } from '@/src/types';
 import { useCheckout } from '../hooks/useCheckout';
 
@@ -43,17 +42,13 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
 
   const handlePackagingToggle = (pkg: Embalage) => {
     setSelectedPackaging(prev =>
-      prev.find(p => p.type === pkg.type)
-        ? prev.filter(p => p.type !== pkg.type)
-        : [...prev, pkg]
+      prev.find(p => p.type === pkg.type) ? prev.filter(p => p.type !== pkg.type) : [...prev, pkg]
     );
   };
 
   const handleDrinkToggle = (drink: Boisson) => {
     setSelectedDrinks(prev =>
-      prev.find(d => d.type === drink.type)
-        ? prev.filter(d => d.type !== drink.type)
-        : [...prev, drink]
+      prev.find(d => d.type === drink.type) ? prev.filter(d => d.type !== drink.type) : [...prev, drink]
     );
   };
 
@@ -61,229 +56,217 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
     setDelivery(prev => ({ ...prev, ...updates } as Livraison));
   };
 
-  const renderTab = (key: CheckoutStep, label: string, icon: string) => (
+  const renderTabChip = (key: CheckoutStep, label: string, icon: string) => (
     <TouchableOpacity
-      style={[styles.tab, activeTab === key && styles.activeTab]}
+      style={[styles.bottomTabChip, activeTab === key && { backgroundColor: 'transparent' }]}
       onPress={() => setActiveTab(key)}
     >
-      <Ionicons
-        name={icon as any}
-        size={18}
-        color={activeTab === key ? Theme.colors.primary : Theme.colors.gray[400]}
-      />
-      <Text style={[styles.tabLabel, activeTab === key && styles.activeTabLabel]}>{label}</Text>
+      <Text style={styles.bottomTabLabel}>{label}</Text>
+      <Ionicons name={icon as any} size={14} color="white" style={{ marginLeft: 6 }} />
     </TouchableOpacity>
   );
 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.dismiss} onPress={onClose} />
-        <View style={styles.sheet}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.handle} />
-            <Text style={styles.title}>{menu.titre}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color={Theme.colors.gray[400]} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Body Content */}
-          <View style={styles.body}>
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-              {/* PANNEAU DETAIL */}
-              {activeTab === 'detail' && (
-                <View style={styles.panel}>
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Quantité</Text>
-                    <View style={styles.qtyRow}>
-                      <TouchableOpacity
-                        onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                        style={styles.qtyBtn}
-                      >
-                        <Ionicons name="remove" size={24} color="white" />
-                      </TouchableOpacity>
-                      <View style={styles.qtyDisplay}>
-                        <Text style={styles.qtyNum}>{quantity}</Text>
-                        <Text style={styles.qtyLbl}>portion{quantity > 1 ? 's' : ''}</Text>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => setQuantity(quantity + 1)}
-                        style={styles.qtyBtn}
-                      >
-                        <Ionicons name="add" size={24} color="white" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  <View style={styles.infoRow}>
-                    <View style={styles.infoBox}>
-                      <Text style={styles.infoVal}>{menu.prix1} F</Text>
-                      <Text style={styles.infoLbl}>Prix Unitaire</Text>
-                    </View>
-                    <View style={styles.infoBox}>
-                      <Text style={[styles.infoVal, { color: Theme.colors.primary }]}>{total} F</Text>
-                      <Text style={styles.infoLbl}>Sous-total</Text>
-                    </View>
-                  </View>
+        <TouchableOpacity style={styles.dismiss} onPress={onClose} activeOpacity={1} />
+        
+        {/* BOITE PRINCIPALE DU BOTTOM CARD */}
+        <BlurView intensity={55} tint="dark" style={styles.sheetGrid}>
+          
+          {/* LIGNE 1 : HEADER (item1-cmd-bottom-card) */}
+          {activeTab === 'detail' && (
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeft}>
+                <View style={styles.headerImgCard}>
+                  <Image source={menu.image ? { uri: menu.image } : require('@/assets/blur3.jpg')} style={styles.headerImg} />
                 </View>
-              )}
-
-              {/* PANNEAU EXTRAS (Packaging) */}
-              {activeTab === 'extra' && (
-                <View style={styles.panel}>
-                  <Text style={styles.sectionTitle}>Emballage & Suppléments</Text>
-                  <View style={styles.optionsList}>
-                    {availablePackaging.map(pkg => (
-                      <TouchableOpacity
-                        key={pkg.type}
-                        style={[
-                          styles.optionCard,
-                          selectedPackaging.find(p => p.type === pkg.type) && styles.selectedCard
-                        ]}
-                        onPress={() => handlePackagingToggle(pkg)}
-                      >
-                        <View style={styles.optionInfo}>
-                          <Text style={[
-                            styles.optionName,
-                            selectedPackaging.find(p => p.type === pkg.type) && styles.selectedText
-                          ]}>{pkg.type}</Text>
-                          <Text style={styles.optionPrice}>+{pkg.prix} F</Text>
-                        </View>
-                        <Ionicons
-                          name={selectedPackaging.find(p => p.type === pkg.type) ? "checkbox" : "square-outline"}
-                          size={24}
-                          color={selectedPackaging.find(p => p.type === pkg.type) ? Theme.colors.primary : Theme.colors.gray[300]}
-                        />
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                <View style={styles.headerTitleBox}>
+                  <Text style={styles.headerTitle} numberOfLines={1}>{menu.titre}</Text>
+                  <Text style={styles.headerPrice}>{menu.prix1} f</Text>
                 </View>
-              )}
+              </View>
 
-              {/* PANNEAU BOISSONS */}
-              {activeTab === 'drink' && (
-                <View style={styles.panel}>
-                  <Text style={styles.sectionTitle}>Boissons fraîches</Text>
-                  <View style={styles.drinkGrid}>
-                    {availableDrinks.map(drink => (
-                      <TouchableOpacity
-                        key={drink.type}
-                        style={[
-                          styles.drinkCard,
-                          selectedDrinks.find(d => d.type === drink.type) && styles.selectedDrinkCard
-                        ]}
-                        onPress={() => handleDrinkToggle(drink)}
-                      >
-                        <View style={styles.drinkIcon}>
-                          <Ionicons
-                            name="wine-outline"
-                            size={20}
-                            color={selectedDrinks.find(d => d.type === drink.type) ? "white" : Theme.colors.gray[400]}
-                          />
-                        </View>
-                        <Text style={[
-                          styles.drinkName,
-                          selectedDrinks.find(d => d.type === drink.type) && styles.selectedDrinkText
-                        ]}>{drink.type}</Text>
-                        <Text style={styles.drinkPrice}>{drink.prix} F</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-              )}
-
-              {/* PANNEAU LIVRAISON */}
-              {activeTab === 'delivery' && (
-                <View style={styles.panel}>
-                  <Text style={styles.sectionTitle}>Options de Livraison</Text>
-
-                  {/* Type */}
-                  <View style={styles.deliveryTypes}>
-                    {[
-                      { key: 'standard', label: 'Standard (500F)', icon: 'bicycle-outline' },
-                      { key: 'express', label: 'Express (1000F)', icon: 'flash-outline' },
-                      { key: 'aucune', label: 'Sur place', icon: 'restaurant-outline' },
-                    ].map(t => (
-                      <TouchableOpacity
-                        key={t.key}
-                        style={[
-                          styles.typeCard,
-                          delivery.type === t.key && styles.selectedTypeCard
-                        ]}
-                        onPress={() => updateDelivery({ type: t.key as any, statut: t.key !== 'aucune' })}
-                      >
-                        <Ionicons
-                          name={t.icon as any}
-                          size={18}
-                          color={delivery.type === t.key ? "white" : Theme.colors.gray[500]}
-                        />
-                        <Text style={[styles.typeText, delivery.type === t.key && styles.selectedTypeText]}>
-                          {t.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  {/* Heure */}
-                  {delivery.type !== 'aucune' && (
-                    <>
-                      <Text style={styles.subTitle}>Heure souhaitée</Text>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.hourScroll}>
-                        {availableHours.map(h => (
-                          <TouchableOpacity
-                            key={h}
-                            style={[styles.hourChip, delivery.hour === h && styles.selectedHour]}
-                            onPress={() => updateDelivery({ hour: h })}
-                          >
-                            <Text style={[styles.hourText, delivery.hour === h && styles.selectedText]}>{h}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-
-                      <Text style={styles.subTitle}>Adresse de livraison</Text>
-                      <TextInput
-                        style={styles.addressInput}
-                        placeholder="Ex: Quartier Nkomo, immeuble bleu porte 204..."
-                        multiline
-                        numberOfLines={3}
-                        value={delivery.address}
-                        onChangeText={(text) => updateDelivery({ address: text })}
-                      />
-                    </>
-                  )}
-                </View>
-              )}
-            </ScrollView>
-          </View>
-
-          {/* Tabs Navigation */}
-          <View style={styles.tabsContainer}>
-            {renderTab('detail', 'Détail', 'list-outline')}
-            {renderTab('extra', 'Extra', 'add-circle-outline')}
-            {renderTab('drink', 'Boisson', 'wine-outline')}
-            {renderTab('delivery', 'Livraison', 'bicycle-outline')}
-          </View>
-
-          {/* Footer - Final confirm */}
-          <BlurView intensity={80} tint="light" style={styles.footer}>
-            <View style={styles.totalBlock}>
-              <Text style={styles.totalLbl}>Total à payer</Text>
-              <Text style={styles.totalVal}>{total} F</Text>
+              <View style={styles.headerRight}>
+                <TouchableOpacity style={[styles.hChip, styles.hChipBuy]} onPress={() => {
+                  const order = createOrder();
+                  if (order) onConfirm(order);
+                }}>
+                  <Text style={styles.hChipText}>buy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.hChip, styles.hChipAdd]}>
+                  <Text style={styles.hChipText}>Add To</Text>
+                  <Ionicons name="cart-outline" size={14} color="white" style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.hChip, styles.hChipClose]} onPress={onClose}>
+                  <Ionicons name="close-outline" size={16} color="white" />
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity
-              style={styles.confirmBtn}
-              onPress={() => {
-                const order = createOrder();
-                if (order) onConfirm(order);
-              }}
-            >
-              <Text style={styles.confirmBtnText}>Commander</Text>
-              <Ionicons name="arrow-forward" size={18} color="white" />
-            </TouchableOpacity>
-          </BlurView>
-        </View>
+          )}
+
+          {/* LIGNE 2 : CONTENT (Horizontal Scroll / Items) */}
+          <View style={styles.contentRow}>
+            
+            {/* DETAIL */}
+            {activeTab === 'detail' && (
+              <View style={{ flexDirection: 'row', height: '100%', justifyContent: 'space-between', paddingHorizontal: 10 }}>
+                <View style={{ width: '70%', height: '100%', overflow: 'hidden', justifyContent: 'center' }}>
+                   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignContent: 'center', width: '100%', rowGap: 8 }}>
+                       {/* Dummy details mapping */}
+                       {[1,2,3,4].map(i => (
+                         <View key={i} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, width: '48%' }}>
+                         <View style={{ flexDirection: 'column', alignItems: 'flex-start', flex: 1, overflow: 'hidden' }}>
+                            <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>500f</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, marginTop: 7, height: 15 }} numberOfLines={1}>detail</Text>
+                         </View>
+
+                         <Ionicons name="add-outline" size={14} color="white" style={{ backgroundColor: 'darkred', borderRadius: 12, padding: 3, overflow: 'hidden', marginLeft: 4 }} />
+                       </View>
+                     ))}
+                     </View>
+                   </ScrollView>
+                </View>
+
+                <View style={{ width: '28%', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 20, justifyContent: 'space-around', paddingVertical: 10 }}>
+                  <View style={{ alignItems: 'flex-start', width: '100%', paddingHorizontal: 15 }}>
+                    <Text style={{ color: 'white', fontSize: 17, fontWeight: 'bold' }}>2</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>quantite</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-start', width: '100%', paddingHorizontal: 15 }}>
+                    <Text style={{ color: 'white', fontSize: 17, fontWeight: 'bold' }}>{total}f</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>Montant Total</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {/* EXTRAS */}
+            {activeTab === 'extra' && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10 }}>
+                {availablePackaging.map(pkg => (
+                  <TouchableOpacity key={pkg.type} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 25, marginRight: 8, marginBottom: 8, alignSelf: 'flex-start' }} onPress={() => handlePackagingToggle(pkg)}>
+                    <View style={{ flexDirection: 'column', alignItems: 'flex-start', maxWidth: 80 }}>
+                      <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>+{pkg.prix}f</Text>
+                      <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10 }} numberOfLines={1}>{pkg.type}</Text>
+                    </View>
+                    <Ionicons name={selectedPackaging.find(p=>p.type===pkg.type) ? "checkmark" : "add-outline"} size={14} color="white" style={[{ marginLeft: 15, backgroundColor: 'darkred', borderRadius: 12, padding: 3, overflow: 'hidden' }, selectedPackaging.find(p=>p.type===pkg.type) && { backgroundColor: 'white', color: 'darkred' }]} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* DRINKS */}
+            {activeTab === 'drink' && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 10 }}>
+                <View style={{ flexDirection: 'column' }}>
+                  <View style={{ flexDirection: 'row', paddingBottom: 5 }}>
+                    {availableDrinks.map(drink => (
+                      <TouchableOpacity key={drink.type} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 25, marginRight: 8, marginBottom: 8, alignSelf: 'flex-start' }} onPress={() => handleDrinkToggle(drink)}>
+                        <View style={{ flexDirection: 'column', alignItems: 'flex-start', maxWidth: 80 }}>
+                          <Text style={{ color: 'white', fontSize: 13, fontWeight: 'bold' }}>{drink.prix}f</Text>
+                          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10 }} numberOfLines={1}>{drink.type}</Text>
+                        </View>
+                        <Ionicons name={selectedDrinks.find(d=>d.type===drink.type) ? "checkmark" : "add-outline"} size={14} color="white" style={[{ marginLeft: 15, backgroundColor: 'darkred', borderRadius: 12, padding: 3, overflow: 'hidden' }, selectedDrinks.find(d=>d.type===drink.type) && { backgroundColor: 'white', color: 'darkred' }]} />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              </ScrollView>
+            )}
+
+            {/* DELIVERY */}
+            {activeTab === 'delivery' && (
+              <View style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%', paddingHorizontal: 10, justifyContent: 'space-between', marginTop: -15 }}>
+                 {/* Column 1: Type (20%) */}
+                 <View style={{ display: 'flex', flexDirection: 'column', width: '22%', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 20, paddingHorizontal: 4, paddingVertical: 8, alignItems: 'center', justifyContent: 'space-between', height: '100%' }}>
+                   <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 15, alignSelf: 'center', marginBottom: 2 }}>
+                     <Text style={{ color: 'white', fontSize: 10 }}>Type</Text>
+                     <Ionicons name="add-outline" size={10} color="white" style={{ backgroundColor: 'darkred', borderRadius: 10, padding: 2, marginLeft: 4, overflow: 'hidden' }} />
+                   </View>
+
+                   {[
+                     { key: 'standard', label: 'heure' },
+                     { key: 'express', label: 'express' },
+                     { key: 'aucune', label: 'Aucune' },
+                   ].map(t => (
+                     <TouchableOpacity key={t.key} style={{ paddingHorizontal: 4, paddingVertical: 4, width: '90%', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 15, alignItems: 'center', marginBottom: 4 }} onPress={() => updateDelivery({ type: t.key as any, statut: t.key !== 'aucune' })} >
+                       <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                         <Ionicons name={delivery.type === t.key ? "checkbox" : "square-outline"} size={13} color="darkred" />
+                         <Text style={{ color: 'white', fontSize: 10, marginTop: 2 }}>{t.label}</Text>
+                       </View>
+                     </TouchableOpacity>
+                   ))}
+                 </View>
+
+                 {/* Right Wrapper (76%) */}
+                 <View style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', width: '76%', justifyContent: 'space-between', height: '100%' }}>
+                   
+                   <View style={{ display: 'flex', flexDirection: 'column', width: '46%', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 20, paddingHorizontal: 4, paddingVertical: 8, alignItems: 'flex-start', justifyContent: 'space-between', height: '100%' }}>
+                   <View style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 15,  marginBottom: 2 }}>
+                     <Text style={{ color: 'white', fontSize: 10 }}>Auj</Text>
+                     <Ionicons name="add-outline" size={10} color="white" style={{ backgroundColor: 'darkred', borderRadius: 10, padding: 2, marginLeft: 4, overflow: 'hidden' }} />
+                   </View>
+
+                   {Array.from({ length: Math.ceil(availableHours.length / 2) }).map((_, rowIndex) => {
+                     const h1 = availableHours[rowIndex * 2];
+                     const h2 = availableHours[rowIndex * 2 + 1];
+                     return (
+                       <View key={rowIndex} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                         {h1 && (
+                           <TouchableOpacity style={{ paddingHorizontal: 4, paddingVertical: 4, borderRadius: 15, alignItems: 'center', marginBottom: 4 }} onPress={() => updateDelivery({ hour: h1 })} >
+                             <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                               <Ionicons name={delivery.hour === h1 ? "checkbox" : "square-outline"} size={13} color="darkred" />
+                               <Text style={{ color: 'white', fontSize: 10, marginTop: 2 }}>{h1}</Text>
+                             </View>
+                           </TouchableOpacity>
+                         )}
+
+                         {h2 ? (
+                           <TouchableOpacity style={{ paddingHorizontal: 4, paddingVertical: 4, borderRadius: 15, alignItems: 'center', marginLeft: 8, marginBottom: 4 }} onPress={() => updateDelivery({ hour: h2 })} >
+                             <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                               <Ionicons name={delivery.hour === h2 ? "checkbox" : "square-outline"} size={13} color="darkred" />
+                               <Text style={{ color: 'white', fontSize: 10, marginTop: 2 }}>{h2}</Text>
+                             </View>
+                           </TouchableOpacity>
+                         ) : (
+                           <View style={{ paddingHorizontal: 4, paddingVertical: 4, width: 40, marginLeft: 8, marginBottom: 4 }} />
+                         )}
+                       </View>
+                     );
+                   })}
+                   </View>
+
+                   {/* Column 3: Location (52%) */}
+                   <View style={{ display: 'flex', flexDirection: 'column', width: '52%', backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 20, height: '100%', padding: 4 }}>
+                     <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 15, marginLeft: 2, marginTop: 2 }}>
+                       <Text style={{ color: 'white', fontSize: 10 }}>Localisation</Text>
+                       <Ionicons name="location-outline" size={10} color="white" style={{ backgroundColor: 'darkred', borderRadius: 10, padding: 2, marginLeft: 4, overflow: 'hidden' }} />
+                     </View>
+                     <TextInput
+                        style={{ fontSize: 10, width: '90%', marginLeft: '5%', color: 'white', textAlignVertical: 'top', flex: 1, marginTop: 6 }}
+                        placeholder="Entrer une description de votre lieu exemple:  Quartier Nkomo, après le marché central, à côté de la pharmacie du soleil, immeuble bleu à 3 étages, 2ème étage, porte 204"
+                        placeholderTextColor="rgba(255,255,255,0.4)"
+                        multiline
+                        value={delivery.address}
+                        onChangeText={(t) => updateDelivery({ address: t })}
+                     />
+                   </View>
+                 </View>
+              </View>
+            )}
+          </View>
+
+          {/* LIGNE 3 : BOTTOM TABS */}
+          <View style={styles.bottomTabsRow}>
+             {renderTabChip('detail', 'Détail', 'list-outline')}
+             {renderTabChip('extra', 'Extra', 'add-circle-outline')}
+             {renderTabChip('drink', 'Boisson', 'wine-outline')}
+             {renderTabChip('delivery', 'Livraison', 'bicycle-outline')}
+          </View>
+
+        </BlurView>
       </View>
     </Modal>
   );
@@ -292,302 +275,276 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'transparent',
     justifyContent: 'flex-end',
   },
   dismiss: {
     flex: 1,
   },
-  sheet: {
-    backgroundColor: Theme.colors.white,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    height: '85%',
+  sheetGrid: {
+    width: '100%',
+    height: 225, // FIXED HEIGHT from rudafood SCSS
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderTopLeftRadius: 45,
+    borderTopRightRadius: 45,
     overflow: 'hidden',
+    position: 'relative',
+    paddingTop: 15,
   },
-  header: {
-    padding: Theme.spacing.md,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[100],
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: Theme.colors.gray[200],
-    borderRadius: 2,
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
-  },
-  closeBtn: {
-    position: 'absolute',
-    right: 20,
-    top: 25,
-  },
-  body: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: Theme.spacing.lg,
-  },
-  panel: {
-    flex: 1,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
-    marginBottom: 16,
-  },
-  subTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Theme.colors.gray[600],
-    marginTop: 16,
-    marginBottom: 10,
-  },
-  qtyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 30,
-    marginTop: 10,
-  },
-  qtyBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Theme.colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 3,
-  },
-  qtyDisplay: {
-    alignItems: 'center',
-  },
-  qtyNum: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: Theme.colors.primary,
-  },
-  qtyLbl: {
-    fontSize: 14,
-    color: Theme.colors.gray[500],
-    marginTop: -5,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  infoBox: {
-    flex: 1,
-    backgroundColor: Theme.colors.gray[50],
-    padding: 16,
-    borderRadius: 16,
-    alignItems: 'center',
-  },
-  infoVal: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
-  },
-  infoLbl: {
-    fontSize: 11,
-    color: Theme.colors.gray[500],
-    marginTop: 4,
-    textTransform: 'uppercase',
-  },
-  optionsList: {
-    gap: 12,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Theme.colors.gray[50],
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  selectedCard: {
-    borderColor: Theme.colors.primary,
-    backgroundColor: Theme.colors.primary + '05',
-  },
-  optionInfo: {
-    flex: 1,
-  },
-  optionName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Theme.colors.dark,
-  },
-  selectedText: {
-    color: Theme.colors.primary,
-  },
-  optionPrice: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
-    marginTop: 2,
-  },
-  drinkGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  drinkCard: {
-    width: '31%',
-    backgroundColor: Theme.colors.gray[50],
-    padding: 12,
-    borderRadius: 16,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  selectedDrinkCard: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
-  },
-  drinkIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  drinkName: {
-    fontSize: 11,
-    fontWeight: '600',
-    textAlign: 'center',
-    color: Theme.colors.gray[700],
-  },
-  selectedDrinkText: {
-    color: 'white',
-  },
-  drinkPrice: {
-    fontSize: 10,
-    color: Theme.colors.gray[400],
-    marginTop: 4,
-  },
-  deliveryTypes: {
-    gap: 10,
-  },
-  typeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: Theme.colors.gray[50],
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Theme.colors.gray[200],
-  },
-  selectedTypeCard: {
-    backgroundColor: Theme.colors.primary,
-    borderColor: Theme.colors.primary,
-  },
-  typeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Theme.colors.gray[700],
-  },
-  selectedTypeText: {
-    color: 'white',
-  },
-  hourScroll: {
-    marginTop: 4,
-  },
-  hourChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.gray[100],
-    marginRight: 10,
-  },
-  selectedHour: {
-    backgroundColor: Theme.colors.primary,
-  },
-  hourText: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: Theme.colors.gray[600],
-  },
-  addressInput: {
-    backgroundColor: Theme.colors.gray[50],
-    borderWidth: 1,
-    borderColor: Theme.colors.gray[200],
-    borderRadius: 12,
-    padding: 12,
-    fontSize: 14,
-    textAlignVertical: 'top',
-  },
-  tabsContainer: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: Theme.colors.gray[100],
-    paddingVertical: 10,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: Theme.colors.primary,
-    paddingBottom: 4,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Theme.colors.gray[400],
-  },
-  activeTabLabel: {
-    color: Theme.colors.primary,
-  },
-  footer: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 35 : 20,
-    borderTopWidth: 1,
-    borderTopColor: Theme.colors.gray[100],
+    paddingHorizontal: 15,
+    height: 45,
   },
-  totalBlock: {
-    gap: 2,
-  },
-  totalLbl: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
-  },
-  totalVal: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: Theme.colors.primary,
-  },
-  confirmBtn: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    backgroundColor: Theme.colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 16,
-    elevation: 4,
   },
-  confirmBtnText: {
+  headerImgCard: {
+    width: 45,
+    height: 45,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'black'
+  },
+  headerImg: {
+    width: '100%',
+    height: '100%'
+  },
+  headerTitleBox: {
+    marginLeft: 10,
+    justifyContent: 'center',
+  },
+  headerTitle: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
+  headerPrice: {
+    color: 'white',
+    fontSize: 13,
+    marginTop: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    flex: 1,
+  },
+  hChip: {
+    backgroundColor: 'darkred',
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    marginLeft: 6,
+    shadowColor: '#ff9d9d',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  hChipBuy: {
+    paddingHorizontal: 15,
+  },
+  hChipAdd: {
+  },
+  hChipClose: {
+  },
+  hChipText: {
+    color: 'white',
+    fontSize: 12,
+  },
+  contentRow: {
+    flex: 1,
+    width: '100%',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  detailContainer: {
+    flexDirection: 'row',
+    height: '100%',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+  },
+  detailLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    height: '100%',
+  },
+  horizontalScrollPadding: {
+    paddingHorizontal: 10,
+    alignItems: 'flex-start',
+  },
+  detailRight: {
+    width: 110,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 20,
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    alignItems: 'center'
+  },
+  cmdDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    minWidth: 80,
+  },
+  cmdDetailIconRight: {
+    marginLeft: 7,
+    backgroundColor: 'darkred',
+    borderRadius: 12,
+    padding: 2,
+    overflow: 'hidden'
+  },
+  cmdDetailT1: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  cmdDetailT2: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+  },
+  detailRightChip: {
+    alignItems: 'flex-start',
+    width: '100%',
+    paddingHorizontal: 10,
+    paddingVertical: 5
+  },
+  drVal: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: 'bold',
+    textAlign: 'left'
+  },
+  drLbl: {
+    color: 'white',
+    fontSize: 12,
+    marginTop: 2,
+    textAlign: 'left'
+  },
+  deliveryContainer: {
+    flexDirection: 'row',
+    height: '100%',
+  },
+  deliveryTypesCol: {
+    width: Dimensions.get('window').width * 0.2,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 20,
+    paddingVertical: 10,
+    alignItems: 'flex-start',
+    paddingHorizontal: 8,
+    height: '100%',
+    justifyContent: 'space-around'
+  },
+  dTypeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  dTypeLbl: {
+    color: 'white',
+    fontSize: 11,
+    marginTop: 4,
+  },
+  deliveryRightWrapper: {
+    flexDirection: 'row',
+    width: Dimensions.get('window').width * 0.75,
+    justifyContent: 'space-around',
+    height: '100%',
+    marginLeft: 10,
+  },
+  deliveryHoursBox: {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 20,
+    padding: 10,
+    maxWidth: '50%',
+    height: '100%',
+    position: 'relative',
+    marginRight: 5,
+  },
+  darkRedBadgeInlineSticky: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'darkred',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 15,
+  },
+  badgePlusIcon: {
+    marginLeft: 4,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 10,
+    padding: 1,
+    overflow: 'hidden'
+  },
+  hourChip: {
+    margin: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  hourChipText: {
+    color: 'white',
+    fontSize: 11
+  },
+  deliveryLocBox: {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 20,
+    padding: 10,
+    width: '47%',
+    height: '100%',
+  },
+  darkRedBadgeInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'darkred',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 15,
+    alignSelf: 'flex-start',
+    marginBottom: 5
+  },
+  dlOCInput: {
+    flex: 1,
+    color: 'white',
+    fontSize: 11,
+    textAlignVertical: 'top'
+  },
+  bottomTabsRow: {
+    position: 'absolute',
+    bottom: -2,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 15,
+  },
+  bottomTabChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    marginLeft: 8,
+  },
+  bottomTabLabel: {
+    color: 'white',
+    fontSize: 11,
+  }
 });

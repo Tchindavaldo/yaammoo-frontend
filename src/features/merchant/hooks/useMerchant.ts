@@ -12,7 +12,7 @@ export const useMerchant = () => {
     const [error, setError] = useState<string | null>(null);
 
     const fastFoodId = (userData as any)?.fastFoodId;
-    const userId = userData?.infos?.uid;
+    const userId = (userData as any)?.uid;
 
     const fetchData = useCallback(async () => {
         if (!fastFoodId || !userId) return;
@@ -42,7 +42,7 @@ export const useMerchant = () => {
     const updateStatus = async (orderId: string, status: string) => {
         try {
             await merchantService.updateOrderStatus(orderId, status);
-            setOrders(prev => prev.map(o => o.idCmd === orderId ? { ...o, staut: status } : o));
+            setOrders(prev => prev.map(o => o.idCmd === orderId ? { ...o, staut: status, status: status } as any : o));
         } catch (err) {
             console.error('Failed to update status:', err);
         }
@@ -70,11 +70,11 @@ export const useMerchant = () => {
         addMenu,
         stats: {
             totalOrders: orders.length,
-            pendingOrders: orders.filter(o => o.staut === 'pending').length,
-            completedOrders: orders.filter(o => o.staut === 'completed').length,
+            pendingOrders: orders.filter(o => ((o as any).status || o.staut) === 'pending' || ((o as any).status || o.staut) === 'pendingToBuy').length,
+            completedOrders: orders.filter(o => ((o as any).status || o.staut) === 'completed' || ((o as any).status || o.staut) === 'finished').length,
             totalRevenue: orders
-                .filter(o => o.staut === 'completed')
-                .reduce((acc, o) => acc + o.prixTotal, 0),
+                .filter(o => ((o as any).status || o.staut) === 'completed' || ((o as any).status || o.staut) === 'finished')
+                .reduce((acc, o) => acc + ((o as any).total || o.prixTotal || 0), 0),
         }
     };
 };

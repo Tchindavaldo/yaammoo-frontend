@@ -24,7 +24,7 @@ export const useBonus = () => {
     const [postingId, setPostingId] = useState<string | null>(null);
 
     const paidOrders = orders.filter(o =>
-        ['processing', 'pending', 'finished', 'completed'].includes(o.staut)
+        ['processing', 'pending', 'finished', 'completed'].includes((o as any).status || o.staut)
     );
 
     const fetchBonuses = async () => {
@@ -61,7 +61,7 @@ export const useBonus = () => {
             await axios.post(`${Config.apiUrl}/bonus-request`, {
                 bonusId,
                 bonusType,
-                userId: userData?.infos?.uid,
+                userId: (userData as any)?.uid,
                 total,
             });
             return true;

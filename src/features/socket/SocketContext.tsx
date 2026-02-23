@@ -36,7 +36,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     socket.on('connect', () => {
       console.log('✅ Socket connected');
       // Identical to initSessionSocketService
-      socket.emit('initSession', { userId: userData?.infos?.uid });
+      socket.emit('initSession', { userId: (userData as any)?.uid });
     });
 
     // User Order Events

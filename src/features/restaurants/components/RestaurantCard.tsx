@@ -17,7 +17,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPr
       activeOpacity={0.8}
     >
       <Image
-        source={{ uri: restaurant.image || 'https://via.placeholder.com/150' }}
+        source={restaurant.image ? { uri: restaurant.image } : require('@/assets/blur3.jpg')}
         style={styles.image}
         contentFit="cover"
         transition={300}

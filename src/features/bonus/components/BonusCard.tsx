@@ -47,7 +47,7 @@ export const BonusCard: React.FC<BonusCardProps> = ({
 
       {/* Image illustrative */}
       <Image
-        source={{ uri: 'https://via.placeholder.com/100' }}
+        source={require('@/assets/blur3.jpg')}
         style={styles.bonusImage}
       />
 

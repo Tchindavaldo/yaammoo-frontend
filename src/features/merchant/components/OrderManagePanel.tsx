@@ -60,7 +60,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   };
 
   const filteredOrders = orders.filter((o) =>
-    statusMap[selectedStatus].includes(o.staut)
+    statusMap[selectedStatus].includes((o as any).status || o.staut)
   );
 
   // Dates uniques disponibles pour ce statut
@@ -78,12 +78,12 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     : filteredOrders;
 
   const counts = {
-    pending: orders.filter((o) => statusMap.pending.includes(o.staut)).length,
-    proccess: orders.filter((o) => statusMap.proccess.includes(o.staut)).length,
-    finish: orders.filter((o) => statusMap.finish.includes(o.staut)).length,
+    pending: orders.filter((o) => statusMap.pending.includes((o as any).status || o.staut)).length,
+    proccess: orders.filter((o) => statusMap.proccess.includes((o as any).status || o.staut)).length,
+    finish: orders.filter((o) => statusMap.finish.includes((o as any).status || o.staut)).length,
   };
 
-  const totalAmount = dateFilteredOrders.reduce((acc, o) => acc + (o.prixTotal || 0), 0);
+  const totalAmount = dateFilteredOrders.reduce((acc, o) => acc + ((o as any).total || o.prixTotal || 0), 0);
 
   const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
     { key: 'pending', label: 'En Attente', icon: 'time-outline' },

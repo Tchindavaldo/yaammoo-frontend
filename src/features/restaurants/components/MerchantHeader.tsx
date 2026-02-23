@@ -21,7 +21,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({ name, image, rat
       <View style={styles.left}>
         <View style={styles.avatarContainer}>
           <Image 
-            source={{ uri: image || 'https://via.placeholder.com/40' }} 
+            source={image ? { uri: image } : require('@/assets/blur3.jpg')} 
             style={styles.avatar} 
           />
         </View>

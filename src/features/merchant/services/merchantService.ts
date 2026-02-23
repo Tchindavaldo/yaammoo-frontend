@@ -24,7 +24,7 @@ export const merchantService = {
 
     async updateOrderStatus(orderId: string, status: string): Promise<void> {
         try {
-            await axios.put(`${Config.apiUrl}/order/status/${orderId}`, { status });
+            await axios.put(`${Config.apiUrl}/order`, { id: orderId, status });
         } catch (error) {
             console.error('Error updating order status:', error);
             throw error;
@@ -41,9 +41,9 @@ export const merchantService = {
         }
     },
 
-    async addMenu(fastFoodId: string, menu: Menu): Promise<void> {
+    async addMenu(fastFoodId: string, menu: any): Promise<void> {
         try {
-            await axios.post(`${Config.apiUrl}/menu/add`, { ...menu, fastFoodId });
+            await axios.post(`${Config.apiUrl}/menu`, { ...menu, fastFoodId });
         } catch (error) {
             console.error('Error adding menu:', error);
             throw error;

@@ -18,8 +18,8 @@ export const useSocketEvents = () => {
         const handleConnect = () => {
             console.log("🟢 Connected to socket:", socket.id);
             // Ionic event: join_user
-            socket.emit('join_user', userData?.infos?.uid);
-            console.log(`📨 Joined user room: ${userData?.infos?.uid}`);
+            socket.emit('initSession', { userId: (userData as any)?.uid });
+            console.log(`📨 Joined user room: ${(userData as any)?.uid}`);
         };
 
         if (socket.connected) handleConnect();

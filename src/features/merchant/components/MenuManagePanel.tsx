@@ -5,10 +5,12 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
   Switch,
   ActivityIndicator,
-  Modal,
+  Animated,
+  Easing,
+  Platform,
+  Dimensions,
   ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -17,6 +19,9 @@ import { Theme } from '@/src/theme';
 import { AddMenuSheetMultiStep } from './AddMenuSheetMultiStep';
 import axios from 'axios';
 import { Config } from '@/src/api/config';
+import Svg, { Path, G } from 'react-native-svg';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type MenuManageTab = 'list' | 'dispo' | 'modif' | 'supp';
 
@@ -38,49 +43,69 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
   const [editingMenu, setEditingMenu] = useState<any>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+  const [confirmActionType, setConfirmActionType] = useState<'available' | 'unavailable' | 'delete'>('delete');
+  const [menuToConfirm, setMenuToConfirm] = useState<any>(null);
+  
+  const slideAnim = React.useRef(new Animated.Value(230)).current;
+  const spinAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (confirmModalVisible) {
+      Animated.timing(slideAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+    } else {
+      Animated.timing(slideAnim, { toValue: 230, duration: 300, useNativeDriver: true }).start();
+      spinAnim.stopAnimation();
+    }
+  }, [confirmModalVisible]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
+
   const stats = {
     total: menus.length,
-    available: menus.filter((m) => m.status === 'available' || m.disponibilite === 'available').length,
-    unavailable: menus.filter((m) => m.status === 'unavailable' || m.disponibilite === 'unavailable').length,
+    available: menus.filter((m) => m.status === 'available' || m.disponibilite === 'available' || m.disponibilite === 'Disponible').length,
+    unavailable: menus.filter((m) => m.status === 'unavailable' || m.disponibilite === 'unavailable' || m.disponibilite === 'Indisponible').length,
   };
 
-  const toggleDisponibilite = async (menu: any) => {
-    const currentStatus = menu.status || menu.disponibilite || 'available';
-    const newStatus = currentStatus === 'available' ? 'unavailable' : 'available';
-    try {
-      setUpdatingId(menu._id || menu.id);
-      await axios.patch(`${Config.apiUrl}/menu/${menu._id || menu.id}`, { status: newStatus });
-      onRefresh();
-    } catch (error) {
-      Alert.alert('Erreur', 'Impossible de modifier la disponibilité');
-    } finally {
+  const openConfirmModal = (menu: any, actionType: 'available' | 'unavailable' | 'delete') => {
+    setMenuToConfirm(menu);
+    setConfirmActionType(actionType);
+    setConfirmModalVisible(true);
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModalVisible(false);
+    setTimeout(() => {
+      setMenuToConfirm(null);
       setUpdatingId(null);
-    }
+    }, 300);
   };
 
-  const deleteMenu = async (menu: any) => {
-    Alert.alert(
-      'Supprimer le menu',
-      `Voulez-vous vraiment supprimer "${menu.name || menu.titre}" ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        {
-          text: 'Supprimer',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setUpdatingId(menu._id || menu.id);
-              await axios.delete(`${Config.apiUrl}/menu/${menu._id || menu.id}`);
-              onRefresh();
-            } catch (error) {
-              Alert.alert('Erreur', 'Impossible de supprimer ce menu');
-            } finally {
-              setUpdatingId(null);
-            }
-          },
-        },
-      ]
-    );
+  const executeConfirmAction = async () => {
+    if (!menuToConfirm) return;
+    setUpdatingId(menuToConfirm._id || menuToConfirm.id);
+    
+    Animated.loop(
+      Animated.timing(spinAnim, { toValue: 1, duration: 1000, easing: Easing.linear, useNativeDriver: true })
+    ).start();
+
+    try {
+      const id = menuToConfirm._id || menuToConfirm.id;
+      if (confirmActionType === 'available' || confirmActionType === 'unavailable') {
+        await axios.patch(`${Config.apiUrl}/menu/${id}`, { status: confirmActionType });
+      } else if (confirmActionType === 'delete') {
+        await axios.delete(`${Config.apiUrl}/menu/${id}`);
+      }
+      onRefresh();
+      closeConfirmModal();
+    } catch (error) {
+      setUpdatingId(null);
+      spinAnim.stopAnimation();
+      alert('Erreur: Impossible d\'effectuer cette action');
+    }
   };
 
   const startEdit = (menu: any) => {
@@ -107,57 +132,70 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     { key: 'supp', label: 'Suppression', icon: 'trash-outline' },
   ];
 
-  const renderMenuCard = (item: any, mode: 'dispo' | 'modif' | 'supp' | 'list') => {
+  const renderMenuCard = (item: any, index: number, mode: 'dispo' | 'modif' | 'supp' | 'list') => {
     const name = item.name || item.titre || 'Menu';
-    const status = item.status || item.disponibilite || 'available';
+    const status = item.status || (item.disponibilite === 'Disponible' ? 'available' : item.disponibilite === 'Indisponible' ? 'unavailable' : 'available');
     const isAvailable = status === 'available';
-    const imageUrl = item.coverImage || item.images?.[0] || item.image;
-    const id = item._id || item.id;
-    const isUpdating = updatingId === id;
+    const prix = item.prices?.[0]?.price || item.prix1 || 0;
+
+    let iconName = 'trash-outline';
+    if (mode === 'modif') iconName = 'create-outline';
+
+    const showCheck = mode === 'dispo';
 
     return (
-      <View style={styles.menuCard}>
-        {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.menuImg} />
-        ) : (
-          <View style={[styles.menuImg, styles.noImg]}>
-            <Ionicons name="fast-food-outline" size={24} color={Theme.colors.gray[400]} />
+      <View style={styles.menuItemContainer}>
+        <View style={styles.rRow}>
+          <View style={styles.rColIndex}>
+            <View style={styles.rChipIndex}>
+              <Text style={styles.rChipIndexText}>{index + 1}</Text>
+            </View>
           </View>
-        )}
 
-        <View style={styles.menuInfo}>
-          <Text style={styles.menuName}>{name}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: isAvailable ? '#e6f9ee' : '#fdecea' }]}>
-            <Text style={[styles.statusText, { color: isAvailable ? Theme.colors.success : Theme.colors.danger }]}>
-              {isAvailable ? 'Disponible' : 'Indisponible'}
-            </Text>
+          <View style={styles.rColContent}>
+            <Text style={styles.rNameText} numberOfLines={1}>{name}</Text>
+            
+            {!showCheck ? (
+              <View style={styles.rDetailsRow}>
+                <Text style={styles.rLabelText}>Prix</Text>
+                <Text style={styles.rValPrix}>{prix}</Text>
+                
+                {/* Check if secondary prices exist if needed, otherwise skip */}
+                {item.prices?.[1]?.price && <Text style={styles.rValPrix}>{item.prices[1].price}</Text>}
+                {item.prices?.[2]?.price && <Text style={styles.rValPrix}>{item.prices[2].price}</Text>}
+                
+                <Text style={[styles.rLabelText, { paddingLeft: 15 }]}>statut</Text>
+                <Text style={[styles.rValStatut, { color: isAvailable ? 'forestgreen' : 'darkred' }]}>
+                  {isAvailable ? 'Disponible' : 'Indisponible'}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.rCheckRow}>
+                <TouchableOpacity style={styles.rCheckWrapper} onPress={() => openConfirmModal(item, 'available')}>
+                  <Text style={[styles.rCheckLabel, { color: 'forestgreen' }]}>Disponible</Text>
+                  <View style={[styles.rCheckboxBox, { borderColor: 'darkgreen' }]}>
+                    {isAvailable && <View style={[styles.rCheckboxFill, { backgroundColor: 'darkgreen' }]} />}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.rCheckWrapper, { paddingLeft: 30 }]} onPress={() => openConfirmModal(item, 'unavailable')}>
+                  <Text style={[styles.rCheckLabel, { color: 'darkred' }]}>Indisponible</Text>
+                  <View style={[styles.rCheckboxBox, { borderColor: 'darkred' }]}>
+                    {!isAvailable && <View style={[styles.rCheckboxFill, { backgroundColor: 'darkred' }]} />}
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.rColIcon}>
+            {(mode === 'supp' || mode === 'modif') && (
+              <TouchableOpacity onPress={() => mode === 'modif' ? startEdit(item) : openConfirmModal(item, 'delete')}>
+                <Ionicons name={iconName as any} size={22} color={Theme.colors.danger} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
-
-        {isUpdating ? (
-          <ActivityIndicator color={Theme.colors.primary} />
-        ) : (
-          <>
-            {mode === 'dispo' && (
-              <Switch
-                value={isAvailable}
-                onValueChange={() => toggleDisponibilite(item)}
-                trackColor={{ false: Theme.colors.gray[200], true: '#86efac' }}
-                thumbColor={isAvailable ? Theme.colors.success : Theme.colors.gray[400]}
-              />
-            )}
-            {mode === 'modif' && (
-              <TouchableOpacity style={styles.actionBtn} onPress={() => startEdit(item)}>
-                <Ionicons name="create-outline" size={20} color={Theme.colors.primary} />
-              </TouchableOpacity>
-            )}
-            {mode === 'supp' && (
-              <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => deleteMenu(item)}>
-                <Ionicons name="trash-outline" size={20} color={Theme.colors.danger} />
-              </TouchableOpacity>
-            )}
-          </>
-        )}
+        <View style={styles.rSeparator} />
       </View>
     );
   };
@@ -224,9 +262,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
       <FlatList
         data={menus}
         keyExtractor={(item, i) => item._id || item.id || i.toString()}
-        renderItem={({ item }) =>
+        renderItem={({ item, index }) =>
           activeTab === 'list' || activeTab === 'dispo' || activeTab === 'modif' || activeTab === 'supp'
-            ? renderMenuCard(item, activeTab === 'list' ? 'dispo' : activeTab)
+            ? renderMenuCard(item, index, activeTab)
             : null
         }
         contentContainerStyle={styles.listContent}
@@ -246,13 +284,88 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
 
-      {/* Multi-step sheet */}
       <AddMenuSheetMultiStep
         visible={showAddMenu}
         onClose={() => { setShowAddMenu(false); setEditingMenu(null); }}
         onSave={handleSave}
         existingMenu={editingMenu}
       />
+
+      {confirmModalVisible && (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+          <View style={styles.cfnOverlay} />
+          <Animated.View style={[styles.cfnBottomCard, { transform: [{ translateY: slideAnim }] }]}>
+            <BlurView intensity={55} tint="dark" style={styles.cfnGlassCard}>
+              <LinearGradient
+                colors={['rgba(145,24,24,0.55)', 'rgba(60,10,10,0.30)', 'rgba(0,0,0,0.0)']}
+                locations={[0, 0.45, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
+              <View style={styles.cfnInner}>
+                <View style={styles.cfnHeaderRow}>
+                  <View style={[styles.cfnTitleChip]}>
+                    <Text style={styles.cfnTitleText}>
+                      {confirmActionType === 'delete' ? 'Voulez vous vraiment supprimer ?' : 'Changer la disponibilité ?'}
+                    </Text>
+                  </View>
+                </View>
+
+              <View style={styles.cfnContentRow}>
+                <View style={styles.cfnImgRow}>
+                  <View style={styles.cfnAvatarCard}>
+                    <Image
+                      source={{ uri: menuToConfirm?.coverImage || menuToConfirm?.images?.[0] || menuToConfirm?.image }}
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  </View>
+                  <View style={styles.cfnDetails}>
+                    <Text style={styles.cfnNameText} numberOfLines={1}>{menuToConfirm?.name || menuToConfirm?.titre}</Text>
+                    <Text style={styles.cfnPriceText}>{menuToConfirm?.prices?.[0]?.price || menuToConfirm?.prix1} f</Text>
+                  </View>
+                </View>
+
+                <View style={styles.cfnActionsCol}>
+                  <TouchableOpacity
+                    style={[
+                      styles.cfnChip,
+                      { backgroundColor: confirmActionType === 'available' ? 'darkgreen' : confirmActionType === 'delete' ? 'darkred' : '#ff9d9d', right: 110 }
+                    ]}
+                    onPress={executeConfirmAction}
+                  >
+                    <Text style={styles.cfnChipText}>
+                      {confirmActionType === 'delete' ? 'Supprimer' : confirmActionType === 'available' ? 'Disponible' : 'Indisponible'}
+                    </Text>
+                    <Ionicons name={confirmActionType === 'delete' ? 'trash' : 'checkmark'} size={14} color="white" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.cfnChip, { backgroundColor: 'darkred', right: 0 }]}
+                    onPress={closeConfirmModal}
+                  >
+                    <Text style={styles.cfnChipText}>Annuler</Text>
+                    <Ionicons name="close-circle-outline" size={14} color="white" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </BlurView>
+            {updatingId && (
+              <View style={styles.cfnLoaderOverlay}>
+                <Animated.View style={{ transform: [{ rotate: spin }] }}>
+                  <Svg viewBox="0 0 100 100" width={100} height={100}>
+                    <G>
+                      <Path stroke="white" strokeWidth="6" fill="none" d="M9 50A41 41 0 0 0 91 50A41 43 0 0 1 9 50" />
+                    </G>
+                  </Svg>
+                </Animated.View>
+              </View>
+            )}
+          </Animated.View>
+        </View>
+      )}
     </View>
   );
 };
@@ -344,7 +457,6 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   menuCard: {
-    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
     borderRadius: 12,
@@ -423,5 +535,216 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  
+  // NOUVEAUX STYLES FIDÈLES À RUDAFOOD POUR LES MENUS
+  menuItemContainer: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0', // Légère ligne de séparation comme <ion-item>
+  },
+  rRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20, // margin: '35px 0px 35px 0' approximation
+  },
+  rColIndex: {
+    width: '10%',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  rChipIndex: {
+    backgroundColor: 'rgba(56, 128, 255, 0.08)', // Ionic primary with opacity
+    borderRadius: 16,
+    height: 32,
+    minWidth: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  rChipIndexText: {
+    color: '#3880ff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  rColContent: {
+    width: '80%',
+    paddingLeft: 14,
+  },
+  rNameText: {
+    color: '#000000a8',
+    fontWeight: '900',
+    fontSize: 10,
+    paddingBottom: 8,
+  },
+  rDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+  rLabelText: {
+    fontSize: 10,
+    color: 'rgba(0, 0, 0, 0.61)',
+  },
+  rValPrix: {
+    paddingLeft: 8,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: 'darkred',
+  },
+  rValStatut: {
+    paddingLeft: 8,
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  rCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  rCheckWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rCheckLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginRight: 10,
+  },
+  rCheckboxBox: {
+    width: 15,
+    height: 15,
+    borderWidth: 2,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rCheckboxFill: {
+    width: 9,
+    height: 9,
+    borderRadius: 2,
+  },
+  rColIcon: {
+    width: '10%',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  rSeparator: {
+    display: 'none', // La séparation se fait par le borderBottomWidth du menuItemContainer désormais
+  },
+
+  // STYLES BOTTOM CARD MODAL
+  cfnOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 100400,
+  },
+  cfnBottomCard: {
+    position: 'absolute',
+    bottom: 40,
+    width: '98%',
+    marginHorizontal: '1%',
+    height: 140,
+    zIndex: 100500,
+    borderRadius: 40,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  cfnGlassCard: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    borderRadius: 40,
+    overflow: 'hidden',
+  },
+  cfnInner: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'transparent',
+    paddingTop: 20,
+    paddingHorizontal: 15,
+  },
+  cfnHeaderRow: {
+    position: 'absolute',
+    top: 15,
+    left: 15,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  cfnTitleChip: {
+    padding: 0,
+    backgroundColor: 'transparent',
+  },
+  cfnTitleText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: 'white',
+  },
+  cfnContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: '100%',
+  },
+  cfnImgRow: {
+    width: '40%',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cfnAvatarCard: {
+    width: 45,
+    height: 45,
+    backgroundColor: 'darkred',
+    borderRadius: 22.5,
+    overflow: 'hidden',
+    marginLeft: 0,
+    marginRight: 10,
+  },
+  cfnDetails: {
+    justifyContent: 'center',
+    flexShrink: 1,
+  },
+  cfnNameText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  cfnPriceText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: 'white',
+    marginTop: 4,
+  },
+  cfnActionsCol: {
+    width: '60%',
+    height: '100%',
+    position: 'relative',
+  },
+  cfnChip: {
+    position: 'absolute',
+    bottom: 30, // Fit the height correctly
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    height: 30,
+  },
+  cfnChipText: {
+    color: 'white',
+    fontSize: 12,
+    marginRight: 5,
+  },
+  cfnLoaderOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100600,
   },
 });

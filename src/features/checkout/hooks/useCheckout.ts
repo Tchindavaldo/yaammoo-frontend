@@ -34,21 +34,47 @@ export const useCheckout = (menu: Menu | null) => {
         return basePrice + packagingPrice + drinksPrice + deliveryPrice;
     }, [menu, quantity, selectedPackaging, selectedDrinks, delivery]);
 
-    const createOrder = (): Partial<Commande> | null => {
+    const createOrder = (): any | null => {
         if (!menu || !userData) return null;
 
+        const extraData = selectedPackaging.map(pkg => ({
+            name: pkg.type,
+            status: true
+        }));
+
+        const drinkData = selectedDrinks.map(drink => ({
+            name: drink.type,
+            status: true
+        }));
+        if (drinkData.length === 0) drinkData.push({ name: 'Aucune', status: false });
+
+        let finalDeliveryType = delivery.type === 'standard' ? 'time' : (delivery.type === 'aucune' ? 'time' : delivery.type);
+        let deliveryData: any = {
+            status: delivery.statut,
+            date: delivery.date || new Date().toISOString().split('T')[0],
+            type: finalDeliveryType,
+            location: delivery.address || (delivery.statut ? "Non spécifié" : ""),
+        };
+
+        if (finalDeliveryType === 'time') {
+            deliveryData.time = delivery.hour || "12:00";
+        }
+
         return {
-            uidUser: userData?.infos?.uid,
-            idFastFood: '1', // Devrait être dynamique
+            userId: (userData as any)?.uid || 'unknown_user',
+            fastFoodId: (menu as any)?.fastFoodId || (menu as any)?.idFastFood || '1',
             menu,
-            quantite: quantity,
-            embalage: selectedPackaging,
-            boisson: selectedDrinks[0] || new Boisson('Aucune', 0), // Type compatible avec Commande existante
-            livraison: delivery,
-            prixTotal: calculateTotal(),
-            staut: 'pendingToBuy',
-            isBuy: false,
-            ispending: true,
+            quantity,
+            total: Number(calculateTotal()) || 0,
+            userData: {
+                firstName: (userData as any)?.infos?.prenom || 'Inconnu',
+                lastName: (userData as any)?.infos?.nom || 'Inconnu',
+                email: (userData as any)?.infos?.email || 'inconnu@email.com',
+                phoneNumber: (userData as any)?.infos?.numero || 0
+            },
+            extra: extraData.length > 0 ? extraData : [{ name: 'Aucun', status: false }],
+            drink: drinkData,
+            delivery: deliveryData,
         };
     };
 

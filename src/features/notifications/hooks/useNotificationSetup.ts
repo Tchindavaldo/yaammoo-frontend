@@ -87,7 +87,7 @@ export const useNotificationSetup = () => {
     const syncToken = async (token: string) => {
         if (!userData) return;
         try {
-            await axios.put(`${Config.apiUrl}/user/update/${userData?.infos?.uid}`, {
+            await axios.put(`${Config.apiUrl}/user/update/${(userData as any)?.uid}`, {
                 fcmToken: token
             });
             console.log('FCM Token synced with backend');

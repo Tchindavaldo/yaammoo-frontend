@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { Users } from '@/src/types';
-import { userToJSON, jsonToUser } from '../utils/userMappers';
 
 export const userFirestore = {
     async getUser(uid: string): Promise<Users | null> {
@@ -10,7 +9,7 @@ export const userFirestore = {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             });
             const data = response.data.data;
-            return data && data.user ? jsonToUser(data.user) : null;
+            return data && data.infos ? data : null;
         } catch (error) {
             console.error('Error fetching user via API:', error);
             return null;
@@ -19,7 +18,7 @@ export const userFirestore = {
 
     async saveUser(user: Users, uid: string): Promise<void> {
         try {
-            await axios.put(`${Config.apiUrl}/user/${uid}`, { user: userToJSON(user) }, {
+            await axios.put(`${Config.apiUrl}/user/${uid}`, user, {
                 headers: { 'ngrok-skip-browser-warning': 'true' }
             });
         } catch (error) {

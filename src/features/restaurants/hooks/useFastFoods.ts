@@ -20,6 +20,7 @@ export const useFastFoods = () => {
             if (response.data && response.data.data) {
                 const data = response.data.data.map((item: any, index: number) => ({
                     ...item,
+                    menu: item.menus || item.menu || [],
                     designIndex: index % 4,
                 }));
                 setFastFoods(data);
@@ -36,9 +37,10 @@ export const useFastFoods = () => {
         fetchFastFoods();
     }, []);
 
-    const filteredFastFoods = fastFoods.filter(ff =>
-        ff.nom.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredFastFoods = fastFoods.filter(ff => {
+        const fastFoodName = ff.nom || (ff as any).name || '';
+        return fastFoodName.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
     return {
         fastFoods: filteredFastFoods,

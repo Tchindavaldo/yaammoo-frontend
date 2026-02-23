@@ -20,7 +20,7 @@ import { Menu } from '@/src/types';
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 
-type Step = 'image' | 'name' | 'price' | 'desc1' | 'desc2' | 'status';
+type Step = 'image' | 'name' | 'price' | 'desc1' | 'desc2' | 'extras' | 'status';
 
 interface AddMenuSheetProps {
   visible: boolean;
@@ -30,7 +30,7 @@ interface AddMenuSheetProps {
   existingMenu?: any; // pour la modification
 }
 
-const STEPS: Step[] = ['image', 'name', 'price', 'desc1', 'desc2', 'status'];
+const STEPS: Step[] = ['image', 'name', 'price', 'desc1', 'desc2', 'extras', 'status'];
 
 export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   visible,
@@ -49,6 +49,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const [desc1, setDesc1] = useState(existingMenu?.prices?.[0]?.description || '');
   const [desc2, setDesc2] = useState(existingMenu?.prices?.[1]?.description || '');
   const [desc3, setDesc3] = useState(existingMenu?.prices?.[2]?.description || '');
+  const [extraInput, setExtraInput] = useState(existingMenu?.extra?.map((e: any) => e.name).join(', ') || '');
+  const [drinkInput, setDrinkInput] = useState(existingMenu?.drink?.map((d: any) => d.name).join(', ') || '');
   const [availability, setAvailability] = useState(existingMenu?.status || 'available');
   const [uploadProgress, setUploadProgress] = useState([0, 0, 0]);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
@@ -63,6 +65,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     setNom('');
     setPrix1(''); setPrix2(''); setPrix3('');
     setDesc1(''); setDesc2(''); setDesc3('');
+    setExtraInput(''); setDrinkInput('');
     setAvailability('available');
     setUploadProgress([0, 0, 0]);
   };
@@ -103,9 +106,16 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       const formData = new FormData();
       const filename = uri.split('/').pop() || 'image.jpg';
       const type = 'image/jpeg';
-      formData.append('image', { uri, name: filename, type } as any);
 
-      const response = await axios.post(`${Config.apiUrl}/upload/image`, formData, {
+      if (Platform.OS === 'web') {
+        const res = await fetch(uri);
+        const blob = await res.blob();
+        formData.append('image', blob, filename);
+      } else {
+        formData.append('image', { uri, name: filename, type } as any);
+      }
+
+      const response = await axios.post(`${Config.apiUrl}/image/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (e) => {
           if (e.total) {
@@ -137,6 +147,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     if (step === 'price' && !prix1) return 'Le prix 1 ne doit pas être vide';
     if (step === 'desc1' && !desc1.trim()) return 'La description du prix 1 ne doit pas être vide';
     if (step === 'desc2' && prix2 && !desc2.trim()) return 'La description du prix 2 ne doit pas être vide';
+    if (step === 'extras' && !extraInput.trim()) return 'Veuillez saisir au moins un extra (ex: "Aucun")';
+    if (step === 'extras' && !drinkInput.trim()) return 'Veuillez saisir au moins une boisson (ex: "Aucune")';
     return null;
   };
 
@@ -154,11 +166,16 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
     if (step === 'desc1') {
       if (prix2) setStep('desc2');
-      else setStep('status');
+      else setStep('extras');
       return;
     }
 
     if (step === 'desc2') {
+      setStep('extras');
+      return;
+    }
+
+    if (step === 'extras') {
       setStep('status');
       return;
     }
@@ -174,6 +191,10 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
   const goBack = () => {
     if (step === 'status') {
+      setStep('extras');
+      return;
+    }
+    if (step === 'extras') {
       setStep(prix2 ? 'desc2' : 'desc1');
       return;
     }
@@ -186,6 +207,12 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
   const handleSubmit = async () => {
     const finalImages = uploadedUrls.length > 0 ? uploadedUrls : images;
+    const parsedExtras = extraInput.split(',').map((e: string) => ({ name: e.trim(), status: true })).filter((e: { name: string, status: boolean }) => e.name);
+    if (parsedExtras.length === 0) parsedExtras.push({ name: 'Aucun', status: false });
+
+    const parsedDrinks = drinkInput.split(',').map((d: string) => ({ name: d.trim(), status: true })).filter((d: { name: string, status: boolean }) => d.name);
+    if (parsedDrinks.length === 0) parsedDrinks.push({ name: 'Aucune', status: false });
+
     const menuData = {
       name: nom,
       prices: [
@@ -196,16 +223,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       status: availability,
       images: finalImages.filter(i => i),
       coverImage: finalImages[0] || '',
-      // Pour compatibilité avec le type Menu existant
-      titre: nom,
-      prix1: Number(prix1) || 0,
-      prix2: Number(prix2) || 0,
-      prix3: Number(prix3) || 0,
-      optionPrix1: desc1,
-      optionPrix2: desc2,
-      optionPrix3: desc3,
-      image: finalImages[0] || '',
-      disponibilite: availability === 'available' ? 'Disponible' : 'Indisponible',
+      coverImageHasBackground: false,
+      extra: parsedExtras,
+      drink: parsedDrinks
     };
 
     try {
@@ -225,6 +245,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     price: 'Prix du menu',
     desc1: 'Description Prix 1',
     desc2: 'Description Prix 2',
+    extras: 'Extras et Boissons',
     status: 'Statut et publication',
   };
 
@@ -377,6 +398,28 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                   multiline
                   numberOfLines={4}
                   autoFocus
+                />
+              </View>
+            )}
+
+            {/* Étape extras */}
+            {step === 'extras' && (
+              <View>
+                <Text style={styles.fieldLabel}>Extras proposés (séparés par des virgules)</Text>
+                <TextInput
+                  style={[styles.input, { marginBottom: Theme.spacing.lg }]}
+                  placeholder='Ex: Ketchup, Mayonnaise, Fromage (ou "Aucun")'
+                  value={extraInput}
+                  onChangeText={setExtraInput}
+                  autoFocus
+                />
+                
+                <Text style={styles.fieldLabel}>Boissons proposées (séparées par des virgules)</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder='Ex: Coca, Fanta, Sprite (ou "Aucune")'
+                  value={drinkInput}
+                  onChangeText={setDrinkInput}
                 />
               </View>
             )}

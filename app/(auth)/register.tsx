@@ -20,7 +20,6 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/services/firebase';
 import { userFirestore } from '@/src/features/auth/services/userFirestore';
-import { Users, UsersInfos } from '@/src/types';
 
 const { width, height } = Dimensions.get('window');
 
@@ -69,15 +68,26 @@ export default function RegisterScreen() {
     setConnect(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = new Users(
-        new UsersInfos(nom, prenom, 0, parseInt(tel), userCredential.user.uid, email, birth),
-        isMerchant,
-        100,
-        []
-      );
-      
-      await userFirestore.saveUser(newUser, userCredential.user.uid);
-      setUserData(newUser);
+      const uid = userCredential.user.uid;
+
+      // Objet plat : uid à la racine, pas de champ cmd
+      const newUser = {
+        uid,
+        infos: {
+          nom,
+          prenom,
+          age: 0,
+          numero: parseInt(tel),
+          email,
+          password: birth, // champ password stocke la date de naissance comme auparavant
+        },
+        isMarchand: isMerchant,
+        statistique: 100,
+        fastFoodId: '',
+      };
+
+      await userFirestore.saveUser(newUser as any, uid);
+      setUserData(newUser as any);
       router.replace('/(tabs)');
     } catch (error: any) {
       setConnect(false);

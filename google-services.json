@@ -1,0 +1,98 @@
+{
+  "project_info": {
+    "project_number": "66450079753",
+    "project_id": "fir-d75bc",
+    "storage_bucket": "fir-d75bc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66450079753:android:a152511f89d7c8417278d8",
+        "android_client_info": {
+          "package_name": "com.rudavo.wiilloo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66450079753-44ncb4da28q2hosr9hh2cti0c0qkm5ne.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rudavo.wiilloo",
+            "certificate_hash": "fabab1465c51d8ad0cc8d86b3e39d7d83007374c"
+          }
+        },
+        {
+          "client_id": "66450079753-uv42sduotm65t1j70fnp62kvg9kggt6t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClq7K3njl_SBUJ0tLaEv5MjO2a-X3fzmw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66450079753-g4cg4o1lhrd31aa7logdjadf030stii1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66450079753-elc6d807tg1g0flul2ccc63214b2k2kf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rudavo.wiilloo"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:66450079753:android:cfe14360d15a03a07278d8",
+        "android_client_info": {
+          "package_name": "com.yaammoo.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "66450079753-58mmaomhujv0bfj4pf222qc2dc8n74ds.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yaammoo.app",
+            "certificate_hash": "fabab1465c51d8ad0cc8d86b3e39d7d83007374c"
+          }
+        },
+        {
+          "client_id": "66450079753-uv42sduotm65t1j70fnp62kvg9kggt6t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClq7K3njl_SBUJ0tLaEv5MjO2a-X3fzmw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "66450079753-g4cg4o1lhrd31aa7logdjadf030stii1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "66450079753-elc6d807tg1g0flul2ccc63214b2k2kf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.rudavo.wiilloo"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

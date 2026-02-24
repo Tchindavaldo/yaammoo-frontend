@@ -1,19 +1,7 @@
-import {
-  GoogleSignin,
-  statusCodes,
-} from "@react-native-google-signin/google-signin";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { userFirestore } from "./userFirestore";
 import { Users, UsersInfos } from "@/src/types";
-import { Config } from "@/src/api/config";
-
-// Configuration Google Sign-In
-GoogleSignin.configure({
-  webClientId: Config.googleAuth.webClientId,
-  iosClientId: Config.googleAuth.iosClientId,
-  offlineAccess: true,
-});
 
 export interface GoogleSignInResult {
   success: boolean;
@@ -26,7 +14,23 @@ export interface GoogleSignInResult {
  * Connexion avec Google via @react-native-google-signin + Firebase
  */
 export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
+  // Temporairement désactiver Google Auth sur Expo Go
+  if (process.env.EXPO_PUBLIC_DISABLE_GOOGLE_AUTH === 'true') {
+    return {
+      success: false,
+      isNewUser: false,
+      error: "Google Auth est désactivé dans Expo Go. Utilisez un development build.",
+    };
+  }
+
+  let statusCodes: any;
+
   try {
+    // Import dynamique pour éviter les erreurs sur Expo Go
+    const { GoogleSignin: GS, statusCodes: SC } = await import("@react-native-google-signin/google-signin");
+    const GoogleSignin = GS;
+    statusCodes = SC;
+
     console.log("🔵 [GoogleAuth] Étape 1: Vérification Google Play Services");
     // Vérifie que Google Play Services est disponible (Android)
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
@@ -166,6 +170,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
  */
 export async function handleGoogleSignOut(): Promise<void> {
   try {
+    const { GoogleSignin } = await import("@react-native-google-signin/google-signin");
     await GoogleSignin.revokeAccess();
     await GoogleSignin.signOut();
   } catch (error) {

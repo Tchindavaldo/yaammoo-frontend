@@ -3,7 +3,6 @@ import {
   StyleSheet,
   FlatList,
   SafeAreaView,
-  ActivityIndicator,
   View,
   Text,
   TouchableOpacity,
@@ -19,7 +18,7 @@ import { PaymentSheet } from "@/src/features/payment/components/PaymentSheet";
 import { BlurView } from "expo-blur";
 import { BonusScreen } from "@/src/features/bonus/components/BonusScreen";
 import { Ionicons } from "@expo/vector-icons";
-import { AppLoader } from "@/src/components/AppLoader";
+import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 
 export default function OrdersScreen() {
@@ -37,6 +36,9 @@ export default function OrdersScreen() {
     stats,
   } = useOrders();
   const tabBarHeight = useTabBarHeight();
+
+  // For testing: force loader to persist
+  const [forceLoading, setForceLoading] = useState(false);
 
   const [currentTab, setCurrentTab] = useState("cart");
   const [activeStatus, setActiveStatus] = useState<
@@ -140,19 +142,22 @@ export default function OrdersScreen() {
     }
   };
 
-  if (loading && pendingToBuy.length === 0 && pending.length === 0) {
+  if (
+    (loading && pendingToBuy.length === 0 && pending.length === 0) ||
+    forceLoading
+  ) {
     return (
-      <AppLoader visible={true} message="Chargement de vos commandes..." />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Theme.colors.primary} />
+          <Text style={styles.loadingText}>Chargement de vos commandes...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        currentTab === "bonus" && { backgroundColor: "#0d0404" },
-      ]}
-    >
+    <SafeAreaView style={styles.container}>
       <OrderHeader
         activeTab={currentTab}
         onTabChange={setCurrentTab}
@@ -266,21 +271,24 @@ export default function OrdersScreen() {
         amount={calculateCartTotal()}
         onSuccess={handlePaymentSuccess}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white", // Original setup (background: none on ion-list)
   },
   centered: {
     flex: 1,
-    paddingTop: 100,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 40,
+    gap: 12,
+  },
+  loadingText: {
+    color: Theme.colors.gray[500],
+    fontSize: 14,
   },
   listContent: {
     paddingVertical: 10,

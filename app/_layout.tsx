@@ -48,25 +48,21 @@ function AppInitializer({ layoutMounted }: { layoutMounted: boolean }) {
   useEffect(() => {
     if (!layoutMounted) return;
     if (user && userData && !appReady) {
-      // Initialiser tout avant de permettre l'accès à l'app
-      const initializeApp = async () => {
-        try {
-          await setupNotifications();
-          setAppReady(true);
-          if (segments[0] === "(auth)") {
-            router.replace("/(tabs)");
-          }
-        } catch (error) {
-          console.error("Erreur lors de l'initialisation:", error);
-          setAppReady(true); // Permettre l'accès même en cas d'erreur
-        }
-      };
-      initializeApp();
+      setAppReady(true);
+      if (segments[0] === "(auth)") {
+        router.replace("/(tabs)");
+      }
+      // Setup notifications in background after navigation
+      setupNotifications().catch((error) => {
+        console.error("Erreur lors de l'initialisation des notifications:", error);
+      });
     }
   }, [user, userData, setupNotifications, segments, appReady, layoutMounted]);
 
-  if (loading || (user && !userData) || (user && userData && !appReady)) {
-    return <AppLoader visible={true} message="Initialisation de l'application..." />;
+  if (loading || (user && !userData)) {
+    return (
+      <AppLoader visible={true} message="Initialisation de l'application..." />
+    );
   }
 
   return null;
@@ -83,7 +79,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <AppInitializer layoutMounted={layoutMounted} />
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />

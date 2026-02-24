@@ -85,7 +85,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
       "",
     );
 
-    await userFirestore.saveUser(newUser, firebaseUser.uid);
+    await userFirestore.createUser(newUser, firebaseUser.uid);
 
     return {
       success: true,

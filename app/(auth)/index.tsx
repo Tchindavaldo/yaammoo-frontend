@@ -35,16 +35,23 @@ export default function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [connect, setConnect] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleLoadingTop, setGoogleLoadingTop] = useState(false);
+  const [googleLoadingBottom, setGoogleLoadingBottom] = useState(false);
+  const [googleLoadingSmall, setGoogleLoadingSmall] = useState(false);
   const [passwordIsShow, setPasswordIsShow] = useState(false);
 
   // Media Query simulations (Basé sur auth.page2.scss)
   const isSmall = height < 700;
   const isExtraSmall = height < 500;
 
-  const connectWithGoogle = async () => {
-    if (googleLoading) return;
-    setGoogleLoading(true);
+  const connectWithGoogle = async (position: 'top' | 'bottom' | 'small') => {
+    const isLoading = position === 'top' ? googleLoadingTop : position === 'bottom' ? googleLoadingBottom : googleLoadingSmall;
+    if (isLoading) return;
+
+    if (position === 'top') setGoogleLoadingTop(true);
+    else if (position === 'bottom') setGoogleLoadingBottom(true);
+    else setGoogleLoadingSmall(true);
+
     try {
       const result = await handleGoogleSignIn();
       if (result.success && result.userData) {
@@ -58,7 +65,9 @@ export default function AuthScreen() {
     } catch {
       Alert.alert("Erreur", "Connexion Google échouée.");
     } finally {
-      setGoogleLoading(false);
+      if (position === 'top') setGoogleLoadingTop(false);
+      else if (position === 'bottom') setGoogleLoadingBottom(false);
+      else setGoogleLoadingSmall(false);
     }
   };
 
@@ -87,7 +96,7 @@ export default function AuthScreen() {
     router.push(`/(auth)/${rout}` as any);
   };
 
-  const isAnyLoading = connect || googleLoading;
+  const isAnyLoading = connect || googleLoadingTop || googleLoadingBottom || googleLoadingSmall;
 
   return (
     <View style={styles.content}>
@@ -139,10 +148,10 @@ export default function AuthScreen() {
                     </View>
                     <View style={styles.colTopIconG}>
                       <TouchableOpacity
-                        onPress={connectWithGoogle}
+                        onPress={() => connectWithGoogle('top')}
                         disabled={isAnyLoading}
                       >
-                        {googleLoading ? (
+                        {googleLoadingTop ? (
                           <ActivityIndicator size="small" color="#a65757" />
                         ) : (
                           <Ionicons
@@ -281,10 +290,10 @@ export default function AuthScreen() {
                       <View style={styles.rowOtherConnect}>
                         <View style={styles.colSize1}>
                           <TouchableOpacity
-                            onPress={connectWithGoogle}
+                            onPress={() => connectWithGoogle('bottom')}
                             disabled={isAnyLoading}
                           >
-                            {googleLoading ? (
+                            {googleLoadingBottom ? (
                               <ActivityIndicator size="small" color="#a65757" />
                             ) : (
                               <Ionicons
@@ -316,10 +325,10 @@ export default function AuthScreen() {
                   {isSmall && !isExtraSmall && (
                     <View style={styles.colOtherConnectSmall}>
                       <TouchableOpacity
-                        onPress={connectWithGoogle}
+                        onPress={() => connectWithGoogle('small')}
                         disabled={isAnyLoading}
                       >
-                        {googleLoading ? (
+                        {googleLoadingSmall ? (
                           <ActivityIndicator size="small" color="#a65757" />
                         ) : (
                           <Ionicons

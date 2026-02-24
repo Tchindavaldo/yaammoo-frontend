@@ -1,7 +1,10 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
-node_modules/
+/node_modules
+
+# Keystore partagé - NE PAS ignorer (SHA-1 fixe pour Google Sign-In)
+!debug.keystore
 
 # Expo
 .expo/

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   StyleSheet,
   FlatList,
@@ -7,14 +7,19 @@ import {
   View,
   Text,
   TouchableOpacity,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNotifications, Notification } from '@/src/features/notifications/hooks/useNotifications';
-import { NotificationItem } from '@/src/features/notifications/components/NotificationItem';
-import { Theme } from '@/src/theme';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  useNotifications,
+  Notification,
+} from "@/src/features/notifications/hooks/useNotifications";
+import { NotificationItem } from "@/src/features/notifications/components/NotificationItem";
+import { Theme } from "@/src/theme";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 
 export default function NotificationsScreen() {
   const { notifications, loading, refresh, markAsRead } = useNotifications();
+  const tabBarHeight = useTabBarHeight();
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -25,7 +30,9 @@ export default function NotificationsScreen() {
   };
 
   const markAllAsRead = () => {
-    notifications.filter((n) => !n.isRead).forEach((n) => markAsRead(n.id, n.idGroup));
+    notifications
+      .filter((n) => !n.isRead)
+      .forEach((n) => markAsRead(n.id, n.idGroup));
   };
 
   if (loading && notifications.length === 0) {
@@ -44,12 +51,18 @@ export default function NotificationsScreen() {
         <View>
           <Text style={styles.title}>Notifications</Text>
           {unreadCount > 0 && (
-            <Text style={styles.subtitle}>{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</Text>
+            <Text style={styles.subtitle}>
+              {unreadCount} non lue{unreadCount > 1 ? "s" : ""}
+            </Text>
           )}
         </View>
         {unreadCount > 0 && (
           <TouchableOpacity style={styles.markAllBtn} onPress={markAllAsRead}>
-            <Ionicons name="checkmark-done-outline" size={16} color={Theme.colors.primary} />
+            <Ionicons
+              name="checkmark-done-outline"
+              size={16}
+              color={Theme.colors.primary}
+            />
             <Text style={styles.markAllText}>Tout marquer lu</Text>
           </TouchableOpacity>
         )}
@@ -58,21 +71,27 @@ export default function NotificationsScreen() {
       <FlatList
         data={notifications}
         renderItem={({ item }) => (
-          <NotificationItem
-            notification={item}
-            onPress={handleNotifPress}
-          />
+          <NotificationItem notification={item} onPress={handleNotifPress} />
         )}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: tabBarHeight + 20 },
+        ]}
         refreshing={loading}
         onRefresh={refresh}
         ListEmptyComponent={
           !loading ? (
             <View style={styles.centered}>
-              <Ionicons name="notifications-off-outline" size={60} color={Theme.colors.gray[300]} />
+              <Ionicons
+                name="notifications-off-outline"
+                size={60}
+                color={Theme.colors.gray[300]}
+              />
               <Text style={styles.emptyTitle}>Aucune notification</Text>
-              <Text style={styles.emptySubtitle}>Vous serez notifié lors de nouvelles commandes et mises à jour</Text>
+              <Text style={styles.emptySubtitle}>
+                Vous serez notifié lors de nouvelles commandes et mises à jour
+              </Text>
             </View>
           ) : null
         }
@@ -87,9 +106,9 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.white,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: Theme.spacing.md,
     paddingTop: Theme.spacing.lg,
     borderBottomWidth: 1,
@@ -97,34 +116,34 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Theme.colors.dark,
   },
   subtitle: {
     fontSize: 13,
     color: Theme.colors.primary,
     marginTop: 2,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   markAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: Theme.colors.primary + '10',
+    backgroundColor: Theme.colors.primary + "10",
   },
   markAllText: {
     fontSize: 12,
     color: Theme.colors.primary,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   centered: {
     flex: 1,
     padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 12,
   },
   loadingText: {
@@ -132,17 +151,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   listContent: {
-    paddingBottom: 20,
+    // paddingBottom géré dynamiquement avec useTabBarHeight
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Theme.colors.gray[500],
   },
   emptySubtitle: {
     fontSize: 13,
     color: Theme.colors.gray[400],
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 20,
   },
 });

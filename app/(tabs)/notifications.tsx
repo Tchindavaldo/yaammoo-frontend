@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   FlatList,
   SafeAreaView,
-  ActivityIndicator,
   View,
   Text,
   TouchableOpacity,
@@ -16,10 +15,14 @@ import {
 import { NotificationItem } from "@/src/features/notifications/components/NotificationItem";
 import { Theme } from "@/src/theme";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 
 export default function NotificationsScreen() {
   const { notifications, loading, refresh, markAsRead } = useNotifications();
   const tabBarHeight = useTabBarHeight();
+
+  // For testing: force loader to persist
+  const [forceLoading, setForceLoading] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -35,12 +38,16 @@ export default function NotificationsScreen() {
       .forEach((n) => markAsRead(n.id, n.idGroup));
   };
 
-  if (loading && notifications.length === 0) {
+  if ((loading && notifications.length === 0) || forceLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={Theme.colors.primary} />
-        <Text style={styles.loadingText}>Chargement des notifications...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Theme.colors.primary} />
+          <Text style={styles.loadingText}>
+            Chargement des notifications...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -103,7 +110,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.white,
   },
   header: {
     flexDirection: "row",
@@ -141,7 +147,6 @@ const styles = StyleSheet.create({
   },
   centered: {
     flex: 1,
-    padding: 40,
     alignItems: "center",
     justifyContent: "center",
     gap: 12,

@@ -6,12 +6,24 @@ export const userFirestore = {
   /**
    * Récupère un utilisateur par son UID depuis le backend
    */
-  async getUser(uid: string): Promise<Users | null> {
+  async getUser(firebaseUser: any): Promise<Users | null> {
     try {
-      const response = await axios.get(`${Config.apiUrl}/user/${uid}`, {
-        headers: { "ngrok-skip-browser-warning": "true" },
+      console.log("🔍 [getUser] Fetching user with UID:", firebaseUser.uid);
+      const idToken = await firebaseUser.getIdToken();
+      const response = await axios.get(`${Config.apiUrl}/user/${firebaseUser.uid}`, {
+        headers: { 
+          "ngrok-skip-browser-warning": "true",
+          "Authorization": `Bearer ${idToken}`,
+        },
       });
       const data = response.data.data;
+      console.log(
+        "📦 [getUser] Raw backend response:",
+        JSON.stringify(response.data, null, 2),
+      );
+      console.log("📦 [getUser] data.uid:", data?.uid);
+      console.log("📦 [getUser] data.id:", data?.id);
+      console.log("📦 [getUser] data.infos:", data?.infos);
       return data && data.infos ? data : null;
     } catch (error) {
       console.error("Error fetching user via API:", error);
@@ -23,20 +35,31 @@ export const userFirestore = {
    * Crée un nouvel utilisateur dans le backend (POST)
    * À utiliser lors de l'inscription (email ou Google)
    */
-  async createUser(user: Users, uid: string): Promise<void> {
+  async createUser(user: Users, firebaseUser: any): Promise<void> {
     try {
-      await axios.post(
+      console.log("📤 [createUser] POST /user");
+      console.log("📤 [createUser] URL:", `${Config.apiUrl}/user`);
+      console.log("📤 [createUser] UID:", firebaseUser.uid);
+      console.log("📤 [createUser] User data:", JSON.stringify(user, null, 2));
+
+      const idToken = await firebaseUser.getIdToken();
+      const response = await axios.post(
         `${Config.apiUrl}/user`,
-        { ...user, uid },
+        { ...user, uid: firebaseUser.uid },
         {
           headers: {
             "ngrok-skip-browser-warning": "true",
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`,
           },
         },
       );
-    } catch (error) {
-      console.error("Error creating user via API:", error);
+
+      console.log("✅ [createUser] Réponse backend:", response.data);
+    } catch (error: any) {
+      console.error("❌ [createUser] Erreur API:", error.message);
+      console.error("❌ [createUser] Response:", error.response?.data);
+      console.error("❌ [createUser] Status:", error.response?.status);
       throw error;
     }
   },
@@ -45,12 +68,14 @@ export const userFirestore = {
    * Met à jour un utilisateur existant (PUT)
    * À utiliser pour modifier le profil d'un utilisateur existant
    */
-  async updateUser(user: Users, uid: string): Promise<void> {
+  async updateUser(user: Users, firebaseUser: any): Promise<void> {
     try {
-      await axios.put(`${Config.apiUrl}/user/${uid}`, user, {
+      const idToken = await firebaseUser.getIdToken();
+      await axios.put(`${Config.apiUrl}/user/${firebaseUser.uid}`, user, {
         headers: {
           "ngrok-skip-browser-warning": "true",
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
         },
       });
     } catch (error) {
@@ -63,17 +88,17 @@ export const userFirestore = {
    * Sauvegarde intelligente : essaie de créer (POST), sinon met à jour (PUT)
    * À utiliser quand on n'est pas sûr si l'utilisateur existe déjà
    */
-  async saveUser(user: Users, uid: string): Promise<void> {
+  async saveUser(user: Users, firebaseUser: any): Promise<void> {
     try {
       // Vérifie d'abord si l'utilisateur existe
-      const existingUser = await this.getUser(uid);
+      const existingUser = await this.getUser(firebaseUser);
 
       if (existingUser) {
         // Utilisateur existant → PUT (update)
-        await this.updateUser(user, uid);
+        await this.updateUser(user, firebaseUser);
       } else {
         // Nouvel utilisateur → POST (create)
-        await this.createUser(user, uid);
+        await this.createUser(user, firebaseUser);
       }
     } catch (error) {
       console.error("Error saving user via API:", error);

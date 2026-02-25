@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   StyleSheet,
   SafeAreaView,
-  ActivityIndicator,
   View,
   Text,
   TouchableOpacity,
@@ -16,6 +15,7 @@ import { OrderManagePanel } from '@/src/features/merchant/components/OrderManage
 import { MenuManagePanel } from '@/src/features/merchant/components/MenuManagePanel';
 import { PorteFeuillePanel } from '@/src/features/merchant/components/PorteFeuillePanel';
 import { NoBoutiquePanel } from '@/src/features/merchant/components/NoBoutiquePanel';
+import { ActivityIndicator } from '@/src/components/CustomActivityIndicator';
 
 const TabItem = ({ label, active, onPress, count, icon }: any) => (
   <View style={styles.colSegment}>
@@ -49,7 +49,9 @@ export default function BoutiqueScreen() {
     await addMenu(newMenu);
   };
 
-  const loading = authLoading || merchantLoading;
+  const [forceLoading, setForceLoading] = useState(false);
+
+  const loading = authLoading || merchantLoading || forceLoading;
 
   // If no fast food associated with account, show creation UI
   if (!userData?.fastFoodId && !loading) {
@@ -89,7 +91,7 @@ export default function BoutiqueScreen() {
   );
 
   const renderContent = () => {
-    if (loading && orders.length === 0 && menus.length === 0) {
+    if ((loading && orders.length === 0 && menus.length === 0) || forceLoading) {
       return (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
@@ -101,36 +103,118 @@ export default function BoutiqueScreen() {
     switch (activeTab) {
       case 'commande':
         return (
-          <OrderManagePanel
-            orders={orders}
-            loading={loading}
-            onRefresh={refresh}
-            onUpdateStatus={(id, status) => updateStatus(id, status)}
-          />
+          <>
+            <View style={styles.header}>
+              <View style={styles.rowSegment}>
+                <TabItem
+                  label="Mon porte feuille"
+                  icon="wallet-outline"
+                  active={activeTab === 'historique'}
+                  onPress={() => setActiveTab('historique')}
+                  count={0}
+                />
+                <TabItem
+                  label="Commande"
+                  icon="receipt-outline"
+                  active={activeTab === 'commande'}
+                  onPress={() => setActiveTab('commande')}
+                  count={stats.pendingOrders}
+                />
+                <TabItem
+                  label="Menu"
+                  icon="restaurant-outline"
+                  active={activeTab === 'menu'}
+                  onPress={() => setActiveTab('menu')}
+                  count={0}
+                />
+              </View>
+            </View>
+            <OrderManagePanel
+              orders={orders}
+              loading={loading}
+              onRefresh={refresh}
+              onUpdateStatus={(id, status) => updateStatus(id, status)}
+            />
+          </>
         );
       case 'menu':
         return (
-          <MenuManagePanel
-            menus={menus}
-            onRefresh={refresh}
-            onAddMenu={handleAddMenu}
-            loading={loading}
-          />
+          <>
+            <View style={styles.header}>
+              <View style={styles.rowSegment}>
+                <TabItem
+                  label="Mon porte feuille"
+                  icon="wallet-outline"
+                  active={activeTab === 'historique'}
+                  onPress={() => setActiveTab('historique')}
+                  count={0}
+                />
+                <TabItem
+                  label="Commande"
+                  icon="receipt-outline"
+                  active={activeTab === 'commande'}
+                  onPress={() => setActiveTab('commande')}
+                  count={stats.pendingOrders}
+                />
+                <TabItem
+                  label="Menu"
+                  icon="restaurant-outline"
+                  active={activeTab === 'menu'}
+                  onPress={() => setActiveTab('menu')}
+                  count={0}
+                />
+              </View>
+            </View>
+            <MenuManagePanel
+              menus={menus}
+              onRefresh={refresh}
+              onAddMenu={handleAddMenu}
+              loading={loading}
+            />
+          </>
         );
       case 'historique':
         return (
-          <PorteFeuillePanel
-            transactions={transactions}
-            loading={loading}
-            onRefresh={refresh}
-          />
+          <>
+            <View style={styles.header}>
+              <View style={styles.rowSegment}>
+                <TabItem
+                  label="Mon porte feuille"
+                  icon="wallet-outline"
+                  active={activeTab === 'historique'}
+                  onPress={() => setActiveTab('historique')}
+                  count={0}
+                />
+                <TabItem
+                  label="Commande"
+                  icon="receipt-outline"
+                  active={activeTab === 'commande'}
+                  onPress={() => setActiveTab('commande')}
+                  count={stats.pendingOrders}
+                />
+                <TabItem
+                  label="Menu"
+                  icon="restaurant-outline"
+                  active={activeTab === 'menu'}
+                  onPress={() => setActiveTab('menu')}
+                  count={0}
+                />
+              </View>
+            </View>
+            <PorteFeuillePanel
+              transactions={transactions}
+              loading={loading}
+              onRefresh={refresh}
+            />
+          </>
         );
+      default:
+        return null;
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {renderHeader()}
       <View style={{ flex: 1 }}>
         {renderContent()}
       </View>
@@ -141,7 +225,6 @@ export default function BoutiqueScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? 45 : (Platform.OS === 'android' ? 30 : 10),

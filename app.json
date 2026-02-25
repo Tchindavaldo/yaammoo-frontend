@@ -8,6 +8,11 @@
     "scheme": "yaammoo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "fir-d75bc"
+      }
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.yaammoo.app",

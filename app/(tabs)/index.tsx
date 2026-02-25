@@ -3,7 +3,6 @@ import {
   StyleSheet,
   FlatList,
   SafeAreaView,
-  ActivityIndicator,
   View,
   Text,
   TouchableOpacity,
@@ -15,8 +14,8 @@ import { RestaurantCard } from "@/src/features/restaurants/components/Restaurant
 import { CategoryList } from "@/src/features/restaurants/components/CategoryList";
 import { Theme } from "@/src/theme";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
-import { AppLoader } from "@/src/components/AppLoader";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 
 const CATEGORIES = [
   { name: "Fast Food", icon: "fast-food-outline" },
@@ -50,6 +49,9 @@ export default function HomeScreen() {
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+
+  // For testing: force loader to persist
+  const [forceLoading, setForceLoading] = useState(false);
 
   const handleMenuClick = (menu: Menu) => {
     setSelectedMenu(menu);
@@ -104,14 +106,21 @@ export default function HomeScreen() {
     </>
   );
 
-  if (loading && fastFoods.length === 0) {
+  if ((loading && fastFoods.length === 0) || forceLoading) {
     return (
-      <AppLoader visible={true} message="Recherche des meilleurs plats..." />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Theme.colors.primary} />
+          <Text style={styles.loadingText}>
+            Recherche des meilleurs plats...
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         data={fastFoods}
         ListHeaderComponent={renderHeader}
@@ -150,14 +159,13 @@ export default function HomeScreen() {
           <Text style={styles.loadingOverlayText}>Ajout au panier...</Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.white,
   },
   centered: {
     flex: 1,

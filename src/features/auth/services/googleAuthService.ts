@@ -1,7 +1,8 @@
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-import { auth } from "@/src/services/firebase";
+import { Config } from "../../../api/config";
+import { auth } from "../../../services/firebase";
+import { Users, UsersInfos } from "../../../types";
 import { userFirestore } from "./userFirestore";
-import { Users, UsersInfos } from "@/src/types";
 
 export interface GoogleSignInResult {
   success: boolean;
@@ -31,7 +32,12 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     const GoogleSignin = GS;
     statusCodes = SC;
 
-    console.log("🔵 [GoogleAuth] Étape 1: Vérification Google Play Services");
+    // Configuration Google Signin
+    GoogleSignin.configure({
+      webClientId: Config.googleAuth.webClientId,
+      iosClientId: Config.googleAuth.iosClientId,
+      offlineAccess: true,
+    });
     // Vérifie que Google Play Services est disponible (Android)
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 

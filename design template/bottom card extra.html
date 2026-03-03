@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#ec4913",
+              "background-light": "#f8f6f6",
+              "background-dark": "#221510",
+            },
+            fontFamily: {
+              "display": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased">
+<div class="relative flex h-screen w-full flex-col overflow-hidden">
+<!-- Header -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between border-b border-primary/10">
+<div class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center">Menu</h2>
+<div class="flex w-10 items-center justify-end">
+<button class="flex items-center justify-center text-slate-900 dark:text-slate-100">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+</div>
+<!-- Background Menu Grid (Dimmed) -->
+<div class="grid grid-cols-2 gap-4 p-4 opacity-40">
+<div class="flex flex-col gap-2 pb-3">
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-xl" data-alt="Gourmet beef burger with fresh ingredients" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuClmg-VyzxTTRpm-7mN6Erkt5uXRpr-jfEFidesni_9NTxVRQovRfioKZ4f8om_AsvSYRwav69Jn5aBdgte5rR6JMashyheRnJByvaIpd-NggYM09aw-mlyvKLcxQhCmqcgQ53nUoRFnXp11MSzjQ0kWXUDgPXiWoeIll_Q3agB8Y4VNIbdBj6HHYuRXGjUflLrvnYQubGRxj6lCKJOCH4R6SkB3UT-Xdzajbv3FHUdLPN_zs9C36tc8Ew-f5y4UaJTkLKsxWlipLRh");'></div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-semibold">Classic Burger</p>
+<p class="text-primary text-xs font-bold">$12.00</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 pb-3">
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-xl" data-alt="Freshly baked pepperoni pizza slice" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBvPV0g9cBoHJdBdrKIGOzpFwFpmImgsloSPu-MPPFek9rNm3MxHiyVHIeQihfjkCi8gnnmYD8XAZWacO5OLKUpDbtUTf3anRXQIzvpfum7RvH_VXQSAms3LWZQfVfvnZG5fcgrPPc3Ts8vHRrMP2o2XVMIH5pqEaZVojEKqvU4Oz-lPZapmS6mBZ-wdB6iCYtk7EoLcIS9fGcXlBEvCPjPQjEHDRCqalvkjncUAv_pS9-g1drxQ4nzkHruIcVd_qcfXpXJQVdvOlPc");'></div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-semibold">Pepperoni Pizza</p>
+<p class="text-primary text-xs font-bold">$15.00</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 pb-3">
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-xl" data-alt="Assorted fresh sushi platter" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDIggGbT2miIedIWIM8Qq8wdI-_dSAXJWZ300QVviDyb8cbGVNQ04kGCWUPHKaQO1jUur4Omsity9_GbfqJh3erTupIR35v4bHHBbyHYY-E7GAcrX4EtnNG6fgeomGwNd-S8w7T5DcHhu7t6B-2oZz8KVH7iy1fBGCQjHrwc_C8XL3RA2P5AnsMyQSb6yhTomZBJWtynqH9X69iQONGA9QVNKabzFeQ4wbWfKobaWjpy4QwuV-AEe5rJFCL42uJUvc4JXzdBDPDbO0w");'></div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-semibold">Salmon Sushi</p>
+<p class="text-primary text-xs font-bold">$20.00</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 pb-3">
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-xl" data-alt="Healthy mediterranean salad bowl" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDFEeih2qVlMx_D5Wc7Vu6csg-hVyJXd28rOcAp9EHTlqInHpAnt5_dayC12dX-4zW-wLIB0MWnghBsYbTGVFcvVt4N0LRsVpJgzcqu7RTBT756ZTkG0k1go1twxWYlRWD-NtXBoy5nbDU2K5wE1v4jI0pce6f_b6aGSOw-UJpCiGe_u9wHoF68rsd3xjwUW5rFlrZP2O066mqEoAMqzTMWZ8-s6_khValEcfKWPDXT9WGxlYzPt_faiBlL0lT2q5phVxjw_Cx9_gjH");'></div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-semibold">Garden Salad</p>
+<p class="text-primary text-xs font-bold">$10.00</p>
+</div>
+</div>
+</div>
+<!-- Dimmed Overlay -->
+<div class="absolute inset-0 bg-slate-900/40 z-10"></div>
+<!-- Bottom Sheet (1/3 Height) -->
+<div class="absolute bottom-0 left-0 right-0 h-1/3 bg-background-light dark:bg-background-dark rounded-t-xl z-20 flex flex-col shadow-2xl overflow-hidden">
+<!-- Handle -->
+<div class="flex w-full items-center justify-center py-3">
+<div class="h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+</div>
+<!-- Tab Navigation -->
+<div class="flex border-b border-slate-200 dark:border-slate-800 px-4">
+<button class="flex-1 py-3 text-xs font-bold text-slate-400 dark:text-slate-500">
+                    DETAILS
+                </button>
+<button class="flex-1 py-3 text-xs font-bold text-slate-400 dark:text-slate-500">
+                    ADD-ONS
+                </button>
+<button class="flex-1 py-3 text-xs font-bold text-primary border-b-2 border-primary">
+                    EXTRAS
+                </button>
+</div>
+<!-- Scrollable Content: Extras List -->
+<div class="flex-1 overflow-y-auto px-4 py-2">
+<div class="space-y-1">
+<!-- Extra Item -->
+<label class="flex items-center justify-between py-2 cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:bg-slate-800 dark:border-slate-700" type="checkbox"/>
+</div>
+<span class="text-slate-800 dark:text-slate-200 text-sm font-medium">Extra Cheese</span>
+</div>
+<span class="text-primary text-sm font-bold">+$1.50</span>
+</label>
+<div class="h-px bg-slate-100 dark:bg-slate-800 w-full"></div>
+<!-- Extra Item -->
+<label class="flex items-center justify-between py-2 cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="relative flex items-center">
+<input checked="" class="peer h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:bg-slate-800 dark:border-slate-700" type="checkbox"/>
+</div>
+<span class="text-slate-800 dark:text-slate-200 text-sm font-medium">Bacon Bits</span>
+</div>
+<span class="text-primary text-sm font-bold">+$2.00</span>
+</label>
+<div class="h-px bg-slate-100 dark:bg-slate-800 w-full"></div>
+<!-- Extra Item -->
+<label class="flex items-center justify-between py-2 cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:bg-slate-800 dark:border-slate-700" type="checkbox"/>
+</div>
+<span class="text-slate-800 dark:text-slate-200 text-sm font-medium">Jalapeños</span>
+</div>
+<span class="text-primary text-sm font-bold">+$0.75</span>
+</label>
+<div class="h-px bg-slate-100 dark:bg-slate-800 w-full"></div>
+<!-- Extra Item -->
+<label class="flex items-center justify-between py-2 cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary dark:bg-slate-800 dark:border-slate-700" type="checkbox"/>
+</div>
+<span class="text-slate-800 dark:text-slate-200 text-sm font-medium">Avocado</span>
+</div>
+<span class="text-primary text-sm font-bold">+$2.50</span>
+</label>
+</div>
+</div>
+<!-- Sticky Footer Action -->
+<div class="p-4 bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800"><button
+  class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2">
+  <span>Add to Cart</span>
+  <span class="text-xs opacity-80 text-white/90">•</span>
+  <span>$14.00</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

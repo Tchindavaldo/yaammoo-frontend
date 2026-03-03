@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec4913",
+                        "background-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans", "sans-serif"],
+                        "ui": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Refined Delivery Actions UI</title>
+<style type="text/tailwindcss">
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        :root {
+            --ios-bg: #f8fafc;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-slate-100 font-display">
+<div class="relative mx-auto my-8 h-[844px] w-[390px] overflow-hidden rounded-[3.5rem] bg-white shadow-2xl ring-8 ring-slate-900">
+<div class="absolute top-0 flex w-full items-center justify-between px-8 pt-12 pb-4 z-20">
+<p class="text-slate-900 text-[15px] font-semibold">9:41</p>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[20px]">signal_cellular_4_bar</span>
+<span class="material-symbols-outlined text-[20px]">wifi</span>
+<span class="material-symbols-outlined text-[20px] rotate-90">battery_full</span>
+</div>
+</div>
+<div class="absolute inset-0 z-0 h-full w-full bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAlmYuNG2oKqoLfWPSN1wg_jefQ1FJOYIEmMrOdE1xI3xZcBzO4hVAc89iGILBhMDf639BUGv7P-C3v8NI7gqvnKQjRD08v0w7Fh5UzRDlGzMFI8W78wjwCWjMu1qNrkuzC3zC7mUDn-xEvQhD433THo87EnO79WGV59AYV_Ha2WBp6MyIxNR8JPVzoOVSRTzuR0OIMVD9Y6eJmK3Wdp8t4xTn99ZXjWWqEJg71aNxQ3B_bzTkxvymweeUyOU3Yq8kQimzkFmRksIbI')">
+<div class="absolute inset-0 bg-white/10"></div>
+</div>
+<div class="absolute bottom-0 left-0 w-full">
+<div class="flex flex-col items-stretch rounded-t-[2.5rem] bg-white pt-2 shadow-[0_-15px_40px_rgba(0,0,0,0.08)]">
+<div class="flex h-1.5 w-full items-center justify-center py-4">
+<div class="h-1.25 w-10 rounded-full bg-slate-100"></div>
+</div>
+<div class="flex px-6 justify-between border-b border-slate-50/50">
+<a class="relative flex flex-col items-center justify-center pb-4 pt-2" href="#">
+<p class="text-slate-400 text-[10px] font-semibold uppercase tracking-[0.12em] font-ui">Standard</p>
+</a>
+<a class="relative flex flex-col items-center justify-center pb-4 pt-2" href="#">
+<p class="text-slate-400 text-[10px] font-semibold uppercase tracking-[0.12em] font-ui">Express</p>
+</a>
+<a class="relative flex flex-col items-center justify-center pb-4 pt-2" href="#">
+<p class="text-primary text-[10px] font-bold uppercase tracking-[0.12em] font-ui">Premium</p>
+<div class="absolute bottom-0 h-[2.5px] w-6 bg-primary rounded-full"></div>
+</a>
+<a class="relative flex flex-col items-center justify-center pb-4 pt-2" href="#">
+<p class="text-slate-400 text-[10px] font-semibold uppercase tracking-[0.12em] font-ui">Schedule</p>
+</a>
+</div>
+<div class="px-7 pt-7 pb-2">
+    <div class="flex items-center justify-between mb-5">
+        <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Select Type</h3>
+        <button class="text-primary text-[11px] font-bold">Done</button>
+    </div>
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-3.5">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 text-slate-500">
+<span class="material-symbols-outlined text-[22px]">location_on</span>
+</div>
+<div class="flex flex-col">
+<p class="text-slate-900 text-[15px] font-bold leading-tight">Current Location</p>
+<p class="text-slate-400 text-[13px] font-normal mt-0.5">123 Premium Way, Apt 4B</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[9px] font-bold text-slate-300 tracking-[0.05em] uppercase font-ui">Step</span>
+<span class="text-sm font-bold text-primary">1/3</span>
+</div>
+</div>
+</div>
+<div class="flex justify-between px-7 pt-6 pb-12">
+<div class="flex flex-col items-center gap-2.5 flex-1">
+<div class="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-slate-100 bg-white shadow-sm text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-2xl font-light">satellite_alt</span>
+</div>
+<span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-ui">GPS</span>
+</div>
+<div class="flex flex-col items-center gap-2.5 flex-1">
+<div class="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-slate-100 bg-white shadow-sm text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-2xl font-light">call</span>
+</div>
+<span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-ui">Contact</span>
+</div>
+<div class="flex flex-col items-center gap-2.5 flex-1">
+<div class="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-slate-100 bg-white shadow-sm text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-2xl font-light">sticky_note_2</span>
+</div>
+<span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-ui">Note</span>
+</div>
+<div class="flex flex-col items-center gap-2.5 flex-1">
+<div class="flex h-[60px] w-[60px] items-center justify-center rounded-full border border-slate-100 bg-white shadow-sm text-slate-500 hover:bg-slate-50 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-2xl font-light">mic</span>
+</div>
+<span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-ui">Voice</span>
+</div>
+</div>
+<div class="h-5 w-full flex justify-center items-end pb-3">
+<div class="h-1.25 w-32 rounded-full bg-slate-200/60"></div>
+</div>
+
+<!-- Sticky Bottom Action Bar compressed -->
+ <!-- <div
+    class="p-4 bg-white dark:bg-background-dark border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center gap-4">
+    <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-full p-1 h-12">
+        <button class="w-10 h-10 flex items-center justify-center rounded-full text-slate-900 dark:text-white">
+            <span class="material-symbols-outlined text-lg">remove</span>
+        </button>
+        <span class="w-8 text-center font-bold text-slate-900 dark:text-white">1</span>
+        <button
+            class="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full shadow-sm text-slate-900 dark:text-white">
+            <span class="material-symbols-outlined text-lg">add</span>
+        </button>
+    </div>
+    <button
+        class="flex-1 h-12 bg-primary text-white rounded-full font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined text-lg">shopping_bag</span>
+        150 fcfa
+    </button>
+
+    <button
+        class="h-14 w-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 relative">
+        <div class="flex items-center justify-center">
+            <span class="material-symbols-outlined text-2xl">shopping_cart</span>
+        </div>
+    </button>
+
+</div> -->
+
+<!-- Sticky Bottom Action Bar expanded -->
+<div
+    class="p-4 bg-white dark:bg-background-dark border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center gap-4">
+    <div class=" flex flex-1 items-center  rounded-full p-1 h-12 justify-center">
+         
+        <span class="  font-bold text-slate-900 dark:text-white">XAF <br> 1500 </span>
+     
+    </div>
+    <button
+        class=" text-xs px-1 flex-[1.5] h-12 bg-primary text-white rounded-full font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+        <!-- <span class="material-symbols-outlined text-lg">shopping_bag</span> -->
+        add To Cart
+    </button>
+    <button
+        class=" text-xs flex-[1.2] h-12 bg-primary text-white rounded-3xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+        <span class="material-symbols-outlined text-base">shopping_cart</span>
+        buy
+    </button>
+
+    <button
+        class="  h-14 w-14 bg-red-900 text-white rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 relative">
+        <div class="flex items-center justify-center">
+            <span class="material-symbols-outlined text-2xl">close</span>
+        </div>
+    </button>
+
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

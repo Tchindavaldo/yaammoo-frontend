@@ -32,7 +32,7 @@ export const Config = {
     webClientId:
       "66450079753-g4cg4o1lhrd31aa7logdjadf030stii1.apps.googleusercontent.com",
     androidClientId:
-      "66450079753-58mmaomhujv0bfj4pf222qc2dc8n74ds.apps.googleusercontent.com",
+      "583417452577-bheaqpgkvahp6smfs0eflrqpstgatbud.apps.googleusercontent.com",
     iosClientId:
       "66450079753-kjsomtcdc5eld27ib06rvq0q3ic3to2q.apps.googleusercontent.com",
   },

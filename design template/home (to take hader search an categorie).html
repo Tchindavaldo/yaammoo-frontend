@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#ec4913",
+              "background-light": "#f8f6f6",
+              "background-dark": "#121212",
+            },
+            fontFamily: {
+              "display": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style type="text/tailwindcss">
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: 100dvh;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased text-slate-900 dark:text-slate-100">
+<div class="relative min-h-screen w-full flex flex-col pb-24">
+<header class="sticky top-0 z-30 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 py-4 flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-primary uppercase tracking-[0.1em]">Deliver to</span>
+<button class="flex items-center gap-1 group">
+<span class="text-sm font-extrabold">Downtown, Central Park</span>
+<span class="material-symbols-outlined text-primary text-base transition-transform group-hover:translate-y-0.5">expand_more</span>
+</button>
+</div>
+<div class="flex gap-2">
+<button class="h-10 w-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">notifications</span>
+</button>
+<button class="h-10 w-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300 text-[22px]">shopping_bag</span>
+</button>
+</div>
+</header>
+<div class="px-4 mb-6">
+<div class="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-3.5 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm">
+<span class="material-symbols-outlined text-slate-400">search</span>
+<input class="bg-transparent border-none p-0 focus:ring-0 text-sm w-full placeholder:text-slate-400" placeholder="Search for burger, pizza, sushi..." type="text"/>
+<button class="text-primary">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+<div class="mb-8">
+<div class="flex items-center justify-between px-4 mb-4">
+<h2 class="font-extrabold text-lg tracking-tight">Categories</h2>
+<button class="text-xs font-bold text-primary">See all</button>
+</div>
+<div class="flex gap-5 overflow-x-auto px-4 no-scrollbar">
+<div class="flex flex-col items-center gap-2 shrink-0">
+<div class="h-16 w-16 rounded-3xl bg-white dark:bg-slate-800 shadow-sm border border-slate-50 dark:border-slate-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">lunch_dining</span>
+</div>
+<span class="text-xs font-bold text-slate-500">Burgers</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0">
+<div class="h-16 w-16 rounded-3xl bg-white dark:bg-slate-800 shadow-sm border border-slate-50 dark:border-slate-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">local_pizza</span>
+</div>
+<span class="text-xs font-bold text-slate-500">Pizza</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0">
+<div class="h-16 w-16 rounded-3xl bg-primary shadow-lg shadow-primary/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-3xl">ramen_dining</span>
+</div>
+<span class="text-xs font-bold text-primary">Asian</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0">
+<div class="h-16 w-16 rounded-3xl bg-white dark:bg-slate-800 shadow-sm border border-slate-50 dark:border-slate-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">icecream</span>
+</div>
+<span class="text-xs font-bold text-slate-500">Dessert</span>
+</div>
+<div class="flex flex-col items-center gap-2 shrink-0">
+<div class="h-16 w-16 rounded-3xl bg-white dark:bg-slate-800 shadow-sm border border-slate-50 dark:border-slate-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">bakery_dining</span>
+</div>
+<span class="text-xs font-bold text-slate-500">Bakery</span>
+</div>
+</div>
+</div>
+<main class="flex-1 px-4 space-y-6">
+<div class="flex items-center justify-between">
+<h2 class="font-extrabold text-xl tracking-tight">Fast Food Nearby</h2>
+<div class="flex items-center gap-1 text-slate-400">
+<span class="text-xs font-bold">Sort by: Popular</span>
+<span class="material-symbols-outlined text-sm">expand_more</span>
+</div>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-xl active:scale-[0.98]">
+<div class="relative h-44 w-full">
+<img class="w-full h-full object-cover" data-alt="High quality overhead view of a premium beef burger" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDtogRoqR4n9kXoWEXhZVR8Vyi5qDmaPlHtt73Z_bCV-lGojfIJ-3VGfuDzuGxKjLMN-3NbaWfhlUWh_FENf28o-NYfyGMrcnqomdMjs9YwnPqYE7uMcObaTmTHH-wT2d5DRjARbMmmku9q6OjhGxHh3cvWkMy_JsKQFHUFRrd2xnC8TSB7uuDIFEzprN_ttFePzeYGSCiKNounabKuUmfzSsJp-tJVcQojh3IuGbR3p0foAjherW-c6hKzdywRDg9fPD1cLXXUzAW"/>
+<div class="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</div>
+<div class="absolute bottom-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-yellow-500 text-sm fill-1">star</span>
+<span class="text-xs font-extrabold">4.9</span>
+<span class="text-[10px] text-slate-400 font-medium">(1.2k+)</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-lg font-extrabold leading-tight">Gourmet Burger Kitchen</h3>
+<span class="text-primary font-bold text-sm">$</span>
+</div>
+<div class="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs font-medium mb-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">restaurant</span>
+<span>Burgers • American</span>
+</div>
+<div class="h-1 w-1 rounded-full bg-slate-300"></div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span>15-25 min</span>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-3 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                        View Menu
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-xl active:scale-[0.98]">
+<div class="relative h-44 w-full">
+<img class="w-full h-full object-cover" data-alt="Freshly baked pepperoni pizza with melting cheese" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMIWPL6WITMZ-mqLC12eFRf1whnYc6eJdS-Pzf9ltEeGVOU2i0WRn_wj5ZoYKbxDZ8vNGpXSCBP3TWLA6SReDf7UE46n6sgCsixWMoCdJbb3VHeusys48XfumnkIuynkpH8JM2Wkvig4wRQwYnslaNBVoZP8YQAo6V2pAwsdDNEVu56GdcRds9IHdsnyW7iKVzk2YI0ZnFI9cW7y6bhXSM0n-GCJF67lJLPkS6q035MOiYqDy7VtrDWyYbvPQJtxWyeh7KdsDz64xZ"/>
+<div class="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</div>
+<div class="absolute bottom-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-yellow-500 text-sm fill-1">star</span>
+<span class="text-xs font-extrabold">4.7</span>
+<span class="text-[10px] text-slate-400 font-medium">(850)</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-lg font-extrabold leading-tight">Slice of Heaven</h3>
+<span class="text-primary font-bold text-sm">$$</span>
+</div>
+<div class="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs font-medium mb-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">restaurant</span>
+<span>Pizza • Italian</span>
+</div>
+<div class="h-1 w-1 rounded-full bg-slate-300"></div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span>25-40 min</span>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-3 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                        View Menu
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="group relative bg-white dark:bg-slate-800 rounded-3xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-xl active:scale-[0.98]">
+<div class="relative h-44 w-full">
+<img class="w-full h-full object-cover" data-alt="Sushi platter with salmon, tuna and avocado rolls" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAy2Dhmb19SFaYSGhv-1Xu763z-AkwY0ehRSNrgHRJf4sVUrfww_ZIS3quAx5DnMnAk0NjxnXufbGBKol00a5TxT5zDwKgOr29541pfs0dsEqdz7PCuNAe4i4U8iEb2K5wBU7BA6NmCM2QPehOuZDQM-7p3L09iAxbefiQR2OM0QnQ91KTORzQ90pWGq46CfHo-3N6K2QhKGZbZ-qsLHYkLZok0VUURv_0iRgBiukELHnqHq2Cybic5gKKRZ1p9tgKnskyudbJr2x0"/>
+<div class="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center text-slate-400 shadow-sm">
+<span class="material-symbols-outlined text-[20px]">favorite</span>
+</div>
+<div class="absolute bottom-3 left-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-yellow-500 text-sm fill-1">star</span>
+<span class="text-xs font-extrabold">4.8</span>
+<span class="text-[10px] text-slate-400 font-medium">(2.1k)</span>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-lg font-extrabold leading-tight">Yuzu Sushi Express</h3>
+<span class="text-primary font-bold text-sm">$$$</span>
+</div>
+<div class="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-xs font-medium mb-4">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">restaurant</span>
+<span>Sushi • Japanese</span>
+</div>
+<div class="h-1 w-1 rounded-full bg-slate-300"></div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span>20-35 min</span>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-3 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                        View Menu
+                        <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 inset-x-0 bg-white/90 dark:bg-background-dark/90 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 px-8 py-3 flex items-center justify-between z-40">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined fill-1">home</span>
+<span class="text-[10px] font-bold">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">explore</span>
+<span class="text-[10px] font-bold">Discover</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="text-[10px] font-bold">Orders</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</button>
+</nav>
+</div>
+
+</body></html>

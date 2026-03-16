@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Modal Detail Tab Variant 1</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec4913",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221510",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+    <!-- Main Container -->
+    <div class="relative flex h-screen w-full flex-col overflow-hidden">
+        <!-- Header -->
+        <div
+            class="flex items-center bg-white dark:bg-zinc-900 p-4 pb-2 justify-between border-b border-slate-100 dark:border-zinc-800">
+            <div class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center justify-start">
+                <span class="material-symbols-outlined">menu</span>
+            </div>
+            <h2
+                class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
+                Food Delivery</h2>
+            <div class="flex w-12 items-center justify-end">
+                <button
+                    class="flex size-10 cursor-pointer items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-slate-100">
+                    <span class="material-symbols-outlined">shopping_bag</span>
+                </button>
+            </div>
+        </div>
+        <!-- Background Content (Dimmed) -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 opacity-40 bg-slate-200 dark:bg-zinc-950">
+            <!-- Hero Card -->
+            <div class="rounded-xl bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+                <div class="w-full aspect-video bg-cover bg-center"
+                    data-alt="Delicious pepperoni pizza with melted cheese"
+                    style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCL8VQtQvrYi76kLX3UtbKc-2Pgcdm1nGEo6bO7PY8nimG6VwfOZoF7hT5QP12CxYBTuW3_wa7cJKjlt-6LVm7VH5USSVWYHHigj7OldkaSEjtGb44xitvY6VD0LS7SRi_-gWtodv4GEAtgSCgpSRfMTq4hgOPjCUJRmLvLpHaDxzZNeNXnmQb34jR1LMWelv4Frd_G3B7JudDuB0noHUU5AIbFOqllsKHQoJWdidP-EXtiD-nXrcXaX6z_QpEcH7BNL90vJVh-lqUL");'>
+                </div>
+                <div class="p-4">
+                    <p class="text-lg font-bold">Special Pizza</p>
+                    <p class="text-slate-500 dark:text-zinc-400 text-sm">Fresh tomato, mozzarella and basil</p>
+                </div>
+            </div>
+            <!-- List Items -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-sm">
+                    <div class="aspect-square rounded-lg bg-slate-100 mb-2"
+                        data-alt="Fresh garden salad with vinaigrette"
+                        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDhMAN-bgDYrPrxt1FFTDDr54ruJjMGsmktEeU_AYs3rb7JMcz0sf7cDSndW6KA6ilftOC3uTVUA2nNTtvi3gne57VoR51jQPjxDWdVc6h9dcpvK5F45ii99lTtut08U-thVISYYmPqyCDE6gWgQRez8kA5FoeQzIfcjbmAWlfK-gBr2VO185CWPb0nyPpp5Ym48HHnHJSazpvh2aFm2jzN_GsFk1wAF3UjIyoEntirBXHFcL8E7-t8LRxjGNKuhIGNgOcxqEbYjcne"); background-size: cover;'>
+                    </div>
+                    <p class="font-semibold text-sm">Garden Salad</p>
+                    <p class="text-xs text-primary">$12.00</p>
+                </div>
+                <div class="bg-white dark:bg-zinc-900 p-3 rounded-xl shadow-sm">
+                    <div class="aspect-square rounded-lg bg-slate-100 mb-2" data-alt="Juicy beef burger with toppings"
+                        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCNVzMz5DQEv6lDNZhEik4AVw18pqBOIgV5JjToBF0WqzUznI5pdA0cXSBesmIS0Ma1HSITxHI-DuDtmr6eVJStMCqOM0HhyGBbl0DicAO9or0yQ7sFBaABzH2284PR49NsfMMJJe9BzuW1sedi9sQ0IQWCs0X-aHB2FM4Djt63cCzy2UOHIbrnk4MVQmi2EnBSHqxscgCEhOXAWRvPW8-GtHjpabf-1_L-CNTEMn7LaTRw6j4ziPO_NB9DGDRSWAFHpufO8yKx9w20"); background-size: cover;'>
+                    </div>
+                    <p class="font-semibold text-sm">Classic Burger</p>
+                    <p class="text-xs text-primary">$15.50</p>
+                </div>
+            </div>
+        </div>
+        <!-- Dim Overlay -->
+        <div class="absolute inset-0 bg-black/40 z-10"></div>
+        <!-- Bottom Modal (1/3 Height) -->
+        <div
+            class="absolute bottom-0 left-0 right-0 z-20 bg-white dark:bg-zinc-900 rounded-t-[2rem] shadow-2xl flex flex-col max-h-[45%]">
+            <!-- Pull Bar -->
+            <div class="flex h-6 w-full items-center justify-center">
+                <div class="h-1.5 w-12 rounded-full bg-slate-200 dark:bg-zinc-700"></div>
+            </div>
+            <!-- Modal Header / Tabs -->
+            <div class="flex gap-3 px-4 pb-4 overflow-x-auto no-scrollbar">
+                <div
+                    class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary px-5 text-white">
+                    <p class="text-sm font-semibold leading-normal">Details</p>
+                </div>
+                <div
+                    class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-slate-100 dark:bg-zinc-800 px-5 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                    <p class="text-sm font-medium leading-normal">Drinks</p>
+                </div>
+                <div
+                    class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-slate-100 dark:bg-zinc-800 px-5 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                    <p class="text-sm font-medium leading-normal">Extras</p>
+                </div>
+                <div
+                    class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-slate-100 dark:bg-zinc-800 px-5 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
+                    <p class="text-sm font-medium leading-normal">Delivery</p>
+                </div>
+            </div>
+            <!-- Modal Content Area -->
+            <div class="flex-1 overflow-y-auto px-4">
+                <div class="flex items-start gap-4 py-2">
+                    <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-16 w-16 shrink-0 shadow-md border-2 border-white dark:border-zinc-800"
+                        data-alt="Small gourmet pepperoni pizza"
+                        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBrANE8adrSbFLC4N82hBpGBvDZQ5R4Kzdzz3diVbcCSVNrT6Mfx4_NS_LH4tpyaJfUsRUoCTW9eoPgUE1f7wWgJBzI05pdsFchyrJNl4lH6QNIYsNtqmUm3y4n1zvNLp64_tk6mklcTRWDtaRdTVWOmfHxIhP94W6bdTTOr4cdAJxkcrmfkfgtrZhRgSD31B96RlW_BsVahOws4xhQPPKExGwGoAXO4UU4vACQCNjz1lLrlYPcdeD3k-03w0xN44aPT-gA0_vltEDv");'>
+                    </div>
+                    <div class="flex flex-col justify-center">
+                        <p class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">Gourmet Pizza</p>
+                        <p class="text-slate-500 dark:text-zinc-400 text-sm font-normal leading-snug line-clamp-2">
+                            Hand-tossed crust with premium cured pepperoni and aged mozzarella.</p>
+                    </div>
+                </div>
+                <!-- Price Chips -->
+                <div class="flex gap-2 py-4 border-t border-slate-100 dark:border-zinc-800 mt-2">
+                    <button
+                        class="flex-1 flex flex-col items-center justify-center p-2 rounded-xl border-2 border-primary bg-primary/5">
+                        <span class="text-[10px] uppercase font-bold text-primary">Small</span>
+                        <span class="text-sm font-bold text-slate-900 dark:text-slate-100">$10.99</span>
+                    </button>
+                    <button
+                        class="flex-1 flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 dark:border-zinc-700">
+                        <span class="text-[10px] uppercase font-bold text-slate-400">Med</span>
+                        <span class="text-sm font-bold text-slate-900 dark:text-slate-100">$14.99</span>
+                    </button>
+                    <button
+                        class="flex-1 flex flex-col items-center justify-center p-2 rounded-xl border border-slate-200 dark:border-zinc-700">
+                        <span class="text-[10px] uppercase font-bold text-slate-400">Large</span>
+                        <span class="text-sm font-bold text-slate-900 dark:text-slate-100">$18.99</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Sticky Bottom Bar -->
+            <div
+                class="p-4 bg-white dark:bg-zinc-900 border-t border-slate-100 dark:border-zinc-800 flex items-center gap-4 pb-8">
+                <div
+                    class="flex items-center bg-slate-100 dark:bg-zinc-800 rounded-full p-1 border border-slate-200 dark:border-zinc-700">
+                    <button class="size-9 flex items-center justify-center text-slate-900 dark:text-slate-100">
+                        <span class="material-symbols-outlined text-xl">remove</span>
+                    </button>
+                    <span class="w-8 text-center font-bold text-slate-900 dark:text-slate-100">1</span>
+                    <button class="size-9 flex items-center justify-center text-slate-900 dark:text-slate-100">
+                        <span class="material-symbols-outlined text-xl">add</span>
+                    </button>
+                </div>
+                <button
+                    class="flex-1 bg-primary text-white h-12 rounded-full font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+                    <span>Add to cart</span>
+                    <span class="text-xs opacity-80 bg-white/20 px-2 py-0.5 rounded-full">$10.99</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body>
+
+</html>

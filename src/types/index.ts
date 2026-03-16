@@ -6,21 +6,21 @@ export class UsersInfos {
     public numero: number,
     public email: string,
     public password: string,
-  ) {}
+  ) { }
 }
 
 export class Embalage {
   constructor(
     public type: string,
     public prix: number,
-  ) {}
+  ) { }
 }
 
 export class Boisson {
   constructor(
     public type: string,
     public prix: number,
-  ) {}
+  ) { }
 }
 
 export class Livraison {
@@ -31,7 +31,7 @@ export class Livraison {
     public hour: string = "",
     public date: string = "",
     public address: string = "",
-  ) {}
+  ) { }
 }
 
 export class Menu {
@@ -45,7 +45,8 @@ export class Menu {
     public optionPrix3: string,
     public image: string,
     public disponibilite: string,
-  ) {}
+    public images?: string[],
+  ) { }
 }
 
 export class Commande {
@@ -62,7 +63,7 @@ export class Commande {
     public staut: string,
     public isBuy: boolean,
     public ispending: boolean,
-  ) {}
+  ) { }
 }
 
 export class Users {
@@ -74,7 +75,7 @@ export class Users {
     public statistique: number,
     public cmd: Commande[],
     public fastFoodId?: string,
-  ) {}
+  ) { }
 }
 
 export class FastFood {
@@ -87,7 +88,7 @@ export class FastFood {
     public nom: string,
     public image: string,
     public designIndex?: number,
-  ) {}
+  ) { }
 }
 
 export class Transaction {
@@ -99,5 +100,5 @@ export class Transaction {
     public payBy: string,
     public createdAt: string,
     public type: "credit" | "debit",
-  ) {}
+  ) { }
 }

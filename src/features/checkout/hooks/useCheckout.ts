@@ -5,6 +5,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 export const useCheckout = (menu: Menu | null) => {
   const { userData } = useAuth();
   const [quantity, setQuantity] = useState(1);
+  const [selectedPriceIndex, setSelectedPriceIndex] = useState(1); // 1, 2, or 3
   const [selectedPackaging, setSelectedPackaging] = useState<Embalage[]>([]);
   const [selectedDrinks, setSelectedDrinks] = useState<Boisson[]>([]);
   const [delivery, setDelivery] = useState<Livraison>(new Livraison(false, 0));
@@ -30,7 +31,12 @@ export const useCheckout = (menu: Menu | null) => {
 
   const calculateTotal = useCallback(() => {
     if (!menu) return 0;
-    const basePrice = menu.prix1 * quantity;
+
+    let basePrice = menu.prix1;
+    if (selectedPriceIndex === 2 && menu.prix2 > 0) basePrice = menu.prix2;
+    if (selectedPriceIndex === 3 && menu.prix3 > 0) basePrice = menu.prix3;
+
+    const totalPrice = basePrice * quantity;
     const packagingPrice =
       selectedPackaging.reduce((acc, p) => acc + p.prix, 0) * quantity;
     const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix, 0);
@@ -39,8 +45,8 @@ export const useCheckout = (menu: Menu | null) => {
         ? 1000
         : 500
       : 0;
-    return basePrice + packagingPrice + drinksPrice + deliveryPrice;
-  }, [menu, quantity, selectedPackaging, selectedDrinks, delivery]);
+    return totalPrice + packagingPrice + drinksPrice + deliveryPrice;
+  }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, delivery]);
 
   const createOrder = (): any | null => {
     if (!menu || !userData) return null;
@@ -79,6 +85,7 @@ export const useCheckout = (menu: Menu | null) => {
       fastFoodId: (menu as any)?.fastFoodId || (menu as any)?.idFastFood || "1",
       menu,
       quantity,
+      selectedPriceIndex,
       total: Number(calculateTotal()) || 0,
       userData: {
         firstName: userData?.infos?.prenom || "Inconnu",
@@ -96,6 +103,8 @@ export const useCheckout = (menu: Menu | null) => {
   return {
     quantity,
     setQuantity,
+    selectedPriceIndex,
+    setSelectedPriceIndex,
     selectedPackaging,
     setSelectedPackaging,
     selectedDrinks,

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Food Cards – Image Contained</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #e8e6e2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .scene {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: white;
+            border-radius: 22px;
+            width: 250px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Image en haut à gauche, contenue dans la carte */
+        .img-wrap {
+            width: 160px;
+            height: 160px;
+            border-radius: 16px;
+            overflow: hidden;
+            flex-shrink: 0;
+            margin-bottom: 0;
+        }
+
+        .img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+
+            margin-left: -3px;
+        }
+
+        /* Note en haut à droite, alignée avec l'image */
+        .rating {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #222;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .star {
+            color: #f5a623;
+            font-size: 13px;
+        }
+
+        /* Cœur favori */
+        .heart {
+            margin-top: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        .heart svg {
+            width: 18px;
+            height: 18px;
+            stroke: #ccc;
+            fill: none;
+            transition: all .2s;
+        }
+
+        .heart.liked svg {
+            stroke: #e05050;
+            fill: #e05050;
+        }
+
+        .food-name {
+            font-size: 14px;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 3px;
+        }
+
+        .food-desc {
+            font-size: 10px;
+            color: #aaa;
+            margin-bottom: 14px;
+            line-height: 1.4;
+        }
+
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cart-btn {
+            width: 38px;
+            height: 38px;
+            background: #2d6e65;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            transition: background .2s, transform .1s;
+        }
+
+        .cart-btn:hover {
+            background: #1a4a42;
+        }
+
+        .cart-btn:active {
+            transform: scale(0.93);
+        }
+
+        .cart-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: white;
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        .price {
+            font-size: 16px;
+            font-weight: 800;
+            color: #111;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scene">
+
+        <!-- Card 1 — Lemon Chicken Rice -->
+        <div class="card">
+            <div class="img-wrap">
+                <!-- Remplace src par ton image : ex. src="lemon-chicken.jpg" -->
+                <img src="riz_Spaghettis et Œuf_poulet_pané_fritz_platain_noBG.png" style="object-position: 20% center"
+                    alt="Lemon Chicken Rice" />
+            </div>
+            <div class="rating"><span class="star">★</span> 5.0</div>
+            <div class="heart" onclick="this.classList.toggle('liked')">
+                <svg viewBox="0 0 20 18">
+                    <path d="M10 17S2 11 2 6a4 4 0 0 1 8-1.2A4 4 0 0 1 18 6c0 5-8 11-8 11z" stroke-width="1.5"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+            <div class="food-name">Lemon Chicken Rice</div>
+            <div class="food-desc">Spoeм Chicken, Fresh Herbs</div>
+            <div class="footer">
+                <button class="cart-btn"
+                    onclick="this.style.background='#1a4a42';setTimeout(()=>this.style.background='#2d6e65',600)">
+                    <svg viewBox="0 0 20 20">
+                        <path d="M2 2h2.5l2 9h8l2-6H6" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="9" cy="16.5" r="1.5" fill="white" stroke="none" />
+                        <circle cx="13" cy="16.5" r="1.5" fill="white" stroke="none" />
+                    </svg>
+                </button>
+                <div class="price">$95.00</div>
+            </div>
+        </div>
+
+        <!-- Card 2 — Salmon Toast -->
+        <div class="card">
+            <div class="img-wrap">
+                <!-- Remplace src par ton image : ex. src="salmon-toast.jpg" -->
+                <img src="purre avocat tomate legume .png" style="object-position: 78% center" alt="Salmon Toast" />
+            </div>
+            <div class="rating"><span class="star">★</span> 5.0</div>
+            <div class="heart" onclick="this.classList.toggle('liked')">
+                <svg viewBox="0 0 20 18">
+                    <path d="M10 17S2 11 2 6a4 4 0 0 1 8-1.2A4 4 0 0 1 18 6c0 5-8 11-8 11z" stroke-width="1.5"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+            <div class="food-name">Salmon Toast</div>
+            <div class="food-desc">Spaghetti, Egg Group Sauce</div>
+            <div class="footer">
+                <button class="cart-btn"
+                    onclick="this.style.background='#1a4a42';setTimeout(()=>this.style.background='#2d6e65',600)">
+                    <svg viewBox="0 0 20 20">
+                        <path d="M2 2h2.5l2 9h8l2-6H6" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="9" cy="16.5" r="1.5" fill="white" stroke="none" />
+                        <circle cx="13" cy="16.5" r="1.5" fill="white" stroke="none" />
+                    </svg>
+                </button>
+                <div class="price">$67.00</div>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

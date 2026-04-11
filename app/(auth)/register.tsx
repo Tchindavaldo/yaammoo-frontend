@@ -90,7 +90,7 @@ export default function RegisterScreen() {
         fastFoodId: "",
       };
 
-      await userFirestore.createUser(newUser as any, uid);
+      await userFirestore.createUser(newUser as any, userCredential.user);
       setUserData(newUser as any);
       router.replace("/(tabs)");
     } catch (error: any) {

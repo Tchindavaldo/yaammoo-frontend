@@ -56,7 +56,40 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const isModification = !!existingMenu?.id;
+  const isModification = !!(existingMenu?.id || existingMenu?._id);
+
+  // Synchronize state when existingMenu changes or modal becomes visible
+  React.useEffect(() => {
+    if (visible && existingMenu) {
+      setNom(existingMenu.name || existingMenu.titre || '');
+      
+      const p1 = existingMenu.prices?.[0]?.price || existingMenu.prix1 || '';
+      const p2 = existingMenu.prices?.[1]?.price || existingMenu.prix2 || '';
+      const p3 = existingMenu.prices?.[2]?.price || existingMenu.prix3 || '';
+      
+      setPrix1(p1.toString());
+      setPrix2(p2.toString());
+      setPrix3(p3.toString());
+      
+      setDesc1(existingMenu.prices?.[0]?.description || existingMenu.description || '');
+      setDesc2(existingMenu.prices?.[1]?.description || '');
+      setDesc3(existingMenu.prices?.[2]?.description || '');
+      
+      const extras = existingMenu.extra || existingMenu.extras || [];
+      setExtraInput(extras.map((e: any) => e.name).join(', '));
+      
+      const drinks = existingMenu.drink || existingMenu.drinks || [];
+      setDrinkInput(drinks.map((d: any) => d.name).join(', '));
+      
+      setAvailability(existingMenu.status || existingMenu.disponibilite === 'Disponible' ? 'available' : 'unavailable');
+      
+      const menuImages = existingMenu.images || (existingMenu.image ? [existingMenu.image] : []);
+      setImages(menuImages);
+      setUploadedUrls(menuImages);
+    } else if (visible && !existingMenu) {
+      reset();
+    }
+  }, [visible, existingMenu]);
 
   const reset = () => {
     setStep('image');

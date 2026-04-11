@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Food Menu Cards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #d8d8da, #c8c8cc);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .scene {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            width: 220px;
+            height: 340px;
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform .25s;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+        }
+
+        .card-img-wrap {
+            position: absolute;
+            inset: 0;
+        }
+
+        .card-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+            transform: scale(1.08);
+            transition: filter .3s;
+        }
+
+        .card:hover .card-img-wrap img {
+            filter: blur(1.5px) brightness(0.85) !important;
+        }
+
+        .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0) 20%, rgba(0, 0, 0, 0.85) 100%);
+        }
+
+        .badge {
+            position: absolute;
+            top: 13px;
+            left: 13px;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 4px 11px;
+            border-radius: 20px;
+            letter-spacing: .4px;
+            backdrop-filter: blur(8px);
+        }
+
+        .badge-dark {
+            background: rgba(30, 30, 30, 0.72);
+        }
+
+        .bookmark {
+            position: absolute;
+            top: 11px;
+            right: 11px;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            background: rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bookmark svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 14px 14px 16px;
+            z-index: 10;
+        }
+
+        .card-body::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            top: -20px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            -webkit-mask-image: linear-gradient(to top, black 0%, black 65%, transparent 100%);
+            mask-image: linear-gradient(to top, black 0%, black 65%, transparent 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .card-title {
+            font-size: 21px;
+            font-weight: 800;
+            color: white;
+            line-height: 1.15;
+            margin-bottom: 7px;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+        }
+
+        .card-desc {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.5;
+            margin-bottom: 13px;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 11px 0;
+            background: white;
+            color: #111;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background .2s, transform .1s;
+        }
+
+        .add-btn:hover {
+            background: #f2f2f2;
+        }
+
+        .add-btn:active {
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="scene">
+
+        <!-- Card 1 — Classic Cheeseburger -->
+        <div class="card">
+            <div class="card-img-wrap">
+                <img src="burger.png" alt="Classic Cheeseburger" />
+            </div>
+            <div class="card-overlay"></div>
+            <div class="badge badge-dark">Top Pick</div>
+            <div class="bookmark">
+                <svg viewBox="0 0 14 16" fill="none">
+                    <path d="M2 2h10v12l-5-3-5 3V2z" stroke="white" stroke-width="1.5" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <div class="card-body">
+                <div class="card-title">Classic<br>Cheeseburger</div>
+                <div class="card-desc">Juicy beef patty, melted cheddar, fresh lettuce, tomatoes, and a hint of smoky
+                    sauce; all packed in a soft, toasted bun.</div>
+                <button class="add-btn">Add to Cart</button>
+            </div>
+        </div>
+
+        <!-- Card 2 — Honey Glazed Chicken -->
+        <div class="card">
+            <div class="card-img-wrap">
+                <img src="burger.png" alt="Honey Glazed Chicken" />
+            </div>
+            <div class="card-overlay"></div>
+            <div class="badge badge-dark">Veg</div>
+            <div class="bookmark">
+                <svg viewBox="0 0 14 16" fill="none">
+                    <path d="M2 2h10v12l-5-3-5 3V2z" stroke="white" stroke-width="1.5" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <div class="card-body">
+                <div class="card-title">Honey Glazed<br>Chicken</div>
+                <div class="card-desc">Crispy chicken in a sweet & savory honey-soy glaze, served on jasmine rice with
+                    sesame seeds & scallions.</div>
+                <button class="add-btn">Add to Cart</button>
+            </div>
+        </div>
+
+        <!-- Card 3 — Spicy Fried Chicken -->
+        <div class="card">
+            <div class="card-img-wrap">
+                <img src="burger.png" alt="Spicy Fried Chicken" />
+            </div>
+            <div class="card-overlay"></div>
+            <div class="badge badge-dark">Best Seller</div>
+            <div class="bookmark">
+                <svg viewBox="0 0 14 16" fill="none">
+                    <path d="M2 2h10v12l-5-3-5 3V2z" stroke="white" stroke-width="1.5" stroke-linejoin="round" />
+                </svg>
+            </div>
+            <div class="card-body">
+                <div class="card-title">Spicy Fried<br>Chicken</div>
+                <div class="card-desc">Crispy, golden-fried chicken with a fiery kick, served with a side of tangy
+                    dipping sauce. Perfect for spice lovers!</div>
+                <button class="add-btn">Add to Cart</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.querySelectorAll('.add-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const orig = btn.textContent;
+                btn.textContent = '✓ Added!';
+                btn.style.background = '#d4edda';
+                setTimeout(() => { btn.textContent = orig; btn.style.background = 'white'; }, 1400);
+            });
+        });
+    </script>
+</body>
+
+</html>

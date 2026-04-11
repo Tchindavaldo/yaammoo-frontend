@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The SpicyCab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #e8e8e8;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .phone {
+            background: #f5f5f5;
+            width: 390px;
+            min-height: 100vh;
+            padding-bottom: 2rem;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 20px 10px;
+        }
+
+        .hamburger {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: #222;
+            border-radius: 2px;
+        }
+
+        .hamburger span:first-child {
+            width: 14px;
+        }
+
+        .brand {
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: #222;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #ddd;
+        }
+
+        .avatar-placeholder {
+            width: 100%;
+            height: 100%;
+            background: #c97b6b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .cats {
+            display: flex;
+            gap: 10px;
+            padding: 12px 20px 20px;
+            overflow-x: auto;
+        }
+
+        .cats::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cat {
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            border: none;
+        }
+
+        .cat.active {
+            background: #e8503a;
+            color: white;
+        }
+
+        .cat.inactive {
+            background: white;
+            color: #222;
+            border: 1.5px solid #e8e8e8;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 800;
+            color: #111;
+            padding: 0 20px 14px;
+        }
+
+        .menu-section {
+            background: white;
+            border-radius: 24px 24px 0 0;
+            padding: 24px 14px;
+        }
+
+        .grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .card {
+            width: 110px;
+            background: white;
+            border-radius: 16px;
+            padding: 12px;
+            border: 1px solid #efefef;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .card-img {
+            width: 100%;
+            height: 110px;
+            display: flex;
+            align-items: center;
+
+            margin-bottom: 8px;
+        }
+
+        .card-img img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            /* transform: scale(1.05); */
+            transition: transform 0.25s ease-in-out;
+            margin-left: -11px;
+        }
+
+        .card:hover .card-img img {
+            transform: scale(1.05);
+        }
+
+        .plus-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1.5px solid #c8a84b;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #c8a84b;
+            font-size: 16px;
+            line-height: 1;
+            transition: all 0.2s;
+        }
+
+        .card-price {
+            font-size: 16px;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 3px;
+        }
+
+        .card-name {
+            font-size: 11px;
+            color: #999;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="phone">
+        <div class="topbar">
+            <div class="hamburger">
+                <span style="width:14px"></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="brand">THE SPICYCAB</div>
+            <div class="avatar">
+                <div class="avatar-placeholder">A</div>
+            </div>
+        </div>
+
+        <div class="cats">
+            <button class="cat active">Indian</button>
+            <button class="cat inactive">Chinese</button>
+            <button class="cat inactive">Snacks</button>
+        </div>
+
+        <div class="menu-section">
+            <div class="section-title">Popular Menu</div>
+            <div class="grid">
+
+                <div class="card">
+                    <div class="plus-btn">+</div>
+                    <div class="card-img">
+                        <img src="burger1-nobackground.png" alt="Menu item" />
+                    </div>
+                    <div class="card-price">$12.99</div>
+                    <div class="card-name">Junk Food, French Fries, Cheeseburger</div>
+                </div>
+
+                <div class="card">
+                    <div class="plus-btn">+</div>
+                    <div class="card-img">
+                        <img src="pane 9;16 noBG.png" alt="Menu item" />
+                    </div>
+                    <div class="card-price">$18.99</div>
+                    <div class="card-name">Huron Honey-Apple Chicken</div>
+                </div>
+
+                <div class="card">
+                    <div class="plus-btn">+</div>
+                    <div class="card-img">
+                        <img src="burger1-nobackground.png" alt="Menu item" />
+                    </div>
+                    <div class="card-price">$14.99</div>
+                    <div class="card-name">food, central gyros the best gyros</div>
+                </div>
+
+                <div class="card">
+                    <div class="plus-btn">+</div>
+                    <div class="card-img">
+                        <img src="burger1-nobackground.png" alt="Menu item" />
+                    </div>
+                    <div class="card-price">$09.99</div>
+                    <div class="card-name">French Fries</div>
+                </div>
+
+                <div class="card">
+                    <div class="plus-btn">+</div>
+                    <div class="card-img">
+                        <img src="burger1-nobackground.png" alt="Menu item" />
+                    </div>
+                    <div class="card-price">$14.99</div>
+                    <div class="card-name">food, central gyros the best gyros</div>
+                </div>
+
+                <div class="card">
+                    <div class="plus-btn">+</div>
+                    <div class="card-img">
+                        <img src="burger1-nobackground.png" alt="Menu item" />
+                    </div>
+                    <div class="card-price">$09.99</div>
+                    <div class="card-name">French Fries</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.cat').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat').forEach(b => b.className = 'cat inactive');
+                btn.className = 'cat active';
+            });
+        });
+        document.querySelectorAll('.plus-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                btn.style.background = '#e8503a';
+                btn.style.color = 'white';
+                btn.style.borderColor = '#e8503a';
+                setTimeout(() => {
+                    btn.style.background = 'white';
+                    btn.style.color = '#c8a84b';
+                    btn.style.borderColor = '#c8a84b';
+                }, 600);
+            });
+        });
+    </script>
+</body>
+
+</html>

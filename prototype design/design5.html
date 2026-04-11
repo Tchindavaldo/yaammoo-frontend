@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pizza Pepperoni Card</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #e8ddd8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .card {
+            width: 320px;
+            background: #f5f0ee;
+            border-radius: 28px;
+            overflow: hidden;
+            position: relative;
+            min-height: 440px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-text {
+            padding: 32px 28px 16px;
+            z-index: 2;
+            position: relative;
+        }
+
+        .card-title {
+            font-size: 38px;
+            font-weight: 900;
+            color: #1a1a1a;
+            line-height: 1.05;
+            letter-spacing: -1px;
+            margin-bottom: 12px;
+        }
+
+        .card-price {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .card-img-wrap {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+            margin-top: auto;
+        }
+
+        .card-img-wrap img {
+            width: 155%;
+            position: relative;
+            left: -15%;
+            top: 40px;
+            display: block;
+            clip-path: ellipse(50% 55% at 50% 55%);
+        }
+
+        .sparkle {
+            position: absolute;
+            bottom: 14px;
+            right: 16px;
+            color: #c8b8b0;
+            font-size: 20px;
+            z-index: 3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="card-text">
+            <div class="card-title">Pizza<br>Pepperoni</div>
+            <div class="card-price">$15.00</div>
+        </div>
+
+        <div class="card-img-wrap">
+            <!-- Remplace src par le chemin de ton image pizza -->
+            <img src="purre avocat tomate legume .png" alt="Pizza Pepperoni" />
+        </div>
+
+        <div class="sparkle">✦</div>
+    </div>
+</body>
+
+</html>

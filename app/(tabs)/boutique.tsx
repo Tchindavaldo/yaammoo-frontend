@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet,
-  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
   Platform,
+  StyleSheet as RNStyleSheet
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useMerchant } from '@/src/features/merchant/hooks/useMerchant';
 import { Theme } from '@/src/theme';
@@ -41,6 +42,7 @@ const TabItem = ({ label, active, onPress, count, icon }: any) => (
 type ActiveTab = 'commande' | 'menu' | 'historique';
 
 export default function BoutiqueScreen() {
+  const insets = useSafeAreaInsets();
   const { userData, loading: authLoading } = useAuth();
   const { orders, menus, transactions, loading: merchantLoading, stats, refresh, updateStatus, addMenu } = useMerchant();
   const [activeTab, setActiveTab] = useState<ActiveTab>('commande');
@@ -49,21 +51,18 @@ export default function BoutiqueScreen() {
     await addMenu(newMenu);
   };
 
-  const [forceLoading, setForceLoading] = useState(false);
+  const loading = authLoading || merchantLoading;
 
-  const loading = authLoading || merchantLoading || forceLoading;
-
-  // If no fast food associated with account, show creation UI
   if (!userData?.fastFoodId && !loading) {
     return (
-     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+     <View style={{ flex: 1, backgroundColor: 'white', paddingTop: insets.top }}>
         <NoBoutiquePanel />
-     </SafeAreaView>
+     </View>
     );
   }
 
   const renderHeader = () => (
-    <View style={styles.header}>
+    <BlurView intensity={80} tint="light" style={[styles.header, { paddingTop: insets.top }]}>
       <View style={styles.rowSegment}>
         <TabItem
           label="Mon porte feuille"
@@ -87,11 +86,11 @@ export default function BoutiqueScreen() {
           count={0}
         />
       </View>
-    </View>
+    </BlurView>
   );
 
   const renderContent = () => {
-    if ((loading && orders.length === 0 && menus.length === 0) || forceLoading) {
+    if (loading && orders.length === 0 && menus.length === 0) {
       return (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
@@ -100,113 +99,43 @@ export default function BoutiqueScreen() {
       );
     }
 
+    const contentWrapperStyle = { paddingTop: insets.top + 60, flex: 1 };
+
     switch (activeTab) {
       case 'commande':
         return (
-          <>
-            <View style={styles.header}>
-              <View style={styles.rowSegment}>
-                <TabItem
-                  label="Mon porte feuille"
-                  icon="wallet-outline"
-                  active={activeTab === 'historique'}
-                  onPress={() => setActiveTab('historique')}
-                  count={0}
-                />
-                <TabItem
-                  label="Commande"
-                  icon="receipt-outline"
-                  active={activeTab === 'commande'}
-                  onPress={() => setActiveTab('commande')}
-                  count={stats.pendingOrders}
-                />
-                <TabItem
-                  label="Menu"
-                  icon="restaurant-outline"
-                  active={activeTab === 'menu'}
-                  onPress={() => setActiveTab('menu')}
-                  count={0}
-                />
-              </View>
-            </View>
+          <View style={contentWrapperStyle}>
+            {renderHeader()}
             <OrderManagePanel
               orders={orders}
               loading={loading}
               onRefresh={refresh}
               onUpdateStatus={(id, status) => updateStatus(id, status)}
             />
-          </>
+          </View>
         );
       case 'menu':
         return (
-          <>
-            <View style={styles.header}>
-              <View style={styles.rowSegment}>
-                <TabItem
-                  label="Mon porte feuille"
-                  icon="wallet-outline"
-                  active={activeTab === 'historique'}
-                  onPress={() => setActiveTab('historique')}
-                  count={0}
-                />
-                <TabItem
-                  label="Commande"
-                  icon="receipt-outline"
-                  active={activeTab === 'commande'}
-                  onPress={() => setActiveTab('commande')}
-                  count={stats.pendingOrders}
-                />
-                <TabItem
-                  label="Menu"
-                  icon="restaurant-outline"
-                  active={activeTab === 'menu'}
-                  onPress={() => setActiveTab('menu')}
-                  count={0}
-                />
-              </View>
-            </View>
+          <View style={contentWrapperStyle}>
+            {renderHeader()}
             <MenuManagePanel
               menus={menus}
               onRefresh={refresh}
               onAddMenu={handleAddMenu}
               loading={loading}
             />
-          </>
+          </View>
         );
       case 'historique':
         return (
-          <>
-            <View style={styles.header}>
-              <View style={styles.rowSegment}>
-                <TabItem
-                  label="Mon porte feuille"
-                  icon="wallet-outline"
-                  active={activeTab === 'historique'}
-                  onPress={() => setActiveTab('historique')}
-                  count={0}
-                />
-                <TabItem
-                  label="Commande"
-                  icon="receipt-outline"
-                  active={activeTab === 'commande'}
-                  onPress={() => setActiveTab('commande')}
-                  count={stats.pendingOrders}
-                />
-                <TabItem
-                  label="Menu"
-                  icon="restaurant-outline"
-                  active={activeTab === 'menu'}
-                  onPress={() => setActiveTab('menu')}
-                  count={0}
-                />
-              </View>
-            </View>
+          <View style={contentWrapperStyle}>
+            {renderHeader()}
             <PorteFeuillePanel
               transactions={transactions}
               loading={loading}
               onRefresh={refresh}
             />
-          </>
+          </View>
         );
       default:
         return null;
@@ -214,21 +143,24 @@ export default function BoutiqueScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={{ flex: 1 }}>
-        {renderContent()}
-      </View>
-    </SafeAreaView>
+    <View style={styles.container}>
+      {renderContent()}
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = RNStyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 45 : (Platform.OS === 'android' ? 30 : 10),
-    backgroundColor: 'white',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     paddingBottom: 10,
   },
   rowSegment: {

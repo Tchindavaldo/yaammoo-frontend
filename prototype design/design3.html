@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chicken Burger Card</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #d0cece;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .card {
+            width: 300px;
+            background: #f96f62;
+            border-radius: 32px;
+            position: relative;
+            overflow: hidden;
+            padding: 24px 20px 20px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .heart-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .title {
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+            opacity: 0.95;
+        }
+
+        .price {
+            color: white;
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-top: 2px;
+        }
+
+        .img-wrapper {
+            position: relative;
+            flex: 1;
+            margin: 10px -20px 0;
+
+        }
+
+        .img-wrapper img {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+            height: 225px;
+            transform: scale(1.4) rotate(-10deg);
+            margin-left: -15px;
+        }
+
+        .badge {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.28);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 6px 14px;
+            color: white;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-time {
+            top: 60px;
+            right: 16px;
+        }
+
+        .badge-cal {
+            top: 120px;
+            left: 10px;
+        }
+
+        .brand-bar {
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 8px 7px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 14px;
+            align-self: flex-start;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            color: white;
+            font-size: 17px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+
+        <!-- Bouton favori -->
+        <div class="heart-btn">
+            <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
+                <path
+                    d="M11 18.5C11 18.5 1.5 12 1.5 6A4.5 4.5 0 0 1 10.06 4.5L11 5.5l.94-1A4.5 4.5 0 0 1 20.5 6c0 6-9.5 12.5-9.5 12.5Z"
+                    fill="rgba(255,255,255,0.7)" stroke="rgba(255,255,255,0.4)" stroke-width="1" />
+            </svg>
+        </div>
+
+        <!-- Titre & prix -->
+        <div class="title">Chicken Burger</div>
+        <div class="price">$18.00</div>
+
+        <!-- Image + badges -->
+        <div class="img-wrapper">
+            <!-- Remplace src par le chemin de ton image burger -->
+            <img src="burger1-nobackground1.png" alt="Chicken Burger" />
+
+            <div class="badge badge-time">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5" />
+                    <path d="M7 4v3.5l2 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                5 mins
+            </div>
+
+            <div class="badge badge-cal">350 cal</div>
+        </div>
+
+        <!-- Barre McDonald's -->
+        <div class="brand-bar">
+            <div class="brand-icon">
+                <svg width="26" height="20" viewBox="0 0 26 20" fill="none">
+                    <path
+                        d="M4 17C4 17 2.5 15 2.5 11C2.5 7.5 5.5 5.5 8.5 6.5C9 3.5 11 2 13 2C15 2 17 3.5 17.5 6.5C20.5 5.5 23.5 7.5 23.5 11C23.5 15 22 17 22 17"
+                        stroke="#FFC300" stroke-width="2.5" stroke-linecap="round" />
+                    <path d="M9.5 17C9.5 17 9.5 13 13 13C16.5 13 16.5 17 16.5 17" stroke="#FFC300" stroke-width="2.5"
+                        stroke-linecap="round" />
+                    <path d="M6.5 17C6.5 17 6 14.5 6 12" stroke="#FFC300" stroke-width="2.5" stroke-linecap="round" />
+                    <path d="M19.5 17C19.5 17 20 14.5 20 12" stroke="#FFC300" stroke-width="2.5"
+                        stroke-linecap="round" />
+                </svg>
+            </div>
+            <span class="brand-name">McDonald's</span>
+        </div>
+
+    </div>
+</body>
+
+</html>

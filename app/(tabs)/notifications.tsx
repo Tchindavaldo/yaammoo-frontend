@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import {
   StyleSheet,
   FlatList,
-  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useNotifications,
@@ -20,6 +21,8 @@ import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 export default function NotificationsScreen() {
   const { notifications, loading, refresh, markAsRead } = useNotifications();
   const tabBarHeight = useTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const HEADER_HEIGHT = 70 + insets.top;
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
@@ -40,21 +43,21 @@ export default function NotificationsScreen() {
 
   if ((loading && notifications.length === 0) || forceLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
           <Text style={styles.loadingText}>
             Chargement des notifications...
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <BlurView intensity={80} tint="light" style={[styles.header, { paddingTop: insets.top }]}>
         <View>
           <Text style={styles.title}>Notifications</Text>
           {unreadCount > 0 && (
@@ -73,7 +76,7 @@ export default function NotificationsScreen() {
             <Text style={styles.markAllText}>Tout marquer lu</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </BlurView>
 
       <FlatList
         data={notifications}
@@ -83,7 +86,7 @@ export default function NotificationsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: tabBarHeight + 20 },
+          { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 20 },
         ]}
         refreshing={loading}
         onRefresh={refresh}
@@ -103,20 +106,26 @@ export default function NotificationsScreen() {
           ) : null
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: Theme.spacing.md,
-    paddingTop: Theme.spacing.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.gray[100],
   },
@@ -156,7 +165,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   listContent: {
-    // paddingBottom géré dynamiquement avec useTabBarHeight
+    // paddingTop géré dynamiquement
   },
   emptyTitle: {
     fontSize: 18,

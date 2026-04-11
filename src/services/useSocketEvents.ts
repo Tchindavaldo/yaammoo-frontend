@@ -4,12 +4,14 @@ import { useAuth } from "../features/auth/context/AuthContext";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useOrders } from "../features/orders/hooks/useOrders";
 import { useMerchant } from "../features/merchant/hooks/useMerchant";
+import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
 
 export const useSocketEvents = () => {
   const { userData } = useAuth();
   const { refresh: refreshNotifications } = useNotifications();
   const { refresh: refreshOrders } = useOrders();
   const { refresh: refreshMerchant } = useMerchant();
+  const { refresh: refreshFastFoods } = useFastFoods();
   const socket = socketService.getSocket();
 
   useEffect(() => {
@@ -17,8 +19,8 @@ export const useSocketEvents = () => {
 
     const handleConnect = () => {
       console.log("🟢 Connected to socket:", socket.id);
-      // Ionic event: join_user
-      socket.emit("initSession", { userId: userData?.uid });
+      // Backend expects 'join_user' with the raw UID string
+      socket.emit("join_user", userData?.uid);
       console.log(`📨 Joined user room: ${userData?.uid}`);
     };
 
@@ -54,6 +56,26 @@ export const useSocketEvents = () => {
       refreshMerchant();
     });
 
+    socket.on("fastFoodMenuUpdated", (data) => {
+      console.log("🥘 fastFoodMenuUpdated:", data);
+      refreshMerchant();
+    });
+
+    socket.on("newFastFoodMenu", (data) => {
+      console.log("🥘 newFastFoodMenu:", data);
+      refreshMerchant();
+    });
+
+    socket.on("globalMenuUpdated", (data) => {
+      console.log("🌎 globalMenuUpdated:", data);
+      refreshFastFoods();
+    });
+
+    socket.on("newGlobalMenu", (data) => {
+      console.log("🌎 newGlobalMenu:", data);
+      refreshFastFoods();
+    });
+
     // Transaction Events
     socket.on("newTransaction", (data) => {
       console.log("💰 newTransaction:", data);
@@ -86,6 +108,10 @@ export const useSocketEvents = () => {
       socket.off("newFastFoodOrder");
       socket.off("newFastFoodOrders");
       socket.off("fastFoodOrderUpdated");
+      socket.off("fastFoodMenuUpdated");
+      socket.off("newFastFoodMenu");
+      socket.off("globalMenuUpdated");
+      socket.off("newGlobalMenu");
       socket.off("newTransaction");
       socket.off("isRead");
       socket.off("newNotification");

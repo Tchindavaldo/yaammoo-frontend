@@ -11,20 +11,43 @@ export const userFirestore = {
       console.log("🔍 [getUser] Fetching user with UID:", firebaseUser.uid);
       const idToken = await firebaseUser.getIdToken();
       const response = await axios.get(`${Config.apiUrl}/user/${firebaseUser.uid}`, {
-        headers: { 
+        headers: {
           "ngrok-skip-browser-warning": "true",
           "Authorization": `Bearer ${idToken}`,
         },
       });
-      const data = response.data.data;
+
+      const rawData = response.data.data;
+      if (!rawData) return null;
+
       console.log(
         "📦 [getUser] Raw backend response:",
         JSON.stringify(response.data, null, 2),
       );
-      console.log("📦 [getUser] data.uid:", data?.uid);
-      console.log("📦 [getUser] data.id:", data?.id);
-      console.log("📦 [getUser] data.infos:", data?.infos);
-      return data && data.infos ? data : null;
+
+      // Si le backend renvoie des données plates, on reconstruit la structure attendue par le frontend
+      if (!rawData.infos) {
+        console.log("🔨 [getUser] Reconstruction de l'objet infos à partir des données plates...");
+        const mappedUser: Users = {
+          uid: rawData.uid || rawData.id || firebaseUser.uid,
+          id: rawData.id || rawData.uid || firebaseUser.uid,
+          isMarchand: !!rawData.fastFoodId,
+          fastFoodId: rawData.fastFoodId || undefined,
+          statistique: rawData.statistique || 0,
+          cmd: rawData.cmd || [],
+          infos: {
+            nom: rawData.nom || rawData.displayName || (rawData.email ? rawData.email.split('@')[0] : 'Utilisateur'),
+            prenom: rawData.prenom || '',
+            age: rawData.age || 0,
+            numero: rawData.numero || 0,
+            email: rawData.email || firebaseUser.email || '',
+            password: rawData.password || '********',
+          }
+        };
+        return mappedUser;
+      }
+
+      return rawData;
     } catch (error) {
       console.error("Error fetching user via API:", error);
       return null;

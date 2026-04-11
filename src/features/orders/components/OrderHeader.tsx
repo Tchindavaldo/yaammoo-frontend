@@ -1,6 +1,7 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
 
 interface OrderHeaderProps {
@@ -10,6 +11,7 @@ interface OrderHeaderProps {
 }
 
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange, counts }) => {
+  const insets = useSafeAreaInsets();
   const tabs = [
     { id: 'cart', label: 'Mon pannier', icon: 'cart-outline', count: counts.cart },
     { id: 'status', label: 'Etat des commandes', icon: 'checkmark-circle-outline', count: counts.status },
@@ -17,7 +19,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange
   ];
 
   return (
-    <View style={styles.container}>
+    <BlurView intensity={80} tint="light" style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.rowSegment}>
         {tabs.map((tab) => (
           <View key={tab.id} style={styles.colSegment}>
@@ -49,15 +51,19 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange
           </View>
         ))}
       </View>
-    </View>
+    </BlurView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop: Platform.OS === 'ios' ? 45 : (Platform.OS === 'android' ? 30 : 10), // Adjust for status bar
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     paddingBottom: 10,
-    backgroundColor: 'white',
     borderBottomWidth: 0,
     elevation: 0,
     shadowOpacity: 0,

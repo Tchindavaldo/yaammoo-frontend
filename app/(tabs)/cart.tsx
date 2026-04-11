@@ -2,13 +2,13 @@ import React, { useState, useMemo, useEffect } from "react";
 import {
   StyleSheet,
   FlatList,
-  SafeAreaView,
   View,
   Text,
   TouchableOpacity,
   Alert,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { OrderHeader } from "@/src/features/orders/components/OrderHeader";
 import { OrderCard } from "@/src/features/orders/components/OrderCard";
@@ -36,6 +36,8 @@ export default function OrdersScreen() {
     stats,
   } = useOrders();
   const tabBarHeight = useTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const HEADER_HEIGHT = 60 + insets.top;
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
@@ -97,9 +99,11 @@ export default function OrdersScreen() {
       case "delivered":
         list = delivered;
         break;
+      default:
+        list = [];
     }
 
-    return list.filter((o) => {
+    return list.filter((o: any) => {
       if (!o.livraison?.date) return isSameDay(new Date(), selectedDate);
       return isSameDay(new Date(o.livraison.date), selectedDate);
     });
@@ -147,17 +151,17 @@ export default function OrdersScreen() {
     forceLoading
   ) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
           <Text style={styles.loadingText}>Chargement de vos commandes...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <OrderHeader
         activeTab={currentTab}
         onTabChange={setCurrentTab}
@@ -169,25 +173,29 @@ export default function OrdersScreen() {
       />
 
       {currentTab === "status" && (
-        <OrderTrackingHeader
-          selectedDate={selectedDate}
-          onDateChange={setSelectedDate}
-          availableDates={availableDates}
-          totalOrders={filteredOrders.length}
-          totalAmount={filteredOrders.reduce((acc, o) => acc + o.prixTotal, 0)}
-          activeStatus={activeStatus}
-          onStatusChange={setActiveStatus}
-          counts={{
-            pending: pending.length,
-            processing: active.length,
-            finished: finished.length,
-            delivered: delivered.length,
-          }}
-        />
+        <View style={{ position: 'absolute', top: HEADER_HEIGHT, left: 0, right: 0, zIndex: 999 }}>
+          <OrderTrackingHeader
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            availableDates={availableDates}
+            totalOrders={filteredOrders.length}
+            totalAmount={filteredOrders.reduce((acc, o: any) => acc + o.prixTotal, 0)}
+            activeStatus={activeStatus}
+            onStatusChange={setActiveStatus}
+            counts={{
+              pending: pending.length,
+              processing: active.length,
+              finished: finished.length,
+              delivered: delivered.length,
+            }}
+          />
+        </View>
       )}
 
       {currentTab === "bonus" ? (
-        <BonusScreen />
+        <View style={{ paddingTop: HEADER_HEIGHT, flex: 1 }}>
+          <BonusScreen />
+        </View>
       ) : (
         <>
           <FlatList
@@ -201,16 +209,16 @@ export default function OrdersScreen() {
               />
             )}
             keyExtractor={(item, index) =>
-              item.idCmd?.toString() || index.toString()
+              (item as any).idCmd?.toString() || index.toString()
             }
             contentContainerStyle={[
               styles.listContent,
-              { paddingBottom: tabBarHeight + 20 },
+              { paddingTop: HEADER_HEIGHT + (currentTab === "status" ? 140 : 0), paddingBottom: tabBarHeight + 80 },
             ]}
             refreshing={loading}
             onRefresh={refresh}
             ListEmptyComponent={
-              <View style={styles.centered}>
+              <View style={[styles.centered, { paddingTop: 100 }]}>
                 <Ionicons
                   name={
                     currentTab === "cart" ? "cart-outline" : "receipt-outline"
@@ -223,18 +231,11 @@ export default function OrdersScreen() {
                     ? "Votre panier est vide"
                     : "Aucune commande pour cette date"}
                 </Text>
-                {currentTab === "cart" && (
-                  <TouchableOpacity style={styles.browseBtn} onPress={() => {}}>
-                    <Text style={styles.browseBtnText}>
-                      Parcourir les menus
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </View>
             }
           />
           {currentTab === "cart" && pendingToBuy.length > 0 && (
-            <View style={styles.payFooterCapsule}>
+            <View style={[styles.payFooterCapsule, { bottom: tabBarHeight + 10 }]}>
               <View style={styles.totalChip}>
                 <Ionicons
                   name="logo-usd"
@@ -271,13 +272,14 @@ export default function OrdersScreen() {
         amount={calculateCartTotal()}
         onSuccess={handlePaymentSuccess}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   centered: {
     flex: 1,
@@ -292,7 +294,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 10,
-    // paddingBottom géré dynamiquement avec useTabBarHeight
   },
   emptyText: {
     marginTop: 10,
@@ -312,10 +313,8 @@ const styles = StyleSheet.create({
     color: "darkred",
     fontWeight: "bold",
   },
-  // La capsule flottante conforme au SCSS original
   payFooterCapsule: {
     position: "absolute",
-    bottom: 10,
     left: "1%",
     width: "98%",
     height: 70,
@@ -330,11 +329,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
+    zIndex: 1000,
   },
   totalChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2dd36f", // success color
+    backgroundColor: "#2dd36f",
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,

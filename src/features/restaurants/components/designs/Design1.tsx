@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { FastFood, Menu } from '@/src/types';
 import { MerchantHeader } from '../MerchantHeader';
 import { DesignItem } from './DesignItem';
@@ -18,25 +18,32 @@ export const Design1: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         image={fastFood.image} 
         rating={fastFood.stats?.rating} 
       />
-      <View style={styles.list}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+      >
         {fastFood.menu?.map((menu, index) => (
           <DesignItem 
             key={index} 
+            index={index}
             menu={menu} 
             variant={1} 
+            merchantName={fastFood.nom}
             onPress={() => onMenuClick(menu)} 
           />
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: Theme.spacing.sm,
+    marginVertical: Theme.spacing.xs,
   },
-  list: {
-    paddingHorizontal: Theme.spacing.md,
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 10,
   }
 });

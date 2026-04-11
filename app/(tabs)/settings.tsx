@@ -2,25 +2,23 @@ import React, { useState } from 'react';
 import {
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   View,
   Text,
   Alert,
   TouchableOpacity,
-  Modal,
   Switch,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingItem } from '@/src/features/profile/components/SettingItem';
 import { Theme } from '@/src/theme';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
-
 import { useRouter } from 'expo-router';
 
-// ... (in SettingsScreen)
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
 );
@@ -29,6 +27,7 @@ export default function SettingsScreen() {
   const { userData, setUserData } = useAuth();
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -72,9 +71,9 @@ export default function SettingsScreen() {
   const contact = userData?.infos.email || userData?.infos.numero?.toString() || '';
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header Profil */}
-      <View style={styles.profileCard}>
+    <View style={styles.container}>
+      {/* Header Profil Fixe et Flouté */}
+      <BlurView intensity={80} tint="light" style={[styles.profileCard, { paddingTop: insets.top + 20 }]}>
         <View style={styles.avatarContainer}>
           <Text style={styles.avatarText}>{initiales}</Text>
           <View style={styles.onlineDot} />
@@ -92,9 +91,13 @@ export default function SettingsScreen() {
         <TouchableOpacity style={styles.editProfileBtn} onPress={() => handleComingSoon('Édition du profil')}>
           <Ionicons name="create-outline" size={18} color={Theme.colors.primary} />
         </TouchableOpacity>
-      </View>
+      </BlurView>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: insets.top + 100, paddingBottom: 40 }}
+      >
         {/* Compte */}
         <SectionHeader title="Compte" />
         <View style={styles.section}>
@@ -217,33 +220,32 @@ export default function SettingsScreen() {
           <Text style={styles.versionSubtext}>© 2025 Yaammoo. Tous droits réservés.</Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   profileCard: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Theme.colors.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     padding: Theme.spacing.lg,
+    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.gray[100],
     gap: Theme.spacing.md,
   },
   avatarContainer: {
     position: 'relative',
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   avatarText: {
     color: 'white',

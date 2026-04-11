@@ -19,7 +19,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<Users | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -47,17 +47,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             await storage.set("user_data", apiData);
           } else {
             console.log(
-              "⚠️ [AuthContext] API n'a pas retourné de données, fallback vers storage",
+              "⚠️ [AuthContext] API n'a pas retourné de données, vérification du storage ou de l'état actuel",
             );
-            // 2. Fallback to stored data if API fails or returns null
+            // Si on a déjà des données (venant de RegisterScreen), on ne les écrase pas
+            setUserData((prev) => {
+              if (prev && prev.uid === firebaseUser.uid) {
+                console.log("ℹ️ [AuthContext] Conservation des données existantes (inscription en cours?)");
+                return prev;
+              }
+              return null; 
+            });
+
+            // Fallback to storage seulement si le state est vide
             const stored = await storage.get("user_data");
-            if (stored) {
+            if (stored && stored.uid === firebaseUser.uid) {
               console.log("✅ [AuthContext] User data récupéré depuis storage");
               setUserData(stored);
-            } else {
-              console.log(
-                "❌ [AuthContext] Aucune donnée trouvée (API + storage)",
-              );
             }
           }
         } catch (error) {

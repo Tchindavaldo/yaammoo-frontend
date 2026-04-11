@@ -15,6 +15,7 @@ import { CategoryList } from "@/src/features/restaurants/components/CategoryList
 import { Theme } from "@/src/theme";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 
 const CATEGORIES = [
@@ -25,6 +26,7 @@ const CATEGORIES = [
 ];
 
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
+import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
 import { Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
@@ -44,6 +46,8 @@ export default function HomeScreen() {
   } = useFastFoods();
   const { addOrder } = useOrders();
   const tabBarHeight = useTabBarHeight();
+  const insets = useSafeAreaInsets();
+  const HEADER_HEIGHT = 60 + insets.top;
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
@@ -103,6 +107,7 @@ export default function HomeScreen() {
         selectedCategory={selectedCategory}
         onSelect={setSelectedCategory}
       />
+      <HeroBanner />
     </>
   );
 
@@ -120,17 +125,37 @@ export default function HomeScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <RestaurantHeader
+        userName={userData?.infos?.nom || "Utilisateur"}
+        userPhoto={
+          (userData as any)?.photoUrl || (userData as any)?.photo || ""
+        }
+        location="Banganté, Cameroun"
+        searchVisible={searchOpen}
+        onSearchToggle={() => setSearchOpen(!searchOpen)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
       <FlatList
         data={fastFoods}
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={() => (
+          <>
+            <CategoryList
+              categories={CATEGORIES}
+              selectedCategory={selectedCategory}
+              onSelect={setSelectedCategory}
+            />
+            <HeroBanner />
+          </>
+        )}
         renderItem={({ item }) => (
           <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
         )}
         keyExtractor={(item, index) => item.id || index.toString()}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: tabBarHeight + 20 },
+          { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 20 },
         ]}
         refreshing={loading}
         onRefresh={refresh}
@@ -159,13 +184,14 @@ export default function HomeScreen() {
           <Text style={styles.loadingOverlayText}>Ajout au panier...</Text>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
   centered: {
     flex: 1,

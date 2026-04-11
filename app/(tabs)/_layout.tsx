@@ -3,6 +3,8 @@ import React from "react";
 import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+import { StyleSheet } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { Theme as Colors } from "@/src/theme";
@@ -24,11 +26,18 @@ export default function TabLayout() {
         headerShown: false,
         tabBarShowLabel: false,
         tabBarButton: HapticTab,
+        tabBarBackground: () => (
+          <BlurView
+            tint="light"
+            intensity={80}
+            style={StyleSheet.absoluteFill}
+          />
+        ),
         tabBarStyle: {
           height: tabBarHeight,
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-          backgroundColor: "white",
+          backgroundColor: "rgba(255, 255, 255, 0.7)",
           borderTopWidth: 0,
           elevation: 8,
           shadowColor: "#000",

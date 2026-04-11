@@ -9,6 +9,8 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/src/hooks/use-color-scheme";
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
+import { MerchantProvider } from "@/src/features/merchant/context/MerchantContext";
+import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
 import { useState, useEffect } from "react";
@@ -59,7 +61,9 @@ function AppInitializer({ layoutMounted }: { layoutMounted: boolean }) {
     }
   }, [user, userData, setupNotifications, segments, appReady, layoutMounted]);
 
-  if (loading || (user && !userData)) {
+  const inAuthGroup = segments[0] === "(auth)";
+
+  if (loading || (user && !userData && !inAuthGroup)) {
     return (
       <AppLoader visible={true} message="Initialisation de l'application..." />
     );
@@ -78,18 +82,18 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <AppInitializer layoutMounted={layoutMounted} />
-      <ThemeProvider value={DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="modal"
-            options={{ presentation: "modal", title: "Modal" }}
-          />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <StatusBar style="dark" />
+      <MerchantProvider>
+        <FastFoodProvider>
+          <AppInitializer layoutMounted={layoutMounted} />
+          <ThemeProvider value={DefaultTheme}>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="(auth)" />
+            </Stack>
+          </ThemeProvider>
+        </FastFoodProvider>
+      </MerchantProvider>
     </AuthProvider>
   );
 }

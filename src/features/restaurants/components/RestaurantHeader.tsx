@@ -1,7 +1,8 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
 
 interface RestaurantHeaderProps {
@@ -23,8 +24,10 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <BlurView intensity={80} tint="light" style={[styles.container, { paddingTop: insets.top }]}>
       {/* Première Barre d'outils (Icons & Location) - Equivalent ion-toolbar baseline */}
       <View style={styles.toolbar1}>
         <View style={styles.colAvatar}>
@@ -52,7 +55,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       </View>
       
       {/* Deuxième Barre d'outils (Greeting & Search) */}
-      <View style={styles.toolbar2}>
+      {/* <View style={styles.toolbar2}>
         <View style={styles.rowGreat}>
           <Text style={styles.greatLabel}>Hello, {userName}</Text>
         </View>
@@ -69,22 +72,26 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
             />
           </View>
         )}
-      </View>
-    </View>
+      </View> */}
+    </BlurView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'white',
-    paddingTop: Platform.OS === 'ios' ? 44 : 10, // Safe area minimaliste pour le haut
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    backgroundColor: 'rgba(255,255,255,0.7)',
   },
   toolbar1: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 5,
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
   },
   colAvatar: {
     paddingLeft: 8,

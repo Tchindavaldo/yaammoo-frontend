@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 10,
-    backgroundColor: "darkred",
+    backgroundColor: "rgba(236,73,19,1.00)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   labelInscripLabel: { fontSize: 13, color: "white" },
   rowInscription: { flexDirection: "row", alignItems: "center" },
   ionChip: {
-    backgroundColor: "darkred",
+    backgroundColor: "rgba(236,73,19,1.00)",
     borderRadius: 26,
     paddingHorizontal: 20,
     paddingVertical: 10,

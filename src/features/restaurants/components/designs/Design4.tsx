@@ -26,6 +26,7 @@ export const Design4: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         {fastFood.menu?.map((menu, index) => (
           <DesignItem 
             key={index} 
+            index={index}
             menu={menu} 
             variant={4} 
             merchantName={fastFood.nom}

@@ -165,7 +165,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                 {item.prices?.[2]?.price && <Text style={styles.rValPrix}>{item.prices[2].price}</Text>}
                 
                 <Text style={[styles.rLabelText, { paddingLeft: 15 }]}>statut</Text>
-                <Text style={[styles.rValStatut, { color: isAvailable ? 'forestgreen' : 'darkred' }]}>
+                <Text style={[styles.rValStatut, { color: isAvailable ? 'forestgreen' : 'rgba(236,73,19,1.00)' }]}>
                   {isAvailable ? 'Disponible' : 'Indisponible'}
                 </Text>
               </View>
@@ -178,9 +178,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                   </View>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.rCheckWrapper, { paddingLeft: 30 }]} onPress={() => openConfirmModal(item, 'unavailable')}>
-                  <Text style={[styles.rCheckLabel, { color: 'darkred' }]}>Indisponible</Text>
-                  <View style={[styles.rCheckboxBox, { borderColor: 'darkred' }]}>
-                    {!isAvailable && <View style={[styles.rCheckboxFill, { backgroundColor: 'darkred' }]} />}
+                  <Text style={[styles.rCheckLabel, { color: 'rgba(236,73,19,1.00)' }]}>Indisponible</Text>
+                  <View style={[styles.rCheckboxBox, { borderColor: 'rgba(236,73,19,1.00)' }]}>
+                    {!isAvailable && <View style={[styles.rCheckboxFill, { backgroundColor: 'rgba(236,73,19,1.00)' }]} />}
                   </View>
                 </TouchableOpacity>
               </View>
@@ -228,7 +228,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
           <Text style={styles.statLbl}>Menu disponible</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={[styles.statVal, { color: 'darkred' }]}>{stats.unavailable}</Text>
+          <Text style={[styles.statVal, { color: 'rgba(236,73,19,1.00)' }]}>{stats.unavailable}</Text>
           <Text style={styles.statLbl}>Menu indisponible</Text>
         </View>
       </View>
@@ -331,7 +331,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                   <TouchableOpacity
                     style={[
                       styles.cfnChip,
-                      { backgroundColor: confirmActionType === 'available' ? 'darkgreen' : confirmActionType === 'delete' ? 'darkred' : '#ff9d9d', right: 110 }
+                      { backgroundColor: confirmActionType === 'available' ? 'darkgreen' : confirmActionType === 'delete' ? 'rgba(236,73,19,1.00)' : '#ff9d9d', right: 110 }
                     ]}
                     onPress={executeConfirmAction}
                   >
@@ -342,7 +342,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.cfnChip, { backgroundColor: 'darkred', right: 0 }]}
+                    style={[styles.cfnChip, { backgroundColor: 'rgba(236,73,19,1.00)', right: 0 }]}
                     onPress={closeConfirmModal}
                   >
                     <Text style={styles.cfnChipText}>Annuler</Text>
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   subTabActive: {
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
   },
   subTabLabel: {
     fontSize: 10,
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     fontSize: 10,
     fontWeight: 'bold',
-    color: 'darkred',
+    color: 'rgba(236,73,19,1.00)',
   },
   rValStatut: {
     paddingLeft: 8,
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
   cfnAvatarCard: {
     width: 45,
     height: 45,
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
     borderRadius: 22.5,
     overflow: 'hidden',
     marginLeft: 0,

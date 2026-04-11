@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
@@ -13,6 +13,9 @@ interface RestaurantHeaderProps {
   onSearchToggle: () => void;
   searchQuery?: string;
   onSearchChange?: (text: string) => void;
+  categories: { name: string; icon: any }[];
+  selectedCategory: string;
+  onCategorySelect: (category: string) => void;
 }
 
 export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
@@ -23,6 +26,9 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   onSearchToggle,
   searchQuery,
   onSearchChange,
+  categories,
+  selectedCategory,
+  onCategorySelect,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -49,30 +55,37 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
 
         <View style={styles.colNotification}>
           <TouchableOpacity style={styles.notifBtn}>
-            <Ionicons name="notifications-outline" size={12} color="darkred" />
+            <Ionicons name="notifications-outline" size={12} color="rgba(236,73,19,1.00)" />
           </TouchableOpacity>
         </View>
       </View>
-      
-      {/* Deuxième Barre d'outils (Greeting & Search) */}
-      {/* <View style={styles.toolbar2}>
-        <View style={styles.rowGreat}>
-          <Text style={styles.greatLabel}>Hello, {userName}</Text>
-        </View>
 
-        {searchVisible && (
-          <View style={styles.rowSearchBar}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Custom Placeholder"
-              placeholderTextColor="#999"
-              value={searchQuery}
-              onChangeText={onSearchChange}
-              autoFocus
-            />
-          </View>
-        )}
-      </View> */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={styles.categoryBar}
+        contentContainerStyle={styles.categoryContent}
+      >
+        {categories.map((cat, idx) => {
+          const isSelected = selectedCategory === cat.name;
+          return (
+            <TouchableOpacity 
+              key={idx} 
+              style={[styles.catChip, isSelected && styles.catChipActive]}
+              onPress={() => onCategorySelect(cat.name)}
+            >
+              <Ionicons 
+                name={cat.icon} 
+                size={14} 
+                color={isSelected ? 'rgba(236,73,19,1.00)' : 'rgba(236,73,19,1.00)'} 
+              />
+              <Text style={[styles.catLabel, isSelected && styles.catLabelActive]}>
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
     </BlurView>
   );
 };
@@ -112,23 +125,22 @@ const styles = StyleSheet.create({
   },
   colLocation: {
     flex: 1,
-    height: 33,
+    height: 'auto',
     justifyContent: 'center',
     alignItems: 'center',
   },
   chipLocalisation: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
     paddingHorizontal: 14,
-    paddingVertical: 11,
     borderRadius: 25,
     height: 33, // Pour forcer la cohérence de taille avec l'avatar
   },
   localisationLabel: {
     color: 'white',
-    fontSize: 14,
-    fontWeight: '900',
+    fontSize: 12,
+    fontWeight: '300',
     marginLeft: 4,
   },
   colNotification: {
@@ -139,6 +151,35 @@ const styles = StyleSheet.create({
   },
   notifBtn: {
     padding: 2,
+  },
+  categoryBar: {
+    paddingVertical: 12,
+  },
+  categoryContent: {
+    paddingHorizontal: 8,
+    gap: 10,
+  },
+  catChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 25,
+    gap: 6,
+  },
+  catChipActive: {
+    backgroundColor: 'white',
+    borderWidth: 0.5,
+    borderColor: 'rgba(236,73,19,1.00)',
+  },
+  catLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(236,73,19,1.00)',
+  },
+  catLabelActive: {
+    color: 'rgba(236,73,19,1.00)',
   },
   toolbar2: {
     backgroundColor: 'white',

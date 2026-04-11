@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   activeChip: {
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
   },
   label: {
     fontSize: 9, // original was font-size: 8px or similar
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -7,
     right: -7,
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
     width: 20,
     height: 20,
     borderRadius: 10,

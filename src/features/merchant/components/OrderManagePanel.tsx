@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dateChipActive: {
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
   },
   dateChipText: {
     fontSize: 12,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   statusTabActive: {
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
   },
   statusTabLabel: {
     fontSize: 10,

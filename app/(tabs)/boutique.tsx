@@ -183,7 +183,7 @@ const styles = RNStyleSheet.create({
     gap: 4,
   },
   activeChip: {
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
   },
   label: {
     fontSize: 9,
@@ -195,7 +195,7 @@ const styles = RNStyleSheet.create({
     fontWeight: 'normal',
   },
   badge: {
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 8,

@@ -19,10 +19,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 
 const CATEGORIES = [
+  { name: "All", icon: "grid-outline" },
   { name: "Fast Food", icon: "fast-food-outline" },
   { name: "Pizza", icon: "pizza-outline" },
   { name: "Burger", icon: "nutrition-outline" },
   { name: "Drinks", icon: "beer-outline" },
+  { name: "Rice", icon: "restaurant-outline" },
 ];
 
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
@@ -47,7 +49,7 @@ export default function HomeScreen() {
   const { addOrder } = useOrders();
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
-  const HEADER_HEIGHT = 60 + insets.top;
+  const HEADER_HEIGHT = 100 + insets.top;
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
@@ -101,11 +103,9 @@ export default function HomeScreen() {
         onSearchToggle={() => setSearchOpen(!searchOpen)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-      />
-      <CategoryList
         categories={CATEGORIES}
         selectedCategory={selectedCategory}
-        onSelect={setSelectedCategory}
+        onCategorySelect={setSelectedCategory}
       />
       <HeroBanner />
     </>
@@ -136,16 +136,14 @@ export default function HomeScreen() {
         onSearchToggle={() => setSearchOpen(!searchOpen)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        categories={CATEGORIES}
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
       />
       <FlatList
         data={fastFoods}
         ListHeaderComponent={() => (
           <>
-            <CategoryList
-              categories={CATEGORIES}
-              selectedCategory={selectedCategory}
-              onSelect={setSelectedCategory}
-            />
             <HeroBanner />
           </>
         )}

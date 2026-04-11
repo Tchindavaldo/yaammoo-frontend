@@ -240,7 +240,7 @@ export const NoBoutiquePanel = () => {
           <Ionicons
             name="fast-food"
             size={250}
-            color="darkred"
+            color="rgba(236,73,19,1.00)"
             style={{ opacity: 0.1 }}
           />
         </View>
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
   chipBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "darkred",
+    backgroundColor: "rgba(236,73,19,1.00)",
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,

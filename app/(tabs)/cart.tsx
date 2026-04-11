@@ -307,10 +307,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "darkred",
+    borderColor: "rgba(236,73,19,1.00)",
   },
   browseBtnText: {
-    color: "darkred",
+    color: "rgba(236,73,19,1.00)",
     fontWeight: "bold",
   },
   payFooterCapsule: {
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   payerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "darkred",
+    backgroundColor: "rgba(236,73,19,1.00)",
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,

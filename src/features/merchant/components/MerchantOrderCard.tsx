@@ -856,7 +856,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cancelBtnNo: {
-    backgroundColor: "darkred",
+    backgroundColor: "rgba(236,73,19,1.00)",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,

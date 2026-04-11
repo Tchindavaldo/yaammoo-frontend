@@ -117,7 +117,18 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
 
   // --- DESIGN 4: PIZZA SPECIALS (Ex-D5) ---
   if (variant === 4) {
-    const V4_COLORS = ['#f5f0ee', '#e8f4f8', '#f2e8f8', '#f8f2e8', '#e8f8f2', '#f8e8e8'];
+    const V4_COLORS = [
+      '#fdeded', // Orange
+      '#f5f0ee', // Neutre/Lin
+      '#e8f4f8', // Bleu ciel
+      '#f2e8f8', // Lavande
+      '#f8f2e8', // Pêche
+      '#e8f8f2', // Menthe
+      '#f8e8e8', // Rose
+      '#fdf2e9', // Orange
+      '#fdeded', // Rouge Corail
+      '#ebf5eb'  // Vert Émeraude
+    ];
     const bgColor = V4_COLORS[index % V4_COLORS.length];
 
     return (
@@ -133,56 +144,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             />
         </View>
       </TouchableOpacity>
-    );
-  }
-
-  // --- DESIGN 5: FEATURED SELECTION (Ex-D1) ---
-  if (variant === 5) {
-    return (
-      <TouchableOpacity style={styles.v5Card} onPress={onPress} activeOpacity={0.9}>
-        <Image 
-          source={menu.image ? { uri: menu.image } : require('@/assets/images/burger.png')} 
-          style={styles.v5Image}
-        />
-        <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.85)']}
-            style={styles.v5Overlay}
-        />
-        <View style={styles.v5Badge}>
-            <Text style={styles.v5BadgeText}>Top Pick</Text>
-        </View>
-        <View style={styles.v5Body}>
-            <BlurView intensity={30} tint="dark" style={styles.v5Blur}>
-                <Text style={styles.v5Title}>{menu.titre}</Text>
-                <Text style={styles.v5Desc} numberOfLines={1}>{merchantName || 'Recommended'}</Text>
-                <TouchableOpacity style={styles.v5Btn} onPress={onPress}>
-                    <Text style={styles.v5BtnText}>Add to Cart</Text>
-                </TouchableOpacity>
-            </BlurView>
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
-  // --- DESIGN 6: FLASH DEALS (Ex-D7) ---
-  if (variant === 6) {
-    return (
-        <TouchableOpacity style={styles.v6Card} onPress={onPress} activeOpacity={0.9}>
-            <Image 
-                source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.png')} 
-                style={styles.v6FoodImg}
-                contentFit="contain"
-            />
-            <View style={styles.v6Content}>
-                <View style={styles.v6Top}>
-                    <Text style={styles.v6Code}>Code <Text style={styles.v6CodeBadge}>VITE</Text></Text>
-                </View>
-                <Text style={styles.v6Title}>{menu.titre}</Text>
-                <View style={styles.v6OrderBtn}>
-                    <Text style={styles.v6OrderText}>Commander</Text>
-                </View>
-            </View>
-        </TouchableOpacity>
     );
   }
 
@@ -239,30 +200,6 @@ const styles = StyleSheet.create({
     v4Price: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', marginTop: 4 },
     v4ImgWrap: { position: 'absolute', bottom: -20, right: -40, width: 220, height: 220, zIndex: 1 },
     v4Image: { width: '110%', height: '110%', borderRadius: 110 },
-
-    // --- DESIGN 5 (Ex-D1) ---
-    v5Card: { width: 220, height: 320, borderRadius: 24, marginRight: 16, overflow: 'hidden' },
-    v5Image: { ...StyleSheet.absoluteFillObject },
-    v5Overlay: { ...StyleSheet.absoluteFillObject },
-    v5Badge: { position: 'absolute', top: 13, left: 13, backgroundColor: 'rgba(30,30,30,0.7)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-    v5BadgeText: { color: 'white', fontSize: 9, fontWeight: '700' },
-    v5Body: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, overflow: 'hidden', borderBottomLeftRadius: 24, borderBottomRightRadius: 24 },
-    v5Blur: { flex: 1, padding: 14, justifyContent: 'flex-end' },
-    v5Title: { fontSize: 18, fontWeight: '800', color: 'white' },
-    v5Desc: { fontSize: 9, color: 'rgba(255,255,255,0.7)', marginVertical: 6 },
-    v5Btn: { width: '100%', paddingVertical: 8, backgroundColor: 'white', borderRadius: 30, alignItems: 'center' },
-    v5BtnText: { color: '#111', fontSize: 12, fontWeight: '700' },
-
-    // --- DESIGN 6 (Ex-D7) ---
-    v6Card: { width: 320, height: 160, backgroundColor: '#e8440a', borderRadius: 24, padding: 24, marginRight: 16, overflow: 'hidden' },
-    v6FoodImg: { position: 'absolute', right: 4, top: 6, height: '90%', width: 140 },
-    v6Content: { flex: 1, zIndex: 2 },
-    v6Top: { marginBottom: 4 },
-    v6Code: { color: 'white', fontSize: 13 },
-    v6CodeBadge: { backgroundColor: 'white', color: '#e8440a', fontWeight: '800' },
-    v6Title: { fontSize: 24, fontWeight: '900', color: 'white', lineHeight: 26, marginTop: 10, maxWidth: 180 },
-    v6OrderBtn: { position: 'absolute', bottom: 0, left: 0, backgroundColor: '#111', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-    v6OrderText: { color: '#f5c842', fontSize: 13, fontWeight: '800' },
 
     defaultContainer: { padding: 20, backgroundColor: 'white', marginRight: 16, borderRadius: 10 }
 });

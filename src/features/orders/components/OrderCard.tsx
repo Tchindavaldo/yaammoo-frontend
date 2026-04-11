@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   quantityChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderTopLeftRadius: 20,

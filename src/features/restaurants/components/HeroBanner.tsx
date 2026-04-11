@@ -41,7 +41,8 @@ const styles = StyleSheet.create({
     container: {
         paddingHorizontal: Theme.spacing.md,
         width: '100%',
-        marginVertical: 10,
+        marginTop: 4,
+        marginBottom: 10,
     },
     bannerWrapper: {
         width: '100%',

@@ -132,7 +132,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
 
 const StatusChip = ({ 
   label, icon, count, active, onPress, 
-  activeColor = 'darkred', 
+  activeColor = 'rgba(236,73,19,1.00)', 
   inactiveBg = '#fff5f5',
   inactiveIconColor = 'red' 
 }: any) => (
@@ -189,8 +189,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   activeDateChip: {
-    backgroundColor: 'darkred',
-    shadowColor: 'darkred',
+    backgroundColor: 'rgba(236,73,19,1.00)',
+    shadowColor: 'rgba(236,73,19,1.00)',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   dateNum: {
     fontSize: 10,
     fontWeight: '300',
-    color: 'darkred',
+    color: 'rgba(236,73,19,1.00)',
   },
   activeDateText: {
     color: 'white',

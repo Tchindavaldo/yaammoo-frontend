@@ -21,7 +21,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Fast Food');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const fetchFastFoods = useCallback(async () => {
     try {

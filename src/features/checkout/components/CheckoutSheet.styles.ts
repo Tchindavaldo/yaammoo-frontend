@@ -401,7 +401,7 @@ export const styles = StyleSheet.create({
     },
     infoBtnLarge: {
         flex: 1,
-        backgroundColor: 'white',
+        // backgroundColor: 'white',
         borderRadius: 16,
         padding: 12,
         borderWidth: 1,

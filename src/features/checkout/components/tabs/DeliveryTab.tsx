@@ -7,39 +7,43 @@ import { styles } from '../CheckoutSheet.styles';
 interface DeliveryTabProps {
   delivery: Livraison;
   setDelivery: (delivery: Livraison) => void;
+  onOpenLocation?: () => void;
+  onOpenContact?: () => void;
+  onOpenPeriod?: () => void;
+  onOpenVoiceNote?: () => void;
 }
 
-export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery }) => {
+export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery, onOpenLocation, onOpenContact, onOpenPeriod, onOpenVoiceNote }) => {
   return (
     <View style={styles.deliveryContainer}>
       {/* Info Buttons Grid */}
       <View style={styles.infoGrid4}>
-        <TouchableOpacity style={styles.infoBtnLarge}>
+        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenLocation}>
           <Ionicons name="location-outline" size={20} color="#ec4913" />
           <View style={styles.infoBtnText}>
             <Text style={[styles.infoBtnTitle, styles.textDark]}>Location</Text>
-            <Text style={styles.infoBtnSubText}>{delivery.address || '123 Way, 4B'}</Text>
+            {/* <Text style={styles.infoBtnSubText}>{delivery.address || '123 Way, 4B'}</Text> */}
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.infoBtnLarge}>
+        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenPeriod}>
           <Ionicons name="time-outline" size={20} color="#ec4913" />
           <View style={styles.infoBtnText}>
             <Text style={[styles.infoBtnTitle, styles.textDark]}>Period</Text>
-            <Text style={styles.infoBtnSubText}>{delivery.hour || '11h00 - 11h30'}</Text>
+            {/* <Text style={styles.infoBtnSubText}>{delivery.hour || '11h00 - 11h30'}</Text> */}
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.infoBtnLarge}>
+        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenContact}>
           <Ionicons name="call-outline" size={20} color="#ec4913" />
           <View style={styles.infoBtnText}>
             <Text style={[styles.infoBtnTitle, styles.textDark]}>contact</Text>
-            <Text style={styles.infoBtnSubText}>696080087</Text>
+            {/* <Text style={styles.infoBtnSubText}>696080087</Text> */}
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.infoBtnLarge}>
+        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenVoiceNote}>
           <Ionicons name="document-text-outline" size={20} color="#94a3b8" />
           <View style={styles.infoBtnText}>
             <Text style={[styles.infoBtnTitle, styles.textDark]}>Notes</Text>
-            <Text style={styles.infoBtnSubText}>smal prt</Text>
+            {/* <Text style={styles.infoBtnSubText}>smal prt</Text> */}
           </View>
         </TouchableOpacity>
       </View>

@@ -16,6 +16,12 @@ import { DeliveryTab } from './tabs/DeliveryTab';
 // Footer
 import { CheckoutFooter } from './CheckoutFooter';
 
+// Overlay
+import { CheckoutLocationOverlay } from './CheckoutLocationOverlay';
+import { CheckoutContactOverlay } from './CheckoutContactOverlay';
+import { CheckoutPeriodOverlay } from './CheckoutPeriodOverlay';
+import { CheckoutVoiceNoteOverlay } from './CheckoutVoiceNoteOverlay';
+
 interface CheckoutSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -37,6 +43,10 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
   } = useCheckout(menu);
 
   const [activeTab, setActiveTab] = useState<CheckoutStep>('detail');
+  const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
+  const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
+  const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
+  const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
 
   if (!menu) return null;
 
@@ -51,67 +61,75 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
         <TouchableOpacity style={styles.dismiss} onPress={onClose} activeOpacity={1} />
         
         <View style={[styles.sheetContainer, styles.sheetLight]}>
-          <View style={styles.tabsWrapper}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
-              <TabChip 
-                isActive={activeTab === 'detail'} 
-                label="Details" 
-                icon="information-circle-outline" 
-                onPress={() => setActiveTab('detail')} 
-              />
-              <TabChip 
-                isActive={activeTab === 'drink'} 
-                label="Drinks" 
-                icon="wine-outline" 
-                onPress={() => setActiveTab('drink')} 
-              />
-              <TabChip 
-                isActive={activeTab === 'extra'} 
-                label="Extras" 
-                icon="add-circle-outline" 
-                onPress={() => setActiveTab('extra')} 
-              />
-              <TabChip 
-                isActive={activeTab === 'delivery'} 
-                label="Delivery" 
-                icon="bicycle-outline" 
-                onPress={() => setActiveTab('delivery')} 
-              />
+
+          <View style={{ flex: 1 }}>
+            <View style={styles.tabsWrapper}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
+                <TabChip 
+                  isActive={activeTab === 'detail'} 
+                  label="Details" 
+                  icon="information-circle-outline" 
+                  onPress={() => setActiveTab('detail')} 
+                />
+                <TabChip 
+                  isActive={activeTab === 'drink'} 
+                  label="Drinks" 
+                  icon="wine-outline" 
+                  onPress={() => setActiveTab('drink')} 
+                />
+                <TabChip 
+                  isActive={activeTab === 'extra'} 
+                  label="Extras" 
+                  icon="add-circle-outline" 
+                  onPress={() => setActiveTab('extra')} 
+                />
+                <TabChip 
+                  isActive={activeTab === 'delivery'} 
+                  label="Delivery" 
+                  icon="bicycle-outline" 
+                  onPress={() => setActiveTab('delivery')} 
+                />
+              </ScrollView>
+            </View>
+
+            <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
+              {activeTab === 'detail' && (
+                <DetailTab 
+                  menu={menu} 
+                  selectedPriceIndex={selectedPriceIndex} 
+                  setSelectedPriceIndex={setSelectedPriceIndex} 
+                />
+              )}
+
+              {activeTab === 'extra' && (
+                <ExtrasTab 
+                  availablePackaging={availablePackaging}
+                  selectedPackaging={selectedPackaging}
+                  setSelectedPackaging={setSelectedPackaging}
+                />
+              )}
+
+              {activeTab === 'drink' && (
+                <DrinksTab 
+                  availableDrinks={availableDrinks}
+                  selectedDrinks={selectedDrinks}
+                  setSelectedDrinks={setSelectedDrinks}
+                />
+              )}
+
+              {activeTab === 'delivery' && (
+                <DeliveryTab 
+                  delivery={delivery}
+                  setDelivery={setDelivery}
+                  onOpenLocation={() => setIsLocationPopupVisible(true)}
+                  onOpenContact={() => setIsContactPopupVisible(true)}
+                  onOpenPeriod={() => setIsPeriodPopupVisible(true)}
+                  onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
+                />
+              )}
             </ScrollView>
+
           </View>
-
-          <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
-            {activeTab === 'detail' && (
-              <DetailTab 
-                menu={menu} 
-                selectedPriceIndex={selectedPriceIndex} 
-                setSelectedPriceIndex={setSelectedPriceIndex} 
-              />
-            )}
-
-            {activeTab === 'extra' && (
-              <ExtrasTab 
-                availablePackaging={availablePackaging}
-                selectedPackaging={selectedPackaging}
-                setSelectedPackaging={setSelectedPackaging}
-              />
-            )}
-
-            {activeTab === 'drink' && (
-              <DrinksTab 
-                availableDrinks={availableDrinks}
-                selectedDrinks={selectedDrinks}
-                setSelectedDrinks={setSelectedDrinks}
-              />
-            )}
-
-            {activeTab === 'delivery' && (
-              <DeliveryTab 
-                delivery={delivery}
-                setDelivery={setDelivery}
-              />
-            )}
-          </ScrollView>
 
           <CheckoutFooter 
             total={total}
@@ -120,6 +138,34 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
             onAddToCart={() => {}} // TODO: Implement if needed
             onBuy={handleConfirm}
           />
+
+          {isLocationPopupVisible && (
+            <CheckoutLocationOverlay 
+              onClose={() => setIsLocationPopupVisible(false)} 
+              address={delivery.address || ''}
+            />
+          )}
+
+          {isContactPopupVisible && (
+            <CheckoutContactOverlay 
+              onClose={() => setIsContactPopupVisible(false)} 
+              phone="696080087"
+            />
+          )}
+
+          {isPeriodPopupVisible && (
+            <CheckoutPeriodOverlay 
+              onClose={() => setIsPeriodPopupVisible(false)} 
+              selectedPeriod={delivery.hour || 'Now'}
+              onSelectPeriod={(period) => setDelivery({ ...delivery, hour: period })}
+            />
+          )}
+
+          {isVoiceNotePopupVisible && (
+            <CheckoutVoiceNoteOverlay 
+              onClose={() => setIsVoiceNotePopupVisible(false)} 
+            />
+          )}
         </View>
       </View>
     </Modal>

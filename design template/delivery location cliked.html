@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Checkout - Clean White Background</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec4913",
+                        "background-light": "#f8f6f6",
+                        "background-dark": "#221510",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .ios-blur { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-200 flex justify-center items-center min-h-screen">
+    <div
+        class="relative w-[390px] h-[844px] bg-white dark:bg-background-dark overflow-hidden rounded-[3rem] shadow-2xl border-[8px] border-slate-900 flex flex-col">
+        <div
+            class="flex justify-between px-8 pt-4 pb-2 text-slate-900 dark:text-slate-100 font-bold text-sm bg-white dark:bg-background-dark">
+            <span>9:41</span>
+            <div class="flex gap-1 items-center">
+                <span class="material-symbols-outlined text-sm">signal_cellular_4_bar</span>
+                <span class="material-symbols-outlined text-sm">wifi</span>
+                <span class="material-symbols-outlined text-sm">battery_full</span>
+            </div>
+        </div>
+        <div class="flex items-center bg-white dark:bg-background-dark p-4 pb-2 justify-between">
+            <div
+                class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </div>
+            <h2
+                class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">
+                Checkout</h2>
+            <div class="size-10"></div>
+        </div>
+        <div class="flex gap-3 p-4 overflow-x-hidden bg-white dark:bg-background-dark">
+            <div
+                class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary px-5 text-white shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined text-lg">local_shipping</span>
+                <p class="text-sm font-semibold">Delivery</p>
+            </div>
+            <div
+                class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-slate-50 dark:bg-slate-800 px-5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <span class="material-symbols-outlined text-lg">storefront</span>
+                <p class="text-sm font-medium">Pickup</p>
+            </div>
+            <div
+                class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-full bg-slate-50 dark:bg-slate-800 px-5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <span class="material-symbols-outlined text-lg">restaurant</span>
+                <p class="text-sm font-medium">Dine-in</p>
+            </div>
+        </div>
+        <div class="flex-1 bg-white dark:bg-background-dark relative">
+        </div>
+        <div
+            class="absolute bottom-0 left-0 right-0 bg-white dark:bg-slate-900 rounded-t-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.08)] flex flex-col transition-all duration-300">
+            <div class="w-full flex justify-center py-3">
+                <div class="w-10 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+            </div>
+            <div class="px-4 pb-4 flex flex-col gap-2">
+                <div
+                    class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 opacity-60">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary text-sm">bolt</span>
+                        <p class="text-xs font-bold text-slate-900 dark:text-slate-100">Type: Priority</p>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-400 text-xs">edit</span>
+                </div>
+                <div class="flex flex-col w-full py-2">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-xl">location_on</span>
+                            <h3 class="text-slate-900 dark:text-slate-100 text-sm font-bold">Delivery Address</h3>
+                        </div>
+                        <span
+                            class="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-widest font-ui">Required</span>
+                    </div>
+                    <div class="relative group">
+                        <div
+                            class="w-full h-40 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl p-5 transition-all flex flex-col group-focus-within:ring-1 group-focus-within:ring-primary/20">
+                            <p class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-2">221B Baker St, London
+                            </p>
+                            <textarea
+                                class="w-full h-full bg-transparent border-none p-0 text-slate-700 dark:text-slate-300 text-[15px] leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-0 transition-all resize-none"
+                                placeholder="Instructions (e.g. Leave at gate)"></textarea>
+                        </div>
+
+                        <button
+                            class="absolute bottom-4 left-4 h-10 px-4 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-full shadow-md shadow-slate-200 dark:shadow-slate-900/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform border border-slate-100 dark:border-slate-600 gap-2">
+                            <span class="material-symbols-outlined text-[18px]">my_location</span>
+                            <span class="text-xs font-bold">Send Live GPS</span>
+                        </button>
+
+                        <button
+                            class="absolute bottom-4 right-4 h-10 w-10 bg-primary text-white rounded-full shadow-lg shadow-primary/20 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+                            <span class="material-symbols-outlined text-[22px]">check</span>
+                        </button>
+                    </div>
+                </div>
+                <div
+                    class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800 opacity-60">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary text-sm">schedule</span>
+                        <p class="text-xs font-bold text-slate-900 dark:text-slate-100">Time: ASAP (15-25 min)</p>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-400 text-xs">expand_more</span>
+                </div>
+            </div>
+            <div
+                class="mt-auto border-t border-slate-100 dark:border-slate-800 p-4 bg-white dark:bg-slate-900 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-4 bg-slate-100 dark:bg-slate-800 p-2 rounded-full">
+                    <button
+                        class="size-8 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full shadow-sm">
+                        <span class="material-symbols-outlined text-primary text-sm font-bold">remove</span>
+                    </button>
+                    <span class="font-bold text-slate-900 dark:text-slate-100">2</span>
+                    <button class="size-8 flex items-center justify-center bg-primary rounded-full shadow-sm">
+                        <span class="material-symbols-outlined text-white text-sm font-bold">add</span>
+                    </button>
+                </div>
+                <button
+                    class="flex-1 bg-primary text-white h-12 rounded-full font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30">
+                    <span>Checkout • $42.50</span>
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                </button>
+            </div>
+            <div class="w-full flex justify-center pb-2 bg-white dark:bg-slate-900">
+                <div class="w-32 h-1 bg-slate-900 dark:bg-slate-100/20 rounded-full"></div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

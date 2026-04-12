@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Menu } from '@/src/types';
 import { useCheckout } from '../hooks/useCheckout';
 import { styles } from './CheckoutSheet.styles';
@@ -61,7 +61,6 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
         <TouchableOpacity style={styles.dismiss} onPress={onClose} activeOpacity={1} />
         
         <View style={[styles.sheetContainer, styles.sheetLight]}>
-
           <View style={{ flex: 1 }}>
             <View style={styles.tabsWrapper}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
@@ -128,7 +127,6 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
                 />
               )}
             </ScrollView>
-
           </View>
 
           <CheckoutFooter 
@@ -143,13 +141,15 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
             <CheckoutLocationOverlay 
               onClose={() => setIsLocationPopupVisible(false)} 
               address={delivery.address || ''}
+              onSelectAddress={(addr) => setDelivery({ ...delivery, address: addr })}
             />
           )}
 
           {isContactPopupVisible && (
             <CheckoutContactOverlay 
               onClose={() => setIsContactPopupVisible(false)} 
-              phone="696080087"
+              phone={delivery.phone || ''}
+              onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
             />
           )}
 
@@ -164,6 +164,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
           {isVoiceNotePopupVisible && (
             <CheckoutVoiceNoteOverlay 
               onClose={() => setIsVoiceNotePopupVisible(false)} 
+              onSave={(uri) => setDelivery({ ...delivery, voiceNoteUri: uri })}
             />
           )}
         </View>

@@ -1,27 +1,111 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const SHEET_HEIGHT = 384;
 
 interface CheckoutContactOverlayProps {
   onClose: () => void;
   phone: string;
+  onSelectPhone?: (phone: string) => void;
 }
 
-export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone }) => {
+export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone, onSelectPhone }) => {
+  const [localPhone, setLocalPhone] = React.useState(phone);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const keyboardHeight = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (event) => {
+        Animated.spring(keyboardHeight, {
+          toValue: event.endCoordinates.height,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      }
+    );
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        Animated.spring(keyboardHeight, {
+          toValue: 0,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      }
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
+  const handleClose = () => {
+    Keyboard.dismiss();
+    Animated.spring(keyboardHeight, {
+      toValue: 0,
+      useNativeDriver: false,
+      tension: 40,
+      friction: 8,
+    }).start(() => {
+      onClose();
+    });
+  };
+
+  const handleSave = () => {
+    setIsSaving(true);
+    if (onSelectPhone) onSelectPhone(localPhone);
+    
+    // Dimiss keyboard first to start the slide down
+    Keyboard.dismiss();
+    
+    // Wait for the animation to progress/finish before closing the overlay
+    setTimeout(() => {
+      handleClose();
+    }, 3000); // 400ms ensures we see the slide down
+  };
+
   return (
-    <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill}>
-      <KeyboardAvoidingView 
-        style={styles.container} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <View style={styles.keyboardWrapper}>
+      <AnimatedBlurView 
+        intensity={40} 
+        tint="light" 
+        style={[
+          styles.blurOverlay,
+          { 
+            height: keyboardHeight.interpolate({
+              inputRange: [0, 700],
+              outputRange: [SHEET_HEIGHT, SHEET_HEIGHT + 1000]
+            })
+          }
+        ]} 
+      />
+      <Animated.View 
+        style={[
+          styles.container,
+          { transform: [{ translateY: keyboardHeight.interpolate({
+            inputRange: [0, 100],
+            outputRange: [0, -95]
+          }) }] }
+        ]}
       >
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="call-outline" size={20} color="#94a3b8" />
               <Text style={styles.headerTitle}>Contact Number</Text>
+              <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
+                <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#94a3b8" />
             </TouchableOpacity>
           </View>
@@ -34,12 +118,23 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
                   placeholder="+1 (555) 000-0000"
                   placeholderTextColor="#cbd5e1"
                   keyboardType="phone-pad"
-                  defaultValue={phone}
+                  value={localPhone}
+                  onChangeText={setLocalPhone}
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
                 />
               </View>
               
-              <TouchableOpacity style={styles.checkBtn} onPress={onClose}>
-                <Ionicons name="checkmark" size={28} color="white" />
+              <TouchableOpacity 
+                style={styles.checkBtn} 
+                onPress={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Ionicons name="checkmark" size={28} color="white" />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -48,16 +143,26 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
             </Text>
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </BlurView>
+      </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+  },
+  blurOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   container: {
     flex: 1,
-    justifyContent: 'center',
     paddingHorizontal: 16,
+    justifyContent: 'center',
   },
   card: {
     backgroundColor: 'white',
@@ -87,6 +192,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#0f172a',
   },
+  keyboardSmallBtn: {
+    marginLeft: 8,
+    padding: 4,
+  },
   closeBtn: {
     width: 36,
     height: 36,
@@ -98,7 +207,7 @@ const styles = StyleSheet.create({
     borderColor: '#f1f5f9',
   },
   inputContainer: {
-    height: 240, // As requested
+    height: 240,
   },
   row: {
     flexDirection: 'row',

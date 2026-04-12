@@ -14,36 +14,48 @@ interface DeliveryTabProps {
 }
 
 export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery, onOpenLocation, onOpenContact, onOpenPeriod, onOpenVoiceNote }) => {
+  const isLocationFilled = !!delivery.address;
+  const isPeriodFilled = !!delivery.hour;
+  const isContactFilled = !!delivery.phone;
+  const isVoiceNoteFilled = !!delivery.voiceNoteUri;
+
+  const getBtnStyle = (filled: boolean) => [
+    styles.infoBtnLarge,
+    filled && { borderColor: '#ec4913', borderWidth: 2, backgroundColor: 'rgba(236, 73, 19, 0.05)' }
+  ];
+
+  const getIconColor = (filled: boolean) => filled ? '#ec4913' : '#94a3b8';
+  const getTextColor = (filled: boolean) => filled ? '#ec4913' : '#0f172a';
+
   return (
     <View style={styles.deliveryContainer}>
       {/* Info Buttons Grid */}
       <View style={styles.infoGrid4}>
-        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenLocation}>
-          <Ionicons name="location-outline" size={20} color="#ec4913" />
+        <TouchableOpacity style={getBtnStyle(isLocationFilled)} onPress={onOpenLocation}>
+          <Ionicons name="location-outline" size={20} color={getIconColor(isLocationFilled)} />
           <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, styles.textDark]}>Location</Text>
-            {/* <Text style={styles.infoBtnSubText}>{delivery.address || '123 Way, 4B'}</Text> */}
+            <Text style={[styles.infoBtnTitle, { color: getTextColor(isLocationFilled) }]}>Location</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenPeriod}>
-          <Ionicons name="time-outline" size={20} color="#ec4913" />
+
+        <TouchableOpacity style={getBtnStyle(isPeriodFilled)} onPress={onOpenPeriod}>
+          <Ionicons name="time-outline" size={20} color={getIconColor(isPeriodFilled)} />
           <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, styles.textDark]}>Period</Text>
-            {/* <Text style={styles.infoBtnSubText}>{delivery.hour || '11h00 - 11h30'}</Text> */}
+            <Text style={[styles.infoBtnTitle, { color: getTextColor(isPeriodFilled) }]}>Period</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenContact}>
-          <Ionicons name="call-outline" size={20} color="#ec4913" />
+
+        <TouchableOpacity style={getBtnStyle(isContactFilled)} onPress={onOpenContact}>
+          <Ionicons name="call-outline" size={20} color={getIconColor(isContactFilled)} />
           <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, styles.textDark]}>contact</Text>
-            {/* <Text style={styles.infoBtnSubText}>696080087</Text> */}
+            <Text style={[styles.infoBtnTitle, { color: getTextColor(isContactFilled) }]}>contact</Text>
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.infoBtnLarge} onPress={onOpenVoiceNote}>
-          <Ionicons name="document-text-outline" size={20} color="#94a3b8" />
+
+        <TouchableOpacity style={getBtnStyle(isVoiceNoteFilled)} onPress={onOpenVoiceNote}>
+          <Ionicons name="mic-outline" size={20} color={getIconColor(isVoiceNoteFilled)} />
           <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, styles.textDark]}>Notes</Text>
-            {/* <Text style={styles.infoBtnSubText}>smal prt</Text> */}
+            <Text style={[styles.infoBtnTitle, { color: getTextColor(isVoiceNoteFilled) }]}>Voice Notes</Text>
           </View>
         </TouchableOpacity>
       </View>

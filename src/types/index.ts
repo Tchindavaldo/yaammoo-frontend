@@ -31,6 +31,8 @@ export class Livraison {
     public hour: string = "",
     public date: string = "",
     public address: string = "",
+    public phone: string = "",
+    public voiceNoteUri: string = "",
   ) { }
 }
 

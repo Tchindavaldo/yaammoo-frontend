@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { Theme } from '@/src/theme';
 
 const { width } = Dimensions.get('window');
 
-export const HeroBanner: React.FC = () => {
+export const HeroBanner: React.FC = React.memo(() => {
     return (
         <View style={styles.container}>
             <View style={styles.bannerWrapper}>
@@ -35,7 +35,7 @@ export const HeroBanner: React.FC = () => {
             </View>
         </View>
     );
-};
+});
 
 const styles = StyleSheet.create({
     container: {

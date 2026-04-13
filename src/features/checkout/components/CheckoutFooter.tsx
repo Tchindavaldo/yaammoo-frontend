@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './CheckoutSheet.styles';
+import { Loader } from '../../../components/Loader';
 
 interface CheckoutFooterProps {
   total: number;
@@ -9,6 +10,7 @@ interface CheckoutFooterProps {
   setQuantity: (q: number) => void;
   onAddToCart: () => void;
   onBuy: () => void;
+  isLoading?: boolean;
 }
 
 export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({ 
@@ -16,7 +18,8 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
   quantity, 
   setQuantity, 
   onAddToCart, 
-  onBuy 
+  onBuy,
+  isLoading
 }) => {
   return (
     <View style={[styles.bottomActionBar, styles.actionBarLight]}>
@@ -40,8 +43,16 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.addToCartBtn} onPress={onAddToCart}>
-        <Text style={styles.btnText}>add To Cart</Text>
+      <TouchableOpacity 
+        style={[styles.addToCartBtn, isLoading && { opacity: 0.7 }]} 
+        onPress={onAddToCart}
+        disabled={isLoading}
+      >
+        {isLoading ? (
+          <Loader size={20} color="white" />
+        ) : (
+          <Text style={styles.btnText}>add To Cart</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.buyBtn} onPress={onBuy}>

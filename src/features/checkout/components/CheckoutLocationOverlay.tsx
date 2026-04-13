@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { Loader } from '../../../components/Loader';
+import * as Location from 'expo-location';
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const SHEET_HEIGHT = 384;
@@ -9,18 +11,22 @@ const SHEET_HEIGHT = 384;
 interface CheckoutLocationOverlayProps {
   onClose: () => void;
   address: string;
-  onSelectAddress?: (address: string) => void;
+  note: string;
+  onSave?: (address: string, note: string) => void;
 }
 
-export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = ({ onClose, address, onSelectAddress }) => {
+export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = ({ onClose, address, note, onSave }) => {
   const [localAddress, setLocalAddress] = React.useState(address);
+  const [localNote, setLocalNote] = React.useState(note);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     const showSubscription = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (event) => {
+        setIsKeyboardVisible(true);
         Animated.spring(keyboardHeight, {
           toValue: event.endCoordinates.height,
           useNativeDriver: false,
@@ -32,6 +38,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     const hideSubscription = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
+        setIsKeyboardVisible(false);
         Animated.spring(keyboardHeight, {
           toValue: 0,
           useNativeDriver: false,
@@ -59,17 +66,38 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     });
   };
 
+  const handleGetLocation = async () => {
+    try {
+      setIsSaving(true);
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access location was denied');
+        setIsSaving(false);
+        return;
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
+      setLocalAddress(coords);
+    } catch (error) {
+      alert('Error fetching location');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = () => {
+    if (isKeyboardVisible) {
+      Keyboard.dismiss();
+      return;
+    }
     setIsSaving(true);
-    if (onSelectAddress) onSelectAddress(localAddress);
-    
-    // Dimiss keyboard first to start the slide down
-    Keyboard.dismiss();
+    if (onSave) onSave(localAddress, localNote);
     
     // Wait for the animation to progress/finish before closing the overlay
     setTimeout(() => {
       handleClose();
-    }, 2000); // 400ms ensures we see the slide down
+    }, 400); // 400ms is standard
   };
 
   return (
@@ -112,22 +140,25 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
 
           <View style={styles.inputContainer}>
             <View style={styles.addressBox}>
-              <Text style={styles.addressText}>{address || '221B Baker St, London'}</Text>
+              <Text style={styles.addressText}>{localAddress || '(Send Live GPS Location)'}</Text>
                 <TextInput 
                   style={styles.textInput}
-                  placeholder="Instructions (e.g. Leave at gate)"
+                  placeholder="Note (ex: Porte bleue, 2ème étage...)"
                   placeholderTextColor="#94a3b8"
                   multiline
                   textAlignVertical="top"
-                  value={localAddress}
-                  onChangeText={setLocalAddress}
+                  value={localNote}
+                  onChangeText={setLocalNote}
                   returnKeyType="done"
                   blurOnSubmit={true}
                   onSubmitEditing={Keyboard.dismiss}
                 />
             </View>
 
-            <TouchableOpacity style={styles.gpsBtn}>
+            <TouchableOpacity 
+              style={styles.gpsBtn}
+              onPress={handleGetLocation}
+            >
               <Ionicons name="locate-outline" size={18} color="#334155" />
               <Text style={styles.gpsBtnText}>Send Live GPS</Text>
             </TouchableOpacity>
@@ -138,9 +169,9 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
               disabled={isSaving}
             >
               {isSaving ? (
-                <ActivityIndicator color="white" size="small" />
+                <Loader size={34} color="white" />
               ) : (
-                <Ionicons name="checkmark" size={22} color="white" />
+                <Ionicons name={isKeyboardVisible ? "chevron-down" : "checkmark"} size={22} color="white" />
               )}
             </TouchableOpacity>
           </View>
@@ -162,7 +193,11 @@ const styles = StyleSheet.create({
     right: 0,
   },
   container: {
-    flex: 1,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SHEET_HEIGHT,
     paddingHorizontal: 16,
     justifyContent: 'center',
   },

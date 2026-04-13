@@ -9,7 +9,7 @@ interface MerchantContextType {
   transactions: Transaction[];
   loading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: (showLoading?: boolean) => Promise<void>;
   updateStatus: (orderId: string, status: string) => Promise<void>;
   addMenu: (menu: Menu) => Promise<void>;
   stats: {
@@ -33,10 +33,10 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fastFoodId = userData?.fastFoodId;
   const userId = userData?.uid;
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (showLoading = true) => {
     if (!fastFoodId || !userId) return;
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
     setError(null);
     try {
       const [orderData, menuData, transactionData] = await Promise.all([
@@ -51,7 +51,7 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error("Merchant fetch error:", err);
       setError("Erreur lors du chargement des données marchand");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [fastFoodId, userId]);
 
@@ -64,7 +64,7 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await merchantService.updateOrderStatus(orderId, status);
       setOrders((prev) =>
         prev.map((o) =>
-          o.idCmd === orderId
+          o.idCmd === orderId || (o as any).id === orderId
             ? ({ ...o, staut: status, status: status } as any)
             : o,
         ),

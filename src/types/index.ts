@@ -33,6 +33,7 @@ export class Livraison {
     public address: string = "",
     public phone: string = "",
     public voiceNoteUri: string = "",
+    public note: string = "",
   ) { }
 }
 

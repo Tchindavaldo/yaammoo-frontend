@@ -33,17 +33,23 @@ export const useOrders = () => {
     }
   }, [userData]);
 
-  const addOrder = async (orderData: any) => {
+  const addOrder = async (orderData: any): Promise<{ success: boolean; message?: string }> => {
     try {
       setLoading(true);
+      setError(null);
       const response = await axios.post(`${Config.apiUrl}/order`, orderData);
       if (response.data) {
         await fetchOrders();
-        return true;
+        return { success: true };
       }
-    } catch (err) {
+      return { success: false, message: "Erreur lors de la création." };
+    } catch (err: any) {
       console.error("Add order error:", err);
-      return false;
+      const backendMessage = err.response?.data?.message;
+      return {
+        success: false,
+        message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || "Erreur réseau"
+      };
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
@@ -30,6 +31,16 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 }) => {
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>('express');
+  const [launchedGroups, setLaunchedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroupId(prev => (prev === groupId ? null : groupId));
+  };
+
+  const launchGroup = (groupId: string) => {
+    setLaunchedGroups(prev => ({ ...prev, [groupId]: true }));
+  };
 
   // Grouper les commandes par date (Priorité date de livraison comme Ionic)
   const getDateKey = (order: Commande) => {
@@ -91,15 +102,63 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     { key: 'finish', label: 'Terminées', icon: 'checkmark-done-outline' },
   ];
 
-  const isToday = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const now = new Date();
-    return d.toDateString() === now.toDateString();
-  };
-
   const getRelativeDateLabel = (dateKey: string | null) => {
     if (!dateKey || dateKey === 'Aujourd\'hui') return "aujourd'hui";
     return dateKey;
+  };
+
+  // Grouping logic for the finished orders design (Untitled-1 style)
+  const deliveryData = useMemo(() => {
+    if (selectedStatus !== 'finish') return null;
+
+    const express: Commande[] = [];
+    const scheduled: Record<string, Commande[]> = {};
+
+    dateFilteredOrders.forEach((o) => {
+      const d = (o as any).delivery;
+      const isExpress = d?.type === "express";
+      if (isExpress) {
+        express.push(o);
+      } else {
+        // Use delivery.time first, then fallback to livraison.hour
+        const slot = d?.time || o.livraison?.hour || "À définir";
+        if (!scheduled[slot]) scheduled[slot] = [];
+        scheduled[slot].push(o);
+      }
+    });
+
+    const groupByUser = (ordersArr: Commande[]) => {
+      const userMap: Record<string, Commande[]> = {};
+      ordersArr.forEach((o) => {
+        const u = (o as any).userData;
+        // Group by userId primarily to avoid duplicates for the same user
+        const key = (o as any).userId || u?.email || (o as any).idCmd || `anon_${Math.random()}`;
+        if (!userMap[key]) userMap[key] = [];
+        userMap[key].push(o);
+      });
+      return Object.values(userMap);
+    };
+
+    return {
+      expressGroups: groupByUser(express),
+      slots: Object.entries(scheduled).map(([slot, orders]) => ({
+        title: slot,
+        userGroups: groupByUser(orders),
+      })),
+    };
+  }, [dateFilteredOrders, selectedStatus]);
+
+  const renderUserGroup = (orders: Commande[], groupId?: string) => {
+    const isForced = groupId ? launchedGroups[groupId] : false;
+    return (
+      <MerchantOrderCard
+        key={(orders[0] as any).id || orders[0].idCmd}
+        order={orders[0]}
+        allOrders={orders}
+        isForceLaunched={isForced}
+        onUpdateStatus={(status) => onUpdateStatus((orders[0] as any).id || orders[0].idCmd, status)}
+      />
+    );
   };
 
   return (
@@ -128,7 +187,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         </ScrollView>
       </View>
 
-      {/* Stats Row (Component 1 Style) */}
+      {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
@@ -177,42 +236,143 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         </ScrollView>
       </View>
 
-      {/* Liste commandes */}
-      <FlatList
-        data={dateFilteredOrders}
-        renderItem={({ item }) => (
-          <MerchantOrderCard
-            order={item}
-            onUpdateStatus={(status) => onUpdateStatus(item.idCmd?.toString() || '', status)}
-          />
-        )}
-        keyExtractor={(item, i) => item.idCmd?.toString() || i.toString()}
-        refreshing={loading}
-        onRefresh={onRefresh}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons
-              name={
-                selectedStatus === 'pending'
-                  ? 'time-outline'
-                  : selectedStatus === 'proccess'
-                  ? 'restaurant-outline'
-                  : 'checkmark-done-outline'
-              }
-              size={50}
-              color={Theme.colors.gray[300]}
+      {/* Conditional List Rendering */}
+      {selectedStatus === 'finish' ? (
+        <ScrollView 
+          style={styles.container} 
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={onRefresh} />
+          }
+        >
+          {dateFilteredOrders.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="checkmark-done-outline" size={50} color="#D3D1C7" />
+              <Text style={styles.emptyText}>Aucune commande terminée</Text>
+            </View>
+          ) : deliveryData && (
+            <View style={{ paddingHorizontal: 16 }}>
+              {deliveryData.expressGroups.length > 0 && (
+                <View style={{ marginBottom: 15 }}>
+                  <TouchableOpacity 
+                    activeOpacity={0.7} 
+                    onPress={() => toggleGroup('express')}
+                    style={styles.groupHeader}
+                  >
+                    <View style={styles.groupHeaderLeft}>
+                      <Ionicons 
+                        name={expandedGroupId === 'express' ? "chevron-down" : "chevron-forward"} 
+                        size={12} 
+                        color="#888780" 
+                      />
+                      <Text style={styles.groupTitle}>Express</Text>
+                      <View style={styles.groupCountBadge}>
+                        <Text style={styles.groupCountText}>
+                          {deliveryData.expressGroups.length} livraison{deliveryData.expressGroups.length > 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    </View>
+                    
+                    <TouchableOpacity 
+                       style={[styles.btnLaunchGroup, launchedGroups['express'] && styles.btnLaunchGroupLaunched]}
+                       onPress={(e) => {
+                         e.stopPropagation();
+                         launchGroup('express');
+                       }}
+                       disabled={launchedGroups['express']}
+                    >
+                       <Text style={[styles.btnLaunchGroupText, launchedGroups['express'] && styles.btnLaunchGroupTextLaunched]}>
+                         {launchedGroups['express'] ? "Lancé ✓" : "Lancer tout"}
+                       </Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                  
+                  {expandedGroupId === 'express' && (
+                    <View style={{ gap: 6 }}>
+                      {deliveryData.expressGroups.map(group => renderUserGroup(group, 'express'))}
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {deliveryData.slots.map((slot, sIdx) => {
+                const groupId = `slot_${sIdx}`;
+                const isExpanded = expandedGroupId === groupId;
+                const isLaunched = launchedGroups[groupId];
+
+                return (
+                  <View key={groupId} style={{ marginBottom: 15 }}>
+                    <TouchableOpacity 
+                      activeOpacity={0.7} 
+                      onPress={() => toggleGroup(groupId)}
+                      style={styles.groupHeader}
+                    >
+                      <View style={styles.groupHeaderLeft}>
+                        <Ionicons 
+                          name={isExpanded ? "chevron-down" : "chevron-forward"} 
+                          size={12} 
+                          color="#888780" 
+                        />
+                        <Text style={styles.groupTitle}>{slot.title}</Text>
+                        <View style={styles.groupCountBadge}>
+                          <Text style={styles.groupCountText}>
+                            {slot.userGroups.length} livraison{slot.userGroups.length > 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <TouchableOpacity 
+                         style={[styles.btnLaunchGroup, isLaunched && styles.btnLaunchGroupLaunched]}
+                         onPress={(e) => {
+                           e.stopPropagation();
+                           launchGroup(groupId);
+                         }}
+                         disabled={isLaunched}
+                      >
+                         <Text style={[styles.btnLaunchGroupText, isLaunched && styles.btnLaunchGroupTextLaunched]}>
+                           {isLaunched ? "Lancé ✓" : "Lancer tout"}
+                         </Text>
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                    
+                    {isExpanded && (
+                      <View style={{ gap: 6 }}>
+                        {slot.userGroups.map(group => renderUserGroup(group, groupId))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={dateFilteredOrders}
+          renderItem={({ item }) => (
+            <MerchantOrderCard
+              order={item}
+              onUpdateStatus={(status) => onUpdateStatus((item as any).id || item.idCmd, status)}
             />
-            <Text style={styles.emptyText}>
-              {selectedStatus === 'pending'
-                ? 'Aucune commande en attente'
-                : selectedStatus === 'proccess'
-                ? 'Aucune commande en cours'
-                : 'Aucune commande terminée'}
-            </Text>
-          </View>
-        }
-      />
+          )}
+          keyExtractor={(item, i) => item.idCmd?.toString() || i.toString()}
+          refreshing={loading}
+          onRefresh={onRefresh}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons
+                name={selectedStatus === 'pending' ? 'time-outline' : 'restaurant-outline'}
+                size={50}
+                color={Theme.colors.gray[300]}
+              />
+              <Text style={styles.emptyText}>
+                {selectedStatus === 'pending' ? 'Aucune commande en attente' : 'Aucune commande en cours'}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };
@@ -329,7 +489,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   listContent: {
-    padding: 15,
+    paddingVertical: 15,
     paddingBottom: 100,
   },
   emptyState: {
@@ -340,5 +500,68 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: Theme.colors.gray[500],
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#888780',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    marginBottom: 4,
+  },
+  groupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  groupTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#333',
+  },
+  groupCountBadge: {
+    backgroundColor: '#FFF',
+    borderWidth: 0.5,
+    borderColor: '#D3D1C7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  groupCountText: {
+    fontSize: 10,
+    color: '#5F5E5A',
+    fontWeight: '500',
+  },
+  btnLaunchGroup: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(236,73,19,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(236,73,19,1.00)',
+  },
+  btnLaunchGroupText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: 'rgba(236,73,19,1.00)',
+    textTransform: 'uppercase',
+  },
+  btnLaunchGroupLaunched: {
+    backgroundColor: '#C0DD97',
+    borderColor: '#C0DD97',
+  },
+  btnLaunchGroupTextLaunched: {
+    color: '#27500A',
   },
 });

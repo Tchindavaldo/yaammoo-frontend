@@ -45,25 +45,25 @@ export const useSocketEvents = () => {
     // Merchant Order Events (Identical to FastFoodOrderSocketService)
     socket.on("newFastFoodOrder", (data) => {
       console.log("🍔 newFastFoodOrder:", data);
-      refreshMerchant();
+      refreshMerchant(false);
     });
     socket.on("newFastFoodOrders", (data) => {
       console.log("🍔 newFastFoodOrders:", data);
-      refreshMerchant();
+      refreshMerchant(false);
     });
     socket.on("fastFoodOrderUpdated", (data) => {
       console.log("🍔 fastFoodOrderUpdated:", data);
-      refreshMerchant();
+      refreshMerchant(false);
     });
 
     socket.on("fastFoodMenuUpdated", (data) => {
       console.log("🥘 fastFoodMenuUpdated:", data);
-      refreshMerchant();
+      refreshMerchant(false);
     });
 
     socket.on("newFastFoodMenu", (data) => {
       console.log("🥘 newFastFoodMenu:", data);
-      refreshMerchant();
+      refreshMerchant(false);
     });
 
     socket.on("globalMenuUpdated", (data) => {
@@ -79,7 +79,7 @@ export const useSocketEvents = () => {
     // Transaction Events
     socket.on("newTransaction", (data) => {
       console.log("💰 newTransaction:", data);
-      refreshMerchant(); // Updates Wallet
+      refreshMerchant(false); // Updates Wallet
     });
 
     // Notification Events

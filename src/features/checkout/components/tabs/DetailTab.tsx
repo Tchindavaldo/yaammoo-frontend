@@ -10,9 +10,21 @@ interface DetailTabProps {
   menu: Menu;
   selectedPriceIndex: number;
   setSelectedPriceIndex: (index: number) => void;
+  menuPrice: number;
+  extrasPrice: number;
+  drinksPrice: number;
+  deliveryPrice: number;
 }
 
-export const DetailTab: React.FC<DetailTabProps> = ({ menu, selectedPriceIndex, setSelectedPriceIndex }) => {
+export const DetailTab: React.FC<DetailTabProps> = ({ 
+  menu, 
+  selectedPriceIndex, 
+  setSelectedPriceIndex,
+  menuPrice,
+  extrasPrice,
+  drinksPrice,
+  deliveryPrice
+}) => {
   const images = menu.images && menu.images.length > 0 ? menu.images : [menu.image];
 
   return (
@@ -51,39 +63,49 @@ export const DetailTab: React.FC<DetailTabProps> = ({ menu, selectedPriceIndex, 
         />
       </View>
 
-      {/* Info Grid */}
+      {/* Price Summary Grid */}
       <View style={styles.gridRow}>
-        <TouchableOpacity style={styles.gridBtn}>
-          <Ionicons name="location-outline" size={18} color="#ec4913" />
+        <View style={styles.gridBtn}>
+          <Ionicons name="fast-food-outline" size={18} color="#ec4913" />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>Location</Text>
-            <Text style={styles.gridSubText}>123 Way, 4B</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>Menu</Text>
+            <Text style={styles.gridSubText}>{menuPrice} FCFA</Text>
           </View>
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.gridBtn}>
-          <Ionicons name="time-outline" size={18} color="#ec4913" />
+        <View style={styles.gridBtn}>
+          <Ionicons name="wine-outline" size={18} color="#ec4913" />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>Period</Text>
-            <Text style={styles.gridSubText}>11h00-11h30</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>Boisson</Text>
+            <Text style={styles.gridSubText}>{drinksPrice} FCFA</Text>
           </View>
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.gridBtn}>
-          <Ionicons name="call-outline" size={18} color="#ec4913" />
+        <View style={styles.gridBtn}>
+          <Ionicons name="add-circle-outline" size={18} color="#ec4913" />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>contact</Text>
-            <Text style={styles.gridSubText}>696080087</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>Extras</Text>
+            <Text style={styles.gridSubText}>{extrasPrice} FCFA</Text>
           </View>
-        </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.gridBtn}>
-          <Ionicons name="document-text-outline" size={18} color="#94a3b8" />
+        <View style={styles.gridBtn}>
+          <Ionicons name="bicycle-outline" size={18} color={deliveryPrice > 0 ? "#ec4913" : "#94a3b8"} />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>Notes</Text>
-            <Text style={styles.gridSubText}>smal prt</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>Livraison</Text>
+            <Text style={styles.gridSubText}>{deliveryPrice} FCFA</Text>
           </View>
-        </TouchableOpacity>
+        </View>
+
+        <View style={[styles.gridBtn, { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottomWidth: 0 }]}>
+          <Ionicons name="wallet-outline" size={18} color="#ec4913" />
+          <View style={styles.gridTextCenter}>
+            <Text style={[styles.gridTitle, styles.textDark]}>Total</Text>
+            <Text style={[styles.gridSubText, { fontWeight: 'bold', color: '#ec4913' }]}>
+              {menuPrice + extrasPrice + drinksPrice + deliveryPrice} FCFA
+            </Text>
+          </View>
+        </View>
       </View>
     </View>
   );

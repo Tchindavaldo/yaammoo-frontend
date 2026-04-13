@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, KeyboardAvoidingVie
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 
+const SHEET_HEIGHT = 384;
+
 interface CheckoutPeriodOverlayProps {
   onClose: () => void;
   selectedPeriod: string;
@@ -10,14 +12,16 @@ interface CheckoutPeriodOverlayProps {
 }
 
 export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({ onClose, selectedPeriod, onSelectPeriod }) => {
-  const periods = ['9h', '12h30', '14h', '16h30', null, null];
+  const periods = ['09:00', '12:30', '14:00', '16:30', null, null];
 
   return (
-    <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill}>
-      <KeyboardAvoidingView 
-        style={styles.container} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+    <View style={styles.keyboardWrapper}>
+      <BlurView 
+        intensity={40} 
+        tint="light" 
+        style={[styles.blurOverlay, { height: SHEET_HEIGHT }]} 
+      />
+      <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -46,7 +50,6 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({ on
                     style={[styles.gridBtn, isActive ? styles.gridBtnActive : styles.gridBtnInactive]}
                     onPress={() => {
                       onSelectPeriod(period);
-                      onClose();
                     }}
                   >
                     <Text style={[styles.gridBtnText, isActive ? styles.gridBtnTextActive : styles.gridBtnTextInactive]}>
@@ -61,18 +64,40 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({ on
               <Ionicons name="calendar-outline" size={18} color="#94a3b8" />
               <Text style={styles.customBtnText}>Custom time</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.checkBtn} 
+              onPress={onClose}
+            >
+              <Text style={styles.checkBtnText}>VALIDER</Text>
+              <Ionicons name="arrow-forward-outline" size={18} color="white" />
+            </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
-    </BlurView>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+  },
+  blurOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SHEET_HEIGHT,
     paddingHorizontal: 16,
+    justifyContent: 'center',
   },
   card: {
     backgroundColor: 'white',
@@ -162,5 +187,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
     color: '#1e293b',
+  },
+  checkBtn: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#ec4913',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    shadowColor: '#ec4913',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  checkBtnText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });

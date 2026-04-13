@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   StyleSheet,
   FlatList,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import { Toast } from "@/src/components/Toast";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { RestaurantHeader } from "@/src/features/restaurants/components/RestaurantHeader";
 import { RestaurantCard } from "@/src/features/restaurants/components/RestaurantCard";
@@ -54,40 +55,36 @@ export default function HomeScreen() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
+
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const listHeader = useMemo(() => <HeroBanner />, []);
 
   const handleMenuClick = (menu: Menu) => {
     setSelectedMenu(menu);
     setCheckoutVisible(true);
   };
 
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+  };
+
   const handleConfirmOrder = async (order: any) => {
     try {
-      setIsAdding(true);
-      const success = await addOrder(order);
-      if (success) {
-        setCheckoutVisible(false);
-        Alert.alert(
-          "Succès ✨",
-          "Article ajouté au panier !",
-          [
-            { text: "Continuer mes achats" },
-            { text: "Voir le panier", onPress: () => {} },
-          ], // On pourrait rediriger ici
-        );
+      const result = await addOrder(order);
+      if (result.success) {
+        showToast(order.status === 'pending' ? "Commande envoyée au marchand ! 🚀" : "Article ajouté au panier ! ✨", "success");
+        return true;
       } else {
-        Alert.alert(
-          "Erreur",
-          "Impossible d’ajouter au panier. Vérifiez votre connexion.",
-        );
+        showToast(result.message || "Une erreur est survenue.", "error");
+        return false;
       }
     } catch (error) {
-      Alert.alert("Erreur", "Une erreur est survenue.");
-    } finally {
-      setIsAdding(false);
+      showToast("Une erreur est survenue.", "error");
+      return false;
     }
   };
 
@@ -124,29 +121,26 @@ export default function HomeScreen() {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <RestaurantHeader
-        userName={userData?.infos?.nom || "Utilisateur"}
-        userPhoto={
-          (userData as any)?.photoUrl || (userData as any)?.photo || ""
-        }
-        location="Banganté, Cameroun"
-        searchVisible={searchOpen}
-        onSearchToggle={() => setSearchOpen(!searchOpen)}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        categories={CATEGORIES}
-        selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
-      />
-      <FlatList
-        data={fastFoods}
-        ListHeaderComponent={() => (
-          <>
-            <HeroBanner />
-          </>
-        )}
+
+      return (
+        <View style={styles.container}>
+          <RestaurantHeader
+            userName={userData?.infos?.nom || "Utilisateur"}
+            userPhoto={
+              (userData as any)?.photoUrl || (userData as any)?.photo || ""
+            }
+            location="Banganté, Cameroun"
+            searchVisible={searchOpen}
+            onSearchToggle={() => setSearchOpen(!searchOpen)}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            categories={CATEGORIES}
+            selectedCategory={selectedCategory}
+            onCategorySelect={setSelectedCategory}
+          />
+          <FlatList
+            data={fastFoods}
+            ListHeaderComponent={listHeader}
         renderItem={({ item }) => (
           <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
         )}
@@ -176,11 +170,13 @@ export default function HomeScreen() {
         menu={selectedMenu}
         onConfirm={handleConfirmOrder}
       />
-      {isAdding && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color="white" />
-          <Text style={styles.loadingOverlayText}>Ajout au panier...</Text>
-        </View>
+
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onHide={() => setToast(null)} 
+        />
       )}
     </View>
   );

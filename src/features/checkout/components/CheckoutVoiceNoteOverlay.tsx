@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Audio } from 'expo-av';
 
+const SHEET_HEIGHT = 384;
+
 interface CheckoutVoiceNoteOverlayProps {
   onClose: () => void;
   onSave?: (uri: string) => void;
@@ -171,7 +173,12 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
   };
 
   return (
-    <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill}>
+    <View style={styles.keyboardWrapper}>
+      <BlurView 
+        intensity={40} 
+        tint="light" 
+        style={[styles.blurOverlay, { height: SHEET_HEIGHT }]} 
+      />
       <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.header}>
@@ -268,15 +275,29 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
           </View>
         </View>
       </View>
-    </BlurView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+  },
+  blurOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
   container: {
-    flex: 1,
-    justifyContent: 'center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SHEET_HEIGHT,
     paddingHorizontal: 16,
+    justifyContent: 'center',
   },
   card: {
     backgroundColor: 'white',

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Modal, TouchableOpacity, ScrollView, Platform, Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Menu } from '@/src/types';
 import { useCheckout } from '../hooks/useCheckout';
 import { styles } from './CheckoutSheet.styles';
@@ -21,6 +22,7 @@ import { CheckoutLocationOverlay } from './CheckoutLocationOverlay';
 import { CheckoutContactOverlay } from './CheckoutContactOverlay';
 import { CheckoutPeriodOverlay } from './CheckoutPeriodOverlay';
 import { CheckoutVoiceNoteOverlay } from './CheckoutVoiceNoteOverlay';
+import { CheckoutPaymentOverlay } from './CheckoutPaymentOverlay';
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -39,7 +41,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
     selectedDrinks, setSelectedDrinks,
     delivery, setDelivery,
     availablePackaging, availableDrinks,
-    total, createOrder
+    total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
+    createOrder
   } = useCheckout(menu);
 
   const [activeTab, setActiveTab] = useState<CheckoutStep>('detail');
@@ -47,6 +50,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
   const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
   const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
   const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
+  const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
+  const [paymentKey, setPaymentKey] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!menu) return null;
 
@@ -58,7 +64,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.dismiss} onPress={onClose} activeOpacity={1} />
+        <View style={styles.dismiss} />
         
         <View style={[styles.sheetContainer, styles.sheetLight]}>
           <View style={{ flex: 1 }}>
@@ -89,6 +95,13 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
                   onPress={() => setActiveTab('delivery')} 
                 />
               </ScrollView>
+              
+              <TouchableOpacity 
+                style={styles.closeCircle} 
+                onPress={onClose}
+              >
+                <Ionicons name="close" size={20} color="white" />
+              </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
@@ -97,6 +110,10 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
                   menu={menu} 
                   selectedPriceIndex={selectedPriceIndex} 
                   setSelectedPriceIndex={setSelectedPriceIndex} 
+                  menuPrice={menuPrice}
+                  extrasPrice={extrasPrice}
+                  drinksPrice={drinksPrice}
+                  deliveryPrice={deliveryPrice}
                 />
               )}
 
@@ -133,41 +150,68 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
             total={total}
             quantity={quantity}
             setQuantity={setQuantity}
-            onAddToCart={() => {}} // TODO: Implement if needed
-            onBuy={handleConfirm}
+            isLoading={isSubmitting}
+            onAddToCart={async () => {
+              try {
+                setIsSubmitting(true);
+                const success = await (onConfirm(createOrder('pendingToBuy')) as any);
+                if (success) onClose();
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+            onBuy={() => {
+              setIsPaymentPopupVisible(true);
+              setPaymentKey(prev => prev + 1);
+            }}
           />
 
-          {isLocationPopupVisible && (
-            <CheckoutLocationOverlay 
-              onClose={() => setIsLocationPopupVisible(false)} 
-              address={delivery.address || ''}
-              onSelectAddress={(addr) => setDelivery({ ...delivery, address: addr })}
-            />
-          )}
-
-          {isContactPopupVisible && (
-            <CheckoutContactOverlay 
-              onClose={() => setIsContactPopupVisible(false)} 
-              phone={delivery.phone || ''}
-              onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
-            />
-          )}
-
-          {isPeriodPopupVisible && (
-            <CheckoutPeriodOverlay 
-              onClose={() => setIsPeriodPopupVisible(false)} 
-              selectedPeriod={delivery.hour || 'Now'}
-              onSelectPeriod={(period) => setDelivery({ ...delivery, hour: period })}
-            />
-          )}
-
-          {isVoiceNotePopupVisible && (
-            <CheckoutVoiceNoteOverlay 
-              onClose={() => setIsVoiceNotePopupVisible(false)} 
-              onSave={(uri) => setDelivery({ ...delivery, voiceNoteUri: uri })}
-            />
-          )}
         </View>
+
+        {isLocationPopupVisible && (
+          <CheckoutLocationOverlay 
+            onClose={() => setIsLocationPopupVisible(false)} 
+            address={delivery.address || ''}
+            note={delivery.note || ''}
+            onSave={(addr, note) => setDelivery({ ...delivery, address: addr, note: note })}
+          />
+        )}
+
+        {isContactPopupVisible && (
+          <CheckoutContactOverlay 
+            onClose={() => setIsContactPopupVisible(false)} 
+            phone={delivery.phone || ''}
+            onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
+          />
+        )}
+
+        {isPeriodPopupVisible && (
+          <CheckoutPeriodOverlay 
+            onClose={() => setIsPeriodPopupVisible(false)} 
+            selectedPeriod={delivery.hour || 'Now'}
+            onSelectPeriod={(period) => setDelivery({ ...delivery, hour: period })}
+          />
+        )}
+
+        {isVoiceNotePopupVisible && (
+          <CheckoutVoiceNoteOverlay 
+            onClose={() => setIsVoiceNotePopupVisible(false)} 
+            onSave={(uri) => setDelivery({ ...delivery, voiceNoteUri: uri })}
+          />
+        )}
+
+        {isPaymentPopupVisible && (
+          <CheckoutPaymentOverlay 
+            key={paymentKey}
+            onClose={() => setIsPaymentPopupVisible(false)}
+            phone={delivery.phone || ''}
+            totalAmount={total}
+            onConfirm={async (payPhone) => {
+              const success = await (onConfirm(createOrder('pending')) as any);
+              if (success) onClose();
+            }}
+          />
+        )}
       </View>
     </Modal>
   );

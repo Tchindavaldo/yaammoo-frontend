@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Livraisons du jour</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #F5F5F0;
+            min-height: 100vh;
+            padding: 20px 16px;
+        }
+
+        .frame {
+            background: #F5F5F0;
+            border-radius: 20px;
+            padding: 18px;
+            max-width: 340px;
+            margin: 0 auto;
+        }
+
+        .notch {
+            width: 50px;
+            height: 4px;
+            border-radius: 2px;
+            background: #D3D1C7;
+            margin: 0 auto 16px;
+        }
+
+        .page-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #2C2C2A;
+            margin-bottom: 16px;
+        }
+
+        .section-express-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #888780;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            margin-bottom: 8px;
+        }
+
+        .express-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 18px;
+        }
+
+        .card {
+            background: #FFFFFF;
+            border: 0.5px solid #D3D1C7;
+            border-left: 3px solid transparent;
+            border-radius: 0 10px 10px 0;
+            padding: 10px 12px;
+            cursor: pointer;
+        }
+
+        .card-express {
+            border-left-color: #993C1D;
+        }
+
+        .card-creneau {
+            border-left-color: #185FA5;
+        }
+
+        .card-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .card-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .av-express {
+            background: #F5C4B3;
+            color: #712B13;
+        }
+
+        .av-creneau {
+            background: #B5D4F4;
+            color: #0C447C;
+        }
+
+        .av-late {
+            background: #F7C1C1;
+            color: #791F1F;
+        }
+
+        .av-ongoing {
+            background: #B5D4F4;
+            color: #0C447C;
+        }
+
+        .name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #2C2C2A;
+        }
+
+        .addr {
+            font-size: 11px;
+            color: #5F5E5A;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        .card-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 7px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        .badge-late {
+            background: #F7C1C1;
+            color: #791F1F;
+        }
+
+        .badge-waiting {
+            background: #FAC775;
+            color: #633806;
+        }
+
+        .badge-ongoing {
+            background: #B5D4F4;
+            color: #0C447C;
+        }
+
+        .bar-wrap {
+            height: 3px;
+            background: #E8E6DF;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+
+        .btn-launch-express {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 6px;
+            border: 0.5px solid #993C1D;
+            background: #FAECE7;
+            color: #712B13;
+            cursor: pointer;
+            white-space: nowrap;
+            margin-top: 7px;
+            display: block;
+            margin-left: auto;
+            transition: background 0.15s;
+        }
+
+        .btn-launch-express:hover {
+            background: #F5C4B3;
+        }
+
+        .btn-launch-express.launched {
+            background: #C0DD97;
+            border-color: #3B6D11;
+            color: #27500A;
+        }
+
+        .group {
+            margin-bottom: 10px;
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 10px;
+            background: #ECEAE2;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .group-header-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .group-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: #2C2C2A;
+        }
+
+        .group-count {
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 20px;
+            background: #FFFFFF;
+            border: 0.5px solid #D3D1C7;
+            color: #5F5E5A;
+        }
+
+        .group-late-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #E24B4A;
+            flex-shrink: 0;
+        }
+
+        .chevron {
+            font-size: 10px;
+            color: #888780;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .chevron.open {
+            transform: rotate(90deg);
+        }
+
+        .btn-launch-group {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 11px;
+            border-radius: 6px;
+            border: 0.5px solid #185FA5;
+            background: #E6F1FB;
+            color: #0C447C;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background 0.15s;
+        }
+
+        .btn-launch-group:hover {
+            background: #B5D4F4;
+        }
+
+        .btn-launch-group.launched {
+            background: #C0DD97;
+            border-color: #3B6D11;
+            color: #27500A;
+        }
+
+        .cards-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            overflow: hidden;
+            transition: max-height 0.25s ease;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="frame">
+        <div class="notch"></div>
+        <div class="page-title">Livraisons du jour</div>
+
+        <div class="section-express-label">Express</div>
+        <div class="express-group">
+
+            <div class="card card-express">
+                <div class="card-row">
+                    <div class="card-left">
+                        <div class="avatar av-late" id="av1">KB</div>
+                        <div style="min-width:0;">
+                            <div class="name">Karim Benali</div>
+                            <div class="addr">14 rue Voltaire, Belleville</div>
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        <span class="badge badge-late" id="badge1">En retard</span>
+                    </div>
+                </div>
+                <div class="bar-wrap">
+                    <div class="bar-fill" id="bar1" style="width:85%; background:#E24B4A;"></div>
+                </div>
+                <button class="btn-launch-express" id="btn-exp-1"
+                    onclick="launchExpress('btn-exp-1','av1','badge1','bar1')">Lancer la livraison</button>
+            </div>
+
+            <div class="card card-express">
+                <div class="card-row">
+                    <div class="card-left">
+                        <div class="avatar av-express" id="av2">SM</div>
+                        <div style="min-width:0;">
+                            <div class="name">Sofia Mendez</div>
+                            <div class="addr">3 impasse des Lilas</div>
+                        </div>
+                    </div>
+                    <div class="card-right">
+                        <span class="badge badge-waiting" id="badge2">En attente</span>
+                    </div>
+                </div>
+                <div class="bar-wrap">
+                    <div class="bar-fill" id="bar2" style="width:22%; background:#639922;"></div>
+                </div>
+                <button class="btn-launch-express" id="btn-exp-2"
+                    onclick="launchExpress('btn-exp-2','av2','badge2','bar2')">Lancer la livraison</button>
+            </div>
+
+        </div>
+
+        <div class="group">
+            <div class="group-header" onclick="toggleGroup('g1')">
+                <div class="group-header-left">
+                    <span class="chevron open" id="chev-g1">&#9654;</span>
+                    <span class="group-title">13h00 – 13h30</span>
+                    <span class="group-count">1 commande</span>
+                    <div class="group-late-dot"></div>
+                </div>
+                <button class="btn-launch-group launched" id="btn-g1"
+                    onclick="event.stopPropagation(); launchGroup('btn-g1')">Lancé</button>
+            </div>
+            <div class="cards-wrap" id="g1" style="max-height:200px;">
+                <div class="card card-creneau">
+                    <div class="card-row">
+                        <div class="card-left">
+                            <div class="avatar av-late">CM</div>
+                            <div style="min-width:0;">
+                                <div class="name">Chloé Martin</div>
+                                <div class="addr">27 rue des Pyrénées</div>
+                            </div>
+                        </div>
+                        <div class="card-right">
+                            <span class="badge badge-late">Retardée</span>
+                        </div>
+                    </div>
+                    <div class="bar-wrap">
+                        <div class="bar-fill" style="width:100%; background:#E24B4A;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="group">
+            <div class="group-header" onclick="toggleGroup('g2')">
+                <div class="group-header-left">
+                    <span class="chevron open" id="chev-g2">&#9654;</span>
+                    <span class="group-title">13h45 – 14h15</span>
+                    <span class="group-count">2 commandes</span>
+                </div>
+                <button class="btn-launch-group" id="btn-g2"
+                    onclick="event.stopPropagation(); launchGroup('btn-g2')">Lancer tout</button>
+            </div>
+            <div class="cards-wrap" id="g2" style="max-height:300px;">
+                <div class="card card-creneau">
+                    <div class="card-row">
+                        <div class="card-left">
+                            <div class="avatar av-creneau">LP</div>
+                            <div style="min-width:0;">
+                                <div class="name">Lucas Petit</div>
+                                <div class="addr">88 bd de la République</div>
+                            </div>
+                        </div>
+                        <div class="card-right">
+                            <span class="badge badge-waiting">En attente</span>
+                        </div>
+                    </div>
+                    <div class="bar-wrap">
+                        <div class="bar-fill" style="width:30%; background:#639922;"></div>
+                    </div>
+                </div>
+                <div class="card card-creneau">
+                    <div class="card-row">
+                        <div class="card-left">
+                            <div class="avatar av-creneau">RP</div>
+                            <div style="min-width:0;">
+                                <div class="name">Rania Pham</div>
+                                <div class="addr">5 rue des Cascades</div>
+                            </div>
+                        </div>
+                        <div class="card-right">
+                            <span class="badge badge-waiting">En attente</span>
+                        </div>
+                    </div>
+                    <div class="bar-wrap">
+                        <div class="bar-fill" style="width:28%; background:#639922;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="group">
+            <div class="group-header" onclick="toggleGroup('g3')">
+                <div class="group-header-left">
+                    <span class="chevron" id="chev-g3">&#9654;</span>
+                    <span class="group-title">15h00 – 15h30</span>
+                    <span class="group-count">1 commande</span>
+                </div>
+                <button class="btn-launch-group" id="btn-g3"
+                    onclick="event.stopPropagation(); launchGroup('btn-g3')">Lancer tout</button>
+            </div>
+            <div class="cards-wrap" id="g3" style="max-height:0px;">
+                <div class="card card-creneau">
+                    <div class="card-row">
+                        <div class="card-left">
+                            <div class="avatar av-creneau">IB</div>
+                            <div style="min-width:0;">
+                                <div class="name">Ibrahim Diallo</div>
+                                <div class="addr">5 avenue Gambetta</div>
+                            </div>
+                        </div>
+                        <div class="card-right">
+                            <span class="badge badge-waiting">En attente</span>
+                        </div>
+                    </div>
+                    <div class="bar-wrap">
+                        <div class="bar-fill" style="width:5%; background:#639922;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function toggleGroup(id) {
+            const wrap = document.getElementById(id);
+            const chev = document.getElementById('chev-' + id);
+            const isOpen = wrap.style.maxHeight !== '0px';
+            wrap.style.maxHeight = isOpen ? '0px' : '600px';
+            if (chev) chev.classList.toggle('open', !isOpen);
+        }
+
+        function launchGroup(btnId) {
+            const btn = document.getElementById(btnId);
+            if (btn.classList.contains('launched')) return;
+            btn.classList.add('launched');
+            btn.textContent = 'Lancé';
+        }
+
+        function launchExpress(btnId, avId, badgeId, barId) {
+            const btn = document.getElementById(btnId);
+            if (btn.classList.contains('launched')) return;
+            btn.classList.add('launched');
+            btn.textContent = 'En cours';
+            const badge = document.getElementById(badgeId);
+            badge.className = 'badge badge-ongoing';
+            badge.textContent = 'En cours';
+            const av = document.getElementById(avId);
+            av.className = 'avatar av-ongoing';
+            const bar = document.getElementById(barId);
+            bar.style.background = '#378ADD';
+        }
+    </script>
+
+</body>
+
+</html>

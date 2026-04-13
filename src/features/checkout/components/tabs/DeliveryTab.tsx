@@ -71,7 +71,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery,
         >
           <Ionicons name="flash-outline" size={22} color={delivery.type === 'express' ? '#ec4913' : '#94a3b8'} />
           <View style={styles.deliveryTypeText}>
-            <Text style={[styles.deliveryTypeTitle, styles.textDark]}>Express</Text>
+            <Text style={[styles.deliveryTypeTitle, styles.textDark]}>Express (1000F)</Text>
             <Text style={[styles.deliveryTypeSubText, delivery.type === 'express' && { color: '#ec4913' }]}>15-25 min</Text>
           </View>
         </TouchableOpacity>
@@ -82,7 +82,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery,
         >
           <Ionicons name="calendar-outline" size={22} color={delivery.type === 'standard' ? '#ec4913' : '#94a3b8'} />
           <View style={styles.deliveryTypeText}>
-            <Text style={[styles.deliveryTypeTitle, styles.textDark]}>Heure</Text>
+            <Text style={[styles.deliveryTypeTitle, styles.textDark]}>Heure (500F)</Text>
             <Text style={[styles.deliveryTypeSubText, delivery.type === 'standard' && { color: '#ec4913' }]}>Scheduled</Text>
           </View>
         </TouchableOpacity>

@@ -27,7 +27,9 @@ export const styles = StyleSheet.create({
     },
     tabsWrapper: {
         paddingVertical: 8,
-        paddingHorizontal: 16,
+        paddingHorizontal: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     tabsContent: {
         gap: 8,
@@ -37,7 +39,7 @@ export const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 12,
+        paddingHorizontal: 8,
         borderRadius: 9999,
         gap: 6,
     },
@@ -66,7 +68,7 @@ export const styles = StyleSheet.create({
         flex: 1,
     },
     detailContainer: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 8,
         paddingTop: 4,
     },
     productHeader: {
@@ -475,5 +477,19 @@ export const styles = StyleSheet.create({
         color: '#94a3b8',
         fontWeight: '500',
         marginTop: 2,
+    },
+    closeCircle: {
+        width: 28,
+        height: 28,
+        borderRadius: 17,
+        backgroundColor: '#ef4444',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 0,
+        shadowColor: '#ef4444',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 6,
     },
 });

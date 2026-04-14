@@ -19,6 +19,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
   const [localAddress, setLocalAddress] = React.useState(address);
   const [localNote, setLocalNote] = React.useState(note);
   const [isSaving, setIsSaving] = React.useState(false);
+  const [isLocating, setIsLocating] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
 
@@ -68,11 +69,11 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
 
   const handleGetLocation = async () => {
     try {
-      setIsSaving(true);
+      setIsLocating(true);
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         alert('Permission to access location was denied');
-        setIsSaving(false);
+        setIsLocating(false);
         return;
       }
 
@@ -82,7 +83,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     } catch (error) {
       alert('Error fetching location');
     } finally {
-      setIsSaving(false);
+      setIsLocating(false);
     }
   };
 
@@ -153,6 +154,13 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
                   blurOnSubmit={true}
                   onSubmitEditing={Keyboard.dismiss}
                 />
+                
+                {isLocating && (
+                  <BlurView intensity={30} tint="light" style={styles.locatingOverlay}>
+                    <Loader size={40} color="#ec4913" />
+                    <Text style={styles.locatingText}>Récupération de votre position actuelle...</Text>
+                  </BlurView>
+                )}
             </View>
 
             <TouchableOpacity 
@@ -312,5 +320,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  locatingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    zIndex: 10,
+    overflow: 'hidden',
+  },
+  locatingText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ec4913',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });

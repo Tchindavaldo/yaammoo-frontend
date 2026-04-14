@@ -14,6 +14,9 @@ import {
 import { Commande } from "@/src/types";
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
+import MapView, { Marker } from 'react-native-maps';
+import * as Linking from 'expo-linking';
+import { Platform } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -94,7 +97,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
       setUser({
         initials,
         name: `${customerFirstName} ${customerLastName}`,
-        addr: order.livraison?.address || "Adresse non spécifiée",
+        addr: (order as any).delivery?.location || order.livraison?.address || "Adresse non spécifiée",
         avColor: theme.bg,
         avTextColor: theme.text,
         badgeColor: theme.badge,
@@ -257,6 +260,40 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
 function LivraisonTab({ user }: { user: DeliveryUser }) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackProgress, setPlaybackProgress] = useState(0); // 0 to 1
+  const [isOpeningMaps, setIsOpeningMaps] = useState(false);
+
+  const parseLocation = (addr: string) => {
+    if (!addr) return null;
+    const parts = addr.split(',').map(p => parseFloat(p.trim()));
+    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+      return { latitude: parts[0], longitude: parts[1] };
+    }
+    return null;
+  };
+
+  const coords = parseLocation(user.addr);
+
+  const openInMaps = () => {
+    if (!coords) return;
+    setIsOpeningMaps(true);
+    const { latitude, longitude } = coords;
+    const label = encodeURIComponent(user.name);
+    
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}&label=${label}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+    });
+
+    Linking.canOpenURL(url).then(supported => {
+      const finalUrl = supported ? url : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+      Linking.openURL(finalUrl).finally(() => {
+        // Reset after a small delay to allow transition
+        setTimeout(() => setIsOpeningMaps(false), 2000);
+      });
+    });
+  };
 
   async function playSound() {
     if (!user.voiceNoteUri) return;
@@ -266,6 +303,11 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
           await sound.pauseAsync();
           setIsPlaying(false);
         } else {
+          // If already finished, restart from 0
+          const status = await sound.getStatusAsync();
+          if (status.isLoaded && status.positionMillis >= (status.durationMillis || 0)) {
+            await sound.setPositionAsync(0);
+          }
           await sound.playAsync();
           setIsPlaying(true);
         }
@@ -281,8 +323,14 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
       setIsPlaying(true);
 
       newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          setIsPlaying(false);
+        if (status.isLoaded) {
+          if (status.durationMillis) {
+            setPlaybackProgress(status.positionMillis / status.durationMillis);
+          }
+          if (status.didJustFinish) {
+            setIsPlaying(false);
+            setPlaybackProgress(0);
+          }
         }
       });
     } catch (error) {
@@ -314,15 +362,47 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
 
         {/* Right Column: Map matching exactly 110px */}
         <View style={{ flex: 1 }}>
-          <View style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, overflow: 'hidden', borderRadius: 12 }]}>
-            <View style={styles.mapGridH} />
-            <View style={styles.mapGridV} />
-            <View style={styles.pinContainer}>
-              <View style={styles.pinRing} />
-              <View style={styles.pinDot} />
-            </View>
-            <Text style={styles.mapLabel} numberOfLines={1}>{user.addr}</Text>
-          </View>
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onPress={openInMaps}
+            style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, overflow: 'hidden', borderRadius: 12 }]}
+          >
+            {coords ? (
+              <MapView
+                style={StyleSheet.absoluteFill}
+                zoomEnabled={false}
+                scrollEnabled={false}
+                rotateEnabled={false}
+                pitchEnabled={false}
+                initialRegion={{
+                  ...coords,
+                  latitudeDelta: 0.01,
+                  longitudeDelta: 0.01,
+                }}
+              >
+                <Marker coordinate={coords} pinColor="#ec4913" />
+              </MapView>
+            ) : (
+              <>
+                <View style={styles.mapGridH} />
+                <View style={styles.mapGridV} />
+                <View style={styles.pinContainer}>
+                  <View style={styles.pinRing} />
+                  <View style={styles.pinDot} />
+                </View>
+                <Text style={styles.mapLabel} numberOfLines={1}>{user.addr}</Text>
+              </>
+            )}
+
+            {isOpeningMaps && (
+              <View style={styles.mapLoadingOverlay}>
+                <View style={styles.mapLoaderCircle}>
+                   <Text style={{ fontSize: 18 }}>📍</Text>
+                </View>
+                <Text style={styles.mapLoadingText}>Ouverture Maps...</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -346,8 +426,8 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
                 color="#ec4913" 
               />
             </View>
-            <Waveform active={isPlaying} />
-            <Text style={styles.waveDur}>{isPlaying ? "En lecture..." : "0:18"}</Text>
+            <Waveform active={isPlaying} progress={playbackProgress} />
+            <Text style={styles.waveDur}>{isPlaying ? `${Math.round(playbackProgress * 100)}%` : "0:18"}</Text>
           </TouchableOpacity>
         </>
       ) : (
@@ -429,13 +509,25 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
-function Waveform() {
+function Waveform({ active, progress = 0 }: { active?: boolean; progress?: number }) {
   const heights = [4, 7, 12, 6, 10, 14, 8, 5, 11, 9, 13, 6, 8, 12, 5, 10, 7, 14, 6, 9, 11, 4, 8, 12, 7, 5, 10, 13, 6, 9];
   return (
     <View style={styles.wave}>
-      {heights.map((h, i) => (
-        <View key={i} style={[styles.wavebar, { height: h }]} />
-      ))}
+      {heights.map((h, i) => {
+        const barProgress = (i + 1) / heights.length;
+        const isPlayed = progress >= barProgress;
+        return (
+          <View 
+            key={i} 
+            style={[
+              styles.wavebar, 
+              { height: h }, 
+              (active && isPlayed) && { backgroundColor: '#ec4913' },
+              (active && !isPlayed) && { backgroundColor: 'rgba(236,19,49,0.2)' }
+            ]} 
+          />
+        );
+      })}
     </View>
   );
 }
@@ -622,6 +714,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     color: '#6B7280',
+  },
+  mapLoadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  mapLoaderCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  mapLoadingText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ec4913',
+    textTransform: 'uppercase',
   },
   grid2: {
     flexDirection: 'row',

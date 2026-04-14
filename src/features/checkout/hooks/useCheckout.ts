@@ -1,14 +1,15 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { Menu, Commande, Embalage, Boisson, Livraison } from "../../../types";
 import { useAuth } from "../../auth/context/AuthContext";
 
-export const useCheckout = (menu: Menu | null) => {
+export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData } = useAuth();
   const [quantity, setQuantity] = useState(1);
   const [selectedPriceIndex, setSelectedPriceIndex] = useState(1); // 1, 2, or 3
   const [selectedPackaging, setSelectedPackaging] = useState<Embalage[]>([]);
   const [selectedDrinks, setSelectedDrinks] = useState<Boisson[]>([]);
   const [delivery, setDelivery] = useState<Livraison>(new Livraison(false, 0));
+  const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
   // Prix par défaut pour les options (peuvent être dynamiques si API dispo)
   const availablePackaging = useMemo(
@@ -28,6 +29,33 @@ export const useCheckout = (menu: Menu | null) => {
   );
 
   const availableHours = ["12:00", "13:00", "14:00", "18:00", "19:00", "20:00"];
+
+  useEffect(() => {
+    const currentId = initialOrder?.id;
+    if (currentId && currentId !== lastOrderId) {
+      setQuantity(initialOrder.quantity || 1);
+      if (initialOrder.drink) {
+        const initialD = availableDrinks.filter(d => initialOrder.drink.some((idr: any) => idr.name === d.type && idr.status === true));
+        setSelectedDrinks(initialD);
+      }
+      if (initialOrder.extra) {
+        const initialP = availablePackaging.filter(p => initialOrder.extra.some((ex: any) => ex.name === p.type && ex.status === true));
+        setSelectedPackaging(initialP);
+      }
+      if (initialOrder.delivery || initialOrder.livraison) {
+        const dData = initialOrder.delivery || initialOrder.livraison;
+        const d = new Livraison(dData.status, 0);
+        d.type = dData.type;
+        d.hour = dData.time || dData.hour;
+        d.address = dData.location || dData.address;
+        d.phone = dData.phone;
+        d.voiceNoteUri = dData.voiceNoteUri;
+        d.note = dData.note;
+        setDelivery(d);
+      }
+      setLastOrderId(currentId);
+    }
+  }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
   const prices = useMemo(() => {
     if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0 };
@@ -54,7 +82,7 @@ export const useCheckout = (menu: Menu | null) => {
     };
   }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, delivery]);
 
-  const createOrder = (status: string = "pendingToBuy"): any | null => {
+  const createOrder = useCallback((status: string = "pendingToBuy"): any | null => {
     if (!menu || !userData) return null;
 
     const extraData = selectedPackaging.map((pkg) => ({
@@ -110,7 +138,7 @@ export const useCheckout = (menu: Menu | null) => {
       deliveryData.time = formattedTime;
     }
 
-    return {
+    const returnedOrder: any = {
       userId: userData?.uid || "unknown_user",
       fastFoodId: (menu as any).fastFoodId || (menu as any).idFastFood || "1",
       menu: mappedMenu,
@@ -120,14 +148,32 @@ export const useCheckout = (menu: Menu | null) => {
         firstName: userData?.infos?.prenom || "Inconnu",
         lastName: userData?.infos?.nom || "Inconnu",
         email: userData?.infos?.email || "inconnu@email.com",
-        phoneNumber: userData?.infos?.numero || 0,
+        phoneNumber: Number(userData?.infos?.numero) || 0,
       },
       extra: extraData.length > 0 ? extraData : [{ name: "Aucun", status: false }],
       drink: drinkData,
       delivery: deliveryData,
       status,
     };
-  };
+
+    if (initialOrder) {
+      if (initialOrder.id) {
+        returnedOrder.id = initialOrder.id;
+      }
+      if (initialOrder.createdAt) {
+        returnedOrder.createdAt = initialOrder.createdAt;
+      }
+    }
+
+    return returnedOrder;
+  }, [menu, userData, selectedPackaging, selectedDrinks, delivery, quantity, initialOrder]);
+
+  useEffect(() => {
+    if (onChange && menu && userData) {
+      const order = createOrder();
+      if (order) onChange(order);
+    }
+  }, [createOrder, onChange, menu, userData]);
 
   return {
     quantity,

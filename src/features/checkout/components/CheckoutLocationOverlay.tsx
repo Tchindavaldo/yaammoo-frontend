@@ -55,6 +55,13 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     };
   }, []);
 
+  // Auto-refresh location if current address looks like GPS coords
+  React.useEffect(() => {
+    if (address && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(address)) {
+      handleGetLocation();
+    }
+  }, []);
+
   const handleClose = () => {
     Keyboard.dismiss();
     Animated.spring(keyboardHeight, {
@@ -77,11 +84,21 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
       const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
       setLocalAddress(coords);
     } catch (error) {
-      alert('Error fetching location');
+      alert('Error fetching location or timeout. Using last known if available.');
+      // Try a less accurate but faster fix as fallback
+      try {
+        const last = await Location.getLastKnownPositionAsync({});
+        if (last) {
+           const coords = `${last.coords.latitude.toFixed(6)}, ${last.coords.longitude.toFixed(6)}`;
+           setLocalAddress(coords);
+        }
+      } catch (e) {}
     } finally {
       setIsLocating(false);
     }

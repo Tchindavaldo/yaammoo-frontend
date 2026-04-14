@@ -64,9 +64,7 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await merchantService.updateOrderStatus(orderId, status);
       setOrders((prev) =>
         prev.map((o) =>
-          o.idCmd === orderId || (o as any).id === orderId
-            ? ({ ...o, staut: status, status: status } as any)
-            : o,
+          o.id === orderId ? { ...o, status: status } : o,
         ),
       );
     } catch (err) {
@@ -88,22 +86,16 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const stats = {
     totalOrders: orders.length,
     pendingOrders: orders.filter(
-      (o) =>
-        ((o as any).status || o.staut) === "pending" ||
-        ((o as any).status || o.staut) === "pendingToBuy",
+      (o) => o.status === "pending"
     ).length,
     completedOrders: orders.filter(
-      (o) =>
-        ((o as any).status || o.staut) === "completed" ||
-        ((o as any).status || o.staut) === "finished",
+      (o) => o.status === "completed" || o.status === "finished",
     ).length,
     totalRevenue: orders
       .filter(
-        (o) =>
-          ((o as any).status || o.staut) === "completed" ||
-          ((o as any).status || o.staut) === "finished",
+        (o) => o.status === "completed" || o.status === "finished",
       )
-      .reduce((acc, o) => acc + ((o as any).total || o.prixTotal || 0), 0),
+      .reduce((acc, o) => acc + (o.total || 0), 0),
   };
 
   return (

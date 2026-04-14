@@ -54,18 +54,19 @@ export class Menu {
 
 export class Commande {
   constructor(
-    public uidUser: string,
-    public idCmd: string,
-    public idFastFood: string,
-    public menu: Menu,
-    public quantite: number,
-    public embalage: Embalage[],
-    public boisson: Boisson,
-    public livraison: Livraison,
-    public prixTotal: number,
-    public staut: string,
-    public isBuy: boolean,
-    public ispending: boolean,
+    public userId: string,
+    public id: string,
+    public fastFoodId: string,
+    public menu: any,
+    public quantity: number,
+    public extra: any[],
+    public drink: any[],
+    public delivery: any,
+    public total: number,
+    public status: string,
+    public userData?: any,
+    public createdAt?: string,
+    public updatedAt?: string,
   ) { }
 }
 

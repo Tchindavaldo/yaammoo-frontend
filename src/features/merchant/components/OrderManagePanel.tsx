@@ -44,8 +44,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
   // Grouper les commandes par date (Priorité date de livraison comme Ionic)
   const getDateKey = (order: Commande) => {
-    const deliveryDate = order.livraison?.date;
-    const dateStr = deliveryDate || (order as any).createdAt || (order as any).date || '';
+    const deliveryDate = order.delivery?.date;
+    const dateStr = deliveryDate || order.createdAt || '';
     
     if (!dateStr) return 'Aujourd\'hui';
     
@@ -65,13 +65,13 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   };
 
   const statusMap: Record<OrderStatus, string[]> = {
-    pending: ['pending', 'pendingToBuy'],
+    pending: ['pending'],
     proccess: ['processing', 'active', 'in_progress'],
     finish: ['completed', 'finished', 'done'],
   };
 
-  const filteredOrders = orders.filter((o) =>
-    statusMap[selectedStatus].includes((o as any).status || o.staut)
+   const filteredOrders = orders.filter((o) =>
+    statusMap[selectedStatus].includes(o.status)
   );
 
   // Dates uniques disponibles pour ce statut
@@ -89,12 +89,12 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     : filteredOrders;
 
   const counts = {
-    pending: orders.filter((o) => statusMap.pending.includes((o as any).status || o.staut)).length,
-    proccess: orders.filter((o) => statusMap.proccess.includes((o as any).status || o.staut)).length,
-    finish: orders.filter((o) => statusMap.finish.includes((o as any).status || o.staut)).length,
+    pending: orders.filter((o) => statusMap.pending.includes(o.status)).length,
+    proccess: orders.filter((o) => statusMap.proccess.includes(o.status)).length,
+    finish: orders.filter((o) => statusMap.finish.includes(o.status)).length,
   };
 
-  const totalAmount = dateFilteredOrders.reduce((acc, o) => acc + ((o as any).total || o.prixTotal || 0), 0);
+  const totalAmount = dateFilteredOrders.reduce((acc, o) => acc + (o.total || 0), 0);
 
   const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
     { key: 'pending', label: 'En Attente', icon: 'time-outline' },
@@ -121,7 +121,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         express.push(o);
       } else {
         // Use delivery.time first, then fallback to livraison.hour
-        const slot = d?.time || o.livraison?.hour || "À définir";
+        const slot = d?.time || "À définir";
         if (!scheduled[slot]) scheduled[slot] = [];
         scheduled[slot].push(o);
       }
@@ -130,9 +130,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     const groupByUser = (ordersArr: Commande[]) => {
       const userMap: Record<string, Commande[]> = {};
       ordersArr.forEach((o) => {
-        const u = (o as any).userData;
-        // Group by userId primarily to avoid duplicates for the same user
-        const key = (o as any).userId || u?.email || (o as any).idCmd || `anon_${Math.random()}`;
+        const u = o.userData;
+        const key = o.userId || u?.email || o.id || `anon_${Math.random()}`;
         if (!userMap[key]) userMap[key] = [];
         userMap[key].push(o);
       });
@@ -152,11 +151,11 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     const isForced = groupId ? launchedGroups[groupId] : false;
     return (
       <MerchantOrderCard
-        key={(orders[0] as any).id || orders[0].idCmd}
+        key={orders[0].id}
         order={orders[0]}
         allOrders={orders}
         isForceLaunched={isForced}
-        onUpdateStatus={(status) => onUpdateStatus((orders[0] as any).id || orders[0].idCmd, status)}
+        onUpdateStatus={(status) => onUpdateStatus(orders[0].id, status)}
       />
     );
   };
@@ -352,10 +351,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           renderItem={({ item }) => (
             <MerchantOrderCard
               order={item}
-              onUpdateStatus={(status) => onUpdateStatus((item as any).id || item.idCmd, status)}
+              onUpdateStatus={(status) => onUpdateStatus(item.id, status)}
             />
           )}
-          keyExtractor={(item, i) => item.idCmd?.toString() || i.toString()}
+          keyExtractor={(item) => item.id}
           refreshing={loading}
           onRefresh={onRefresh}
           contentContainerStyle={styles.listContent}

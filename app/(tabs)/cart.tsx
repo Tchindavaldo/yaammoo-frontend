@@ -7,11 +7,20 @@ import {
   TouchableOpacity,
   Alert,
   Platform,
+  RefreshControl,
+  TextInput,
+  LayoutAnimation,
+  UIManager,
+  Animated,
+  Keyboard,
+  Dimensions,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Commande, Menu } from "@/src/types";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { OrderHeader } from "@/src/features/orders/components/OrderHeader";
-import { OrderCard } from "@/src/features/orders/components/OrderCard";
+import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
 import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrackingHeader";
 import { Theme } from "@/src/theme";
 import { PaymentSheet } from "@/src/features/payment/components/PaymentSheet";
@@ -20,10 +29,20 @@ import { BonusScreen } from "@/src/features/bonus/components/BonusScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { Loader } from "@/src/components/Loader";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { Toast } from "@/src/components/Toast";
+import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
+import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
 
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 export default function OrdersScreen() {
   const {
     loading,
+    orders,
     pendingToBuy,
     pending,
     active,
@@ -32,9 +51,116 @@ export default function OrdersScreen() {
     refresh,
     deleteOrder,
     updateQuantity,
+    updateLocalOrder,
     buyOrders,
     stats,
   } = useOrders();
+  const { userData } = useAuth();
+  
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [isPaying, setIsPaying] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [orderToEdit, setOrderToEdit] = useState<any | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<Commande | null>(null);
+  const [detailVisible, setDetailVisible] = useState(false);
+
+  const itemToDelete = useMemo(() => {
+    if (!orderToDelete) return null;
+    return orders.find(o => o.id === orderToDelete);
+  }, [orderToDelete, orders]);
+
+  const synthesizedEditMenu = useMemo(() => {
+    if (!orderToEdit) return null;
+    return {
+      id: orderToEdit.menu.id,
+      fastFoodId: orderToEdit.fastFoodId,
+      titre: orderToEdit.menu.titre || orderToEdit.menu.name || "",
+      prix1: orderToEdit.menu.prix1 || orderToEdit.menu.prices?.[0]?.price || 0,
+      prix2: orderToEdit.menu.prix2 || orderToEdit.menu.prices?.[1]?.price || 0,
+      prix3: orderToEdit.menu.prix3 || orderToEdit.menu.prices?.[2]?.price || 0,
+      optionPrix1: orderToEdit.menu.optionPrix1 || orderToEdit.menu.prices?.[0]?.description || "",
+      optionPrix2: orderToEdit.menu.optionPrix2 || orderToEdit.menu.prices?.[1]?.description || "",
+      optionPrix3: orderToEdit.menu.optionPrix3 || orderToEdit.menu.prices?.[2]?.description || "",
+      image: orderToEdit.menu.image || orderToEdit.menu.coverImage || "",
+      disponibilite: "active",
+      images: orderToEdit.menu.images || [orderToEdit.menu.image || orderToEdit.menu.coverImage || ""],
+    } as Menu;
+  }, [orderToEdit]);
+
+  // UI states
+  const fadeAnim = React.useRef(new Animated.Value(1)).current;
+  const keyboardHeight = React.useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (userData?.infos?.numero) {
+      setPhoneNumber(userData.infos.numero.toString());
+    }
+  }, [userData]);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        setIsKeyboardVisible(true);
+        Animated.spring(keyboardHeight, {
+          toValue: e.endCoordinates.height,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setIsKeyboardVisible(false);
+        Animated.spring(keyboardHeight, {
+          toValue: 0,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const handlePayerPress = () => {
+    if (isKeyboardVisible) {
+      Keyboard.dismiss();
+    } else if (isPaying) {
+      handlePaymentSuccess();
+    } else {
+      togglePaying();
+    }
+  };
+
+  const togglePaying = () => {
+    // Fade out
+    Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+    }).start(() => {
+        setIsPaying(!isPaying);
+        // Fade in
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 250,
+            useNativeDriver: true,
+        }).start();
+    });
+
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  };
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
   const HEADER_HEIGHT = 60 + insets.top;
@@ -53,8 +179,8 @@ export default function OrdersScreen() {
   const availableDates = useMemo(() => {
     const dates = [new Date()];
     [...pending, ...active, ...finished, ...delivered].forEach((o) => {
-      if (o.livraison?.date) {
-        dates.push(new Date(o.livraison.date));
+      if (o.delivery?.date) {
+        dates.push(new Date(o.delivery.date));
       }
     });
     // Uniq par jour
@@ -71,7 +197,11 @@ export default function OrdersScreen() {
   }, [currentTab]);
 
   const calculateCartTotal = () => {
-    return pendingToBuy.reduce((acc, o) => acc + o.prixTotal, 0);
+    const totalValue = pendingToBuy.reduce((acc, o) => {
+        const itemTotal = o.total || 0;
+        return acc + (Number(itemTotal) || 0);
+    }, 0);
+    return isNaN(totalValue) ? 0 : totalValue;
   };
 
   const isSameDay = (d1: Date, d2: Date) => {
@@ -82,10 +212,30 @@ export default function OrdersScreen() {
     );
   };
 
+  const handleConfirmDelete = async () => {
+    if (!orderToDelete) return;
+    setIsSubmitting(true);
+    try {
+      const success = await deleteOrder(orderToDelete);
+      if (success) {
+        setOrderToDelete(null);
+        setToast({ message: "Article supprimé du panier", type: "success" });
+      } else {
+        setToast({ message: "Erreur lors de la suppression", type: "error" });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOrderToDelete(null);
+  };
   const filteredOrders = useMemo(() => {
     if (currentTab === "cart") return pendingToBuy;
 
-    let list = [];
+    let list: Commande[] = [];
     switch (activeStatus) {
       case "pending":
         list = pending;
@@ -130,24 +280,69 @@ export default function OrdersScreen() {
   };
 
   const handlePaymentSuccess = async () => {
-    setPaymentVisible(false);
     // Transitionner les articles du panier vers le statut 'payé/pending'
-    const success = await buyOrders(pendingToBuy);
-    if (success) {
-      Alert.alert("Succès ✨", "Votre commande a été validée avec succès !");
-      setCurrentTab("status");
-      setActiveStatus("pending");
-    } else {
-      Alert.alert(
-        "Attention",
-        "Le paiement a réussi mais une erreur est survenue lors de la validation de la commande.",
-      );
-      refresh();
+    setIsSubmitting(true);
+    try {
+      const success = await buyOrders(pendingToBuy);
+      if (success) {
+        Alert.alert("Succès ✨", "Votre commande a été validée avec succès !");
+        setCurrentTab("status");
+        setActiveStatus("pending");
+        setIsPaying(false);
+      } else {
+        Alert.alert(
+          "Attention",
+          "Une erreur est survenue lors de la validation de la commande.",
+        );
+        refresh();
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const { fastFoods } = useFastFoods();
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (id: string) => {
+    setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const groupedOrders = useMemo(() => {
+    if (currentTab !== "status") return null;
+    const groups: Record<string, { name: string; orders: Commande[] }> = {};
+    
+    filteredOrders.forEach(o => {
+      const ffId = o.fastFoodId;
+      if (!ffId) return;
+      if (!groups[ffId]) {
+        const ff = fastFoods.find(f => f.id === ffId);
+        groups[ffId] = {
+          name: ff?.nom || (ff as any)?.name || "Boutique",
+          orders: []
+        };
+      }
+      groups[ffId].orders.push(o);
+    });
+    
+    const result = Object.entries(groups).map(([id, data]) => ({ id, ...data }));
+    
+    // Auto-expand first group if nothing is expanded
+    if (result.length > 0 && Object.keys(expandedGroups).length === 0) {
+      setExpandedGroups({ [result[0].id]: true });
+    }
+    
+    return result;
+  }, [filteredOrders, currentTab, fastFoods]);
+
+  const onManualRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
+  
   if (
-    (loading && pendingToBuy.length === 0 && pending.length === 0) ||
+    (loading && orders.length === 0) ||
     forceLoading
   ) {
     return (
@@ -159,6 +354,65 @@ export default function OrdersScreen() {
       </View>
     );
   }
+
+  const renderStatusGroups = () => {
+    if (!groupedOrders || groupedOrders.length === 0) {
+      return (
+        <View style={[styles.centered, { paddingTop: 100 }]}>
+          <Ionicons name="receipt-outline" size={60} color={Theme.colors.gray[200]} />
+          <Text style={styles.emptyText}>Aucune commande pour cette date</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={{ paddingHorizontal: 16 }}>
+        {groupedOrders.map((group) => {
+          const isExpanded = !!expandedGroups[group.id];
+          return (
+            <View key={group.id} style={{ marginBottom: 15 }}>
+              <TouchableOpacity 
+                activeOpacity={0.7} 
+                onPress={() => toggleGroup(group.id)}
+                style={styles.groupHeader}
+              >
+                <View style={styles.groupHeaderLeft}>
+                  <Ionicons 
+                    name={isExpanded ? "chevron-down" : "chevron-forward"} 
+                    size={12} 
+                    color="#888780" 
+                  />
+                  <Text style={styles.groupTitle} numberOfLines={1}>{group.name}</Text>
+                  <View style={styles.groupCountBadge}>
+                    <Text style={styles.groupCountText}>
+                      {group.orders.length} commande{group.orders.length > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+              
+              {isExpanded && (
+                <View style={{ gap: 2 }}>
+                  {group.orders.map(order => (
+                    <ClientOrderCard
+                      key={order.id}
+                      order={order}
+                      onUpdateQuantity={handleUpdateQty}
+                      showActions={false}
+                      onPress={() => {
+                        setSelectedOrderDetails(order);
+                        setDetailVisible(true);
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -179,7 +433,7 @@ export default function OrdersScreen() {
             onDateChange={setSelectedDate}
             availableDates={availableDates}
             totalOrders={filteredOrders.length}
-            totalAmount={filteredOrders.reduce((acc, o: any) => acc + o.prixTotal, 0)}
+            totalAmount={filteredOrders.reduce((acc, o: any) => acc + (o.total || 0), 0)}
             activeStatus={activeStatus}
             onStatusChange={setActiveStatus}
             counts={{
@@ -192,78 +446,142 @@ export default function OrdersScreen() {
         </View>
       )}
 
-      {currentTab === "bonus" ? (
-        <View style={{ paddingTop: HEADER_HEIGHT, flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: HEADER_HEIGHT + (currentTab === "status" ? 140 : 0) }}>
+        {currentTab === "bonus" ? (
           <BonusScreen />
-        </View>
-      ) : (
-        <>
+        ) : currentTab === "status" ? (
+          <ScrollView
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: tabBarHeight + 100 },
+            ]}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onManualRefresh}
+                tintColor={Theme.colors.primary}
+                colors={[Theme.colors.primary]}
+              />
+            }
+          >
+            {renderStatusGroups()}
+          </ScrollView>
+        ) : (
           <FlatList
             data={filteredOrders}
             renderItem={({ item }) => (
-              <OrderCard
+              <ClientOrderCard
                 order={item}
-                onDelete={handleDelete}
+                onPress={() => {
+                  setOrderToEdit(item);
+                  setEditModalVisible(true);
+                }}
+                onDelete={(id) => {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setOrderToEdit(null);
+                  setOrderToDelete(id);
+                }}
                 onUpdateQuantity={handleUpdateQty}
-                showActions={currentTab === "cart"}
+                showActions={true}
               />
             )}
             keyExtractor={(item, index) =>
-              (item as any).idCmd?.toString() || index.toString()
+              (item as any).id?.toString() || (item as any).idCmd?.toString() || index.toString()
             }
             contentContainerStyle={[
               styles.listContent,
-              { paddingTop: HEADER_HEIGHT + (currentTab === "status" ? 140 : 0), paddingBottom: tabBarHeight + 80 },
+              { paddingBottom: tabBarHeight + 100 },
             ]}
-            refreshing={loading}
-            onRefresh={refresh}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onManualRefresh}
+                tintColor={Theme.colors.primary}
+                colors={[Theme.colors.primary]}
+              />
+            }
             ListEmptyComponent={
               <View style={[styles.centered, { paddingTop: 100 }]}>
                 <Ionicons
-                  name={
-                    currentTab === "cart" ? "cart-outline" : "receipt-outline"
-                  }
+                  name="cart-outline"
                   size={60}
                   color={Theme.colors.gray[200]}
                 />
-                <Text style={styles.emptyText}>
-                  {currentTab === "cart"
-                    ? "Votre panier est vide"
-                    : "Aucune commande pour cette date"}
-                </Text>
+                <Text style={styles.emptyText}>Votre panier est vide</Text>
               </View>
             }
           />
-          {currentTab === "cart" && pendingToBuy.length > 0 && (
-            <View style={[styles.payFooterCapsule, { bottom: tabBarHeight + 10 }]}>
-              <View style={styles.totalChip}>
-                <Ionicons
-                  name="logo-usd"
-                  size={14}
-                  color="white"
-                  style={{ marginRight: 8 }}
-                />
-                <Text style={styles.totalLabel}>
-                  Total {"\n"}
-                  {calculateCartTotal()} fcfa
-                </Text>
-              </View>
+        )}
+      </View>
 
-              <TouchableOpacity
-                style={styles.payerBtn}
-                onPress={() => setPaymentVisible(true)}
-              >
-                <Text style={styles.payerBtnText}>PAYER</Text>
-                <Ionicons
-                  name="arrow-forward-outline"
-                  size={14}
-                  color="white"
-                  style={{ marginLeft: 5 }}
-                />
+      {currentTab === "cart" && pendingToBuy.length > 0 && (
+        <Animated.View style={[
+            styles.payFooterCapsule, 
+            { 
+                bottom: Animated.add(keyboardHeight, isKeyboardVisible ? 5 : tabBarHeight + 10),
+            }
+        ]}>
+          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+          
+          {orderToDelete ? (
+            <TouchableOpacity style={styles.closeCircle} onPress={cancelDelete}>
+               <Ionicons name="close" size={16} color="white" />
+            </TouchableOpacity>
+          ) : isPaying ? (
+            !isKeyboardVisible && (
+              <TouchableOpacity style={styles.closeCircle} onPress={togglePaying}>
+                <Ionicons name="close" size={16} color="white" />
               </TouchableOpacity>
+            )
+          ) : (
+            <View style={styles.totalIconCircle}>
+               <Ionicons name="card-outline" size={16} color="white" />
             </View>
           )}
-        </>
+
+          {orderToDelete ? (
+            <View style={styles.deleteMsgWrapper}>
+              <Text style={styles.deleteMenuTitle} numberOfLines={1}>
+                {((itemToDelete as any)?.menu?.titre || (itemToDelete as any)?.menu?.name || "Article")} - {((itemToDelete as any)?.total || (itemToDelete as any)?.prixTotal || 0)} FCFA
+              </Text>
+              <Text style={styles.deleteMsg}>Voulez-vous vraiment supprimer ?</Text>
+            </View>
+          ) : isPaying ? (
+            <Animated.View style={[styles.inputWrapper, { opacity: fadeAnim }]}>
+              <Ionicons name="call-outline" size={16} color="white" style={styles.inputIcon} />
+              <TextInput
+                style={styles.textInput}
+                placeholder="Numéro de paiement"
+                placeholderTextColor="rgba(255,255,255,0.5)"
+                keyboardType="phone-pad"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                autoFocus
+              />
+            </Animated.View>
+          ) : (
+            <Animated.View style={[styles.totalInfo, { opacity: fadeAnim }]}>
+              <Text style={styles.totalTitle}>Total à payer</Text>
+              <Text style={styles.totalAmount}>{calculateCartTotal()} FCFA</Text>
+            </Animated.View>
+          )}
+
+          <TouchableOpacity
+            style={[styles.payerBtnHome, isSubmitting && { opacity: 0.7 }, orderToDelete && { backgroundColor: '#ef4444' }]}
+            onPress={orderToDelete ? handleConfirmDelete : handlePayerPress}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Ionicons
+                name={orderToDelete ? "checkmark" : (isKeyboardVisible ? "chevron-down" : "arrow-forward-outline")}
+                size={isKeyboardVisible ? 18 : 16}
+                color="white"
+              />
+            )}
+          </TouchableOpacity>
+        </Animated.View>
       )}
 
       <PaymentSheet
@@ -271,6 +589,47 @@ export default function OrdersScreen() {
         onClose={() => setPaymentVisible(false)}
         amount={calculateCartTotal()}
         onSuccess={handlePaymentSuccess}
+      />
+
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onHide={() => setToast(null)} 
+        />
+      )}
+
+      {orderToEdit && (
+        <CartCheckoutSheet
+          visible={editModalVisible}
+          onClose={() => {
+            setEditModalVisible(false);
+            setOrderToEdit(null);
+          }}
+          menu={synthesizedEditMenu}
+          initialOrder={orderToEdit}
+          isCartMode={true}
+          onChange={updateLocalOrder}
+          onConfirm={async (updatedOrder) => {
+            const success = await buyOrders([updatedOrder]);
+            if (success) {
+               setToast({ message: "Commande validée avec succès", type: "success" });
+            } else {
+               setToast({ message: "Erreur lors de la validation", type: "error" });
+            }
+            return success;
+          }}
+        />
+      )}
+
+      <OrderBottomSheet
+        isVisible={detailVisible}
+        onClose={() => {
+            setDetailVisible(false);
+            setSelectedOrderDetails(null);
+        }}
+        order={selectedOrderDetails}
+        boutique={fastFoods.find(f => f.id === selectedOrderDetails?.fastFoodId)}
       />
     </View>
   );
@@ -315,48 +674,132 @@ const styles = StyleSheet.create({
   },
   payFooterCapsule: {
     position: "absolute",
-    left: "1%",
-    width: "98%",
+    width: "96%",
     height: 70,
-    backgroundColor: "rgba(0, 0, 0, 0.85)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     borderRadius: 80,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    overflow: 'hidden',
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
+    alignSelf: 'center',
     zIndex: 1000,
+    left: '2%',
   },
-  totalChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#2dd36f",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
+  totalIconCircle: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  totalInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  totalTitle: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 9,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  totalAmount: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     height: 45,
+    borderRadius: 22.5,
+    paddingHorizontal: 12,
+    marginHorizontal: 10,
   },
-  totalLabel: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "900",
+  inputIcon: {
+    marginRight: 8,
   },
-  payerBtn: {
+  textInput: {
+    flex: 1,
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+    padding: 0,
+  },
+  payerBtnHome: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(236,73,19,1.00)",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    backgroundColor: "#ec4913",
+    height: 40,
     borderRadius: 20,
-    height: 35,
+    justifyContent: 'center',
+    minWidth: 40,
   },
-  payerBtnText: {
-    color: "white",
+  deleteMsgWrapper: {
+    flex: 1,
+    paddingLeft: 12,
+    justifyContent: 'center',
+  },
+  deleteMenuTitle: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 10,
-    fontWeight: "bold",
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  deleteMsg: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  groupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    marginBottom: 4,
+  },
+  groupHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  groupTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#333',
+    flex: 1,
+  },
+  groupCountBadge: {
+    backgroundColor: '#FFF',
+    borderWidth: 0.5,
+    borderColor: '#D3D1C7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  groupCountText: {
+    fontSize: 10,
+    color: '#5F5E5A',
+    fontWeight: '500',
   },
 });

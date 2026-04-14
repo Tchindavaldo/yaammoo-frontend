@@ -19,7 +19,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 }) => {
   const [activePanel, setActivePanel] = useState<'menu' | 'extra' | 'drink'>('menu');
   
-  const isPending = order.staut === 'pendingToBuy';
+  const isPending = order.status === 'pendingToBuy';
 
   const handleDelete = () => {
     Alert.alert(
@@ -27,7 +27,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       'Voulez-vous vraiment retirer cet article du panier ?',
       [
         { text: 'Non', style: 'cancel' },
-        { text: 'Oui, retirer', style: 'destructive', onPress: () => onDelete?.(order.idCmd) }
+        { text: 'Oui, retirer', style: 'destructive', onPress: () => onDelete?.(order.id) }
       ]
     );
   };
@@ -46,23 +46,23 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 <Text style={[styles.chipLabel, activePanel === 'menu' && styles.activeChipLabel]}>Menu</Text>
              </TouchableOpacity>
 
-             {(order.embalage && order.embalage.length > 0) && (
+             {(order.extra && order.extra.length > 0) && (
                <TouchableOpacity 
                  style={[styles.segmentChip, activePanel === 'extra' && styles.activeChip]}
                  onPress={() => setActivePanel('extra')}
                >
                   <Ionicons name="fast-food-outline" size={14} color={activePanel === 'extra' ? 'white' : 'black'} />
-                  <Text style={[styles.chipLabel, activePanel === 'extra' && styles.activeChipLabel]}>Extras +{order.embalage.length}</Text>
+                  <Text style={[styles.chipLabel, activePanel === 'extra' && styles.activeChipLabel]}>Extras +{order.extra.length}</Text>
                </TouchableOpacity>
              )}
-
-             {(order.boisson && order.boisson.type !== 'Aucune') && (
+ 
+             {(order.drink && order.drink.length > 0 && order.drink[0]?.name !== 'Aucune') && (
                <TouchableOpacity 
                  style={[styles.segmentChip, activePanel === 'drink' && styles.activeChip]}
                  onPress={() => setActivePanel('drink')}
                >
                   <Ionicons name="beer-outline" size={14} color={activePanel === 'drink' ? 'white' : 'black'} />
-                  <Text style={[styles.chipLabel, activePanel === 'drink' && styles.activeChipLabel]}>Boisson +1</Text>
+                  <Text style={[styles.chipLabel, activePanel === 'drink' && styles.activeChipLabel]}>Boisson +{order.drink.length}</Text>
                </TouchableOpacity>
              )}
           </View>
@@ -84,43 +84,45 @@ export const OrderCard: React.FC<OrderCardProps> = ({
            {activePanel === 'menu' && (
              <View>
                {/* Total Price */}
-               <View style={styles.infoRow}>
-                 <Ionicons name="wallet-outline" size={14} color="black" />
-                 <Text style={styles.infoText}>{order.prixTotal} fcfa</Text>
-               </View>
-
-               {/* Menu Name */}
-               <View style={styles.infoRow}>
-                 <Ionicons name="restaurant-outline" size={14} color="black" />
-                 <Text style={[styles.infoText, { fontWeight: 'bold' }]} numberOfLines={1}>
-                   {order.menu.titre}
-                 </Text>
-               </View>
-
-               {/* Delivery Location */}
-               <View style={styles.infoRow}>
-                 <Ionicons name="navigate-outline" size={14} color="red" />
-                 <Text style={styles.addressLabel}>Livraison:</Text>
-                 <Text style={styles.addressText} numberOfLines={1}>
-                   {order.livraison?.address || 'Quartier Nkomo, Cameroun'}
-                 </Text>
-               </View>
+                <View style={styles.infoRow}>
+                  <Ionicons name="wallet-outline" size={14} color="black" />
+                  <Text style={styles.infoText}>{order.total} fcfa</Text>
+                </View>
+ 
+                {/* Menu Name */}
+                <View style={styles.infoRow}>
+                  <Ionicons name="restaurant-outline" size={14} color="black" />
+                  <Text style={[styles.infoText, { fontWeight: 'bold' }]} numberOfLines={1}>
+                    {order.menu.titre || order.menu.name}
+                  </Text>
+                </View>
+ 
+                {/* Delivery Location */}
+                <View style={styles.infoRow}>
+                  <Ionicons name="navigate-outline" size={14} color="red" />
+                  <Text style={styles.addressLabel}>Livraison:</Text>
+                  <Text style={styles.addressText} numberOfLines={1}>
+                    {order.delivery?.location || 'Quartier Nkomo, Cameroun'}
+                  </Text>
+                </View>
              </View>
            )}
 
-           {activePanel === 'extra' && (
-             <View style={styles.panelContent}>
-               {order.embalage?.map((e, i) => (
-                 <Text key={i} style={styles.panelItem}>• {e.type} ({e.prix}F)</Text>
-               ))}
-             </View>
-           )}
-
-           {activePanel === 'drink' && (
-             <View style={styles.panelContent}>
-               <Text style={styles.panelItem}>• {order.boisson?.type} ({order.boisson?.prix}F)</Text>
-             </View>
-           )}
+            {activePanel === 'extra' && (
+              <View style={styles.panelContent}>
+                {order.extra?.map((e, i) => (
+                  <Text key={i} style={styles.panelItem}>• {e.name}</Text>
+                ))}
+              </View>
+            )}
+ 
+            {activePanel === 'drink' && (
+              <View style={styles.panelContent}>
+                {order.drink?.map((d, i) => (
+                  <Text key={i} style={styles.panelItem}>• {d.name}</Text>
+                ))}
+              </View>
+            )}
         </View>
 
         {/* Quantity Selector (Bottom Right) */}
@@ -128,13 +130,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           <View style={styles.quantityContainer}>
             <TouchableOpacity 
                style={styles.quantityChip}
-               onPress={() => {}} // Ces actions devront être liées aux props de mise à jour
+               onPress={() => {}} 
             >
-               <TouchableOpacity onPress={() => order.quantite > 1 && onUpdateQuantity?.(order.idCmd, order.quantite - 1)}>
+               <TouchableOpacity onPress={() => order.quantity > 1 && onUpdateQuantity?.(order.id, order.quantity - 1)}>
                 <Ionicons name="remove-circle" size={24} color="white" />
                </TouchableOpacity>
-               <Text style={styles.quantityText}>{order.quantite || 1}</Text>
-               <TouchableOpacity onPress={() => onUpdateQuantity?.(order.idCmd, order.quantite + 1)}>
+               <Text style={styles.quantityText}>{order.quantity || 1}</Text>
+               <TouchableOpacity onPress={() => onUpdateQuantity?.(order.id, order.quantity + 1)}>
                 <Ionicons name="add-circle" size={24} color="white" />
                </TouchableOpacity>
             </TouchableOpacity>

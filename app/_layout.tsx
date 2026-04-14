@@ -9,6 +9,7 @@ import "react-native-reanimated";
 
 import { useColorScheme } from "@/src/hooks/use-color-scheme";
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
+import { OrderProvider } from "@/src/features/orders/context/OrderContext";
 import { MerchantProvider } from "@/src/features/merchant/context/MerchantContext";
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
@@ -82,18 +83,20 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <StatusBar style="dark" />
-      <MerchantProvider>
-        <FastFoodProvider>
-          <AppInitializer layoutMounted={layoutMounted} />
-          <ThemeProvider value={DefaultTheme}>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="(auth)" />
-            </Stack>
-          </ThemeProvider>
-        </FastFoodProvider>
-      </MerchantProvider>
+      <OrderProvider>
+        <StatusBar style="dark" />
+        <MerchantProvider>
+          <FastFoodProvider>
+            <AppInitializer layoutMounted={layoutMounted} />
+            <ThemeProvider value={DefaultTheme}>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="(auth)" />
+              </Stack>
+            </ThemeProvider>
+          </FastFoodProvider>
+        </MerchantProvider>
+      </OrderProvider>
     </AuthProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,14 @@ import {
   PanResponder,
   Pressable,
   Modal,
+  Platform,
+  Linking,
 } from 'react-native';
-import { Commande } from "@/src/types";
+import { Commande, FastFood } from "@/src/types";
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
-import * as Linking from 'expo-linking';
-import { Platform } from 'react-native';
+import { BikeAnimation } from '../../merchant/components/BikeAnimation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -27,31 +28,6 @@ export type OrderItem = {
   price: string;
 };
 
-export type DeliveryUser = {
-  initials: string;
-  name: string;
-  addr: string;
-  avColor: string;
-  avTextColor: string;
-  badgeColor: string;
-  orderCount: number;
-  rating: number;
-  phone: string;
-  creneau: string;
-  duration: string;
-  note: string;
-  voiceNoteUri: string;
-  orders: OrderItem[];
-};
-
-type Props = {
-  order: Commande | null;
-  visible: boolean;
-  onClose: () => void;
-};
-
-type Tab = 'livraison' | 'commandes';
-
 const COLORS = [
   { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' }, 
   { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' }, 
@@ -59,64 +35,48 @@ const COLORS = [
   { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' }, 
 ];
 
-export default function MerchantOrderBottomSheet({ order, visible, onClose }: Props) {
+type Props = {
+  order: Commande | null;
+  isVisible: boolean;
+  onClose: () => void;
+  boutique?: FastFood | null;
+};
+
+type Tab = 'livraison' | 'commandes';
+
+export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, boutique }) => {
   const [tab, setTab] = useState<Tab>('livraison');
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const [user, setUser] = useState<DeliveryUser | null>(null);
+  const [items, setItems] = useState<OrderItem[]>([]);
 
   useEffect(() => {
-    if (order) {
+    if (isVisible && order) {
+      // Setup Items
       const extras = order.extra || [];
       const drinks = order.drink || [];
+      const newItems: OrderItem[] = [];
       
-      const items: OrderItem[] = [];
-      items.push({
-        name: order.menu?.titre || "Menu principal",
+      newItems.push({
+        name: order.menu?.titre || order.menu?.name || "Menu principal",
         qty: order.quantity || 1,
-        price: `${order.menu?.prix1 || 0} F`
+        price: `${(order.menu?.prix1 || 0) * (order.quantity || 1)} F`
       });
 
       extras.forEach((ex: any) => {
         if (ex.status !== false && ex.name !== "Aucun") {
-          items.push({ name: ex.name, qty: 1, price: "0 F" });
+          newItems.push({ name: ex.name, qty: 1, price: "0 F" });
         }
       });
 
       drinks.forEach((dr: any) => {
         if (dr.status !== false && dr.name !== "Aucune") {
-          items.push({ name: dr.name, qty: 1, price: "0 F" });
+          newItems.push({ name: dr.name, qty: 1, price: "0 F" });
         }
       });
+      setItems(newItems);
 
-      const customerFirstName = order.userData?.firstName || "Client";
-      const customerLastName = order.userData?.lastName || "";
-      const initials = `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}`.toUpperCase();
-      const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
-
-      setUser({
-        initials,
-        name: `${customerFirstName} ${customerLastName}`,
-        addr: order.delivery?.location || "Adresse non spécifiée",
-        avColor: theme.bg,
-        avTextColor: theme.text,
-        badgeColor: theme.badge,
-        orderCount: (order as any).rank || 1,
-        rating: 4, 
-        phone: order.delivery?.phone || order.userData?.phoneNumber?.toString() || "Non fourni",
-        creneau: order.delivery?.type === 'express' 
-          ? "Express" 
-          : `Période (${order.delivery?.time || "Dès que possible"})`,
-        duration: order.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
-        note: order.delivery?.note || "Aucune note de livraison.",
-        voiceNoteUri: order.delivery?.voiceNoteUri || "",
-        orders: items
-      });
-    }
-  }, [order]);
-
-  useEffect(() => {
-    if (visible && order) {
+      // Animation Open
       translateY.setValue(SHEET_HEIGHT);
       overlayOpacity.setValue(0);
       setTab('livraison');
@@ -136,7 +96,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
         }),
       ]).start();
     }
-  }, [visible, order]);
+  }, [isVisible, order]);
 
   const handleDismiss = () => {
     Animated.parallel([
@@ -175,16 +135,15 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
     })
   ).current;
 
-  if (!user) return null;
+  if (!order) return null;
 
-  const total = user.orders.reduce((sum, o) => {
-    const val = parseFloat(o.price.replace(',', '.').replace(' €', ''));
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
+  const initials = (boutique?.nom || "B").substring(0, 2).toUpperCase();
+  const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
+  const isDelivering = order.status === 'delivering';
 
   return (
     <Modal
-      visible={visible}
+      visible={isVisible}
       transparent
       animationType="none"
       onRequestClose={handleDismiss}
@@ -203,17 +162,17 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
 
           <View style={styles.header}>
             <View style={styles.userRow}>
-              <View style={[styles.avatar, { backgroundColor: user.avColor }]}>
-                <Text style={[styles.avatarText, { color: user.avTextColor }]}>
-                  {user.initials}
+              <View style={[styles.avatar, { backgroundColor: theme.bg }]}>
+                <Text style={[styles.avatarText, { color: theme.text }]}>
+                  {initials}
                 </Text>
-                <View style={[styles.badge, { backgroundColor: user.badgeColor }]}>
-                  <Text style={styles.badgeText}>{user.orderCount}</Text>
+                <View style={[styles.badge, { backgroundColor: theme.badge }]}>
+                  <Text style={styles.badgeText}>1</Text>
                 </View>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userAddr} numberOfLines={1}>{user.addr}</Text>
+                <Text style={styles.userName}>{boutique?.nom || "Boutique"}</Text>
+                <Text style={styles.userAddr} numberOfLines={1}>{order.delivery?.location || "Sur place"}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
@@ -246,37 +205,39 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
             showsVerticalScrollIndicator={false}
           >
             {tab === 'livraison' ? (
-              <LivraisonTab user={user} />
+              <LivraisonTab order={order} boutiqueName={boutique?.nom || "Boutique"} />
             ) : (
-              <CommandesTab orders={user.orders} total={total} />
+              <CommandesTab items={items} total={order.total} />
+            )}
+
+            {isDelivering && (
+              <View style={styles.animationSection}>
+                  <BikeAnimation />
+                  <Text style={styles.animationText}>Livraison en cours...</Text>
+              </View>
             )}
           </ScrollView>
         </Animated.View>
       </View>
     </Modal>
   );
-}
+};
 
-function LivraisonTab({ user }: { user: DeliveryUser }) {
+function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: string }) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackProgress, setPlaybackProgress] = useState(0); // 0 to 1
+  const [playbackProgress, setPlaybackProgress] = useState(0);
   const [isOpeningMaps, setIsOpeningMaps] = useState(false);
   const [region, setRegion] = useState<any>(null);
 
   const parseLocation = (addr: string) => {
     if (!addr || typeof addr !== 'string') return null;
-    // Basic regex to check if it looks like coords
     if (!/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(addr)) return null;
-    
     const parts = addr.split(',').map(p => parseFloat(p.trim()));
-    if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-      return { latitude: parts[0], longitude: parts[1] };
-    }
-    return null;
+    return { latitude: parts[0], longitude: parts[1] };
   };
 
-  const coords = React.useMemo(() => parseLocation(user.addr), [user.addr]);
+  const coords = useMemo(() => parseLocation(order.delivery?.location), [order.delivery?.location]);
 
   useEffect(() => {
     if (coords) {
@@ -285,16 +246,14 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
       });
-    } else {
-      setRegion(null);
     }
   }, [coords]);
 
   const openInMaps = () => {
     if (!coords) return;
     setIsOpeningMaps(true);
+    const label = encodeURIComponent(boutiqueName);
     const { latitude, longitude } = coords;
-    const label = encodeURIComponent(user.name);
     
     const url = Platform.select({
       ios: `maps://app?daddr=${latitude},${longitude}&label=${label}`,
@@ -302,35 +261,27 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
       default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
     });
 
-    Linking.canOpenURL(url).then(supported => {
-      const finalUrl = supported ? url : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-      Linking.openURL(finalUrl).finally(() => {
-        setTimeout(() => setIsOpeningMaps(false), 2000);
-      });
+    Linking.openURL(url!).finally(() => {
+      setTimeout(() => setIsOpeningMaps(false), 2000);
     });
   };
 
   async function playSound() {
-    if (!user.voiceNoteUri) return;
+    if (!order.delivery?.voiceNoteUri) return;
     try {
       if (sound) {
         if (isPlaying) {
           await sound.pauseAsync();
           setIsPlaying(false);
         } else {
-          const status = await sound.getStatusAsync();
-          if (status.isLoaded && status.positionMillis >= (status.durationMillis || 0)) {
-            await sound.setPositionAsync(0);
-          }
           await sound.playAsync();
           setIsPlaying(true);
         }
         return;
       }
 
-      console.log('Loading Sound');
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: user.voiceNoteUri },
+        { uri: order.delivery.voiceNoteUri },
         { shouldPlay: true }
       );
       setSound(newSound);
@@ -348,33 +299,26 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
         }
       });
     } catch (error) {
-      console.log('Error playing sound', error);
+       console.log(error);
     }
   }
 
   useEffect(() => {
-    return sound
-      ? () => {
-          console.log('Unloading Sound');
-          sound.unloadAsync();
-        }
-      : undefined;
+    return sound ? () => { sound.unloadAsync(); } : undefined;
   }, [sound]);
 
   return (
     <>
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, height: 110 }}>
-        {/* Left Column: Fixed height 110px */}
         <View style={{ width: '42%', gap: 8 }}>
           <View style={{ flex: 1 }}>
-            <InfoCard label="Créneau" value={user.creneau} compact />
+            <InfoCard label="Créneau" value={order.delivery?.time || "Dès que possible"} compact />
           </View>
           <View style={{ flex: 1 }}>
-            <InfoCard label="Téléphone" value={user.phone} small compact />
+            <InfoCard label="Téléphone" value={order.delivery?.phone || "—"} small compact />
           </View>
         </View>
 
-        {/* Right Column: Map matching exactly 110px */}
         <View style={{ flex: 1 }}>
           <TouchableOpacity 
             activeOpacity={0.8}
@@ -400,7 +344,7 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
                   <View style={styles.pinRing} />
                   <View style={styles.pinDot} />
                 </View>
-                <Text style={styles.mapLabel} numberOfLines={1}>{user.addr}</Text>
+                <Text style={styles.mapLabel} numberOfLines={1}>{order.delivery?.location || "Adresse"}</Text>
               </>
             )}
 
@@ -418,26 +362,18 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
 
       <View style={[styles.infoCard, { marginTop: 12, padding: 12 }]}>
         <Text style={styles.infoLabel}>Note de livraison</Text>
-        <Text style={styles.infoValSm}>{user.note}</Text>
+        <Text style={styles.infoValSm}>{order.delivery?.note || "Aucune note."}</Text>
       </View>
 
-      {user.voiceNoteUri ? (
+      {order.delivery?.voiceNoteUri ? (
         <>
           <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>Message vocal</Text>
-          <TouchableOpacity 
-            style={styles.voiceBar}
-            activeOpacity={0.7}
-            onPress={playSound}
-          >
+          <TouchableOpacity style={styles.voiceBar} activeOpacity={0.7} onPress={playSound}>
             <View style={styles.playBtn}>
-              <Ionicons 
-                name={isPlaying ? "pause" : "play"} 
-                size={16} 
-                color="#ec4913" 
-              />
+              <Ionicons name={isPlaying ? "pause" : "play"} size={16} color="#ec4913" />
             </View>
             <Waveform active={isPlaying} progress={playbackProgress} />
-            <Text style={styles.waveDur}>{isPlaying ? `${Math.round(playbackProgress * 100)}%` : "0:18"}</Text>
+            <Text style={styles.waveDur}>{Math.round(playbackProgress * 100)}%</Text>
           </TouchableOpacity>
         </>
       ) : (
@@ -450,20 +386,12 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
   );
 }
 
-function CommandesTab({ orders, total }: { orders: OrderItem[]; total: number }) {
+function CommandesTab({ items, total }: { items: OrderItem[]; total: number }) {
   return (
     <View style={styles.infoCard}>
-      {orders.map((o, i) => (
-        <View
-          key={i}
-          style={[
-            styles.cmdRow,
-            i < orders.length - 1 && styles.cmdRowBorder,
-          ]}
-        >
-          <View style={styles.cmdIcon}>
-            <Text style={{ fontSize: 12 }}>📦</Text>
-          </View>
+      {items.map((o, i) => (
+        <View key={i} style={[styles.cmdRow, i < items.length - 1 && styles.cmdRowBorder]}>
+          <View style={styles.cmdIcon}><Text style={{ fontSize: 12 }}>📦</Text></View>
           <Text style={styles.cmdName}>{o.name}</Text>
           <Text style={styles.cmdQty}>x{o.qty}</Text>
           <Text style={styles.cmdPrice}>{o.price}</Text>
@@ -471,50 +399,17 @@ function CommandesTab({ orders, total }: { orders: OrderItem[]; total: number })
       ))}
       <View style={styles.cmdTotal}>
         <Text style={styles.cmdTotalLabel}>Total</Text>
-        <Text style={styles.cmdTotalVal}>
-          {total.toFixed(2).replace('.', ',')} €
-        </Text>
+        <Text style={styles.cmdTotalVal}>{total} F</Text>
       </View>
     </View>
   );
 }
 
-function InfoCard({
-  label,
-  value,
-  small,
-  compact,
-  renderValue,
-}: {
-  label: string;
-  value: string;
-  small?: boolean;
-  compact?: boolean;
-  renderValue?: () => React.ReactNode;
-}) {
+function InfoCard({ label, value, small, compact }: { label: string; value: string; small?: boolean; compact?: boolean }) {
   return (
-    <View style={[styles.infoCard, compact && { padding: 10 }]}>
+    <View style={[styles.infoCard, compact && { padding: 10, flex: 1 }]}>
       <Text style={[styles.infoLabel, compact && { marginBottom: 2, fontSize: 9 }]}>{label}</Text>
-      {renderValue ? (
-        renderValue()
-      ) : (
-        <Text style={[
-          small ? styles.infoValSm : styles.infoVal,
-          compact && { fontSize: 13, lineHeight: 18 }
-        ]}>{value}</Text>
-      )}
-    </View>
-  );
-}
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <View style={{ flexDirection: 'row', gap: 2, marginTop: 2 }}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Text key={i} style={{ fontSize: 12, color: i <= rating ? '#BA7517' : '#D3D1C7' }}>
-          ★
-        </Text>
-      ))}
+      <Text style={[styles.infoVal, small && styles.infoValSm]}>{value}</Text>
     </View>
   );
 }
@@ -751,13 +646,6 @@ const styles = StyleSheet.create({
     color: '#ec4913',
     textTransform: 'uppercase',
   },
-  grid2: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 12,
-    marginTop: 12,
-  },
   infoCard: {
     backgroundColor: '#F9FAFB',
     borderRadius: 16,
@@ -800,17 +688,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  playIcon: {
-    width: 0,
-    height: 0,
-    borderTopWidth: 6,
-    borderBottomWidth: 6,
-    borderLeftWidth: 10,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderLeftColor: '#fff',
-    marginLeft: 3,
   },
   wave: {
     flex: 1,
@@ -879,5 +756,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     color: '#EF4444',
+  },
+  animationSection: {
+    marginTop: 30,
+    alignItems: 'center',
+    gap: 10,
+    paddingBottom: 40,
+  },
+  animationText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#27500A',
   },
 });

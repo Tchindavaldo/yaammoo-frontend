@@ -1,0 +1,274 @@
+import React from "react";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Commande } from "@/src/types";
+
+interface ClientOrderCardProps {
+  order: Commande;
+  onDelete?: (id: string) => void;
+  onUpdateQuantity?: (id: string, qty: number) => void;
+  showActions?: boolean;
+  onPress?: () => void;
+}
+
+import { BikeAnimation } from "../../merchant/components/BikeAnimation";
+
+export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
+  order,
+  onDelete,
+  onUpdateQuantity,
+  showActions = false,
+  onPress,
+}) => {
+  const totalPrice = order.total || 0;
+  const menuName = (order.menu as any)?.titre || (order.menu as any)?.name || "—";
+  const menuImage = (order.menu as any)?.coverImage || (order.menu as any)?.image;
+  const status = (order.status || "pending").toLowerCase();
+  const isDelivering = status === "delivering";
+  
+  const deliveryRaw = order.delivery;
+  const deliveryType = deliveryRaw?.type;
+  const deliveryColor = deliveryType === "express" ? "#dc2626" : deliveryType === "time" ? "#2563eb" : "#ccc";
+
+  const extras = order.extra || [];
+  const extrasActiveCount = Array.isArray(extras) ? extras.filter((x: any) => x.status !== false).length : 0;
+  const drinks = order.drink || [];
+  const drinksActiveCount = Array.isArray(drinks) ? drinks.filter((x: any) => x.status !== false).length : 0;
+
+  const quantity = order.quantity || 1;
+
+  return (
+    <TouchableOpacity activeOpacity={0.8} style={styles.wrapper} onPress={onPress} disabled={!onPress}>
+      <View style={styles.summaryRow}>
+        <View style={styles.avatarContainer}>
+          {menuImage ? (
+            <Image source={{ uri: menuImage }} style={styles.avatarImage} />
+          ) : (
+            <Ionicons name="fast-food" size={24} color="#dc2626" />
+          )}
+          <Ionicons
+            name="navigate"
+            size={12}
+            color="white"
+            style={[styles.deliveryIcon, { backgroundColor: deliveryColor }]}
+          />
+        </View>
+
+        <View style={styles.summaryInfo}>
+          <View style={styles.summaryTopRow}>
+            <View style={styles.summaryTitleContainer}>
+              <Text style={styles.summaryPrice}>{totalPrice} F</Text>
+              <Text style={styles.summaryName} numberOfLines={1}>{menuName} (X{quantity})</Text>
+            </View>
+          </View>
+
+          <View style={styles.summaryBottomRow}>
+            <View style={styles.summaryChipsRow}>
+              <View style={[styles.smallChip, styles.chipInactive, { paddingLeft: 0 }]}>
+                <Ionicons name="fast-food-outline" size={14} color="#ccc" />
+                <Text style={[styles.chipText, { color: "#ccc" }]}>Extras +{extrasActiveCount}</Text>
+              </View>
+              <View style={[styles.smallChip, styles.chipInactive]}>
+                <Ionicons name="beer-outline" size={14} color="#ccc" />
+                <Text style={[styles.chipText, { color: "#ccc" }]}>Boisson +{drinksActiveCount}</Text>
+              </View>
+            </View>
+            
+            <View style={styles.rightActionColumn}>
+              {isDelivering && (
+                <View style={styles.cardBikeContainer}>
+                  <BikeAnimation />
+                </View>
+              )}
+              
+              {showActions ? (
+                <View style={styles.qtyContainer}>
+                  <View style={styles.qtyLabel}>
+                    <Text style={styles.qtyLabelText}>x{quantity}</Text>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => onDelete?.(order.id)}
+                    style={styles.deleteBtn}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#dc2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.qtyLabel}>
+                  <Text style={styles.qtyLabelText}>x{quantity}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const qtyBtnMain = {
+    backgroundColor: "black",
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+};
+
+const styles = StyleSheet.create({
+  wrapper: {
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+    paddingHorizontal: 15,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    backgroundColor: "white",
+  },
+  avatarContainer: {
+    width: 50,
+    height: 55,
+    borderRadius: 25,
+    backgroundColor: "#fee2e2",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 14,
+    position: "relative",
+  },
+  avatarImage: {
+    width: 48,
+    height: 53,
+    borderRadius: 24,
+  },
+  cardBikeContainer: {
+    transform: [{ scale: 0.5 }],
+    marginBottom: -10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightActionColumn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  deliveryIcon: {
+    position: "absolute",
+    bottom: -2,
+    left: -2,
+    padding: 2,
+    borderRadius: 6,
+    zIndex: 10,
+  },
+  summaryInfo: {
+    flex: 1,
+  },
+  summaryName: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#111827",
+    flex: 1,
+  },
+  summaryPrice: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#dc2626",
+  },
+  summaryChipsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  smallChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginRight: 5,
+    marginBottom: 4,
+  },
+  chipInactive: {
+    backgroundColor: "rgba(0,0,0,0.03)",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
+  },
+  chipText: {
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  summaryTopRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  summaryTitleContainer: {
+    flexDirection: "column",
+    flex: 1,
+  },
+  statusBadge: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  statusText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#9ca3af',
+  },
+  summaryBottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  qtyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  qtyBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#ccc',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  deleteBtn: {
+    marginLeft: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#fee2e2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyLabel: {
+    backgroundColor: 'black',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  qtyLabelText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  }
+});

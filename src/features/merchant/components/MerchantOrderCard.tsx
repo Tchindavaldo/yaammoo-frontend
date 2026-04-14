@@ -55,7 +55,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     }
   };
 
-  const status = ((order as any).status || order.staut || "pending").toLowerCase();
+  const status = (order.status || "pending").toLowerCase();
   const isPending = status === "pending" || status === "pendingtobuy";
   const isActive = status === "active" || status === "processing" || status === "in_progress";
   const isFinished = status === "completed" || status === "finished" || status === "done";
@@ -71,10 +71,10 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const deliveryType = (order as any).delivery?.type;
     const isExpress = deliveryType === "express";
     const deliveryColor = isExpress ? "#dc2626" : "#2563eb";
-    const deliveryLabel = isExpress ? "Express" : order.livraison?.hour || "Créneau";
+    const deliveryLabel = isExpress ? "Express" : order.delivery?.hour || "Créneau";
     
     const orderCount = allOrders.length;
-    const addressStr = order.livraison?.address || (order as any).delivery?.location || "Adresse non spécifiée";
+    const addressStr = order.delivery?.location || "Adresse non spécifiée";
 
     return (
       <View style={styles.wrapper}>
@@ -132,18 +132,19 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   }
 
   // --- Design Variant: Standard (Pending/Progress) ---
-  const totalPrice = order.prixTotal || (order as any).total || 0;
+  const totalPrice = order.total || 0;
   const userRank = (order as any).rank || 1;
-  const menuName = order.menu?.titre || (order.menu as any)?.name || "—";
+  const menuName = (order.menu as any)?.titre || (order.menu as any)?.name || "—";
   const menuImage = (order.menu as any)?.coverImage || (order.menu as any)?.image;
-  const deliveryRaw = (order as any).delivery;
+  const deliveryRaw = order.delivery;
   const deliveryType = deliveryRaw?.type;
   const deliveryColor = deliveryType === "express" ? "#dc2626" : deliveryType === "time" ? "#2563eb" : "black";
 
-  const extras = (order as any).extra || order.embalage || [];
+  const extras = order.extra || [];
   const extrasActiveCount = Array.isArray(extras) ? extras.filter((x: any) => x.status !== false).length : 0;
-  const drinks = (order as any).drink || [order.boisson];
+  const drinks = order.drink || [];
   const drinksActiveCount = Array.isArray(drinks) ? drinks.filter((x: any) => x.status !== false).length : 0;
+  const quantity = order.quantity || 1;
 
   return (
     <View style={styles.wrapper}>
@@ -166,7 +167,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           <View style={styles.summaryTopRow}>
             <View style={styles.summaryTitleContainer}>
               <Text style={styles.summaryPrice}>{totalPrice} F</Text>
-              <Text style={styles.summaryName} numberOfLines={1}>{menuName}</Text>
+              <Text style={styles.summaryName} numberOfLines={1}> {menuName} (X{quantity})</Text>
             </View>
             <View style={styles.rankContainer}>
               <Ionicons name="trophy-outline" size={14} color="#ccc" />

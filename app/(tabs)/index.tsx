@@ -7,6 +7,8 @@ import {
   Text,
   TouchableOpacity,
   Alert,
+  Platform,
+  RefreshControl,
 } from "react-native";
 import { Toast } from "@/src/components/Toast";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
@@ -58,8 +60,15 @@ export default function HomeScreen() {
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const onManualRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
 
   const listHeader = useMemo(() => <HeroBanner />, []);
 
@@ -138,32 +147,40 @@ export default function HomeScreen() {
             selectedCategory={selectedCategory}
             onCategorySelect={setSelectedCategory}
           />
-          <FlatList
-            data={fastFoods}
-            ListHeaderComponent={listHeader}
-        renderItem={({ item }) => (
-          <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
-        )}
-        keyExtractor={(item, index) => item.id || index.toString()}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 20 },
-        ]}
-        refreshing={loading}
-        onRefresh={refresh}
-        ListEmptyComponent={
-          <View style={styles.centered}>
-            <Ionicons
-              name="search-outline"
-              size={60}
-              color={Theme.colors.gray[200]}
+          <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
+            <FlatList
+              data={fastFoods}
+              ListHeaderComponent={listHeader}
+              renderItem={({ item }) => (
+                <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
+              )}
+              keyExtractor={(item, index) => item.id || index.toString()}
+              contentContainerStyle={[
+                styles.listContent,
+                { paddingBottom: tabBarHeight + 20 },
+              ]}
+              refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onManualRefresh}
+                    tintColor={Theme.colors.primary}
+                    colors={[Theme.colors.primary]}
+                  />
+                }
+              ListEmptyComponent={
+                <View style={styles.centered}>
+                  <Ionicons
+                    name="search-outline"
+                    size={60}
+                    color={Theme.colors.gray[200]}
+                  />
+                  <Text style={styles.emptyText}>
+                    Aucun restaurant trouvé pour "{searchQuery || selectedCategory}"
+                  </Text>
+                </View>
+              }
             />
-            <Text style={styles.emptyText}>
-              Aucun restaurant trouvé pour "{searchQuery || selectedCategory}"
-            </Text>
           </View>
-        }
-      />
       <CheckoutSheet
         visible={checkoutVisible}
         onClose={() => setCheckoutVisible(false)}

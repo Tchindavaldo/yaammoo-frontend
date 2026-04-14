@@ -1,3 +1,5 @@
+// Web-specific version of MerchantOrderBottomSheet
+// react-native-maps is not supported on web, so we replace MapView with a static placeholder
 import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
@@ -14,9 +16,7 @@ import {
 import { Commande } from "@/src/types";
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
 import * as Linking from 'expo-linking';
-import { Platform } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -53,10 +53,10 @@ type Props = {
 type Tab = 'livraison' | 'commandes';
 
 const COLORS = [
-  { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' }, 
-  { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' }, 
-  { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' }, 
-  { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' }, 
+  { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' },
+  { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' },
+  { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' },
+  { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' },
 ];
 
 export default function MerchantOrderBottomSheet({ order, visible, onClose }: Props) {
@@ -67,49 +67,49 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
 
   useEffect(() => {
     if (order) {
-      const extras = order.extra || [];
-      const drinks = order.drink || [];
-      
+      const extras = (order as any).extra || order.embalage || [];
+      const drinks = (order as any).drink || [order.boisson];
+
       const items: OrderItem[] = [];
       items.push({
         name: order.menu?.titre || "Menu principal",
-        qty: order.quantity || 1,
-        price: `${order.menu?.prix1 || 0} F`
+        qty: order.quantite || 1,
+        price: `${order.menu?.prix1 || 0} €`
       });
 
       extras.forEach((ex: any) => {
-        if (ex.status !== false && ex.name !== "Aucun") {
-          items.push({ name: ex.name, qty: 1, price: "0 F" });
+        if (ex.status !== false) {
+          items.push({ name: ex.name || ex.type, qty: 1, price: "0 €" });
         }
       });
 
       drinks.forEach((dr: any) => {
-        if (dr.status !== false && dr.name !== "Aucune") {
-          items.push({ name: dr.name, qty: 1, price: "0 F" });
+        if (dr.name || dr.type) {
+          items.push({ name: dr.name || dr.type, qty: 1, price: "0 €" });
         }
       });
 
-      const customerFirstName = order.userData?.firstName || "Client";
-      const customerLastName = order.userData?.lastName || "";
+      const customerFirstName = (order as any).userData?.firstName || "Client";
+      const customerLastName = (order as any).userData?.lastName || "";
       const initials = `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}`.toUpperCase();
       const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
 
       setUser({
         initials,
         name: `${customerFirstName} ${customerLastName}`,
-        addr: order.delivery?.location || "Adresse non spécifiée",
+        addr: (order as any).delivery?.location || order.livraison?.address || "Adresse non spécifiée",
         avColor: theme.bg,
         avTextColor: theme.text,
         badgeColor: theme.badge,
         orderCount: (order as any).rank || 1,
-        rating: 4, 
-        phone: order.delivery?.phone || order.userData?.phoneNumber?.toString() || "Non fourni",
-        creneau: order.delivery?.type === 'express' 
-          ? "Express" 
-          : `Période (${order.delivery?.time || "Dès que possible"})`,
-        duration: order.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
-        note: order.delivery?.note || "Aucune note de livraison.",
-        voiceNoteUri: order.delivery?.voiceNoteUri || "",
+        rating: 4,
+        phone: (order as any).delivery?.phone || order.livraison?.phone || (order as any).userData?.phoneNumber || "Non fourni",
+        creneau: (order as any).delivery?.type === 'express'
+          ? "Express"
+          : `Période (${(order as any).delivery?.time || order.livraison?.hour || "Dès que possible"})`,
+        duration: (order as any).delivery?.type === 'express' ? "15-20 min" : "30-45 min",
+        note: (order as any).delivery?.note || order.livraison?.note || "Aucune note de livraison.",
+        voiceNoteUri: (order as any).delivery?.voiceNoteUri || order.livraison?.voiceNoteUri || "",
         orders: items
       });
     }
@@ -120,7 +120,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
       translateY.setValue(SHEET_HEIGHT);
       overlayOpacity.setValue(0);
       setTab('livraison');
-      
+
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
@@ -257,18 +257,36 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
   );
 }
 
+// Web map placeholder — uses Google Maps link instead of native MapView
+function WebMapPlaceholder({ addr, onPress }: { addr: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={onPress}
+      style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, overflow: 'hidden', borderRadius: 12 }]}
+    >
+      <View style={styles.mapGridH} />
+      <View style={styles.mapGridV} />
+      <View style={styles.pinContainer}>
+        <View style={styles.pinRing} />
+        <View style={styles.pinDot} />
+      </View>
+      <Text style={styles.mapLabel} numberOfLines={1}>{addr}</Text>
+      <View style={styles.webMapTag}>
+        <Ionicons name="map-outline" size={10} color="#6B7280" />
+        <Text style={styles.webMapTagText}>Ouvrir Maps</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function LivraisonTab({ user }: { user: DeliveryUser }) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackProgress, setPlaybackProgress] = useState(0); // 0 to 1
-  const [isOpeningMaps, setIsOpeningMaps] = useState(false);
-  const [region, setRegion] = useState<any>(null);
+  const [playbackProgress, setPlaybackProgress] = useState(0);
 
   const parseLocation = (addr: string) => {
-    if (!addr || typeof addr !== 'string') return null;
-    // Basic regex to check if it looks like coords
-    if (!/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(addr)) return null;
-    
+    if (!addr) return null;
     const parts = addr.split(',').map(p => parseFloat(p.trim()));
     if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
       return { latitude: parts[0], longitude: parts[1] };
@@ -276,38 +294,13 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
     return null;
   };
 
-  const coords = React.useMemo(() => parseLocation(user.addr), [user.addr]);
-
-  useEffect(() => {
-    if (coords) {
-      setRegion({
-        ...coords,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-    } else {
-      setRegion(null);
-    }
-  }, [coords]);
+  const coords = parseLocation(user.addr);
 
   const openInMaps = () => {
     if (!coords) return;
-    setIsOpeningMaps(true);
     const { latitude, longitude } = coords;
-    const label = encodeURIComponent(user.name);
-    
-    const url = Platform.select({
-      ios: `maps://app?daddr=${latitude},${longitude}&label=${label}`,
-      android: `google.navigation:q=${latitude},${longitude}`,
-      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
-    });
-
-    Linking.canOpenURL(url).then(supported => {
-      const finalUrl = supported ? url : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-      Linking.openURL(finalUrl).finally(() => {
-        setTimeout(() => setIsOpeningMaps(false), 2000);
-      });
-    });
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+    Linking.openURL(url);
   };
 
   async function playSound() {
@@ -328,7 +321,6 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
         return;
       }
 
-      console.log('Loading Sound');
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: user.voiceNoteUri },
         { shouldPlay: true }
@@ -354,17 +346,13 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
 
   useEffect(() => {
     return sound
-      ? () => {
-          console.log('Unloading Sound');
-          sound.unloadAsync();
-        }
+      ? () => { sound.unloadAsync(); }
       : undefined;
   }, [sound]);
 
   return (
     <>
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, height: 110 }}>
-        {/* Left Column: Fixed height 110px */}
         <View style={{ width: '42%', gap: 8 }}>
           <View style={{ flex: 1 }}>
             <InfoCard label="Créneau" value={user.creneau} compact />
@@ -374,45 +362,8 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
           </View>
         </View>
 
-        {/* Right Column: Map matching exactly 110px */}
         <View style={{ flex: 1 }}>
-          <TouchableOpacity 
-            activeOpacity={0.8}
-            onPress={openInMaps}
-            style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, overflow: 'hidden', borderRadius: 12 }]}
-          >
-            {coords && region ? (
-              <MapView
-                style={StyleSheet.absoluteFill}
-                zoomEnabled={false}
-                scrollEnabled={false}
-                rotateEnabled={false}
-                pitchEnabled={false}
-                region={region}
-              >
-                <Marker coordinate={coords} pinColor="#ec4913" />
-              </MapView>
-            ) : (
-              <>
-                <View style={styles.mapGridH} />
-                <View style={styles.mapGridV} />
-                <View style={styles.pinContainer}>
-                  <View style={styles.pinRing} />
-                  <View style={styles.pinDot} />
-                </View>
-                <Text style={styles.mapLabel} numberOfLines={1}>{user.addr}</Text>
-              </>
-            )}
-
-            {isOpeningMaps && (
-              <View style={styles.mapLoadingOverlay}>
-                <View style={styles.mapLoaderCircle}>
-                   <Text style={{ fontSize: 18 }}>📍</Text>
-                </View>
-                <Text style={styles.mapLoadingText}>Ouverture Maps...</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <WebMapPlaceholder addr={user.addr} onPress={openInMaps} />
         </View>
       </View>
 
@@ -424,16 +375,16 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
       {user.voiceNoteUri ? (
         <>
           <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>Message vocal</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.voiceBar}
             activeOpacity={0.7}
             onPress={playSound}
           >
             <View style={styles.playBtn}>
-              <Ionicons 
-                name={isPlaying ? "pause" : "play"} 
-                size={16} 
-                color="#ec4913" 
+              <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={16}
+                color="#ec4913"
               />
             </View>
             <Waveform active={isPlaying} progress={playbackProgress} />
@@ -507,18 +458,6 @@ function InfoCard({
   );
 }
 
-function Stars({ rating }: { rating: number }) {
-  return (
-    <View style={{ flexDirection: 'row', gap: 2, marginTop: 2 }}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Text key={i} style={{ fontSize: 12, color: i <= rating ? '#BA7517' : '#D3D1C7' }}>
-          ★
-        </Text>
-      ))}
-    </View>
-  );
-}
-
 function Waveform({ active, progress = 0 }: { active?: boolean; progress?: number }) {
   const heights = [4, 7, 12, 6, 10, 14, 8, 5, 11, 9, 13, 6, 8, 12, 5, 10, 7, 14, 6, 9, 11, 4, 8, 12, 7, 5, 10, 13, 6, 9];
   return (
@@ -527,14 +466,14 @@ function Waveform({ active, progress = 0 }: { active?: boolean; progress?: numbe
         const barProgress = (i + 1) / heights.length;
         const isPlayed = progress >= barProgress;
         return (
-          <View 
-            key={i} 
+          <View
+            key={i}
             style={[
-              styles.wavebar, 
-              { height: h }, 
+              styles.wavebar,
+              { height: h },
               (active && isPlayed) && { backgroundColor: '#ec4913' },
               (active && !isPlayed) && { backgroundColor: 'rgba(236,19,49,0.2)' }
-            ]} 
+            ]}
           />
         );
       })}
@@ -562,322 +501,49 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 20,
   },
-  dragZone: {
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  handle: {
-    width: 36,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#E5E7EB',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  avatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  badge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -4,
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  badgeText: {
-    fontSize: 9,
-    color: '#fff',
-    fontWeight: '800',
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  userAddr: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnText: {
-    fontSize: 14,
-    color: '#4B5563',
-  },
-  tabBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  tab: {
-    marginRight: 24,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabActive: {
-    borderBottomColor: '#111827',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  tabTextActive: {
-    color: '#111827',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  mapPlaceholder: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 20,
-    marginBottom: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  mapGridH: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: '50%',
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.03)',
-  },
-  mapGridV: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: '50%',
-    width: 1,
-    backgroundColor: 'rgba(0,0,0,0.03)',
-  },
-  pinContainer: {
-    position: 'absolute',
-    top: '35%',
-    left: '51%',
-  },
-  pinRing: {
-    position: 'absolute',
-    top: -6,
-    left: -6,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#EF4444',
-    opacity: 0.3,
-  },
-  pinDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#EF4444',
-    borderWidth: 2.5,
-    borderColor: '#fff',
-  },
-  mapLabel: {
-    position: 'absolute',
-    bottom: 10,
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  mapLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  mapLoaderCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  mapLoadingText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#ec4913',
-    textTransform: 'uppercase',
-  },
-  grid2: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 12,
-    marginTop: 12,
-  },
-  infoCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  infoLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  infoVal: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  infoValSm: {
-    fontSize: 13,
-    color: '#374151',
-    lineHeight: 20,
-  },
-  voiceBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-  },
-  playBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  playIcon: {
-    width: 0,
-    height: 0,
-    borderTopWidth: 6,
-    borderBottomWidth: 6,
-    borderLeftWidth: 10,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderLeftColor: '#fff',
-    marginLeft: 3,
-  },
-  wave: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  wavebar: {
-    width: 3,
-    borderRadius: 2,
-    backgroundColor: '#E5E7EB',
-  },
-  waveDur: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9CA3AF',
-  },
-  cmdRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 10,
-  },
-  cmdRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  cmdIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#F0FDF4',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cmdName: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  cmdQty: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
-  },
-  cmdPrice: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  cmdTotal: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 8,
-    borderTopWidth: 2,
-    borderTopColor: '#F3F4F6',
-  },
-  cmdTotalLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  cmdTotalVal: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#EF4444',
-  },
+  dragZone: { alignItems: 'center', paddingVertical: 14 },
+  handle: { width: 36, height: 5, borderRadius: 2.5, backgroundColor: '#E5E7EB' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
+  userRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff', shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
+  avatarText: { fontSize: 14, fontWeight: '700' },
+  badge: { position: 'absolute', bottom: -2, right: -4, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 2, borderColor: '#fff' },
+  badgeText: { fontSize: 9, color: '#fff', fontWeight: '800' },
+  userName: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  userAddr: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  closeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: { fontSize: 14, color: '#4B5563' },
+  tabBar: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+  tab: { marginRight: 24, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabActive: { borderBottomColor: '#111827' },
+  tabText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
+  tabTextActive: { color: '#111827' },
+  content: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
+  mapPlaceholder: { backgroundColor: '#F3F4F6', borderRadius: 20, marginBottom: 8, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: '#E5E7EB' },
+  mapGridH: { position: 'absolute', left: 0, right: 0, top: '50%', height: 1, backgroundColor: 'rgba(0,0,0,0.03)' },
+  mapGridV: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, backgroundColor: 'rgba(0,0,0,0.03)' },
+  pinContainer: { position: 'absolute', top: '35%', left: '51%' },
+  pinRing: { position: 'absolute', top: -6, left: -6, width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: '#EF4444', opacity: 0.3 },
+  pinDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#EF4444', borderWidth: 2.5, borderColor: '#fff' },
+  mapLabel: { position: 'absolute', bottom: 20, fontSize: 11, fontWeight: '500', color: '#6B7280' },
+  webMapTag: { position: 'absolute', bottom: 6, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  webMapTagText: { fontSize: 9, color: '#6B7280', fontWeight: '600' },
+  infoCard: { backgroundColor: '#F9FAFB', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#F3F4F6' },
+  infoLabel: { fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '700', marginBottom: 6 },
+  infoVal: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  infoValSm: { fontSize: 13, color: '#374151', lineHeight: 20 },
+  voiceBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#F3F4F6' },
+  playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
+  wave: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2, height: 32 },
+  wavebar: { width: 2.5, borderRadius: 2, backgroundColor: '#D1D5DB' },
+  waveDur: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', minWidth: 28, textAlign: 'right' },
+  cmdRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
+  cmdRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  cmdIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  cmdName: { flex: 1, fontSize: 13, color: '#374151', fontWeight: '500' },
+  cmdQty: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
+  cmdPrice: { fontSize: 13, fontWeight: '700', color: '#111827' },
+  cmdTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  cmdTotalLabel: { fontSize: 13, fontWeight: '700', color: '#374151' },
+  cmdTotalVal: { fontSize: 16, fontWeight: '800', color: '#111827' },
 });

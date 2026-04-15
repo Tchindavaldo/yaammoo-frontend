@@ -14,7 +14,7 @@ import {
 import { Commande } from "@/src/types";
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
+import MapComponent from '@/src/components/MapComponent';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 
@@ -379,30 +379,13 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
           <TouchableOpacity 
             activeOpacity={0.8}
             onPress={openInMaps}
-            style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, overflow: 'hidden', borderRadius: 12 }]}
+            style={[styles.mapPlaceholder, { overflow: 'hidden', borderRadius: 12 }]}
           >
-            {coords && region ? (
-              <MapView
-                style={StyleSheet.absoluteFill}
-                zoomEnabled={false}
-                scrollEnabled={false}
-                rotateEnabled={false}
-                pitchEnabled={false}
-                region={region}
-              >
-                <Marker coordinate={coords} pinColor="#ec4913" />
-              </MapView>
-            ) : (
-              <>
-                <View style={styles.mapGridH} />
-                <View style={styles.mapGridV} />
-                <View style={styles.pinContainer}>
-                  <View style={styles.pinRing} />
-                  <View style={styles.pinDot} />
-                </View>
-                <Text style={styles.mapLabel} numberOfLines={1}>{user.addr}</Text>
-              </>
-            )}
+            <MapComponent 
+              region={region} 
+              coords={coords} 
+              address={user.addr} 
+            />
 
             {isOpeningMaps && (
               <View style={styles.mapLoadingOverlay}>

@@ -16,7 +16,7 @@ import {
 import { Commande, FastFood } from "@/src/types";
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
+import MapComponent from '@/src/components/MapComponent';
 import { BikeAnimation } from '../../merchant/components/BikeAnimation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -325,28 +325,11 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
             onPress={openInMaps}
             style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, overflow: 'hidden', borderRadius: 12 }]}
           >
-            {coords && region ? (
-              <MapView
-                style={StyleSheet.absoluteFill}
-                zoomEnabled={false}
-                scrollEnabled={false}
-                rotateEnabled={false}
-                pitchEnabled={false}
-                region={region}
-              >
-                <Marker coordinate={coords} pinColor="#ec4913" />
-              </MapView>
-            ) : (
-              <>
-                <View style={styles.mapGridH} />
-                <View style={styles.mapGridV} />
-                <View style={styles.pinContainer}>
-                  <View style={styles.pinRing} />
-                  <View style={styles.pinDot} />
-                </View>
-                <Text style={styles.mapLabel} numberOfLines={1}>{order.delivery?.location || "Adresse"}</Text>
-              </>
-            )}
+            <MapComponent 
+              region={region} 
+              coords={coords} 
+              address={order.delivery?.location} 
+            />
 
             {isOpeningMaps && (
               <View style={styles.mapLoadingOverlay}>

@@ -17,6 +17,7 @@ import { MenuManagePanel } from '@/src/features/merchant/components/MenuManagePa
 import { PorteFeuillePanel } from '@/src/features/merchant/components/PorteFeuillePanel';
 import { NoBoutiquePanel } from '@/src/features/merchant/components/NoBoutiquePanel';
 import { ActivityIndicator } from '@/src/components/CustomActivityIndicator';
+import { Toast } from '@/src/components/Toast';
 
 const TabItem = ({ label, active, onPress, count, icon }: any) => (
   <View style={styles.colSegment}>
@@ -46,6 +47,22 @@ export default function BoutiqueScreen() {
   const { userData, loading: authLoading } = useAuth();
   const { orders, menus, transactions, loading: merchantLoading, stats, refresh, updateStatus, addMenu } = useMerchant();
   const [activeTab, setActiveTab] = useState<ActiveTab>('commande');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToast({ message, type });
+  };
+
+  const handleUpdateStatus = async (id: string, status: string) => {
+    const ok = await updateStatus(id, status);
+    if (status === 'delivering') {
+      ok ? showToast('🚲 Livraison lancée !', 'success') : showToast('Erreur lors du lancement', 'error');
+    } else if (status === 'processing') {
+      ok ? showToast('✅ Commande acceptée', 'success') : showToast('Erreur lors de la mise à jour', 'error');
+    } else if (status === 'finished') {
+      ok ? showToast('✅ Commande terminée', 'success') : showToast('Erreur lors de la mise à jour', 'error');
+    }
+  };
 
   const handleAddMenu = async (newMenu: any) => {
     await addMenu(newMenu);
@@ -110,7 +127,7 @@ export default function BoutiqueScreen() {
               orders={orders}
               loading={loading}
               onRefresh={refresh}
-              onUpdateStatus={(id, status) => updateStatus(id, status)}
+              onUpdateStatus={handleUpdateStatus}
             />
           </View>
         );
@@ -145,6 +162,13 @@ export default function BoutiqueScreen() {
   return (
     <View style={styles.container}>
       {renderContent()}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onHide={() => setToast(null)}
+        />
+      )}
     </View>
   );
 }

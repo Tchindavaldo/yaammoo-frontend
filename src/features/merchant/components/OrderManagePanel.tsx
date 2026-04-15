@@ -20,7 +20,7 @@ interface OrderManagePanelProps {
   orders: Commande[];
   loading: boolean;
   onRefresh: () => void;
-  onUpdateStatus: (orderId: string, status: string) => Promise<void>;
+  onUpdateStatus: (orderId: string, status: string) => Promise<void | boolean>;
 }
 
 export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
@@ -33,13 +33,20 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>('express');
   const [launchedGroups, setLaunchedGroups] = useState<Record<string, boolean>>({});
+  const [launchingGroups, setLaunchingGroups] = useState<Record<string, boolean>>({});
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroupId(prev => (prev === groupId ? null : groupId));
   };
 
-  const launchGroup = (groupId: string) => {
-    setLaunchedGroups(prev => ({ ...prev, [groupId]: true }));
+  const launchGroup = async (groupId: string, groupOrders: Commande[]) => {
+    setLaunchingGroups(prev => ({ ...prev, [groupId]: true }));
+    try {
+      await Promise.all(groupOrders.map(o => onUpdateStatus(o.id, 'delivering')));
+      setLaunchedGroups(prev => ({ ...prev, [groupId]: true }));
+    } finally {
+      setLaunchingGroups(prev => ({ ...prev, [groupId]: false }));
+    }
   };
 
   // Grouper les commandes par date (Priorité date de livraison comme Ionic)
@@ -67,7 +74,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const statusMap: Record<OrderStatus, string[]> = {
     pending: ['pending'],
     proccess: ['processing', 'active', 'in_progress'],
-    finish: ['completed', 'finished', 'done'],
+    finish: ['completed', 'finished', 'done', 'delivering'],
   };
 
    const filteredOrders = orders.filter((o) =>
@@ -272,16 +279,16 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                       </View>
                     </View>
                     
-                    <TouchableOpacity 
+                    <TouchableOpacity
                        style={[styles.btnLaunchGroup, launchedGroups['express'] && styles.btnLaunchGroupLaunched]}
                        onPress={(e) => {
                          e.stopPropagation();
-                         launchGroup('express');
+                         launchGroup('express', deliveryData!.expressGroups.flat());
                        }}
-                       disabled={launchedGroups['express']}
+                       disabled={launchedGroups['express'] || launchingGroups['express']}
                     >
                        <Text style={[styles.btnLaunchGroupText, launchedGroups['express'] && styles.btnLaunchGroupTextLaunched]}>
-                         {launchedGroups['express'] ? "Lancé ✓" : "Lancer tout"}
+                         {launchingGroups['express'] ? "..." : launchedGroups['express'] ? "Lancé ✓" : "Lancer tout"}
                        </Text>
                     </TouchableOpacity>
                   </TouchableOpacity>
@@ -320,16 +327,16 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                         </View>
                       </View>
                       
-                      <TouchableOpacity 
+                      <TouchableOpacity
                          style={[styles.btnLaunchGroup, isLaunched && styles.btnLaunchGroupLaunched]}
                          onPress={(e) => {
                            e.stopPropagation();
-                           launchGroup(groupId);
+                           launchGroup(groupId, slot.userGroups.flat());
                          }}
-                         disabled={isLaunched}
+                         disabled={isLaunched || launchingGroups[groupId]}
                       >
                          <Text style={[styles.btnLaunchGroupText, isLaunched && styles.btnLaunchGroupTextLaunched]}>
-                           {isLaunched ? "Lancé ✓" : "Lancer tout"}
+                           {launchingGroups[groupId] ? "..." : isLaunched ? "Lancé ✓" : "Lancer tout"}
                          </Text>
                       </TouchableOpacity>
                     </TouchableOpacity>

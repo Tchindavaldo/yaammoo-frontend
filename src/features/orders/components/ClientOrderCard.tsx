@@ -66,6 +66,11 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
               <Text style={styles.summaryPrice}>{totalPrice} F</Text>
               <Text style={styles.summaryName} numberOfLines={1}>{menuName} (X{quantity})</Text>
             </View>
+            {isDelivering && (
+              <View style={styles.bikeAnimationTop}>
+                <BikeAnimation />
+              </View>
+            )}
           </View>
 
           <View style={styles.summaryBottomRow}>
@@ -79,20 +84,14 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
                 <Text style={[styles.chipText, { color: "#ccc" }]}>Boisson +{drinksActiveCount}</Text>
               </View>
             </View>
-            
+
             <View style={styles.rightActionColumn}>
-              {isDelivering && (
-                <View style={styles.cardBikeContainer}>
-                  <BikeAnimation />
-                </View>
-              )}
-              
               {showActions ? (
                 <View style={styles.qtyContainer}>
                   <View style={styles.qtyLabel}>
                     <Text style={styles.qtyLabelText}>x{quantity}</Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => onDelete?.(order.id)}
                     style={styles.deleteBtn}
                   >
@@ -149,9 +148,10 @@ const styles = StyleSheet.create({
     height: 53,
     borderRadius: 24,
   },
-  cardBikeContainer: {
+  bikeAnimationTop: {
     transform: [{ scale: 0.5 }],
-    marginBottom: -10,
+    marginLeft: 12,
+    marginTop: -8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -208,13 +208,14 @@ const styles = StyleSheet.create({
   },
   summaryTopRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 6,
   },
   summaryTitleContainer: {
     flexDirection: "column",
     flex: 1,
+    justifyContent: "flex-start",
   },
   statusBadge: {
     backgroundColor: '#f3f4f6',

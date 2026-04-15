@@ -27,7 +27,7 @@ interface MerchantOrderCardProps {
   order: Commande;
   allOrders?: Commande[];
   onUpdateStatus: (
-    status: "processing" | "finished" | "cancelByFastFood",
+    status: "processing" | "finished" | "delivering" | "cancelByFastFood",
   ) => Promise<void> | void;
   isForceLaunched?: boolean;
 }
@@ -45,11 +45,14 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const isLaunched = isLaunchedLocal || isForceLaunched;
 
   const handleUpdateStatus = async (
-    newStatus: "processing" | "finished" | "cancelByFastFood",
+    newStatus: "processing" | "finished" | "delivering" | "cancelByFastFood",
   ) => {
     setIsUpdating(true);
     try {
       await onUpdateStatus(newStatus);
+      if (newStatus === "delivering") {
+        setIsLaunchedLocal(true);
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -59,6 +62,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const isPending = status === "pending" || status === "pendingtobuy";
   const isActive = status === "active" || status === "processing" || status === "in_progress";
   const isFinished = status === "completed" || status === "finished" || status === "done";
+  const isDelivering = status === "delivering";
 
   // --- Design Variant: Grouped Finished ---
   if (allOrders) {
@@ -75,6 +79,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     
     const orderCount = allOrders.length;
     const addressStr = order.delivery?.location || "Adresse non spécifiée";
+    const isGroupDelivering = isDelivering || isLaunched;
 
     return (
       <View style={styles.wrapper}>
@@ -107,12 +112,15 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 </View>
               </View>
               
-              {isLaunched ? (
+              {isGroupDelivering ? (
                 <BikeAnimation />
+              ) : isUpdating ? (
+                <ActivityIndicator size="small" color="#dc2626" />
               ) : (
                 <TouchableOpacity
                   style={styles.summaryValidateBtn}
-                  onPress={() => setIsLaunchedLocal(true)}
+                  disabled={isUpdating}
+                  onPress={() => handleUpdateStatus("delivering")}
                 >
                   <Ionicons name="bicycle-outline" size={14} color="white" />
                   <Text style={styles.summaryValidateBtnText}>Lancer</Text>

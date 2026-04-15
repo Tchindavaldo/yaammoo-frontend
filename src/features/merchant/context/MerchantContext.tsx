@@ -10,7 +10,7 @@ interface MerchantContextType {
   loading: boolean;
   error: string | null;
   refresh: (showLoading?: boolean) => Promise<void>;
-  updateStatus: (orderId: string, status: string) => Promise<void>;
+  updateStatus: (orderId: string, status: string) => Promise<boolean>;
   addMenu: (menu: Menu) => Promise<void>;
   stats: {
     totalOrders: number;
@@ -59,16 +59,18 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchData();
   }, [fetchData]);
 
-  const updateStatus = async (orderId: string, status: string) => {
+  const updateStatus = async (orderId: string, status: string): Promise<boolean> => {
     try {
       await merchantService.updateOrderStatus(orderId, status);
       setOrders((prev) =>
         prev.map((o) =>
-          o.id === orderId ? { ...o, status: status } : o,
+          o.id === orderId ? { ...o, status } : o,
         ),
       );
+      return true;
     } catch (err) {
       console.error("Failed to update status:", err);
+      return false;
     }
   };
 

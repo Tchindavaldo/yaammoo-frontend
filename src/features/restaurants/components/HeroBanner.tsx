@@ -10,7 +10,7 @@ export const HeroBanner: React.FC = React.memo(() => {
         <View style={styles.container}>
             <View style={styles.bannerWrapper}>
                 <Image 
-                    source={require('@/assets/images/banner shawamar.png')} 
+                    source={require('@/assets/images/banner shawamar.webp')} 
                     style={styles.backgroundImage}
                     contentFit="cover"
                 />

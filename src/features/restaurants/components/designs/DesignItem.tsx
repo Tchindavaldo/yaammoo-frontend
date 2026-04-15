@@ -53,7 +53,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
  
         <View style={styles.v1ImgWrapper}>
           <Image 
-            source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.png')} 
+            source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')} 
             style={styles.v1Image} 
             contentFit="contain"
           />
@@ -104,7 +104,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
       <TouchableOpacity style={styles.v3Card} onPress={onPress} activeOpacity={0.8}>
         <View style={styles.v3ImgBox}>
             <Image 
-                source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.png')} 
+                source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.webp')} 
                 style={styles.v3Image}
                 contentFit="contain"
             />

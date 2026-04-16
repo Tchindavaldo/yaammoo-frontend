@@ -65,12 +65,12 @@ const COLORS = [
 function buildItems(order: Commande): OrderItem[] {
   const items: OrderItem[] = [];
 
-  // Menu principal - read from prices array
+  // Menu principal - read the selected price from prices[0] (now contains only the selected price)
   const menuPrice = order.menu?.prices?.[0]?.price || 0;
   items.push({
     name: order.menu?.titre || order.menu?.name || "Menu principal",
     qty: order.quantity || 1,
-    price: `${menuPrice} F`,
+    price: `${menuPrice * (order.quantity || 1)} F`,
     unitPrice: menuPrice
   });
 

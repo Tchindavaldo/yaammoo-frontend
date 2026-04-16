@@ -64,7 +64,7 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
       newItems.push({
         name: selectedOrder.menu?.titre || selectedOrder.menu?.name || "Menu principal",
         qty: selectedOrder.quantity || 1,
-        price: `${menuPrice} F`,
+        price: `${menuPrice * (selectedOrder.quantity || 1)} F`,
         unitPrice: menuPrice
       });
 

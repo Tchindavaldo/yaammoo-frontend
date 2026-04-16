@@ -58,7 +58,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
   const prices = useMemo(() => {
-    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0 };
+    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0, selectedPrice: 0 };
 
     let basePrice = menu.prix1;
     if (selectedPriceIndex === 2 && menu.prix2 > 0) basePrice = menu.prix2;
@@ -78,7 +78,8 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       extrasPrice,
       drinksPrice,
       deliveryPrice,
-      total: menuPrice + extrasPrice + drinksPrice + deliveryPrice
+      total: menuPrice + extrasPrice + drinksPrice + deliveryPrice,
+      selectedPrice: basePrice
     };
   }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, delivery]);
 
@@ -99,6 +100,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     if (drinkData.length === 0)
       drinkData.push({ name: "Aucune", status: false, prix: 0 });
 
+    let selectedDescription = menu.optionPrix1 || "Standard";
+    if (selectedPriceIndex === 2) selectedDescription = menu.optionPrix2 || "Medium";
+    if (selectedPriceIndex === 3) selectedDescription = menu.optionPrix3 || "Large";
+
     const mappedMenu = {
       id: (menu as any).id || (menu as any)._id || "unknown",
       fastFoodId: (menu as any).fastFoodId || (menu as any).idFastFood || "1",
@@ -107,10 +112,8 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       coverImageHasBackground: true,
       images: menu.images || [menu.image],
       prices: [
-        { price: menu.prix1, description: menu.optionPrix1 || "Standard" },
-        menu.prix2 > 0 ? { price: menu.prix2, description: menu.optionPrix2 || "Medium" } : null,
-        menu.prix3 > 0 ? { price: menu.prix3, description: menu.optionPrix3 || "Large" } : null,
-      ].filter((p): p is { price: number; description: string } => p !== null),
+        { price: prices.selectedPrice, description: selectedDescription },
+      ],
       extra: [],
       drink: [],
       status: menu.disponibilite === "active" || menu.disponibilite === "Disponible" ? "available" : "unavailable",

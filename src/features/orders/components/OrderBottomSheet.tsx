@@ -23,6 +23,7 @@ export type OrderItem = {
   name: string;
   qty: number;
   price: string;
+  unitPrice?: number;
 };
 
 const COLORS = [
@@ -37,38 +38,47 @@ type Props = {
   isVisible: boolean;
   onClose: () => void;
   boutique?: FastFood | null;
+  allOrders?: Commande[];
 };
 
 type Tab = 'livraison' | 'commandes';
 
-export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, boutique }) => {
+export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, boutique, allOrders }) => {
   const [tab, setTab] = useState<Tab>('livraison');
+  const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [items, setItems] = useState<OrderItem[]>([]);
 
   useEffect(() => {
     if (isVisible && order) {
-      // Setup Items
-      const extras = order.extra || [];
-      const drinks = order.drink || [];
+      // Déterminer la commande à afficher
+      const selectedOrder = allOrders ? allOrders[selectedOrderIdx] || order : order;
+
+      // Construire les items
+      const extras = selectedOrder.extra || [];
+      const drinks = selectedOrder.drink || [];
       const newItems: OrderItem[] = [];
-      
+
+      const menuPrice = selectedOrder.menu?.prices?.[0]?.price || 0;
       newItems.push({
-        name: order.menu?.titre || order.menu?.name || "Menu principal",
-        qty: order.quantity || 1,
-        price: `${(order.menu?.prix1 || 0) * (order.quantity || 1)} F`
+        name: selectedOrder.menu?.titre || selectedOrder.menu?.name || "Menu principal",
+        qty: selectedOrder.quantity || 1,
+        price: `${menuPrice} F`,
+        unitPrice: menuPrice
       });
 
       extras.forEach((ex: any) => {
         if (ex.status !== false && ex.name !== "Aucun") {
-          newItems.push({ name: ex.name, qty: 1, price: "0 F" });
+          const exPrice = ex.prix || ex.price || 0;
+          newItems.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice });
         }
       });
 
       drinks.forEach((dr: any) => {
         if (dr.status !== false && dr.name !== "Aucune") {
-          newItems.push({ name: dr.name, qty: 1, price: "0 F" });
+          const drPrice = dr.prix || dr.price || 0;
+          newItems.push({ name: dr.name, qty: 1, price: `${drPrice} F`, unitPrice: drPrice });
         }
       });
       setItems(newItems);
@@ -77,7 +87,8 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
       translateY.setValue(SHEET_HEIGHT);
       overlayOpacity.setValue(0);
       setTab('livraison');
-      
+      setSelectedOrderIdx(0);
+
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
@@ -93,7 +104,7 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
         }),
       ]).start();
     }
-  }, [isVisible, order]);
+  }, [isVisible, order, allOrders, selectedOrderIdx]);
 
   const handleDismiss = () => {
     Animated.parallel([
@@ -195,17 +206,23 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            style={styles.content}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {tab === 'livraison' ? (
+          {tab === 'livraison' ? (
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              showsVerticalScrollIndicator={false}
+            >
               <LivraisonTab order={order} boutiqueName={boutique?.nom || "Boutique"} />
-            ) : (
-              <CommandesTab items={items} total={order.total} />
-            )}
-          </ScrollView>
+            </ScrollView>
+          ) : (
+            <CommandesTab
+              items={items}
+              total={order?.total || 0}
+              allOrders={allOrders}
+              selectedIdx={selectedOrderIdx}
+              onSelectOrder={setSelectedOrderIdx}
+            />
+          )}
         </Animated.View>
       </View>
     </Modal>
@@ -310,21 +327,85 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
   );
 }
 
-function CommandesTab({ items, total }: { items: OrderItem[]; total: number }) {
+function CommandesTab({
+  items,
+  total,
+  allOrders,
+  selectedIdx,
+  onSelectOrder
+}: {
+  items: OrderItem[];
+  total: number;
+  allOrders?: Commande[];
+  selectedIdx?: number;
+  onSelectOrder?: (idx: number) => void;
+}) {
   return (
-    <View style={styles.infoCard}>
-      {items.map((o, i) => (
-        <View key={i} style={[styles.cmdRow, i < items.length - 1 && styles.cmdRowBorder]}>
-          <View style={styles.cmdIcon}><Text style={{ fontSize: 12 }}>📦</Text></View>
-          <Text style={styles.cmdName}>{o.name}</Text>
-          <Text style={styles.cmdQty}>x{o.qty}</Text>
-          <Text style={styles.cmdPrice}>{o.price}</Text>
+    <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
+      {/* Container arrondi englobant items + total */}
+      <View style={[styles.infoCard, { flex: 1, padding: 0, overflow: 'hidden', marginBottom: 12 }]}>
+        {/* Items scrollables */}
+        <ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 12 }}
+        >
+          {items.map((o, i) => {
+            const unitPrice = o.unitPrice || 0;
+            const lineTotal = unitPrice * o.qty;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.cmdRow,
+                  i < items.length - 1 && styles.cmdRowBorder,
+                ]}
+              >
+                <View style={styles.cmdIcon}>
+                  <Text style={{ fontSize: 12 }}>📦</Text>
+                </View>
+                <Text style={[styles.cmdName, { flex: 1 }]}>{o.name}</Text>
+                <Text style={styles.cmdPrice}>
+                  {unitPrice} x{o.qty} = {lineTotal} F
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        {/* Total fixe en bas du container */}
+        <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+          <View style={styles.cmdTotal}>
+            <Text style={styles.cmdTotalLabel}>Total</Text>
+            <Text style={styles.cmdTotalVal}>{total} F</Text>
+          </View>
         </View>
-      ))}
-      <View style={styles.cmdTotal}>
-        <Text style={styles.cmdTotalLabel}>Total</Text>
-        <Text style={styles.cmdTotalVal}>{total} F</Text>
       </View>
+
+      {/* Nav tab en bas (hors du container, si plusieurs commandes) */}
+      {allOrders && allOrders.length > 1 && onSelectOrder && (
+        <View style={styles.cmdNavTabs}>
+          {allOrders.map((_, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={[
+                styles.cmdNavTab,
+                selectedIdx === idx && styles.cmdNavTabActive
+              ]}
+              onPress={() => onSelectOrder(idx)}
+            >
+              <Text
+                style={[
+                  styles.cmdNavTabText,
+                  selectedIdx === idx && styles.cmdNavTabTextActive
+                ]}
+              >
+                Cmd {idx + 1}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -666,10 +747,6 @@ const styles = StyleSheet.create({
   cmdTotal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 8,
-    borderTopWidth: 2,
-    borderTopColor: '#F3F4F6',
   },
   cmdTotalLabel: {
     fontSize: 14,
@@ -680,5 +757,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     color: '#EF4444',
+  },
+  cmdQtyPrice: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  cmdNavTabs: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 12,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  cmdNavTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cmdNavTabActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  cmdNavTabText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  cmdNavTabTextActive: {
+    color: '#FFFFFF',
   },
 });

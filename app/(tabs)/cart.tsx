@@ -67,6 +67,7 @@ export default function OrdersScreen() {
   const [orderToEdit, setOrderToEdit] = useState<any | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedOrderDetails, setSelectedOrderDetails] = useState<Commande | null>(null);
+  const [selectedGroupOrders, setSelectedGroupOrders] = useState<Commande[]>([]);
   const [detailVisible, setDetailVisible] = useState(false);
 
   const itemToDelete = useMemo(() => {
@@ -401,6 +402,7 @@ export default function OrdersScreen() {
                       showActions={false}
                       onPress={() => {
                         setSelectedOrderDetails(order);
+                        setSelectedGroupOrders(group.orders);
                         setDetailVisible(true);
                       }}
                     />
@@ -627,8 +629,10 @@ export default function OrdersScreen() {
         onClose={() => {
             setDetailVisible(false);
             setSelectedOrderDetails(null);
+            setSelectedGroupOrders([]);
         }}
         order={selectedOrderDetails}
+        allOrders={selectedGroupOrders}
         boutique={fastFoods.find(f => f.id === selectedOrderDetails?.fastFoodId)}
       />
     </View>

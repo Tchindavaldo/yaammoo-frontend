@@ -132,6 +132,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
 
         <MerchantOrderBottomSheet
           order={order}
+          allOrders={allOrders}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
         />

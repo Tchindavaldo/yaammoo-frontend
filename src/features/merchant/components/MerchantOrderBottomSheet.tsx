@@ -25,6 +25,7 @@ export type OrderItem = {
   name: string;
   qty: number;
   price: string;
+  unitPrice?: number;
 };
 
 export type DeliveryUser = {
@@ -48,79 +49,110 @@ type Props = {
   order: Commande | null;
   visible: boolean;
   onClose: () => void;
+  allOrders?: Commande[];
 };
 
 type Tab = 'livraison' | 'commandes';
 
 const COLORS = [
-  { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' }, 
-  { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' }, 
-  { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' }, 
-  { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' }, 
+  { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' },
+  { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' },
+  { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' },
+  { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' },
 ];
 
-export default function MerchantOrderBottomSheet({ order, visible, onClose }: Props) {
+// Helper function to build order items with correct prices
+function buildItems(order: Commande): OrderItem[] {
+  const items: OrderItem[] = [];
+
+  // Menu principal - read from prices array
+  const menuPrice = order.menu?.prices?.[0]?.price || 0;
+  items.push({
+    name: order.menu?.titre || order.menu?.name || "Menu principal",
+    qty: order.quantity || 1,
+    price: `${menuPrice} F`,
+    unitPrice: menuPrice
+  });
+
+  // Extras - lire le prix stocké dans l'ordre
+  const extras = order.extra || [];
+  extras.forEach((ex: any) => {
+    if (ex.status !== false && ex.name !== "Aucun") {
+      const exPrice = ex.prix || ex.price || 0;
+      items.push({
+        name: ex.name,
+        qty: 1,
+        price: `${exPrice} F`,
+        unitPrice: exPrice
+      });
+    }
+  });
+
+  // Boissons - lire le prix stocké dans l'ordre
+  const drinks = order.drink || [];
+  drinks.forEach((dr: any) => {
+    if (dr.status !== false && dr.name !== "Aucune") {
+      const drPrice = dr.prix || dr.price || 0;
+      items.push({
+        name: dr.name,
+        qty: 1,
+        price: `${drPrice} F`,
+        unitPrice: drPrice
+      });
+    }
+  });
+
+  return items;
+}
+
+export default function MerchantOrderBottomSheet({ order, visible, onClose, allOrders }: Props) {
   const [tab, setTab] = useState<Tab>('livraison');
+  const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const [user, setUser] = useState<DeliveryUser | null>(null);
 
   useEffect(() => {
     if (order) {
-      const extras = order.extra || [];
-      const drinks = order.drink || [];
-      
-      const items: OrderItem[] = [];
-      items.push({
-        name: order.menu?.titre || "Menu principal",
-        qty: order.quantity || 1,
-        price: `${order.menu?.prix1 || 0} F`
-      });
+      // Déterminer la commande à afficher (sélectionnée ou première)
+      const selectedOrder = allOrders ? allOrders[selectedOrderIdx] || order : order;
 
-      extras.forEach((ex: any) => {
-        if (ex.status !== false && ex.name !== "Aucun") {
-          items.push({ name: ex.name, qty: 1, price: "0 F" });
-        }
-      });
+      // Construire les items avec la fonction helper
+      const items = buildItems(selectedOrder);
 
-      drinks.forEach((dr: any) => {
-        if (dr.status !== false && dr.name !== "Aucune") {
-          items.push({ name: dr.name, qty: 1, price: "0 F" });
-        }
-      });
-
-      const customerFirstName = order.userData?.firstName || "Client";
-      const customerLastName = order.userData?.lastName || "";
+      const customerFirstName = selectedOrder.userData?.firstName || "Client";
+      const customerLastName = selectedOrder.userData?.lastName || "";
       const initials = `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}`.toUpperCase();
       const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
 
       setUser({
         initials,
         name: `${customerFirstName} ${customerLastName}`,
-        addr: order.delivery?.location || "Adresse non spécifiée",
+        addr: selectedOrder.delivery?.location || "Adresse non spécifiée",
         avColor: theme.bg,
         avTextColor: theme.text,
         badgeColor: theme.badge,
-        orderCount: (order as any).rank || 1,
-        rating: 4, 
-        phone: order.delivery?.phone || order.userData?.phoneNumber?.toString() || "Non fourni",
-        creneau: order.delivery?.type === 'express' 
-          ? "Express" 
-          : `Période (${order.delivery?.time || "Dès que possible"})`,
-        duration: order.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
-        note: order.delivery?.note || "Aucune note de livraison.",
-        voiceNoteUri: order.delivery?.voiceNoteUri || "",
+        orderCount: (selectedOrder as any).rank || 1,
+        rating: 4,
+        phone: selectedOrder.delivery?.phone || selectedOrder.userData?.phoneNumber?.toString() || "Non fourni",
+        creneau: selectedOrder.delivery?.type === 'express'
+          ? "Express"
+          : `Période (${selectedOrder.delivery?.time || "Dès que possible"})`,
+        duration: selectedOrder.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
+        note: selectedOrder.delivery?.note || "Aucune note de livraison.",
+        voiceNoteUri: selectedOrder.delivery?.voiceNoteUri || "",
         orders: items
       });
     }
-  }, [order]);
+  }, [order, allOrders, selectedOrderIdx]);
 
   useEffect(() => {
     if (visible && order) {
       translateY.setValue(SHEET_HEIGHT);
       overlayOpacity.setValue(0);
       setTab('livraison');
-      
+      setSelectedOrderIdx(0);
+
       Animated.parallel([
         Animated.spring(translateY, {
           toValue: 0,
@@ -240,17 +272,23 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            style={styles.content}
-            contentContainerStyle={{ paddingBottom: 24 }}
-            showsVerticalScrollIndicator={false}
-          >
-            {tab === 'livraison' ? (
+          {tab === 'livraison' ? (
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              showsVerticalScrollIndicator={false}
+            >
               <LivraisonTab user={user} />
-            ) : (
-              <CommandesTab orders={user.orders} total={total} />
-            )}
-          </ScrollView>
+            </ScrollView>
+          ) : (
+            <CommandesTab
+              orders={user.orders}
+              total={total}
+              allOrders={allOrders}
+              selectedIdx={selectedOrderIdx}
+              onSelectOrder={setSelectedOrderIdx}
+            />
+          )}
         </Animated.View>
       </View>
     </Modal>
@@ -433,31 +471,85 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
   );
 }
 
-function CommandesTab({ orders, total }: { orders: OrderItem[]; total: number }) {
+function CommandesTab({
+  orders,
+  total,
+  allOrders,
+  selectedIdx,
+  onSelectOrder
+}: {
+  orders: OrderItem[];
+  total: number;
+  allOrders?: Commande[];
+  selectedIdx?: number;
+  onSelectOrder?: (idx: number) => void;
+}) {
   return (
-    <View style={styles.infoCard}>
-      {orders.map((o, i) => (
-        <View
-          key={i}
-          style={[
-            styles.cmdRow,
-            i < orders.length - 1 && styles.cmdRowBorder,
-          ]}
+    <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
+      {/* Container arrondi englobant items + total */}
+      <View style={[styles.infoCard, { flex: 1, padding: 0, overflow: 'hidden', marginBottom: 12 }]}>
+        {/* Items scrollables */}
+        <ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 12 }}
         >
-          <View style={styles.cmdIcon}>
-            <Text style={{ fontSize: 12 }}>📦</Text>
+          {orders.map((o, i) => {
+            const unitPrice = o.unitPrice || 0;
+            const lineTotal = unitPrice * o.qty;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.cmdRow,
+                  i < orders.length - 1 && styles.cmdRowBorder,
+                ]}
+              >
+                <View style={styles.cmdIcon}>
+                  <Text style={{ fontSize: 12 }}>📦</Text>
+                </View>
+                <Text style={[styles.cmdName, { flex: 1 }]}>{o.name}</Text>
+                <Text style={styles.cmdPrice}>
+                  {unitPrice} x{o.qty} = {lineTotal} F
+                </Text>
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        {/* Total fixe en bas du container */}
+        <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
+          <View style={styles.cmdTotal}>
+            <Text style={styles.cmdTotalLabel}>Total</Text>
+            <Text style={styles.cmdTotalVal}>{total} F</Text>
           </View>
-          <Text style={styles.cmdName}>{o.name}</Text>
-          <Text style={styles.cmdQty}>x{o.qty}</Text>
-          <Text style={styles.cmdPrice}>{o.price}</Text>
         </View>
-      ))}
-      <View style={styles.cmdTotal}>
-        <Text style={styles.cmdTotalLabel}>Total</Text>
-        <Text style={styles.cmdTotalVal}>
-          {total.toFixed(2).replace('.', ',')} €
-        </Text>
       </View>
+
+      {/* Nav tab en bas (hors du container, si plusieurs commandes) */}
+      {allOrders && allOrders.length > 1 && onSelectOrder && (
+        <View style={styles.cmdNavTabs}>
+          {allOrders.map((_, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={[
+                styles.cmdNavTab,
+                selectedIdx === idx && styles.cmdNavTabActive
+              ]}
+              onPress={() => onSelectOrder(idx)}
+            >
+              <Text
+                style={[
+                  styles.cmdNavTabText,
+                  selectedIdx === idx && styles.cmdNavTabTextActive
+                ]}
+              >
+                Cmd {idx + 1}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -848,10 +940,6 @@ const styles = StyleSheet.create({
   cmdTotal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 8,
-    borderTopWidth: 2,
-    borderTopColor: '#F3F4F6',
   },
   cmdTotalLabel: {
     fontSize: 14,
@@ -862,5 +950,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     color: '#EF4444',
+  },
+  cmdQtyPrice: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  cmdNavTabs: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 12,
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  cmdNavTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cmdNavTabActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  cmdNavTabText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  cmdNavTabTextActive: {
+    color: '#FFFFFF',
   },
 });

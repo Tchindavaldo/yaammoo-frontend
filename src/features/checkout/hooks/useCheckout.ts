@@ -88,14 +88,16 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     const extraData = selectedPackaging.map((pkg) => ({
       name: pkg.type,
       status: true,
+      prix: pkg.prix,
     }));
 
     const drinkData = selectedDrinks.map((drink) => ({
       name: drink.type,
       status: true,
+      prix: drink.prix,
     }));
     if (drinkData.length === 0)
-      drinkData.push({ name: "Aucune", status: false });
+      drinkData.push({ name: "Aucune", status: false, prix: 0 });
 
     const mappedMenu = {
       id: (menu as any).id || (menu as any)._id || "unknown",

@@ -24,6 +24,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
 
 const { width, height } = Dimensions.get("window");
 
@@ -37,6 +38,7 @@ export const NoBoutiquePanel = () => {
   const [openTime, setOpenTime] = useState(new Date());
   const [closeTime, setCloseTime] = useState(new Date());
   const [number, setNumber] = useState("");
+  const [image, setImage] = useState<string>("");
 
   // Picker states
   const [showOpenPicker, setShowOpenPicker] = useState(false);
@@ -188,6 +190,24 @@ export const NoBoutiquePanel = () => {
     });
   };
 
+  const pickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      showToast("Erreur lors de la sélection de l'image", "error");
+    }
+  };
+
   const handleCreate = async () => {
     if (!name || !number) {
       showToast("Veuillez remplir les champs obligatoires", "error");
@@ -203,7 +223,7 @@ export const NoBoutiquePanel = () => {
         closeTime: formatTime(closeTime),
         userId,
         number,
-        image: "",
+        image: image || "",
       });
 
       if (response.data && response.data.success) {
@@ -375,9 +395,31 @@ export const NoBoutiquePanel = () => {
                 showsVerticalScrollIndicator={false}
               >
                 <View style={[styles.formRow, { alignItems: "center" }]}>
-                  {/* Left avatar placeholder */}
+                  {/* Left avatar image picker */}
                   <View style={styles.avatarCol}>
-                    <View style={styles.avatarPlaceholder} />
+                    <TouchableOpacity
+                      style={styles.avatarButton}
+                      onPress={pickImage}
+                    >
+                      {image ? (
+                        <>
+                          <Image
+                            source={{ uri: image }}
+                            style={styles.avatarImage}
+                          />
+                          <View style={styles.avatarOverlay}>
+                            <Ionicons name="camera-outline" size={20} color="white" />
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          <View style={styles.avatarPlaceholder} />
+                          <View style={styles.avatarOverlay}>
+                            <Ionicons name="image-outline" size={20} color="white" />
+                          </View>
+                        </>
+                      )}
+                    </TouchableOpacity>
                   </View>
 
                   {/* Inputs col */}
@@ -763,11 +805,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarButton: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    overflow: "hidden",
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   avatarPlaceholder: {
     width: 90,
     height: 90,
     borderRadius: 45,
     backgroundColor: "#ffffff3b",
+  },
+  avatarImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+  },
+  avatarOverlay: {
+    position: "absolute",
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   inputsCol: {
     width: "70%",

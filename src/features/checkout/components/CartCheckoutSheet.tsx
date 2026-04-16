@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Modal, TouchableOpacity, ScrollView, Platform, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Menu } from '@/src/types';
 import { useCheckout } from '../hooks/useCheckout';
 import { styles } from './CartCheckoutSheet.styles';
+import axios from 'axios';
+import { Config } from '@/src/api/config';
 
 // Shared Components
 import { TabChip } from './shared/TabChip';
@@ -46,7 +48,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     availablePackaging, availableDrinks,
     total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
     createOrder
-  } = useCheckout(menu, initialOrder, onChange);
+  } = useCheckout(menuWithDeliveryHours, initialOrder, onChange);
 
   const [activeTab, setActiveTab] = useState<CheckoutStep>('detail');
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
@@ -56,6 +58,35 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
   const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
   const [paymentKey, setPaymentKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [menuWithDeliveryHours, setMenuWithDeliveryHours] = useState<Menu | null>(menu);
+
+  // Enrichir le menu avec les deliveryHours de la boutique
+  useEffect(() => {
+    if (!menu || !(menu as any).fastFoodId) {
+      setMenuWithDeliveryHours(menu);
+      return;
+    }
+
+    const fetchDeliveryHours = async () => {
+      try {
+        const response = await axios.get(`${Config.apiUrl}/fastfood/${(menu as any).fastFoodId}`, {
+          headers: { "ngrok-skip-browser-warning": "true" }
+        });
+        if (response.data?.data?.deliveryHours) {
+          setMenuWithDeliveryHours({
+            ...menu,
+            deliveryHours: response.data.data.deliveryHours
+          } as any);
+        } else {
+          setMenuWithDeliveryHours(menu);
+        }
+      } catch {
+        setMenuWithDeliveryHours(menu);
+      }
+    };
+
+    fetchDeliveryHours();
+  }, [menu]);
 
   if (!menu) return null;
 
@@ -190,10 +221,11 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
         )}
 
         {isPeriodPopupVisible && (
-          <CheckoutPeriodOverlay 
-            onClose={() => setIsPeriodPopupVisible(false)} 
+          <CheckoutPeriodOverlay
+            onClose={() => setIsPeriodPopupVisible(false)}
             selectedPeriod={delivery.hour || 'Now'}
             onSelectPeriod={(period) => setDelivery({ ...delivery, hour: period })}
+            availableHours={availableHours}
           />
         )}
 

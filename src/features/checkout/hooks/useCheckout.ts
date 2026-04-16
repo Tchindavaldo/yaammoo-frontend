@@ -28,7 +28,16 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     [],
   );
 
-  const availableHours = ["12:00", "13:00", "14:00", "18:00", "19:00", "20:00"];
+  // Heures par défaut si la boutique n'en a pas configuré
+  const defaultHours = ["12:00", "13:00", "14:00", "18:00", "19:00", "20:00"];
+
+  // Récupérer les heures de livraison depuis le menu/boutique si disponibles
+  const availableHours = useMemo(() => {
+    if (menu && (menu as any).deliveryHours && Array.isArray((menu as any).deliveryHours)) {
+      return (menu as any).deliveryHours;
+    }
+    return defaultHours;
+  }, [menu]);
 
   useEffect(() => {
     const currentId = initialOrder?.id;

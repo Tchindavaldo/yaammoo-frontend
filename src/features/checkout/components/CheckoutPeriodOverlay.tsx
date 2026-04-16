@@ -9,10 +9,17 @@ interface CheckoutPeriodOverlayProps {
   onClose: () => void;
   selectedPeriod: string;
   onSelectPeriod: (period: string) => void;
+  availableHours?: string[];
 }
 
-export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({ onClose, selectedPeriod, onSelectPeriod }) => {
-  const periods = ['09:00', '12:30', '14:00', '16:30', null, null];
+export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
+  onClose,
+  selectedPeriod,
+  onSelectPeriod,
+  availableHours = ['12:00', '13:00', '14:00', '18:00', '19:00', '20:00']
+}) => {
+  // Remplir avec des nulls pour garder la grille 2x3
+  const periods = [...availableHours, ...Array(Math.max(0, 6 - availableHours.length)).fill(null)];
 
   return (
     <View style={styles.keyboardWrapper}>

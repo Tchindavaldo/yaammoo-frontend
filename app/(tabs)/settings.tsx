@@ -18,6 +18,7 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'expo-router';
+import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
 
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
@@ -27,6 +28,7 @@ export default function SettingsScreen() {
   const { userData, setUserData } = useAuth();
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
+  const [editBoutiqueVisible, setEditBoutiqueVisible] = useState(false);
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -122,6 +124,20 @@ export default function SettingsScreen() {
             onPress={() => handleComingSoon('Bonus et parrainage')}
           />
         </View>
+
+        {/* Boutique - only show for merchants */}
+        {userData?.isMarchand && userData?.fastFoodId && (
+          <>
+            <SectionHeader title="Boutique" />
+            <View style={styles.section}>
+              <SettingItem
+                icon="storefront-outline"
+                title="Gérer ma boutique"
+                onPress={() => setEditBoutiqueVisible(true)}
+              />
+            </View>
+          </>
+        )}
 
         {/* Préférences */}
         <SectionHeader title="Préférences" />
@@ -220,6 +236,15 @@ export default function SettingsScreen() {
           <Text style={styles.versionSubtext}>© 2025 Yaammoo. Tous droits réservés.</Text>
         </View>
       </ScrollView>
+
+      {/* Edit Boutique Modal */}
+      <EditBoutiquePanel
+        visible={editBoutiqueVisible}
+        onClose={() => setEditBoutiqueVisible(false)}
+        onSuccess={() => {
+          // Refresh if needed
+        }}
+      />
     </View>
   );
 }

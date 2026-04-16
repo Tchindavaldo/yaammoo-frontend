@@ -72,10 +72,11 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
         const response = await axios.get(`${Config.apiUrl}/fastfood/${(menu as any).fastFoodId}`, {
           headers: { "ngrok-skip-browser-warning": "true" }
         });
-        if (response.data?.data?.deliveryHours) {
+        if (response.data?.data?.deliveryHours || response.data?.data?.orderLeadTime) {
           setMenuWithDeliveryHours({
             ...menu,
-            deliveryHours: response.data.data.deliveryHours
+            deliveryHours: response.data.data.deliveryHours,
+            orderLeadTime: response.data.data.orderLeadTime
           } as any);
         } else {
           setMenuWithDeliveryHours(menu);
@@ -89,6 +90,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
   }, [menu]);
 
   if (!menu) return null;
+
+  const availableHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
+  const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
 
   const handleConfirm = () => {
     const order = createOrder();
@@ -226,6 +230,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             selectedPeriod={delivery.hour || 'Now'}
             onSelectPeriod={(period) => setDelivery({ ...delivery, hour: period })}
             availableHours={availableHours}
+            orderLeadTime={orderLeadTime}
           />
         )}
 

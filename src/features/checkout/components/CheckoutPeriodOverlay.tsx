@@ -10,14 +10,35 @@ interface CheckoutPeriodOverlayProps {
   selectedPeriod: string;
   onSelectPeriod: (period: string) => void;
   availableHours?: string[];
+  orderLeadTime?: number;
 }
 
 export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   onClose,
   selectedPeriod,
   onSelectPeriod,
-  availableHours = ['12:00', '13:00', '14:00', '18:00', '19:00', '20:00']
+  availableHours = ['12:00', '13:00', '14:00', '18:00', '19:00', '20:00'],
+  orderLeadTime = 0
 }) => {
+  // Fonction pour vérifier si une heure est valide (pas dépassée par le délai de cutoff)
+  const isHourValid = (hour: string): boolean => {
+    if (orderLeadTime <= 0) return true; // Pas de restriction si délai est 0
+
+    const now = new Date();
+    const currentHours = now.getHours();
+    const currentMinutes = now.getMinutes();
+    const currentTotalMinutes = currentHours * 60 + currentMinutes;
+
+    const [hoursStr, minutesStr] = hour.split(':');
+    const hourValue = parseInt(hoursStr, 10);
+    const minuteValue = parseInt(minutesStr, 10);
+    const hourTotalMinutes = hourValue * 60 + minuteValue;
+
+    // L'heure est valide si : hourTime - orderLeadTime > currentTime
+    const cutoffTime = hourTotalMinutes - orderLeadTime;
+    return currentTotalMinutes < cutoffTime;
+  };
+
   // Remplir avec des nulls pour garder la grille 2x3
   const periods = [...availableHours, ...Array(Math.max(0, 6 - availableHours.length)).fill(null)];
 
@@ -51,17 +72,30 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
                   );
                 }
                 const isActive = selectedPeriod === period;
+                const isValid = isHourValid(period);
+                const isDisabled = !isValid;
+
                 return (
-                  <TouchableOpacity 
-                    key={period} 
-                    style={[styles.gridBtn, isActive ? styles.gridBtnActive : styles.gridBtnInactive]}
+                  <TouchableOpacity
+                    key={period}
+                    style={[
+                      styles.gridBtn,
+                      isDisabled ? styles.gridBtnCutoff : (isActive ? styles.gridBtnActive : styles.gridBtnInactive)
+                    ]}
+                    disabled={isDisabled}
                     onPress={() => {
-                      onSelectPeriod(period);
+                      if (!isDisabled) onSelectPeriod(period);
                     }}
                   >
-                    <Text style={[styles.gridBtnText, isActive ? styles.gridBtnTextActive : styles.gridBtnTextInactive]}>
+                    <Text style={[
+                      styles.gridBtnText,
+                      isDisabled ? styles.gridBtnTextCutoff : (isActive ? styles.gridBtnTextActive : styles.gridBtnTextInactive)
+                    ]}>
                       {period}
                     </Text>
+                    {isDisabled && (
+                      <Text style={styles.gridBtnCutoffLabel}>Délai écoulé</Text>
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -170,6 +204,10 @@ const styles = StyleSheet.create({
   gridBtnDisabled: {
     backgroundColor: '#f8fafc',
   },
+  gridBtnCutoff: {
+    backgroundColor: '#fee2e2',
+    opacity: 0.6,
+  },
   gridBtnText: {
     fontSize: 13,
     fontWeight: 'bold',
@@ -179,6 +217,15 @@ const styles = StyleSheet.create({
   },
   gridBtnTextInactive: {
     color: '#1e293b',
+  },
+  gridBtnTextCutoff: {
+    color: '#991b1b',
+  },
+  gridBtnCutoffLabel: {
+    fontSize: 9,
+    color: '#991b1b',
+    marginTop: 2,
+    fontWeight: '600',
   },
   customBtn: {
     width: '100%',

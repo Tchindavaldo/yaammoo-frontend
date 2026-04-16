@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 1,
-    maxHeight: "90%",
+    maxHeight: "95%",
   },
   cardWrapper: {
     width: "100%",
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     overflow: "hidden",
     position: "relative",
-    maxHeight: 620,
+    maxHeight: 650,
   },
   glassCardWrapper: {
     width: "100%",
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   inputGroup: {
-    marginBottom: 10,
+    marginBottom: 0,
   },
   avatarCircle: {
     width: 80,
@@ -832,8 +832,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(236,73,19,0.8)",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 16,
     gap: 6,
   },

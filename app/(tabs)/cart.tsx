@@ -614,11 +614,13 @@ export default function OrdersScreen() {
           isCartMode={true}
           onChange={updateLocalOrder}
           onConfirm={async (updatedOrder) => {
-            const success = await buyOrders([updatedOrder]);
+            const success = await buyOrders([{ ...updatedOrder, status: 'pendingToBuy' }]);
             if (success) {
-               setToast({ message: "Commande validée avec succès", type: "success" });
+              setToast({ message: "Commande validée avec succès", type: "success" });
+              setEditModalVisible(false);
+              setOrderToEdit(null);
             } else {
-               setToast({ message: "Erreur lors de la validation", type: "error" });
+              setToast({ message: "Erreur lors de la validation", type: "error" });
             }
             return success;
           }}

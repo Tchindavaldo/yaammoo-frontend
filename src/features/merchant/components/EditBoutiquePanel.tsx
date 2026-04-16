@@ -49,6 +49,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   const [deliveryHours, setDeliveryHours] = useState<string[]>([]);
   const [newHour, setNewHour] = useState("");
   const [image, setImage] = useState<string>("");
+  const [orderLeadTime, setOrderLeadTime] = useState("");
   const [tempDeliveryTime, setTempDeliveryTime] = useState(new Date());
 
   // Picker states
@@ -121,6 +122,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
             setNumber(data.number || "");
             setDeliveryHours(data.deliveryHours || []);
             setImage(data.image || "");
+            setOrderLeadTime(data.orderLeadTime !== undefined ? String(data.orderLeadTime) : "");
 
             // Parse times
             if (data.openTime) {
@@ -233,6 +235,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
         openTime: formatTime(openTime),
         closeTime: formatTime(closeTime),
         number,
+        orderLeadTime: orderLeadTime ? parseInt(orderLeadTime, 10) : undefined,
         deliveryHours: deliveryHours.length > 0 ? deliveryHours : undefined,
       };
 
@@ -392,6 +395,22 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                     onChangeText={setNumber}
                     keyboardType="numeric"
                     placeholder="Entrer le numero (Orange Money)"
+                    placeholderTextColor="#cbd5e1"
+                  />
+                </View>
+
+                {/* Delivery Cutoff Time input */}
+                <View style={[styles.inputGroup, { marginTop: 15 }]}>
+                  <Text style={styles.floatingLabel}>Délai avant une livraison (minutes)</Text>
+                  <Text style={styles.helperText}>
+                    Les clients ne pourront plus commander X minutes avant l'heure de livraison
+                  </Text>
+                  <TextInput
+                    style={[styles.glassInput, { borderRadius: 20 }]}
+                    value={orderLeadTime}
+                    onChangeText={setOrderLeadTime}
+                    keyboardType="numeric"
+                    placeholder="ex: 30"
                     placeholderTextColor="#cbd5e1"
                   />
                 </View>
@@ -647,16 +666,16 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 1,
     maxHeight: "90%",
   },
   cardWrapper: {
     width: "100%",
-    maxWidth: 480,
+    // maxWidth: 480,
     borderRadius: 30,
     overflow: "hidden",
     position: "relative",
-    maxHeight: 600,
+    maxHeight: 620,
   },
   glassCardWrapper: {
     width: "100%",
@@ -830,19 +849,18 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.5)",
     fontSize: 11,
     fontStyle: "italic",
-    marginBottom: 12,
+    marginBottom: 2,
   },
   actionRow: {
     flexDirection: "row",
-    marginTop: 20,
+    marginTop: 2,
   },
   chipBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#ec4913",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingHorizontal: 8,
     borderRadius: 20,
     gap: 8,
     shadowColor: "#ec4913",
@@ -850,7 +868,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
-    minHeight: 44,
+    minHeight: 34,
   },
   chipText: {
     color: "white",

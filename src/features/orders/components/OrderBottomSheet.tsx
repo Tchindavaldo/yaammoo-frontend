@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,10 @@ import {
   PanResponder,
   Pressable,
   Modal,
-  Platform,
-  Linking,
 } from 'react-native';
 import { Commande, FastFood } from "@/src/types";
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import MapComponent from '@/src/components/MapComponent';
 import { BikeAnimation } from '../../merchant/components/BikeAnimation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -139,7 +136,6 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
 
   const initials = (boutique?.nom || "B").substring(0, 2).toUpperCase();
   const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
-  const isDelivering = order.status === 'delivering';
 
   return (
     <Modal
@@ -209,13 +205,6 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
             ) : (
               <CommandesTab items={items} total={order.total} />
             )}
-
-            {isDelivering && (
-              <View style={styles.animationSection}>
-                  <BikeAnimation />
-                  <Text style={styles.animationText}>Livraison en cours...</Text>
-              </View>
-            )}
           </ScrollView>
         </Animated.View>
       </View>
@@ -227,44 +216,6 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
-  const [isOpeningMaps, setIsOpeningMaps] = useState(false);
-  const [region, setRegion] = useState<any>(null);
-
-  const parseLocation = (addr: string) => {
-    if (!addr || typeof addr !== 'string') return null;
-    if (!/^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(addr)) return null;
-    const parts = addr.split(',').map(p => parseFloat(p.trim()));
-    return { latitude: parts[0], longitude: parts[1] };
-  };
-
-  const coords = useMemo(() => parseLocation(order.delivery?.location), [order.delivery?.location]);
-
-  useEffect(() => {
-    if (coords) {
-      setRegion({
-        ...coords,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-    }
-  }, [coords]);
-
-  const openInMaps = () => {
-    if (!coords) return;
-    setIsOpeningMaps(true);
-    const label = encodeURIComponent(boutiqueName);
-    const { latitude, longitude } = coords;
-    
-    const url = Platform.select({
-      ios: `maps://app?daddr=${latitude},${longitude}&label=${label}`,
-      android: `google.navigation:q=${latitude},${longitude}`,
-      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
-    });
-
-    Linking.openURL(url!).finally(() => {
-      setTimeout(() => setIsOpeningMaps(false), 2000);
-    });
-  };
 
   async function playSound() {
     if (!order.delivery?.voiceNoteUri) return;
@@ -320,26 +271,16 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
         </View>
 
         <View style={{ flex: 1 }}>
-          <TouchableOpacity 
-            activeOpacity={0.8}
-            onPress={openInMaps}
-            style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, overflow: 'hidden', borderRadius: 12 }]}
-          >
-            <MapComponent 
-              region={region} 
-              coords={coords} 
-              address={order.delivery?.location} 
-            />
-
-            {isOpeningMaps && (
-              <View style={styles.mapLoadingOverlay}>
-                <View style={styles.mapLoaderCircle}>
-                   <Text style={{ fontSize: 18 }}>📍</Text>
-                </View>
-                <Text style={styles.mapLoadingText}>Ouverture Maps...</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {order.status === 'delivering' ? (
+            <View style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 8 }]}>
+              <BikeAnimation />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#27500A' }}>Livraison en cours...</Text>
+            </View>
+          ) : (
+            <View style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }]}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#9CA3AF' }}>En attente de livraison</Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -739,16 +680,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
     color: '#EF4444',
-  },
-  animationSection: {
-    marginTop: 30,
-    alignItems: 'center',
-    gap: 10,
-    paddingBottom: 40,
-  },
-  animationText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#27500A',
   },
 });

@@ -1,11 +1,11 @@
 export const Config = {
   // apiUrl: 'http://54.146.156.89:3001',
   // apiUrl: 'http://192.168.8.103:5000',
-  // apiUrl: 'http://192.168.8.101:5000',
+  apiUrl: 'http://192.168.8.101:5000',
   // apiUrl: "http://192.168.137.206:5000",
   // apiUrl: "http://192.168.11.37:5000",
   // apiUrl: "http://192.168.1.122:5000",
-  apiUrl: "http://localhost:5000",
+  // apiUrl: "http://localhost:5000",
 
 
   firebaseConfig: {
@@ -17,6 +17,8 @@ export const Config = {
     appId: "1:66450079753:web:d206f2d5189fdaa87278d8",
     measurementId: "G-KY914452XL",
   },
+
+
 
   // ─── Google OAuth Client IDs ───────────────────────────────────────────────
   // À récupérer dans : Google Cloud Console → APIs & Services → Credentials

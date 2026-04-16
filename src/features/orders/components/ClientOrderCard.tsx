@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Commande } from "@/src/types";
+import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 
 interface ClientOrderCardProps {
   order: Commande;
@@ -17,7 +18,6 @@ interface ClientOrderCardProps {
   onPress?: () => void;
 }
 
-import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 
 export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
   order,
@@ -66,11 +66,12 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
               <Text style={styles.summaryPrice}>{totalPrice} F</Text>
               <Text style={styles.summaryName} numberOfLines={1}>{menuName} (X{quantity})</Text>
             </View>
-            {isDelivering && (
+                        {isDelivering && (
               <View style={styles.bikeAnimationTop}>
                 <BikeAnimation />
               </View>
             )}
+
           </View>
 
           <View style={styles.summaryBottomRow}>
@@ -111,6 +112,8 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
   );
 };
 
+
+
 const qtyBtnMain = {
     backgroundColor: "black",
     width: 24,
@@ -149,9 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   bikeAnimationTop: {
-    transform: [{ scale: 0.5 }],
-    marginLeft: 12,
-    marginTop: -8,
+  
     alignItems: 'center',
     justifyContent: 'center',
   },

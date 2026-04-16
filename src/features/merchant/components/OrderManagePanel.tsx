@@ -162,7 +162,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         order={orders[0]}
         allOrders={orders}
         isForceLaunched={isForced}
-        onUpdateStatus={(status) => onUpdateStatus(orders[0].id, status)}
+        onUpdateStatus={async (status) => {
+          await Promise.all(orders.map(o => onUpdateStatus(o.id, status)));
+        }}
       />
     );
   };

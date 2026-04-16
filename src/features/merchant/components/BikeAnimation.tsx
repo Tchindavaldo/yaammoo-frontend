@@ -8,12 +8,20 @@ const AnimatedG = Animated.createAnimatedComponent(G);
  * Version universelle (Web + Native) avec positionnement corrigé.
  */
 
-export const BikeAnimation: React.FC = () => {
-  const rotateAnim = useRef(new Animated.Value(0)).current; 
+export const BikeAnimation: React.FC<{ paused?: boolean; hideLabel?: boolean }> = ({ paused = false, hideLabel = false }) => {
+  const rotateAnim = useRef(new Animated.Value(0)).current;
   const bobAnim = useRef(new Animated.Value(0)).current;
   const roadAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (paused) {
+      // Reset to initial state when paused
+      rotateAnim.setValue(0);
+      bobAnim.setValue(0);
+      roadAnim.setValue(0);
+      return;
+    }
+
     // Rotation infinie (0 à 360)
     const runRotation = () => {
       rotateAnim.setValue(0);
@@ -49,7 +57,7 @@ export const BikeAnimation: React.FC = () => {
         useNativeDriver: true,
       })
     ).start();
-  }, []);
+  }, [paused]);
 
   const renderWheel = (x: number, y: number) => (
     <G x={x} y={y}>
@@ -92,7 +100,7 @@ export const BikeAnimation: React.FC = () => {
           </Svg>
         </Animated.View>
       </View>
-      <Text style={styles.label}>En route...</Text>
+      {!hideLabel && <Text style={styles.label}>En route...</Text>}
     </View>
   );
 };

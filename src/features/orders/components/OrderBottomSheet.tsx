@@ -294,7 +294,8 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
               <Text style={{ fontSize: 12, fontWeight: '600', color: '#27500A' }}>Livraison en cours...</Text>
             </View>
           ) : (
-            <View style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }]}>
+            <View style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 8 }]}>
+              <BikeAnimation paused hideLabel />
               <Text style={{ fontSize: 12, fontWeight: '600', color: '#9CA3AF' }}>En attente de livraison</Text>
             </View>
           )}
@@ -382,30 +383,6 @@ function CommandesTab({
         </View>
       </View>
 
-      {/* Nav tab en bas (hors du container, si plusieurs commandes) */}
-      {allOrders && allOrders.length > 1 && onSelectOrder && (
-        <View style={styles.cmdNavTabs}>
-          {allOrders.map((_, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.cmdNavTab,
-                selectedIdx === idx && styles.cmdNavTabActive
-              ]}
-              onPress={() => onSelectOrder(idx)}
-            >
-              <Text
-                style={[
-                  styles.cmdNavTabText,
-                  selectedIdx === idx && styles.cmdNavTabTextActive
-                ]}
-              >
-                Cmd {idx + 1}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
     </View>
   );
 }

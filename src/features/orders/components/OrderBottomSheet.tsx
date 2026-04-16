@@ -60,7 +60,8 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
       const drinks = selectedOrder.drink || [];
       const newItems: OrderItem[] = [];
 
-      const menuPrice = selectedOrder.menu?.prices?.[0]?.price || 0;
+      const priceIdx = ((selectedOrder as any).selectedPriceIndex || 1) - 1;
+      const menuPrice = selectedOrder.menu?.prices?.[priceIdx]?.price || selectedOrder.menu?.prices?.[0]?.price || 0;
       newItems.push({
         name: selectedOrder.menu?.titre || selectedOrder.menu?.name || "Menu principal",
         qty: selectedOrder.quantity || 1,

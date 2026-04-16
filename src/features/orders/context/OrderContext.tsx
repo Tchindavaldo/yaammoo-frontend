@@ -126,6 +126,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           fastFoodId: o.fastFoodId,
           total: Number(o.total) || 0,
           quantity: Number(o.quantity) || 1,
+          selectedPriceIndex: (o as any).selectedPriceIndex || 1,
           status: o.status || 'pending',
           userData: o.userData ? {
             firstName: o.userData.firstName || 'Client',
@@ -136,11 +137,13 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           } : undefined,
           extra: Array.isArray(o.extra) ? o.extra.map((e: any) => ({
             name: e.name || 'Extra',
-            status: !!e.status
+            status: !!e.status,
+            ...(e.prix !== undefined && { prix: e.prix }),
           })) : [],
           drink: Array.isArray(o.drink) ? o.drink.map((d: any) => ({
             name: d.name || 'Boisson',
-            status: !!d.status
+            status: !!d.status,
+            ...(d.prix !== undefined && { prix: d.prix }),
           })) : [],
           delivery: o.delivery ? {
             status: !!o.delivery.status,

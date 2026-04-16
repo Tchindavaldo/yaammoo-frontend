@@ -29,6 +29,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   onRefresh,
   onUpdateStatus,
 }) => {
+  console.log('📦 OrderManagePanel received orders:', orders.map(o => ({ id: o.id, status: o.status })));
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>('express');

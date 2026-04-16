@@ -34,6 +34,9 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     const currentId = initialOrder?.id;
     if (currentId && currentId !== lastOrderId) {
       setQuantity(initialOrder.quantity || 1);
+      if (initialOrder.selectedPriceIndex) {
+        setSelectedPriceIndex(initialOrder.selectedPriceIndex);
+      }
       if (initialOrder.drink) {
         const initialD = availableDrinks.filter(d => initialOrder.drink.some((idr: any) => idr.name === d.type && idr.status === true));
         setSelectedDrinks(initialD);
@@ -58,7 +61,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
   const prices = useMemo(() => {
-    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0, selectedPrice: 0 };
+    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0 };
 
     let basePrice = menu.prix1;
     if (selectedPriceIndex === 2 && menu.prix2 > 0) basePrice = menu.prix2;
@@ -66,7 +69,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
     const menuPrice = basePrice * quantity;
     const extrasPrice = selectedPackaging.reduce((acc, p) => acc + p.prix, 0) * quantity;
-    const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix, 0); // Note: quantity for drinks? usually drinks are fixed count
+    const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix, 0);
     const deliveryPrice = delivery.statut
       ? delivery.type === "express"
         ? 1000
@@ -79,7 +82,6 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       drinksPrice,
       deliveryPrice,
       total: menuPrice + extrasPrice + drinksPrice + deliveryPrice,
-      selectedPrice: basePrice
     };
   }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, delivery]);
 
@@ -100,6 +102,11 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     if (drinkData.length === 0)
       drinkData.push({ name: "Aucune", status: false, prix: 0 });
 
+    // Calcul du prix sélectionné
+    let selectedPrice = menu.prix1;
+    if (selectedPriceIndex === 2 && menu.prix2 > 0) selectedPrice = menu.prix2;
+    if (selectedPriceIndex === 3 && menu.prix3 > 0) selectedPrice = menu.prix3;
+
     let selectedDescription = menu.optionPrix1 || "Standard";
     if (selectedPriceIndex === 2) selectedDescription = menu.optionPrix2 || "Medium";
     if (selectedPriceIndex === 3) selectedDescription = menu.optionPrix3 || "Large";
@@ -112,8 +119,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       coverImageHasBackground: true,
       images: menu.images || [menu.image],
       prices: [
-        { price: prices.selectedPrice, description: selectedDescription },
-      ],
+        { price: menu.prix1, description: menu.optionPrix1 || "Standard" },
+        menu.prix2 > 0 ? { price: menu.prix2, description: menu.optionPrix2 || "Medium" } : null,
+        menu.prix3 > 0 ? { price: menu.prix3, description: menu.optionPrix3 || "Large" } : null,
+      ].filter((p): p is { price: number; description: string } => p !== null),
       extra: [],
       drink: [],
       status: menu.disponibilite === "active" || menu.disponibilite === "Disponible" ? "available" : "unavailable",
@@ -134,11 +143,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       phone: delivery.phone || userData?.infos?.numero?.toString() || "",
       voiceNoteUri: delivery.voiceNoteUri || "",
       note: delivery.note || "",
-      record: "", // Placeholder for additional record if needed
+      record: "",
     };
 
     if (finalDeliveryType === "time") {
-      // Backend expects HH:MM, frontend might have HHhMM from previous versions or HH:MM from our fix
       const formattedTime = (delivery.hour || "12:00").replace('h', ':');
       deliveryData.time = formattedTime;
     }
@@ -148,6 +156,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       fastFoodId: (menu as any).fastFoodId || (menu as any).idFastFood || "1",
       menu: mappedMenu,
       quantity,
+      selectedPriceIndex,
       total: prices.total,
       userData: {
         firstName: userData?.infos?.prenom || "Inconnu",
@@ -171,7 +180,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     }
 
     return returnedOrder;
-  }, [menu, userData, selectedPackaging, selectedDrinks, delivery, quantity, initialOrder]);
+  }, [menu, userData, selectedPackaging, selectedDrinks, delivery, quantity, selectedPriceIndex, initialOrder]);
 
   useEffect(() => {
     if (onChange && menu && userData) {

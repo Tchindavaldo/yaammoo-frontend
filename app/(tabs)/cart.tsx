@@ -77,16 +77,17 @@ export default function OrdersScreen() {
 
   const synthesizedEditMenu = useMemo(() => {
     if (!orderToEdit) return null;
+    const p = orderToEdit.menu.prices || [];
     return {
       id: orderToEdit.menu.id,
       fastFoodId: orderToEdit.fastFoodId,
       titre: orderToEdit.menu.titre || orderToEdit.menu.name || "",
-      prix1: orderToEdit.menu.prix1 || orderToEdit.menu.prices?.[0]?.price || 0,
-      prix2: orderToEdit.menu.prix2 || orderToEdit.menu.prices?.[1]?.price || 0,
-      prix3: orderToEdit.menu.prix3 || orderToEdit.menu.prices?.[2]?.price || 0,
-      optionPrix1: orderToEdit.menu.optionPrix1 || orderToEdit.menu.prices?.[0]?.description || "",
-      optionPrix2: orderToEdit.menu.optionPrix2 || orderToEdit.menu.prices?.[1]?.description || "",
-      optionPrix3: orderToEdit.menu.optionPrix3 || orderToEdit.menu.prices?.[2]?.description || "",
+      prix1: p[0]?.price || 0,
+      prix2: p[1]?.price || 0,
+      prix3: p[2]?.price || 0,
+      optionPrix1: p[0]?.description || "Standard",
+      optionPrix2: p[1]?.description || "Medium",
+      optionPrix3: p[2]?.description || "Large",
       image: orderToEdit.menu.image || orderToEdit.menu.coverImage || "",
       disponibilite: "active",
       images: orderToEdit.menu.images || [orderToEdit.menu.image || orderToEdit.menu.coverImage || ""],

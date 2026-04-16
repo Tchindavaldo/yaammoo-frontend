@@ -332,43 +332,25 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                   <Text style={styles.headerTitle}>Modifier votre boutique</Text>
                 </View>
 
-                {/* Image Section */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.floatingLabel}>Logo/Image de la boutique</Text>
-                  <TouchableOpacity
-                    style={styles.imagePicker}
-                    onPress={pickImage}
-                  >
+                {/* Avatar + Name row */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <TouchableOpacity onPress={pickImage} style={styles.avatarCircle}>
                     {image ? (
-                      <>
-                        <Image
-                          source={{ uri: image }}
-                          style={styles.imagePreview}
-                        />
-                        <View style={styles.imageOverlay}>
-                          <Ionicons name="image-outline" size={24} color="white" />
-                          <Text style={styles.imageOverlayText}>Changer l'image</Text>
-                        </View>
-                      </>
+                      <Image source={{ uri: image }} style={styles.avatarImage} />
                     ) : (
-                      <View style={styles.noImage}>
-                        <Ionicons name="image-outline" size={40} color="#cbd5e1" />
-                        <Text style={styles.noImageText}>Ajouter une image</Text>
-                      </View>
+                      <Ionicons name="image-outline" size={28} color="#cbd5e1" />
                     )}
                   </TouchableOpacity>
-                </View>
-
-                {/* Name input */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.floatingLabel}>Nom Boutique</Text>
-                  <TextInput
-                    style={[styles.glassInput, { borderRadius: 20 }]}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Entrer le nom de votre boutique"
-                    placeholderTextColor="#cbd5e1"
-                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.floatingLabel}>Nom Boutique</Text>
+                    <TextInput
+                      style={[styles.glassInput, { borderRadius: 20 }]}
+                      value={name}
+                      onChangeText={setName}
+                      placeholder="Entrer le nom de votre boutique"
+                      placeholderTextColor="#cbd5e1"
+                    />
+                  </View>
                 </View>
 
                 {/* Time inputs */}
@@ -725,6 +707,23 @@ const styles = StyleSheet.create({
   },
   inputGroup: {
     marginBottom: 10,
+  },
+  avatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderStyle: "dashed",
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   imagePicker: {
     width: "100%",

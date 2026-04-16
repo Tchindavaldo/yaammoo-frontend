@@ -17,9 +17,11 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   onClose,
   selectedPeriod,
   onSelectPeriod,
-  availableHours = ['12:00', '13:00', '14:00', '18:00', '19:00', '20:00'],
+  availableHours,
   orderLeadTime = 0
 }) => {
+  const defaultHours = ['12:00', '13:00', '14:00', '18:00', '19:00', '20:00'];
+  const hours = (availableHours && availableHours.length > 0) ? availableHours : defaultHours;
   // Fonction pour vérifier si une heure est valide (pas dépassée par le délai de cutoff)
   const isHourValid = (hour: string): boolean => {
     if (orderLeadTime <= 0) return true; // Pas de restriction si délai est 0
@@ -40,7 +42,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   };
 
   // Remplir avec des nulls pour garder la grille 2x3
-  const periods = [...availableHours, ...Array(Math.max(0, 6 - availableHours.length)).fill(null)];
+  const periods = [...hours, ...Array(Math.max(0, 6 - hours.length)).fill(null)];
 
   return (
     <View style={styles.keyboardWrapper}>

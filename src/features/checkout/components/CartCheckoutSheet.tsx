@@ -39,6 +39,16 @@ interface CheckoutSheetProps {
 type CheckoutStep = 'detail' | 'extra' | 'drink' | 'delivery';
 
 export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, menu, initialOrder, onConfirm, isCartMode, onChange }) => {
+  const [activeTab, setActiveTab] = useState<CheckoutStep>('detail');
+  const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
+  const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
+  const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
+  const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
+  const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
+  const [paymentKey, setPaymentKey] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [menuWithDeliveryHours, setMenuWithDeliveryHours] = useState<Menu | null>(menu);
+
   const {
     quantity, setQuantity,
     selectedPriceIndex, setSelectedPriceIndex,
@@ -49,16 +59,6 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
     createOrder
   } = useCheckout(menuWithDeliveryHours, initialOrder, onChange);
-
-  const [activeTab, setActiveTab] = useState<CheckoutStep>('detail');
-  const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
-  const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
-  const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
-  const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
-  const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
-  const [paymentKey, setPaymentKey] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [menuWithDeliveryHours, setMenuWithDeliveryHours] = useState<Menu | null>(menu);
 
   // Enrichir le menu avec les deliveryHours de la boutique
   useEffect(() => {

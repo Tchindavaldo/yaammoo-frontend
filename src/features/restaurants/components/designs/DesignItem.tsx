@@ -188,7 +188,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
         </View>
 
         {/* Barre de stock en bas */}
-        <View style={styles.v4StockBar}>
+        <BlurView intensity={60} tint="light" style={styles.v4StockBar}>
           <View style={styles.v4StockInfo}>
             <View style={styles.v4StockLeft}>
               <View style={styles.v4StockPulse} />
@@ -202,7 +202,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
           <View style={styles.v4ProgressTrack}>
             <View style={[styles.v4ProgressFill, { width: `${stockPercent}%` }]} />
           </View>
-        </View>
+        </BlurView>
       </TouchableOpacity>
     );
   }
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     v4LivraisonTag: { position: 'absolute', top: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, zIndex: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 },
     v4LivraisonDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80' },
     v4LivraisonText: { fontSize: 11, fontWeight: '800', color: '#e8440a' },
-    v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.04)', zIndex: 5 },
+    v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 10, zIndex: 5, overflow: 'hidden' },
     v4StockInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
     v4StockLeft: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     v4StockPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },

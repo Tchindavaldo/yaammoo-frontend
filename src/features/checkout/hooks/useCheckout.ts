@@ -8,24 +8,39 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   const [selectedPriceIndex, setSelectedPriceIndex] = useState(1); // 1, 2, or 3
   const [selectedPackaging, setSelectedPackaging] = useState<Embalage[]>([]);
   const [selectedDrinks, setSelectedDrinks] = useState<Boisson[]>([]);
+  const [drinkQuantities, setDrinkQuantities] = useState<Record<string, number>>({});
   const [delivery, setDelivery] = useState<Livraison>(new Livraison(false, 0));
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
 
-  // Prix par défaut pour les options (peuvent être dynamiques si API dispo)
+  // Utiliser les extras/drinks du menu si disponibles
   const availablePackaging = useMemo(
-    () => [new Embalage("Sac plastique", 100), new Embalage("Gamelle", 150)],
-    [],
+    () => {
+      if (menu && (menu as any).extra && Array.isArray((menu as any).extra)) {
+        return (menu as any).extra
+          .filter((e: any) => e.name && e.name !== 'Aucun')
+          .map((e: any) => new Embalage(e.name, e.prix || 0));
+      }
+      return [new Embalage("Sac plastique", 100), new Embalage("Gamelle", 150)];
+    },
+    [menu],
   );
 
   const availableDrinks = useMemo(
-    () => [
-      new Boisson("Coca Cola", 600),
-      new Boisson("Djino", 700),
-      new Boisson("Top Pamplemousse", 500),
-      new Boisson("Planete Cocktail", 600),
-      new Boisson("Vinto", 700),
-    ],
-    [],
+    () => {
+      if (menu && (menu as any).drink && Array.isArray((menu as any).drink)) {
+        return (menu as any).drink
+          .filter((d: any) => d.name && d.name !== 'Aucune')
+          .map((d: any) => new Boisson(d.name, d.prix || 0));
+      }
+      return [
+        new Boisson("Coca Cola", 600),
+        new Boisson("Djino", 700),
+        new Boisson("Top Pamplemousse", 500),
+        new Boisson("Planete Cocktail", 600),
+        new Boisson("Vinto", 700),
+      ];
+    },
+    [menu],
   );
 
   // Heures par défaut si la boutique n'en a pas configuré
@@ -77,8 +92,8 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     if (selectedPriceIndex === 3 && menu.prix3 > 0) basePrice = menu.prix3;
 
     const menuPrice = basePrice * quantity;
-    const extrasPrice = selectedPackaging.reduce((acc, p) => acc + p.prix, 0) * quantity;
-    const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix, 0);
+    const extrasPrice = selectedPackaging.reduce((acc, p) => acc + p.prix, 0);
+    const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix * (drinkQuantities[d.type] || 1), 0);
     const deliveryPrice = delivery.statut
       ? delivery.type === "express"
         ? 1000
@@ -92,7 +107,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       deliveryPrice,
       total: menuPrice + extrasPrice + drinksPrice + deliveryPrice,
     };
-  }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, delivery]);
+  }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery]);
 
   const createOrder = useCallback((status: string = "pendingToBuy"): any | null => {
     if (!menu || !userData) return null;
@@ -107,9 +122,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       name: drink.type,
       status: true,
       prix: drink.prix,
+      quantite: drinkQuantities[drink.type] || 1,
     }));
     if (drinkData.length === 0)
-      drinkData.push({ name: "Aucune", status: false, prix: 0 });
+      drinkData.push({ name: "Aucune", status: false, prix: 0, quantite: 0 });
 
     // Calcul du prix sélectionné
     let selectedPrice = menu.prix1;
@@ -196,7 +212,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       const order = createOrder();
       if (order) onChange(order);
     }
-  }, [createOrder, onChange, menu, userData]);
+  }, [createOrder, onChange, menu, userData, drinkQuantities]);
 
   return {
     quantity,
@@ -207,6 +223,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     setSelectedPackaging,
     selectedDrinks,
     setSelectedDrinks,
+    drinkQuantities,
+    setDrinkQuantity: (type: string, qty: number) => {
+      setDrinkQuantities(prev => ({ ...prev, [type]: qty }));
+    },
     delivery,
     setDelivery,
     availablePackaging,

@@ -54,6 +54,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     selectedPriceIndex, setSelectedPriceIndex,
     selectedPackaging, setSelectedPackaging,
     selectedDrinks, setSelectedDrinks,
+    drinkQuantities, setDrinkQuantity,
     delivery, setDelivery,
     availablePackaging, availableDrinks,
     total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
@@ -164,10 +165,12 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
               )}
 
               {activeTab === 'drink' && (
-                <DrinksTab 
+                <DrinksTab
                   availableDrinks={availableDrinks}
                   selectedDrinks={selectedDrinks}
                   setSelectedDrinks={setSelectedDrinks}
+                  drinkQuantities={drinkQuantities}
+                  setDrinkQuantity={setDrinkQuantity}
                 />
               )}
 

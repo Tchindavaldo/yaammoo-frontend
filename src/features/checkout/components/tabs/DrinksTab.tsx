@@ -8,12 +8,16 @@ interface DrinksTabProps {
   availableDrinks: Boisson[];
   selectedDrinks: Boisson[];
   setSelectedDrinks: (drinks: Boisson[]) => void;
+  drinkQuantities?: Record<string, number>;
+  setDrinkQuantity?: (type: string, qty: number) => void;
 }
 
-export const DrinksTab: React.FC<DrinksTabProps> = ({ 
-  availableDrinks, 
-  selectedDrinks, 
-  setSelectedDrinks 
+export const DrinksTab: React.FC<DrinksTabProps> = ({
+  availableDrinks,
+  selectedDrinks,
+  setSelectedDrinks,
+  drinkQuantities = {},
+  setDrinkQuantity
 }) => {
   const toggleDrink = (item: Boisson) => {
     const isSelected = selectedDrinks.some(d => d.type === item.type);
@@ -21,29 +25,58 @@ export const DrinksTab: React.FC<DrinksTabProps> = ({
       setSelectedDrinks(selectedDrinks.filter(d => d.type !== item.type));
     } else {
       setSelectedDrinks([...selectedDrinks, item]);
+      if (setDrinkQuantity) setDrinkQuantity(item.type, 1);
     }
+  };
+
+  const handleQuantityChange = (type: string, delta: number) => {
+    const current = drinkQuantities[type] || 1;
+    const newQty = Math.max(1, current + delta);
+    if (setDrinkQuantity) setDrinkQuantity(type, newQty);
   };
 
   return (
     <View style={styles.drinksContainer}>
       {availableDrinks.map((item) => {
         const isSelected = selectedDrinks.some(d => d.type === item.type);
+        const qty = drinkQuantities[item.type] || 1;
+        const totalPrice = item.prix * qty;
+
         return (
-          <TouchableOpacity 
+          <View
             key={item.type}
             style={styles.drinkRow}
-            onPress={() => toggleDrink(item)}
-            activeOpacity={0.6}
           >
-            <View style={styles.drinkLeft}>
+            <TouchableOpacity
+              style={styles.drinkLeft}
+              onPress={() => toggleDrink(item)}
+              activeOpacity={0.6}
+            >
               <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
                 {isSelected && <Ionicons name="checkmark" size={14} color="white" />}
               </View>
               <Ionicons name="wine-outline" size={20} color={isSelected ? '#ec4913' : '#94a3b8'} style={{ marginLeft: 12 }} />
               <Text style={[styles.drinkName, styles.textDark]}>{item.type}</Text>
-            </View>
-            <Text style={styles.drinkPrice}>{item.prix} F</Text>
-          </TouchableOpacity>
+            </TouchableOpacity>
+
+            {isSelected ? (
+              <View style={styles.drinkDetailRow}>
+                <Text style={styles.drinkUnitPrice}>{item.prix} F</Text>
+                <View style={styles.drinkQuantityControl}>
+                  <TouchableOpacity onPress={() => handleQuantityChange(item.type, -1)} style={styles.qtyBtn}>
+                    <Ionicons name="remove" size={14} color="#ec4913" />
+                  </TouchableOpacity>
+                  <Text style={styles.drinkQty}>{qty}</Text>
+                  <TouchableOpacity onPress={() => handleQuantityChange(item.type, 1)} style={styles.qtyBtn}>
+                    <Ionicons name="add" size={14} color="#ec4913" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.drinkTotalPrice}>{totalPrice} F</Text>
+              </View>
+            ) : (
+              <Text style={styles.drinkPrice}>{item.prix} F</Text>
+            )}
+          </View>
         );
       })}
     </View>

@@ -49,8 +49,12 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const [desc1, setDesc1] = useState(existingMenu?.prices?.[0]?.description || '');
   const [desc2, setDesc2] = useState(existingMenu?.prices?.[1]?.description || '');
   const [desc3, setDesc3] = useState(existingMenu?.prices?.[2]?.description || '');
-  const [extraInput, setExtraInput] = useState(existingMenu?.extra?.map((e: any) => e.name).join(', ') || '');
-  const [drinkInput, setDrinkInput] = useState(existingMenu?.drink?.map((d: any) => d.name).join(', ') || '');
+  const [extras, setExtras] = useState<Array<{name: string, prix: string}>>(
+    existingMenu?.extra?.map((e: any) => ({ name: e.name, prix: String(e.prix || 0) })) || []
+  );
+  const [drinks, setDrinks] = useState<Array<{name: string, prix: string}>>(
+    existingMenu?.drink?.map((d: any) => ({ name: d.name, prix: String(d.prix || 0) })) || []
+  );
   const [availability, setAvailability] = useState(existingMenu?.status || 'available');
   const [uploadProgress, setUploadProgress] = useState([0, 0, 0]);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
@@ -62,27 +66,27 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   React.useEffect(() => {
     if (visible && existingMenu) {
       setNom(existingMenu.name || existingMenu.titre || '');
-      
+
       const p1 = existingMenu.prices?.[0]?.price || existingMenu.prix1 || '';
       const p2 = existingMenu.prices?.[1]?.price || existingMenu.prix2 || '';
       const p3 = existingMenu.prices?.[2]?.price || existingMenu.prix3 || '';
-      
+
       setPrix1(p1.toString());
       setPrix2(p2.toString());
       setPrix3(p3.toString());
-      
+
       setDesc1(existingMenu.prices?.[0]?.description || existingMenu.description || '');
       setDesc2(existingMenu.prices?.[1]?.description || '');
       setDesc3(existingMenu.prices?.[2]?.description || '');
-      
-      const extras = existingMenu.extra || existingMenu.extras || [];
-      setExtraInput(extras.map((e: any) => e.name).join(', '));
-      
-      const drinks = existingMenu.drink || existingMenu.drinks || [];
-      setDrinkInput(drinks.map((d: any) => d.name).join(', '));
-      
+
+      const extrasData = existingMenu.extra || existingMenu.extras || [];
+      setExtras(extrasData.map((e: any) => ({ name: e.name, prix: String(e.prix || 0) })));
+
+      const drinksData = existingMenu.drink || existingMenu.drinks || [];
+      setDrinks(drinksData.map((d: any) => ({ name: d.name, prix: String(d.prix || 0) })));
+
       setAvailability(existingMenu.status || existingMenu.disponibilite === 'Disponible' ? 'available' : 'unavailable');
-      
+
       const menuImages = existingMenu.images || (existingMenu.image ? [existingMenu.image] : []);
       setImages(menuImages);
       setUploadedUrls(menuImages);
@@ -98,7 +102,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     setNom('');
     setPrix1(''); setPrix2(''); setPrix3('');
     setDesc1(''); setDesc2(''); setDesc3('');
-    setExtraInput(''); setDrinkInput('');
+    setExtras([]);
+    setDrinks([]);
     setAvailability('available');
     setUploadProgress([0, 0, 0]);
   };
@@ -180,8 +185,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     if (step === 'price' && !prix1) return 'Le prix 1 ne doit pas être vide';
     if (step === 'desc1' && !desc1.trim()) return 'La description du prix 1 ne doit pas être vide';
     if (step === 'desc2' && prix2 && !desc2.trim()) return 'La description du prix 2 ne doit pas être vide';
-    if (step === 'extras' && !extraInput.trim()) return 'Veuillez saisir au moins un extra (ex: "Aucun")';
-    if (step === 'extras' && !drinkInput.trim()) return 'Veuillez saisir au moins une boisson (ex: "Aucune")';
+    if (step === 'extras' && extras.length === 0) return 'Veuillez ajouter au moins un extra';
+    if (step === 'extras' && drinks.length === 0) return 'Veuillez ajouter au moins une boisson';
     return null;
   };
 
@@ -240,11 +245,16 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
   const handleSubmit = async () => {
     const finalImages = uploadedUrls.length > 0 ? uploadedUrls : images;
-    const parsedExtras = extraInput.split(',').map((e: string) => ({ name: e.trim(), status: true })).filter((e: { name: string, status: boolean }) => e.name);
-    if (parsedExtras.length === 0) parsedExtras.push({ name: 'Aucun', status: false });
 
-    const parsedDrinks = drinkInput.split(',').map((d: string) => ({ name: d.trim(), status: true })).filter((d: { name: string, status: boolean }) => d.name);
-    if (parsedDrinks.length === 0) parsedDrinks.push({ name: 'Aucune', status: false });
+    const parsedExtras = extras
+      .filter(e => e.name.trim())
+      .map((e: any) => ({ name: e.name.trim(), status: true, prix: Number(e.prix) || 0 }));
+    if (parsedExtras.length === 0) parsedExtras.push({ name: 'Aucun', status: false, prix: 0 });
+
+    const parsedDrinks = drinks
+      .filter(d => d.name.trim())
+      .map((d: any) => ({ name: d.name.trim(), status: true, prix: Number(d.prix) || 0 }));
+    if (parsedDrinks.length === 0) parsedDrinks.push({ name: 'Aucune', status: false, prix: 0 });
 
     const menuData = {
       name: nom,
@@ -438,22 +448,91 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
             {/* Étape extras */}
             {step === 'extras' && (
               <View>
-                <Text style={styles.fieldLabel}>Extras proposés (séparés par des virgules)</Text>
-                <TextInput
-                  style={[styles.input, { marginBottom: Theme.spacing.lg }]}
-                  placeholder='Ex: Ketchup, Mayonnaise, Fromage (ou "Aucun")'
-                  value={extraInput}
-                  onChangeText={setExtraInput}
-                  autoFocus
-                />
-                
-                <Text style={styles.fieldLabel}>Boissons proposées (séparées par des virgules)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder='Ex: Coca, Fanta, Sprite (ou "Aucune")'
-                  value={drinkInput}
-                  onChangeText={setDrinkInput}
-                />
+                {/* Extras Section */}
+                <Text style={styles.fieldLabel}>Extras proposés</Text>
+                <ScrollView style={{ maxHeight: 200, marginBottom: Theme.spacing.lg }}>
+                  {extras.map((extra, idx) => (
+                    <View key={idx} style={styles.itemRow}>
+                      <TextInput
+                        style={[styles.input, styles.itemInput, { flex: 2 }]}
+                        placeholder="Nom de l'extra"
+                        value={extra.name}
+                        onChangeText={(text) => {
+                          const newExtras = [...extras];
+                          newExtras[idx].name = text;
+                          setExtras(newExtras);
+                        }}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.itemInput, { flex: 1, marginHorizontal: 8 }]}
+                        placeholder="Prix"
+                        keyboardType="numeric"
+                        value={extra.prix}
+                        onChangeText={(text) => {
+                          const newExtras = [...extras];
+                          newExtras[idx].prix = text;
+                          setExtras(newExtras);
+                        }}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setExtras(extras.filter((_, i) => i !== idx))}
+                        style={styles.deleteBtn}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={Theme.colors.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={() => setExtras([...extras, { name: '', prix: '0' }])}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color={Theme.colors.primary} />
+                  <Text style={styles.addBtnText}>Ajouter un extra</Text>
+                </TouchableOpacity>
+
+                {/* Drinks Section */}
+                <Text style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}>Boissons proposées</Text>
+                <ScrollView style={{ maxHeight: 200, marginBottom: Theme.spacing.lg }}>
+                  {drinks.map((drink, idx) => (
+                    <View key={idx} style={styles.itemRow}>
+                      <TextInput
+                        style={[styles.input, styles.itemInput, { flex: 2 }]}
+                        placeholder="Nom de la boisson"
+                        value={drink.name}
+                        onChangeText={(text) => {
+                          const newDrinks = [...drinks];
+                          newDrinks[idx].name = text;
+                          setDrinks(newDrinks);
+                        }}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.itemInput, { flex: 1, marginHorizontal: 8 }]}
+                        placeholder="Prix"
+                        keyboardType="numeric"
+                        value={drink.prix}
+                        onChangeText={(text) => {
+                          const newDrinks = [...drinks];
+                          newDrinks[idx].prix = text;
+                          setDrinks(newDrinks);
+                        }}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setDrinks(drinks.filter((_, i) => i !== idx))}
+                        style={styles.deleteBtn}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={Theme.colors.danger} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={() => setDrinks([...drinks, { name: '', prix: '0' }])}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color={Theme.colors.primary} />
+                  <Text style={styles.addBtnText}>Ajouter une boisson</Text>
+                </TouchableOpacity>
               </View>
             )}
 
@@ -710,5 +789,39 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
+  itemInput: {
+    paddingVertical: Theme.spacing.sm,
+  },
+  deleteBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Theme.colors.danger + '10',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: Theme.spacing.md,
+    paddingHorizontal: Theme.spacing.lg,
+    borderWidth: 1.5,
+    borderColor: Theme.colors.primary,
+    borderRadius: Theme.borderRadius.lg,
+    backgroundColor: Theme.colors.primary + '05',
+  },
+  addBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Theme.colors.primary,
   },
 });

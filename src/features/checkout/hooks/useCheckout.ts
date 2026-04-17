@@ -4,13 +4,21 @@ import { useAuth } from "../../auth/context/AuthContext";
 
 export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData } = useAuth();
-  const [quantity, setQuantity] = useState(1);
-  const [selectedPriceIndex, setSelectedPriceIndex] = useState(1); // 1, 2, or 3
+  const [quantity, setQuantity] = useState(initialOrder?.quantity || 1);
+  const [selectedPriceIndex, setSelectedPriceIndex] = useState(initialOrder?.selectedPriceIndex || 1);
   const [selectedPackaging, setSelectedPackaging] = useState<Embalage[]>([]);
   const [selectedDrinks, setSelectedDrinks] = useState<Boisson[]>([]);
-  const [drinkQuantities, setDrinkQuantities] = useState<Record<string, number>>({});
+  const [drinkQuantities, setDrinkQuantities] = useState<Record<string, number>>(() => {
+    if (!initialOrder?.drink) return {};
+    const qtys: Record<string, number> = {};
+    initialOrder.drink.forEach((d: any) => {
+      if (d.status === true && d.quantite > 1) qtys[d.name] = d.quantite;
+    });
+    return qtys;
+  });
   const [delivery, setDelivery] = useState<Livraison>(new Livraison(false, 0));
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(!initialOrder);
 
   // Utiliser les extras/drinks du menu si disponibles
   const availablePackaging = useMemo(
@@ -81,6 +89,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         setDelivery(d);
       }
       setLastOrderId(currentId);
+      setIsInitialized(true);
     }
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
@@ -112,15 +121,20 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   const createOrder = useCallback((status: string = "pendingToBuy"): any | null => {
     if (!menu || !userData) return null;
 
-    const extraData = selectedPackaging.map((pkg) => ({
+    // Sauvegarder TOUS les extras/drinks du menu avec leur statut
+    // (true = sélectionné, false = non sélectionné) pour pouvoir les réafficher à l'édition
+    const selectedExtraNames = new Set(selectedPackaging.map(p => p.type));
+    const selectedDrinkNames = new Set(selectedDrinks.map(d => d.type));
+
+    const extraData = availablePackaging.map((pkg) => ({
       name: pkg.type,
-      status: true,
+      status: selectedExtraNames.has(pkg.type),
       prix: pkg.prix,
     }));
 
-    const drinkData = selectedDrinks.map((drink) => ({
+    const drinkData = availableDrinks.map((drink) => ({
       name: drink.type,
-      status: true,
+      status: selectedDrinkNames.has(drink.type),
       prix: drink.prix,
       quantite: drinkQuantities[drink.type] || 1,
     }));
@@ -208,11 +222,11 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   }, [menu, userData, selectedPackaging, selectedDrinks, delivery, quantity, selectedPriceIndex, initialOrder]);
 
   useEffect(() => {
-    if (onChange && menu && userData) {
+    if (onChange && menu && userData && isInitialized) {
       const order = createOrder();
       if (order) onChange(order);
     }
-  }, [createOrder, onChange, menu, userData, drinkQuantities]);
+  }, [createOrder, onChange, menu, userData, drinkQuantities, isInitialized]);
 
   return {
     quantity,

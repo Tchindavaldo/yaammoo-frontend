@@ -91,6 +91,8 @@ export default function OrdersScreen() {
       image: orderToEdit.menu.image || orderToEdit.menu.coverImage || "",
       disponibilite: "active",
       images: orderToEdit.menu.images || [orderToEdit.menu.image || orderToEdit.menu.coverImage || ""],
+      extra: orderToEdit.extra || [],
+      drink: orderToEdit.drink || [],
     } as Menu;
   }, [orderToEdit]);
 

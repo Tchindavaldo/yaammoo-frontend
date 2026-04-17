@@ -66,8 +66,17 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
           </BlurView>
         </View>
         <BlurView intensity={60} tint="dark" style={styles.v1BrandBar}>
-          <View style={styles.v1BrandIcon}><Text style={styles.v1BrandInitial}>{merchantName?.charAt(0) || 'Y'}</Text></View>
-          <Text style={styles.v1BrandName}>{merchantName || 'Yaammoo'}</Text>
+          <View style={styles.v2Delivery}>
+  <View style={styles.v2DeliveryTimer}>
+    <Text style={styles.v2DeliveryHour}>12</Text>
+    <Text style={styles.v2DeliveryUnit}>heure</Text>
+  </View>
+  <View style={{ flex: 1 }}>
+    <Text style={styles.v2DeliveryMeta}>Prochaine livraison</Text>
+    <Text style={styles.v2DeliveryMain}>En route • 12h00</Text>
+  </View>
+  <View style={styles.v2DeliveryDot} />
+</View>
         </BlurView>
       </TouchableOpacity>
     );
@@ -173,6 +182,15 @@ const styles = StyleSheet.create({
     v1BadgeTime: { position: 'absolute', top: 50, right: 0, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 4,overflow: 'hidden' },
     v1BadgeCal: { position: 'absolute', top: 110, left: 0, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,overflow: 'hidden' },
     v1BadgeTextDetail: { color: 'white', fontSize: 11, fontWeight: '500' },
+
+    // --- DESIGN 1 Delivery ---
+    v2Delivery: { flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: '#2d6e65', borderRadius: 12, paddingVertical: 7, paddingHorizontal: 10, gap: 8 },
+    v2DeliveryTimer: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8, alignItems: 'center' },
+    v2DeliveryHour: { fontSize: 16, fontWeight: '900', color: 'white', lineHeight: 18 },
+    v2DeliveryUnit: { fontSize: 7, color: 'rgba(255,255,255,0.7)' },
+    v2DeliveryMeta: { fontSize: 9, color: 'rgba(255,255,255,0.7)' },
+    v2DeliveryMain: { fontSize: 10, fontWeight: '700', color: 'white' },
+    v2DeliveryDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 4 },
 
     // --- DESIGN 2 (Ex-D4) ---
     v2Card: { width: 220, backgroundColor: 'white', borderRadius: 22, padding: 14, marginRight: 16, borderWidth: 1, borderColor: '#efefef' },

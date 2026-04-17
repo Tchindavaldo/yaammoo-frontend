@@ -162,17 +162,46 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
     ];
     const bgColor = V4_COLORS[index % V4_COLORS.length];
 
+    const stock = 40;
+    const total = 100;
+    const stockPercent = (stock / total) * 100;
+
     return (
       <TouchableOpacity style={[styles.v4Card, { backgroundColor: bgColor }]} onPress={onPress} activeOpacity={0.9}>
+        {/* Tag livraison flottant en haut à droite */}
+        <View style={styles.v4LivraisonTag}>
+          <View style={styles.v4LivraisonDot} />
+          <Text style={styles.v4LivraisonText}>12h</Text>
+          <Ionicons name="bicycle-outline" size={11} color="#e8440a" />
+        </View>
+
         <View style={styles.v4Text}>
             <Text style={styles.v4Title}>{menu.titre}</Text>
             <Text style={styles.v4Price}>{price}</Text>
         </View>
+
         <View style={styles.v4ImgWrap}>
-            <Image 
-                source={menu.image ? { uri: menu.image } : require('@/assets/images/purre avocat tomate legume .png')} 
+            <Image
+                source={menu.image ? { uri: menu.image } : require('@/assets/images/purre avocat tomate legume .png')}
                 style={styles.v4Image}
             />
+        </View>
+
+        {/* Barre de stock en bas */}
+        <View style={styles.v4StockBar}>
+          <View style={styles.v4StockInfo}>
+            <View style={styles.v4StockLeft}>
+              <View style={styles.v4StockPulse} />
+              <Text style={styles.v4StockCount}>
+                <Text style={{ color: '#e8440a', fontWeight: '900' }}>{stock}</Text>
+                <Text style={{ color: '#aaa' }}> / {total}</Text>
+              </Text>
+            </View>
+            <Text style={styles.v4StockLabel}>en stock</Text>
+          </View>
+          <View style={styles.v4ProgressTrack}>
+            <View style={[styles.v4ProgressFill, { width: `${stockPercent}%` }]} />
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -245,6 +274,17 @@ const styles = StyleSheet.create({
     v4Price: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', marginTop: 4 },
     v4ImgWrap: { position: 'absolute', bottom: -20, right: -40, width: 220, height: 220, zIndex: 1 },
     v4Image: { width: '110%', height: '110%', borderRadius: 110 },
+    v4LivraisonTag: { position: 'absolute', top: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, zIndex: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 },
+    v4LivraisonDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80' },
+    v4LivraisonText: { fontSize: 11, fontWeight: '800', color: '#e8440a' },
+    v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.04)', zIndex: 5 },
+    v4StockInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    v4StockLeft: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    v4StockPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
+    v4StockCount: { fontSize: 13, fontWeight: '700' },
+    v4StockLabel: { fontSize: 10, fontWeight: '600', color: '#bbb', textTransform: 'uppercase', letterSpacing: 1 },
+    v4ProgressTrack: { height: 4, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' },
+    v4ProgressFill: { height: '100%', backgroundColor: '#e8440a', borderRadius: 2 },
 
     defaultContainer: { padding: 20, backgroundColor: 'white', marginRight: 16, borderRadius: 10 }
 });

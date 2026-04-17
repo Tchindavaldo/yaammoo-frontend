@@ -24,6 +24,7 @@ export type OrderItem = {
   qty: number;
   price: string;
   unitPrice?: number;
+  hasQty?: boolean;
 };
 
 const COLORS = [
@@ -66,13 +67,14 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
         name: selectedOrder.menu?.titre || selectedOrder.menu?.name || "Menu principal",
         qty: selectedOrder.quantity || 1,
         price: `${menuPrice * (selectedOrder.quantity || 1)} F`,
-        unitPrice: menuPrice
+        unitPrice: menuPrice,
+        hasQty: true,
       });
 
       extras.forEach((ex: any) => {
         if (ex.status === true && ex.name !== "Aucun") {
           const exPrice = ex.prix || ex.price || 0;
-          newItems.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice });
+          newItems.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice, hasQty: false });
         }
       });
 
@@ -80,7 +82,7 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
         if (dr.status === true && dr.name !== "Aucune") {
           const drPrice = dr.prix || dr.price || 0;
           const drQty = dr.quantite || 1;
-          newItems.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice });
+          newItems.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice, hasQty: true });
         }
       });
       setItems(newItems);
@@ -369,7 +371,7 @@ function CommandesTab({
                 </View>
                 <Text style={[styles.cmdName, { flex: 1 }]}>{o.name}</Text>
                 <Text style={styles.cmdPrice}>
-                  {unitPrice} x{o.qty} = {lineTotal} F
+                  {o.hasQty ? `${unitPrice} x${o.qty} = ${lineTotal} F` : `${unitPrice} F`}
                 </Text>
               </View>
             );

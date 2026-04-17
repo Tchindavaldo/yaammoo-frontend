@@ -26,6 +26,7 @@ export type OrderItem = {
   qty: number;
   price: string;
   unitPrice?: number;
+  hasQty?: boolean;
 };
 
 export type DeliveryUser = {
@@ -72,15 +73,16 @@ function buildItems(order: Commande): OrderItem[] {
     name: order.menu?.titre || order.menu?.name || "Menu principal",
     qty: order.quantity || 1,
     price: `${menuPrice * (order.quantity || 1)} F`,
-    unitPrice: menuPrice
+    unitPrice: menuPrice,
+    hasQty: true,
   });
 
-  // Extras - uniquement ceux sélectionnés (status === true)
+  // Extras - uniquement ceux sélectionnés (status === true), sans quantité
   const extras = order.extra || [];
   extras.forEach((ex: any) => {
     if (ex.status === true && ex.name !== "Aucun") {
       const exPrice = ex.prix || ex.price || 0;
-      items.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice });
+      items.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice, hasQty: false });
     }
   });
 
@@ -90,7 +92,7 @@ function buildItems(order: Commande): OrderItem[] {
     if (dr.status === true && dr.name !== "Aucune") {
       const drPrice = dr.prix || dr.price || 0;
       const drQty = dr.quantite || 1;
-      items.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice });
+      items.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice, hasQty: true });
     }
   });
 
@@ -499,7 +501,7 @@ function CommandesTab({
                 </View>
                 <Text style={[styles.cmdName, { flex: 1 }]}>{o.name}</Text>
                 <Text style={styles.cmdPrice}>
-                  {unitPrice} x{o.qty} = {lineTotal} F
+                  {o.hasQty ? `${unitPrice} x${o.qty} = ${lineTotal} F` : `${unitPrice} F`}
                 </Text>
               </View>
             );

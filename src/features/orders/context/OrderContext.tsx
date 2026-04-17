@@ -144,6 +144,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             name: d.name || 'Boisson',
             status: !!d.status,
             ...(d.prix !== undefined && { prix: d.prix }),
+            quantite: d.quantite || 1,
           })) : [],
           delivery: o.delivery ? {
             status: !!o.delivery.status,

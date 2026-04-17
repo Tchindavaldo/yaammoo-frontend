@@ -219,7 +219,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     }
 
     return returnedOrder;
-  }, [menu, userData, selectedPackaging, selectedDrinks, delivery, quantity, selectedPriceIndex, initialOrder]);
+  }, [menu, userData, selectedPackaging, selectedDrinks, drinkQuantities, delivery, quantity, selectedPriceIndex, initialOrder]);
 
   useEffect(() => {
     if (onChange && menu && userData && isInitialized) {

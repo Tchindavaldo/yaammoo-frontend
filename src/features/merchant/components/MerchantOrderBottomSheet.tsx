@@ -75,31 +75,22 @@ function buildItems(order: Commande): OrderItem[] {
     unitPrice: menuPrice
   });
 
-  // Extras - lire le prix stocké dans l'ordre
+  // Extras - uniquement ceux sélectionnés (status === true)
   const extras = order.extra || [];
   extras.forEach((ex: any) => {
-    if (ex.status !== false && ex.name !== "Aucun") {
+    if (ex.status === true && ex.name !== "Aucun") {
       const exPrice = ex.prix || ex.price || 0;
-      items.push({
-        name: ex.name,
-        qty: 1,
-        price: `${exPrice} F`,
-        unitPrice: exPrice
-      });
+      items.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice });
     }
   });
 
-  // Boissons - lire le prix stocké dans l'ordre
+  // Boissons - uniquement celles sélectionnées avec leur vraie quantité
   const drinks = order.drink || [];
   drinks.forEach((dr: any) => {
-    if (dr.status !== false && dr.name !== "Aucune") {
+    if (dr.status === true && dr.name !== "Aucune") {
       const drPrice = dr.prix || dr.price || 0;
-      items.push({
-        name: dr.name,
-        qty: 1,
-        price: `${drPrice} F`,
-        unitPrice: drPrice
-      });
+      const drQty = dr.quantite || 1;
+      items.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice });
     }
   });
 
@@ -210,10 +201,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
 
   if (!user) return null;
 
-  const total = user.orders.reduce((sum, o) => {
-    const val = parseFloat(o.price.replace(',', '.').replace(' €', ''));
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
+  const total = user.orders.reduce((sum, o) => sum + (o.unitPrice || 0) * o.qty, 0);
 
   return (
     <Modal

@@ -70,16 +70,17 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
       });
 
       extras.forEach((ex: any) => {
-        if (ex.status !== false && ex.name !== "Aucun") {
+        if (ex.status === true && ex.name !== "Aucun") {
           const exPrice = ex.prix || ex.price || 0;
           newItems.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice });
         }
       });
 
       drinks.forEach((dr: any) => {
-        if (dr.status !== false && dr.name !== "Aucune") {
+        if (dr.status === true && dr.name !== "Aucune") {
           const drPrice = dr.prix || dr.price || 0;
-          newItems.push({ name: dr.name, qty: 1, price: `${drPrice} F`, unitPrice: drPrice });
+          const drQty = dr.quantite || 1;
+          newItems.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice });
         }
       });
       setItems(newItems);

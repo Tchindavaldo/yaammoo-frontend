@@ -115,6 +115,8 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
                 <Ionicons name="cart-outline" size={16} color="white" />
             </View>
         </View>
+
+        
       </TouchableOpacity>
     );
   }
@@ -194,7 +196,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
               <View style={styles.v4StockPulse} />
               <Text style={styles.v4StockCount}>
                 <Text style={{ color: '#e8440a', fontWeight: '900' }}>{stock}</Text>
-                <Text style={{ color: '#aaa' }}> / {total}</Text>
+                <Text style={{ color: '#000000ff' }}> / {total}</Text>
               </Text>
             </View>
             <Text style={styles.v4StockLabel}>en stock</Text>
@@ -282,7 +284,7 @@ const styles = StyleSheet.create({
     v4StockLeft: { flexDirection: 'row', alignItems: 'center', gap: 5 },
     v4StockPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
     v4StockCount: { fontSize: 13, fontWeight: '700' },
-    v4StockLabel: { fontSize: 10, fontWeight: '600', color: '#bbb', textTransform: 'uppercase', letterSpacing: 1 },
+    v4StockLabel: { fontSize: 10, fontWeight: '600', color: '#000000ff', textTransform: 'uppercase', letterSpacing: 1 },
     v4ProgressTrack: { height: 4, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' },
     v4ProgressFill: { height: '100%', backgroundColor: '#e8440a', borderRadius: 2 },
 

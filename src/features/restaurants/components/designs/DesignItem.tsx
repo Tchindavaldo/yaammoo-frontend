@@ -240,6 +240,154 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
     );
   }
 
+  // --- DESIGN 5: GLASS SHOWCASE ---
+  if (variant === 5) {
+    const V5_ACCENTS = ['#e8440a', '#6c5ce7', '#00b894', '#fd79a8', '#0984e3', '#e17055'];
+    const accent = V5_ACCENTS[index % V5_ACCENTS.length];
+    const stock = 40;
+    const stockRadius = 18;
+    const stockCircumference = 2 * Math.PI * stockRadius;
+    const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
+
+    return (
+      <TouchableOpacity style={styles.v5Card} onPress={onPress} activeOpacity={0.92}>
+        {/* Fond dégradé subtil */}
+        <LinearGradient
+          colors={['#fafafa', '#f0f0f0', '#e8e8e8']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Cercle décoratif accent en arrière-plan */}
+        <View style={[styles.v5DecorCircle, { backgroundColor: accent, opacity: 0.08 }]} />
+        <View style={[styles.v5DecorCircle2, { borderColor: accent, opacity: 0.12 }]} />
+
+        {/* Top row: stock ring + prix */}
+        <View style={styles.v5TopRow}>
+          {/* SVG stock ring */}
+          <View style={styles.v5StockRing}>
+            <Svg width={44} height={44}>
+              <Circle cx={22} cy={22} r={stockRadius} stroke="rgba(0,0,0,0.06)" strokeWidth={3} fill="none" />
+              <Circle cx={22} cy={22} r={stockRadius} stroke={accent} strokeWidth={3} fill="none"
+                strokeDasharray={`${stockCircumference}`} strokeDashoffset={stockProgress}
+                strokeLinecap="round" transform="rotate(-90 22 22)" />
+              <SvgText x={22} y={20} textAnchor="middle" fontSize={11} fontWeight="900" fill="#111">{stock}</SvgText>
+              <SvgText x={22} y={28} textAnchor="middle" fontSize={5} fontWeight="600" fill="#999">DISPO</SvgText>
+            </Svg>
+          </View>
+
+          {/* Prix avec accent */}
+          <View style={[styles.v5PriceChip, { backgroundColor: accent }]}>
+            <Text style={styles.v5PriceText}>{price}</Text>
+          </View>
+        </View>
+
+        {/* Image produit — flottante, débordante, dramatique */}
+        <View style={styles.v5ImgZone}>
+          <View style={[styles.v5ImgShadow, { shadowColor: accent }]}>
+            <Image
+              source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
+              style={styles.v5ProductImg}
+              contentFit="contain"
+            />
+          </View>
+        </View>
+
+        {/* Titre — minimaliste, fort */}
+        <Text style={styles.v5Title} numberOfLines={1}>{menu.titre}</Text>
+
+        {/* Livraison — bande glass en bas */}
+        <View style={styles.v5DeliveryStrip}>
+          <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
+            <Ionicons name="flash" size={10} color="white" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.v5DeliveryLabel}>PROCHAINE LIVRAISON</Text>
+            <Text style={[styles.v5DeliveryTime, { color: accent }]}>Aujourd'hui · 12h</Text>
+          </View>
+          <View style={styles.v5DeliveryPulse} />
+        </View>
+
+        {/* Bouton + flottant */}
+        <View style={[styles.v5AddBtn, { backgroundColor: accent }]}>
+          <Ionicons name="add" size={18} color="white" />
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  // --- DESIGN 6: PANORAMIC SPLIT ---
+  if (variant === 6) {
+    const V6_BG = ['#fef4f0', '#f0f4fe', '#f0fef4', '#fef0fa', '#f4f0fe', '#fefaf0'];
+    const V6_ACCENT = ['#e8440a', '#0984e3', '#00b894', '#e84393', '#6c5ce7', '#e17055'];
+    const bg = V6_BG[index % V6_BG.length];
+    const accent = V6_ACCENT[index % V6_ACCENT.length];
+    const stock = 40;
+    const stockRadius = 14;
+    const stockCircumference = 2 * Math.PI * stockRadius;
+    const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
+
+    return (
+      <TouchableOpacity style={[styles.v6Card, { backgroundColor: bg }]} onPress={onPress} activeOpacity={0.9}>
+        {/* Grand cercle décoratif flou */}
+        <View style={[styles.v6Blob, { backgroundColor: accent }]} />
+        <View style={[styles.v6Blob2, { backgroundColor: accent }]} />
+
+        {/* Layout horizontal: gauche infos, droite image */}
+        <View style={styles.v6Split}>
+          {/* Colonne gauche — tout le contenu texte */}
+          <View style={styles.v6Left}>
+            {/* Prix pill */}
+            <View style={[styles.v6PricePill, { backgroundColor: accent }]}>
+              <Text style={styles.v6PriceText}>{price}</Text>
+            </View>
+
+            {/* Titre */}
+            <Text style={styles.v6Title} numberOfLines={2}>{menu.titre}</Text>
+
+            {/* Stock mini inline */}
+            <View style={styles.v6StockRow}>
+              <Svg width={32} height={32}>
+                <Circle cx={16} cy={16} r={stockRadius} stroke="rgba(0,0,0,0.06)" strokeWidth={2} fill="none" />
+                <Circle cx={16} cy={16} r={stockRadius} stroke="#4ade80" strokeWidth={2} fill="none"
+                  strokeDasharray={`${stockCircumference}`} strokeDashoffset={stockProgress}
+                  strokeLinecap="round" transform="rotate(-90 16 16)" />
+                <SvgText x={16} y={18} textAnchor="middle" fontSize={9} fontWeight="900" fill="#111">{stock}</SvgText>
+              </Svg>
+              <Text style={styles.v6StockText}>en stock</Text>
+            </View>
+
+            {/* Livraison badge */}
+            <View style={styles.v6DeliveryBadge}>
+              <View style={[styles.v6DeliveryDot, { backgroundColor: accent }]} />
+              <View>
+                <Text style={styles.v6DeliveryMeta}>PROCHAINE LIVRAISON</Text>
+                <Text style={[styles.v6DeliveryHour, { color: accent }]}>Aujourd'hui · 12h</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Colonne droite — image dramatique */}
+          <View style={styles.v6Right}>
+            <View style={[styles.v6ImgGlow, { shadowColor: accent }]}>
+              <Image
+                source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
+                style={styles.v6Img}
+                contentFit="contain"
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Bouton + en bas à droite */}
+        <View style={[styles.v6AddBtn, { backgroundColor: accent }]}>
+          <Ionicons name="arrow-forward" size={16} color="white" />
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
   // Default Variant
   return (
     <TouchableOpacity style={styles.defaultContainer} onPress={onPress}>
@@ -299,7 +447,7 @@ const styles = StyleSheet.create({
     v2LivraisonChip2: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff5f0', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12 },
     v2LivraisonChip2Text: { fontSize: 10, fontWeight: '700', color: '#e8440a' },
     v2LivraisonIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#e8440a', alignItems: 'center', justifyContent: 'center' },
-    v2LivraisonChip2Label: { fontSize: 7, fontWeight: '600', color: '#000000ff', textTransform: 'uppercase', letterSpacing: 0.5 },
+    v2LivraisonChip2Label: { fontSize: 8, fontWeight: '800', color: '#000000ff', textTransform: 'uppercase', letterSpacing: 0.5 },
      v2LivraisonChip1Label: { fontSize: 10, fontWeight: '600', color: '#ffffffff', textTransform: 'uppercase', letterSpacing: 0.5 },
     v2LivraisonChip2Time: { fontSize: 10, fontWeight: '800', color: '#e8440a' },
     v2Content: { marginTop: 10 },
@@ -337,6 +485,45 @@ const styles = StyleSheet.create({
     v4StockLabel: { fontSize: 10, fontWeight: '600', color: '#000000ff', textTransform: 'uppercase', letterSpacing: 1 },
     v4ProgressTrack: { height: 4, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' },
     v4ProgressFill: { height: '100%', backgroundColor: '#e8440a', borderRadius: 2 },
+
+    // --- DESIGN 5: GLASS SHOWCASE ---
+    v5Card: { width: 200, height: 280, borderRadius: 28, marginRight: 16, overflow: 'hidden', padding: 14 },
+    v5DecorCircle: { position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: 70 },
+    v5DecorCircle2: { position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, borderRadius: 50, borderWidth: 2 },
+    v5TopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 },
+    v5StockRing: { width: 44, height: 44 },
+    v5PriceChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14 },
+    v5PriceText: { color: 'white', fontSize: 13, fontWeight: '900' },
+    v5ImgZone: { flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 2, marginVertical: 4 },
+    v5ImgShadow: { width: 120, height: 120, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+    v5ProductImg: { width: '100%', height: '100%', transform: [{ scale: 1.3 }, { rotate: '-8deg' }] },
+    v5Title: { fontSize: 14, fontWeight: '900', color: '#111', textAlign: 'center', marginBottom: 8, zIndex: 2 },
+    v5DeliveryStrip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10, zIndex: 2 },
+    v5DeliveryIcon: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    v5DeliveryLabel: { fontSize: 6, fontWeight: '700', color: '#999', letterSpacing: 0.8 },
+    v5DeliveryTime: { fontSize: 10, fontWeight: '800' },
+    v5DeliveryPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
+    v5AddBtn: { position: 'absolute', bottom: 14, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+
+    // --- DESIGN 6: PANORAMIC SPLIT ---
+    v6Card: { width: SCREEN_WIDTH * 0.78, height: 200, borderRadius: 26, marginRight: 16, overflow: 'hidden', padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 6 },
+    v6Blob: { position: 'absolute', top: -50, right: -30, width: 160, height: 160, borderRadius: 80, opacity: 0.07 },
+    v6Blob2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, opacity: 0.05 },
+    v6Split: { flex: 1, flexDirection: 'row', gap: 12 },
+    v6Left: { flex: 1, justifyContent: 'space-between', zIndex: 2 },
+    v6PricePill: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+    v6PriceText: { color: 'white', fontSize: 13, fontWeight: '900' },
+    v6Title: { fontSize: 16, fontWeight: '900', color: '#111', lineHeight: 20, marginTop: 6 },
+    v6StockRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+    v6StockText: { fontSize: 9, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5 },
+    v6DeliveryBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 10, paddingVertical: 5, paddingHorizontal: 8 },
+    v6DeliveryDot: { width: 6, height: 6, borderRadius: 3 },
+    v6DeliveryMeta: { fontSize: 6, fontWeight: '700', color: '#aaa', letterSpacing: 0.8 },
+    v6DeliveryHour: { fontSize: 10, fontWeight: '800' },
+    v6Right: { width: 140, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+    v6ImgGlow: { width: 140, height: 140, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
+    v6Img: { width: '100%', height: '100%', transform: [{ scale: 1.25 }, { rotate: '-10deg' }] },
+    v6AddBtn: { position: 'absolute', bottom: 14, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 
     defaultContainer: { padding: 20, backgroundColor: 'white', marginRight: 16, borderRadius: 10 }
 });

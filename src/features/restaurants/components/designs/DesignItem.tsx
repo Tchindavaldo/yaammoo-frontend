@@ -89,34 +89,47 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
   if (variant === 2) {
     return (
       <TouchableOpacity style={styles.v2Card} onPress={onPress} activeOpacity={0.8}>
+        
+          {/* Badge dispo  */} 
+         <View style={styles.v2DispoBadge}>
+            <View style={styles.v2DispoPulse} />
+            <Text style={styles.v2DispoText}>
+              <Text style={{ color: '#4faa71ff', fontWeight: '900' }}>40</Text>
+              <Text style={{ color: '#666' }}> En Stock</Text>
+            </Text>
+          </View>
+        {/* Image avec overlay gradient */}
         <View style={styles.v2ImgWrap}>
-          <Image 
-            source={menu.image ? { uri: menu.image } : require('@/assets/images/riz_Spaghettis et Œuf_poulet_pané_fritz_platain_noBG.png')} 
-            style={styles.v2Image} 
+          <Image
+            source={menu.image ? { uri: menu.image } : require('@/assets/images/riz_Spaghettis et Œuf_poulet_pané_fritz_platain_noBG.png')}
+            style={styles.v2Image}
           />
         </View>
-        <View style={styles.v2Rating}>
-            {/* <Text style={styles.v2RatingText}>★ 5.0</Text> */}
-                <View style={styles.v2DeliveryWhite}>
-  <View style={{ flexShrink: 1 }}>
-    <Text style={[styles.v2DeliveryMeta, { color: '#111' }]}>
-      <Text style={{ color: '#e8440a', fontSize: 13, fontWeight: '800' }}>40</Text>
-      <Text style={{ color: '#111', fontSize: 13, fontWeight: '800' }}>/100</Text>
-    </Text>
-    <Text style={[styles.v2DeliveryMain, { color: '#111' }]}>Disponible</Text>
-  </View>
-</View>
-        </View>
-        <Text style={styles.v2Name} numberOfLines={1}>{menu.titre}</Text>
-        <Text style={[styles.v2Desc, { color: '#e8440a', fontSize: 12, fontWeight: '700' }]} numberOfLines={1}>livraison 12h</Text>
-        <View style={styles.v2Footer}>
+
+        {/* Contenu */}
+        <View style={styles.v2Content}>
+          <View style={styles.v2TitleRow}>
+            <Text style={styles.v2Name} numberOfLines={1}>{menu.titre}</Text>
+            {/* <View style={styles.v2CartBtn}>
+              <Ionicons name="cart-outline" size={14} color="white" />
+            </View> */}
+          </View>
+
+          <View style={styles.v2BottomRow}>
             <Text style={styles.v2Price}>{price}</Text>
-            <View style={styles.v2CartBtn}>
-                <Ionicons name="cart-outline" size={16} color="white" />
+            <View style={styles.v2LivraisonChip2}>
+              <View style={styles.v2LivraisonIcon}>
+                               <Text style={styles.v2LivraisonChip1Label}>12h</Text>
+
+              </View>
+              <View>
+                <Text style={styles.v2LivraisonChip2Label}>Prochaine </Text>
+                <Text style={styles.v2LivraisonChip2Time}>livraison</Text>
+              </View>
             </View>
+          </View>
         </View>
 
-        
       </TouchableOpacity>
     );
   }
@@ -126,13 +139,24 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
     return (
       <TouchableOpacity style={styles.v3Card} onPress={onPress} activeOpacity={0.8}>
         <View style={styles.v3DeliveryWhite}>
-          <View style={{ flexShrink: 1 }}>
+          {/* <View style={{ flexShrink: 1 }}>
             <Text style={[styles.v2DeliveryMeta, { color: '#111' }]}>
               <Text style={{ color: '#e8440a', fontSize: 13, fontWeight: '800' }}>40</Text>
               <Text style={{ color: '#111', fontSize: 13, fontWeight: '800' }}>/100</Text>
             </Text>
-            {/* <Text style={[styles.v2DeliveryMain, { color: '#111' }]}>Disponible</Text> */}
-          </View>
+            <Text style={[styles.v2DeliveryMain, { color: '#111' }]}>Disponible</Text>
+          </View> */}
+        
+         <View style={styles.v2LivraisonChip2}>
+              <View style={styles.v2LivraisonIcon}>
+                               <Text style={styles.v2LivraisonChip1Label}>12h</Text>
+
+              </View>
+              <View>
+                <Text style={styles.v2LivraisonChip2Label}>Prochaine </Text>
+                <Text style={styles.v2LivraisonChip2Time}>livraison</Text>
+              </View>
+            </View>
         </View>
         <View style={styles.v3ImgBox}>
             <Image
@@ -143,7 +167,14 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
         </View>
         <Text style={styles.v3Price}>{price}</Text>
         <Text style={styles.v3Desc} numberOfLines={1}>{menu.titre}</Text>
-        <Text style={styles.v3Livraison} numberOfLines={1}>livraison 12h</Text>
+        {/* <Text style={styles.v3Livraison} numberOfLines={1}>livraison 12h</Text> */}
+          <View style={styles.v2DispoBadgeDesign3} >
+            <View style={styles.v2DispoPulse} />
+            <Text style={styles.v2DispoText}>
+              <Text style={{ color: '#4faa71ff', fontWeight: '900' }}>40</Text>
+              <Text style={{ color: '#666' }}> En Stock</Text>
+            </Text>
+          </View>
       </TouchableOpacity>
     );
   }
@@ -258,16 +289,35 @@ const styles = StyleSheet.create({
     v2Desc: { fontSize: 10, color: '#aaa', marginVertical: 4 },
     v2Footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
     v2Price: { fontSize: 15, fontWeight: '800', color: '#111' },
-    v2CartBtn: { width: 34, height: 34, backgroundColor: '#2d6e65', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    v2CartBtn: { width: 30, height: 30, backgroundColor: '#2d6e65', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    v2DispoBadge: {zIndex:10, position: 'absolute', top: 4, left: 6, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+    v2DispoBadgeDesign3: {zIndex:10, position: 'relative', top: 0, left: 0, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 },
+    v2DispoPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
+    v2DispoText: { fontSize: 11, fontWeight: '700' },
+    v2LivraisonChip: { position: 'absolute', top: 8, right: 8, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' },
+    v2LivraisonChipText: { fontSize: 10, fontWeight: '700', color: '#fff' },
+    v2LivraisonChip2: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#fff5f0', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 12 },
+    v2LivraisonChip2Text: { fontSize: 10, fontWeight: '700', color: '#e8440a' },
+    v2LivraisonIcon: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#e8440a', alignItems: 'center', justifyContent: 'center' },
+    v2LivraisonChip2Label: { fontSize: 7, fontWeight: '600', color: '#000000ff', textTransform: 'uppercase', letterSpacing: 0.5 },
+     v2LivraisonChip1Label: { fontSize: 10, fontWeight: '600', color: '#ffffffff', textTransform: 'uppercase', letterSpacing: 0.5 },
+    v2LivraisonChip2Time: { fontSize: 10, fontWeight: '800', color: '#e8440a' },
+    v2Content: { marginTop: 10 },
+    v2TitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    v2BottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+    v2MiniProgress: { alignItems: 'flex-end', gap: 2 },
+    v2MiniProgressTrack: { width: 40, height: 3, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' },
+    v2MiniProgressFill: { height: '100%', backgroundColor: '#e8440a', borderRadius: 2 },
+    v2MiniProgressLabel: { fontSize: 7, fontWeight: '600', color: '#bbb', textTransform: 'uppercase', letterSpacing: 0.5 },
 
     // --- DESIGN 3 (Ex-D2) ---
-    v3Card: { width: 120, backgroundColor: 'white', borderRadius: 20, padding: 14, marginRight: 16, borderWidth: 1, borderColor: '#efefef', alignItems: 'center' },
-    v3DeliveryWhite: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 12, paddingVertical: 5, paddingHorizontal: 8,   marginBottom: 6 },
+    v3Card: { width: 120, backgroundColor: 'white', borderRadius: 20, padding: 14,paddingTop:10,paddingBottom:5, marginRight: 16, borderWidth: 1, borderColor: '#efefef', alignItems: 'center' },
+    v3DeliveryWhite: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 12, paddingVertical: 0, paddingHorizontal: 8,   marginBottom: 0 },
     v3Livraison: { color: '#e8440a', fontSize: 12, fontWeight: '700', marginTop: 4 },
     v3ImgBox: { width: '100%', height: 100, justifyContent: 'center', alignItems: 'center' },
     v3Image: { width: '110%', height: '110%' },
     v3Price: { fontSize: 16, fontWeight: '800', color: '#111', marginTop: 4, textAlign: 'center' },
-    v3Desc: { fontSize: 10, color: '#999', marginTop: 2, textAlign: 'center' },
+    v3Desc: { fontSize: 12, color: '#000000ff', marginTop: 2, textAlign: 'center' },
 
     // --- DESIGN 4 (Ex-D5) ---
     v4Card: { width: 240, height: 320, borderRadius: 28, marginRight: 16, overflow: 'hidden' },

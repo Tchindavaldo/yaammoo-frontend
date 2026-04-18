@@ -18,22 +18,23 @@ export const Design5: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         image={fastFood.image}
         rating={fastFood.stats?.rating}
       />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {fastFood.menu?.map((menu, index) => (
-          <DesignItem
-            key={index}
-            menu={menu}
-            variant={5}
-            merchantName={fastFood.nom}
-            onPress={() => onMenuClick(menu)}
-            index={index}
-          />
-        ))}
-      </ScrollView>
+      <View style={styles.scrollWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+        >
+          {fastFood.menu?.map((menu, index) => (
+            <DesignItem
+              key={index}
+              menu={menu}
+              variant={5}
+              merchantName={fastFood.nom}
+              onPress={() => onMenuClick(menu)}
+              index={index}
+            />
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -41,9 +42,10 @@ export const Design5: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
 const styles = StyleSheet.create({
   container: {
     marginVertical: Theme.spacing.xs,
+    // marginBottom: Theme.spacing.xl,
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+  scrollWrapper: {
+    width: '100%',
+    overflow: 'hidden',
   }
 });

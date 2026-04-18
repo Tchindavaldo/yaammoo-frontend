@@ -459,23 +459,18 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
         {/* Ligne accent diagonale décorative */}
         <View style={[styles.v7AccentStripe, { backgroundColor: tint }]} />
 
-        {/* Stock ring flottant haut-droite */}
-        <View style={styles.v7StockWrap}>
-          <BlurView intensity={40} tint="light" style={styles.v7StockBlur}>
-            <Svg width={30} height={30}>
-              <Circle cx={15} cy={15} r={stockRadius} stroke="rgba(0,0,0,0.08)" strokeWidth={2} fill="rgba(255,255,255,0.3)" />
-              <Circle cx={15} cy={15} r={stockRadius} stroke="#4ade80" strokeWidth={2.5} fill="none"
-                strokeDasharray={`${stockCircumference}`} strokeDashoffset={stockProgress}
-                strokeLinecap="round" transform="rotate(-90 15 15)" />
-              <SvgText x={15} y={17} textAnchor="middle" fontSize={8} fontWeight="900" fill="#111">{stock}</SvgText>
-            </Svg>
-          </BlurView>
-          <Text style={styles.v7StockText}>en stock</Text>
-        </View>
+        {/* Top chips: Prix + Stock */}
+        <View style={styles.v7TopChips}>
+          {/* Prix */}
+          <View style={[styles.v7PricePill, { backgroundColor: '#e8440a' }]}>
+            <Text style={styles.v7PriceText}>{price}</Text>
+          </View>
 
-        {/* Prix flottant haut-gauche — fond orange app */}
-        <View style={[styles.v7PricePill, { backgroundColor: '#e8440a' }]}>
-          <Text style={styles.v7PriceText}>{price}</Text>
+          {/* Stock chip */}
+          <BlurView intensity={80} tint="dark" style={styles.v7StockChip}>
+            <Text style={styles.v7StockNumber}>{stock}</Text>
+            <Text style={styles.v7StockLabel}>DISPO</Text>
+          </BlurView>
         </View>
 
         {/* Zone basse — titre + livraison sur le gradient sombre */}
@@ -646,13 +641,14 @@ const styles = StyleSheet.create({
     v6AddBtn: { position: 'absolute', bottom: 14, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 
     // --- DESIGN 7: IMMERSIVE MINI ---
-    v7Card: { width: 150, height: 185, borderRadius: 22, marginRight: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
+    v7Card: { width: 150, height: 190, borderRadius: 22, marginRight: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
     v7BgImg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' ,transform:'scale(1.5)'},
     v7AccentStripe: { position: 'absolute', top: 30, left: -10, width: 60, height: 3, borderRadius: 2, transform: [{ rotate: '45deg' }], opacity: 0.7, zIndex: 2 },
-    v7StockWrap: { position: 'absolute', top: 8, right: 8, alignItems: 'center', zIndex: 3 },
-    v7StockBlur: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-    v7StockText: { fontSize: 6, fontWeight: '700', color: 'white', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
-    v7PricePill: { position: 'absolute', top: 10, left: 8, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, zIndex: 3 },
+    v7TopChips: { position: 'absolute', top: 8, left: 8, right: 8, flexDirection: 'row', gap: 8, alignItems: 'center', zIndex: 3 },
+    v7PricePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+    v7StockChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' },
+    v7StockNumber: { fontSize: 12, fontWeight: '900', color: 'white' },
+    v7StockLabel: { fontSize: 7, fontWeight: '700', color: 'white', textTransform: 'uppercase', letterSpacing: 0.5 },
     v7PriceText: { color: 'white', fontSize: 12, fontWeight: '900' },
     v7BottomZone: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 10, paddingBottom: 10, zIndex: 3 },
     v7Title: { color: 'white', fontSize: 15, fontWeight: '900', lineHeight: 18, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },

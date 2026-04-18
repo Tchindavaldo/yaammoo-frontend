@@ -39,7 +39,7 @@ export const HeroBanner: React.FC = React.memo(() => {
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: Theme.spacing.md,
+        // paddingHorizontal: Theme.spacing.md,
         width: '100%',
         marginTop: 4,
         marginBottom: 10,

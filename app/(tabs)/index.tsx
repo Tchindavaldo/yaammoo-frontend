@@ -157,7 +157,7 @@ export default function HomeScreen() {
               keyExtractor={(item, index) => item.id || index.toString()}
               contentContainerStyle={[
                 styles.listContent,
-                { paddingBottom: tabBarHeight + 20 },
+                { paddingBottom: tabBarHeight + 20, paddingHorizontal: Theme.spacing.sm },
               ]}
               refreshControl={
                   <RefreshControl

@@ -13,27 +13,28 @@ interface DesignProps {
 export const Design1: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
   return (
     <View style={styles.container}>
-      <MerchantHeader 
-        name={fastFood.nom} 
-        image={fastFood.image} 
-        rating={fastFood.stats?.rating} 
+      <MerchantHeader
+        name={fastFood.nom}
+        image={fastFood.image}
+        rating={fastFood.stats?.rating}
       />
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        contentContainerStyle={styles.scrollContent}
-      >
-        {fastFood.menu?.map((menu, index) => (
-          <DesignItem 
-            key={index} 
-            index={index}
-            menu={menu} 
-            variant={1} 
-            merchantName={fastFood.nom}
-            onPress={() => onMenuClick(menu)} 
-          />
-        ))}
-      </ScrollView>
+      <View style={styles.scrollWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+        >
+          {fastFood.menu?.map((menu, index) => (
+            <DesignItem
+              key={index}
+              index={index}
+              menu={menu}
+              variant={1}
+              merchantName={fastFood.nom}
+              onPress={() => onMenuClick(menu)}
+            />
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 };
@@ -41,9 +42,10 @@ export const Design1: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
 const styles = StyleSheet.create({
   container: {
     marginVertical: Theme.spacing.xs,
+    // marginBottom: Theme.spacing.xl,
   },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+  scrollWrapper: {
+    width: '100%',
+    overflow: 'hidden',
   }
 });

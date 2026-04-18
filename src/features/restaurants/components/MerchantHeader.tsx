@@ -20,9 +20,9 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({ name, image, rat
     <View style={styles.container}>
       <View style={styles.left}>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={image ? { uri: image } : require('@/assets/blur3.jpg')} 
-            style={styles.avatar} 
+          <Image
+            source={image ? { uri: image } : require('@/assets/blur3.jpg')}
+            style={styles.avatar}
           />
         </View>
         <Text style={styles.name}>{name}</Text>
@@ -32,7 +32,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({ name, image, rat
           <View key={i} style={styles.starWrapper}>
             <Ionicons name="star" size={14} color={Theme.colors.gray[200]} />
             <View style={[styles.starFill, { width: `${fill * 100}%` }]}>
-              <Ionicons name="star" size={14} color={Theme.colors.primary} />
+              <Ionicons name="star" size={14} color="#e8440a" />
             </View>
           </View>
         ))}
@@ -47,7 +47,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: Theme.spacing.sm,
-    paddingHorizontal: Theme.spacing.md,
     backgroundColor: Theme.colors.white,
     marginBottom: Theme.spacing.sm,
   },
@@ -76,9 +75,8 @@ const styles = StyleSheet.create({
   ratingContainer: {
     flexDirection: 'row',
     gap: 2,
-    backgroundColor: Theme.colors.gray[100],
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    // paddingHorizontal: 8,
+    // paddingVertical: 4,
     borderRadius: Theme.borderRadius.pill,
   },
   starWrapper: {

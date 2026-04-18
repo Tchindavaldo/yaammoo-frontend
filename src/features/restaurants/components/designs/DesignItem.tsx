@@ -134,47 +134,64 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
     );
   }
 
-  // --- DESIGN 3: POPULAR MENU (Ex-D2) ---
+  // --- DESIGN 3: COMPACT GEM ---
   if (variant === 3) {
-    return (
-      <TouchableOpacity style={styles.v3Card} onPress={onPress} activeOpacity={0.8}>
-        <View style={styles.v3DeliveryWhite}>
-          {/* <View style={{ flexShrink: 1 }}>
-            <Text style={[styles.v2DeliveryMeta, { color: '#111' }]}>
-              <Text style={{ color: '#e8440a', fontSize: 13, fontWeight: '800' }}>40</Text>
-              <Text style={{ color: '#111', fontSize: 13, fontWeight: '800' }}>/100</Text>
-            </Text>
-            <Text style={[styles.v2DeliveryMain, { color: '#111' }]}>Disponible</Text>
-          </View> */}
-        
-         <View style={styles.v2LivraisonChip2}>
-              <View style={styles.v2LivraisonIcon}>
-                               <Text style={styles.v2LivraisonChip1Label}>12h</Text>
+    const stock = 40;
+    const stockRadius = 11;
+    const stockCircumference = 2 * Math.PI * stockRadius;
+    const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
 
-              </View>
-              <View>
-                <Text style={styles.v2LivraisonChip2Label}>Prochaine </Text>
-                <Text style={styles.v2LivraisonChip2Time}>livraison</Text>
-              </View>
-            </View>
-        </View>
-        <View style={styles.v3ImgBox}>
-            <Image
-                source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.webp')}
-                style={styles.v3Image}
-                contentFit="contain"
-            />
-        </View>
-        <Text style={styles.v3Price}>{price}</Text>
-        <Text style={styles.v3Desc} numberOfLines={1}>{menu.titre}</Text>
-        {/* <Text style={styles.v3Livraison} numberOfLines={1}>livraison 12h</Text> */}
-          <View style={styles.v2DispoBadgeDesign3} >
-            <View style={styles.v2DispoPulse} />
-            <Text style={styles.v2DispoText}>
-              <Text style={{ color: '#4faa71ff', fontWeight: '900' }}>40</Text>
-              <Text style={{ color: '#666' }}> En Stock</Text>
-            </Text>
+    return (
+      <TouchableOpacity style={styles.v3Card} onPress={onPress} activeOpacity={0.88}>
+        {/* Zone haute: fond coloré arrondi avec image + prix overlay */}
+        <View style={styles.v3HeroZone}>
+          <LinearGradient
+            colors={['#fff1ec', '#ffe0d4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Image centrée */}
+          <Image
+            source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.webp')}
+            style={styles.v3Image}
+            contentFit="contain"
+          />
+          {/* Prix en overlay bas-gauche */}
+          <View style={styles.v3PriceFloat}>
+            <Text style={styles.v3PriceText}>{price}</Text>
           </View>
+          {/* Stock ring en overlay haut-droite */}
+          <View style={styles.v3StockFloat}>
+            <Svg width={26} height={26}>
+              <Circle cx={13} cy={13} r={stockRadius} stroke="rgba(255,255,255,0.5)" strokeWidth={2} fill="rgba(255,255,255,0.7)" />
+              <Circle cx={13} cy={13} r={stockRadius} stroke="#4ade80" strokeWidth={2} fill="none"
+                strokeDasharray={`${stockCircumference}`} strokeDashoffset={stockProgress}
+                strokeLinecap="round" transform="rotate(-90 13 13)" />
+              <SvgText x={13} y={15} textAnchor="middle" fontSize={7} fontWeight="900" fill="#111">{stock}</SvgText>
+            </Svg>
+          </View>
+        </View>
+
+        {/* Titre */}
+        <Text style={styles.v3Title} numberOfLines={2}>{menu.titre}</Text>
+
+        {/* Stock texte */}
+        <View style={styles.v3StockTextRow}>
+          <View style={styles.v3StockDot} />
+          <Text style={styles.v3StockTxt}>{stock} en stock</Text>
+        </View>
+
+        {/* Livraison — mini card empilée */}
+        <View style={styles.v3LiveCard}>
+          <View style={styles.v3LiveIconWrap}>
+            <Ionicons name="bicycle" size={8} color="white" />
+          </View>
+          <View>
+            <Text style={styles.v3LiveLabel}>Prochaine livraison</Text>
+            <Text style={styles.v3LiveHour}>12h</Text>
+          </View>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -459,13 +476,20 @@ const styles = StyleSheet.create({
     v2MiniProgressLabel: { fontSize: 7, fontWeight: '600', color: '#bbb', textTransform: 'uppercase', letterSpacing: 0.5 },
 
     // --- DESIGN 3 (Ex-D2) ---
-    v3Card: { width: 120, backgroundColor: 'white', borderRadius: 20, padding: 14,paddingTop:10,paddingBottom:5, marginRight: 16, borderWidth: 1, borderColor: '#efefef', alignItems: 'center' },
-    v3DeliveryWhite: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 12, paddingVertical: 0, paddingHorizontal: 8,   marginBottom: 0 },
-    v3Livraison: { color: '#e8440a', fontSize: 12, fontWeight: '700', marginTop: 4 },
-    v3ImgBox: { width: '100%', height: 100, justifyContent: 'center', alignItems: 'center' },
-    v3Image: { width: '110%', height: '110%' },
-    v3Price: { fontSize: 16, fontWeight: '800', color: '#111', marginTop: 4, textAlign: 'center' },
-    v3Desc: { fontSize: 12, color: '#000000ff', marginTop: 2, textAlign: 'center' },
+    v3Card: { width: 120, borderRadius: 20, marginRight: 14, overflow: 'hidden', backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 5 },
+    v3HeroZone: { width: '100%', height: 120, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+    v3Image: { width: 90, height: 90, transform: [{ scale: 1.2 }, { rotate: '-6deg' }] },
+    v3PriceFloat: { position: 'absolute', bottom: 6, left: 6, backgroundColor: '#e8440a', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+    v3PriceText: { color: 'white', fontSize: 11, fontWeight: '900' },
+    v3StockFloat: { position: 'absolute', top: 6, right: 6 },
+    v3Title: { fontSize: 12, fontWeight: '800', color: '#111', textAlign: 'center', lineHeight: 15, paddingHorizontal: 6, marginTop: 8 },
+    v3StockTextRow: { flexDirection: 'row', alignItems: 'center', gap: 3, justifyContent: 'center', marginTop: 4 },
+    v3StockDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
+    v3StockTxt: { fontSize: 9, fontWeight: '700', color: '#4ade80' },
+    v3LiveCard: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, marginHorizontal: 6, marginBottom: 8, backgroundColor: '#1a1a1a', borderRadius: 10, paddingVertical: 6, paddingHorizontal: 7 },
+    v3LiveIconWrap: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#e8440a', alignItems: 'center', justifyContent: 'center' },
+    v3LiveLabel: { fontSize: 6, fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.3 },
+    v3LiveHour: { fontSize: 9, fontWeight: '800', color: 'white' },
 
     // --- DESIGN 4 (Ex-D5) ---
     v4Card: { width: 240, height: 320, borderRadius: 28, marginRight: 16, overflow: 'hidden' },

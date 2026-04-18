@@ -6,6 +6,7 @@ import { Design3 } from './designs/Design3';
 import { Design4 } from './designs/Design4';
 import { Design5 } from './designs/Design5';
 import { Design6 } from './designs/Design6';
+import { Design7 } from './designs/Design7';
 
 interface DesignRouterProps {
   fastFood: FastFood;
@@ -25,18 +26,18 @@ export const DesignRouter: React.FC<DesignRouterProps> = ({ fastFood, onMenuClic
   
   switch (index) {
     case 0:
-      return <Design3 fastFood={fastFood} onMenuClick={onMenuClick} />;
+      return <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 1:
-      return <Design5 fastFood={fastFood} onMenuClick={onMenuClick} />;
+      return <Design6 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 2:
       return <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 3:
-      return <Design6 fastFood={fastFood} onMenuClick={onMenuClick} />;
+      return <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 4:
       return <Design5 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 5:
       return <Design1 fastFood={fastFood} onMenuClick={onMenuClick} />;
     default:
       return <Design3 fastFood={fastFood} onMenuClick={onMenuClick} />;
-  }
+}
 };

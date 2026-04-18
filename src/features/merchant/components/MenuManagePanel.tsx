@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 100,
     right: 20,
     width: 56,
     height: 56,
@@ -530,7 +530,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(236,73,19,1.00)',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+    elevation: 50,
+    zIndex: 2000,
     shadowColor: 'black',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,

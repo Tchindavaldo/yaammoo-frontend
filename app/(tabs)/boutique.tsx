@@ -116,7 +116,7 @@ export default function BoutiqueScreen() {
       );
     }
 
-    const contentWrapperStyle = { paddingTop: insets.top + 60, flex: 1 };
+    const contentWrapperStyle = { flex: 1 };
 
     switch (activeTab) {
       case 'commande':

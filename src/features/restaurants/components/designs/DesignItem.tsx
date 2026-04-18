@@ -144,13 +144,21 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
     return (
       <TouchableOpacity style={styles.v3Card} onPress={onPress} activeOpacity={0.88}>
         {/* Zone haute: fond coloré arrondi avec image + prix overlay */}
-        <View style={styles.v3HeroZone}>
           <LinearGradient
             colors={['#fff1ec', '#ffe0d4']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
+              <View style={styles.v3StockTextRow}>
+          <View style={styles.v3StockDot} />
+          <Text style={styles.v3StockTxt}>{stock} en stock</Text>
+        </View>
+        <View style={styles.v3HeroZone}>
+        
+
+        {/* Stock texte */}
+    
           {/* Image centrée */}
           <Image
             source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.webp')}
@@ -161,35 +169,19 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
           <View style={styles.v3PriceFloat}>
             <Text style={styles.v3PriceText}>{price}</Text>
           </View>
-          {/* Stock ring en overlay haut-droite */}
-          <View style={styles.v3StockFloat}>
-            <Svg width={26} height={26}>
-              <Circle cx={13} cy={13} r={stockRadius} stroke="rgba(255,255,255,0.5)" strokeWidth={2} fill="rgba(255,255,255,0.7)" />
-              <Circle cx={13} cy={13} r={stockRadius} stroke="#4ade80" strokeWidth={2} fill="none"
-                strokeDasharray={`${stockCircumference}`} strokeDashoffset={stockProgress}
-                strokeLinecap="round" transform="rotate(-90 13 13)" />
-              <SvgText x={13} y={15} textAnchor="middle" fontSize={7} fontWeight="900" fill="#111">{stock}</SvgText>
-            </Svg>
-          </View>
+        
         </View>
 
         {/* Titre */}
         <Text style={styles.v3Title} numberOfLines={2}>{menu.titre}</Text>
 
-        {/* Stock texte */}
-        <View style={styles.v3StockTextRow}>
-          <View style={styles.v3StockDot} />
-          <Text style={styles.v3StockTxt}>{stock} en stock</Text>
-        </View>
 
         {/* Livraison — mini card empilée */}
         <View style={styles.v3LiveCard}>
-          <View style={styles.v3LiveIconWrap}>
-            <Ionicons name="bicycle" size={8} color="white" />
-          </View>
+         
           <View>
             <Text style={styles.v3LiveLabel}>Prochaine livraison</Text>
-            <Text style={styles.v3LiveHour}>12h</Text>
+            <Text style={styles.v3LiveHour}>12h</Text> 
           </View>
         </View>
       </TouchableOpacity>
@@ -210,7 +202,9 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
       '#fdeded', // Rouge Corail
       '#ebf5eb'  // Vert Émeraude
     ];
+    const V4_ACCENTS = ['#e8440a', '#6c5ce7', '#00b894', '#fd79a8', '#0984e3', '#e17055', '#fdcb6e', '#00cec9'];
     const bgColor = V4_COLORS[index % V4_COLORS.length];
+    const accentColor = V4_ACCENTS[index % V4_ACCENTS.length];
 
     const stock = 40;
     const total = 100;
@@ -218,39 +212,55 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
 
     return (
       <TouchableOpacity style={[styles.v4Card, { backgroundColor: bgColor }]} onPress={onPress} activeOpacity={0.9}>
-        {/* Tag livraison flottant en haut à droite */}
-        <View style={styles.v4LivraisonTag}>
-          <View style={styles.v4LivraisonDot} />
-          <Text style={styles.v4LivraisonText}>12h</Text>
-          <Ionicons name="bicycle-outline" size={11} color="#e8440a" />
-        </View>
 
-        <View style={styles.v4Text}>
-            <Text style={styles.v4Title}>{menu.titre}</Text>
-            <Text style={styles.v4Price}>{price}</Text>
-        </View>
+        {/* Motifs décoratifs — blobs comme Design 5 & 6 */}
+        <View style={[styles.v4Blob, { backgroundColor: accentColor }]} />
+        <View style={[styles.v4Blob2, { backgroundColor: accentColor }]} />
 
-        <View style={styles.v4ImgWrap}>
+        {/* Image dramatique en bas-droite avec shadow */}
+        <View style={[styles.v4ImgWrap, { shadowColor: accentColor }]}>
             <Image
                 source={menu.image ? { uri: menu.image } : require('@/assets/images/purre avocat tomate legume .png')}
                 style={styles.v4Image}
             />
         </View>
 
-        {/* Barre de stock en bas */}
+        {/* SECTION HAUT: Titre + Prix — REDESIGNÉE */}
+        <View style={styles.v4TopSection}>
+          {/* Titre impressive */}
+          <Text style={styles.v4TitleNew} numberOfLines={2}>{menu.titre}</Text>
+
+          {/* Prix badge audacieux */}
+          <BlurView intensity={70} tint="dark" style={styles.v4PriceBadgeNew}>
+            <Text style={styles.v4PriceNew}>{price}</Text>
+          </BlurView>
+        </View>
+
+        {/* Barre de stock + livraison en bas */}
         <BlurView intensity={60} tint="light" style={styles.v4StockBar}>
-          <View style={styles.v4StockInfo}>
-            <View style={styles.v4StockLeft}>
-              <View style={styles.v4StockPulse} />
-              <Text style={styles.v4StockCount}>
-                <Text style={{ color: '#e8440a', fontWeight: '900' }}>{stock}</Text>
-                <Text style={{ color: '#000000ff' }}> / {total}</Text>
-              </Text>
+          <View style={styles.v4StockMainRow}>
+            {/* Côté gauche: Stock + Progression */}
+            <View style={styles.v4StockLeftSection}>
+              <View style={styles.v4StockInfo}>
+                <View style={styles.v4StockPulse} />
+                <Text style={styles.v4StockCount}>
+                  <Text style={{ color: '#e8440a', fontWeight: '900' }}>{stock}</Text>
+                  <Text style={{ color: '#000000ff' }}> / {total}</Text>
+                </Text>
+              </View>
+              <View style={styles.v4ProgressTrack}>
+                <View style={[styles.v4ProgressFill, { width: `${stockPercent}%` }]} />
+              </View>
             </View>
-            <Text style={styles.v4StockLabel}>en stock</Text>
-          </View>
-          <View style={styles.v4ProgressTrack}>
-            <View style={[styles.v4ProgressFill, { width: `${stockPercent}%` }]} />
+
+            {/* Côté droit: Livraison pleine hauteur */}
+            <View style={styles.v4StockRight}>
+              <Ionicons name="bicycle-outline" size={12} color="#e8440a" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.v4StockRightLabel}>PROCHAINE</Text>
+                <Text style={styles.v4StockRightTime}>LIVRAISON · 12h</Text>
+              </View>
+            </View>
           </View>
         </BlurView>
       </TouchableOpacity>
@@ -283,16 +293,26 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
         {/* Top row: stock ring + prix */}
         <View style={styles.v5TopRow}>
           {/* SVG stock ring */}
-          <View style={styles.v5StockRing}>
+          {/* <View style={styles.v5StockRing}>
             <Svg width={44} height={44}>
               <Circle cx={22} cy={22} r={stockRadius} stroke="rgba(0,0,0,0.06)" strokeWidth={3} fill="none" />
               <Circle cx={22} cy={22} r={stockRadius} stroke={accent} strokeWidth={3} fill="none"
                 strokeDasharray={`${stockCircumference}`} strokeDashoffset={stockProgress}
                 strokeLinecap="round" transform="rotate(-90 22 22)" />
               <SvgText x={22} y={20} textAnchor="middle" fontSize={11} fontWeight="900" fill="#111">{stock}</SvgText>
-              <SvgText x={22} y={28} textAnchor="middle" fontSize={5} fontWeight="600" fill="#999">DISPO</SvgText>
+              <SvgText x={22} y={28} textAnchor="middle" fontSize={7} fontWeight="700" fill="#000000b7">DISPO</SvgText>
             </Svg>
+          </View> */}
+            {/* Livraison — bande glass en bas */}
+        <View style={styles.v5DeliveryStrip1}>
+          {/* <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
+            <Ionicons name="flash" size={10} color="white" />
+          </View> */}
+          <View>
+            <Text style={[styles.v5DeliveryTime, { color: accent }]}>40 En Stock</Text>
+            {/* <Text style={styles.v5DeliveryLabel}>Livraison</Text> */}
           </View>
+        </View>
 
           {/* Prix avec accent */}
           <View style={[styles.v5PriceChip, { backgroundColor: accent }]}>
@@ -317,11 +337,17 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
         {/* Livraison — bande glass en bas */}
         <View style={styles.v5DeliveryStrip}>
           <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
-            <Ionicons name="flash" size={10} color="white" />
+           
+                       <Ionicons name="flash" size={10} color="white" />
+
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.v5DeliveryLabel}>PROCHAINE LIVRAISON</Text>
-            <Text style={[styles.v5DeliveryTime, { color: accent }]}>Aujourd'hui · 12h</Text>
+          {/* <View style={{ flex: 1 }}> 
+            <Text style={[styles.v5DeliveryTime, { color: accent }]}>En Stiock</Text>
+          </View> */}
+            <View>
+
+            <Text style={styles.v5DeliveryLabel}>Prochaine</Text>
+            <Text style={[styles.v5DeliveryTime, { color: accent }]}>Livraison 12h</Text>
           </View>
           <View style={styles.v5DeliveryPulse} />
         </View>
@@ -405,6 +431,72 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
     );
   }
 
+  // --- DESIGN 7: IMMERSIVE MINI ---
+  if (variant === 7) {
+    const V7_TINT = ['#e8440a', '#6c5ce7', '#00b894', '#e84393', '#0984e3', '#e17055', '#fdcb6e', '#00cec9'];
+    const tint = V7_TINT[index % V7_TINT.length];
+    const stock = 40;
+    const stockRadius = 13;
+    const stockCircumference = 2 * Math.PI * stockRadius;
+    const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
+
+    return (
+      <TouchableOpacity style={styles.v7Card} onPress={onPress} activeOpacity={0.9}>
+        {/* Image plein fond */}
+        <Image
+          source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
+          style={styles.v7BgImg}
+          contentFit="cover"
+        />
+
+        {/* Triple gradient: haut clair → transparent → bas ultra sombre */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0.6)', 'rgba(255,255,255,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+          locations={[0, 0.15, 0.35, 0.6, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+
+        {/* Ligne accent diagonale décorative */}
+        <View style={[styles.v7AccentStripe, { backgroundColor: tint }]} />
+
+        {/* Stock ring flottant haut-droite */}
+        <View style={styles.v7StockWrap}>
+          <BlurView intensity={40} tint="light" style={styles.v7StockBlur}>
+            <Svg width={30} height={30}>
+              <Circle cx={15} cy={15} r={stockRadius} stroke="rgba(0,0,0,0.08)" strokeWidth={2} fill="rgba(255,255,255,0.3)" />
+              <Circle cx={15} cy={15} r={stockRadius} stroke="#4ade80" strokeWidth={2.5} fill="none"
+                strokeDasharray={`${stockCircumference}`} strokeDashoffset={stockProgress}
+                strokeLinecap="round" transform="rotate(-90 15 15)" />
+              <SvgText x={15} y={17} textAnchor="middle" fontSize={8} fontWeight="900" fill="#111">{stock}</SvgText>
+            </Svg>
+          </BlurView>
+          <Text style={styles.v7StockText}>en stock</Text>
+        </View>
+
+        {/* Prix flottant haut-gauche — pill accent */}
+        <View style={[styles.v7PricePill, { backgroundColor: tint }]}>
+          <Text style={styles.v7PriceText}>{price}</Text>
+        </View>
+
+        {/* Zone basse — titre + livraison sur le gradient sombre */}
+        <View style={styles.v7BottomZone}>
+          {/* Titre */}
+          <Text style={styles.v7Title} numberOfLines={2}>{menu.titre}</Text>
+
+          {/* Séparateur accent */}
+          <View style={[styles.v7AccentLine, { backgroundColor: tint }]} />
+
+          {/* Livraison */}
+          <View style={styles.v7LiveRow}>
+            <View style={[styles.v7LiveDot, { backgroundColor: tint }]} />
+            <Text style={styles.v7LiveMeta}>Prochaine livraison</Text>
+          </View>
+          <Text style={[styles.v7LiveHour, { color: tint }]}>Aujourd'hui · 12h</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
   // Default Variant
   return (
     <TouchableOpacity style={styles.defaultContainer} onPress={onPress}>
@@ -476,7 +568,7 @@ const styles = StyleSheet.create({
     v2MiniProgressLabel: { fontSize: 7, fontWeight: '600', color: '#bbb', textTransform: 'uppercase', letterSpacing: 0.5 },
 
     // --- DESIGN 3 (Ex-D2) ---
-    v3Card: { width: 120, borderRadius: 20, marginRight: 14, overflow: 'hidden', backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 5 },
+    v3Card: { width: 130, borderRadius: 20, marginRight: 14, overflow: 'hidden', backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 5 },
     v3HeroZone: { width: '100%', height: 120, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', position: 'relative' },
     v3Image: { width: 90, height: 90, transform: [{ scale: 1.2 }, { rotate: '-6deg' }] },
     v3PriceFloat: { position: 'absolute', bottom: 6, left: 6, backgroundColor: '#e8440a', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
@@ -485,49 +577,53 @@ const styles = StyleSheet.create({
     v3Title: { fontSize: 12, fontWeight: '800', color: '#111', textAlign: 'center', lineHeight: 15, paddingHorizontal: 6, marginTop: 8 },
     v3StockTextRow: { flexDirection: 'row', alignItems: 'center', gap: 3, justifyContent: 'center', marginTop: 4 },
     v3StockDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
-    v3StockTxt: { fontSize: 9, fontWeight: '700', color: '#4ade80' },
-    v3LiveCard: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6, marginHorizontal: 6, marginBottom: 8, backgroundColor: '#1a1a1a', borderRadius: 10, paddingVertical: 6, paddingHorizontal: 7 },
+    v3StockTxt: { fontSize: 9, fontWeight: '700', color: '#157237ff' },
+    v3LiveCard: { flexDirection: 'row', justifyContent: 'center', gap: 5, marginTop: 6, marginHorizontal: 0, marginBottom: 8,   borderRadius: 10, paddingVertical: 0, paddingHorizontal: 0 },
     v3LiveIconWrap: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#e8440a', alignItems: 'center', justifyContent: 'center' },
-    v3LiveLabel: { fontSize: 6, fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.3 },
-    v3LiveHour: { fontSize: 9, fontWeight: '800', color: 'white' },
+    v3LiveLabel: { fontSize: 9, fontWeight: '700', color: 'rgba(0, 0, 0, 1)', textTransform: 'uppercase',textAlign:'center' },
+    v3LiveHour: { fontSize: 9, fontWeight: '800', color: 'black' ,textAlign:'center'},
 
     // --- DESIGN 4 (Ex-D5) ---
     v4Card: { width: 240, height: 320, borderRadius: 28, marginRight: 16, overflow: 'hidden' },
-    v4Text: { padding: 24, zIndex: 2 },
-    v4Title: { fontSize: 24, fontWeight: '900', color: '#1a1a1a', lineHeight: 26 },
-    v4Price: { fontSize: 20, fontWeight: '700', color: '#1a1a1a', marginTop: 4 },
-    v4ImgWrap: { position: 'absolute', bottom: -20, right: -40, width: 220, height: 220, zIndex: 1 },
+    v4Blob: { position: 'absolute', top: -50, right: -30, width: 160, height: 160, borderRadius: 80, opacity: 0.07 },
+    v4Blob2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, opacity: 0.05 },
+    v4TopSection: { padding: 14, paddingBottom: 10, zIndex: 3, position: 'relative' },
+    v4TitleNew: { fontSize: 20, fontWeight: '900', color: '#1a1a1a', lineHeight: 23, marginBottom: 10, fontStyle: 'italic' },
+    v4PriceBadgeNew: { alignSelf: 'flex-start', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5, overflow: 'hidden' },
+    v4PriceNew: { color: 'white', fontSize: 14, fontWeight: '900', letterSpacing: 0.3 },
+    v4ImgWrap: { position: 'absolute', bottom: -20, right: -40, width: 220, height: 220, zIndex: 1, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
     v4Image: { width: '110%', height: '110%', borderRadius: 110 },
-    v4LivraisonTag: { position: 'absolute', top: 14, right: 14, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.92)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, zIndex: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 3 },
-    v4LivraisonDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80' },
-    v4LivraisonText: { fontSize: 11, fontWeight: '800', color: '#e8440a' },
     v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 10, zIndex: 5, overflow: 'hidden' },
-    v4StockInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-    v4StockLeft: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    v4StockMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+    v4StockLeftSection: { flex: 1, justifyContent: 'center' },
+    v4StockInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 5 },
     v4StockPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
     v4StockCount: { fontSize: 13, fontWeight: '700' },
-    v4StockLabel: { fontSize: 10, fontWeight: '600', color: '#000000ff', textTransform: 'uppercase', letterSpacing: 1 },
+    v4StockRight: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end' },
+    v4StockRightLabel: { fontSize: 8, fontWeight: '700', color: '#e8440a', textTransform: 'uppercase', letterSpacing: 0.6 },
+    v4StockRightTime: { fontSize: 11, fontWeight: '900', color: '#e8440a', lineHeight: 13 },
     v4ProgressTrack: { height: 4, backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 2, overflow: 'hidden' },
     v4ProgressFill: { height: '100%', backgroundColor: '#e8440a', borderRadius: 2 },
 
     // --- DESIGN 5: GLASS SHOWCASE ---
-    v5Card: { width: 200, height: 280, borderRadius: 28, marginRight: 16, overflow: 'hidden', padding: 14 },
+    v5Card: { width: 200, height: 250, borderRadius: 28, marginRight: 16, overflow: 'hidden', padding: 14,paddingVertical:8 },
     v5DecorCircle: { position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: 70 },
     v5DecorCircle2: { position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, borderRadius: 50, borderWidth: 2 },
     v5TopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 },
     v5StockRing: { width: 44, height: 44 },
-    v5PriceChip: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14 },
+    v5PriceChip: { paddingHorizontal: 2, paddingVertical: 5, borderRadius: 14 },
     v5PriceText: { color: 'white', fontSize: 13, fontWeight: '900' },
-    v5ImgZone: { flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 2, marginVertical: 4 },
+    v5ImgZone: { flex: 1, alignItems: 'center', justifyContent: 'center', zIndex: 2, marginVertical: 0 },
     v5ImgShadow: { width: 120, height: 120, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
-    v5ProductImg: { width: '100%', height: '100%', transform: [{ scale: 1.3 }, { rotate: '-8deg' }] },
-    v5Title: { fontSize: 14, fontWeight: '900', color: '#111', textAlign: 'center', marginBottom: 8, zIndex: 2 },
-    v5DeliveryStrip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10, zIndex: 2 },
+    v5ProductImg: { width: '100%', height: '100%', transform: [{ scale: 1.1 }, { rotate: '-8deg' }] },
+    v5Title: { fontSize: 14, fontWeight: '900', color: '#111', textAlign: 'center', marginBottom: 14, zIndex: 2 },
+    v5DeliveryStrip: {alignSelf:'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10, zIndex: 2 },
+    v5DeliveryStrip1: { flexDirection: 'row', alignItems: 'center',  backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10, zIndex: 2 },
     v5DeliveryIcon: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    v5DeliveryLabel: { fontSize: 6, fontWeight: '700', color: '#999', letterSpacing: 0.8 },
+    v5DeliveryLabel: { fontSize: 10, fontWeight: '700', color: '#000000e1', letterSpacing: 0.8 },
     v5DeliveryTime: { fontSize: 10, fontWeight: '800' },
     v5DeliveryPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
-    v5AddBtn: { position: 'absolute', bottom: 14, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+    v5AddBtn: { position: 'absolute', bottom: 11, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 
     // --- DESIGN 6: PANORAMIC SPLIT ---
     v6Card: { width: SCREEN_WIDTH * 0.78, height: 200, borderRadius: 26, marginRight: 16, overflow: 'hidden', padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 6 },
@@ -548,6 +644,23 @@ const styles = StyleSheet.create({
     v6ImgGlow: { width: 140, height: 140, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
     v6Img: { width: '100%', height: '100%', transform: [{ scale: 1.25 }, { rotate: '-10deg' }] },
     v6AddBtn: { position: 'absolute', bottom: 14, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+
+    // --- DESIGN 7: IMMERSIVE MINI ---
+    v7Card: { width: 150, height: 185, borderRadius: 22, marginRight: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
+    v7BgImg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' ,transform:'scale(1.5)'},
+    v7AccentStripe: { position: 'absolute', top: 30, left: -10, width: 60, height: 3, borderRadius: 2, transform: [{ rotate: '45deg' }], opacity: 0.7, zIndex: 2 },
+    v7StockWrap: { position: 'absolute', top: 8, right: 8, alignItems: 'center', zIndex: 3 },
+    v7StockBlur: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+    v7StockText: { fontSize: 6, fontWeight: '700', color: 'white', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+    v7PricePill: { position: 'absolute', top: 10, left: 8, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, zIndex: 3 },
+    v7PriceText: { color: 'white', fontSize: 12, fontWeight: '900' },
+    v7BottomZone: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 10, paddingBottom: 10, zIndex: 3 },
+    v7Title: { color: 'white', fontSize: 15, fontWeight: '900', lineHeight: 18, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+    v7AccentLine: { width: 24, height: 2.5, borderRadius: 2, marginVertical: 5 },
+    v7LiveRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    v7LiveDot: { width: 5, height: 5, borderRadius: 2.5 },
+    v7LiveMeta: { fontSize: 8, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
+    v7LiveHour: { fontSize: 11, fontWeight: '900', marginTop: 1 },
 
     defaultContainer: { padding: 20, backgroundColor: 'white', marginRight: 16, borderRadius: 10 }
 });

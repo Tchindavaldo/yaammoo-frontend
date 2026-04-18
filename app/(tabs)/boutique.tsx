@@ -48,6 +48,7 @@ export default function BoutiqueScreen() {
   const { orders, menus, transactions, loading: merchantLoading, stats, refresh, updateStatus, addMenu } = useMerchant();
   const [activeTab, setActiveTab] = useState<ActiveTab>('commande');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(70);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });
@@ -79,7 +80,12 @@ export default function BoutiqueScreen() {
   }
 
   const renderHeader = () => (
-    <BlurView intensity={80} tint="light" style={[styles.header, { paddingTop: insets.top }]}>
+    <BlurView
+      intensity={80}
+      tint="light"
+      style={[styles.header, { paddingTop: insets.top }]}
+      onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+    >
       <View style={styles.rowSegment}>
         <TabItem
           label="Mon porte feuille"
@@ -116,43 +122,32 @@ export default function BoutiqueScreen() {
       );
     }
 
-    const contentWrapperStyle = { flex: 1 };
-
     switch (activeTab) {
       case 'commande':
         return (
-          <View style={contentWrapperStyle}>
-            {renderHeader()}
-            <OrderManagePanel
-              orders={orders}
-              loading={loading}
-              onRefresh={refresh}
-              onUpdateStatus={handleUpdateStatus}
-            />
-          </View>
+          <OrderManagePanel
+            orders={orders}
+            loading={loading}
+            onRefresh={refresh}
+            onUpdateStatus={handleUpdateStatus}
+          />
         );
       case 'menu':
         return (
-          <View style={contentWrapperStyle}>
-            {renderHeader()}
-            <MenuManagePanel
-              menus={menus}
-              onRefresh={refresh}
-              onAddMenu={handleAddMenu}
-              loading={loading}
-            />
-          </View>
+          <MenuManagePanel
+            menus={menus}
+            onRefresh={refresh}
+            onAddMenu={handleAddMenu}
+            loading={loading}
+          />
         );
       case 'historique':
         return (
-          <View style={contentWrapperStyle}>
-            {renderHeader()}
-            <PorteFeuillePanel
-              transactions={transactions}
-              loading={loading}
-              onRefresh={refresh}
-            />
-          </View>
+          <PorteFeuillePanel
+            transactions={transactions}
+            loading={loading}
+            onRefresh={refresh}
+          />
         );
       default:
         return null;
@@ -161,7 +156,10 @@ export default function BoutiqueScreen() {
 
   return (
     <View style={styles.container}>
-      {renderContent()}
+      {renderHeader()}
+      <View style={{ flex: 1, paddingTop: headerHeight }}>
+        {renderContent()}
+      </View>
       {toast && (
         <Toast
           message={toast.message}
@@ -186,6 +184,8 @@ const styles = RNStyleSheet.create({
     zIndex: 1000,
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
     paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.05)',
   },
   rowSegment: {
     flexDirection: 'row',

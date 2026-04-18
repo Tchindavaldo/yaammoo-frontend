@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
     backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    paddingBottom: 10,
+    paddingBottom: 3,
     borderBottomWidth: 0,
     elevation: 0,
     shadowOpacity: 0,

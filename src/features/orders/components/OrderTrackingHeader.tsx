@@ -67,7 +67,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
             );
           })}
         </ScrollView>
-1      </View>
+      </View>
 
       {/* Status Chips Row */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusScroll}>
@@ -126,7 +126,7 @@ const StatusChip = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: Theme.colors.white,
-    paddingTop: 10,
+    paddingTop: 0,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -134,7 +134,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
-    marginBottom: 5,
+    paddingTop: 3,
+    marginBottom: 25,
   },
   dateInfo: {
     marginRight: 10,
@@ -186,35 +187,9 @@ const styles = StyleSheet.create({
   activeDateText: {
     color: 'white',
   },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    marginHorizontal: 15,
-    paddingVertical: 10,
-    marginBottom: 5,
-    marginTop: -5,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  statDivider: {
-    width: 0,
-  },
-  statVal: {
-    fontSize: 31,
-    fontWeight: '900',
-    color: 'black',
-  },
-  statLbl: {
-    fontSize: 11,
-    color: 'rgba(0,0,0,0.44)',
-    fontWeight: 'bold',
-    marginTop: -2,
-  },
   statusScroll: {
     paddingHorizontal: 15,
-    paddingBottom: 15,
+    paddingBottom: 10,
     gap: 8,
   },
   statusChip: {

@@ -178,6 +178,7 @@ export default function OrdersScreen() {
   >("pending");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [paymentVisible, setPaymentVisible] = useState(false);
+  const [trackingHeaderHeight, setTrackingHeaderHeight] = useState(100);
 
   // Générer les dates disponibles (Aujourd'hui + dates des commandes existantes)
   const availableDates = useMemo(() => {
@@ -432,13 +433,14 @@ export default function OrdersScreen() {
       />
 
       {currentTab === "status" && (
-        <View style={{ position: 'absolute', top: HEADER_HEIGHT, left: 0, right: 0, zIndex: 999 }}>
+        <View
+          style={{ position: 'absolute', top: HEADER_HEIGHT - 10, left: 0, right: 0, zIndex: 999 }}
+          onLayout={(e) => setTrackingHeaderHeight(e.nativeEvent.layout.height)}
+        >
           <OrderTrackingHeader
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
-            availableDates={availableDates}
-            totalOrders={filteredOrders.length}
-            totalAmount={filteredOrders.reduce((acc, o: any) => acc + (o.total || 0), 0)}
+            availableDates={availableDates}  
             activeStatus={activeStatus}
             onStatusChange={setActiveStatus}
             counts={{
@@ -451,7 +453,7 @@ export default function OrdersScreen() {
         </View>
       )}
 
-      <View style={{ flex: 1, paddingTop: HEADER_HEIGHT + (currentTab === "status" ? 140 : 0) }}>
+      <View style={{ flex: 1, paddingTop: (currentTab === "status" ? HEADER_HEIGHT + trackingHeaderHeight : HEADER_HEIGHT) }}>
         {currentTab === "bonus" ? (
           <BonusScreen />
         ) : currentTab === "status" ? (
@@ -661,7 +663,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   listContent: {
-    paddingVertical: 10,
+    paddingVertical: 1,
   },
   emptyText: {
     marginTop: 10,

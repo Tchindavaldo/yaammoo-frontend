@@ -16,28 +16,17 @@ interface DesignRouterProps {
 export const DesignRouter: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick }) => {
   const index = fastFood.designIndex ?? 0;
 
-  // Mapping séquentiel des designs restants :
-  // 0 -> Design3 (Popular Menu)
-  // 1 -> Design2 (Rice & Salad)
-  // 2 -> Design4 (Pizza Specials)
-  // 3 -> Design3 
-  // 4 -> Design2
-  // 5 -> Design1 
-  
-  switch (index) {
-    case 0:
-      return <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />;
-    case 1:
-      return <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />;
-    case 2:
-      return <Design6 fastFood={fastFood} onMenuClick={onMenuClick} />;
-    case 3:
-      return <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />;
-    case 4:
-      return <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />;
-    case 5:
-      return <Design5 fastFood={fastFood} onMenuClick={onMenuClick} />;
-    default:
-      return <Design3 fastFood={fastFood} onMenuClick={onMenuClick} />;
-}
+  // Mapping avec cycle : boucle sur les 6 designs
+  // 0 → Design7, 1 → Design4, 2 → Design6, 3 → Design7, 4 → Design4, 5 → Design5
+  // À partir de 6, cela recommence (6 → Design7, 7 → Design4, etc.)
+  const designs = [
+    <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />,
+    <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />,
+    <Design6 fastFood={fastFood} onMenuClick={onMenuClick} />,
+    <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />,
+    <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />,
+    <Design5 fastFood={fastFood} onMenuClick={onMenuClick} />,
+  ];
+
+  return designs[index % designs.length];
 };

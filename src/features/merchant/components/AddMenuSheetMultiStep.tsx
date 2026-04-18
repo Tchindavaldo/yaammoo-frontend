@@ -20,7 +20,7 @@ import { Menu } from '@/src/types';
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 
-type Step = 'image' | 'name' | 'price' | 'desc1' | 'desc2' | 'extras' | 'status';
+type Step = 'image' | 'name' | 'price' | 'desc1' | 'desc2' | 'extras' | 'stock' | 'status';
 
 interface AddMenuSheetProps {
   visible: boolean;
@@ -30,7 +30,7 @@ interface AddMenuSheetProps {
   existingMenu?: any; // pour la modification
 }
 
-const STEPS: Step[] = ['image', 'name', 'price', 'desc1', 'desc2', 'extras', 'status'];
+const STEPS: Step[] = ['image', 'name', 'price', 'desc1', 'desc2', 'extras', 'stock', 'status'];
 
 export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   visible,
@@ -56,6 +56,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     existingMenu?.drink?.map((d: any) => ({ name: d.name, prix: String(d.prix || 0) })) || []
   );
   const [availability, setAvailability] = useState(existingMenu?.status || 'available');
+  const [stock, setStock] = useState(existingMenu?.stock?.toString() || '0');
   const [uploadProgress, setUploadProgress] = useState([0, 0, 0]);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -87,6 +88,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
       setAvailability(existingMenu.status || existingMenu.disponibilite === 'Disponible' ? 'available' : 'unavailable');
 
+      setStock((existingMenu?.stock ?? 0).toString());
+
       const menuImages = existingMenu.images || (existingMenu.image ? [existingMenu.image] : []);
       setImages(menuImages);
       setUploadedUrls(menuImages);
@@ -105,6 +108,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     setExtras([]);
     setDrinks([]);
     setAvailability('available');
+    setStock('0');
     setUploadProgress([0, 0, 0]);
   };
 
@@ -214,6 +218,11 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     }
 
     if (step === 'extras') {
+      setStep('stock');
+      return;
+    }
+
+    if (step === 'stock') {
       setStep('status');
       return;
     }
@@ -229,6 +238,10 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
   const goBack = () => {
     if (step === 'status') {
+      setStep('stock');
+      return;
+    }
+    if (step === 'stock') {
       setStep('extras');
       return;
     }
@@ -268,7 +281,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       coverImage: finalImages[0] || '',
       coverImageHasBackground: false,
       extra: parsedExtras,
-      drink: parsedDrinks
+      drink: parsedDrinks,
+      stock: Number(stock) || 0
     };
 
     try {
@@ -289,6 +303,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     desc1: 'Description Prix 1',
     desc2: 'Description Prix 2',
     extras: 'Extras et Boissons',
+    stock: 'Stock disponible',
     status: 'Statut et publication',
   };
 
@@ -536,6 +551,31 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
               </View>
             )}
 
+            {/* Étape stock */}
+            {step === 'stock' && (
+              <View>
+                <Text style={styles.fieldLabel}>Stock disponible</Text>
+                <TextInput
+                  style={[styles.input, { textAlign: 'center' }]}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  value={stock}
+                  onChangeText={setStock}
+                  autoFocus
+                />
+                <Text style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}>Aperçu du résumé</Text>
+                <View style={styles.summaryBox}>
+                  <Text style={styles.summaryTitle}>📋 Résumé</Text>
+                  <Text style={styles.summaryText}>Nom : {nom}</Text>
+                  <Text style={styles.summaryText}>Prix 1 : {prix1}F</Text>
+                  {prix2 ? <Text style={styles.summaryText}>Prix 2 : {prix2}F</Text> : null}
+                  {prix3 ? <Text style={styles.summaryText}>Prix 3 : {prix3}F</Text> : null}
+                  <Text style={styles.summaryText}>Photos : {images.length}</Text>
+                  <Text style={styles.summaryText}>Stock : {stock}</Text>
+                </View>
+              </View>
+            )}
+
             {/* Étape status */}
             {step === 'status' && (
               <View>
@@ -574,6 +614,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                   {prix2 ? <Text style={styles.summaryText}>Prix 2 : {prix2}F</Text> : null}
                   {prix3 ? <Text style={styles.summaryText}>Prix 3 : {prix3}F</Text> : null}
                   <Text style={styles.summaryText}>Photos : {images.length}</Text>
+                  <Text style={styles.summaryText}>Stock : {stock}</Text>
                 </View>
               </View>
             )}

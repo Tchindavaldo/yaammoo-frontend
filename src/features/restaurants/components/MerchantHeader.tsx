@@ -25,7 +25,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({ name, image, rat
             style={styles.avatar}
           />
         </View>
-        <Text style={styles.name}>{name}</Text>
+        <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
       </View>
       <View style={styles.ratingContainer}>
         {stars.map((fill, i) => (
@@ -71,6 +71,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: Theme.colors.dark,
+    maxWidth: 120,
   },
   ratingContainer: {
     flexDirection: 'row',

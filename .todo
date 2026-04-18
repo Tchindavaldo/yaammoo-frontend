@@ -1,6 +1,22 @@
 # YAAMMOO - TODO LIST
 
+[ ] Gérer la mise à jour au socket sur le home des infos du fastfood et heure de livraison quand un marchand modifie ses données depuis "Gérer ma boutique" de la page paramètres.
+
+[x] Gestion du stock des menus (tous les designs 1 à 7 + backend + bottom sheet).
+    - Rendre le stock dynamique au lieu de hardcodé "40"
+    - Ajouter champ stock au backend menuFields (obligatoire)
+    - Ajouter prop stock à DesignItem et remplacer 40 par {stock} dans tous les designs
+    - Ajouter champ stock au bottom sheet AddMenuSheetMultiStep (step stock)
+
+[ ] Vérifier et corriger les champs obligatoires (required) dans menuFields et orderFields.
+    - S'assurer que les champs vraiment obligatoires ont `required: true`
+    - Vérifier que les validations sont correctes backend et frontend
+
+[ ] S'assurer que le frontend affiche bien les messages d'erreur des champs lors des requêtes API.
+    - Vérifier l'affichage des erreurs de validation menu et order
+    - Ajouter affichage d'erreurs si absent
+
 [ ] Remplacer les images par défaut (fallbacks) par une icône "retry".
     - Si le chargement d'une image échoue, afficher une icône circulaire de rafraîchissement.
     - Au clic sur l'icône, tenter de re-fetcher l'image concernée pour la charger à nouveau.
-    - S'assurer que cela s'applique à tous les DesignItems (Design 1 à 6).
+    - S'assurer que cela s'applique à tous les DesignItems (Design 1 à 7).

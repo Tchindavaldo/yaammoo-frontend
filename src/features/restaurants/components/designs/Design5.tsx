@@ -31,6 +31,10 @@ export const Design5: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
               merchantName={fastFood.nom}
               onPress={() => onMenuClick(menu)}
               index={index}
+              isLast={index === fastFood.menu!.length - 1}
+              deliveryHours={(fastFood as any)?.deliveryHours}
+              orderLeadTime={(fastFood as any)?.orderLeadTime}
+              stock={(menu as any)?.stock ?? 0}
             />
           ))}
         </ScrollView>
@@ -42,7 +46,7 @@ export const Design5: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
 const styles = StyleSheet.create({
   container: {
     marginVertical: Theme.spacing.xs,
-    // marginBottom: Theme.spacing.xl,
+    marginBottom: Theme.design.marginBottom,
   },
   scrollWrapper: {
     width: '100%',

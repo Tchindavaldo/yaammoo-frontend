@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Theme } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,8 +7,6 @@ interface OrderTrackingHeaderProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
   availableDates: Date[];
-  totalOrders: number;
-  totalAmount: number;
   activeStatus: string;
   onStatusChange: (status: any) => void;
   counts: {
@@ -23,8 +21,6 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
   selectedDate,
   onDateChange,
   availableDates,
-  totalOrders,
-  totalAmount,
   activeStatus,
   onStatusChange,
   counts
@@ -71,26 +67,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
             );
           })}
         </ScrollView>
-      </View>
-
-      {/* Stats Row */}
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-             <Text style={styles.statVal}>{totalOrders}</Text>
-             <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>cmd</Text>
-          </View>
-          <Text style={styles.statLbl}>Commandes effectue</Text>
-        </View>
-        <View style={styles.statDivider} />
-        <View style={styles.statBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={styles.statVal}>{totalAmount}</Text>
-            <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>fcfa</Text>
-          </View>
-          <Text style={styles.statLbl}>Montant Total</Text>
-        </View>
-      </View>
+1      </View>
 
       {/* Status Chips Row */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusScroll}>

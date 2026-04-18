@@ -36,5 +36,9 @@ export const Theme = {
         xl: 20,
         pill: 25,
         round: 9999,
+    },
+    design: {
+        marginBottom: 32,
+        horizontalPadding: 4,
     }
 };

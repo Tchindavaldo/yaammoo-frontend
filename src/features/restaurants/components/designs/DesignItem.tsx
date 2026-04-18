@@ -7,10 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
+import { getNextDeliveryTime } from '../../utils/deliveryUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const V1_COLORS = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
 const V1_COLORS2 = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
+const USE_VARIABLE_BACKGROUNDS = false; // Set to true to enable variable backgrounds for Design 5 & 6
 
 interface DesignItemProps {
   menu: Menu;
@@ -18,11 +20,26 @@ interface DesignItemProps {
   merchantName?: string;
   onPress: () => void;
   index?: number;
+  isLast?: boolean;
+  deliveryHours?: string[];
+  orderLeadTime?: number;
+  stock?: number;
 }
 
-export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantName, onPress, index = 0 }) => {
+export const DesignItem: React.FC<DesignItemProps> = ({
+  menu,
+  variant,
+  merchantName,
+  onPress,
+  index = 0,
+  isLast = false,
+  deliveryHours = [],
+  orderLeadTime = 0,
+  stock = 0
+}) => {
   const isAvailable = menu.disponibilite === 'available' || menu.disponibilite === 'Disponible';
   const price = `${menu.prix1} F`;
+  const deliveryTime = getNextDeliveryTime(deliveryHours, orderLeadTime);
 
   // --- DESIGN 1: SPECIAL OFFERS (Ex-D3) ---
   if (variant === 1) {
@@ -31,7 +48,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
       : require('@/assets/images/purre avocat tomate legume flouter.png');
 
     return (
-      <TouchableOpacity style={styles.v1Card} onPress={onPress} activeOpacity={0.9}>
+      <TouchableOpacity style={[styles.v1Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         <Image 
           source={bgImage} 
           style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.5 }] }]}
@@ -76,7 +93,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
   </View>
   <View style={{ flexShrink: 1 }}>
     <Text style={styles.v2DeliveryMeta}>Prochaine livraison</Text>
-    <Text style={styles.v2DeliveryMain}>40 Disponible</Text>
+    <Text style={styles.v2DeliveryMain}>{stock} Disponible</Text>
   </View>
   <View style={styles.v2DeliveryDot} />
 </View>
@@ -88,13 +105,13 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
   // --- DESIGN 2: RICE & SALAD (Ex-D4) ---
   if (variant === 2) {
     return (
-      <TouchableOpacity style={styles.v2Card} onPress={onPress} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.v2Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.8}>
         
-          {/* Badge dispo  */} 
+          {/* Badge dispo  */}
          <View style={styles.v2DispoBadge}>
             <View style={styles.v2DispoPulse} />
             <Text style={styles.v2DispoText}>
-              <Text style={{ color: '#4faa71ff', fontWeight: '900' }}>40</Text>
+              <Text style={{ color: '#4faa71ff', fontWeight: '900' }}>{stock}</Text>
               <Text style={{ color: '#666' }}> En Stock</Text>
             </Text>
           </View>
@@ -119,7 +136,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             <Text style={styles.v2Price}>{price}</Text>
             <View style={styles.v2LivraisonChip2}>
               <View style={styles.v2LivraisonIcon}>
-                               <Text style={styles.v2LivraisonChip1Label}>12h</Text>
+                               <Text style={styles.v2LivraisonChip1Label}>{deliveryTime}</Text>
 
               </View>
               <View>
@@ -136,13 +153,12 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
 
   // --- DESIGN 3: COMPACT GEM ---
   if (variant === 3) {
-    const stock = 40;
     const stockRadius = 11;
     const stockCircumference = 2 * Math.PI * stockRadius;
     const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
 
     return (
-      <TouchableOpacity style={styles.v3Card} onPress={onPress} activeOpacity={0.88}>
+      <TouchableOpacity style={[styles.v3Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.88}>
         {/* Zone haute: fond coloré arrondi avec image + prix overlay */}
           <LinearGradient
             colors={['#fff1ec', '#ffe0d4']}
@@ -181,7 +197,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
          
           <View>
             <Text style={styles.v3LiveLabel}>Prochaine livraison</Text>
-            <Text style={styles.v3LiveHour}>12h</Text> 
+            <Text style={styles.v3LiveHour}>{deliveryTime}</Text> 
           </View>
         </View>
       </TouchableOpacity>
@@ -203,15 +219,18 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
       '#ebf5eb'  // Vert Émeraude
     ];
     const V4_ACCENTS = ['#e8440a', '#6c5ce7', '#00b894', '#fd79a8', '#0984e3', '#e17055', '#fdcb6e', '#00cec9'];
-    const bgColor = V4_COLORS[index % V4_COLORS.length];
-    const accentColor = V4_ACCENTS[index % V4_ACCENTS.length];
+    const bgColor = USE_VARIABLE_BACKGROUNDS ? V4_COLORS[index % V4_COLORS.length] : V4_COLORS[0];
+    const accentColor = USE_VARIABLE_BACKGROUNDS ? V4_ACCENTS[index % V4_ACCENTS.length] : V4_ACCENTS[0];
 
-    const stock = 40;
+
+    const V5_ACCENTS = ['#e8440a'];
+    const accent = V5_ACCENTS[index % V5_ACCENTS.length];
+
     const total = 100;
     const stockPercent = (stock / total) * 100;
 
     return (
-      <TouchableOpacity style={[styles.v4Card, { backgroundColor: bgColor }]} onPress={onPress} activeOpacity={0.9}>
+      <TouchableOpacity style={[styles.v4Card, { backgroundColor: bgColor }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
 
         {/* Motifs décoratifs — blobs comme Design 5 & 6 */}
         <View style={[styles.v4Blob, { backgroundColor: accentColor }]} />
@@ -231,7 +250,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
           <Text style={styles.v4TitleNew} numberOfLines={2}>{menu.titre}</Text>
 
           {/* Prix badge audacieux */}
-          <BlurView intensity={70} tint="dark" style={styles.v4PriceBadgeNew}>
+          <BlurView intensity={0}  style={styles.v4PriceBadgeNew}>
             <Text style={styles.v4PriceNew}>{price}</Text>
           </BlurView>
         </View>
@@ -242,10 +261,10 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             {/* Côté gauche: Stock + Progression */}
             <View style={styles.v4StockLeftSection}>
               <View style={styles.v4StockInfo}>
-                <View style={styles.v4StockPulse} />
+                {/* <View style={styles.v4StockPulse} /> */}
                 <Text style={styles.v4StockCount}>
                   <Text style={{ color: '#e8440a', fontWeight: '900' }}>{stock}</Text>
-                  <Text style={{ color: '#000000ff' }}> / {total}</Text>
+                  <Text style={{ color: '#000000ff' }}> En stock</Text>
                 </Text>
               </View>
               <View style={styles.v4ProgressTrack}>
@@ -254,13 +273,30 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             </View>
 
             {/* Côté droit: Livraison pleine hauteur */}
-            <View style={styles.v4StockRight}>
+            {/* <View style={styles.v4StockRight}>
               <Ionicons name="bicycle-outline" size={12} color="#e8440a" />
               <View style={{ flex: 1 }}>
                 <Text style={styles.v4StockRightLabel}>PROCHAINE</Text>
-                <Text style={styles.v4StockRightTime}>LIVRAISON · 12h</Text>
+                <Text style={styles.v4StockRightTime}>LIVRAISON · {deliveryTime}</Text>
               </View>
-            </View>
+            </View> */}
+
+             {/* Livraison — bande glass en bas */}
+        <View style={styles.v5DeliveryStrip}>
+          <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
+           
+                       <Ionicons name="flash" size={10} color="white" />
+
+          </View>
+          {/* <View style={{ flex: 1 }}> 
+            <Text style={[styles.v5DeliveryTime, { color: accent }]}>En Stiock</Text>
+          </View> */}
+            <View>
+
+            <Text style={[styles.v5DeliveryLabel, {fontSize:10}]}>Prochaine</Text>
+            <Text style={[styles.v5DeliveryTime, { color: 'black',fontSize:11 }]}>Livraison {deliveryTime}</Text>
+          </View> 
+        </View>
           </View>
         </BlurView>
       </TouchableOpacity>
@@ -270,14 +306,13 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
   // --- DESIGN 5: GLASS SHOWCASE ---
   if (variant === 5) {
     const V5_ACCENTS = ['#e8440a', '#6c5ce7', '#00b894', '#fd79a8', '#0984e3', '#e17055'];
-    const accent = V5_ACCENTS[index % V5_ACCENTS.length];
-    const stock = 40;
+    const accent = USE_VARIABLE_BACKGROUNDS ? V5_ACCENTS[index % V5_ACCENTS.length] : V5_ACCENTS[0];
     const stockRadius = 18;
     const stockCircumference = 2 * Math.PI * stockRadius;
     const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
 
     return (
-      <TouchableOpacity style={styles.v5Card} onPress={onPress} activeOpacity={0.92}>
+      <TouchableOpacity style={[styles.v5Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.92}>
         {/* Fond dégradé subtil */}
         <LinearGradient
           colors={['#fafafa', '#f0f0f0', '#e8e8e8']}
@@ -309,7 +344,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             <Ionicons name="flash" size={10} color="white" />
           </View> */}
           <View>
-            <Text style={[styles.v5DeliveryTime, { color: accent }]}>40 En Stock</Text>
+            <Text style={[styles.v5DeliveryTime, { color: accent }]}>{stock} En Stock</Text>
             {/* <Text style={styles.v5DeliveryLabel}>Livraison</Text> */}
           </View>
         </View>
@@ -347,9 +382,9 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             <View>
 
             <Text style={styles.v5DeliveryLabel}>Prochaine</Text>
-            <Text style={[styles.v5DeliveryTime, { color: accent }]}>Livraison 12h</Text>
+            <Text style={[styles.v5DeliveryTime, { color: accent }]}>Livraison {deliveryTime}</Text>
           </View>
-          <View style={styles.v5DeliveryPulse} />
+          {/* <View style={styles.v5DeliveryPulse} /> */}
         </View>
 
         {/* Bouton + flottant */}
@@ -364,15 +399,14 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
   if (variant === 6) {
     const V6_BG = ['#fef4f0', '#f0f4fe', '#f0fef4', '#fef0fa', '#f4f0fe', '#fefaf0'];
     const V6_ACCENT = ['#e8440a', '#0984e3', '#00b894', '#e84393', '#6c5ce7', '#e17055'];
-    const bg = V6_BG[index % V6_BG.length];
-    const accent = V6_ACCENT[index % V6_ACCENT.length];
-    const stock = 40;
+    const bg = USE_VARIABLE_BACKGROUNDS ? V6_BG[index % V6_BG.length] : V6_BG[0];
+    const accent = USE_VARIABLE_BACKGROUNDS ? V6_ACCENT[index % V6_ACCENT.length] : V6_ACCENT[0];
     const stockRadius = 14;
     const stockCircumference = 2 * Math.PI * stockRadius;
     const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
 
     return (
-      <TouchableOpacity style={[styles.v6Card, { backgroundColor: bg }]} onPress={onPress} activeOpacity={0.9}>
+      <TouchableOpacity style={[styles.v6Card, { backgroundColor: bg }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Grand cercle décoratif flou */}
         <View style={[styles.v6Blob, { backgroundColor: accent }]} />
         <View style={[styles.v6Blob2, { backgroundColor: accent }]} />
@@ -405,8 +439,8 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             <View style={styles.v6DeliveryBadge}>
               <View style={[styles.v6DeliveryDot, { backgroundColor: accent }]} />
               <View>
-                <Text style={styles.v6DeliveryMeta}>PROCHAINE LIVRAISON</Text>
-                <Text style={[styles.v6DeliveryHour, { color: accent }]}>Aujourd'hui · 12h</Text>
+                <Text style={styles.v6DeliveryMeta}>PROCHAINE</Text>
+                <Text style={[styles.v6DeliveryHour, { color: accent }]}>LIVRAISON · {deliveryTime}</Text>
               </View>
             </View>
           </View>
@@ -435,13 +469,12 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
   if (variant === 7) {
     const V7_TINT = ['#e8440a', '#6c5ce7', '#00b894', '#e84393', '#0984e3', '#e17055', '#fdcb6e', '#00cec9'];
     const tint = V7_TINT[index % V7_TINT.length];
-    const stock = 40;
     const stockRadius = 13;
     const stockCircumference = 2 * Math.PI * stockRadius;
     const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
 
     return (
-      <TouchableOpacity style={styles.v7Card} onPress={onPress} activeOpacity={0.9}>
+      <TouchableOpacity style={[styles.v7Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Image plein fond */}
         <Image
           source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
@@ -476,7 +509,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
         {/* Zone basse — titre + livraison sur le gradient sombre */}
         <View style={styles.v7BottomZone}>
           {/* Titre */}
-          <Text style={styles.v7Title} numberOfLines={2}>{menu.titre}</Text>
+          <Text style={styles.v7Title} numberOfLines={1} ellipsizeMode="tail">{menu.titre}</Text>
 
           {/* Séparateur accent */}
           <View style={[styles.v7AccentLine, { backgroundColor: '#e8440a' }]} />
@@ -486,7 +519,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
             {/* <View style={[styles.v7LiveDot, { backgroundColor: '#e8440a' }]} /> */}
             <Text style={styles.v7LiveMeta}>Prochaine</Text>
           </View>
-          <Text style={styles.v7LiveHour}>livraison · 12h</Text>
+          <Text style={styles.v7LiveHour}>livraison · {deliveryTime}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -584,8 +617,8 @@ const styles = StyleSheet.create({
     v4Blob2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, opacity: 0.05 },
     v4TopSection: { padding: 14, paddingBottom: 10, zIndex: 3, position: 'relative' },
     v4TitleNew: { fontSize: 20, fontWeight: '900', color: '#1a1a1a', lineHeight: 23, marginBottom: 10 },
-    v4PriceBadgeNew: { alignSelf: 'flex-start', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5, overflow: 'hidden' },
-    v4PriceNew: { color: 'white', fontSize: 14, fontWeight: '900', letterSpacing: 0.3 },
+    v4PriceBadgeNew: { alignSelf: 'flex-start', borderRadius: 14, paddingHorizontal: 0, paddingVertical: 5, overflow: 'hidden' },
+    v4PriceNew: { color: '#e8440a', fontSize: 16, fontWeight: '900', letterSpacing: 0 },
     v4ImgWrap: { position: 'absolute', bottom: -20, right: -40, width: 220, height: 220, zIndex: 1, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
     v4Image: { width: '110%', height: '110%', borderRadius: 110 },
     v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 10, zIndex: 5, overflow: 'hidden' },
@@ -630,11 +663,11 @@ const styles = StyleSheet.create({
     v6PriceText: { color: 'white', fontSize: 13, fontWeight: '900' },
     v6Title: { fontSize: 16, fontWeight: '900', color: '#111', lineHeight: 20, marginTop: 6 },
     v6StockRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-    v6StockText: { fontSize: 9, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5 },
+    v6StockText: { fontSize: 9, fontWeight: '600', color: 'hsla(0, 0%, 30%, 1.00)', textTransform: 'uppercase', letterSpacing: 0.5 },
     v6DeliveryBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 10, paddingVertical: 5, paddingHorizontal: 8 },
     v6DeliveryDot: { width: 6, height: 6, borderRadius: 3 },
-    v6DeliveryMeta: { fontSize: 6, fontWeight: '700', color: '#aaa', letterSpacing: 0.8 },
-    v6DeliveryHour: { fontSize: 10, fontWeight: '800' },
+    v6DeliveryMeta: { fontSize: 9, fontWeight: '700', color: '#000000ff', letterSpacing: 0.8 },
+    v6DeliveryHour: { fontSize: 11, fontWeight: '800' },
     v6Right: { width: 140, alignItems: 'center', justifyContent: 'center', zIndex: 2 },
     v6ImgGlow: { width: 140, height: 140, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
     v6Img: { width: '100%', height: '100%', transform: [{ scale: 1.25 }, { rotate: '-10deg' }] },
@@ -651,7 +684,7 @@ const styles = StyleSheet.create({
     v7StockLabel: { fontSize: 7, fontWeight: '700', color: 'white', textTransform: 'uppercase', letterSpacing: 0.5 },
     v7PriceText: { color: 'white', fontSize: 12, fontWeight: '900' },
     v7BottomZone: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 10, paddingBottom: 10, zIndex: 3 },
-    v7Title: { color: 'white', fontSize: 15, fontWeight: '900', lineHeight: 18, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4 },
+    v7Title: { color: 'white', fontSize: 15, fontWeight: '900', lineHeight: 18, textShadowColor: 'rgba(0,0,0,0.4)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 4, maxWidth: '85%' },
     v7AccentLine: { width: 24, height: 2.5, borderRadius: 2, marginVertical: 5 },
     v7LiveRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     v7LiveDot: { width: 5, height: 5, borderRadius: 2.5 },

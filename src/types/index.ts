@@ -51,6 +51,7 @@ export class Menu {
     public images?: string[],
     public extra?: Array<{ name: string; status: boolean; prix?: number }>,
     public drink?: Array<{ name: string; status: boolean; prix?: number; quantite?: number }>,
+    public stock?: number,
   ) { }
 }
 

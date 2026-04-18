@@ -451,7 +451,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
 
         {/* Triple gradient: haut clair → transparent → bas ultra sombre */}
         <LinearGradient
-          colors={['rgba(255,255,255,0.6)', 'rgba(255,255,255,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+          colors={['rgba(0, 0, 0, 0.6)', 'rgba(255,255,255,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
           locations={[0, 0.15, 0.35, 0.6, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -473,8 +473,8 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
           <Text style={styles.v7StockText}>en stock</Text>
         </View>
 
-        {/* Prix flottant haut-gauche — pill accent */}
-        <View style={[styles.v7PricePill, { backgroundColor: tint }]}>
+        {/* Prix flottant haut-gauche — fond orange app */}
+        <View style={[styles.v7PricePill, { backgroundColor: '#e8440a' }]}>
           <Text style={styles.v7PriceText}>{price}</Text>
         </View>
 
@@ -484,14 +484,14 @@ export const DesignItem: React.FC<DesignItemProps> = ({ menu, variant, merchantN
           <Text style={styles.v7Title} numberOfLines={2}>{menu.titre}</Text>
 
           {/* Séparateur accent */}
-          <View style={[styles.v7AccentLine, { backgroundColor: tint }]} />
+          <View style={[styles.v7AccentLine, { backgroundColor: '#e8440a' }]} />
 
           {/* Livraison */}
           <View style={styles.v7LiveRow}>
-            <View style={[styles.v7LiveDot, { backgroundColor: tint }]} />
-            <Text style={styles.v7LiveMeta}>Prochaine livraison</Text>
+            {/* <View style={[styles.v7LiveDot, { backgroundColor: '#e8440a' }]} /> */}
+            <Text style={styles.v7LiveMeta}>Prochaine</Text>
           </View>
-          <Text style={[styles.v7LiveHour, { color: tint }]}>Aujourd'hui · 12h</Text>
+          <Text style={styles.v7LiveHour}>livraison · 12h</Text>
         </View>
       </TouchableOpacity>
     );
@@ -584,11 +584,11 @@ const styles = StyleSheet.create({
     v3LiveHour: { fontSize: 9, fontWeight: '800', color: 'black' ,textAlign:'center'},
 
     // --- DESIGN 4 (Ex-D5) ---
-    v4Card: { width: 240, height: 320, borderRadius: 28, marginRight: 16, overflow: 'hidden' },
+    v4Card: { width: 240, height: 240, borderRadius: 28, marginRight: 16, overflow: 'hidden' },
     v4Blob: { position: 'absolute', top: -50, right: -30, width: 160, height: 160, borderRadius: 80, opacity: 0.07 },
     v4Blob2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, opacity: 0.05 },
     v4TopSection: { padding: 14, paddingBottom: 10, zIndex: 3, position: 'relative' },
-    v4TitleNew: { fontSize: 20, fontWeight: '900', color: '#1a1a1a', lineHeight: 23, marginBottom: 10, fontStyle: 'italic' },
+    v4TitleNew: { fontSize: 20, fontWeight: '900', color: '#1a1a1a', lineHeight: 23, marginBottom: 10 },
     v4PriceBadgeNew: { alignSelf: 'flex-start', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 5, overflow: 'hidden' },
     v4PriceNew: { color: 'white', fontSize: 14, fontWeight: '900', letterSpacing: 0.3 },
     v4ImgWrap: { position: 'absolute', bottom: -20, right: -40, width: 220, height: 220, zIndex: 1, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
@@ -659,8 +659,8 @@ const styles = StyleSheet.create({
     v7AccentLine: { width: 24, height: 2.5, borderRadius: 2, marginVertical: 5 },
     v7LiveRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     v7LiveDot: { width: 5, height: 5, borderRadius: 2.5 },
-    v7LiveMeta: { fontSize: 8, fontWeight: '600', color: 'rgba(255,255,255,0.7)' },
-    v7LiveHour: { fontSize: 11, fontWeight: '900', marginTop: 1 },
+    v7LiveMeta: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.7)' },
+    v7LiveHour: { fontSize: 11, fontWeight: '900', marginTop: 1, color: 'white' },
 
     defaultContainer: { padding: 20, backgroundColor: 'white', marginRight: 16, borderRadius: 10 }
 });

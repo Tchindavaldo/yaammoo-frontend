@@ -28,15 +28,15 @@ export const DesignRouter: React.FC<DesignRouterProps> = ({ fastFood, onMenuClic
     case 0:
       return <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 1:
-      return <Design6 fastFood={fastFood} onMenuClick={onMenuClick} />;
+      return <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 2:
       return <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 3:
       return <Design7 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 4:
-      return <Design5 fastFood={fastFood} onMenuClick={onMenuClick} />;
+      return <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />;
     case 5:
-      return <Design1 fastFood={fastFood} onMenuClick={onMenuClick} />;
+      return <Design4 fastFood={fastFood} onMenuClick={onMenuClick} />;
     default:
       return <Design3 fastFood={fastFood} onMenuClick={onMenuClick} />;
 }

@@ -92,9 +92,19 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     day: 'numeric',
   });
 
-  const dateFilteredOrders = selectedDate
-    ? filteredOrders.filter((o) => getDateKey(o) === selectedDate)
-    : filteredOrders;
+  const dateFilteredOrders = useMemo(() => {
+    const filtered = selectedDate
+      ? filteredOrders.filter((o) => getDateKey(o) === selectedDate)
+      : filteredOrders;
+    if (selectedStatus === 'pending' || selectedStatus === 'proccess') {
+      return [...filtered].sort((a, b) => {
+        const ra = (a as any).rank ?? Infinity;
+        const rb = (b as any).rank ?? Infinity;
+        return ra - rb;
+      });
+    }
+    return filtered;
+  }, [filteredOrders, selectedDate, selectedStatus]);
 
   const counts = {
     pending: orders.filter((o) => statusMap.pending.includes(o.status)).length,

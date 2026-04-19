@@ -214,10 +214,21 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const rankedStatuses = ["pending", "processing", "active", "in_progress", "accept"];
+
   const getFilteredByStatus = useCallback((statusList: string[]) => {
-    return orders.filter((o) =>
+    const filtered = orders.filter((o) =>
       statusList.includes((o.status || "").toLowerCase())
     );
+    const needsRankSort = statusList.some(s => rankedStatuses.includes(s));
+    if (needsRankSort) {
+      return [...filtered].sort((a, b) => {
+        const ra = (a as any).rank ?? Infinity;
+        const rb = (b as any).rank ?? Infinity;
+        return ra - rb;
+      });
+    }
+    return filtered;
   }, [orders]);
 
   const stats = useMemo(() => {

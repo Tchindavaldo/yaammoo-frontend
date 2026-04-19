@@ -129,10 +129,14 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
         orderCount: (selectedOrder as any).rank || 1,
         rating: 4,
         phone: selectedOrder.delivery?.phone || selectedOrder.userData?.phoneNumber?.toString() || "Non fourni",
-        creneau: selectedOrder.delivery?.type === 'express'
-          ? "Express"
-          : `Période (${selectedOrder.delivery?.time || "Dès que possible"})`,
-        duration: selectedOrder.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
+        creneau: !selectedOrder.delivery?.type || selectedOrder.delivery?.type === 'aucun'
+          ? "Sur place"
+          : selectedOrder.delivery?.type === 'express'
+            ? "Express"
+            : `Période (${selectedOrder.delivery?.time || "Dès que possible"})`,
+        duration: !selectedOrder.delivery?.type || selectedOrder.delivery?.type === 'aucun'
+          ? "Immédiat"
+          : selectedOrder.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
         note: selectedOrder.delivery?.note || "Aucune note de livraison.",
         voiceNoteUri: selectedOrder.delivery?.voiceNoteUri || "",
         orders: items
@@ -404,16 +408,18 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
         </View>
 
         {/* Right Column: Map matching exactly 110px */}
-        <View style={{ flex: 1 }}>
-          <TouchableOpacity 
+        <View style={{ flex: 1, height: 110 }}>
+          <TouchableOpacity
             activeOpacity={0.8}
             onPress={openInMaps}
-            style={[styles.mapPlaceholder, { overflow: 'hidden', borderRadius: 12 }]}
+            style={[styles.mapPlaceholder, { overflow: 'hidden', borderRadius: 12, flex: 1 }]}
+            disabled={!coords}
           >
-            <MapComponent 
-              region={region} 
-              coords={coords} 
-              address={user.addr} 
+            <MapComponent
+              region={region}
+              coords={coords}
+              address={user.addr}
+              deliveryType={user.creneau.includes('Express') ? 'express' : 'standard'}
             />
 
             {isOpeningMaps && (

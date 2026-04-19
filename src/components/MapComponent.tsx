@@ -1,15 +1,41 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface MapComponentProps {
   region: any;
   coords: any;
   address?: string;
+  deliveryType?: 'express' | 'time' | string;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ address }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ address, region, coords, deliveryType }) => {
+  const isNoDelivery = deliveryType === 'surplace' || !deliveryType;
+
+  if (isNoDelivery) {
+    return (
+      <View style={[styles.mapPlaceholder, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ fontSize: 28 }}>🏪</Text>
+        <Text style={{ fontSize: 11, color: '#6b7280', fontWeight: '500', marginTop: 6, textAlign: 'center' }}>
+          Pas de livraison
+        </Text>
+      </View>
+    );
+  }
+
+  if (!region || !coords) {
+    return (
+      <View style={[styles.mapPlaceholder, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ fontSize: 28 }}>📍</Text>
+        <Text style={{ fontSize: 11, color: '#6b7280', fontWeight: '500', marginTop: 6, textAlign: 'center' }}>
+          Le client n'a pas envoyé ses coordonnées
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.mapPlaceholder}>
+    <View style={[styles.mapPlaceholder, { flex: 1 }]}>
       <View style={styles.mapGridH} />
       <View style={styles.mapGridV} />
       <View style={styles.pinContainer}>
@@ -17,7 +43,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ address }) => {
         <View style={styles.pinDot} />
       </View>
       <Text style={styles.mapLabel} numberOfLines={1}>
-        {address || "Localisation (Web Preview)"}
+        {address || "Localisation"}
       </Text>
     </View>
   );
@@ -25,7 +51,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ address }) => {
 
 const styles = StyleSheet.create({
   mapPlaceholder: {
-    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',

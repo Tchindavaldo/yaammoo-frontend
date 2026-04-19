@@ -89,9 +89,6 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
             <View style={styles.rightActionColumn}>
               {showActions ? (
                 <View style={styles.qtyContainer}>
-                  <View style={styles.qtyLabel}>
-                    <Text style={styles.qtyLabelText}>x{quantity}</Text>
-                  </View>
                   <TouchableOpacity
                     onPress={() => onDelete?.(order.id)}
                     style={styles.deleteBtn}
@@ -100,8 +97,9 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={styles.qtyLabel}>
-                  <Text style={styles.qtyLabelText}>x{quantity}</Text>
+                <View style={styles.rankContainer}>
+                  <Ionicons name="trophy-outline" size={14} color="#ccc" />
+                  <Text style={styles.rankText}>{quantity}</Text>
                 </View>
               )}
             </View>
@@ -272,5 +270,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  rankContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 4,
+  },
+  rankText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#6b7280',
   }
 });

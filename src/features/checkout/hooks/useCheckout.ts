@@ -62,6 +62,19 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     return defaultHours;
   }, [menu]);
 
+  // Réinitialiser tous les états quand le menu change (nouveau menu cliqué)
+  useEffect(() => {
+    if (menu && !initialOrder) {
+      setQuantity(1);
+      setSelectedPriceIndex(1);
+      setSelectedPackaging([]);
+      setSelectedDrinks([]);
+      setDrinkQuantities({});
+      setDelivery(new Livraison(false, 0));
+      setIsInitialized(true);
+    }
+  }, [menu, initialOrder]);
+
   useEffect(() => {
     const currentId = initialOrder?.id;
     if (currentId && currentId !== lastOrderId) {

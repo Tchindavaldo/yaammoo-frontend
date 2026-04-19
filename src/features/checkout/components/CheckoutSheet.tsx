@@ -58,6 +58,18 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
     createOrder
   } = useCheckout(menuWithDeliveryHours);
 
+  // Réinitialiser l'état quand la bottomsheet s'ouvre
+  useEffect(() => {
+    if (visible) {
+      setActiveTab('detail');
+      setIsLocationPopupVisible(false);
+      setIsContactPopupVisible(false);
+      setIsPeriodPopupVisible(false);
+      setIsVoiceNotePopupVisible(false);
+      setIsPaymentPopupVisible(false);
+    }
+  }, [visible]);
+
   // Enrichir le menu avec les deliveryHours de la boutique
   useEffect(() => {
     if (!menu || !(menu as any).fastFoodId) {

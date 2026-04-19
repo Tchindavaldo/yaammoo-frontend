@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Modal, TouchableOpacity, ScrollView, Platform, Text } from 'react-native';
+import { Toast } from '../../../components/Toast';
 import { Ionicons } from '@expo/vector-icons';
 import { Menu } from '@/src/types';
 import { useCheckout } from '../hooks/useCheckout';
@@ -58,8 +59,10 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     delivery, setDelivery,
     availablePackaging, availableDrinks,
     total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
-    createOrder
+    createOrder, validateDelivery
   } = useCheckout(menuWithDeliveryHours, initialOrder, onChange);
+  const [sheetToast, setSheetToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const showError = (message: string) => setSheetToast({ message, type: 'error' });
 
   // Enrichir le menu avec les deliveryHours de la boutique
   useEffect(() => {
@@ -187,22 +190,30 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             </ScrollView>
           </View>
 
-          <CartCheckoutFooter 
+          <CartCheckoutFooter
             total={total}
             quantity={quantity}
             setQuantity={setQuantity}
             isLoading={isSubmitting}
             isCartMode={isCartMode}
             onAddToCart={async () => {
+              const deliveryErr = validateDelivery();
+              if (deliveryErr) { showError(deliveryErr); return; }
               try {
                 setIsSubmitting(true);
-                const success = await (onConfirm(createOrder('pendingToBuy')) as any);
-                if (success) onClose();
+                const result = await (onConfirm(createOrder('pendingToBuy')) as any);
+                if (result === true || result?.success) {
+                  onClose();
+                } else if (result?.message) {
+                  showError(result.message);
+                }
               } finally {
                 setIsSubmitting(false);
               }
             }}
             onBuy={() => {
+              const deliveryErr = validateDelivery();
+              if (deliveryErr) { showError(deliveryErr); return; }
               setIsPaymentPopupVisible(true);
               setPaymentKey(prev => prev + 1);
             }}
@@ -245,15 +256,28 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
         )}
 
         {isPaymentPopupVisible && (
-          <CheckoutPaymentOverlay 
+          <CheckoutPaymentOverlay
             key={paymentKey}
             onClose={() => setIsPaymentPopupVisible(false)}
             phone={delivery.phone || ''}
             totalAmount={total}
             onConfirm={async (payPhone) => {
-              const success = await (onConfirm(createOrder('pending')) as any);
-              if (success) onClose();
+              const result = await (onConfirm(createOrder('pending')) as any);
+              if (result === true || result?.success) {
+                onClose();
+              } else if (result?.message) {
+                setIsPaymentPopupVisible(false);
+                showError(result.message);
+              }
             }}
+          />
+        )}
+
+        {sheetToast && (
+          <Toast
+            message={sheetToast.message}
+            type={sheetToast.type}
+            onHide={() => setSheetToast(null)}
           />
         )}
       </View>

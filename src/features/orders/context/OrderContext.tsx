@@ -13,7 +13,7 @@ interface OrderContextType {
   deleteOrder: (id: string) => Promise<boolean>;
   updateQuantity: (id: string, newQty: number) => Promise<boolean>;
   updateLocalOrder: (updatedOrder: any) => void;
-  buyOrders: (ordersToBuy: Commande[]) => Promise<boolean>;
+  buyOrders: (ordersToBuy: Commande[]) => Promise<{ success: boolean; message?: string }>;
   pendingToBuy: Commande[];
   pending: Commande[];
   active: Commande[];
@@ -114,8 +114,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
   }, []);
 
-  const buyOrders = async (ordersToBuy: Commande[]) => {
-    if (!userData) return false;
+  const buyOrders = async (ordersToBuy: Commande[]): Promise<{ success: boolean; message?: string }> => {
+    if (!userData) return { success: false, message: "Utilisateur non connecté" };
     try {
       setLoading(true);
       const ordersWithUserId = ordersToBuy.map((o) => {
@@ -146,17 +146,25 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...(d.prix !== undefined && { prix: d.prix }),
             quantite: d.quantite || 1,
           })) : [],
-          delivery: o.delivery ? {
-            status: !!o.delivery.status,
-            date: o.delivery.date || new Date().toISOString().split('T')[0],
-            type: o.delivery.type || 'time',
-            time: o.delivery.time,
-            location: o.delivery.location || 'Sur place',
-            phone: o.delivery.phone,
-            voiceNoteUri: o.delivery.voiceNoteUri,
-            record: o.delivery.record,
-            note: o.delivery.note,
-          } : undefined,
+          delivery: (() => {
+            const d = o.delivery;
+            if (!d) return undefined;
+            const hasDelivery = !!d.status && d.type !== 'aucune';
+            const base: any = {
+              status: hasDelivery,
+              date: d.date || new Date().toISOString().split('T')[0],
+            };
+            if (hasDelivery) {
+              if (d.type) base.type = d.type;
+              if (d.location) base.location = d.location;
+              if (d.phone) base.phone = d.phone;
+              if (d.voiceNoteUri) base.voiceNoteUri = d.voiceNoteUri;
+              if (d.record) base.record = d.record;
+              if (d.note) base.note = d.note;
+              if (d.type === 'time' && d.time) base.time = d.time;
+            }
+            return base;
+          })(),
         };
 
         // Strict sanitization for Menu
@@ -191,12 +199,16 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       );
       if (response.data) {
         await fetchOrders();
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (err) {
+      return { success: false, message: "Erreur lors de la validation des commandes" };
+    } catch (err: any) {
       console.error("Buy orders error:", err);
-      return false;
+      const backendMessage = err.response?.data?.message;
+      return {
+        success: false,
+        message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || "Erreur réseau"
+      };
     } finally {
       setLoading(false);
     }

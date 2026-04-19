@@ -54,6 +54,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("🔄 userOrderUpdated:", data);
       refreshOrders(true);
     });
+    socket.on("ordersRankUpdated", (data) => {
+      console.log("🔢 ordersRankUpdated:", data);
+      refreshOrders(true);
+    });
 
     // Merchant Order Events
     socket.on("newFastFoodOrder", (data) => {

@@ -62,18 +62,16 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     return defaultHours;
   }, [menu]);
 
-  // Réinitialiser tous les états quand le menu change (nouveau menu cliqué)
-  useEffect(() => {
-    if (menu && !initialOrder) {
-      setQuantity(1);
-      setSelectedPriceIndex(1);
-      setSelectedPackaging([]);
-      setSelectedDrinks([]);
-      setDrinkQuantities({});
-      setDelivery(new Livraison(false, 0));
-      setIsInitialized(true);
-    }
-  }, [menu, initialOrder]);
+  const resetCheckout = useCallback(() => {
+    setQuantity(1);
+    setSelectedPriceIndex(1);
+    setSelectedPackaging([]);
+    setSelectedDrinks([]);
+    setDrinkQuantities({});
+    setDelivery(new Livraison(false, 0));
+    setLastOrderId(null);
+    setIsInitialized(!initialOrder);
+  }, [initialOrder]);
 
   useEffect(() => {
     const currentId = initialOrder?.id;
@@ -92,13 +90,19 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       }
       if (initialOrder.delivery || initialOrder.livraison) {
         const dData = initialOrder.delivery || initialOrder.livraison;
-        const d = new Livraison(dData.status, 0);
-        d.type = dData.type;
-        d.hour = dData.time || dData.hour;
-        d.address = dData.location || dData.address;
-        d.phone = dData.phone;
-        d.voiceNoteUri = dData.voiceNoteUri;
-        d.note = dData.note;
+        const hasDelivery = !!dData.status && dData.type && dData.type !== 'aucune';
+        const d = new Livraison(!!dData.status, 0);
+        if (hasDelivery) {
+          if (dData.type === 'time') d.type = 'standard';
+          else if (dData.type === 'express') d.type = 'express';
+          if (dData.time || dData.hour) d.hour = dData.time || dData.hour;
+          if (dData.location || dData.address) d.address = dData.location || dData.address;
+          if (dData.phone) d.phone = dData.phone;
+          if (dData.voiceNoteUri) d.voiceNoteUri = dData.voiceNoteUri;
+          if (dData.note) d.note = dData.note;
+        } else {
+          d.type = 'aucune';
+        }
         setDelivery(d);
       }
       setLastOrderId(currentId);
@@ -180,27 +184,28 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       status: menu.disponibilite === "active" || menu.disponibilite === "Disponible" ? "available" : "unavailable",
     };
 
-    let finalDeliveryType =
-      delivery.type === "standard"
-        ? "time"
-        : delivery.type === "aucune"
-          ? "time"
-          : delivery.type;
+    const hasDelivery = delivery.statut === true && delivery.type !== "aucune";
+
+    let finalDeliveryType: string | undefined;
+    if (hasDelivery) {
+      finalDeliveryType = delivery.type === "standard" ? "time" : delivery.type;
+    }
 
     let deliveryData: any = {
-      status: delivery.statut,
+      status: hasDelivery,
       date: delivery.date || new Date().toISOString().split("T")[0],
-      type: finalDeliveryType,
-      location: delivery.address || (delivery.statut ? "Non spécifié" : "Sur place"),
-      phone: delivery.phone || userData?.infos?.numero?.toString() || "",
-      voiceNoteUri: delivery.voiceNoteUri || "",
-      note: delivery.note || "",
-      record: "",
     };
 
-    if (finalDeliveryType === "time") {
-      const formattedTime = (delivery.hour || "12:00").replace('h', ':');
-      deliveryData.time = formattedTime;
+    if (hasDelivery && finalDeliveryType) {
+      deliveryData.type = finalDeliveryType;
+      if (delivery.address) deliveryData.location = delivery.address;
+      if (delivery.phone) deliveryData.phone = delivery.phone;
+      if (delivery.voiceNoteUri) deliveryData.voiceNoteUri = delivery.voiceNoteUri;
+      if (delivery.note) deliveryData.note = delivery.note;
+
+      if (finalDeliveryType === "time" && delivery.hour) {
+        deliveryData.time = delivery.hour.replace('h', ':');
+      }
     }
 
     const returnedOrder: any = {
@@ -241,6 +246,15 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     }
   }, [createOrder, onChange, menu, userData, drinkQuantities, isInitialized]);
 
+  const validateDelivery = useCallback((): string | null => {
+    const type = delivery.type;
+    if (!delivery.statut || type === 'aucune') return null;
+    if (!delivery.address) return "Adresse de livraison requise";
+    if (!delivery.phone) return "Numéro de contact requis";
+    if (type === 'standard' && !delivery.hour) return "Période de livraison requise";
+    return null;
+  }, [delivery]);
+
   return {
     quantity,
     setQuantity,
@@ -265,5 +279,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     drinksPrice: prices.drinksPrice,
     deliveryPrice: prices.deliveryPrice,
     createOrder,
+    resetCheckout,
+    validateDelivery,
   };
 };

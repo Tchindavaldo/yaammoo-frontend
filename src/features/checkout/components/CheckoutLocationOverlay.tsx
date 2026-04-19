@@ -20,6 +20,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
   const [localNote, setLocalNote] = React.useState(note);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isLocating, setIsLocating] = React.useState(false);
+  const [validationError, setValidationError] = React.useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
 
@@ -109,13 +110,20 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       Keyboard.dismiss();
       return;
     }
+    if (!localAddress.trim()) {
+      setValidationError("Envoyez votre GPS ou saisissez une adresse");
+      return;
+    }
+    if (!localNote.trim()) {
+      setValidationError("Ajoutez une note (ex: Porte bleue, 2ème étage)");
+      return;
+    }
+    setValidationError(null);
     setIsSaving(true);
     if (onSave) onSave(localAddress, localNote);
-    
-    // Wait for the animation to progress/finish before closing the overlay
     setTimeout(() => {
       handleClose();
-    }, 400); // 400ms is standard
+    }, 400);
   };
 
   return (
@@ -180,7 +188,13 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
                 )}
             </View>
 
-            <TouchableOpacity 
+            {validationError && (
+              <Text style={{ color: '#ef4444', fontSize: 12, marginBottom: 6, paddingHorizontal: 4 }}>
+                {validationError}
+              </Text>
+            )}
+
+            <TouchableOpacity
               style={styles.gpsBtn}
               onPress={handleGetLocation}
             >

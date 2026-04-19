@@ -10,14 +10,16 @@ interface CheckoutFooterProps {
   setQuantity: (q: number) => void;
   onBuy: () => void;
   isLoading?: boolean;
+  isCartMode?: boolean;
+  onAddToCart?: () => void;
 }
 
-export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({ 
-  total, 
-  quantity, 
-  setQuantity, 
+export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
+  total,
+  quantity,
+  setQuantity,
   onBuy,
-  isLoading
+  isLoading,
 }) => {
   return (
     <View style={[styles.bottomActionBar, styles.actionBarLight]}>

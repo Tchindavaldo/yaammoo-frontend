@@ -70,6 +70,7 @@ export class Commande {
     public userData?: any,
     public createdAt?: string,
     public updatedAt?: string,
+    public rank?: number,
   ) { }
 }
 

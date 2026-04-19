@@ -284,12 +284,28 @@ export default function OrdersScreen() {
       Alert.alert("Erreur", "Impossible de mettre à jour la quantité");
   };
 
+  const validateAllDeliveries = (): string | null => {
+    for (const order of pendingToBuy) {
+      const d = order.delivery as any;
+      if (!d || !d.status || d.type === 'aucune') continue;
+      const menuName = (order.menu as any)?.name || (order.menu as any)?.titre || 'Commande';
+      if (!d.location) return `"${menuName}" : adresse de livraison requise`;
+      if (!d.phone && !(order.userData?.phoneNumber)) return `"${menuName}" : numéro de contact requis`;
+      if (d.type === 'time' && !d.time) return `"${menuName}" : période de livraison requise`;
+    }
+    return null;
+  };
+
   const handlePaymentSuccess = async () => {
-    // Transitionner les articles du panier vers le statut 'payé/pending'
+    const validationErr = validateAllDeliveries();
+    if (validationErr) {
+      setToast({ message: validationErr, type: 'error' });
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const success = await buyOrders(pendingToBuy);
-      if (success) {
+      const result = await buyOrders(pendingToBuy);
+      if (result.success) {
         Alert.alert("Succès ✨", "Votre commande a été validée avec succès !");
         setCurrentTab("status");
         setActiveStatus("pending");
@@ -297,7 +313,7 @@ export default function OrdersScreen() {
       } else {
         Alert.alert(
           "Attention",
-          "Une erreur est survenue lors de la validation de la commande.",
+          result.message || "Une erreur est survenue lors de la validation de la commande.",
         );
         refresh();
       }
@@ -612,25 +628,23 @@ export default function OrdersScreen() {
 
       {orderToEdit && (
         <CartCheckoutSheet
+          key={orderToEdit.id}
           visible={editModalVisible}
           onClose={() => {
             setEditModalVisible(false);
-            setOrderToEdit(null);
           }}
           menu={synthesizedEditMenu}
           initialOrder={orderToEdit}
           isCartMode={true}
           onChange={updateLocalOrder}
           onConfirm={async (updatedOrder) => {
-            const success = await buyOrders([{ ...updatedOrder, status: 'pendingToBuy' }]);
-            if (success) {
+            const result = await buyOrders([{ ...updatedOrder, status: 'pendingToBuy' }]);
+            if (result.success) {
               setToast({ message: "Commande validée avec succès", type: "success" });
               setEditModalVisible(false);
               setOrderToEdit(null);
-            } else {
-              setToast({ message: "Erreur lors de la validation", type: "error" });
             }
-            return success;
+            return result;
           }}
         />
       )}

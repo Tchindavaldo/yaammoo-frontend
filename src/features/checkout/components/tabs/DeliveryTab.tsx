@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Livraison } from '@/src/types';
 import { styles } from '../CheckoutSheet.styles';
+import { StyleSheet } from 'react-native';
 
 interface DeliveryTabProps {
   delivery: Livraison;
@@ -27,38 +28,60 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery,
   const getIconColor = (filled: boolean) => filled ? '#ec4913' : '#94a3b8';
   const getTextColor = (filled: boolean) => filled ? '#ec4913' : '#0f172a';
 
+  const deliveryType = delivery.type;
+  const showCards = deliveryType === 'express' || deliveryType === 'standard';
+  const showPeriod = deliveryType === 'standard';
+
   return (
     <View style={styles.deliveryContainer}>
-      {/* Info Buttons Grid */}
-      <View style={styles.infoGrid4}>
-        <TouchableOpacity style={getBtnStyle(isLocationFilled)} onPress={onOpenLocation}>
-          <Ionicons name="location-outline" size={20} color={getIconColor(isLocationFilled)} />
-          <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, { color: getTextColor(isLocationFilled) }]}>Location</Text>
-          </View>
-        </TouchableOpacity>
+      {/* Info Buttons Grid — conditionnel selon le type */}
+      {showCards && (
+        <View style={deliveryType === 'express' ? localStyles.infoGrid3 : styles.infoGrid4}>
+          <TouchableOpacity style={getBtnStyle(isLocationFilled)} onPress={onOpenLocation}>
+            <Ionicons name="location-outline" size={20} color={getIconColor(isLocationFilled)} />
+            <View style={styles.infoBtnText}>
+              <Text style={[styles.infoBtnTitle, { color: getTextColor(isLocationFilled) }]}>Location</Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={getBtnStyle(isPeriodFilled)} onPress={onOpenPeriod}>
-          <Ionicons name="time-outline" size={20} color={getIconColor(isPeriodFilled)} />
-          <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, { color: getTextColor(isPeriodFilled) }]}>Period</Text>
-          </View>
-        </TouchableOpacity>
+          {showPeriod && (
+            <TouchableOpacity style={getBtnStyle(isPeriodFilled)} onPress={onOpenPeriod}>
+              <Ionicons name="time-outline" size={20} color={getIconColor(isPeriodFilled)} />
+              <View style={styles.infoBtnText}>
+                <Text style={[styles.infoBtnTitle, { color: getTextColor(isPeriodFilled) }]}>Period</Text>
+              </View>
+            </TouchableOpacity>
+          )}
 
-        <TouchableOpacity style={getBtnStyle(isContactFilled)} onPress={onOpenContact}>
-          <Ionicons name="call-outline" size={20} color={getIconColor(isContactFilled)} />
-          <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, { color: getTextColor(isContactFilled) }]}>contact</Text>
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity style={getBtnStyle(isContactFilled)} onPress={onOpenContact}>
+            <Ionicons name="call-outline" size={20} color={getIconColor(isContactFilled)} />
+            <View style={styles.infoBtnText}>
+              <Text style={[styles.infoBtnTitle, { color: getTextColor(isContactFilled) }]}>Contact</Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={getBtnStyle(isVoiceNoteFilled)} onPress={onOpenVoiceNote}>
-          <Ionicons name="mic-outline" size={20} color={getIconColor(isVoiceNoteFilled)} />
-          <View style={styles.infoBtnText}>
-            <Text style={[styles.infoBtnTitle, { color: getTextColor(isVoiceNoteFilled) }]}>Voice Notes</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={getBtnStyle(isVoiceNoteFilled)} onPress={onOpenVoiceNote}>
+            <Ionicons name="mic-outline" size={20} color={getIconColor(isVoiceNoteFilled)} />
+            <View style={styles.infoBtnText}>
+              <Text style={[styles.infoBtnTitle, { color: getTextColor(isVoiceNoteFilled) }]}>Voice Notes</Text>
+            </View>
+          </TouchableOpacity>
+
+          {deliveryType === 'express' && (
+            <View style={localStyles.expressInfoBanner}>
+              <Ionicons name="flash-outline" size={14} color="#ec4913" />
+              <Text style={localStyles.expressInfoText}>Commande livrée dès que terminée</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {deliveryType === 'aucune' && (
+        <View style={localStyles.aucuneBanner}>
+          <Ionicons name="storefront-outline" size={20} color="#64748b" />
+          <Text style={localStyles.aucuneText}>Vous passerez en boutique récupérer votre commande</Text>
+        </View>
+      )}
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionHeaderText}>Select Type</Text>
@@ -101,3 +124,43 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery,
     </View>
   );
 };
+
+const localStyles = StyleSheet.create({
+  infoGrid3: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  aucuneBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  aucuneText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 18,
+  },
+  expressInfoBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(236, 73, 19, 0.06)',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    width: '100%',
+    marginTop: 4,
+  },
+  expressInfoText: {
+    fontSize: 12,
+    color: '#ec4913',
+    fontStyle: 'italic',
+  },
+});

@@ -102,10 +102,16 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
                 <View style={styles.qtyLabel}>
                   <Text style={styles.qtyLabelText}>x{quantity}</Text>
                 </View>
-              ) : (
+              ) : (status === "pending" || status === "processing") && order.rank ? (
                 <View style={styles.rankContainer}>
                   <Ionicons name="trophy-outline" size={14} color="#ccc" />
-                  <Text style={styles.rankText}>{quantity}</Text>
+                  <Text style={styles.rankText}>
+                    {status === "pending" ? "En attente" : "En cours"} • {order.rank}
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.qtyLabel}>
+                  <Text style={styles.qtyLabelText}>x{quantity}</Text>
                 </View>
               )}
             </View>

@@ -23,8 +23,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ region, coords, deliveryTyp
   if (isNoDelivery) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={{ fontSize: 28 }}>🏪</Text>
-        <Text style={styles.errorText}>Pas de livraison</Text>
+        <Text style={{ fontSize: 28 }}>📍</Text>
+        <View style={{ paddingHorizontal: 16 }}>
+          <Text style={styles.errorText}>Pas de livraison</Text>
+          <Text style={[styles.errorText, { fontSize: 10 }]}>Le client va passer à la boutique prendre</Text>
+        </View>
       </View>
     );
   }

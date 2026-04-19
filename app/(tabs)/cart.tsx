@@ -398,19 +398,23 @@ export default function OrdersScreen() {
               
               {isExpanded && (
                 <View style={{ gap: 2 }}>
-                  {group.orders.map(order => (
-                    <ClientOrderCard
-                      key={order.id}
-                      order={order}
-                      onUpdateQuantity={handleUpdateQty}
-                      showActions={false}
-                      onPress={() => {
-                        setSelectedOrderDetails(order);
-                        setSelectedGroupOrders(group.orders);
-                        setDetailVisible(true);
-                      }}
-                    />
-                  ))}
+                  {group.orders.map(order => {
+                    const isFinished = order.status === 'finished' || order.status === 'delivered';
+                    return (
+                      <ClientOrderCard
+                        key={order.id}
+                        order={order}
+                        onUpdateQuantity={handleUpdateQty}
+                        showActions={false}
+                        hideRanking={isFinished}
+                        onPress={() => {
+                          setSelectedOrderDetails(order);
+                          setSelectedGroupOrders(group.orders);
+                          setDetailVisible(true);
+                        }}
+                      />
+                    );
+                  })}
                 </View>
               )}
             </View>

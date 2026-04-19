@@ -129,12 +129,12 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
         orderCount: (selectedOrder as any).rank || 1,
         rating: 4,
         phone: selectedOrder.delivery?.phone || selectedOrder.userData?.phoneNumber?.toString() || "Non fourni",
-        creneau: !selectedOrder.delivery?.type || selectedOrder.delivery?.type === 'aucun'
+        creneau: !selectedOrder.delivery?.status
           ? "Sur place"
           : selectedOrder.delivery?.type === 'express'
             ? "Express"
             : `Période (${selectedOrder.delivery?.time || "Dès que possible"})`,
-        duration: !selectedOrder.delivery?.type || selectedOrder.delivery?.type === 'aucun'
+        duration: !selectedOrder.delivery?.status
           ? "Immédiat"
           : selectedOrder.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
         note: selectedOrder.delivery?.note || "Aucune note de livraison.",
@@ -419,7 +419,7 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
               region={region}
               coords={coords}
               address={user.addr}
-              deliveryType={user.creneau.includes('Express') ? 'express' : 'standard'}
+              deliveryType={user.creneau === 'Sur place' ? 'surplace' : user.creneau.includes('Express') ? 'express' : 'time'}
             />
 
             {isOpeningMaps && (

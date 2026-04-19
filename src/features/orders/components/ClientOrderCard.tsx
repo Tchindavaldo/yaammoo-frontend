@@ -15,6 +15,7 @@ interface ClientOrderCardProps {
   onDelete?: (id: string) => void;
   onUpdateQuantity?: (id: string, qty: number) => void;
   showActions?: boolean;
+  hideRanking?: boolean;
   onPress?: () => void;
 }
 
@@ -24,6 +25,7 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
   onDelete,
   onUpdateQuantity,
   showActions = false,
+  hideRanking = false,
   onPress,
 }) => {
   const totalPrice = order.total || 0;
@@ -64,7 +66,7 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
           <View style={styles.summaryTopRow}>
             <View style={styles.summaryTitleContainer}>
               <Text style={styles.summaryPrice}>{totalPrice} F</Text>
-              <Text style={styles.summaryName} numberOfLines={1}>{menuName} (X{quantity})</Text>
+              <Text style={styles.summaryName} numberOfLines={1}>{menuName}{hideRanking ? '' : ` (X${quantity})`}</Text>
             </View>
                         {isDelivering && (
               <View style={styles.bikeAnimationTop}>
@@ -95,6 +97,10 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
                   >
                     <Ionicons name="trash-outline" size={16} color="#dc2626" />
                   </TouchableOpacity>
+                </View>
+              ) : hideRanking ? (
+                <View style={styles.qtyLabel}>
+                  <Text style={styles.qtyLabelText}>x{quantity}</Text>
                 </View>
               ) : (
                 <View style={styles.rankContainer}>

@@ -246,6 +246,14 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     }
   }, [createOrder, onChange, menu, userData, drinkQuantities, isInitialized]);
 
+  const validateStock = useCallback((): string | null => {
+    if (!menu) return null;
+    const menuStock = (menu as any).stock;
+    if (typeof menuStock !== 'number') return null;
+    if (menuStock < quantity) return `Stock insuffisant. Disponible : ${menuStock}`;
+    return null;
+  }, [menu, quantity]);
+
   const validateDelivery = useCallback((): string | null => {
     const type = delivery.type;
     if (!delivery.statut || type === 'aucune') return null;
@@ -281,5 +289,6 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     createOrder,
     resetCheckout,
     validateDelivery,
+    validateStock,
   };
 };

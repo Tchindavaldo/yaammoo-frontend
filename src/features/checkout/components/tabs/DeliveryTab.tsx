@@ -29,50 +29,68 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery,
   const getTextColor = (filled: boolean) => filled ? '#ec4913' : '#0f172a';
 
   const deliveryType = delivery.type;
-  const showCards = deliveryType === 'express' || deliveryType === 'standard';
-  const showPeriod = deliveryType === 'standard';
 
   return (
     <View style={styles.deliveryContainer}>
-      {/* Info Buttons Grid — conditionnel selon le type */}
-      {showCards && (
-        <View style={deliveryType === 'express' ? localStyles.infoGrid3 : styles.infoGrid4}>
+      {/* Layout Express : 3 cartes à gauche + message à droite */}
+      {deliveryType === 'express' && (
+        <View style={localStyles.expressRow}>
+          <View style={localStyles.expressCardsCol}>
+            <TouchableOpacity style={[getBtnStyle(isLocationFilled), { marginBottom: 8 }]} onPress={onOpenLocation}>
+              <Ionicons name="location-outline" size={20} color={getIconColor(isLocationFilled)} />
+              <View style={styles.infoBtnText}>
+                <Text style={[styles.infoBtnTitle, { color: getTextColor(isLocationFilled) }]}>Location</Text>
+              </View>
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity style={[getBtnStyle(isContactFilled), { flex: 1 }]} onPress={onOpenContact}>
+                <Ionicons name="call-outline" size={20} color={getIconColor(isContactFilled)} />
+                <View style={styles.infoBtnText}>
+                  <Text style={[styles.infoBtnTitle, { color: getTextColor(isContactFilled) }]}>Contact</Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity style={[getBtnStyle(isVoiceNoteFilled), { flex: 1 }]} onPress={onOpenVoiceNote}>
+                <Ionicons name="mic-outline" size={20} color={getIconColor(isVoiceNoteFilled)} />
+                <View style={styles.infoBtnText}>
+                  <Text style={[styles.infoBtnTitle, { color: getTextColor(isVoiceNoteFilled) }]}>Voice Notes</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={localStyles.expressInfoCol}>
+            <Ionicons name="flash-outline" size={20} color="#ec4913" />
+            <Text style={localStyles.expressInfoText}>Commande livrée dès que terminée</Text>
+          </View>
+        </View>
+      )}
+
+      {/* Layout Standard : 4 cartes */}
+      {deliveryType === 'standard' && (
+        <View style={styles.infoGrid4}>
           <TouchableOpacity style={getBtnStyle(isLocationFilled)} onPress={onOpenLocation}>
             <Ionicons name="location-outline" size={20} color={getIconColor(isLocationFilled)} />
             <View style={styles.infoBtnText}>
               <Text style={[styles.infoBtnTitle, { color: getTextColor(isLocationFilled) }]}>Location</Text>
             </View>
           </TouchableOpacity>
-
-          {showPeriod && (
-            <TouchableOpacity style={getBtnStyle(isPeriodFilled)} onPress={onOpenPeriod}>
-              <Ionicons name="time-outline" size={20} color={getIconColor(isPeriodFilled)} />
-              <View style={styles.infoBtnText}>
-                <Text style={[styles.infoBtnTitle, { color: getTextColor(isPeriodFilled) }]}>Period</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-
+          <TouchableOpacity style={getBtnStyle(isPeriodFilled)} onPress={onOpenPeriod}>
+            <Ionicons name="time-outline" size={20} color={getIconColor(isPeriodFilled)} />
+            <View style={styles.infoBtnText}>
+              <Text style={[styles.infoBtnTitle, { color: getTextColor(isPeriodFilled) }]}>Period</Text>
+            </View>
+          </TouchableOpacity>
           <TouchableOpacity style={getBtnStyle(isContactFilled)} onPress={onOpenContact}>
             <Ionicons name="call-outline" size={20} color={getIconColor(isContactFilled)} />
             <View style={styles.infoBtnText}>
               <Text style={[styles.infoBtnTitle, { color: getTextColor(isContactFilled) }]}>Contact</Text>
             </View>
           </TouchableOpacity>
-
           <TouchableOpacity style={getBtnStyle(isVoiceNoteFilled)} onPress={onOpenVoiceNote}>
             <Ionicons name="mic-outline" size={20} color={getIconColor(isVoiceNoteFilled)} />
             <View style={styles.infoBtnText}>
               <Text style={[styles.infoBtnTitle, { color: getTextColor(isVoiceNoteFilled) }]}>Voice Notes</Text>
             </View>
           </TouchableOpacity>
-
-          {deliveryType === 'express' && (
-            <View style={localStyles.expressInfoBanner}>
-              <Ionicons name="flash-outline" size={14} color="#ec4913" />
-              <Text style={localStyles.expressInfoText}>Commande livrée dès que terminée</Text>
-            </View>
-          )}
         </View>
       )}
 
@@ -126,11 +144,32 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({ delivery, setDelivery,
 };
 
 const localStyles = StyleSheet.create({
-  infoGrid3: {
+  expressRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
     marginBottom: 16,
+    alignItems: 'stretch',
+  },
+  expressCardsCol: {
+    flex: 2,
+  },
+  expressInfoCol: {
+    flex: 1,
+    backgroundColor: 'rgba(236, 73, 19, 0.06)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(236, 73, 19, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 10,
+  },
+  expressInfoText: {
+    fontSize: 11,
+    color: '#ec4913',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 15,
   },
   aucuneBanner: {
     flexDirection: 'row',
@@ -146,21 +185,5 @@ const localStyles = StyleSheet.create({
     fontSize: 13,
     color: '#475569',
     lineHeight: 18,
-  },
-  expressInfoBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(236, 73, 19, 0.06)',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    width: '100%',
-    marginTop: 4,
-  },
-  expressInfoText: {
-    fontSize: 12,
-    color: '#ec4913',
-    fontStyle: 'italic',
   },
 });

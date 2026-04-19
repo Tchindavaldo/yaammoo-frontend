@@ -59,7 +59,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     delivery, setDelivery,
     availablePackaging, availableDrinks,
     total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
-    createOrder, validateDelivery
+    createOrder, validateDelivery, validateStock
   } = useCheckout(menuWithDeliveryHours, initialOrder, onChange);
   const [sheetToast, setSheetToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showError = (message: string) => setSheetToast({ message, type: 'error' });
@@ -212,6 +212,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
               }
             }}
             onBuy={() => {
+              const stockErr = validateStock();
+              if (stockErr) { showError(stockErr); return; }
               const deliveryErr = validateDelivery();
               if (deliveryErr) { showError(deliveryErr); return; }
               setIsPaymentPopupVisible(true);

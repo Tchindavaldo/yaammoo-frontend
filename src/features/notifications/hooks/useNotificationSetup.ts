@@ -42,7 +42,7 @@ export const useNotificationSetup = () => {
 
     // Notif reçue app ouverte : rafraîchir la liste (filet de sécurité en plus du socket)
     const receivedSub = Notifications.addNotificationReceivedListener(() => {
-      refresh(true).catch(() => {});
+      refresh(true).catch(() => { });
     });
 
     // App killed → tap sur notif → routing initial
@@ -54,7 +54,7 @@ export const useNotificationSetup = () => {
           const route = routeFromData(data);
           router.push(route as any);
         }
-      } catch {}
+      } catch { }
     })();
 
     return () => {
@@ -69,6 +69,15 @@ export const useNotificationSetup = () => {
       return null;
     }
 
+    // Android 13+ : demander la permission POST_NOTIFICATIONS native
+    if (Platform.OS === "android") {
+      try {
+        const { PermissionsAndroid } = await import("react-native");
+        await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+      } catch (e) {
+        console.warn("POST_NOTIFICATIONS permission request failed:", (e as Error).message);
+      }
+    }
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== "granted") {

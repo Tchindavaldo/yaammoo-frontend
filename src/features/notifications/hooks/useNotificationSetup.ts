@@ -80,9 +80,33 @@ export const useNotificationSetup = () => {
       return null;
     }
 
-    const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? (require("@/app.json").expo?.extra?.eas?.projectId ?? undefined);
-    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    console.log("Expo Push Token:", token);
+    let token: string | null = null;
+
+    try {
+      const { default: messaging } = await import("@react-native-firebase/messaging").catch(() => ({ default: null }));
+      if (messaging && typeof messaging === "function") {
+        const authStatus = await messaging().requestPermission();
+        const enabled =
+          authStatus === 1 /* AUTHORIZED */ ||
+          authStatus === 2 /* PROVISIONAL */ ||
+          authStatus === true;
+        if (enabled) {
+          const fcmToken = await messaging().getToken();
+          if (fcmToken) {
+            token = fcmToken;
+            console.log("Native FCM Token:", token);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Native FCM unavailable, falling back to Expo Push:", (e as Error).message);
+    }
+
+    if (!token) {
+      const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? (require("@/app.json").expo?.extra?.eas?.projectId ?? undefined);
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      console.log("Expo Push Token:", token);
+    }
 
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("high_priority_channel", {

@@ -1,8 +1,9 @@
-# Architecture — Yaammoo / Y0
+# Architecture — yaammoo (Frontend React Native / Expo)
 
-Index des fichiers de documentation d'architecture. Chaque fichier décrit la structure d'une feature, ses composants, leurs chemins et leurs responsabilités.
+Documentation d'architecture de l'app mobile (client + marchand).
 
-> **Convention** : mettre à jour le fichier concerné dès qu'un composant est modifié. Créer un nouveau fichier si une feature non listée est travaillée.
+> **Convention** : mettre à jour le fichier concerné dès qu'un composant/hook/feature est modifié.
+> Pour la doc backend, voir [`BACKEND/architecture/`](../../BACKEND/architecture/README.md).
 
 ---
 
@@ -10,38 +11,52 @@ Index des fichiers de documentation d'architecture. Chaque fichier décrit la st
 
 | Fichier | Feature |
 |---|---|
+| [structure.md](./structure.md) | Arborescence `app/`, `src/features/`, `src/components/`, `src/api/` |
+| [auth.md](./auth.md) | Authentification client (Email/Password, Google Sign-In, AuthContext) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
 | [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank) |
 | [orders-merchant.md](./orders-merchant.md) | Gestion commandes côté marchand (panel, cartes, statuts) |
-| [backend-orders.md](./backend-orders.md) | Backend — services commande, rank queue, stock |
-| [socket-events.md](./socket-events.md) | Événements socket (liste complète émetteurs → récepteurs) |
-| [notifications.md](./notifications.md) | Module notifications (FCM push + Socket, multi-devices, deep-linking) |
-| [auth.md](./auth.md) | Authentification (Email/Password + Google Sign-In, flow complet, erreurs) |
+| [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
+| [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
 
 ---
 
-## Structure racine du projet
+## Stack frontend
+
+- **Framework** : React Native + Expo Router
+- **State** : Contexts React (Auth, Order, Notification, Socket)
+- **Storage** : AsyncStorage
+- **Push** : Hybride — `@react-native-firebase/messaging` (dev/prod build) + `expo-notifications` (Expo Go)
+- **Socket** : socket.io-client
+- **HTTP** : axios (`Config.apiUrl`)
+- **UI** : composants custom + Ionicons
+
+## Structure racine
 
 ```
-Y0/
-├── yaammoo/          # App React Native (Expo) — client + marchand
-│   └── src/
-│       ├── features/ # Features isolées (auth, checkout, orders, merchant, restaurants…)
-│       ├── types/    # Types TypeScript globaux (Commande, Menu, Livraison…)
-│       ├── api/      # Config axios (Config.apiUrl)
-│       ├── theme/    # Thème global (Theme.colors…)
-│       └── components/ # Composants partagés (Toast…)
-├── BACKEND/          # Node.js / Express / Firestore
-│   └── src/
-│       ├── app.js        # Express app + routes
-│       ├── server.js     # HTTP server + Socket.io init
-│       ├── socket.js     # getIO() singleton
-│       ├── config/       # Firebase, Swagger, Multer
-│       ├── routes/       # Déclaration des routes
-│       ├── controllers/  # Entrées HTTP (validation basique → service)
-│       ├── services/     # Logique métier
-│       ├── utils/        # Validators, helpers
-│       └── interface/    # Définitions champs Firestore
-├── rudafood/         # Ancienne app Angular/Ionic (legacy — ne pas modifier)
-└── architecture/     # Ce dossier — documentation d'architecture
+yaammoo/
+├── app/                      # Expo Router (file-based routing)
+│   ├── _layout.tsx           # Racine : AuthProvider, OrderProvider, NotificationProvider, SocketProvider
+│   ├── (auth)/               # Pages login/register/phone
+│   ├── (tabs)/               # Tabs principales (home, boutique, cart, notifications, profile)
+│   └── modal.tsx
+│
+├── src/
+│   ├── features/             # Features isolées
+│   │   ├── auth/             # login, google auth, AuthContext
+│   │   ├── checkout/         # Bottom sheets commande
+│   │   ├── notifications/    # Context + hooks + components
+│   │   ├── orders/           # OrderContext + cartes
+│   │   ├── merchant/         # Panel marchand (boutique, commandes)
+│   │   ├── menu/ restaurants/ profile/ payment/
+│   │   └── socket/           # SocketContext
+│   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs)
+│   ├── theme/                # Theme.colors, typography
+│   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
+│   ├── components/           # Composants partagés (Toast…)
+│   └── services/             # useSocketEvents.ts (handlers socket globaux)
+│
+├── assets/                   # Images, fonts
+├── architecture/             # Ce dossier
+└── app.json, package.json
 ```

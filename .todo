@@ -23,6 +23,7 @@
 
 
 [ ] gerer les anulation de cmd 
+    - penaliser le marchand (couper un motnant) sur ca prochine cmd si il n'anule pas la cmd en moins de 10min en cas de penueri de stock ou indisponibiliter pour que on le ransfere ailleur ou notifii le cient  ou le penaliser auto touou car il n'a pas acitver les stock
     - anulation pour stock insufisant peut etre auto transferer a un autre marchand et notifi le user
     - annulation peut un porte la raison est transferer a un autre autre ou moi meme l'admin de l'app je gere manuelement sur le terrain si aucun fastfood n'a de stock ou de menu dispo
     - les annulation permetre de gerer les marchand qui n'ont pas de stock et qui ne mette pas a jour le statu (dispo /indispo des menu)

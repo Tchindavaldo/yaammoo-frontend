@@ -14,30 +14,52 @@ import {
   Notification,
 } from "@/src/features/notifications/hooks/useNotifications";
 import { NotificationItem } from "@/src/features/notifications/components/NotificationItem";
+import { NotificationDetailSheet } from "@/src/features/notifications/components/NotificationDetailSheet";
+import { getNotificationRoute } from "@/src/features/notifications/utils/notificationRouting";
+import { useRouter } from "expo-router";
 import { Theme } from "@/src/theme";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
+
+const isReadFlag = (n: Notification) => {
+  if (typeof n.isRead === 'boolean') return n.isRead;
+  if (typeof n.isRead === 'string') {
+    try { const p = JSON.parse(n.isRead); return Array.isArray(p) ? p.length > 0 : !!p; } catch { return false; }
+  }
+  return false;
+};
 
 export default function NotificationsScreen() {
   const { notifications, loading, refresh, markAsRead } = useNotifications();
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const HEADER_HEIGHT = 70 + insets.top;
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
+  const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
+  const [detailVisible, setDetailVisible] = useState(false);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  const unreadCount = notifications.filter((n) => !isReadFlag(n)).length;
 
   const handleNotifPress = (notif: Notification) => {
-    if (!notif.isRead) {
+    if (!isReadFlag(notif)) {
       markAsRead(notif.id, notif.idGroup);
     }
+    setSelectedNotif(notif);
+    setDetailVisible(true);
+  };
+
+  const handleNotifAction = (notif: Notification) => {
+    setDetailVisible(false);
+    const route = getNotificationRoute(notif);
+    router.push(route as any);
   };
 
   const markAllAsRead = () => {
     notifications
-      .filter((n) => !n.isRead)
+      .filter((n) => !isReadFlag(n))
       .forEach((n) => markAsRead(n.id, n.idGroup));
   };
 
@@ -105,6 +127,13 @@ export default function NotificationsScreen() {
             </View>
           ) : null
         }
+      />
+
+      <NotificationDetailSheet
+        visible={detailVisible}
+        notification={selectedNotif}
+        onClose={() => setDetailVisible(false)}
+        onAction={handleNotifAction}
       />
     </View>
   );

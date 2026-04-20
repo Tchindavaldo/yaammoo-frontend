@@ -20,3 +20,18 @@
     - Si le chargement d'une image échoue, afficher une icône circulaire de rafraîchissement.
     - Au clic sur l'icône, tenter de re-fetcher l'image concernée pour la charger à nouveau.
     - S'assurer que cela s'applique à tous les DesignItems (Design 1 à 7).
+
+
+[ ] gerer les anulation de cmd 
+    - anulation pour stock insufisant peut etre auto transferer a un autre marchand et notifi le user
+    - annulation peut un porte la raison est transferer a un autre autre ou moi meme l'admin de l'app je gere manuelement sur le terrain si aucun fastfood n'a de stock ou de menu dispo
+    - les annulation permetre de gerer les marchand qui n'ont pas de stock et qui ne mette pas a jour le statu (dispo /indispo des menu)
+
+[ ] fastfood par defaut dans la ville a mettre dans l'app
+    -riz 11h
+    -alliyou
+    - greeldish
+    -keurtis
+    -chrisFstfood
+    -maman oeuf plan total ()
+        -lui fournir des flyer quel distibura a ses client (si possbile au max les etudiant) qui met en valeur l'achat de ses plat via l'app ou niveau de sa boutique dans l'app

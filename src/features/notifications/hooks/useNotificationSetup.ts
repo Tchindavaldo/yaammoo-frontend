@@ -7,6 +7,9 @@ import axios from "axios";
 import { Config } from "@/src/api/config";
 import { useRouter } from "expo-router";
 import { storage } from "@/src/utils/storage";
+import { Users } from "@/src/types";
+import { useNotificationContext } from "../context/NotificationContext";
+import { getNotificationRoute } from "../utils/notificationRouting";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -18,20 +21,46 @@ Notifications.setNotificationHandler({
   }),
 });
 
+const routeFromData = (data: any): string => {
+  if (!data) return "/(tabs)/notifications";
+  return getNotificationRoute({ type: data.type, route: data.route } as any);
+};
+
 export const useNotificationSetup = () => {
-  const { userData } = useAuth();
+  const { userData, setUserData } = useAuth();
   const router = useRouter();
+  const { refresh } = useNotificationContext();
 
+  // Tap sur la notif (app background / foreground)
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        // Action au clic sur la notification : redirection vers Tab 4
-        router.push("/notifications");
-      },
-    );
+    const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      const route = routeFromData(data);
+      router.push(route as any);
+    });
 
-    return () => subscription.remove();
-  }, []);
+    // Notif reçue app ouverte : rafraîchir la liste (filet de sécurité en plus du socket)
+    const receivedSub = Notifications.addNotificationReceivedListener(() => {
+      refresh(true).catch(() => {});
+    });
+
+    // App killed → tap sur notif → routing initial
+    (async () => {
+      try {
+        const last = await Notifications.getLastNotificationResponseAsync();
+        if (last) {
+          const data = last.notification.request.content.data as any;
+          const route = routeFromData(data);
+          router.push(route as any);
+        }
+      } catch {}
+    })();
+
+    return () => {
+      responseSub.remove();
+      receivedSub.remove();
+    };
+  }, [router, refresh]);
 
   const registerForPushNotificationsAsync = async () => {
     if (!Device.isDevice) {
@@ -39,8 +68,7 @@ export const useNotificationSetup = () => {
       return null;
     }
 
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
     if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
@@ -67,6 +95,17 @@ export const useNotificationSetup = () => {
     return token;
   };
 
+  const syncToken = async (token: string) => {
+    if (!userData) return;
+    await axios.put(`${Config.apiUrl}/user/${userData?.uid}`, { fcmToken: token });
+    // Mise à jour locale pour éviter les re-sync inutiles
+    const existing = ((userData as any).fcmTokens as string[] | undefined) || [];
+    const nextTokens = existing.includes(token) ? existing : [...existing, token];
+    const updated: Users = { ...(userData as any), fcmTokens: nextTokens };
+    setUserData(updated);
+    await storage.set("user_data", updated);
+  };
+
   const setup = async () => {
     if (!userData) return;
 
@@ -82,18 +121,13 @@ export const useNotificationSetup = () => {
     }
 
     const token = await registerForPushNotificationsAsync();
-    if (token && token !== (userData as any).fcmToken) {
-      await syncToken(token);
-    }
-  };
+    if (!token) return;
 
-  const syncToken = async (token: string) => {
-    if (!userData) return;
+    const existing = ((userData as any).fcmTokens as string[] | undefined) || [];
+    if (existing.includes(token)) return; // déjà synchronisé
+
     try {
-      await axios.put(`${Config.apiUrl}/user/update/${userData?.uid}`, {
-        fcmToken: token,
-      });
-      console.log("FCM Token synced with backend");
+      await syncToken(token);
     } catch (error) {
       console.error("Error syncing FCM token:", error);
       await storage.set("unsentFcmToken", token);

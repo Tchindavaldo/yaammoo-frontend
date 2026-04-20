@@ -16,6 +16,7 @@ Index des fichiers de documentation d'architecture. Chaque fichier décrit la st
 | [backend-orders.md](./backend-orders.md) | Backend — services commande, rank queue, stock |
 | [socket-events.md](./socket-events.md) | Événements socket (liste complète émetteurs → récepteurs) |
 | [notifications.md](./notifications.md) | Module notifications (FCM push + Socket, multi-devices, deep-linking) |
+| [auth.md](./auth.md) | Authentification (Email/Password + Google Sign-In, flow complet, erreurs) |
 
 ---
 

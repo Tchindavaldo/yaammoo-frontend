@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "extra": {
       "eas": {
-        "projectId": "fir-d75bc"
+        "projectId": "44bc7644-3f94-439e-8c1f-896bfb55b526"
       }
     },
     "ios": {
@@ -60,6 +60,7 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "owner": "devright"
   }
 }

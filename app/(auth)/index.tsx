@@ -83,9 +83,10 @@ export default function AuthScreen() {
         const data = await authService.getUserById(userCredential.user.uid);
         if (data) setUserData(data);
         router.replace("/(tabs)");
-      } catch {
+      } catch (error: any) {
         setConnect(false);
-        Alert.alert("Erreur", "Connexion échouée.");
+        console.error("❌ [Login] Erreur:", error?.code, error?.message);
+        Alert.alert("Erreur", error?.message ?? "Connexion échouée.");
       }
     } else {
       Alert.alert("Erreur", "l'email ou le mot de passe ne doit pas etre vide");

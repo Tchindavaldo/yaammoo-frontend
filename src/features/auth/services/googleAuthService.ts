@@ -35,6 +35,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     // Configuration Google Signin
     GoogleSignin.configure({
       webClientId: Config.googleAuth.webClientId,
+      androidClientId: Config.googleAuth.androidClientId,
       iosClientId: Config.googleAuth.iosClientId,
       offlineAccess: true,
     });
@@ -105,7 +106,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
       false,
       100,
       [],
-      "",
+      undefined,
     );
 
     console.log("🔵 [GoogleAuth] Étape 8: Envoi au backend (POST /user)");

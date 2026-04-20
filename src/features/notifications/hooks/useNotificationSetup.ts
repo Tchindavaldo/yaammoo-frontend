@@ -10,6 +10,7 @@ import { storage } from "@/src/utils/storage";
 import { Users } from "@/src/types";
 import { useNotificationContext } from "../context/NotificationContext";
 import { getNotificationRoute } from "../utils/notificationRouting";
+import { auth } from "@/src/services/firebase";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -63,7 +64,7 @@ export const useNotificationSetup = () => {
   }, [router, refresh]);
 
   const registerForPushNotificationsAsync = async () => {
-    if (!Device.isDevice) {
+    if (!Device.isDevice && Platform.OS !== "android") {
       console.log("Must use physical device for Push Notifications");
       return null;
     }
@@ -79,7 +80,8 @@ export const useNotificationSetup = () => {
       return null;
     }
 
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? (require("@/app.json").expo?.extra?.eas?.projectId ?? undefined);
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     console.log("Expo Push Token:", token);
 
     if (Platform.OS === "android") {
@@ -97,7 +99,13 @@ export const useNotificationSetup = () => {
 
   const syncToken = async (token: string) => {
     if (!userData) return;
-    await axios.put(`${Config.apiUrl}/user/${userData?.uid}`, { fcmToken: token });
+    const idToken = await auth.currentUser?.getIdToken();
+    await axios.put(`${Config.apiUrl}/user/${userData?.uid}`, { fcmToken: token }, {
+      headers: {
+        "Authorization": `Bearer ${idToken}`,
+        "ngrok-skip-browser-warning": "true",
+      },
+    });
     // Mise à jour locale pour éviter les re-sync inutiles
     const existing = ((userData as any).fcmTokens as string[] | undefined) || [];
     const nextTokens = existing.includes(token) ? existing : [...existing, token];

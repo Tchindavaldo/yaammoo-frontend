@@ -56,6 +56,9 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 **Foreground (app ouverte)**
 - `addNotificationReceivedListener` → `refresh(true)` sur NotificationContext.
 - Permet à la page `/notifications` de se mettre à jour en temps réel (couplé au socket).
+- **FCM natif foreground** : `messaging().onMessage()` intercepte les pushs FCM reçus app ouverte et déclenche `Notifications.scheduleNotificationAsync(...)` pour afficher une notif locale (canal `high_priority_channel` sur Android).
+  - **Why:** en dev build / prod natif, FCM ne montre PAS de bannière OS quand l'app est au foreground (comportement standard Android/iOS). Sans ce relais, l'utilisateur ne voit rien alors qu'Expo Go affichait via son handler.
+  - Listener nettoyé dans le cleanup du `useEffect`.
 
 **Response (tap sur la notif)**
 - `addNotificationResponseReceivedListener` → lit `data.route` ou le dérive du `type` → `router.push(route)`.
@@ -117,7 +120,8 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 frontend: buyOrders() → POST /order/tabs
 backend envoie push FCM + socket newNotification au marchand
 frontend marchand (app ouverte) :
-  - bannière FCM affichée par l'OS
+  - Expo Go : handler expo-notifications → bannière affichée
+  - Dev build natif : messaging().onMessage() → scheduleNotificationAsync → bannière locale
   - socket newNotification → NotificationContext.refresh(true)
   - /notifications mis à jour en temps réel
 frontend marchand (app killed) :

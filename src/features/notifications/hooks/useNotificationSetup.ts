@@ -45,6 +45,36 @@ export const useNotificationSetup = () => {
       refresh(true).catch(() => { });
     });
 
+    // FCM natif foreground : présenter une notification locale (sinon Android/iOS n'affichent rien)
+    let fcmForegroundUnsub: (() => void) | null = null;
+    (async () => {
+      try {
+        const mod = await import("@react-native-firebase/messaging").catch(() => null);
+        const messaging = mod?.default;
+        if (messaging && typeof messaging === "function") {
+          fcmForegroundUnsub = messaging().onMessage(async (remoteMessage: any) => {
+            const title = remoteMessage?.notification?.title ?? remoteMessage?.data?.title ?? "Notification";
+            const body = remoteMessage?.notification?.body ?? remoteMessage?.data?.body ?? "";
+            const data = remoteMessage?.data ?? {};
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                title: String(title),
+                body: String(body),
+                data,
+                sound: "default",
+              },
+              trigger: Platform.OS === "android"
+                ? { channelId: "high_priority_channel" } as any
+                : null,
+            });
+            refresh(true).catch(() => { });
+          });
+        }
+      } catch (e) {
+        console.warn("FCM foreground listener unavailable:", (e as Error).message);
+      }
+    })();
+
     // App killed → tap sur notif → routing initial
     (async () => {
       try {
@@ -60,6 +90,7 @@ export const useNotificationSetup = () => {
     return () => {
       responseSub.remove();
       receivedSub.remove();
+      fcmForegroundUnsub?.();
     };
   }, [router, refresh]);
 

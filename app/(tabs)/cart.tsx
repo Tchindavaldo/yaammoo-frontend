@@ -35,6 +35,7 @@ import { Toast } from "@/src/components/Toast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
+import { useLocalSearchParams } from "expo-router";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -200,6 +201,24 @@ export default function OrdersScreen() {
       setActiveStatus("pending");
     }
   }, [currentTab]);
+
+  // Deep-link via query param `?section=...` (notifications → cart)
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  useEffect(() => {
+    if (!section) return;
+    if (section === "bonus") {
+      setCurrentTab("bonus");
+      return;
+    }
+    if (section === "cart") {
+      setCurrentTab("cart");
+      return;
+    }
+    if (section === "pending" || section === "active" || section === "finished" || section === "delivered") {
+      setCurrentTab("status");
+      setActiveStatus(section);
+    }
+  }, [section]);
 
   const calculateCartTotal = () => {
     const totalValue = pendingToBuy.reduce((acc, o) => {

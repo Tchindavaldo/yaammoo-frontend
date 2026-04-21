@@ -30,7 +30,8 @@ const routeFromData = (data: any): string => {
 export const useNotificationSetup = () => {
   const { userData, setUserData } = useAuth();
   const router = useRouter();
-  const { refresh } = useNotificationContext();
+  // refresh n'est plus déclenché automatiquement — seul le pull-to-refresh manuel le déclenche.
+  useNotificationContext();
 
   // Tap sur la notif (app background / foreground)
   useEffect(() => {
@@ -40,10 +41,9 @@ export const useNotificationSetup = () => {
       router.push(route as any);
     });
 
-    // Notif reçue app ouverte : rafraîchir la liste (filet de sécurité en plus du socket)
-    const receivedSub = Notifications.addNotificationReceivedListener(() => {
-      refresh(true).catch(() => { });
-    });
+    // Notif reçue app ouverte : pas de refresh auto (seul le pull-to-refresh le déclenche).
+    // Le socket `newNotification` injecte déjà la notif dans le state.
+    const receivedSub = Notifications.addNotificationReceivedListener(() => { });
 
     // FCM natif foreground : présenter une notification locale (sinon Android/iOS n'affichent rien)
     let fcmForegroundUnsub: (() => void) | null = null;
@@ -67,7 +67,6 @@ export const useNotificationSetup = () => {
                 ? { channelId: "high_priority_channel" } as any
                 : null,
             });
-            refresh(true).catch(() => { });
           });
         }
       } catch (e) {
@@ -92,7 +91,7 @@ export const useNotificationSetup = () => {
       receivedSub.remove();
       fcmForegroundUnsub?.();
     };
-  }, [router, refresh]);
+  }, [router]);
 
   const registerForPushNotificationsAsync = async () => {
     if (!Device.isDevice && Platform.OS !== "android") {

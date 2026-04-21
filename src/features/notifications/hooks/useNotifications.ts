@@ -11,5 +11,6 @@ export const useNotifications = () => {
     unreadCount: ctx.unreadCount,
     refresh: ctx.refresh,
     markAsRead: ctx.markAsRead,
+    addFromSocket: ctx.addFromSocket,
   };
 };

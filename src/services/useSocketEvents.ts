@@ -8,7 +8,7 @@ import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
 
 export const useSocketEvents = () => {
   const { userData } = useAuth();
-  const { refresh: refreshNotifications } = useNotifications();
+  const { refresh: refreshNotifications, addFromSocket: addNotifFromSocket } = useNotifications();
   const { refresh: refreshOrders } = useOrders();
   const { refresh: refreshMerchant } = useMerchant();
   const { refresh: refreshFastFoods } = useFastFoods();
@@ -89,7 +89,9 @@ export const useSocketEvents = () => {
     });
     socket.on("newNotification", (data) => {
       console.log("🔔 newNotification:", data);
-      refreshNotifications();
+      // Injection directe — pas de refetch auto (seul le pull-to-refresh déclenche un fetch).
+      if (data?.notification) addNotifFromSocket(data.notification);
+      else if (data?.id) addNotifFromSocket(data);
     });
 
     // Delivery Tracking

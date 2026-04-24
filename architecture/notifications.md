@@ -23,21 +23,31 @@ Le backend identifie le format en tête du dispatcher. Le même code frontend fo
 ### State
 - `notifications: Notification[]` — toutes les notifs user (hydratées depuis `storage` au mount pour un affichage instantané)
 - `loading, error` — fetch state
-- `unreadCount: number` — dérivé des flags `isRead`
+- `unreadCount: number` — dérivé via le helper `isNotifRead`
+
+### Format `isRead`
+Le champ `isRead` peut être **`boolean | string | string[]`** selon l'historique des données :
+- `string[]` — **format actuel** (array des `userId` ayant lu — matche Firestore côté serveur, supporte les groupes de notifs partagées).
+- `boolean` ou `string` — anciens formats encore tolérés côté client.
+
+Le helper **`isNotifRead(notif, userId)`** exporté par le context unifie la lecture : tableau → `.includes(uid)`, string → `=== uid`, boolean → direct. Tous les composants UI (liste + sheet) utilisent `useNotifications().isRead` — pas de logique locale dupliquée.
 
 ### Methods
-- `refresh(quiet?: boolean)` — fetch `/notification/user?userId=...` (flush la queue `markAsRead` d'abord, puis merge les reads optimistes encore en attente pour qu'ils ne soient pas écrasés par la réponse serveur)
-- `markAsRead(id, idGroup)` — **update instantané** : state + cache storage, puis `PUT /notification/markAsRead` en arrière-plan. Si échec réseau → push dans la queue `notif_read_queue` (storage), rejouée au prochain `refresh()`.
+- `refresh(quiet?: boolean)` — fetch `/notification/user?userId=...` (flush la queue `markAsRead` d'abord, puis merge les reads optimistes encore en attente pour qu'ils ne soient pas écrasés par la réponse serveur). `quiet=true` = pas de `loading` visible.
+- `markAsRead(id, idGroup)` — **update optimiste instantané** : ajoute `userId` dans le tableau `isRead` du state + cache storage (format array, comme le serveur), puis `PUT /notification/markAsRead` en arrière-plan. Si échec réseau → push dans la queue `notif_read_queue` (storage), rejouée au prochain `refresh()`. `pendingReadIdsRef` protège l'optimistic update contre l'écrasement par une réponse serveur lente.
 - `addFromSocket(notif)` — injection directe d'une notif reçue via socket dans le state + cache, sans refetch. Utilisé par `useSocketEvents` sur l'event `newNotification`.
+- `isRead(notif)` — wrapper mémoïsé autour de `isNotifRead(notif, userData.uid)`.
 
 ### Clés storage
 - `notifications_cache` — snapshot de la liste (hydratation au mount).
 - `notif_read_queue` — `[{id, idGroup?, userId}]` des `markAsRead` en attente de sync réseau.
 
 ### Fetch automatique
-- **Un seul fetch silencieux au login** (première hydratation depuis le backend après le cache storage).
-- **Aucun refetch** sur socket, push FCM ou `addNotificationReceivedListener` — le socket injecte via `addFromSocket`, les pushs FCM foreground présentent une notif locale.
-- **Pull-to-refresh manuel** (liste notifications) = seule action utilisateur déclenchant un `refresh()`.
+- **Fetch silencieux au login** (première hydratation depuis le backend après le cache storage).
+- **Catch-up silencieux à chaque `socket.connect`** (app killed → push tap → démarrage, reprise après long background, reconnexion réseau) — déclenché par `useSocketEvents` via `refreshNotifications(true)`.
+- **Event `isRead` socket** → `refreshNotifications(true)` silencieux (sync multi-device quand un autre appareil lit une notif).
+- **Aucun refetch** sur push FCM ou `newNotification` socket — le socket injecte via `addFromSocket`, les pushs FCM foreground présentent une notif locale.
+- **Pull-to-refresh manuel** = fetch explicite avec loader visible.
 
 ### Monté dans
 `app/_layout.tsx` au niveau provider (après AuthProvider + OrderProvider).
@@ -134,18 +144,17 @@ La page [`app/(tabs)/cart.tsx`](../app/(tabs)/cart.tsx) lit `useLocalSearchParam
 
 ### NotificationDetailSheet
 **`src/features/notifications/components/NotificationDetailSheet.tsx`**
-- Bottom sheet modal (backdrop transparent + sheet animé)
-- Message complet scrollable, non tronqué
-- Date formatée ("il y a X min", "hier"…)
-- Bouton primaire "Voir la commande" (si notif liée à une commande)
-- Bouton secondaire "Fermer"
-- Tap "Voir…" → ferme le sheet + `router.push(route)`
+- Bottom sheet modal ultra-minimaliste (backdrop semi-opaque + sheet blanc arrondi).
+- Layout : handle discret → ligne top (date + titre à gauche, chip "Voir la commande" à droite si orderAction) → message complet.
+- Pas de bouton "Fermer" — tap backdrop ferme. Pas d'icône ronde, pas de cadre sur l'action.
+- Chip "Voir la commande" (pilule primary-tintée) apparaît uniquement si notif liée à une commande (`orderId` ou type `order_*`).
+- Tap chip → ferme sheet + `router.push(route)` via `getNotificationRoute`.
 
 ### Page Notifications
 **`app/(tabs)/notifications.tsx`**
-- Header : titre + unread count + bouton "Mark all as read"
-- FlatList de `NotificationItem`
-- Pull-to-refresh → `refresh()`
+- Header absolute + BlurView : titre + unread count + bouton "Mark all as read"
+- FlatList de `NotificationItem` avec `paddingTop: HEADER_HEIGHT` et **`progressViewOffset={HEADER_HEIGHT}`** pour que le spinner de pull-to-refresh soit visible sous le header (sinon masqué derrière le blur)
+- Pull-to-refresh → `refresh()` avec loader natif visible
 - Empty state : "Aucune notification"
 - Intègre `NotificationDetailSheet`
 
@@ -162,8 +171,11 @@ frontend marchand (app ouverte) :
   - Dev build natif : messaging().onMessage() → scheduleNotificationAsync → bannière locale
   - socket newNotification → NotificationContext.addFromSocket(notif) (injection directe, pas de refetch)
   - /notifications mis à jour en temps réel
-frontend marchand (app killed) :
-  - Push arrive, tap → getLastNotificationResponseAsync() → router.push('/(tabs)/boutique')
+frontend marchand (app killed → tap push) :
+  - Push OS ouvre l'app
+  - getLastNotificationResponseAsync() → router.push('/(tabs)/boutique')
+  - socket.connect() → handleConnect → refreshOrders + refreshMerchant + refreshNotifications (catch-up silencieux)
+  - → la page cible a son contenu à jour avant même que l'utilisateur ne l'atteigne
 ```
 
 ### Rang top 5
@@ -180,6 +192,7 @@ frontend user : FCM reçu, tap → '/(tabs)/cart'
 2. **Compact + Detail** : la liste montre 2 lignes, le sheet montre le message complet + date + action.
 3. **Deep-link par type** : jamais de route en dur dans les composants — toujours via `getNotificationRoute`.
 4. **Token hybride transparent** : un seul code path Expo Go / Dev build / Prod.
-5. **Offline-first markAsRead** : state + storage mis à jour instantanément, réseau en arrière-plan, queue persistante en cas d'échec. Pas de spinner au click.
-6. **Refresh déclenché uniquement par l'utilisateur** : socket + push injectent directement dans le state, pull-to-refresh = seul point d'entrée fetch après le login initial.
-7. **Deep-link par section** : query param `?section=...` sur `/(tabs)/cart` pour cibler pending/active/finished/bonus sans créer de routes séparées.
+5. **Offline-first markAsRead** : state + storage mis à jour instantanément (format array matchant le serveur), réseau en arrière-plan, queue persistante en cas d'échec. `pendingReadIdsRef` protège contre l'écrasement par un refresh serveur concurrent. Pas de spinner au click.
+6. **Helper `isRead` unifié** : `isNotifRead` centralisé dans le context gère tous les formats historiques (boolean/string/array), tous les composants UI l'utilisent via `useNotifications().isRead` — zéro duplication.
+7. **Catch-up socket-driven** : pull-to-refresh = fetch explicite utilisateur. Les fetchs automatiques (au login + à chaque reconnect socket) sont **silencieux** (pas de loader). Résultat : aucune UX-pollution par des spinners inattendus.
+8. **Deep-link par section** : query param `?section=...` sur `/(tabs)/cart` pour cibler pending/active/finished/bonus sans créer de routes séparées.

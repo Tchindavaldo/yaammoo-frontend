@@ -21,16 +21,8 @@ import { Theme } from "@/src/theme";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 
-const isReadFlag = (n: Notification) => {
-  if (typeof n.isRead === 'boolean') return n.isRead;
-  if (typeof n.isRead === 'string') {
-    try { const p = JSON.parse(n.isRead); return Array.isArray(p) ? p.length > 0 : !!p; } catch { return false; }
-  }
-  return false;
-};
-
 export default function NotificationsScreen() {
-  const { notifications, loading, refresh, markAsRead } = useNotifications();
+  const { notifications, loading, refresh, markAsRead, isRead: isReadFlag } = useNotifications();
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -110,6 +102,7 @@ export default function NotificationsScreen() {
           styles.listContent,
           { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 20 },
         ]}
+        progressViewOffset={HEADER_HEIGHT}
         refreshing={loading}
         onRefresh={refresh}
         ListEmptyComponent={

@@ -18,15 +18,18 @@ export const useSocketEvents = () => {
     if (!userData || !socket) return;
 
     const handleConnect = () => {
-      console.log("🟢 Connected to socket:", socket.id);
-      // Backend expects 'join_user' with the raw UID string
       socket.emit("join_user", userData?.uid);
-      console.log(`📨 Joined user room: ${userData?.uid}`);
+      // Rattrape ce qui a pu être manqué pendant que le socket était déconnecté
+      // (app killed → tap push → démarrage, reprise après long background, coupure réseau).
+      refreshNotifications(true);
+      refreshOrders(true);
+      refreshMerchant(false);
     };
 
-    if (socket.connected) handleConnect();
-
     socket.on("connect", handleConnect);
+
+    if (socket.connected) handleConnect();
+    else socket.connect();
 
     // User Order Events (Identical to UserOrderSocketService)
     socket.on("newUserOrder", (data) => {
@@ -85,10 +88,12 @@ export const useSocketEvents = () => {
     // Notification Events
     socket.on("isRead", (data) => {
       console.log("📧 Notification isRead:", data);
-      refreshNotifications();
+      // Refresh silencieux — pas de spinner visible. L'optimistic update a déjà
+      // rafraîchi l'UI instantanément ; ceci ne sert qu'à re-synchroniser depuis
+      // un autre appareil / flux externe.
+      refreshNotifications(true);
     });
     socket.on("newNotification", (data) => {
-      console.log("🔔 newNotification:", data);
       // Injection directe — pas de refetch auto (seul le pull-to-refresh déclenche un fetch).
       if (data?.notification) addNotifFromSocket(data.notification);
       else if (data?.id) addNotifFromSocket(data);

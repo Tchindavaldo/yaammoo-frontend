@@ -12,5 +12,6 @@ export const useNotifications = () => {
     refresh: ctx.refresh,
     markAsRead: ctx.markAsRead,
     addFromSocket: ctx.addFromSocket,
+    isRead: ctx.isRead,
   };
 };

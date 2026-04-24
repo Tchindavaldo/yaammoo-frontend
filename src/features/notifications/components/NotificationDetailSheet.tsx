@@ -1,9 +1,7 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, ScrollView, Pressable } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Modal, View, Text, StyleSheet, Pressable } from 'react-native';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
-import { getNotificationIcon } from '../utils/notificationRouting';
 
 interface Props {
   visible: boolean;
@@ -15,91 +13,97 @@ interface Props {
 const formatDate = (iso?: string) => {
   if (!iso) return '';
   const d = new Date(iso);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffMin = Math.floor(diffMs / 60000);
+  const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
   if (diffMin < 1) return "À l'instant";
   if (diffMin < 60) return `il y a ${diffMin} min`;
   const diffH = Math.floor(diffMin / 60);
   if (diffH < 24) return `il y a ${diffH} h`;
-  return d.toLocaleString();
+  return d.toLocaleDateString();
 };
 
 export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification, onClose, onAction }) => {
   if (!notification) return null;
   const title = notification.title || notification.titre || 'Notification';
   const message = notification.body || notification.message || '';
-  const iconName = getNotificationIcon(notification.type) as any;
   const hasOrderAction = !!(notification.orderId || ['order_new','order_status','order_cancel_by_user','order_cancel_by_merchant','order_rank_top','order_delivering'].includes(notification.type || ''));
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheet}>
-        <View style={styles.handle} />
-
-        <View style={styles.header}>
-          <View style={styles.iconWrap}>
-            <Ionicons name={iconName} size={26} color={Theme.colors.primary} />
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.sheet} onPress={() => {}}>
+          <View style={styles.handle} />
+          <View style={styles.topRow}>
+            <View style={styles.topLeft}>
+              <Text style={styles.date}>{formatDate(notification.createdAt)}</Text>
+              <Text style={styles.title}>{title}</Text>
+            </View>
+            {hasOrderAction && (
+              <Pressable style={styles.chip} onPress={() => onAction(notification)}>
+                <Text style={styles.chipText}>Voir la commande</Text>
+              </Pressable>
+            )}
           </View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.date}>{formatDate(notification.createdAt)}</Text>
-        </View>
-
-        <ScrollView style={styles.body} contentContainerStyle={{ paddingBottom: 16 }}>
           <Text style={styles.message}>{message}</Text>
-        </ScrollView>
-
-        <View style={styles.actions}>
-          {hasOrderAction && (
-            <TouchableOpacity style={styles.primaryBtn} onPress={() => onAction(notification)}>
-              <Text style={styles.primaryText}>Voir la commande</Text>
-              <Ionicons name="arrow-forward" size={18} color="white" />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.secondaryBtn} onPress={onClose}>
-            <Text style={styles.secondaryText}>Fermer</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
   sheet: {
     backgroundColor: 'white',
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    paddingHorizontal: 20, paddingBottom: 30, paddingTop: 10,
-    maxHeight: '75%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 32,
   },
   handle: {
-    alignSelf: 'center', width: 40, height: 4, borderRadius: 2,
-    backgroundColor: Theme.colors.gray[300], marginBottom: 12,
+    alignSelf: 'center',
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: Theme.colors.gray[200],
+    marginBottom: 20,
   },
-  header: { alignItems: 'center', marginBottom: 12 },
-  iconWrap: {
-    width: 56, height: 56, borderRadius: 28,
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 12,
+  },
+  topLeft: { flex: 1 },
+  date: {
+    fontSize: 12,
+    color: Theme.colors.gray[400],
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Theme.colors.dark,
+  },
+  message: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: Theme.colors.gray[700],
+    marginBottom: 8,
+  },
+  chip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
     backgroundColor: Theme.colors.primary + '15',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+    marginTop: 18,
   },
-  title: { fontSize: 17, fontWeight: 'bold', color: Theme.colors.dark, textAlign: 'center' },
-  date: { fontSize: 12, color: Theme.colors.gray[500], marginTop: 4 },
-  body: { marginTop: 8 },
-  message: { fontSize: 14, lineHeight: 22, color: Theme.colors.gray[700] },
-  actions: { marginTop: 12, gap: 10 },
-  primaryBtn: {
-    flexDirection: 'row', gap: 8,
-    backgroundColor: Theme.colors.primary,
-    paddingVertical: 14, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
+  chipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Theme.colors.primary,
   },
-  primaryText: { color: 'white', fontSize: 15, fontWeight: '700' },
-  secondaryBtn: {
-    paddingVertical: 12, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Theme.colors.gray[100],
-  },
-  secondaryText: { color: Theme.colors.gray[700], fontSize: 14, fontWeight: '600' },
 });

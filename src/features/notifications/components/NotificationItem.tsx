@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
+import { useNotifications } from '../hooks/useNotifications';
 import { getNotificationIcon } from '../utils/notificationRouting';
 
 interface NotificationItemProps {
@@ -10,15 +11,8 @@ interface NotificationItemProps {
   onPress: (notification: Notification) => void;
 }
 
-const isRead = (n: Notification) => {
-  if (typeof n.isRead === 'boolean') return n.isRead;
-  if (typeof n.isRead === 'string') {
-    try { const p = JSON.parse(n.isRead); return Array.isArray(p) ? p.length > 0 : !!p; } catch { return false; }
-  }
-  return false;
-};
-
 export const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onPress }) => {
+  const { isRead } = useNotifications();
   const read = isRead(notification);
   const title = notification.title || notification.titre || 'Notification';
   const message = notification.body || notification.message || '';

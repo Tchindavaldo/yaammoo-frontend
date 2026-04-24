@@ -10,7 +10,7 @@ export interface Notification {
   title?: string;
   message?: string;
   body?: string;
-  isRead: boolean | string;
+  isRead: boolean | string | string[];
   createdAt: string;
   idGroup?: string;
   type?: string;
@@ -26,6 +26,7 @@ interface NotificationContextType {
   refresh: (quiet?: boolean) => Promise<void>;
   markAsRead: (id: string, idGroup?: string) => Promise<void>;
   addFromSocket: (notif: Notification) => void;
+  isRead: (notif: Notification) => boolean;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -35,18 +36,19 @@ const QUEUE_KEY = "notif_read_queue";
 
 type ReadOp = { id: string; idGroup?: string; userId: string };
 
-const isNotifRead = (n: Notification, userId?: string) => {
-  if (typeof n.isRead === "boolean") return n.isRead;
-  if (typeof n.isRead === "string") {
+export const isNotifRead = (n: Notification, userId?: string) => {
+  const v: any = n.isRead;
+  if (typeof v === "boolean") return v;
+  if (Array.isArray(v)) return userId ? v.includes(userId) : v.length > 0;
+  if (typeof v === "string") {
     try {
-      const parsed = JSON.parse(n.isRead);
+      const parsed = JSON.parse(v);
       if (Array.isArray(parsed)) return userId ? parsed.includes(userId) : parsed.length > 0;
       return !!parsed;
     } catch {
       return false;
     }
   }
-  if (Array.isArray(n.isRead)) return userId ? (n.isRead as any).includes(userId) : (n.isRead as any).length > 0;
   return false;
 };
 
@@ -117,11 +119,22 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       });
       if (response.data && response.data.data) {
         const server: Notification[] = response.data.data;
-        // Filet de sécurité : ré-appliquer les reads optimistes encore en queue
+        const uid = userData.uid;
+        // Filet de sécurité : ré-appliquer les reads optimistes (user déjà présent dans isRead)
         const pendingIds = pendingReadIdsRef.current;
         const merged = pendingIds.size === 0
           ? server
-          : server.map(n => pendingIds.has(n.id) ? { ...n, isRead: true } : n);
+          : server.map(n => {
+            if (!pendingIds.has(n.id)) return n;
+            const current: any = n.isRead;
+            let arr: string[] = [];
+            if (Array.isArray(current)) arr = current.slice();
+            else if (typeof current === "string") {
+              try { const p = JSON.parse(current); if (Array.isArray(p)) arr = p.slice(); } catch { }
+            }
+            if (!arr.includes(uid)) arr.push(uid);
+            return { ...n, isRead: arr };
+          });
         setNotifications(merged);
         persistCache(merged);
       }
@@ -144,10 +157,24 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const markAsRead = useCallback(async (id: string, idGroup?: string) => {
     if (!userData) return;
+    const uid = userData.uid;
 
-    // 1. Optimistic state update
+    // Track l'optimistic read — le merge du prochain fetch s'en sert en filet de sécurité.
+    pendingReadIdsRef.current.add(id);
+
+    // 1. Optimistic state update — format cohérent avec le serveur (array de userIds)
     setNotifications(prev => {
-      const next = prev.map(n => (n.id === id ? { ...n, isRead: true } : n));
+      const next = prev.map(n => {
+        if (n.id !== id) return n;
+        const current: any = n.isRead;
+        let arr: string[] = [];
+        if (Array.isArray(current)) arr = current.slice();
+        else if (typeof current === "string") {
+          try { const p = JSON.parse(current); if (Array.isArray(p)) arr = p.slice(); } catch { }
+        }
+        if (!arr.includes(uid)) arr.push(uid);
+        return { ...n, isRead: arr };
+      });
       persistCache(next);
       return next;
     });
@@ -185,9 +212,14 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     });
   }, [persistCache]);
 
+  const isRead = useCallback(
+    (n: Notification) => isNotifRead(n, userData?.uid),
+    [userData]
+  );
+
   const unreadCount = useMemo(
-    () => notifications.filter((n) => !isNotifRead(n, userData?.uid)).length,
-    [notifications, userData]
+    () => notifications.filter((n) => !isRead(n)).length,
+    [notifications, isRead]
   );
 
   const value: NotificationContextType = {
@@ -198,6 +230,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     refresh: fetchNotifications,
     markAsRead,
     addFromSocket,
+    isRead,
   };
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

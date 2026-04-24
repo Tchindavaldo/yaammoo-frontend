@@ -4,9 +4,10 @@
 
 ## Infrastructure client
 
-- **Provider** : `src/features/socket/SocketContext.tsx` — instancie `io(Config.apiUrl)` + gère connexion/reconnexion.
-- **Handlers globaux** : `src/services/useSocketEvents.ts` — hook monté dans `_layout.tsx` qui abonne le client aux events et dispatch vers les contexts (OrderContext, NotificationContext…).
-- **Room** : dès que `AuthContext.userData.uid` est dispo, le client rejoint sa room `userId`.
+- **Singleton socket** : `src/services/socket.ts` — instancie `io(Config.apiUrl)` une seule fois au chargement du module (`socketService.getSocket()`).
+- **Handlers globaux** : `src/services/useSocketEvents.ts` — hook monté dans `_layout.tsx` qui abonne le client aux events et dispatch vers les contexts (OrderContext, NotificationContext, MerchantContext, FastFoodContext).
+- **Room** : dès que `AuthContext.userData.uid` est dispo, le client `emit('join_user', uid)` → rejoint sa room `userId` (côté backend).
+- **Catch-up sur `connect`** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)` en mode silencieux (pas de spinner) pour rattraper tout ce qui a pu être manqué pendant la déconnexion (app killed, background long, coupure réseau). `refreshFastFoods` n'est pas appelé car les menus sont rafraîchis par leurs events dédiés (`globalMenuUpdated`, `newFastFoodMenu`).
 
 ---
 
@@ -24,7 +25,11 @@
 | `removePeriodKeyDelivering` | Arrête le suivi de livraison |
 | `newClientIdDelivering` | Identifie le livreur |
 | `removeClientIdDelivering` | Retire l'identification livreur |
-| `newNotification` | `NotificationContext.refresh(true)` — sync UI sans spinner |
+| `newNotification` | `NotificationContext.addFromSocket(notif)` — injection directe dans le state + cache, **pas de refetch** |
+| `isRead` | `refreshNotifications(true)` — sync silencieux multi-device (un autre appareil a lu la notif) |
+| `newFastFoodMenu` / `fastFoodMenuUpdated` | `refreshMerchant(false)` — menus marchand rechargés sans spinner |
+| `newTransaction` | `refreshMerchant(false)` — MAJ wallet marchand |
+| `newGlobalMenu` | `refreshFastFoods()` — liste restaurants rechargée |
 
 ---
 
@@ -36,5 +41,10 @@
 
 ## Reconnexion
 
-- Sur reconnexion, re-join automatique de la room via un effet dans `SocketContext` écoutant `connect`.
-- Tous les handlers restent montés via `useSocketEvents` pour éviter les abonnements orphelins.
+- Sur reconnexion, re-join automatique via le handler `connect` dans `useSocketEvents` (émet `join_user`).
+- Catch-up automatique des données (notifications, orders, merchant) en mode silencieux — voir section Infrastructure.
+- Tous les handlers restent montés via `useSocketEvents` (effet dépendant de `[userData, socket]`) pour éviter les abonnements orphelins.
+
+## Piège connu — backends multiples
+
+Le client se connecte à `Config.apiUrl`. En dev local (`192.168.x.x:5000`), le socket est **isolé** du backend de prod (fly.io). Tester un `POST /notification/add` via curl sur la mauvaise URL n'émettra **aucun** event vers l'app. Vérifier `Config.apiUrl` avant tout debug socket.

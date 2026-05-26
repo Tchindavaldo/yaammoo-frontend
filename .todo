@@ -36,3 +36,10 @@
     -chrisFstfood
     -maman oeuf plan total ()
         -lui fournir des flyer quel distibura a ses client (si possbile au max les etudiant) qui met en valeur l'achat de ses plat via l'app ou niveau de sa boutique dans l'app
+
+[ ] gestion livraison surplcae
+    - permetre la receuperation surplcae 
+    - permetre l'option de manger sur place  
+        -gerer ces horaires
+        -permettre le lancement de l'execution de la cmd une fois au restaut
+        -permettre le lancement de l'execution de la cmd une fois a un certaine distance du restaut

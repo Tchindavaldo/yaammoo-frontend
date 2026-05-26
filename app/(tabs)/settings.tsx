@@ -19,6 +19,9 @@ import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
+import axios from 'axios';
+import { Config } from '@/src/api/config';
+import { getDeviceId } from '@/src/features/notifications/services/deviceId';
 
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
@@ -34,6 +37,28 @@ export default function SettingsScreen() {
 
   const handleLogout = async () => {
     const performLogout = async () => {
+      // Best-effort: désenregistre ce device des push avant de signer out
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        if (idToken) {
+          const deviceId = await getDeviceId();
+          await axios.post(
+            `${Config.apiUrl}/user/push-token/remove`,
+            { deviceId },
+            {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+              },
+            },
+          );
+          console.log('🗑️ [Settings] push-token/remove OK pour ce device');
+        }
+      } catch (e: any) {
+        console.warn('⚠️ [Settings] push-token/remove échoué (on continue le logout):', e?.message);
+      }
+
       await signOut(auth);
       setUserData(null);
       router.replace('/(auth)');

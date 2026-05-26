@@ -16,7 +16,6 @@ import { NotificationProvider } from "@/src/features/notifications/context/Notif
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
 import { useState, useEffect } from "react";
-import { AppLoader } from "@/src/components/AppLoader";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -62,14 +61,6 @@ function AppInitializer({ layoutMounted }: { layoutMounted: boolean }) {
       });
     }
   }, [user, userData, setupNotifications, segments, appReady, layoutMounted]);
-
-  const inAuthGroup = segments[0] === "(auth)";
-
-  if (loading || (user && !userData && !inAuthGroup)) {
-    return (
-      <AppLoader visible={true} message="Initialisation de l'application..." />
-    );
-  }
 
   return null;
 }

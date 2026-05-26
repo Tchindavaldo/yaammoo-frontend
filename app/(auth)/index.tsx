@@ -1,490 +1,440 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
-  ImageBackground,
+  Image,
+  StatusBar,
   Dimensions,
-  SafeAreaView,
+  Animated,
+  Pressable,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  useWindowDimensions,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { Ionicons } from "@expo/vector-icons";
+import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
+import Svg, {
+  Path,
+  Circle,
+  G,
+  Defs,
+  RadialGradient as SvgRadialGradient,
+  Stop,
+  Rect,
+} from "react-native-svg";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/src/services/firebase";
-import { authService } from "@/src/features/auth/services/authService";
-import { handleGoogleSignIn } from "@/src/features/auth/services/googleAuthService";
+import {
+  useFonts,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from "@expo-google-fonts/plus-jakarta-sans";
 
-/**
- * RECTIFICATION ALIGNEMENT ET ESPACEMENT - FIDÉLITÉ 1:1 IONIC
- */
-export default function AuthScreen() {
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
+
+function Sparkle({ size, style }: { size: number; style?: object }) {
+  return (
+    <View style={[{ position: "absolute", width: size, height: size }, style]}>
+      <Svg width={size} height={size} viewBox="0 0 100 100">
+        <Path
+          d="M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z"
+          fill="#1a1a1a"
+        />
+      </Svg>
+    </View>
+  );
+}
+
+function Doodle({
+  children,
+  style,
+}: {
+  children: React.ReactNode;
+  style: object;
+}) {
+  return (
+    <View style={[{ position: "absolute" }, style]} pointerEvents="none">
+      {children}
+    </View>
+  );
+}
+
+export default function WelcomeScreen() {
   const router = useRouter();
-  const { height } = useWindowDimensions();
-  const { setUserData } = useAuth();
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const slide = useRef(new Animated.Value(0)).current;
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [connect, setConnect] = useState(false);
-  const [googleLoadingTop, setGoogleLoadingTop] = useState(false);
-  const [googleLoadingBottom, setGoogleLoadingBottom] = useState(false);
-  const [googleLoadingSmall, setGoogleLoadingSmall] = useState(false);
-  const [passwordIsShow, setPasswordIsShow] = useState(false);
+  useEffect(() => {
+    Animated.spring(slide, {
+      toValue: sheetOpen ? 1 : 0,
+      useNativeDriver: true,
+      damping: 18,
+      stiffness: 140,
+      mass: 0.9,
+    }).start();
+  }, [sheetOpen, slide]);
 
-  // Media Query simulations (Basé sur auth.page2.scss)
-  const isSmall = height < 700;
-  const isExtraSmall = height < 500;
+  if (!fontsLoaded) return null;
 
-  const connectWithGoogle = async (position: 'top' | 'bottom' | 'small') => {
-    const isLoading = position === 'top' ? googleLoadingTop : position === 'bottom' ? googleLoadingBottom : googleLoadingSmall;
-    if (isLoading) return;
+  const onGetStarted = () => setSheetOpen(true);
+  const closeSheet = () => setSheetOpen(false);
 
-    if (position === 'top') setGoogleLoadingTop(true);
-    else if (position === 'bottom') setGoogleLoadingBottom(true);
-    else setGoogleLoadingSmall(true);
-
-    try {
-      const result = await handleGoogleSignIn();
-      if (result.success && result.userData) {
-        setUserData(result.userData);
-        router.replace("/(tabs)");
-      } else {
-        if (result.error && result.error !== "Connexion annulée") {
-          Alert.alert("Erreur Google", result.error);
-        }
-      }
-    } catch {
-      Alert.alert("Erreur", "Connexion Google échouée.");
-    } finally {
-      if (position === 'top') setGoogleLoadingTop(false);
-      else if (position === 'bottom') setGoogleLoadingBottom(false);
-      else setGoogleLoadingSmall(false);
-    }
-  };
-
-  const connectUser = async () => {
-    if (email !== "" && password !== "") {
-      setConnect(true);
-      try {
-        const userCredential = await signInWithEmailAndPassword(
-          auth,
-          email,
-          password,
-        );
-        const data = await authService.getUserById(userCredential.user.uid);
-        if (data) setUserData(data);
-        router.replace("/(tabs)");
-      } catch (error: any) {
-        setConnect(false);
-        console.error("❌ [Login] Erreur:", error?.code, error?.message);
-        Alert.alert("Erreur", error?.message ?? "Connexion échouée.");
-      }
-    } else {
-      Alert.alert("Erreur", "l'email ou le mot de passe ne doit pas etre vide");
-    }
-  };
-
-  const direct = (rout: string) => {
-    router.push(`/(auth)/${rout}` as any);
-  };
-
-  const isAnyLoading = connect || googleLoadingTop || googleLoadingBottom || googleLoadingSmall;
+  const sheetTranslateY = slide.interpolate({
+    inputRange: [0, 1],
+    outputRange: [SCREEN_H, 0],
+  });
+  const backdropOpacity = slide.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
 
   return (
-    <View style={styles.content}>
-      <ImageBackground
-        source={require("@/assets/blur3.jpg")}
-        style={styles.cardBack}
-        resizeMode="cover"
-      >
-        <View style={styles.cardBlack}>
-          <BlurView
-            intensity={80}
-            tint="dark"
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
+    <View style={styles.stage}>
+      <StatusBar barStyle="dark-content" />
 
-        <View
-          style={[
-            styles.cardGrid,
-            isSmall && { marginTop: isExtraSmall ? -30 : -60 },
-          ]}
+      <View style={styles.phone}>
+        {/* Base gradient */}
+        <LinearGradient
+          colors={["#f7f5f4", "#f3eeec", "#f6e6dd"]}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        {/* Warm radial glows via SVG */}
+        <Svg
+          style={StyleSheet.absoluteFill}
+          width={SCREEN_W}
+          height={SCREEN_H}
         >
-          <SafeAreaView style={{ flex: 1 }}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
-              style={{ flex: 1 }}
+          <Defs>
+            <SvgRadialGradient
+              id="g1"
+              cx={SCREEN_W * 0.6}
+              cy={SCREEN_H * 0.58}
+              rx={SCREEN_W * 0.7}
+              ry={SCREEN_W * 0.7}
+              fx={SCREEN_W * 0.6}
+              fy={SCREEN_H * 0.58}
+              gradientUnits="userSpaceOnUse"
             >
-              <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                bounces={false}
-              >
-                <View style={styles.ionGrid}>
-                  {/* Row 1: Welcome */}
-                  {!isExtraSmall && (
-                    <View style={styles.row1}>
-                      <Text style={styles.welcomeLabel}>
-                        <Text style={styles.welcomeSpan}>Welcome to</Text>
-                        {"\n"}
-                        Rudavo{"\n"}
-                        FastFood
-                      </Text>
-                    </View>
-                  )}
+              <Stop offset="0%" stopColor="#f5be82" stopOpacity={0.85} />
+              <Stop offset="35%" stopColor="#f0c8a5" stopOpacity={0.55} />
+              <Stop offset="70%" stopColor="#f0c8a5" stopOpacity={0} />
+            </SvgRadialGradient>
+            <SvgRadialGradient
+              id="g2"
+              cx={SCREEN_W * 0.3}
+              cy={SCREEN_H * 0.7}
+              rx={SCREEN_W * 0.8}
+              ry={SCREEN_W * 0.8}
+              fx={SCREEN_W * 0.3}
+              fy={SCREEN_H * 0.7}
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="#ebb4a5" stopOpacity={0.55} />
+              <Stop offset="65%" stopColor="#ebb4a5" stopOpacity={0} />
+            </SvgRadialGradient>
+            <SvgRadialGradient
+              id="g3"
+              cx={SCREEN_W * 0.85}
+              cy={SCREEN_H * 0.8}
+              rx={SCREEN_W * 0.75}
+              ry={SCREEN_W * 0.75}
+              fx={SCREEN_W * 0.85}
+              fy={SCREEN_H * 0.8}
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="#fac88c" stopOpacity={0.7} />
+              <Stop offset="65%" stopColor="#fac88c" stopOpacity={0} />
+            </SvgRadialGradient>
+          </Defs>
+          <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="url(#g1)" />
+          <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="url(#g2)" />
+          <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="url(#g3)" />
+        </Svg>
 
-                  {/* Row 2: Connexion */}
-                  <View style={styles.row2}>
-                    <View style={styles.colSize5}>
-                      <Text style={styles.labelConnexion}>Connexion</Text>
-                    </View>
-                    <View style={styles.colTopIconG}>
-                      <TouchableOpacity
-                        onPress={() => connectWithGoogle('top')}
-                        disabled={isAnyLoading}
-                      >
-                        {googleLoadingTop ? (
-                          <ActivityIndicator size="small" color="#a65757" />
-                        ) : (
-                          <Ionicons
-                            name="logo-google"
-                            size={24}
-                            color="#a65757"
-                          />
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.colTopIconW}>
-                      <TouchableOpacity
-                        onPress={() => direct("phone")}
-                        disabled={isAnyLoading}
-                      >
-                        <Ionicons
-                          name="logo-whatsapp"
-                          size={24}
-                          color="#a65757"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-
-                  {/* Row 3: Email */}
-                  <View style={styles.row3}>
-                    <Ionicons
-                      name="person"
-                      size={20}
-                      color="#a65757"
-                      style={styles.ico1}
-                    />
-                    <TextInput
-                      style={styles.ionInput}
-                      placeholder="Entrer votre mot de Email"
-                      placeholderTextColor="#a3a3a3"
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      editable={!isAnyLoading}
-                    />
-                  </View>
-
-                  {/* Row 4: Password */}
-                  <View style={styles.row4}>
-                    <Ionicons
-                      name="lock-closed"
-                      size={20}
-                      color="#a65757"
-                      style={styles.ico1}
-                    />
-                    <TextInput
-                      style={styles.ionInput}
-                      placeholder="Entrer votre mot de passe"
-                      placeholderTextColor="#a3a3a3"
-                      value={password}
-                      onChangeText={setPassword}
-                      secureTextEntry={!passwordIsShow}
-                      editable={!isAnyLoading}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setPasswordIsShow(!passwordIsShow)}
-                      style={styles.ico2}
-                    >
-                      <Ionicons
-                        name={passwordIsShow ? "eye-off" : "eye"}
-                        size={20}
-                        color="#a65757"
-                      />
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Row 6: Action Button */}
-                  <View style={styles.rowAction}>
-                    <View style={styles.colBtnConnect}>
-                      <TouchableOpacity
-                        style={styles.ionButton}
-                        onPress={connectUser}
-                        disabled={isAnyLoading}
-                      >
-                        {connect ? (
-                          <ActivityIndicator size="small" color="white" />
-                        ) : (
-                          <Ionicons
-                            name="arrow-forward-outline"
-                            size={20}
-                            color="white"
-                          />
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                    {!isSmall && (
-                      <TouchableOpacity style={styles.colForgot}>
-                        <Text style={styles.labelForgot}>Forget Password?</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {/* Row 7: Inscription Section */}
-                  {!isSmall && (
-                    <View style={styles.rowNoAccount}>
-                      <View style={styles.colSize5}>
-                        <Text style={styles.labelInscripLabel}>
-                          vous n&apos;avez pas de compte ?
-                        </Text>
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Augmentation de l'espace */}
-                  <View style={[styles.rowInscription, { marginTop: 15 }]}>
-                    {isExtraSmall && (
-                      <Text style={styles.labelInscripLabel}>
-                        vous n&apos;avez pas de compte ?
-                      </Text>
-                    )}
-                    <TouchableOpacity
-                      style={styles.ionChip}
-                      onPress={() => direct("register")}
-                      disabled={isAnyLoading}
-                    >
-                      <Text style={styles.chipText}>inscription</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Row 9: Connect Label */}
-                  {!isSmall && (
-                    <>
-                      <View style={styles.rowConnectLabel}>
-                        <Text style={styles.labelConnectAvec}>
-                          Connectez Vous Avec
-                        </Text>
-                      </View>
-
-                      <View style={styles.rowOtherConnect}>
-                        <View style={styles.colSize1}>
-                          <TouchableOpacity
-                            onPress={() => connectWithGoogle('bottom')}
-                            disabled={isAnyLoading}
-                          >
-                            {googleLoadingBottom ? (
-                              <ActivityIndicator size="small" color="#a65757" />
-                            ) : (
-                              <Ionicons
-                                name="logo-google"
-                                size={35}
-                                color="#a65757"
-                              />
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                        <View style={styles.colSize5Bottom}>
-                          <TouchableOpacity
-                            onPress={() => direct("phone")}
-                            disabled={isAnyLoading}
-                          >
-                            <Ionicons
-                              name="logo-whatsapp"
-                              size={35}
-                              color="#a65757"
-                              style={{ left: 10 }}
-                            />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </>
-                  )}
-
-                  {/* Responsive small substitut */}
-                  {isSmall && !isExtraSmall && (
-                    <View style={styles.colOtherConnectSmall}>
-                      <TouchableOpacity
-                        onPress={() => connectWithGoogle('small')}
-                        disabled={isAnyLoading}
-                      >
-                        {googleLoadingSmall ? (
-                          <ActivityIndicator size="small" color="#a65757" />
-                        ) : (
-                          <Ionicons
-                            name="logo-google"
-                            size={35}
-                            color="#a65757"
-                          />
-                        )}
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => direct("phone")}
-                        disabled={isAnyLoading}
-                      >
-                        <Ionicons
-                          name="logo-whatsapp"
-                          size={35}
-                          color="#a65757"
-                          style={{ marginLeft: 30 }}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              </ScrollView>
-            </KeyboardAvoidingView>
-          </SafeAreaView>
+        {/* Sparkles top-right */}
+        <View style={styles.sparkles} pointerEvents="none">
+          <Sparkle size={18} style={{ top: 0, right: 0 }} />
+          <Sparkle size={12} style={{ top: 28, right: 38 }} />
+          <Sparkle size={7} style={{ top: 50, right: 8, opacity: 0.7 }} />
         </View>
-      </ImageBackground>
+
+        {/* Content: headline + button */}
+        <View style={styles.content}>
+          <Text style={styles.headline}>
+            Quick{"\n"}Bites, Fast{"\n"}Delivery!
+          </Text>
+
+          <TouchableOpacity
+            style={styles.btnGetStarted}
+            activeOpacity={0.85}
+            onPress={onGetStarted}
+          >
+            <Text style={styles.btnText}>Get started</Text>
+            <Svg width={14} height={14} viewBox="0 0 14 14">
+              <Path
+                d="M2 7h10M8 3l4 4-4 4"
+                stroke="#fff"
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </Svg>
+          </TouchableOpacity>
+        </View>
+
+        {/* Doodles */}
+        <Doodle style={styles.burger}>
+          <Svg viewBox="0 0 44 44" width="100%" height="100%">
+            <G
+              fill="none"
+              stroke="#c9a394"
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M6 22c0-7 7-12 16-12s16 5 16 12" />
+              <Path d="M6 28h32" />
+              <Path d="M8 32c2 2 5 2 7 0s5-2 7 0 5 2 7 0 5-2 7 0" />
+              <Circle cx={14} cy={18} r={1} />
+              <Circle cx={22} cy={15} r={1} />
+              <Circle cx={30} cy={18} r={1} />
+            </G>
+          </Svg>
+        </Doodle>
+
+        <Doodle style={styles.donut}>
+          <Svg viewBox="0 0 42 42" width="100%" height="100%">
+            <G
+              fill="none"
+              stroke="#c9a394"
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Circle cx={21} cy={21} r={14} />
+              <Circle cx={21} cy={21} r={5} />
+              <Path d="M9 16c1 1 2 1 3 0M14 11c1 1 2 1 3 0M28 10c1 1 2 1 3 0M33 16c1 1 2 1 3 0" />
+            </G>
+          </Svg>
+        </Doodle>
+
+        <Doodle style={styles.coffee}>
+          <Svg viewBox="0 0 40 46" width="100%" height="100%">
+            <G
+              fill="none"
+              stroke="#c9a394"
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M10 16h22l-2 24a4 4 0 01-4 4H16a4 4 0 01-4-4L10 16z" />
+              <Path d="M8 16h26" />
+              <Path d="M16 8c0 2-2 2-2 4M22 6c0 2-2 2-2 4M28 8c0 2-2 2-2 4" />
+            </G>
+          </Svg>
+        </Doodle>
+
+        <Doodle style={styles.croissant}>
+          <Svg viewBox="0 0 38 30" width="100%" height="100%">
+            <G
+              fill="none"
+              stroke="#c9a394"
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <Path d="M4 22c4-12 16-18 30-16-2 14-12 22-26 22l-4-6z" />
+              <Path d="M12 18l4-6M18 20l4-6M24 20l4-6" />
+            </G>
+          </Svg>
+        </Doodle>
+
+        {/* Rider */}
+        <Image
+          source={require("@/assets/images/delivery-rider.png")}
+          style={styles.rider}
+          resizeMode="contain"
+        />
+
+        {/* Bottom sheet backdrop */}
+        {sheetOpen && (
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { opacity: backdropOpacity, zIndex: 9 }]}
+            pointerEvents="auto"
+          >
+            <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
+              <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+              <View style={styles.backdropDim} />
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {/* Bottom sheet */}
+        <Animated.View
+          style={[
+            styles.sheet,
+            { transform: [{ translateY: sheetTranslateY }] },
+          ]}
+          pointerEvents={sheetOpen ? "auto" : "none"}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+            style={{ flex: 1 }}
+          >
+            <View style={styles.sheetHandle} />
+            <ScrollView
+              bounces={false}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <AuthSheetContent />
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { flex: 1 },
-  cardBack: { flex: 1, height: "100%", width: "100%" },
-  cardBlack: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.57)",
-    zIndex: 10,
-  },
-  cardGrid: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 5000,
-    backgroundColor: "transparent",
-  },
-  scrollContent: { flexGrow: 1, justifyContent: "center" },
-  ionGrid: { paddingHorizontal: 15, width: "100%" },
-  // Row 1: Welcome
-  row1: { top: 25, marginBottom: 20 },
-  welcomeLabel: {
-    fontSize: 50,
-    color: "white",
-    fontWeight: "bold",
-    lineHeight: 55,
-  },
-  welcomeSpan: { fontSize: 24, fontWeight: "300" },
-  // Row 2: Connexion
-  row2: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 10,
-  },
-  colSize5: { width: (Dimensions.get("window").width - 30) * (5 / 12) },
-  colTopIconG: {
-    width: (Dimensions.get("window").width - 30) * (5 / 12),
-    alignItems: "flex-end",
-    paddingRight: 9,
-  },
-  colTopIconW: {
-    width: (Dimensions.get("window").width - 30) * (2 / 12),
+  stage: {
+    flex: 1,
+    backgroundColor: "#ececec",
+    justifyContent: "center",
     alignItems: "center",
   },
-  labelConnexion: { fontSize: 20, fontWeight: "bold", color: "white" },
-  // Inputs
-  row3: {
+  phone: {
+    flex: 1,
+    width: "100%",
+    overflow: "hidden",
     position: "relative",
-    justifyContent: "center",
+  },
+  sparkles: {
+    position: "absolute",
+    top: 70,
+    right: 40,
+    width: 90,
     height: 60,
-    marginTop: 5,
+    zIndex: 4,
   },
-  row4: {
-    position: "relative",
-    justifyContent: "center",
-    height: 60,
-    marginTop: 9,
-  },
-  ico1: { position: "absolute", left: 0, zIndex: 101 },
-  ico2: { position: "absolute", right: 0, zIndex: 101, padding: 5 },
-  ionInput: {
-    height: 60,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#ffffff59",
-    paddingLeft: 30,
-    color: "white",
-    fontSize: 16,
-  },
-  // Action Row
-  rowAction: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 13,
-  },
-  colBtnConnect: { width: "auto" },
-  ionButton: {
-    width: 35,
-    height: 35,
-    borderRadius: 10,
-    backgroundColor: "rgba(236,73,19,1.00)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  colForgot: { flex: 1, alignItems: "flex-end" },
-  labelForgot: { color: "white", fontSize: 14 },
-  // Inscription Section
-  rowNoAccount: {
-    marginTop: 9,
-    width: (Dimensions.get("window").width - 30) * (5 / 12),
-  },
-  labelInscripLabel: { fontSize: 13, color: "white" },
-  rowInscription: { flexDirection: "row", alignItems: "center" },
-  ionChip: {
-    backgroundColor: "rgba(236,73,19,1.00)",
-    borderRadius: 26,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    alignSelf: "flex-start",
-    shadowColor: "rgb(255, 157, 157)",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 9,
-    elevation: 8,
-  },
-  chipText: { fontSize: 9, color: "white", fontWeight: "bold" },
-  // Bottom Part
-  rowConnectLabel: { marginTop: 25 },
-  labelConnectAvec: { color: "white", fontSize: 13 },
-  rowOtherConnect: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 15,
-  },
-  colSize1: {
-    width: (Dimensions.get("window").width - 30) * (1 / 12),
-    alignItems: "center",
-  },
-  colSize5Bottom: {
-    width: (Dimensions.get("window").width - 30) * (5 / 12),
+  content: {
+    position: "absolute",
+    top: 96,
+    left: 36,
+    right: 36,
+    zIndex: 4,
     alignItems: "flex-start",
   },
-  colOtherConnectSmall: {
+  headline: {
+    fontFamily: "PlusJakartaSans_800ExtraBold",
+    fontSize: 44,
+    lineHeight: 52,
+    letterSpacing: -0.6,
+    color: "#141414",
+    marginBottom: 32,
+  },
+  btnGetStarted: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 15,
-    marginTop: 10,
+    gap: 8,
+    backgroundColor: "#141414",
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 999,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  btnText: {
+    fontFamily: "PlusJakartaSans_700Bold",
+    fontSize: 14,
+    color: "#ffffff",
+    letterSpacing: 0.2,
+    marginRight: 8,
+  },
+  burger: {
+    top: "50%",
+    right: "28%",
+    width: 38,
+    height: 38,
+    opacity: 0.5,
+    zIndex: 2,
+  },
+  donut: {
+    top: "56%",
+    right: "6%",
+    width: 38,
+    height: 38,
+    opacity: 0.55,
+    zIndex: 2,
+  },
+  coffee: {
+    top: "60%",
+    left: "8%",
+    width: 34,
+    height: 40,
+    opacity: 0.5,
+    zIndex: 2,
+  },
+  croissant: {
+    top: "50%",
+    left: "30%",
+    width: 34,
+    height: 28,
+    opacity: 0.45,
+    zIndex: 2,
+  },
+  rider: {
+    position: "absolute",
+    bottom: 0,
+    right: 10,
+    width: SCREEN_W * 0.85,
+    height: SCREEN_W * 0.95,
+    zIndex: 3,
+  },
+
+  backdropDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(20,20,20,0.25)",
+  },
+  sheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: SCREEN_H * 0.82,
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 8,
+    paddingBottom: 24,
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 20,
+  },
+  sheetHandle: {
+    alignSelf: "center",
+    width: 44,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: "#e0e0de",
+    marginTop: 8,
+    marginBottom: 4,
   },
 });

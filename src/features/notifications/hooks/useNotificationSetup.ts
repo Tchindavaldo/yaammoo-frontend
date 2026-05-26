@@ -11,6 +11,7 @@ import { Users } from "@/src/types";
 import { useNotificationContext } from "../context/NotificationContext";
 import { getNotificationRoute } from "../utils/notificationRouting";
 import { auth } from "@/src/services/firebase";
+import { getDeviceId } from "../services/deviceId";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -45,34 +46,9 @@ export const useNotificationSetup = () => {
     // Le socket `newNotification` injecte déjà la notif dans le state.
     const receivedSub = Notifications.addNotificationReceivedListener(() => { });
 
-    // FCM natif foreground : présenter une notification locale (sinon Android/iOS n'affichent rien)
-    let fcmForegroundUnsub: (() => void) | null = null;
-    (async () => {
-      try {
-        const mod = await import("@react-native-firebase/messaging").catch(() => null);
-        const messaging = mod?.default;
-        if (messaging && typeof messaging === "function") {
-          fcmForegroundUnsub = messaging().onMessage(async (remoteMessage: any) => {
-            const title = remoteMessage?.notification?.title ?? remoteMessage?.data?.title ?? "Notification";
-            const body = remoteMessage?.notification?.body ?? remoteMessage?.data?.body ?? "";
-            const data = remoteMessage?.data ?? {};
-            await Notifications.scheduleNotificationAsync({
-              content: {
-                title: String(title),
-                body: String(body),
-                data,
-                sound: "default",
-              },
-              trigger: Platform.OS === "android"
-                ? { channelId: "high_priority_channel" } as any
-                : null,
-            });
-          });
-        }
-      } catch (e) {
-        console.warn("FCM foreground listener unavailable:", (e as Error).message);
-      }
-    })();
+    // Note: avec APNs direct (iOS) + FCM direct (Android), expo-notifications
+    // gère déjà le foreground via addNotificationReceivedListener.
+    // Pas besoin d'un listener supplémentaire.
 
     // App killed → tap sur notif → routing initial
     (async () => {
@@ -89,7 +65,6 @@ export const useNotificationSetup = () => {
     return () => {
       responseSub.remove();
       receivedSub.remove();
-      fcmForegroundUnsub?.();
     };
   }, [router]);
 
@@ -122,29 +97,19 @@ export const useNotificationSetup = () => {
     let token: string | null = null;
 
     try {
-      const { default: messaging } = await import("@react-native-firebase/messaging").catch(() => ({ default: null }));
-      if (messaging && typeof messaging === "function") {
-        const authStatus = await messaging().requestPermission();
-        const enabled =
-          authStatus === 1 /* AUTHORIZED */ ||
-          authStatus === 2 /* PROVISIONAL */ ||
-          authStatus === true;
-        if (enabled) {
-          const fcmToken = await messaging().getToken();
-          if (fcmToken) {
-            token = fcmToken;
-            console.log("Native FCM Token:", token);
-          }
-        }
-      }
+      // Token natif : FCM sur Android, APNs hex brut sur iOS.
+      // Le backend route selon le `platform` envoyé avec le token.
+      token = (await Notifications.getDevicePushTokenAsync()).data;
+      console.log(`✅ [Notifications] Native ${Platform.OS} token:`, token);
     } catch (e) {
-      console.warn("Native FCM unavailable, falling back to Expo Push:", (e as Error).message);
-    }
-
-    if (!token) {
-      const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? (require("@/app.json").expo?.extra?.eas?.projectId ?? undefined);
-      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-      console.log("Expo Push Token:", token);
+      console.warn("Native push token unavailable, fallback to Expo:", (e as Error).message);
+      try {
+        const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? (require("@/app.json").expo?.extra?.eas?.projectId ?? undefined);
+        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        console.log("Expo Push Token (fallback):", token);
+      } catch (e2) {
+        console.error("Tous les fallbacks ont échoué:", (e2 as Error).message);
+      }
     }
 
     if (Platform.OS === "android") {
@@ -162,13 +127,23 @@ export const useNotificationSetup = () => {
 
   const syncToken = async (token: string) => {
     if (!userData) return;
+    const platform: "ios" | "android" = Platform.OS === "ios" ? "ios" : "android";
+    const deviceId = await getDeviceId();
     const idToken = await auth.currentUser?.getIdToken();
-    await axios.put(`${Config.apiUrl}/user/${userData?.uid}`, { fcmToken: token }, {
-      headers: {
-        "Authorization": `Bearer ${idToken}`,
-        "ngrok-skip-browser-warning": "true",
+
+    console.log(`📤 [NOTIFICATIONS] push-token/add (${platform}, device=${deviceId.substring(0, 8)}...)`);
+    await axios.post(
+      `${Config.apiUrl}/user/push-token/add`,
+      { token, platform, deviceId },
+      {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "ngrok-skip-browser-warning": "true",
+          "Content-Type": "application/json",
+        },
       },
-    });
+    );
+
     // Mise à jour locale pour éviter les re-sync inutiles
     const existing = ((userData as any).fcmTokens as string[] | undefined) || [];
     const nextTokens = existing.includes(token) ? existing : [...existing, token];

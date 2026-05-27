@@ -10,16 +10,19 @@
     "newArchEnabled": true,
     "extra": {
       "eas": {
-        "projectId": "44bc7644-3f94-439e-8c1f-896bfb55b526"
-      }
+        "projectId": "24675cd4-f658-43d1-9bfc-0ce0ff16a007"
+      },
+      "router": {}
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yaammoo.app",
+      "bundleIdentifier": "com.rauval.yaammoo",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -32,7 +35,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.yaammoo.app",
+      "package": "com.rauval.yaammoo",
       "googleServicesFile": "./google-services.json",
       "signingConfig": {
         "storeFile": "../debug.keystore",
@@ -68,6 +71,6 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "owner": "devright"
+    "owner": "rauval"
   }
 }

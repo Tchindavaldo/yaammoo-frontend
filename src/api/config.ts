@@ -4,12 +4,12 @@ export const Config = {
   // apiUrl: 'http://192.168.8.101:5000',
   // apiUrl: "http://192.168.137.206:5000",
   // apiUrl: "http://192.168.11.37:5000",
-  apiUrl: "http://192.168.1.122:5000",
+  // apiUrl: "http://192.168.1.122:5000",
   // apiUrl: "http://172.20.10.4:5000",
   // apiUrl: "http://localhost:5000",
 
 
-  // apiUrl: "https://yaammoo-backend.fly.dev",
+  apiUrl: "https://yaammoo-backend.fly.dev",
 
   firebaseConfig: {
     apiKey: "AIzaSyCGjhUfAHQncfeUcI0wXpghctQG_O9WCgo",
@@ -34,10 +34,10 @@ export const Config = {
   // Après avoir créé les credentials, remplacez les valeurs ci-dessous.
   googleAuth: {
     webClientId:
-      "66450079753-g4cg4o1lhrd31aa7logdjadf030stii1.apps.googleusercontent.com",
+      "136139892705-3ahf4grc1prt7jtuk5toifjgi7mgt40c.apps.googleusercontent.com",
     androidClientId:
-      "583417452577-bheaqpgkvahp6smfs0eflrqpstgatbud.apps.googleusercontent.com",
+      "136139892705-3s9mp9mbvc39ud3v7hhmu6947v7aepde.apps.googleusercontent.com",
     iosClientId:
-      "66450079753-kjsomtcdc5eld27ib06rvq0q3ic3to2q.apps.googleusercontent.com",
+      "136139892705-9b71at19ehfjhbte6ou3orj6tq0mbeha.apps.googleusercontent.com",
   },
 };

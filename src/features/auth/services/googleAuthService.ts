@@ -32,10 +32,10 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     const GoogleSignin = GS;
     statusCodes = SC;
 
-    // Configuration Google Signin
+    // Configuration Google Signin (Android Client ID est lu depuis
+    // google-services.json automatiquement par la lib, ne pas le passer ici)
     GoogleSignin.configure({
       webClientId: Config.googleAuth.webClientId,
-      androidClientId: Config.googleAuth.androidClientId,
       iosClientId: Config.googleAuth.iosClientId,
       offlineAccess: true,
     });

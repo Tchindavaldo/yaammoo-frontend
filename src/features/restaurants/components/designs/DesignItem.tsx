@@ -44,8 +44,8 @@ export const DesignItem: React.FC<DesignItemProps> = ({
   // --- DESIGN 1: SPECIAL OFFERS (Ex-D3) ---
   if (variant === 1) {
     const bgImage = index === 0 
-      ? require('@/assets/images/purre avocat tomate legume flouter.png')
-      : require('@/assets/images/purre avocat tomate legume flouter.png');
+      ? require('@/assets/images/purre-avocat-tomate-legume-flouter.png')
+      : require('@/assets/images/purre-avocat-tomate-legume-flouter.png');
 
     return (
       <TouchableOpacity style={[styles.v1Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
@@ -118,7 +118,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         {/* Image avec overlay gradient */}
         <View style={styles.v2ImgWrap}>
           <Image
-            source={menu.image ? { uri: menu.image } : require('@/assets/images/riz_Spaghettis et Œuf_poulet_pané_fritz_platain_noBG.png')}
+            source={menu.image ? { uri: menu.image } : require('@/assets/images/riz-spaghettis-oeuf-poulet-pane-fritz-platain-noBG.png')}
             style={styles.v2Image}
           />
         </View>
@@ -239,7 +239,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         {/* Image dramatique en bas-droite avec shadow */}
         <View style={[styles.v4ImgWrap, { shadowColor: accentColor }]}>
             <Image
-                source={menu.image ? { uri: menu.image } : require('@/assets/images/purre avocat tomate legume .png')}
+                source={menu.image ? { uri: menu.image } : require('@/assets/images/purre-avocat-tomate-legume.png')}
                 style={styles.v4Image}
             />
         </View>

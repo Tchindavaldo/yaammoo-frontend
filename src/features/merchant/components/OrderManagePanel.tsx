@@ -3,10 +3,8 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +30,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   console.log('📦 OrderManagePanel received orders:', orders.map(o => ({ id: o.id, status: o.status })));
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // 'express' par défaut pour le tab finished. Les sections passées (pending/proccess)
+  // utilisent leur propre clé 'past_<iso>', donc elles restent toutes fermées au départ.
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>('express');
   const [launchedGroups, setLaunchedGroups] = useState<Record<string, boolean>>({});
   const [launchingGroups, setLaunchingGroups] = useState<Record<string, boolean>>({});
@@ -50,27 +50,39 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     }
   };
 
-  // Grouper les commandes par date (Priorité date de livraison comme Ionic)
-  const getDateKey = (order: Commande) => {
+  // Helpers de date : retourne YYYY-MM-DD à partir d'une commande (clé stable)
+  const getOrderDateISO = (order: Commande): string => {
     const deliveryDate = order.delivery?.date;
     const dateStr = deliveryDate || order.createdAt || '';
-    
-    if (!dateStr) return 'Aujourd\'hui';
-    
+    if (!dateStr) return new Date().toISOString().substring(0, 10);
     try {
       const d = new Date(dateStr);
-      const now = new Date();
-      if (d.toDateString() === now.toDateString()) return 'Aujourd\'hui';
-      
-      const tomorrow = new Date();
-      tomorrow.setDate(now.getDate() + 1);
-      if (d.toDateString() === tomorrow.toDateString()) return 'Demain';
-
-      return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+      if (isNaN(d.getTime())) return new Date().toISOString().substring(0, 10);
+      return d.toISOString().substring(0, 10);
     } catch {
-      return 'Aujourd\'hui';
+      return new Date().toISOString().substring(0, 10);
     }
   };
+
+  const todayISO = new Date().toISOString().substring(0, 10);
+  const tomorrowISO = (() => {
+    const t = new Date();
+    t.setDate(t.getDate() + 1);
+    return t.toISOString().substring(0, 10);
+  })();
+
+  // Format d'affichage pour un chip / header de section
+  const formatDateLabel = (iso: string): string => {
+    if (iso === todayISO) return "Aujourd'hui";
+    if (iso === tomorrowISO) return 'Demain';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    } catch {
+      return iso;
+    }
+  };
+
 
   const statusMap: Record<OrderStatus, string[]> = {
     pending: ['pending'],
@@ -82,9 +94,25 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     statusMap[selectedStatus].includes(o.status)
   );
 
-  // Dates uniques disponibles pour ce statut
-  const availableDates = [...new Set(filteredOrders.map(getDateKey))];
-  const today = availableDates[0] || 'Aujourd\'hui';
+  // Dates uniques (ISO YYYY-MM-DD) disponibles pour ce statut
+  const availableDateISOs = useMemo(() => {
+    return [...new Set(filteredOrders.map(getOrderDateISO))];
+  }, [filteredOrders]);
+
+  // Ordre des chips : futures (asc) → aujourd'hui → passées (desc)
+  const sortedDateISOs = useMemo(() => {
+    const futures = availableDateISOs.filter((d) => d > todayISO).sort();
+    const past = availableDateISOs.filter((d) => d < todayISO).sort().reverse();
+    const hasToday = availableDateISOs.includes(todayISO);
+    return [...futures, ...(hasToday ? [todayISO] : []), ...past];
+  }, [availableDateISOs]);
+
+  // Sections passées (uniquement pour la vue par défaut pending/processing)
+  const pastDateISOs = useMemo(() => {
+    return availableDateISOs.filter((d) => d < todayISO).sort().reverse();
+  }, [availableDateISOs]);
+
+  const todayLabel = "Aujourd'hui";
   const currentDate = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long',
     year: 'numeric',
@@ -92,19 +120,39 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     day: 'numeric',
   });
 
+  // Trie par rank pour pending/proccess
+  const sortByRank = (arr: Commande[]) => {
+    return [...arr].sort((a, b) => {
+      const ra = (a as any).rank ?? Infinity;
+      const rb = (b as any).rank ?? Infinity;
+      return ra - rb;
+    });
+  };
+
+  // Commandes filtrées :
+  //  - Si un chip de date est sélectionné → uniquement cette date
+  //  - Sinon → uniquement aujourd'hui (la liste principale)
+  //    Pour pending/proccess, les dates passées non traitées sont rendues en sections sous la liste.
+  //    Pour finish, on n'affiche jamais l'historique en dessous : seulement la date sélectionnée.
   const dateFilteredOrders = useMemo(() => {
-    const filtered = selectedDate
-      ? filteredOrders.filter((o) => getDateKey(o) === selectedDate)
-      : filteredOrders;
+    const isoFilter = selectedDate || todayISO;
+    const filtered = filteredOrders.filter((o) => getOrderDateISO(o) === isoFilter);
     if (selectedStatus === 'pending' || selectedStatus === 'proccess') {
-      return [...filtered].sort((a, b) => {
-        const ra = (a as any).rank ?? Infinity;
-        const rb = (b as any).rank ?? Infinity;
-        return ra - rb;
-      });
+      return sortByRank(filtered);
     }
     return filtered;
   }, [filteredOrders, selectedDate, selectedStatus]);
+
+  // Groupes par date passée (uniquement quand aucun chip n'est sélectionné et statut pending/proccess)
+  const pastSections = useMemo(() => {
+    if (selectedDate) return [];
+    if (selectedStatus !== 'pending' && selectedStatus !== 'proccess') return [];
+    return pastDateISOs.map((iso) => ({
+      iso,
+      label: formatDateLabel(iso),
+      orders: sortByRank(filteredOrders.filter((o) => getOrderDateISO(o) === iso)),
+    }));
+  }, [pastDateISOs, selectedDate, selectedStatus, filteredOrders]);
 
   const counts = {
     pending: orders.filter((o) => statusMap.pending.includes(o.status)).length,
@@ -120,9 +168,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     { key: 'finish', label: 'Terminées', icon: 'checkmark-done-outline' },
   ];
 
-  const getRelativeDateLabel = (dateKey: string | null) => {
-    if (!dateKey || dateKey === 'Aujourd\'hui') return "aujourd'hui";
-    return dateKey;
+  const getRelativeDateLabel = (dateISO: string | null) => {
+    if (!dateISO) return "aujourd'hui";
+    return formatDateLabel(dateISO).toLowerCase();
   };
 
   // Grouping logic for the finished orders design (Untitled-1 style)
@@ -189,16 +237,17 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           <Text style={styles.fullDate}>{currentDate}</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
-          {availableDates.map((date, idx) => {
-            const isSelected = (selectedDate === null && date === today) || selectedDate === date;
+          {sortedDateISOs.map((iso) => {
+            const isSelected =
+              (selectedDate === null && iso === todayISO) || selectedDate === iso;
             return (
               <TouchableOpacity
-                key={idx}
+                key={iso}
                 style={[styles.dateChip, isSelected && styles.dateChipActive]}
-                onPress={() => setSelectedDate(date)}
+                onPress={() => setSelectedDate((prev) => (prev === iso ? null : iso))}
               >
                 <Text style={[styles.dateChipText, isSelected && styles.dateChipTextActive]}>
-                  {date}
+                  {formatDateLabel(iso)}
                 </Text>
               </TouchableOpacity>
             );
@@ -366,19 +415,13 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           )}
         </ScrollView>
       ) : (
-        <FlatList
-          data={dateFilteredOrders}
-          renderItem={({ item }) => (
-            <MerchantOrderCard
-              order={item}
-              onUpdateStatus={(status) => onUpdateStatus(item.id, status)}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          refreshing={loading}
-          onRefresh={onRefresh}
+        <ScrollView
+          style={styles.container}
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
+        >
+          {/* Liste principale (aujourd'hui par défaut, ou date du chip sélectionné) */}
+          {dateFilteredOrders.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons
                 name={selectedStatus === 'pending' ? 'time-outline' : 'restaurant-outline'}
@@ -386,11 +429,70 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                 color={Theme.colors.gray[300]}
               />
               <Text style={styles.emptyText}>
-                {selectedStatus === 'pending' ? 'Aucune commande en attente' : 'Aucune commande en cours'}
+                {selectedStatus === 'pending'
+                  ? 'Aucune commande en attente'
+                  : 'Aucune commande en cours'}
               </Text>
             </View>
-          }
-        />
+          ) : (
+            <View style={{ gap: 6 }}>
+              {dateFilteredOrders.map((item) => (
+                <MerchantOrderCard
+                  key={item.id}
+                  order={item}
+                  onUpdateStatus={(status) => onUpdateStatus(item.id, status)}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Sections passées non traitées (uniquement vue par défaut) */}
+          {pastSections.length > 0 && (
+            <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
+              <Text style={styles.sectionLabel}>Commandes des jours précédents</Text>
+              {pastSections.map((section) => {
+                const groupId = `past_${section.iso}`;
+                const isExpanded = expandedGroupId === groupId;
+                return (
+                  <View key={groupId} style={{ marginBottom: 15 }}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => toggleGroup(groupId)}
+                      style={styles.groupHeader}
+                    >
+                      <View style={styles.groupHeaderLeft}>
+                        <Ionicons
+                          name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                          size={12}
+                          color="#888780"
+                        />
+                        <Text style={styles.groupTitle}>{section.label}</Text>
+                        <View style={styles.groupCountBadge}>
+                          <Text style={styles.groupCountText}>
+                            {section.orders.length} commande
+                            {section.orders.length > 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    {isExpanded && (
+                      <View style={{ gap: 6, marginTop: 6 }}>
+                        {section.orders.map((item) => (
+                          <MerchantOrderCard
+                            key={item.id}
+                            order={item}
+                            onUpdateStatus={(status) => onUpdateStatus(item.id, status)}
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </ScrollView>
       )}
     </View>
   );

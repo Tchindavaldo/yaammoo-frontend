@@ -95,6 +95,7 @@ export const useNotificationSetup = () => {
     }
 
     let token: string | null = null;
+    const expoPushEnabled = process.env.EXPO_PUBLIC_USE_EXPO_PUSH === "true";
 
     try {
       // Token natif : FCM sur Android, APNs hex brut sur iOS.
@@ -102,13 +103,17 @@ export const useNotificationSetup = () => {
       token = (await Notifications.getDevicePushTokenAsync()).data;
       console.log(`✅ [Notifications] Native ${Platform.OS} token:`, token);
     } catch (e) {
-      console.warn("Native push token unavailable, fallback to Expo:", (e as Error).message);
-      try {
-        const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? (require("@/app.json").expo?.extra?.eas?.projectId ?? undefined);
-        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-        console.log("Expo Push Token (fallback):", token);
-      } catch (e2) {
-        console.error("Tous les fallbacks ont échoué:", (e2 as Error).message);
+      if (!expoPushEnabled) {
+        console.warn("Native push token unavailable:", (e as Error).message);
+      } else {
+        console.warn("Native push token unavailable, fallback to Expo:", (e as Error).message);
+        try {
+          const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? (require("@/app.json").expo?.extra?.eas?.projectId ?? undefined);
+          token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+          console.log("Expo Push Token (fallback):", token);
+        } catch (e2) {
+          console.error("Tous les fallbacks ont échoué:", (e2 as Error).message);
+        }
       }
     }
 
@@ -145,9 +150,10 @@ export const useNotificationSetup = () => {
     );
 
     // Mise à jour locale pour éviter les re-sync inutiles
-    const existing = ((userData as any).fcmTokens as string[] | undefined) || [];
-    const nextTokens = existing.includes(token) ? existing : [...existing, token];
-    const updated: Users = { ...(userData as any), fcmTokens: nextTokens };
+    const existing = ((userData as any).pushTokens as Array<{ token: string; platform: string; deviceId: string }> | undefined) || [];
+    const filtered = existing.filter((e) => e?.deviceId !== deviceId);
+    const nextTokens = [...filtered, { token, platform, deviceId, lastSeen: new Date().toISOString() }];
+    const updated: Users = { ...(userData as any), pushTokens: nextTokens };
     setUserData(updated);
     await storage.set("user_data", updated);
   };
@@ -169,13 +175,15 @@ export const useNotificationSetup = () => {
     const token = await registerForPushNotificationsAsync();
     if (!token) return;
 
-    const existing = ((userData as any).fcmTokens as string[] | undefined) || [];
-    if (existing.includes(token)) return; // déjà synchronisé
+    const existing = ((userData as any).pushTokens as Array<{ token: string; deviceId: string }> | undefined) || [];
+    const deviceId = await getDeviceId();
+    const alreadySynced = existing.some((e) => e?.deviceId === deviceId && e?.token === token);
+    if (alreadySynced) return;
 
     try {
       await syncToken(token);
     } catch (error) {
-      console.error("Error syncing FCM token:", error);
+      console.error("Error syncing push token:", error);
       await storage.set("unsentFcmToken", token);
     }
   };

@@ -48,8 +48,10 @@ export const userFirestore = {
       }
 
       return rawData;
-    } catch (error) {
-      console.error("Error fetching user via API:", error);
+    } catch (error: any) {
+      if (error?.response?.status !== 404) {
+        console.error("Error fetching user via API:", error);
+      }
       return null;
     }
   },

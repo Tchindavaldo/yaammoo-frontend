@@ -256,41 +256,73 @@ export default function OrdersScreen() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOrderToDelete(null);
   };
+  // Récupère la date "métier" d'une commande (livraison.date ou delivery.date), fallback createdAt
+  const getOrderDate = (o: any): Date | null => {
+    const raw = o?.livraison?.date || o?.delivery?.date || o?.createdAt;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const statusList: Commande[] = useMemo(() => {
+    switch (activeStatus) {
+      case "pending": return pending;
+      case "active": return active;
+      case "finished": return finished;
+      case "delivered": return delivered;
+      default: return [];
+    }
+  }, [activeStatus, pending, active, finished, delivered]);
+
   const filteredOrders = useMemo(() => {
     if (currentTab === "cart") return pendingToBuy;
-
-    let list: Commande[] = [];
-    switch (activeStatus) {
-      case "pending":
-        list = pending;
-        break;
-      case "active":
-        list = active;
-        break;
-      case "finished":
-        list = finished;
-        break;
-      case "delivered":
-        list = delivered;
-        break;
-      default:
-        list = [];
-    }
-
-    return list.filter((o: any) => {
-      if (!o.livraison?.date) return isSameDay(new Date(), selectedDate);
-      return isSameDay(new Date(o.livraison.date), selectedDate);
+    return statusList.filter((o: any) => {
+      const d = getOrderDate(o);
+      if (!d) return isSameDay(new Date(), selectedDate);
+      return isSameDay(d, selectedDate);
     });
-  }, [
-    currentTab,
-    activeStatus,
-    selectedDate,
-    pendingToBuy,
-    pending,
-    active,
-    finished,
-    delivered,
-  ]);
+  }, [currentTab, selectedDate, pendingToBuy, statusList]);
+
+  // Sections passées non traitées (seulement pending/active, et seulement
+  // quand aujourd'hui est la date sélectionnée).
+  const isShowingTodayDefault = useMemo(() => {
+    return (
+      isSameDay(selectedDate, new Date()) &&
+      (activeStatus === "pending" || activeStatus === "active")
+    );
+  }, [selectedDate, activeStatus]);
+
+  const pastSections = useMemo(() => {
+    if (!isShowingTodayDefault) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    // Récupère toutes les dates passées (avant aujourd'hui) où il reste des commandes pending/active
+    const byDate = new Map<string, Commande[]>();
+    statusList.forEach((o: any) => {
+      const d = getOrderDate(o);
+      if (!d) return;
+      if (d.getTime() >= today.getTime()) return; // aujourd'hui et futur exclus
+      const key = d.toISOString().substring(0, 10);
+      if (!byDate.has(key)) byDate.set(key, []);
+      byDate.get(key)!.push(o);
+    });
+    // Tri desc (plus récent en premier)
+    return Array.from(byDate.entries())
+      .sort(([a], [b]) => (a > b ? -1 : a < b ? 1 : 0))
+      .map(([iso, orders]) => ({ iso, orders }));
+  }, [isShowingTodayDefault, statusList]);
+
+  const formatPastDateLabel = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      if (isSameDay(d, yesterday)) return "Hier";
+      return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    } catch {
+      return iso;
+    }
+  };
 
   const handleDelete = async (id: string) => {
     const success = await deleteOrder(id);
@@ -343,35 +375,43 @@ export default function OrdersScreen() {
 
   const { fastFoods } = useFastFoods();
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [expandedPastSection, setExpandedPastSection] = useState<string | null>(null);
 
   const toggleGroup = (id: string) => {
     setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const groupedOrders = useMemo(() => {
-    if (currentTab !== "status") return null;
+  const togglePastSection = (iso: string) => {
+    setExpandedPastSection(prev => (prev === iso ? null : iso));
+  };
+
+  // Groupe une liste de commandes par fastFood (utilisé pour la liste principale et les sections passées)
+  const groupByFastFood = (orders: Commande[]) => {
     const groups: Record<string, { name: string; orders: Commande[] }> = {};
-    
-    filteredOrders.forEach(o => {
+    orders.forEach((o) => {
       const ffId = o.fastFoodId;
       if (!ffId) return;
       if (!groups[ffId]) {
-        const ff = fastFoods.find(f => f.id === ffId);
+        const ff = fastFoods.find((f) => f.id === ffId);
         groups[ffId] = {
           name: ff?.nom || (ff as any)?.name || "Boutique",
-          orders: []
+          orders: [],
         };
       }
       groups[ffId].orders.push(o);
     });
-    
-    const result = Object.entries(groups).map(([id, data]) => ({ id, ...data }));
-    
+    return Object.entries(groups).map(([id, data]) => ({ id, ...data }));
+  };
+
+  const groupedOrders = useMemo(() => {
+    if (currentTab !== "status") return null;
+    const result = groupByFastFood(filteredOrders);
+
     // Auto-expand first group if nothing is expanded
     if (result.length > 0 && Object.keys(expandedGroups).length === 0) {
       setExpandedGroups({ [result[0].id]: true });
     }
-    
+
     return result;
   }, [filteredOrders, currentTab, fastFoods]);
 
@@ -395,8 +435,61 @@ export default function OrdersScreen() {
     );
   }
 
+  const renderFastFoodGroup = (group: { id: string; name: string; orders: Commande[] }, keyPrefix = "") => {
+    const groupKey = `${keyPrefix}${group.id}`;
+    const isExpanded = !!expandedGroups[groupKey];
+    return (
+      <View key={groupKey} style={{ marginBottom: 15 }}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => toggleGroup(groupKey)}
+          style={styles.groupHeader}
+        >
+          <View style={styles.groupHeaderLeft}>
+            <Ionicons
+              name={isExpanded ? "chevron-down" : "chevron-forward"}
+              size={12}
+              color="#888780"
+            />
+            <Text style={styles.groupTitle} numberOfLines={1}>{group.name}</Text>
+            <View style={styles.groupCountBadge}>
+              <Text style={styles.groupCountText}>
+                {group.orders.length} commande{group.orders.length > 1 ? 's' : ''}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {isExpanded && (
+          <View style={{ gap: 2 }}>
+            {group.orders.map((order) => {
+              const isFinished = order.status === 'finished' || order.status === 'delivered';
+              return (
+                <ClientOrderCard
+                  key={order.id}
+                  order={order}
+                  onUpdateQuantity={handleUpdateQty}
+                  showActions={false}
+                  hideRanking={isFinished}
+                  onPress={() => {
+                    setSelectedOrderDetails(order);
+                    setSelectedGroupOrders(group.orders);
+                    setDetailVisible(true);
+                  }}
+                />
+              );
+            })}
+          </View>
+        )}
+      </View>
+    );
+  };
+
   const renderStatusGroups = () => {
-    if (!groupedOrders || groupedOrders.length === 0) {
+    const hasMain = groupedOrders && groupedOrders.length > 0;
+    const hasPast = pastSections.length > 0;
+
+    if (!hasMain && !hasPast) {
       return (
         <View style={[styles.centered, { paddingTop: 100 }]}>
           <Ionicons name="receipt-outline" size={60} color={Theme.colors.gray[200]} />
@@ -407,54 +500,53 @@ export default function OrdersScreen() {
 
     return (
       <View style={{ paddingHorizontal: 16 }}>
-        {groupedOrders.map((group) => {
-          const isExpanded = !!expandedGroups[group.id];
-          return (
-            <View key={group.id} style={{ marginBottom: 15 }}>
-              <TouchableOpacity 
-                activeOpacity={0.7} 
-                onPress={() => toggleGroup(group.id)}
-                style={styles.groupHeader}
-              >
-                <View style={styles.groupHeaderLeft}>
-                  <Ionicons 
-                    name={isExpanded ? "chevron-down" : "chevron-forward"} 
-                    size={12} 
-                    color="#888780" 
-                  />
-                  <Text style={styles.groupTitle} numberOfLines={1}>{group.name}</Text>
-                  <View style={styles.groupCountBadge}>
-                    <Text style={styles.groupCountText}>
-                      {group.orders.length} commande{group.orders.length > 1 ? 's' : ''}
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-              
-              {isExpanded && (
-                <View style={{ gap: 2 }}>
-                  {group.orders.map(order => {
-                    const isFinished = order.status === 'finished' || order.status === 'delivered';
-                    return (
-                      <ClientOrderCard
-                        key={order.id}
-                        order={order}
-                        onUpdateQuantity={handleUpdateQty}
-                        showActions={false}
-                        hideRanking={isFinished}
-                        onPress={() => {
-                          setSelectedOrderDetails(order);
-                          setSelectedGroupOrders(group.orders);
-                          setDetailVisible(true);
-                        }}
+        {hasMain ? (
+          groupedOrders!.map((g) => renderFastFoodGroup(g))
+        ) : (
+          <View style={[styles.centered, { paddingTop: 40, paddingBottom: 20 }]}>
+            <Ionicons name="receipt-outline" size={50} color={Theme.colors.gray[200]} />
+            <Text style={styles.emptyText}>Aucune commande pour aujourd'hui</Text>
+          </View>
+        )}
+
+        {hasPast && (
+          <View style={{ marginTop: 24 }}>
+            <Text style={styles.pastSectionLabel}>Commandes des jours précédents</Text>
+            {pastSections.map((section) => {
+              const sectionKey = `past_${section.iso}`;
+              const isOpen = expandedPastSection === section.iso;
+              const groups = groupByFastFood(section.orders);
+              return (
+                <View key={sectionKey} style={{ marginBottom: 15 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => togglePastSection(section.iso)}
+                    style={styles.groupHeader}
+                  >
+                    <View style={styles.groupHeaderLeft}>
+                      <Ionicons
+                        name={isOpen ? "chevron-down" : "chevron-forward"}
+                        size={12}
+                        color="#888780"
                       />
-                    );
-                  })}
+                      <Text style={styles.groupTitle}>{formatPastDateLabel(section.iso)}</Text>
+                      <View style={styles.groupCountBadge}>
+                        <Text style={styles.groupCountText}>
+                          {section.orders.length} commande{section.orders.length > 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                  {isOpen && (
+                    <View style={{ marginTop: 6 }}>
+                      {groups.map((g) => renderFastFoodGroup(g, `${sectionKey}_`))}
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-          );
-        })}
+              );
+            })}
+          </View>
+        )}
       </View>
     );
   };
@@ -849,5 +941,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#5F5E5A',
     fontWeight: '500',
+  },
+  pastSectionLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#888780',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 10,
   },
 });

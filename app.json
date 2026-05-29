@@ -23,7 +23,9 @@
         "UIBackgroundModes": [
           "remote-notification"
         ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.",
+        "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus."
       }
     },
     "android": {

@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>App Store Connect — Yaammoo (valeurs à copier-coller)</title>
+<style>
+  :root {
+    --bg: #0a0a12;
+    --card: #13131f;
+    --card-2: #1a1a28;
+    --text: #e8e8f0;
+    --muted: #8a8aa0;
+    --accent: #ff6b35;
+    --accent-soft: rgba(255, 107, 53, 0.15);
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --border: rgba(255,255,255,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #0a0a12 0%, #0f0f1a 100%);
+    color: var(--text);
+    line-height: 1.65;
+    padding: 40px 20px;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 30px;
+    background: var(--card);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 0%, #aaa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  header p { margin-top: 10px; color: var(--muted); font-size: 16px; }
+  section {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+  }
+  h2 {
+    margin: 0 0 18px;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+  }
+  h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  h3 {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 18px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .copy {
+    background: #05050a;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: "SF Mono", Monaco, monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #b8e6b3;
+    margin: 8px 0 16px;
+  }
+  .field {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .field:last-child { border-bottom: none; }
+  .field .label { color: var(--muted); font-size: 13px; font-weight: 600; }
+  .field .value { color: var(--text); font-size: 14px; word-break: break-word; }
+  .field .value code {
+    background: var(--card-2);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #ffb380;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: var(--card-2);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  th {
+    background: rgba(255, 107, 53, 0.12);
+    color: #ffb380;
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+  }
+  .pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin-left: 6px;
+  }
+  .pill.req { background: rgba(239, 68, 68, 0.15); color: #ff8080; }
+  .pill.opt { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+  .callout {
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin: 14px 0;
+    font-size: 13px;
+    border-left: 4px solid;
+  }
+  .callout.info {
+    background: rgba(59, 130, 246, 0.08);
+    border-color: #3b82f6;
+    color: #bfdbfe;
+  }
+  .callout.warn {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: var(--warning);
+    color: #fde68a;
+  }
+  .callout.success {
+    background: rgba(34, 197, 94, 0.08);
+    border-color: var(--success);
+    color: #bbf7d0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>App Store Connect — Yaammoo</h1>
+    <p>Valeurs prêtes à copier-coller dans chaque champ. iOS App 1.0</p>
+  </header>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">1</span> App Information (Général)</h2>
+
+    <div class="field">
+      <div class="label">Name</div>
+      <div class="value">Yaammoo</div>
+    </div>
+    <div class="field">
+      <div class="label">Subtitle <span class="pill opt">30 car. max</span></div>
+      <div class="value">Commandez vos repas favoris</div>
+    </div>
+    <div class="field">
+      <div class="label">Bundle ID</div>
+      <div class="value"><code>com.rauval.yaammoo</code></div>
+    </div>
+    <div class="field">
+      <div class="label">SKU</div>
+      <div class="value"><code>YAAMMOO-IOS-001</code></div>
+    </div>
+    <div class="field">
+      <div class="label">Primary Language</div>
+      <div class="value">French (France)</div>
+    </div>
+    <div class="field">
+      <div class="label">Category — Primary</div>
+      <div class="value">Food &amp; Drink</div>
+    </div>
+    <div class="field">
+      <div class="label">Category — Secondary</div>
+      <div class="value">Shopping</div>
+    </div>
+    <div class="field">
+      <div class="label">Content Rights</div>
+      <div class="value">Yes, this app has the necessary rights to its third-party content.</div>
+    </div>
+    <div class="field">
+      <div class="label">App Encryption</div>
+      <div class="value">Exempté — <code>ITSAppUsesNonExemptEncryption: false</code> déjà déclaré dans <code>app.json</code></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">2</span> Promotional Text <span class="pill opt">170 car.</span></h2>
+    <div class="copy">Commandez vos plats préférés des meilleurs restaurants et fast-foods près de chez vous. Livraison rapide, paiement sécurisé, suivi en temps réel.</div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">3</span> Description <span class="pill req">obligatoire</span></h2>
+    <p style="color: var(--muted); margin-top:-6px;">Apple refuse les caractères Unicode décoratifs (━ ✨ etc.). ASCII uniquement.</p>
+    <div class="copy">Yaammoo est l'application qui vous connecte aux meilleurs restaurants, fast-foods et marchands de proximité. Commandez en quelques clics et faites-vous livrer ou retirez sur place.
+
+------------------------------
+FONCTIONNALITES PRINCIPALES
+------------------------------
+
+- Catalogue de restaurants : explorez les boutiques et menus autour de vous, avec photos, descriptions et prix clairs.
+
+- Commande rapide : ajoutez vos plats au panier, personnalisez vos options et passez commande en quelques secondes.
+
+- Suivi en temps reel : suivez l'etat de votre commande (preparee, en route, livree) directement depuis l'application.
+
+- Notifications intelligentes : recevez des alertes pour la confirmation, la preparation et la livraison de vos commandes.
+
+- Programme de bonus : gagnez et utilisez vos bonus de fidelite a chaque commande.
+
+- Connexion securisee : connexion rapide avec Sign in with Apple, Google ou email. Vos donnees sont protegees par Firebase.
+
+- Mode marchand : si vous etes restaurateur, gerez votre boutique, vos menus et vos commandes directement depuis l'application.
+
+------------------------------
+CONFIDENTIALITE
+------------------------------
+
+Yaammoo ne vend jamais vos donnees. Vos informations sont chiffrees et stockees de maniere securisee. Vous pouvez supprimer votre compte a tout moment depuis l'application.
+
+------------------------------
+A PROPOS
+------------------------------
+
+Yaammoo est une plateforme de mise en relation entre clients et marchands. Les noms des restaurants et marques cites sont cites a titre informatif. Yaammoo n'est affilie a aucune marque tierce sauf accord commercial.
+
+Telechargez Yaammoo et savourez vos plats favoris en quelques clics.</div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">4</span> Keywords <span class="pill opt">100 car. max</span></h2>
+    <div class="copy">restaurant,livraison,fast food,commande,repas,food,plat,boutique,marchand,bonus</div>
+    <p style="color: var(--muted); font-size: 12px;">98 caractères. Pas d'espace après la virgule pour économiser.</p>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">5</span> URLs <span class="pill req">obligatoires</span></h2>
+
+    <div class="field">
+      <div class="label">Support URL</div>
+      <div class="value"><code>https://yaammoo.com/support</code></div>
+    </div>
+    <div class="field">
+      <div class="label">Marketing URL <span class="pill opt">opt.</span></div>
+      <div class="value"><code>https://yaammoo.com</code></div>
+    </div>
+    <div class="field">
+      <div class="label">Privacy Policy URL</div>
+      <div class="value"><code>https://yaammoo.com/politique-confidentialite.html</code></div>
+    </div>
+
+    <div class="callout warn">
+      <strong>⚠️ À créer absolument</strong> : <code>https://yaammoo.com/support</code> et <code>https://yaammoo.com/politique-confidentialite.html</code>.
+      Apple les teste pendant la review. Un 404 = refus immédiat.
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">6</span> Version &amp; Copyright</h2>
+    <div class="field">
+      <div class="label">Version</div>
+      <div class="value"><code>1.0</code></div>
+    </div>
+    <div class="field">
+      <div class="label">Copyright</div>
+      <div class="value">2026 Yaammoo</div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">7</span> App Review Information</h2>
+
+    <h3>Sign-In Information</h3>
+    <div class="callout info">Cocher <strong>Sign-in required</strong>.</div>
+    <div class="field">
+      <div class="label">User name</div>
+      <div class="value"><code>review@yaammoo.com</code></div>
+    </div>
+    <div class="field">
+      <div class="label">Password</div>
+      <div class="value"><code>AppleReview2026!</code></div>
+    </div>
+    <div class="callout warn">
+      Ce compte doit exister réellement dans Firebase Auth, avoir des commandes passées et un mode marchand actif (sinon Apple ne pourra pas tester la fonctionnalité boutique).
+    </div>
+
+    <h3>Contact Information</h3>
+    <div class="field">
+      <div class="label">First name</div>
+      <div class="value">Valdo Blair</div>
+    </div>
+    <div class="field">
+      <div class="label">Last name</div>
+      <div class="value">Tchinda Tchenetsu</div>
+    </div>
+    <div class="field">
+      <div class="label">Phone number</div>
+      <div class="value">+237 [ton numéro complet]</div>
+    </div>
+    <div class="field">
+      <div class="label">Email</div>
+      <div class="value">tchindatchenetsuvaldoblair@gmail.com</div>
+    </div>
+
+    <h3>Notes (en anglais — copier tel quel)</h3>
+    <div class="copy">Hello App Review Team,
+
+Yaammoo is a food ordering platform that connects users with local restaurants, fast-foods, and merchants in Africa (primarily Cameroon).
+
+AUTHENTICATION:
+- The app supports Sign in with Apple (as required by Guideline 4.8), Google Sign-In, and email/password via Firebase Authentication.
+
+PERMISSIONS REQUESTED:
+- Location (when in use): to display nearby restaurants and merchants. The app will work without location, but with reduced relevance.
+- Photo Library: only when a merchant edits their shop or menu to upload product photos. Not requested for regular customers.
+- Push Notifications: order status updates (confirmation, preparation, delivery).
+
+TEST ACCOUNT:
+- Email: review@yaammoo.com
+- Password: AppleReview2026!
+- This account has pre-filled orders and merchant mode activated for full feature testing.
+
+NO IN-APP PURCHASES:
+- Payment for food orders is handled outside the app (cash on delivery / Mobile Money). Apple IAP is not applicable.
+
+ACCOUNT DELETION:
+- Accessible from Settings → Zone de danger → Supprimer mon compte.
+- Deletion is immediate and removes all user data (profile, orders, transactions, bonuses) plus the Firebase Auth account.
+
+Please feel free to contact us if you need any additional information.
+
+Thank you,
+Valdo Blair Tchinda</div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">8</span> Age Rating — Questionnaire</h2>
+    <table>
+      <thead><tr><th>Catégorie</th><th>Réponse</th></tr></thead>
+      <tbody>
+        <tr><td>Profanity or Crude Humor</td><td>None</td></tr>
+        <tr><td>Horror/Fear Themes</td><td>None</td></tr>
+        <tr><td>Alcohol, Tobacco, or Drug References</td><td>None <em>(ou Infrequent si les restaurants vendent de l'alcool)</em></td></tr>
+        <tr><td>Medical or Treatment Information</td><td>None</td></tr>
+        <tr><td>Health or Wellness Topics</td><td>None</td></tr>
+        <tr><td>Mature/Suggestive Themes</td><td>None</td></tr>
+        <tr><td>Sexual Content / Nudity</td><td>None</td></tr>
+        <tr><td>Violence (toutes catégories)</td><td>None</td></tr>
+        <tr><td>Gambling / Simulated Gambling / Contests / Loot Boxes</td><td>No</td></tr>
+        <tr><td>Unrestricted Web Access</td><td>No</td></tr>
+        <tr><td>User-Generated Content</td><td>No <em>(les avis utilisateurs sont modérés si présents — sinon No)</em></td></tr>
+        <tr><td>Messaging and Chat</td><td>No</td></tr>
+        <tr><td>Advertising</td><td>None</td></tr>
+        <tr><td>Age Override</td><td>Not Applicable</td></tr>
+      </tbody>
+    </table>
+    <div class="callout success">Résultat attendu : <strong>4+</strong></div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">9</span> App Privacy — Données à déclarer</h2>
+    <p style="color: var(--muted); margin-top: -6px;">
+      Apple compare mot à mot avec ta politique. Cohérence obligatoire avec
+      <code>politique-confidentialite.html</code>.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Catégorie</th><th>Donnée</th><th>Usage</th><th>Linked ?</th><th>Tracking ?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td rowspan="3">Contact Info</td><td>Name</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td>Email Address</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td>Phone Number</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td rowspan="2">Identifiers</td><td>User ID (Firebase UID)</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td>Device ID (push token)</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td>Location</td><td>Coarse Location</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td>Purchases</td><td>Purchase History (commandes)</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td>Financial Info</td><td>Other Financial Info (montants commandes / bonus)</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+        <tr><td>User Content</td><td>Photos (uniquement marchands pour menus)</td><td>App Functionality</td><td>Yes</td><td>No</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <strong>NE PAS cocher</strong> : Health, Sensitive Info, Contacts, Browsing History, Search History, Audio Data,
+      Gameplay Content, IDFA / Advertising Data.
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">10</span> Pricing and Availability</h2>
+    <div class="field">
+      <div class="label">Price</div>
+      <div class="value">Free (Tier 0)</div>
+    </div>
+    <div class="field">
+      <div class="label">Availability</div>
+      <div class="value">All Countries or Regions (175) <em>OU</em> sélection Afrique + diaspora (Cameroun, Sénégal, Côte d'Ivoire, France, Belgique, Canada, etc.)</div>
+    </div>
+    <div class="field">
+      <div class="label">Tax Category</div>
+      <div class="value">App Store software</div>
+    </div>
+    <div class="field">
+      <div class="label">Apple Silicon Mac</div>
+      <div class="value">❌ Décocher (app conçue pour mobile uniquement)</div>
+    </div>
+    <div class="field">
+      <div class="label">Apple Vision Pro</div>
+      <div class="value">❌ Décocher</div>
+    </div>
+    <div class="field">
+      <div class="label">Distribution</div>
+      <div class="value">Public — Discoverable on the App Store</div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">11</span> Digital Services Act (UE)</h2>
+    <div class="callout warn">
+      Si tu gardes les pays UE dans Availability → tu DOIS faire la déclaration
+      DSA dans <em>Business → Agreements → Complete Compliance Requirements</em>.
+    </div>
+    <div class="field">
+      <div class="label">Trader status</div>
+      <div class="value"><strong>Non-trader</strong> (particulier, app gratuite, pas d'IAP)</div>
+    </div>
+    <p style="color: var(--muted); font-size: 13px;">
+      Si plus tard tu monétises (IAP, abonnements ou commissions visibles côté Apple) →
+      tu devras repasser en <strong>Trader</strong> avec RCCM / adresse pro vérifiée.
+    </p>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">12</span> Screenshots iPhone 6.5" / 6.7" <span class="pill req">min 3</span></h2>
+    <p>Format : <strong>1290×2796</strong> (iPhone 15 Pro Max) ou <strong>1242×2688</strong>.</p>
+    <p>Idées de captures avec libellés safe :</p>
+    <ul style="font-size: 14px; line-height: 1.9;">
+      <li>« Découvrez les meilleurs restaurants près de chez vous »</li>
+      <li>« Commandez en quelques secondes »</li>
+      <li>« Suivez votre commande en temps réel »</li>
+      <li>« Mode marchand : gérez votre boutique »</li>
+      <li>« Gagnez des bonus à chaque commande »</li>
+      <li>« Connexion sécurisée avec Apple, Google ou email »</li>
+    </ul>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">13</span> Build &amp; Release</h2>
+    <div class="field">
+      <div class="label">Build production</div>
+      <div class="value"><code>eas build -p ios --profile production</code></div>
+    </div>
+    <div class="field">
+      <div class="label">Submit</div>
+      <div class="value"><code>eas submit -p ios --latest</code></div>
+    </div>
+    <div class="field">
+      <div class="label">Release</div>
+      <div class="value">Manually release this version <em>(recommandé)</em></div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────────── -->
+  <section>
+    <h2><span class="num">14</span> Checklist finale avant Submit for Review</h2>
+    <ul style="font-size: 14px; line-height: 2;">
+      <li>☐ <code>https://yaammoo.com/support</code> en ligne (200 OK)</li>
+      <li>☐ <code>https://yaammoo.com/politique-confidentialite.html</code> en ligne (200 OK)</li>
+      <li>☐ App Privacy = Privacy Policy (cohérence mot à mot)</li>
+      <li>☐ Compte démo <code>review@yaammoo.com</code> testé sur vrai iPhone</li>
+      <li>☐ Sign in with Apple fonctionne en prod</li>
+      <li>☐ Suppression de compte fonctionnelle (Settings → Zone de danger)</li>
+      <li>☐ Permissions Location et Photos affichent un texte clair (NSUsageDescription)</li>
+      <li>☐ Build sélectionné dans la version 1.0</li>
+      <li>☐ Screenshots uploadés (min 3)</li>
+      <li>☐ DSA Non-trader déclaré (si UE incluse)</li>
+    </ul>
+  </section>
+
+</div>
+</body>
+</html>

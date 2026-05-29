@@ -1,15 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import axios from "axios";
 import { auth } from "@/src/services/firebase";
 import { storage } from "@/src/utils/storage";
 import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
+import { Config } from "@/src/api/config";
 
 interface AuthContextType {
   user: User | null;
   userData: Users | null;
   loading: boolean;
   setUserData: (data: Users | null) => void;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,9 +107,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const deleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("Aucun utilisateur connecté");
+    }
+
+    const idToken = await currentUser.getIdToken();
+    const response = await axios.delete(
+      `${Config.apiUrl}/user/delete-account`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+      },
+    );
+
+    if (!response.data?.success) {
+      throw new Error(response.data?.error || response.data?.message || "Échec de la suppression");
+    }
+
+    console.log("✅ [AuthContext] Compte supprimé côté serveur");
+
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn("⚠️ [AuthContext] signOut après deleteAccount:", e);
+    }
+
+    await storage.remove("user_data");
+    setUser(null);
+    setUserData(null);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, userData, loading, setUserData: handleUpdateUserData }}
+      value={{ user, userData, loading, setUserData: handleUpdateUserData, deleteAccount }}
     >
       {children}
     </AuthContext.Provider>

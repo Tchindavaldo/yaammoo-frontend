@@ -8,6 +8,9 @@ import {
   TouchableOpacity,
   Switch,
   Platform,
+  Modal,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -28,10 +31,14 @@ const SectionHeader = ({ title }: { title: string }) => (
 );
 
 export default function SettingsScreen() {
-  const { userData, setUserData } = useAuth();
+  const { userData, setUserData, deleteAccount } = useAuth();
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [editBoutiqueVisible, setEditBoutiqueVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const REQUIRED_CONFIRM = 'SUPPRIMER';
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -90,6 +97,49 @@ export default function SettingsScreen() {
       window.alert(`La section "${label}" sera disponible dans une prochaine version.`);
     } else {
       Alert.alert('Bientôt disponible', `La section "${label}" sera disponible dans une prochaine version.`);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    setDeleteConfirmText('');
+    setDeleteVisible(true);
+  };
+
+  const cancelDelete = () => {
+    if (isDeleting) return;
+    setDeleteVisible(false);
+    setDeleteConfirmText('');
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmText.trim().toUpperCase() !== REQUIRED_CONFIRM) {
+      Alert.alert(
+        'Confirmation requise',
+        `Tapez exactement "${REQUIRED_CONFIRM}" pour confirmer.`,
+      );
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteAccount();
+      setDeleteVisible(false);
+      setDeleteConfirmText('');
+      setIsDeleting(false);
+      Alert.alert(
+        'Compte supprimé',
+        'Votre compte et toutes vos données ont été supprimés définitivement.',
+        [{ text: 'OK', onPress: () => router.replace('/(auth)') }],
+      );
+    } catch (error: any) {
+      setIsDeleting(false);
+      Alert.alert(
+        'Erreur',
+        error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          'Impossible de supprimer le compte. Réessayez ou contactez le support.',
+      );
     }
   };
 
@@ -255,6 +305,17 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* Zone de danger */}
+        <SectionHeader title="Zone de danger" />
+        <View style={[styles.section, { borderWidth: 1, borderColor: Theme.colors.danger + '30' }]}>
+          <SettingItem
+            icon="trash-outline"
+            title="Supprimer mon compte"
+            color={Theme.colors.danger}
+            onPress={handleDeleteAccount}
+          />
+        </View>
+
         {/* App version */}
         <View style={styles.versionBlock}>
           <Text style={styles.versionText}>Yaammoo v1.0.0</Text>
@@ -270,6 +331,76 @@ export default function SettingsScreen() {
           // Refresh if needed
         }}
       />
+
+      {/* Modal Suppression de compte */}
+      <Modal
+        visible={deleteVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelDelete}
+        statusBarTranslucent
+      >
+        <View style={styles.deleteBackdrop}>
+          <View style={styles.deleteCard}>
+            <View style={styles.deleteIconWrap}>
+              <Ionicons name="warning" size={32} color={Theme.colors.danger} />
+            </View>
+            <Text style={styles.deleteTitle}>Supprimer mon compte</Text>
+            <Text style={styles.deleteMessage}>
+              Cette action est <Text style={{ fontWeight: '700' }}>définitive et irréversible</Text>.{'\n\n'}
+              Toutes vos données seront supprimées :{'\n'}
+              • Votre profil et identifiants{'\n'}
+              • Vos commandes et transactions{'\n'}
+              • Vos bonus et notifications{'\n'}
+              {userData?.isMarchand ? '• Votre boutique et menus\n' : ''}
+              {'\n'}Pour confirmer, tapez{' '}
+              <Text style={{ fontWeight: '700', color: Theme.colors.danger }}>{REQUIRED_CONFIRM}</Text>{' '}
+              ci-dessous.
+            </Text>
+
+            <TextInput
+              style={styles.deleteInput}
+              value={deleteConfirmText}
+              onChangeText={setDeleteConfirmText}
+              placeholder={REQUIRED_CONFIRM}
+              placeholderTextColor={Theme.colors.gray[300]}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              editable={!isDeleting}
+            />
+
+            <View style={styles.deleteActions}>
+              <TouchableOpacity
+                style={[styles.deleteBtn, styles.deleteBtnCancel]}
+                onPress={cancelDelete}
+                disabled={isDeleting}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteBtnCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.deleteBtn,
+                  styles.deleteBtnDanger,
+                  deleteConfirmText.trim().toUpperCase() !== REQUIRED_CONFIRM && { opacity: 0.5 },
+                ]}
+                onPress={confirmDelete}
+                disabled={
+                  isDeleting ||
+                  deleteConfirmText.trim().toUpperCase() !== REQUIRED_CONFIRM
+                }
+                activeOpacity={0.8}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.deleteBtnDangerText}>Supprimer</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -419,5 +550,91 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Theme.colors.gray[300],
     marginTop: 4,
+  },
+  deleteBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  deleteCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingTop: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  deleteIconWrap: {
+    alignSelf: 'center',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Theme.colors.danger + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  deleteTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Theme.colors.dark,
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  deleteMessage: {
+    fontSize: 14,
+    color: Theme.colors.gray[500],
+    textAlign: 'left',
+    marginBottom: 18,
+    lineHeight: 20,
+  },
+  deleteInput: {
+    height: 48,
+    borderWidth: 1.5,
+    borderColor: Theme.colors.gray[200],
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: Theme.colors.dark,
+    fontWeight: '600',
+    marginBottom: 18,
+    backgroundColor: Theme.colors.gray[100],
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+  deleteActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  deleteBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteBtnCancel: {
+    backgroundColor: Theme.colors.gray[100],
+  },
+  deleteBtnCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Theme.colors.dark,
+  },
+  deleteBtnDanger: {
+    backgroundColor: Theme.colors.danger,
+  },
+  deleteBtnDangerText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
   },
 });

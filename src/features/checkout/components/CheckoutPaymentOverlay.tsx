@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Loader } from '../../../components/Loader';
@@ -10,14 +10,31 @@ const SHEET_HEIGHT = 384;
 interface CheckoutPaymentOverlayProps {
   onClose: () => void;
   phone: string;
-  onConfirm: (phone: string) => Promise<void>;
+  onPhoneChange: (phone: string) => void;
+  onConfirm: () => Promise<void>;
   totalAmount: number;
+  paymentState?: 'input' | 'waiting' | 'success' | 'failed';
+  network?: 'orange' | 'mtn';
+  onNetworkChange?: (network: 'orange' | 'mtn') => void;
+  ussdCode?: string;
+  onError?: (error: string) => void;
 }
 
-export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({ onClose, phone, onConfirm, totalAmount }) => {
+export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
+  onClose,
+  phone,
+  onPhoneChange,
+  onConfirm,
+  totalAmount,
+  paymentState = 'input',
+  network = 'orange',
+  onNetworkChange,
+  ussdCode = '#150#',
+}) => {
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
+  const [localNetwork, setLocalNetwork] = React.useState<'orange' | 'mtn'>(network);
   
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
@@ -89,7 +106,8 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({ 
     } else {
       try {
         setIsProcessing(true);
-        await onConfirm(localPhone);
+        onPhoneChange(localPhone);
+        await onConfirm();
         handleClose();
       } catch (error) {
         console.error("Payment confirmation error:", error);
@@ -147,57 +165,107 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({ 
       >
         <View style={styles.payFooterCapsule}>
           <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-          
-          <View style={styles.actionRow}>
-           
-             
-             {!isKeyboardVisible && (
 
-            <TouchableOpacity 
-              style={styles.closeCircle} 
-              onPress={handleAction}
-            >
-               <Ionicons 
-                 name={isKeyboardVisible ? "chevron-down" : "close"} 
-                 size={isKeyboardVisible ? 18 : 16} 
-                 color="white" 
-               />
-            </TouchableOpacity>
-             )}
-          </View>
-          
-          <View style={styles.inputWrapper}>
-            <Ionicons name="call-outline" size={16} color="white" style={styles.inputIcon} />
-            <TextInput
-              style={styles.textInput}
-              placeholder="Phone Number"
-              placeholderTextColor="rgba(255,255,255,0.5)"
-              keyboardType="phone-pad"
-              value={localPhone}
-              onChangeText={setLocalPhone}
-              onFocus={() => setIsKeyboardVisible(true)}
-            />
-          </View>
-
-          <View style={styles.actionRow}>
-            
-           
-              <TouchableOpacity 
-                style={[styles.payerBtn, isProcessing && styles.payerBtnDisabled]} 
-                onPress={handlePay}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Loader size={20} color="white" />
-                ) : (
-                  <>
-                    {/* <Text style={styles.payerBtnText}>PAYER</Text> */}
-                    <Ionicons  name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"} size={14} color="white" style={{ marginLeft: 0 }} />
-                  </>
+          {/* État INPUT : saisie normale */}
+          {paymentState === 'input' && (
+            <>
+              <View style={styles.actionRow}>
+                {!isKeyboardVisible && (
+                  <TouchableOpacity
+                    style={styles.closeCircle}
+                    onPress={handleAction}
+                  >
+                    <Ionicons
+                      name="close"
+                      size={16}
+                      color="white"
+                    />
+                  </TouchableOpacity>
                 )}
-              </TouchableOpacity>
-           
-          </View>
+              </View>
+
+              {/* Sélecteur réseau */}
+              <View style={styles.networkSelector}>
+                <TouchableOpacity
+                  style={[styles.networkChip, localNetwork === 'orange' && styles.networkChipActive]}
+                  onPress={() => { setLocalNetwork('orange'); onNetworkChange?.('orange'); }}
+                >
+                  <Text style={[styles.networkChipText, localNetwork === 'orange' && styles.networkChipTextActive]}>
+                    Orange
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.networkChip, localNetwork === 'mtn' && styles.networkChipActive]}
+                  onPress={() => { setLocalNetwork('mtn'); onNetworkChange?.('mtn'); }}
+                >
+                  <Text style={[styles.networkChipText, localNetwork === 'mtn' && styles.networkChipTextActive]}>
+                    MTN
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.inputWrapper}>
+                <Ionicons name="call-outline" size={16} color="white" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Phone Number"
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  keyboardType="phone-pad"
+                  value={localPhone}
+                  onChangeText={setLocalPhone}
+                  onFocus={() => setIsKeyboardVisible(true)}
+                />
+              </View>
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[styles.payerBtn, isProcessing && styles.payerBtnDisabled]}
+                  onPress={handlePay}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <Loader size={20} color="white" />
+                  ) : (
+                    <Ionicons  name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"} size={14} color="white" />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* État WAITING : attente USSD */}
+          {paymentState === 'waiting' && (
+            <View style={styles.waitingContent}>
+              <Text style={styles.waitingText}>
+                Composez <Text style={styles.boldText}>{ussdCode}</Text> sur votre téléphone
+              </Text>
+              <Text style={styles.waitingSubtext}>
+                et validez le paiement de {totalAmount} F
+              </Text>
+            </View>
+          )}
+
+          {/* État SUCCESS : paiement réussi */}
+          {paymentState === 'success' && (
+            <View style={styles.successContent}>
+              <Loader size={24} color="white" />
+              <Text style={styles.successText}>
+                Paiement réussi !
+              </Text>
+              <Text style={styles.successSubtext}>
+                Création de la commande en cours...
+              </Text>
+            </View>
+          )}
+
+          {/* État FAILED : paiement échoué */}
+          {paymentState === 'failed' && (
+            <View style={styles.failedContent}>
+              <Text style={styles.failedText}>
+                Paiement échoué
+              </Text>
+            </View>
+          )}
         </View>
       </Animated.View>
     </Animated.View>
@@ -296,5 +364,78 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
+  },
+  networkSelector: {
+    flexDirection: 'row',
+    gap: 8,
+    marginRight: 8,
+  },
+  networkChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  networkChipActive: {
+    backgroundColor: '#ec4913',
+    borderColor: '#ec4913',
+  },
+  networkChipText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  networkChipTextActive: {
+    color: 'white',
+  },
+  waitingContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  waitingText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  boldText: {
+    fontWeight: 'bold',
+  },
+  waitingSubtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+  successContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+  },
+  successText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  successSubtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
+  failedContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  failedText: {
+    color: '#ef4444',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

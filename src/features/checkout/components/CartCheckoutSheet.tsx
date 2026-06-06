@@ -57,12 +57,31 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     selectedDrinks, setSelectedDrinks,
     drinkQuantities, setDrinkQuantity,
     delivery, setDelivery,
+    paymentPhone, setPaymentPhone,
+    paymentNetwork, setPaymentNetwork,
+    paymentState, setPaymentState,
+    paymentError, setPaymentError,
+    ussdCode,
+    handlePaymentConfirm,
+    handlePaymentVerdict,
+    registerPaymentHandler,
+    unregisterPaymentHandler,
     availablePackaging, availableDrinks,
     total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
     createOrder, validateDelivery, validateStock
   } = useCheckout(menuWithDeliveryHours, initialOrder, onChange);
   const [sheetToast, setSheetToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showError = (message: string) => setSheetToast({ message, type: 'error' });
+
+  // Enregistrer le handler de verdict paiement quand l'overlay est visible
+  useEffect(() => {
+    if (isPaymentPopupVisible) {
+      registerPaymentHandler(handlePaymentVerdict);
+      return () => {
+        unregisterPaymentHandler();
+      };
+    }
+  }, [isPaymentPopupVisible, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
 
   // Enrichir le menu avec les deliveryHours de la boutique
   useEffect(() => {
@@ -261,18 +280,20 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
           <CheckoutPaymentOverlay
             key={paymentKey}
             onClose={() => setIsPaymentPopupVisible(false)}
-            phone={delivery.phone || ''}
+            phone={paymentPhone}
+            onPhoneChange={setPaymentPhone}
             totalAmount={total}
-            onConfirm={async (payPhone) => {
-              const result = await (onConfirm(createOrder('pending')) as any);
-              if (result === true || result?.success) {
-                onClose();
-              } else if (result?.message) {
-                setIsPaymentPopupVisible(false);
-                showError(result.message);
-              }
-            }}
+            paymentState={paymentState}
+            network={paymentNetwork}
+            onNetworkChange={setPaymentNetwork}
+            ussdCode={ussdCode}
+            onError={setPaymentError}
+            onConfirm={handlePaymentConfirm}
           />
+        )}
+
+        {paymentError && (
+          <Toast message={paymentError} type="error" />
         )}
 
         {sheetToast && (

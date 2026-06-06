@@ -8,15 +8,22 @@ import { useNotifications } from "../notifications/hooks/useNotifications";
 
 interface SocketContextType {
   socket: Socket | null;
+  registerPaymentHandler: (handler: (data: any) => void) => void;
+  unregisterPaymentHandler: () => void;
 }
 
-const SocketContext = createContext<SocketContextType>({ socket: null });
+const SocketContext = createContext<SocketContextType>({
+  socket: null,
+  registerPaymentHandler: () => {},
+  unregisterPaymentHandler: () => {},
+});
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { userData } = useAuth();
   const socketRef = useRef<Socket | null>(null);
+  const paymentHandlerRef = useRef<((data: any) => void) | null>(null);
 
   // Hooks to update data on socket events
   const { refresh: refreshOrders } = useOrders();
@@ -90,14 +97,36 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
       refreshNotifications();
     });
 
+    // Payment Events (Mobile Money)
+    socket.on("payment.settled", (data) => {
+      console.log("💳 payment.settled:", data);
+      if (paymentHandlerRef.current) {
+        paymentHandlerRef.current(data);
+      }
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
   }, [userData]);
 
+  const registerPaymentHandler = (handler: (data: any) => void) => {
+    paymentHandlerRef.current = handler;
+  };
+
+  const unregisterPaymentHandler = () => {
+    paymentHandlerRef.current = null;
+  };
+
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current }}>
+    <SocketContext.Provider
+      value={{
+        socket: socketRef.current,
+        registerPaymentHandler,
+        unregisterPaymentHandler,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );

@@ -1,9 +1,13 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { Menu, Commande, Embalage, Boisson, Livraison } from "../../../types";
 import { useAuth } from "../../auth/context/AuthContext";
+import axios from "axios";
+import { Config } from "../../../api/config";
+import { useSocket } from "../../socket/SocketContext";
 
 export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData } = useAuth();
+  const { registerPaymentHandler, unregisterPaymentHandler } = useSocket();
   const [quantity, setQuantity] = useState(initialOrder?.quantity || 1);
   const [selectedPriceIndex, setSelectedPriceIndex] = useState(initialOrder?.selectedPriceIndex || 1);
   const [selectedPackaging, setSelectedPackaging] = useState<Embalage[]>([]);
@@ -17,8 +21,12 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     return qtys;
   });
   const [delivery, setDelivery] = useState<Livraison>(new Livraison(false, 0));
+  const [paymentPhone, setPaymentPhone] = useState('');
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(!initialOrder);
+  const [paymentNetwork, setPaymentNetwork] = useState<'orange' | 'mtn'>('orange');
+  const [paymentState, setPaymentState] = useState<'input' | 'waiting' | 'success' | 'failed'>('input');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   // Utiliser les extras/drinks du menu si disponibles
   const availablePackaging = useMemo(
@@ -69,6 +77,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     setSelectedDrinks([]);
     setDrinkQuantities({});
     setDelivery(new Livraison(false, 0));
+    setPaymentPhone('');
     setLastOrderId(null);
     setIsInitialized(!initialOrder);
   }, [initialOrder]);
@@ -263,6 +272,53 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     return null;
   }, [delivery]);
 
+  const ussdCode = paymentNetwork === 'orange' ? '#150#' : '*126#';
+
+  const handlePaymentConfirm = useCallback(async () => {
+    if (!userData || !paymentPhone) {
+      setPaymentError('Numéro de paiement requis');
+      return;
+    }
+
+    setPaymentState('waiting');
+    setPaymentError(null);
+
+    try {
+      const response = await axios.post(`${Config.apiUrl}/transaction`, {
+        payBy: 'mobilemoney',
+        amount: prices.total,
+        phone: paymentPhone.replace(/\s/g, ''),
+        network: paymentNetwork === 'orange' ? 'Orangemoney' : 'MTN',
+        email: userData?.infos?.email || 'user@yaammoo.com',
+        userId: userData.uid,
+      });
+
+      if (response.data.status === 'ussd_sent') {
+        // Réponse OK — continuer l'attente passive
+      } else {
+        setPaymentState('failed');
+        setPaymentError(response.data.message || 'Erreur paiement');
+        setPaymentState('input');
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.message || error.message || 'Erreur paiement';
+      setPaymentError(message);
+      setPaymentState('input');
+    }
+  }, [userData, paymentPhone, paymentNetwork, prices.total]);
+
+  const handlePaymentVerdict = useCallback((data: any) => {
+    if (data.status === 'successful') {
+      setPaymentState('success');
+    } else {
+      setPaymentState('failed');
+      setPaymentError('Paiement échoué');
+      setTimeout(() => {
+        setPaymentState('input');
+      }, 2000);
+    }
+  }, []);
+
   return {
     quantity,
     setQuantity,
@@ -278,6 +334,19 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     },
     delivery,
     setDelivery,
+    paymentPhone,
+    setPaymentPhone,
+    paymentNetwork,
+    setPaymentNetwork,
+    paymentState,
+    setPaymentState,
+    paymentError,
+    setPaymentError,
+    ussdCode,
+    handlePaymentConfirm,
+    handlePaymentVerdict,
+    registerPaymentHandler,
+    unregisterPaymentHandler,
     availablePackaging,
     availableDrinks,
     availableHours,

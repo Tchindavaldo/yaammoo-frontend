@@ -36,6 +36,8 @@ import { CartCheckoutSheet } from "@/src/features/checkout/components/CartChecko
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
 import { useLocalSearchParams } from "expo-router";
+import axios from "axios";
+import { Config } from "@/src/api/config";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -355,19 +357,29 @@ export default function OrdersScreen() {
     }
     setIsSubmitting(true);
     try {
-      const result = await buyOrders(pendingToBuy);
-      if (result.success) {
-        Alert.alert("Succès ✨", "Votre commande a été validée avec succès !");
-        setCurrentTab("status");
-        setActiveStatus("pending");
-        setIsPaying(false);
+      const response = await axios.post(`${Config.apiUrl}/transaction`, {
+        payBy: 'mobilemoney',
+        amount: calculateCartTotal(),
+        phone: phoneNumber.replace(/\s/g, ''),
+        network: phoneNumber.includes('65') || phoneNumber.includes('66') ? 'Orangemoney' : 'MTN',
+        email: userData?.infos?.email || 'user@yaammoo.com',
+        userId: userData.uid,
+      });
+
+      if (response.data.status === 'ussd_sent') {
+        setToast({ message: 'Composez le code USSD reçu par SMS', type: 'success' });
+        // Attendre le verdict via socket ou polling
       } else {
-        Alert.alert(
-          "Attention",
-          result.message || "Une erreur est survenue lors de la validation de la commande.",
-        );
-        refresh();
+        const errMsg = typeof response.data.message === 'object' ? response.data.message.message : response.data.message;
+        setToast({ message: errMsg || 'Erreur paiement', type: 'error' });
       }
+    } catch (error: any) {
+      let message = error.message || 'Erreur paiement';
+      if (error.response?.data?.message) {
+        const msg = error.response.data.message;
+        message = typeof msg === 'object' ? msg.message : msg;
+      }
+      setToast({ message, type: 'error' });
     } finally {
       setIsSubmitting(false);
     }

@@ -62,6 +62,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     paymentState, setPaymentState,
     paymentError, setPaymentError,
     ussdCode,
+    ussdMessage,
     handlePaymentConfirm,
     handlePaymentVerdict,
     registerPaymentHandler,
@@ -82,6 +83,24 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
       };
     }
   }, [isPaymentPopupVisible, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
+
+  // Fermer l'overlay automatiquement après 5s en état success_created
+  useEffect(() => {
+    if (paymentState === 'success_created') {
+      const timer = setTimeout(() => {
+        setIsPaymentPopupVisible(false);
+        onClose();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentState, onClose]);
+
+  // Fermer l'overlay et afficher le toast d'erreur si erreur lors du paiement
+  useEffect(() => {
+    if (paymentError && isPaymentPopupVisible && paymentState === 'input') {
+      setIsPaymentPopupVisible(false);
+    }
+  }, [paymentError, isPaymentPopupVisible, paymentState]);
 
   // Enrichir le menu avec les deliveryHours de la boutique
   useEffect(() => {
@@ -123,6 +142,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
   };
 
   return (
+    <>
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <View style={styles.dismiss} />
@@ -235,6 +255,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
               if (stockErr) { showError(stockErr); return; }
               const deliveryErr = validateDelivery();
               if (deliveryErr) { showError(deliveryErr); return; }
+              setPaymentState('network_select');
               setIsPaymentPopupVisible(true);
               setPaymentKey(prev => prev + 1);
             }}
@@ -287,13 +308,10 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             network={paymentNetwork}
             onNetworkChange={setPaymentNetwork}
             ussdCode={ussdCode}
+            ussdMessage={ussdMessage || undefined}
             onError={setPaymentError}
             onConfirm={handlePaymentConfirm}
           />
-        )}
-
-        {paymentError && (
-          <Toast message={paymentError} type="error" />
         )}
 
         {sheetToast && (
@@ -305,5 +323,16 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
         )}
       </View>
     </Modal>
+
+    {/* Toast d'erreur paiement : rendu HORS du Modal pour s'afficher au top de l'écran */}
+    {paymentError && (
+      <Toast
+        message={paymentError}
+        type="error"
+        duration={4000}
+        onHide={() => setPaymentError(null)}
+      />
+    )}
+    </>
   );
 };

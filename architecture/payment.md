@@ -37,10 +37,11 @@ USER choisit réseau + saisit numéro + appuie →
                                          réponse synchrone :  │
                                          { status:'ussd_sent'} │
                                          ◄────────────────────┘
-[Frontend reçoit ussd_sent → overlay état WAITING]
+[Frontend reçoit ussd_sent → overlay état USSD_SENT]
         ┌────────────────────────────────────────────┐
-        │ Composez #150# (Orange) / *126# (MTN)      │
-        │ et validez le paiement de <montant> F      │
+        │ <message USSD backend>                     │
+        │ Montant : <montant> F                      │
+        │ ⟳ En attente de confirmation...            │
         └────────────────────────────────────────────┘
 
         [user compose le code USSD — quelques minutes]
@@ -69,7 +70,7 @@ USER choisit réseau + saisit numéro + appuie →
 - **Backend MobileWallet API** : `POST /pay` (admin key)
 - **Frontend** : hook `useCheckout.ts` pour orchestrer le paiement
 - **Socket.IO** : écoute `payment.settled` pour le verdict en temps réel
-- **UI** : overlay `CheckoutPaymentOverlay.tsx` avec 3 états (input, waiting, success, failed)
+- **UI** : overlay `CheckoutPaymentOverlay.tsx` avec 6 états (voir ci-dessous)
 - **State** : intégré dans `useCheckout` (pas de PaymentContext séparé)
 
 ---
@@ -99,13 +100,18 @@ USER choisit réseau + saisit numéro + appuie →
 **État géré** :
 ```typescript
 paymentNetwork: 'orange' | 'mtn';           // Réseau sélectionné
-paymentState: 'input' | 'waiting' | 'success' | 'failed';  // État overlay
+paymentState: 'network_select' | 'input' | 'ussd_sent'
+            | 'success' | 'success_created' | 'failed';  // État overlay
 paymentError: string | null;                 // Message erreur
 ussdCode: string;                            // '#150#' ou '*126#' selon réseau
+ussdMessage: string | null;                  // Message USSD renvoyé par le backend (cas A)
 ```
 
 **Handlers** :
-- `handlePaymentConfirm()` : `POST /transaction` avec `payBy:'mobilemoney'`
+- `handlePaymentConfirm()` : `POST /transaction` avec `payBy:'mobilemoney'`. Traite 3 cas de réponse :
+  - **Cas A** (`status: 'ussd_sent'` / `success: true`) → stocke `ussdMessage` (message à afficher tel quel), passe à `ussd_sent`
+  - **Cas B** (erreur métier, ex. `retry_too_soon`) → `paymentError` enrichi de `retry_after_s` si présent, retour `input`
+  - **Cas C** (validation échouée, `message` = tableau `[{ field, message }]`) → concatène les messages de champs, retour `input`
 - `handlePaymentVerdict(data)` : reçoit `payment.settled`, met à jour `paymentState`
 - `registerPaymentHandler(fn)` / `unregisterPaymentHandler()` : gestion socket
 
@@ -116,18 +122,21 @@ ussdCode: string;                            // '#150#' ou '*126#' selon réseau
 **Chemin** : `src/features/checkout/components/CheckoutPaymentOverlay.tsx`
 
 **Props** :
-- `paymentState: 'input' | 'waiting' | 'success' | 'failed'`
+- `paymentState: 'network_select' | 'input' | 'ussd_sent' | 'success' | 'success_created' | 'failed'`
 - `network: 'orange' | 'mtn'`
 - `onNetworkChange: (network) => void`
 - `ussdCode: string`
+- `ussdMessage?: string`
 - `onError: (error) => void`
-- `onConfirm: () => Promise<void>`
+- `onConfirm: (phone) => Promise<void>`
 
 **États** :
-1. **input** : sélecteur réseau (2 chips) + input numéro + boutons existants
-2. **waiting** : texte "Composez #150#/#\*126# et validez <montant> F" (pas de spinner)
-3. **success** : spinner à gauche + "Paiement réussi ! Création de la commande en cours..."
-4. **failed** : toast en haut "Paiement échoué" (sans emoji) + retour input
+1. **network_select** : bouton fermer + 2 chips réseau (Orange / MTN) + bouton suivant →
+2. **input** : input numéro de téléphone + bouton payer (Loader pendant l'envoi)
+3. **ussd_sent** : message USSD du backend (`ussdMessage`, affiché tel quel) + "Montant : X F" + Loader "En attente de confirmation..."
+4. **success** : "Paiement réussi ! Création de la commande en cours..." + Loader (5 s)
+5. **success_created** : icône ✓ verte + "Commande créée avec succès !" (5 s, puis fermeture auto)
+6. **failed** : pas de rendu propre — `paymentError` est posé, le parent affiche un Toast puis revient à `input`
 
 ---
 

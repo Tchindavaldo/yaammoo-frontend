@@ -11,12 +11,13 @@ interface CheckoutPaymentOverlayProps {
   onClose: () => void;
   phone: string;
   onPhoneChange: (phone: string) => void;
-  onConfirm: () => Promise<void>;
+  onConfirm: (phone: string) => Promise<void>;
   totalAmount: number;
-  paymentState?: 'input' | 'waiting' | 'success' | 'failed';
+  paymentState?: 'network_select' | 'input' | 'ussd_sent' | 'success' | 'success_created' | 'failed';
   network?: 'orange' | 'mtn';
   onNetworkChange?: (network: 'orange' | 'mtn') => void;
   ussdCode?: string;
+  ussdMessage?: string;
   onError?: (error: string) => void;
 }
 
@@ -26,24 +27,30 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
   onPhoneChange,
   onConfirm,
   totalAmount,
-  paymentState = 'input',
+  paymentState = 'network_select',
   network = 'orange',
   onNetworkChange,
   ussdCode = '#150#',
+  ussdMessage,
 }) => {
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
   const [localNetwork, setLocalNetwork] = React.useState<'orange' | 'mtn'>(network);
+  const [localPaymentState, setLocalPaymentState] = React.useState<string>(paymentState);
   
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
 
   React.useEffect(() => {
+    setLocalPaymentState(paymentState);
+  }, [paymentState]);
+
+  React.useEffect(() => {
     // Entry animation - Use false to be safe and consistent with height animations
     Animated.spring(slideAnim, {
       toValue: 0,
-      useNativeDriver: false, 
+      useNativeDriver: false,
       tension: 65, // Faster entry
       friction: 10,
     }).start();
@@ -106,9 +113,9 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
     } else {
       try {
         setIsProcessing(true);
-        onPhoneChange(localPhone);
-        await onConfirm();
-        handleClose();
+        await onConfirm(localPhone);
+        // NE PAS fermer l'overlay — rester ouvert en état waiting/success/failed
+        // Le parent gère la fermeture selon paymentState via le verdict socket
       } catch (error) {
         console.error("Payment confirmation error:", error);
       } finally {
@@ -166,25 +173,18 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
         <View style={styles.payFooterCapsule}>
           <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
 
-          {/* État INPUT : saisie normale */}
-          {paymentState === 'input' && (
+          {/* État NETWORK_SELECT : sélection du réseau uniquement */}
+          {localPaymentState === 'network_select' && (
             <>
               <View style={styles.actionRow}>
-                {!isKeyboardVisible && (
-                  <TouchableOpacity
-                    style={styles.closeCircle}
-                    onPress={handleAction}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={16}
-                      color="white"
-                    />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                  style={styles.closeCircle}
+                  onPress={handleClose}
+                >
+                  <Ionicons name="close" size={16} color="white" />
+                </TouchableOpacity>
               </View>
 
-              {/* Sélecteur réseau */}
               <View style={styles.networkSelector}>
                 <TouchableOpacity
                   style={[styles.networkChip, localNetwork === 'orange' && styles.networkChipActive]}
@@ -202,6 +202,31 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
                     MTN
                   </Text>
                 </TouchableOpacity>
+              </View>
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={styles.nextBtn}
+                  onPress={() => setLocalPaymentState('input')}
+                >
+                  <Ionicons name="arrow-forward-outline" size={14} color="white" />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* État INPUT : saisie du numéro de téléphone */}
+          {localPaymentState === 'input' && (
+            <>
+              <View style={styles.actionRow}>
+                {!isKeyboardVisible && (
+                  <TouchableOpacity
+                    style={styles.closeCircle}
+                    onPress={handleAction}
+                  >
+                    <Ionicons name="close" size={16} color="white" />
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View style={styles.inputWrapper}>
@@ -226,46 +251,48 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
                   {isProcessing ? (
                     <Loader size={20} color="white" />
                   ) : (
-                    <Ionicons  name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"} size={14} color="white" />
+                    <Ionicons name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"} size={14} color="white" />
                   )}
                 </TouchableOpacity>
               </View>
             </>
           )}
 
-          {/* État WAITING : attente USSD */}
-          {paymentState === 'waiting' && (
-            <View style={styles.waitingContent}>
-              <Text style={styles.waitingText}>
-                Composez <Text style={styles.boldText}>{ussdCode}</Text> sur votre téléphone
+          {/* État USSD_SENT : affichage du message USSD + écoute socket */}
+          {localPaymentState === 'ussd_sent' && (
+            <View style={styles.ussdSentContent}>
+              <Text style={styles.ussdSentText}>
+                {ussdMessage || `Composez ${ussdCode} sur votre téléphone`}
               </Text>
-              <Text style={styles.waitingSubtext}>
-                et validez le paiement de {totalAmount} F
+              <Text style={styles.ussdSentSubtext}>
+                Montant : {totalAmount} F
               </Text>
+              <View style={styles.ussdWaitingLoader}>
+                <Loader size={20} color="white" />
+                <Text style={styles.ussdWaitingText}>En attente de confirmation...</Text>
+              </View>
             </View>
           )}
 
-          {/* État SUCCESS : paiement réussi */}
-          {paymentState === 'success' && (
+          {/* État SUCCESS : paiement réussi + création de commande en cours (5s) */}
+          {localPaymentState === 'success' && (
             <View style={styles.successContent}>
-              <Loader size={24} color="white" />
-              <Text style={styles.successText}>
-                Paiement réussi !
-              </Text>
-              <Text style={styles.successSubtext}>
-                Création de la commande en cours...
-              </Text>
+              <View>
+                <Text style={styles.successText}>Paiement réussi !</Text>
+                <Text style={styles.successSubtext}>Création de la commande en cours...</Text>
+              </View>
+              <Loader size={16} color="white" />
             </View>
           )}
 
-          {/* État FAILED : paiement échoué */}
-          {paymentState === 'failed' && (
-            <View style={styles.failedContent}>
-              <Text style={styles.failedText}>
-                Paiement échoué
-              </Text>
+          {/* État SUCCESS_CREATED : commande créée avec succès (5s avant fermeture auto) */}
+          {localPaymentState === 'success_created' && (
+            <View style={styles.successCreatedContent}>
+              <Ionicons name="checkmark-circle" size={40} color="#10b981" />
+              <Text style={styles.successCreatedText}>Commande créée avec succès !</Text>
             </View>
           )}
+
         </View>
       </Animated.View>
     </Animated.View>
@@ -390,6 +417,44 @@ const styles = StyleSheet.create({
   networkChipTextActive: {
     color: 'white',
   },
+  nextBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ec4913",
+    height: 40,
+    borderRadius: 145,
+    justifyContent: 'center',
+    minWidth: 40,
+  },
+  ussdSentContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  ussdSentText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  ussdSentSubtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  ussdWaitingLoader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  ussdWaitingText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
   waitingContent: {
     flex: 1,
     justifyContent: 'center',
@@ -413,7 +478,6 @@ const styles = StyleSheet.create({
   },
   successContent: {
     flex: 1,
-    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 12,
@@ -423,18 +487,22 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+    textAlign: 'center',
   },
   successSubtext: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
+    textAlign: 'center',
   },
-  failedContent: {
+  successCreatedContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
   },
-  failedText: {
-    color: '#ef4444',
+  successCreatedText: {
+    color: '#10b981',
     fontSize: 14,
     fontWeight: '600',
   },

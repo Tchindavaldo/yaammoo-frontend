@@ -25,8 +25,9 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(!initialOrder);
   const [paymentNetwork, setPaymentNetwork] = useState<'orange' | 'mtn'>('orange');
-  const [paymentState, setPaymentState] = useState<'input' | 'waiting' | 'success' | 'failed'>('input');
+  const [paymentState, setPaymentState] = useState<'network_select' | 'input' | 'ussd_sent' | 'success' | 'success_created' | 'failed'>('network_select');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [ussdMessage, setUssdMessage] = useState<string | null>(null);
 
   // Utiliser les extras/drinks du menu si disponibles
   const availablePackaging = useMemo(
@@ -274,42 +275,72 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
   const ussdCode = paymentNetwork === 'orange' ? '#150#' : '*126#';
 
-  const handlePaymentConfirm = useCallback(async () => {
-    if (!userData || !paymentPhone) {
+  const handlePaymentConfirm = useCallback(async (phone: string) => {
+    if (!userData || !phone) {
       setPaymentError('Numéro de paiement requis');
       return;
     }
 
-    setPaymentState('waiting');
     setPaymentError(null);
+    setPaymentPhone(phone);
 
     try {
       const response = await axios.post(`${Config.apiUrl}/transaction`, {
         payBy: 'mobilemoney',
         amount: prices.total,
-        phone: paymentPhone.replace(/\s/g, ''),
+        phone: phone.replace(/\s/g, ''),
         network: paymentNetwork === 'orange' ? 'Orangemoney' : 'MTN',
         email: userData?.infos?.email || 'user@yaammoo.com',
         userId: userData.uid,
       });
 
-      if (response.data.status === 'ussd_sent') {
-        // Réponse OK — continuer l'attente passive
+      console.log('Transaction response:', response.data);
+
+      // Cas A — USSD envoyé : afficher le message du backend, écouter le socket
+      if (response.data.status === 'ussd_sent' || response.data.success === true) {
+        setUssdMessage(response.data.message);
+        setPaymentState('ussd_sent');
+        // Le socket commence à écouter directement dans cet état
       } else {
-        setPaymentState('failed');
-        setPaymentError(response.data.message || 'Erreur paiement');
+        // Cas C — validation backend échouée : message est un tableau [{ field, message }]
+        const raw = response.data.message;
+        const message = Array.isArray(raw)
+          ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || 'Erreur paiement'
+          : raw || 'Erreur paiement';
+        // Cas B — erreur métier : afficher le délai d'attente si fourni
+        const finalMessage = response.data.retry_after_s
+          ? `${message} (réessayez dans ${response.data.retry_after_s}s)`
+          : message;
+        setPaymentError(finalMessage);
         setPaymentState('input');
       }
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || 'Erreur paiement';
+      const data = error.response?.data;
+      const raw = data?.message;
+      let message = Array.isArray(raw)
+        ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
+        : raw;
+      message = message || data?.error || error.message || 'Erreur paiement';
+      if (data?.retry_after_s) message = `${message} (réessayez dans ${data.retry_after_s}s)`;
+      console.error('Payment error details:', data);
+      // Erreur → afficher Toast et fermer l'overlay
       setPaymentError(message);
       setPaymentState('input');
     }
-  }, [userData, paymentPhone, paymentNetwork, prices.total]);
+  }, [userData, paymentNetwork, prices.total]);
 
   const handlePaymentVerdict = useCallback((data: any) => {
     if (data.status === 'successful') {
+      // Paiement réussi → afficher "Création commande en cours" pendant 5s
       setPaymentState('success');
+      setTimeout(() => {
+        // Après 5s, afficher "Commande créée avec succès" pendant 5s
+        setPaymentState('success_created');
+        setTimeout(() => {
+          // Après 5s supplémentaires, fermer l'overlay (géré par le parent)
+          setPaymentState('input');
+        }, 5000);
+      }, 5000);
     } else {
       setPaymentState('failed');
       setPaymentError('Paiement échoué');
@@ -343,6 +374,8 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     paymentError,
     setPaymentError,
     ussdCode,
+    ussdMessage,
+    setUssdMessage,
     handlePaymentConfirm,
     handlePaymentVerdict,
     registerPaymentHandler,

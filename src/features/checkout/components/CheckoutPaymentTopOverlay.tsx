@@ -1,8 +1,15 @@
+import { Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import React from "react";
-import { Animated, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Menu } from "@/src/types";
+import {
+  Animated,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -67,7 +74,11 @@ const PriceRecap: React.FC<{
   extrasPrice: number;
   deliveryPrice: number;
 }> = ({ menuPrice, drinksPrice, extrasPrice, deliveryPrice }) => {
-  const rows: { icon: keyof typeof Ionicons.glyphMap; label: string; value: number }[] = [
+  const rows: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    value: number;
+  }[] = [
     { icon: "fast-food-outline", label: "Menu", value: menuPrice },
     { icon: "wine-outline", label: "Boisson", value: drinksPrice },
     { icon: "add-circle-outline", label: "Extras", value: extrasPrice },

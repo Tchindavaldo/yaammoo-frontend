@@ -33,8 +33,6 @@ interface CheckoutPaymentOverlayProps {
     | "success"
     | "success_created"
     | "failed";
-  network?: "orange" | "mtn";
-  onNetworkChange?: (network: "orange" | "mtn") => void;
   ussdCode?: string;
   ussdMessage?: string;
   onError?: (error: string) => void;
@@ -49,19 +47,17 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
   onConfirm,
   totalAmount,
   paymentState = "network_select",
-  network = "orange",
-  onNetworkChange,
   ussdCode = "#150#",
   ussdMessage,
 }) => {
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
-  const [localNetwork, setLocalNetwork] = React.useState<"orange" | "mtn">(
-    network,
+  // La capsule du bas n'a plus d'étape "network_select" (gérée par le top
+  // overlay) → on démarre directement sur "input".
+  const [localPaymentState, setLocalPaymentState] = React.useState<string>(
+    paymentState === "network_select" ? "input" : paymentState,
   );
-  const [localPaymentState, setLocalPaymentState] =
-    React.useState<string>(paymentState);
 
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
@@ -69,7 +65,9 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
   const [mounted, setMounted] = React.useState(visible);
 
   React.useEffect(() => {
-    setLocalPaymentState(paymentState);
+    setLocalPaymentState(
+      paymentState === "network_select" ? "input" : paymentState,
+    );
   }, [paymentState]);
 
   // Entrée / sortie pilotées par `visible` → synchro avec le top overlay.
@@ -217,74 +215,6 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
             style={StyleSheet.absoluteFill}
           />
 
-          {/* État NETWORK_SELECT : sélection du réseau uniquement */}
-          {localPaymentState === "network_select" && (
-            <>
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={styles.closeCircle}
-                  onPress={handleClose}
-                >
-                  <Ionicons name="close" size={16} color="white" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.networkSelector}>
-                <TouchableOpacity
-                  style={[
-                    styles.networkChip,
-                    localNetwork === "orange" && styles.networkChipActive,
-                  ]}
-                  onPress={() => {
-                    setLocalNetwork("orange");
-                    onNetworkChange?.("orange");
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.networkChipText,
-                      localNetwork === "orange" && styles.networkChipTextActive,
-                    ]}
-                  >
-                    Orange
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.networkChip,
-                    localNetwork === "mtn" && styles.networkChipActive,
-                  ]}
-                  onPress={() => {
-                    setLocalNetwork("mtn");
-                    onNetworkChange?.("mtn");
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.networkChipText,
-                      localNetwork === "mtn" && styles.networkChipTextActive,
-                    ]}
-                  >
-                    MTN
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity
-                  style={styles.nextBtn}
-                  onPress={() => setLocalPaymentState("input")}
-                >
-                  <Ionicons
-                    name="arrow-forward-outline"
-                    size={14}
-                    color="white"
-                  />
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-
           {/* État INPUT : saisie du numéro de téléphone */}
           {localPaymentState === "input" && (
             <>
@@ -308,7 +238,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
                 />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Phone Number"
+                  placeholder="saisir le numéro de paiement"
                   placeholderTextColor="rgba(255,255,255,0.5)"
                   keyboardType="phone-pad"
                   value={localPhone}

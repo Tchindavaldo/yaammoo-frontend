@@ -1,62 +1,105 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { Loader } from '../../../components/Loader';
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import React from "react";
+import {
+  Animated,
+  Keyboard,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Loader } from "../../../components/Loader";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const SHEET_HEIGHT = 384;
 
 interface CheckoutPaymentOverlayProps {
+  visible: boolean;
+  /** Demande au parent de passer visible à false (déclenche la sortie). */
+  onRequestClose: () => void;
+  /** Appelé une fois l'animation de sortie terminée (démontage/reset). */
   onClose: () => void;
   phone: string;
   onPhoneChange: (phone: string) => void;
   onConfirm: (phone: string) => Promise<void>;
   totalAmount: number;
-  paymentState?: 'network_select' | 'input' | 'ussd_sent' | 'success' | 'success_created' | 'failed';
-  network?: 'orange' | 'mtn';
-  onNetworkChange?: (network: 'orange' | 'mtn') => void;
+  paymentState?:
+    | "network_select"
+    | "input"
+    | "ussd_sent"
+    | "success"
+    | "success_created"
+    | "failed";
+  network?: "orange" | "mtn";
+  onNetworkChange?: (network: "orange" | "mtn") => void;
   ussdCode?: string;
   ussdMessage?: string;
   onError?: (error: string) => void;
 }
 
 export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
+  visible,
+  onRequestClose,
   onClose,
   phone,
   onPhoneChange,
   onConfirm,
   totalAmount,
-  paymentState = 'network_select',
-  network = 'orange',
+  paymentState = "network_select",
+  network = "orange",
   onNetworkChange,
-  ussdCode = '#150#',
+  ussdCode = "#150#",
   ussdMessage,
 }) => {
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
-  const [localNetwork, setLocalNetwork] = React.useState<'orange' | 'mtn'>(network);
-  const [localPaymentState, setLocalPaymentState] = React.useState<string>(paymentState);
-  
+  const [localNetwork, setLocalNetwork] = React.useState<"orange" | "mtn">(
+    network,
+  );
+  const [localPaymentState, setLocalPaymentState] =
+    React.useState<string>(paymentState);
+
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
+  // Reste monté tant que l'animation de sortie n'est pas terminée.
+  const [mounted, setMounted] = React.useState(visible);
 
   React.useEffect(() => {
     setLocalPaymentState(paymentState);
   }, [paymentState]);
 
+  // Entrée / sortie pilotées par `visible` → synchro avec le top overlay.
   React.useEffect(() => {
-    // Entry animation - Use false to be safe and consistent with height animations
-    Animated.spring(slideAnim, {
-      toValue: 0,
-      useNativeDriver: false,
-      tension: 65, // Faster entry
-      friction: 10,
-    }).start();
+    if (visible) {
+      setMounted(true);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: false,
+        tension: 65, // Faster entry
+        friction: 10,
+      }).start();
+    } else {
+      Keyboard.dismiss();
+      Animated.timing(slideAnim, {
+        toValue: 300,
+        duration: 220,
+        useNativeDriver: false,
+      }).start(({ finished }) => {
+        if (finished) {
+          setMounted(false);
+          onClose();
+        }
+      });
+    }
+  }, [visible]);
 
+  React.useEffect(() => {
     const showSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (event) => {
         setIsKeyboardVisible(true);
         Animated.spring(keyboardHeight, {
@@ -65,10 +108,10 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
     const hideSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
         setIsKeyboardVisible(false);
         Animated.spring(keyboardHeight, {
@@ -77,7 +120,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
 
     return () => {
@@ -87,16 +130,9 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
   }, []);
 
   const handleClose = () => {
-    Keyboard.dismiss();
-    // Slide down before closing
-    // Faster timing for closing to avoid blocking UI
-    Animated.timing(slideAnim, {
-      toValue: 300,
-      duration: 150,
-      useNativeDriver: false,
-    }).start(() => {
-      onClose();
-    });
+    // On demande juste au parent de fermer ; l'animation de sortie est
+    // déclenchée par le passage de `visible` à false (synchro avec le top overlay).
+    onRequestClose();
   };
 
   const handleAction = () => {
@@ -124,57 +160,65 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
     }
   };
 
+  if (!mounted) return null;
+
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.keyboardWrapper,
         {
           top: keyboardHeight.interpolate({
             inputRange: [0, 50],
-            outputRange: ['99%', '0%'],
-            extrapolate: 'clamp'
-          })
-        }
+            outputRange: ["99%", "0%"],
+            extrapolate: "clamp",
+          }),
+        },
       ]}
     >
-      <AnimatedBlurView 
+      <AnimatedBlurView
         intensity={keyboardHeight.interpolate({
           inputRange: [0, 100],
           outputRange: [0, 90],
-          extrapolate: 'clamp'
-        })} 
-        tint="dark" 
+          extrapolate: "clamp",
+        })}
+        tint="dark"
         style={[
           styles.blurOverlay,
-          { 
+          {
             height: keyboardHeight.interpolate({
               inputRange: [0, 100],
               outputRange: [0, SHEET_HEIGHT],
-              extrapolate: 'clamp'
-            })
-          }
-        ]} 
+              extrapolate: "clamp",
+            }),
+          },
+        ]}
       />
-      
-      <Animated.View 
+
+      <Animated.View
         style={[
           styles.container,
-          { 
+          {
             transform: [
               { translateY: slideAnim },
-              { translateY: keyboardHeight.interpolate({
-                inputRange: [0, 100],
-                outputRange: [0, -100]
-              })}
-            ] 
-          }
+              {
+                translateY: keyboardHeight.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [0, -100],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <View style={styles.payFooterCapsule}>
-          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView
+            intensity={80}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
 
           {/* État NETWORK_SELECT : sélection du réseau uniquement */}
-          {localPaymentState === 'network_select' && (
+          {localPaymentState === "network_select" && (
             <>
               <View style={styles.actionRow}>
                 <TouchableOpacity
@@ -187,18 +231,40 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
 
               <View style={styles.networkSelector}>
                 <TouchableOpacity
-                  style={[styles.networkChip, localNetwork === 'orange' && styles.networkChipActive]}
-                  onPress={() => { setLocalNetwork('orange'); onNetworkChange?.('orange'); }}
+                  style={[
+                    styles.networkChip,
+                    localNetwork === "orange" && styles.networkChipActive,
+                  ]}
+                  onPress={() => {
+                    setLocalNetwork("orange");
+                    onNetworkChange?.("orange");
+                  }}
                 >
-                  <Text style={[styles.networkChipText, localNetwork === 'orange' && styles.networkChipTextActive]}>
+                  <Text
+                    style={[
+                      styles.networkChipText,
+                      localNetwork === "orange" && styles.networkChipTextActive,
+                    ]}
+                  >
                     Orange
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.networkChip, localNetwork === 'mtn' && styles.networkChipActive]}
-                  onPress={() => { setLocalNetwork('mtn'); onNetworkChange?.('mtn'); }}
+                  style={[
+                    styles.networkChip,
+                    localNetwork === "mtn" && styles.networkChipActive,
+                  ]}
+                  onPress={() => {
+                    setLocalNetwork("mtn");
+                    onNetworkChange?.("mtn");
+                  }}
                 >
-                  <Text style={[styles.networkChipText, localNetwork === 'mtn' && styles.networkChipTextActive]}>
+                  <Text
+                    style={[
+                      styles.networkChipText,
+                      localNetwork === "mtn" && styles.networkChipTextActive,
+                    ]}
+                  >
                     MTN
                   </Text>
                 </TouchableOpacity>
@@ -207,16 +273,20 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
               <View style={styles.actionRow}>
                 <TouchableOpacity
                   style={styles.nextBtn}
-                  onPress={() => setLocalPaymentState('input')}
+                  onPress={() => setLocalPaymentState("input")}
                 >
-                  <Ionicons name="arrow-forward-outline" size={14} color="white" />
+                  <Ionicons
+                    name="arrow-forward-outline"
+                    size={14}
+                    color="white"
+                  />
                 </TouchableOpacity>
               </View>
             </>
           )}
 
           {/* État INPUT : saisie du numéro de téléphone */}
-          {localPaymentState === 'input' && (
+          {localPaymentState === "input" && (
             <>
               <View style={styles.actionRow}>
                 {!isKeyboardVisible && (
@@ -230,7 +300,12 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
               </View>
 
               <View style={styles.inputWrapper}>
-                <Ionicons name="call-outline" size={16} color="white" style={styles.inputIcon} />
+                <Ionicons
+                  name="call-outline"
+                  size={16}
+                  color="white"
+                  style={styles.inputIcon}
+                />
                 <TextInput
                   style={styles.textInput}
                   placeholder="Phone Number"
@@ -244,14 +319,25 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
 
               <View style={styles.actionRow}>
                 <TouchableOpacity
-                  style={[styles.payerBtn, isProcessing && styles.payerBtnDisabled]}
+                  style={[
+                    styles.payerBtn,
+                    isProcessing && styles.payerBtnDisabled,
+                  ]}
                   onPress={handlePay}
                   disabled={isProcessing}
                 >
                   {isProcessing ? (
                     <Loader size={20} color="white" />
                   ) : (
-                    <Ionicons name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"} size={14} color="white" />
+                    <Ionicons
+                      name={
+                        isKeyboardVisible
+                          ? "chevron-down"
+                          : "arrow-forward-outline"
+                      }
+                      size={14}
+                      color="white"
+                    />
                   )}
                 </TouchableOpacity>
               </View>
@@ -259,7 +345,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
           )}
 
           {/* État USSD_SENT : affichage du message USSD + écoute socket */}
-          {localPaymentState === 'ussd_sent' && (
+          {localPaymentState === "ussd_sent" && (
             <View style={styles.ussdSentContent}>
               <Text style={styles.ussdSentText}>
                 {ussdMessage || `Composez ${ussdCode} sur votre téléphone`}
@@ -269,30 +355,35 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
               </Text>
               <View style={styles.ussdWaitingLoader}>
                 <Loader size={20} color="white" />
-                <Text style={styles.ussdWaitingText}>En attente de confirmation...</Text>
+                <Text style={styles.ussdWaitingText}>
+                  En attente de confirmation...
+                </Text>
               </View>
             </View>
           )}
 
           {/* État SUCCESS : paiement réussi + création de commande en cours (5s) */}
-          {localPaymentState === 'success' && (
+          {localPaymentState === "success" && (
             <View style={styles.successContent}>
               <View>
                 <Text style={styles.successText}>Paiement réussi !</Text>
-                <Text style={styles.successSubtext}>Création de la commande en cours...</Text>
+                <Text style={styles.successSubtext}>
+                  Création de la commande en cours...
+                </Text>
               </View>
               <Loader size={16} color="white" />
             </View>
           )}
 
           {/* État SUCCESS_CREATED : commande créée avec succès (5s avant fermeture auto) */}
-          {localPaymentState === 'success_created' && (
+          {localPaymentState === "success_created" && (
             <View style={styles.successCreatedContent}>
               <Ionicons name="checkmark-circle" size={40} color="#10b981" />
-              <Text style={styles.successCreatedText}>Commande créée avec succès !</Text>
+              <Text style={styles.successCreatedText}>
+                Commande créée avec succès !
+              </Text>
             </View>
           )}
-
         </View>
       </Animated.View>
     </Animated.View>
@@ -305,19 +396,19 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   blurOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   container: {
     flex: 1,
     paddingHorizontal: 8,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
+    justifyContent: "flex-end",
+    alignItems: "center",
     paddingBottom: 2,
   },
   payFooterCapsule: {
@@ -329,7 +420,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -338,9 +429,9 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
     height: 45,
     borderRadius: 22.5,
     paddingHorizontal: 12,
@@ -351,14 +442,14 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     padding: 0,
   },
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   payerBtn: {
@@ -368,11 +459,11 @@ const styles = StyleSheet.create({
     // paddingHorizontal: 20,
     height: 40,
     borderRadius: 145,
-    justifyContent: 'center',
+    justifyContent: "center",
     minWidth: 40,
   },
   payerBtnDisabled: {
-    backgroundColor: '#94a3b8',
+    backgroundColor: "#94a3b8",
   },
   payerBtnText: {
     color: "white",
@@ -383,17 +474,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 40,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ef4444',
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#ef4444",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
   },
   networkSelector: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginRight: 8,
   },
@@ -401,21 +492,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: "rgba(255,255,255,0.2)",
   },
   networkChipActive: {
-    backgroundColor: '#ec4913',
-    borderColor: '#ec4913',
+    backgroundColor: "#ec4913",
+    borderColor: "#ec4913",
   },
   networkChipText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: "rgba(255,255,255,0.6)",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   networkChipTextActive: {
-    color: 'white',
+    color: "white",
   },
   nextBtn: {
     flexDirection: "row",
@@ -423,87 +514,87 @@ const styles = StyleSheet.create({
     backgroundColor: "#ec4913",
     height: 40,
     borderRadius: 145,
-    justifyContent: 'center',
+    justifyContent: "center",
     minWidth: 40,
   },
   ussdSentContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   ussdSentText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
     marginBottom: 8,
   },
   ussdSentSubtext: {
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 16,
   },
   ussdWaitingLoader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginTop: 12,
   },
   ussdWaitingText: {
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 12,
   },
   waitingContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   waitingText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
+    fontWeight: "500",
+    textAlign: "center",
     marginBottom: 8,
   },
   boldText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   waitingSubtext: {
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   successContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 20,
   },
   successText: {
-    color: 'white',
+    color: "white",
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
   },
   successSubtext: {
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   successCreatedContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 20,
   },
   successCreatedText: {
-    color: '#10b981',
+    color: "#10b981",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

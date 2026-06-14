@@ -298,17 +298,17 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
           />
         )}
 
-        {isPaymentPopupVisible && (
-          <CheckoutPaymentTopOverlay
-            paymentState={paymentState}
-            network={paymentNetwork}
-            ussdMessage={ussdMessage || undefined}
-          />
-        )}
+        <CheckoutPaymentTopOverlay
+          visible={isPaymentPopupVisible}
+          paymentState={paymentState}
+          network={paymentNetwork}
+          ussdMessage={ussdMessage || undefined}
+        />
 
-        {isPaymentPopupVisible && (
-          <CheckoutPaymentOverlay
+        <CheckoutPaymentOverlay
             key={paymentKey}
+            visible={isPaymentPopupVisible}
+            onRequestClose={() => setIsPaymentPopupVisible(false)}
             onClose={() => setIsPaymentPopupVisible(false)}
             phone={paymentPhone}
             onPhoneChange={setPaymentPhone}
@@ -321,7 +321,6 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             onError={setPaymentError}
             onConfirm={handlePaymentConfirm}
           />
-        )}
 
         {sheetToast && (
           <Toast

@@ -312,8 +312,15 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
 
         <CheckoutPaymentTopOverlay
           visible={isPaymentPopupVisible}
+          menu={menu}
+          menuPrice={menuPrice}
+          extrasPrice={extrasPrice}
+          drinksPrice={drinksPrice}
+          deliveryPrice={deliveryPrice}
+          total={total}
           paymentState={paymentState}
           network={paymentNetwork}
+          onNetworkChange={setPaymentNetwork}
           ussdMessage={ussdMessage || undefined}
         />
 

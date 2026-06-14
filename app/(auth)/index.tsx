@@ -26,6 +26,7 @@ import Svg, {
   Rect,
 } from "react-native-svg";
 import { useRouter } from "expo-router";
+import { useHideSplash } from "@/src/hooks/useHideSplash";
 import {
   useFonts,
   PlusJakartaSans_600SemiBold,
@@ -64,6 +65,7 @@ function Doodle({
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const onLayoutRootView = useHideSplash();
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
@@ -97,7 +99,7 @@ export default function WelcomeScreen() {
   });
 
   return (
-    <View style={styles.stage}>
+    <View style={styles.stage} onLayout={onLayoutRootView}>
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.phone}>

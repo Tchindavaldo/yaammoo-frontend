@@ -26,6 +26,7 @@ import { CheckoutContactOverlay } from './CheckoutContactOverlay';
 import { CheckoutPeriodOverlay } from './CheckoutPeriodOverlay';
 import { CheckoutVoiceNoteOverlay } from './CheckoutVoiceNoteOverlay';
 import { CheckoutPaymentOverlay } from './CheckoutPaymentOverlay';
+import { CheckoutPaymentTopOverlay } from './CheckoutPaymentTopOverlay';
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -294,6 +295,14 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
           <CheckoutVoiceNoteOverlay 
             onClose={() => setIsVoiceNotePopupVisible(false)} 
             onSave={(uri) => setDelivery({ ...delivery, voiceNoteUri: uri })}
+          />
+        )}
+
+        {isPaymentPopupVisible && (
+          <CheckoutPaymentTopOverlay
+            paymentState={paymentState}
+            network={paymentNetwork}
+            ussdMessage={ussdMessage || undefined}
           />
         )}
 

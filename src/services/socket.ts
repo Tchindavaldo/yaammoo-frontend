@@ -3,13 +3,38 @@ import { Config } from '../api/config';
 
 class SocketService {
     private socket: Socket;
+    private paymentHandler: ((data: any) => void) | null = null;
 
     constructor() {
-        this.socket = io(Config.apiUrl);
+        this.socket = io(Config.apiUrl, {
+            transports: ['websocket'],
+        });
+
+        this.socket.on('connect', () => {
+            console.log('✅ Socket connected', this.socket.id);
+        });
+        this.socket.on('connect_error', (err) => {
+            console.log('❌ Socket connect_error:', err?.message);
+        });
+
+        // Verdict de paiement Mobile Money — écouté ici (socket vivant de l'app)
+        // et routé vers le handler enregistré par le checkout en cours.
+        this.socket.on('payment.settled', (data) => {
+            console.log('💳 payment.settled:', data);
+            if (this.paymentHandler) this.paymentHandler(data);
+        });
     }
 
     public getSocket() {
         return this.socket;
+    }
+
+    public registerPaymentHandler(handler: (data: any) => void) {
+        this.paymentHandler = handler;
+    }
+
+    public unregisterPaymentHandler() {
+        this.paymentHandler = null;
     }
 
     public disconnect() {

@@ -1,13 +1,12 @@
 import {
-  DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { LogBox } from "react-native";
 import "react-native-reanimated";
 
-import { useColorScheme } from "@/src/hooks/use-color-scheme";
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
 import { OrderProvider } from "@/src/features/orders/context/OrderContext";
 import { MerchantProvider } from "@/src/features/merchant/context/MerchantContext";
@@ -15,64 +14,58 @@ import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodCon
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
+import * as SplashScreen from "expo-splash-screen";
+
+// Le splash natif reste affiché tant qu'on ne l'a pas explicitement caché.
+SplashScreen.preventAutoHideAsync();
+
+// Masque les notifications LogBox (toast d'erreur en bas) en dev.
+LogBox.ignoreAllLogs();
 
 export const unstable_settings = {
   anchor: "(tabs)",
 };
 
-function AppInitializer({ layoutMounted }: { layoutMounted: boolean }) {
+function AppContent() {
   const { user, userData, loading } = useAuth();
-  const router = useRouter();
-  const segments = useSegments();
-  const [appReady, setAppReady] = useState(false);
+  const notifSetupDone = useRef(false);
 
   useSocketEvents();
   const { setup: setupNotifications } = useNotificationSetup();
 
+  // Connecté = Firebase user présent ET profil chargé.
+  const isSignedIn = !!user && !!userData;
+  // L'auth est résolue quand Firebase a fini de répondre (loading false).
+  const authResolved = !loading;
+
+  // Setup notifications une seule fois, en arrière-plan, après connexion.
   useEffect(() => {
-    if (!layoutMounted) return;
-    if (loading) return;
-
-    const inAuthGroup = segments[0] === "(auth)";
-
-    if (!user && !inAuthGroup) {
-      // Rediriger vers login si non connecté et pas déjà dans auth
-      setAppReady(false);
-      router.replace("/(auth)");
-    } else if (user && inAuthGroup && userData) {
-      // Attendre que tout soit prêt avant de rediriger
-      setAppReady(false);
-    } else if (user && !inAuthGroup && userData && appReady) {
-      // Tout est prêt, rester sur tabs
-    }
-  }, [user, userData, loading, segments, appReady, layoutMounted]);
-
-  useEffect(() => {
-    if (!layoutMounted) return;
-    if (user && userData && !appReady) {
-      setAppReady(true);
-      if (segments[0] === "(auth)") {
-        router.replace("/(tabs)");
-      }
-      // Setup notifications in background after navigation
+    if (isSignedIn && !notifSetupDone.current) {
+      notifSetupDone.current = true;
       setupNotifications().catch((error) => {
         console.error("Erreur lors de l'initialisation des notifications:", error);
       });
     }
-  }, [user, userData, setupNotifications, segments, appReady, layoutMounted]);
+  }, [isSignedIn, setupNotifications]);
 
-  return null;
+  return (
+    <ThemeProvider value={DefaultTheme}>
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* Tant que l'auth n'est pas résolue, aucun groupe n'est monté : le splash
+            natif couvre l'écran. On ne monte le bon groupe qu'une fois l'état connu. */}
+        <Stack.Protected guard={authResolved && isSignedIn}>
+          <Stack.Screen name="(tabs)" />
+        </Stack.Protected>
+        <Stack.Protected guard={authResolved && !isSignedIn}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+      </Stack>
+    </ThemeProvider>
+  );
 }
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [layoutMounted, setLayoutMounted] = useState(false);
-
-  useEffect(() => {
-    setLayoutMounted(true);
-  }, []);
-
   return (
     <AuthProvider>
       <OrderProvider>
@@ -80,13 +73,7 @@ export default function RootLayout() {
           <StatusBar style="dark" />
           <MerchantProvider>
             <FastFoodProvider>
-              <AppInitializer layoutMounted={layoutMounted} />
-              <ThemeProvider value={DefaultTheme}>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="(auth)" />
-                </Stack>
-              </ThemeProvider>
+              <AppContent />
             </FastFoodProvider>
           </MerchantProvider>
         </NotificationProvider>

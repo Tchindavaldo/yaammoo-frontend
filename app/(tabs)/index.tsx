@@ -37,8 +37,10 @@ import { Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useHideSplash } from "@/src/hooks/useHideSplash";
 
 export default function HomeScreen() {
+  const onLayoutRootView = useHideSplash();
   const { userData } = useAuth();
   const {
     fastFoods,
@@ -119,7 +121,7 @@ export default function HomeScreen() {
 
   if ((loading && fastFoods.length === 0) || forceLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
           <Text style={styles.loadingText}>
@@ -132,7 +134,7 @@ export default function HomeScreen() {
 
 
       return (
-        <View style={styles.container}>
+        <View style={styles.container} onLayout={onLayoutRootView}>
           <RestaurantHeader
             userName={userData?.infos?.nom || "Utilisateur"}
             userPhoto={

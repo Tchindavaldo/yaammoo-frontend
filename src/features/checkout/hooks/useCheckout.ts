@@ -3,11 +3,18 @@ import { Menu, Commande, Embalage, Boisson, Livraison } from "../../../types";
 import { useAuth } from "../../auth/context/AuthContext";
 import axios from "axios";
 import { Config } from "../../../api/config";
-import { useSocket } from "../../socket/SocketContext";
+import { socketService } from "../../../services/socket";
 
 export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData } = useAuth();
-  const { registerPaymentHandler, unregisterPaymentHandler } = useSocket();
+  const registerPaymentHandler = useCallback(
+    (handler: (data: any) => void) => socketService.registerPaymentHandler(handler),
+    [],
+  );
+  const unregisterPaymentHandler = useCallback(
+    () => socketService.unregisterPaymentHandler(),
+    [],
+  );
   const [quantity, setQuantity] = useState(initialOrder?.quantity || 1);
   const [selectedPriceIndex, setSelectedPriceIndex] = useState(initialOrder?.selectedPriceIndex || 1);
   const [selectedPackaging, setSelectedPackaging] = useState<Embalage[]>([]);
@@ -307,11 +314,8 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         const message = Array.isArray(raw)
           ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || 'Erreur paiement'
           : raw || 'Erreur paiement';
-        // Cas B — erreur métier : afficher le délai d'attente si fourni
-        const finalMessage = response.data.retry_after_s
-          ? `${message} (réessayez dans ${response.data.retry_after_s}s)`
-          : message;
-        setPaymentError(finalMessage);
+        // Le délai d'attente est déjà inclus dans le message du backend.
+        setPaymentError(message);
         setPaymentState('input');
       }
     } catch (error: any) {
@@ -321,8 +325,8 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
         : raw;
       message = message || data?.error || error.message || 'Erreur paiement';
-      if (data?.retry_after_s) message = `${message} (réessayez dans ${data.retry_after_s}s)`;
-      console.error('Payment error details:', data);
+      // Le délai d'attente est déjà inclus dans le message du backend.
+      console.log('Payment error details:', data);
       // Erreur → afficher Toast et fermer l'overlay
       setPaymentError(message);
       setPaymentState('input');

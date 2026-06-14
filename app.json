@@ -4,7 +4,7 @@
     "slug": "yaammoo",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo2.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "yaammoo",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -20,7 +20,9 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.",
         "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus."
@@ -53,19 +55,20 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-logo2.png",
+          "image": "./assets/images/splash-logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#ffffff"
           }
         }
       ],
       "@react-native-community/datetimepicker",
       "@react-native-google-signin/google-signin",
       "expo-apple-authentication",
-      "expo-font"
+      "expo-font",
+      "./plugins/withModularHeadersFix"
     ],
     "experiments": {
       "typedRoutes": true,

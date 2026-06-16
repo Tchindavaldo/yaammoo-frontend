@@ -76,7 +76,11 @@ USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
 - **Socket.IO** : écoute `payment.settled` pour le verdict en temps réel
 - **UI** : 2 overlays — `CheckoutPaymentTopOverlay.tsx` (récap + réseau) +
   `CheckoutPaymentOverlay.tsx` (capsule, états saisie/paiement) + `AnimatedBorderGlow.tsx`
-- **State** : intégré dans `useCheckout` (pas de PaymentContext séparé)
+- **State** : intégré dans `useCheckout` (home) / `useCartPayment` (panier) — pas de PaymentContext
+- **Payload** : `items` = commande(s) sanitizée(s) via `src/features/orders/utils/sanitizeOrder.ts`
+  (même format que l'envoi historique `buyOrders → /order/tabs`) ; le backend en déduit le `fastFoodId`
+- **Timeout HTTP** : `axios.defaults.timeout = 60000` (60 s) défini dans `src/api/config.ts`
+  (défaut axios = 0 = infini) — couvre les paiements MobileWallet lents
 
 ---
 
@@ -128,7 +132,8 @@ ussdMessage: string | null;                  // Message USSD renvoyé par le bac
 - `handlePaymentVerdict(data)` : reçoit `payment.settled`.
   - `successful` → `success` (5 s) → `success_created` (le parent ferme overlays + checkout ;
     le hook ne repasse **plus** à `input` → évite la race condition).
-  - sinon → `failed` (2 s) → `input`.
+  - sinon (échec) → `paymentError` posé + retour **direct à `input`** (aucun état
+    `failed` affiché dans l'overlay ; seul le toast top montre l'erreur).
 - `registerPaymentHandler(fn)` / `unregisterPaymentHandler()` : gestion socket
 
 ---
@@ -155,7 +160,7 @@ par **CheckoutPaymentOverlay** (capsule BAS).
 3. **ussd_sent** : `ussdMessage` du backend **uniquement** (pas de spinner, pas de montant).
 4. **success** : « Paiement réussi ! Création de la commande en cours... » (1 ligne, 5 s).
 5. **success_created** : ✓ « Commande créée avec succès ! » (1 ligne, 5 s) → fermeture auto.
-6. **failed** : `paymentError` posé, le parent affiche un Toast, retour à `input`.
+- (échec) : **aucun état `failed` affiché** — retour direct à `input`, erreur via toast top.
 
 > ⚠️ La capsule **n'a plus l'étape `network_select`** (mappée vers `input` à l'init).
 > **AnimatedBorderGlow** : bordure lumineuse animée active sur tout état ≠ `input`
@@ -169,8 +174,10 @@ Le paiement de **toutes les commandes du panier** (page `app/(tabs)/cart.tsx`) a
 propre logique, **isolée de useCheckout** (données propres, aucun partage).
 
 - **Hook** : `src/features/payment/hooks/useCartPayment.ts` — états
-  `total → network_select → input → waiting → ussd_sent → success → success_created / failed`,
-  `handlePaymentConfirm` (POST /transaction), `handlePaymentVerdict` (socket), réseau/numéro/ussd.
+  `total → network_select → input → waiting → ussd_sent → success → success_created`.
+  `handlePaymentConfirm(phone, items)` (POST /transaction avec `items`),
+  `handlePaymentVerdict` (socket). En cas d'échec : retour direct au `total`
+  (pas d'état `failed` affiché), erreur via toast top.
 - **UI** : `src/features/payment/components/CartPaymentOverlay.tsx` — capsule unique
   (au-dessus de la tab bar) qui enchaîne toutes les étapes. Le **choix du réseau est
   intégré dans la capsule** (état `network_select`), pas d'overlay du haut comme le home.

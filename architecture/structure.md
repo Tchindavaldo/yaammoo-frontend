@@ -54,8 +54,8 @@ src/features/
 │       └── NotificationDetailSheet.tsx  # Modal détail
 │
 ├── orders/
-│   ├── context/OrderContext.tsx         # orders[] + updateLocalOrder
-│   ├── services/ordersService.ts        # buyOrders, updateOrders, fetchOrders
+│   ├── context/OrderContext.tsx         # orders[] + buyOrders + fetchOrders + updateLocalOrder
+│   ├── utils/sanitizeOrder.ts           # Sanitization stricte d'une commande (envoi /order, /transaction)
 │   └── components/
 │       ├── OrderCard.tsx                # Carte client
 │       └── ...

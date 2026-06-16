@@ -168,7 +168,8 @@ Au clic sur **Buy**, deux overlays s'affichent simultanément par-dessus le shee
   - `ussd_sent` — affiche **uniquement** `ussdMessage` du backend (pas de spinner).
   - `success` — « Paiement réussi ! Création de la commande en cours... » (1 ligne, 5s).
   - `success_created` — ✓ « Commande créée avec succès ! » (1 ligne, 5s) → fermeture.
-  - `failed` — ✗ « Paiement échoué » (2s) → retour à `input` (overlays restent ouverts).
+  - (échec) — **aucun état `failed` affiché** dans l'overlay : on revient direct à
+    `input`, l'erreur est montrée uniquement par le toast top.
 - **AnimatedBorderGlow** : bordure lumineuse multicolore active sur tout état ≠ `input`.
 
 ### Synchro & fermeture
@@ -176,8 +177,9 @@ Au clic sur **Buy**, deux overlays s'affichent simultanément par-dessus le shee
 - Après `success_created` (5s), le parent ferme overlays **et** checkout
   (`setIsPaymentPopupVisible(false)` + `onClose()`). Le hook `useCheckout` ne
   repasse plus à `input` (évite la race condition).
-- **En cas d'erreur, on ne ferme JAMAIS** : seul `success_created` ferme. Toute
-  erreur (métier, validation, verdict `failed`) revient à `input`, overlays ouverts.
+- **En cas d'erreur, on ne ferme JAMAIS** et **aucun état `failed` n'est affiché** :
+  seul `success_created` ferme. Toute erreur (métier, validation, verdict d'échec)
+  revient à `input`, overlays ouverts, seul le toast top affiche l'erreur.
 - `resetCheckout()` remet `paymentState` à `network_select`.
 
 ### Ouverture du sheet

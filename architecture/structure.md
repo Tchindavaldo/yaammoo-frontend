@@ -5,7 +5,8 @@
 ```
 app/
 ├── _layout.tsx              # Root — monte tous les providers dans cet ordre :
-│                            #   AuthProvider → SocketProvider → OrderProvider → NotificationProvider
+│                            #   AuthProvider → OrderProvider → NotificationProvider → MerchantProvider → FastFoodProvider
+│                            #   (le socket n'est PAS un provider : singleton src/services/socket.ts)
 │
 ├── (auth)/                  # Stack non authentifié
 │   ├── index.tsx            # Login (email/password + Google)
@@ -69,11 +70,11 @@ src/features/
 │   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout)
 │   └── components/CartPaymentOverlay.tsx # Capsule paiement panier (réseau intégré)
 │
-├── menu/ restaurants/ profile/
-│
-└── socket/
-    └── SocketContext.tsx                # socket.io-client + connection + join(userId)
+└── menu/ restaurants/ profile/
 ```
+
+> Le socket n'est pas une feature avec Context/Provider : c'est un singleton
+> `src/services/socket.ts` (`socketService`) + le hook `src/services/useSocketEvents.ts`.
 
 ## src/ (hors features)
 
@@ -85,18 +86,24 @@ src/
 ├── theme/                       # Theme.colors, typography, spacing
 ├── types/                       # Commande, Menu, Livraison, User…
 └── services/
-    └── useSocketEvents.ts       # Hook global : abonne aux events socket + dispatch vers contexts
+    ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
+    └── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
 ```
 
 ## Ordre des providers (app/_layout.tsx)
 
 ```
 AuthProvider
-  └─ SocketProvider            # dépend de user.uid pour join(room)
-       └─ OrderProvider         # reçoit events socket via useSocketEvents
-            └─ NotificationProvider
-                 └─ <Stack/>    # Expo Router
+  └─ OrderProvider                  # reçoit events socket via useSocketEvents
+       └─ NotificationProvider
+            └─ MerchantProvider
+                 └─ FastFoodProvider
+                      └─ <AppContent/>   # Stack Expo Router
 ```
+
+> Le socket est un singleton (`src/services/socket.ts`), initialisé hors de l'arbre
+> de providers ; `useSocketEvents` (monté dans AppContent) abonne aux events et
+> dispatch vers les contexts.
 
 ## Convention
 

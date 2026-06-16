@@ -37,7 +37,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 ```
 yaammoo/
 ├── app/                      # Expo Router (file-based routing)
-│   ├── _layout.tsx           # Racine : AuthProvider, OrderProvider, NotificationProvider, SocketProvider
+│   ├── _layout.tsx           # Racine : AuthProvider, OrderProvider, NotificationProvider, MerchantProvider, FastFoodProvider
 │   ├── (auth)/               # Pages login/register/phone
 │   ├── (tabs)/               # Tabs principales (home, boutique, cart, notifications, profile)
 │   └── modal.tsx
@@ -49,13 +49,12 @@ yaammoo/
 │   │   ├── notifications/    # Context + hooks + components
 │   │   ├── orders/           # OrderContext + cartes
 │   │   ├── merchant/         # Panel marchand (boutique, commandes)
-│   │   ├── menu/ restaurants/ profile/ payment/
-│   │   └── socket/           # SocketContext
+│   │   └── menu/ restaurants/ profile/ payment/
 │   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs)
 │   ├── theme/                # Theme.colors, typography
 │   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
 │   ├── components/           # Composants partagés (Toast…)
-│   └── services/             # useSocketEvents.ts (handlers socket globaux)
+│   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts
 │
 ├── assets/                   # Images, fonts
 ├── architecture/             # Ce dossier

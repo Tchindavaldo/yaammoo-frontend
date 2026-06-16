@@ -59,7 +59,7 @@ USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
         │   io.to(`user:${userId}`).emit('payment.settled', {...})
         └── EN PARALLÈLE si successful : crée la commande
 
-[Frontend reçoit 'payment.settled' via SocketContext]
+[Frontend reçoit 'payment.settled' via socketService (singleton)]
         ├── successful → SUCCESS « Paiement réussi ! Création... » (5 s)
         │             → SUCCESS_CREATED ✓ « Commande créée... » (5 s)
         │             → fermeture des 2 overlays + du checkout
@@ -93,7 +93,9 @@ USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
 - `src/features/checkout/components/AnimatedBorderGlow.tsx` : bordure lumineuse animée (SVG)
 - `src/features/checkout/components/CheckoutSheet.tsx` : branchement socket + paiement + anim ouverture
 - `src/features/checkout/components/CartCheckoutSheet.tsx` : idem pour panier
-- `src/features/socket/SocketContext.tsx` : listener `payment.settled` + handlers
+- `src/features/payment/hooks/useCartPayment.ts` + `components/CartPaymentOverlay.tsx` : paiement global panier
+- `src/features/orders/utils/sanitizeOrder.ts` : sanitization des `items`
+- `src/services/socket.ts` : singleton `socketService`, listener `payment.settled` + register/unregister handler
 
 ### Backend yaammoo (`BACKEND/`)
 - `src/services/transaction/mobilewalletService.js` : appel sortant ai_browser2
@@ -251,7 +253,7 @@ MOBILEWALLET_WEBHOOK_SECRET=<webhook_secret>
 
 ## Flux Socket.IO
 
-**Connexion** : établie dans `SocketProvider` au login (existing)
+**Connexion** : établie par le singleton `socketService` (`src/services/socket.ts`)
 
 **Events** :
 - `payment.settled` : arrivée du verdict (status, transaction_id, amount)

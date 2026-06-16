@@ -163,10 +163,9 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
       }
       try {
         setIsProcessing(true);
-        // Masque input/cancel/payer et affiche "Veuillez patienter" + bordure
-        // animée, le temps que le backend réponde (puis passe à ussd_sent).
+        // L'état "waiting" est piloté par le hook (onConfirm → paymentState),
+        // pas en local, pour que le resync vers "input" sur erreur fonctionne.
         Keyboard.dismiss();
-        setLocalPaymentState("waiting");
         await onConfirm(phone);
         // NE PAS fermer l'overlay — rester ouvert en état waiting/success/failed
         // Le parent gère la fermeture selon paymentState via le verdict socket
@@ -332,6 +331,14 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
               <Text style={styles.successCreatedText}>
                 Commande créée avec succès !
               </Text>
+            </View>
+          )}
+
+          {/* État FAILED : paiement échoué (2s avant retour à l'input) */}
+          {localPaymentState === "failed" && (
+            <View style={styles.successCreatedContent}>
+              <Ionicons name="close-circle" size={20} color="#ef4444" />
+              <Text style={styles.failedText}>Paiement échoué</Text>
             </View>
           )}
           </Animated.View>
@@ -553,6 +560,11 @@ const styles = StyleSheet.create({
   },
   successCreatedText: {
     color: "#10b981",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  failedText: {
+    color: "#ef4444",
     fontSize: 14,
     fontWeight: "600",
   },

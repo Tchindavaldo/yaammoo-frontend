@@ -32,7 +32,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(!initialOrder);
   const [paymentNetwork, setPaymentNetwork] = useState<'orange' | 'mtn'>('orange');
-  const [paymentState, setPaymentState] = useState<'network_select' | 'input' | 'ussd_sent' | 'success' | 'success_created' | 'failed'>('network_select');
+  const [paymentState, setPaymentState] = useState<'network_select' | 'input' | 'waiting' | 'ussd_sent' | 'success' | 'success_created' | 'failed'>('network_select');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [ussdMessage, setUssdMessage] = useState<string | null>(null);
 
@@ -291,6 +291,9 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
     setPaymentError(null);
     setPaymentPhone(phone);
+    // Source de vérité unique : on passe en "waiting" ici (et non en local dans
+    // la capsule) pour que le resync vers "input" sur erreur fonctionne toujours.
+    setPaymentState('waiting');
 
     try {
       const response = await axios.post(`${Config.apiUrl}/transaction`, {
@@ -328,7 +331,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       message = message || data?.error || error.message || 'Erreur paiement';
       // Le délai d'attente est déjà inclus dans le message du backend.
       console.log('Payment error details:', data);
-      // Erreur → afficher Toast et fermer l'overlay
+      // Erreur → afficher le Toast et revenir à l'input (overlays restent ouverts).
       setPaymentError(message);
       setPaymentState('input');
     }

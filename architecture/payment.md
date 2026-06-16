@@ -21,15 +21,20 @@ Permettre aux utilisateurs de payer les commandes via Mobile Money (Cameroun : O
 ```
 [User appuie BUY dans CheckoutSheet / CartCheckoutSheet]
         │
-        ▼ affiche CheckoutPaymentOverlay (capsule blur existante, état INPUT)
-        ┌────────────────────────────────────────────┐
-        │ [close ✕]  [Orange] [MTN]  [input] [btn →] │
-        │            ^ajout    ^existant            │
+        ▼ affiche DEUX overlays : panel HAUT (récap + réseau) + capsule BAS (input)
+        ┌────────────────────────────────────────────┐  ← TOP (fond clair)
+        │ [photo] Titre menu · description           │
+        │ Menu  Boisson  Extras  Livraison           │
+        │ Total à payer                  <montant> F │
+        │ Réseau :  [Orange Money] [MTN MoMo]        │
+        └────────────────────────────────────────────┘
+        ┌────────────────────────────────────────────┐  ← BAS (capsule, état INPUT)
+        │ [close ✕]   [saisir le numéro]   [btn →]   │
         └────────────────────────────────────────────┘
 
-USER choisit réseau + saisit numéro + appuie →
-        │
-        ▼
+USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
+        │  (numéro vide → toast, rien ne se lance)
+        ▼  capsule BAS passe en WAITING (« Veuillez patienter... » + bordure animée)
 [Frontend] POST /transaction  ────────────────────────► [Backend yaammoo]
   { payBy:'mobilemoney', amount, phone, network,                 │
     email, userId }                      POST /pay → ai_browser2
@@ -37,11 +42,9 @@ USER choisit réseau + saisit numéro + appuie →
                                          réponse synchrone :  │
                                          { status:'ussd_sent'} │
                                          ◄────────────────────┘
-[Frontend reçoit ussd_sent → overlay état USSD_SENT]
+[Frontend reçoit ussd_sent → capsule BAS état USSD_SENT]
         ┌────────────────────────────────────────────┐
-        │ <message USSD backend>                     │
-        │ Montant : <montant> F                      │
-        │ ⟳ En attente de confirmation...            │
+        │ <message USSD backend — affiché tel quel>  │  (bordure animée, pas de spinner)
         └────────────────────────────────────────────┘
 
         [user compose le code USSD — quelques minutes]
@@ -56,9 +59,9 @@ USER choisit réseau + saisit numéro + appuie →
         └── EN PARALLÈLE si successful : crée la commande
 
 [Frontend reçoit 'payment.settled' via SocketContext]
-        ├── successful → overlay état SUCCESS :
-        │   spinner + "Paiement réussi ! Création de la commande en cours..."
-        │   (puis socket 'newUserOrder' existant met à jour les commandes auto)
+        ├── successful → SUCCESS « Paiement réussi ! Création... » (5 s)
+        │             → SUCCESS_CREATED ✓ « Commande créée... » (5 s)
+        │             → fermeture des 2 overlays + du checkout
         │
         └── failed / cancelled → toast haut + retour état INPUT
 ```
@@ -70,7 +73,8 @@ USER choisit réseau + saisit numéro + appuie →
 - **Backend MobileWallet API** : `POST /pay` (admin key)
 - **Frontend** : hook `useCheckout.ts` pour orchestrer le paiement
 - **Socket.IO** : écoute `payment.settled` pour le verdict en temps réel
-- **UI** : overlay `CheckoutPaymentOverlay.tsx` avec 6 états (voir ci-dessous)
+- **UI** : 2 overlays — `CheckoutPaymentTopOverlay.tsx` (récap + réseau) +
+  `CheckoutPaymentOverlay.tsx` (capsule, états saisie/paiement) + `AnimatedBorderGlow.tsx`
 - **State** : intégré dans `useCheckout` (pas de PaymentContext séparé)
 
 ---
@@ -78,9 +82,11 @@ USER choisit réseau + saisit numéro + appuie →
 ## Fichiers impactés
 
 ### Frontend
-- `src/features/checkout/hooks/useCheckout.ts` : ajout state paiement + handlers
-- `src/features/checkout/components/CheckoutPaymentOverlay.tsx` : 4 états, sélecteur réseau
-- `src/features/checkout/components/CheckoutSheet.tsx` : branchement socket + paiement
+- `src/features/checkout/hooks/useCheckout.ts` : state paiement + handlers + verdict
+- `src/features/checkout/components/CheckoutPaymentOverlay.tsx` : capsule BAS, états input→success
+- `src/features/checkout/components/CheckoutPaymentTopOverlay.tsx` : panel HAUT, récap + choix réseau
+- `src/features/checkout/components/AnimatedBorderGlow.tsx` : bordure lumineuse animée (SVG)
+- `src/features/checkout/components/CheckoutSheet.tsx` : branchement socket + paiement + anim ouverture
 - `src/features/checkout/components/CartCheckoutSheet.tsx` : idem pour panier
 - `src/features/socket/SocketContext.tsx` : listener `payment.settled` + handlers
 
@@ -99,44 +105,60 @@ USER choisit réseau + saisit numéro + appuie →
 
 **État géré** :
 ```typescript
-paymentNetwork: 'orange' | 'mtn';           // Réseau sélectionné
-paymentState: 'network_select' | 'input' | 'ussd_sent'
+paymentNetwork: 'orange' | 'mtn';           // Réseau sélectionné (via top overlay)
+paymentState: 'network_select' | 'input' | 'waiting' | 'ussd_sent'
             | 'success' | 'success_created' | 'failed';  // État overlay
 paymentError: string | null;                 // Message erreur
-ussdCode: string;                            // '#150#' ou '*126#' selon réseau
+ussdCode: string;                            // '#150#' ou '*126#' (calculé, plus affiché)
 ussdMessage: string | null;                  // Message USSD renvoyé par le backend (cas A)
 ```
 
+> Note : `network_select` reste l'état initial du hook ; la capsule du bas le mappe
+> vers `input` (le réseau se choisit dans le top overlay). `ussdCode` est encore
+> calculé mais n'est plus consommé par l'overlay (le message backend suffit).
+
 **Handlers** :
-- `handlePaymentConfirm()` : `POST /transaction` avec `payBy:'mobilemoney'`. Traite 3 cas de réponse :
-  - **Cas A** (`status: 'ussd_sent'` / `success: true`) → stocke `ussdMessage` (message à afficher tel quel), passe à `ussd_sent`
-  - **Cas B** (erreur métier, ex. `retry_too_soon`) → `paymentError` enrichi de `retry_after_s` si présent, retour `input`
+- `handlePaymentConfirm()` : passe `paymentState` à `waiting` (source de vérité
+  unique, pas un état local capsule — sinon le resync vers `input` sur erreur ne
+  se redéclenche pas), puis `POST /transaction` avec `payBy:'mobilemoney'`. Traite 3 cas :
+  - **Cas A** (`status: 'ussd_sent'` / `success: true`) → stocke `ussdMessage` (affiché tel quel), passe à `ussd_sent`
+  - **Cas B** (erreur métier, ex. `retry_too_soon`) → `paymentError` (le délai est déjà dans le message backend), retour `input`
   - **Cas C** (validation échouée, `message` = tableau `[{ field, message }]`) → concatène les messages de champs, retour `input`
-- `handlePaymentVerdict(data)` : reçoit `payment.settled`, met à jour `paymentState`
+- `handlePaymentVerdict(data)` : reçoit `payment.settled`.
+  - `successful` → `success` (5 s) → `success_created` (le parent ferme overlays + checkout ;
+    le hook ne repasse **plus** à `input` → évite la race condition).
+  - sinon → `failed` (2 s) → `input`.
 - `registerPaymentHandler(fn)` / `unregisterPaymentHandler()` : gestion socket
 
 ---
 
-## CheckoutPaymentOverlay.tsx
+## UI paiement — deux overlays
 
+> Détail complet dans [checkout.md](./checkout.md) § « Paiement — UI à deux overlays ».
+
+Le choix du réseau et le récap commande sont gérés par **CheckoutPaymentTopOverlay**
+(panel HAUT, fond clair). La saisie du numéro et les étapes du paiement sont gérées
+par **CheckoutPaymentOverlay** (capsule BAS).
+
+### CheckoutPaymentOverlay.tsx (capsule BAS)
 **Chemin** : `src/features/checkout/components/CheckoutPaymentOverlay.tsx`
 
-**Props** :
-- `paymentState: 'network_select' | 'input' | 'ussd_sent' | 'success' | 'success_created' | 'failed'`
-- `network: 'orange' | 'mtn'`
-- `onNetworkChange: (network) => void`
-- `ussdCode: string`
-- `ussdMessage?: string`
-- `onError: (error) => void`
-- `onConfirm: (phone) => Promise<void>`
+**Props** : `visible`, `onRequestClose`, `onClose`, `phone`, `onPhoneChange`,
+`paymentState`, `ussdMessage?`, `onError`, `onConfirm`.
+(plus de `network`/`onNetworkChange`/`ussdCode`/`totalAmount` — réseau géré par le top overlay.)
 
-**États** :
-1. **network_select** : bouton fermer + 2 chips réseau (Orange / MTN) + bouton suivant →
-2. **input** : input numéro de téléphone + bouton payer (Loader pendant l'envoi)
-3. **ussd_sent** : message USSD du backend (`ussdMessage`, affiché tel quel) + "Montant : X F" + Loader "En attente de confirmation..."
-4. **success** : "Paiement réussi ! Création de la commande en cours..." + Loader (5 s)
-5. **success_created** : icône ✓ verte + "Commande créée avec succès !" (5 s, puis fermeture auto)
-6. **failed** : pas de rendu propre — `paymentError` est posé, le parent affiche un Toast puis revient à `input`
+**États** (`localPaymentState`) :
+1. **input** : input numéro (placeholder « saisir le numéro de paiement ») + bouton payer.
+   Validation locale : numéro vide → `onError` (toast), rien ne se lance.
+2. **waiting** : input/cancel/payer masqués (fondu), « Veuillez patienter... ».
+3. **ussd_sent** : `ussdMessage` du backend **uniquement** (pas de spinner, pas de montant).
+4. **success** : « Paiement réussi ! Création de la commande en cours... » (1 ligne, 5 s).
+5. **success_created** : ✓ « Commande créée avec succès ! » (1 ligne, 5 s) → fermeture auto.
+6. **failed** : `paymentError` posé, le parent affiche un Toast, retour à `input`.
+
+> ⚠️ La capsule **n'a plus l'étape `network_select`** (mappée vers `input` à l'init).
+> **AnimatedBorderGlow** : bordure lumineuse animée active sur tout état ≠ `input`
+> (remplace les spinners pendant l'attente).
 
 ---
 

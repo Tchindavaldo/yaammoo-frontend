@@ -36,7 +36,12 @@ src/features/
 │   └── hooks/
 │
 ├── checkout/
-│   └── components/                      # BottomSheets (home, cart)
+│   ├── hooks/useCheckout.ts             # État commande, prix, validation, verdict paiement
+│   └── components/                      # BottomSheets (home, cart) + overlays paiement
+│       ├── CheckoutSheet / CartCheckoutSheet
+│       ├── CheckoutPaymentOverlay       # Capsule BAS (saisie n° + étapes paiement)
+│       ├── CheckoutPaymentTopOverlay    # Panel HAUT (récap commande + choix réseau)
+│       └── AnimatedBorderGlow           # Bordure lumineuse animée (attente paiement)
 │
 ├── notifications/
 │   ├── context/NotificationContext.tsx

@@ -184,6 +184,7 @@ export default function HomeScreen() {
             />
           </View>
       <CheckoutSheet
+        key={selectedMenu?.id || 'checkout'}
         visible={checkoutVisible}
         onClose={() => setCheckoutVisible(false)}
         menu={selectedMenu}

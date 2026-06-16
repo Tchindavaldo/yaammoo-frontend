@@ -24,7 +24,9 @@ yaammoo/src/features/checkout/
 │   ├── CheckoutContactOverlay.tsx      # Overlay saisie numéro de contact
 │   ├── CheckoutPeriodOverlay.tsx       # Overlay sélection créneau horaire
 │   ├── CheckoutVoiceNoteOverlay.tsx    # Overlay enregistrement note vocale
-│   ├── CheckoutPaymentOverlay.tsx      # Overlay confirmation paiement
+│   ├── CheckoutPaymentOverlay.tsx      # Overlay paiement BAS (capsule) — saisie n° + étapes
+│   ├── CheckoutPaymentTopOverlay.tsx   # Overlay paiement HAUT — récap commande + choix réseau
+│   ├── AnimatedBorderGlow.tsx          # Bordure lumineuse animée (SVG) pendant l'attente paiement
 │   ├── shared/
 │   │   ├── TabChip.tsx                 # Chip onglet (Detail / Extras / Boisson / Livraison)
 │   │   ├── PriceChip.tsx               # Chip sélection taille/prix
@@ -131,6 +133,57 @@ yaammoo/src/features/checkout/
 4. Clique "Buy individuel" → `validateStock()` → `validateDelivery()` → `PUT /order/tabs/:userId` avec `[order]` (tableau d'un seul élément)
 
 **Différence avec CheckoutSheet** : pas de "Add to Cart" (commande déjà dans le panier). Le statut passe de `pendingToBuy` → `pending` via la transition backend.
+
+---
+
+## Paiement — UI à deux overlays
+
+Au clic sur **Buy**, deux overlays s'affichent simultanément par-dessus le sheet
+(montés en permanence, pilotés par `visible={isPaymentPopupVisible}`) :
+
+### CheckoutPaymentTopOverlay (HAUT)
+**Chemin** : `components/CheckoutPaymentTopOverlay.tsx`
+
+- Occupe l'espace du sheet **au-dessus** de la capsule du bas (gap de 12px).
+- Fond clair (BlurView `tint="light"`, `rgba(255,255,255,0.85)`).
+- Contenu (markup **dupliqué** depuis le checkout, PAS de réutilisation des
+  composants checkout pour ne rien casser) :
+  - `MenuHeader` — photo + titre + description du menu.
+  - `PriceRecap` — Menu / Boisson / Extras / Livraison (SANS le total).
+  - **Total** affiché à part, plus grand (orange `#ec4913`).
+  - `ActionArea` — **choix du réseau** (Orange Money / MTN MoMo) via `onNetworkChange`.
+- Animation entrée (spring fade/slide/scale) + sortie (timing 220ms) synchro avec le bas.
+
+### CheckoutPaymentOverlay (BAS — capsule)
+**Chemin** : `components/CheckoutPaymentOverlay.tsx`
+
+- Capsule pilule ancrée en bas, fond clair (`rgba(255,255,255,0.55)`).
+- **N'a plus l'étape `network_select`** (gérée par le top overlay) → ouvre direct sur `input`.
+- Étapes (`localPaymentState`) :
+  - `input` — saisie du numéro (placeholder « saisir le numéro de paiement »).
+    Validation locale : numéro vide → toast d'erreur, rien ne se lance.
+  - `waiting` — après clic Payer (numéro OK) : input/cancel/payer masqués (fondu),
+    affiche « Veuillez patienter... ». Piloté par `paymentState` du hook (pas en
+    local) pour que le retour à `input` sur erreur fonctionne toujours.
+  - `ussd_sent` — affiche **uniquement** `ussdMessage` du backend (pas de spinner).
+  - `success` — « Paiement réussi ! Création de la commande en cours... » (1 ligne, 5s).
+  - `success_created` — ✓ « Commande créée avec succès ! » (1 ligne, 5s) → fermeture.
+  - `failed` — ✗ « Paiement échoué » (2s) → retour à `input` (overlays restent ouverts).
+- **AnimatedBorderGlow** : bordure lumineuse multicolore active sur tout état ≠ `input`.
+
+### Synchro & fermeture
+- Entrée/sortie des deux overlays synchronisées via `visible` (timing 220ms).
+- Après `success_created` (5s), le parent ferme overlays **et** checkout
+  (`setIsPaymentPopupVisible(false)` + `onClose()`). Le hook `useCheckout` ne
+  repasse plus à `input` (évite la race condition).
+- **En cas d'erreur, on ne ferme JAMAIS** : seul `success_created` ferme. Toute
+  erreur (métier, validation, verdict `failed`) revient à `input`, overlays ouverts.
+- `resetCheckout()` remet `paymentState` à `network_select`.
+
+### Ouverture du sheet
+- Modal en `animationType="fade"` (voile noir en fondu) + sheet en spring slide-up
+  interne (`Animated.Value`), au lieu du `slide` natif qui faisait monter le voile.
+- Toast `paymentError` rendu **dans** le Modal (1er plan, au-dessus du voile).
 
 ---
 

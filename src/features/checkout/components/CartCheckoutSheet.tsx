@@ -96,12 +96,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     }
   }, [paymentState, onClose]);
 
-  // Fermer l'overlay et afficher le toast d'erreur si erreur lors du paiement
-  useEffect(() => {
-    if (paymentError && isPaymentPopupVisible && paymentState === 'input') {
-      setIsPaymentPopupVisible(false);
-    }
-  }, [paymentError, isPaymentPopupVisible, paymentState]);
+  // En cas d'erreur paiement : NE PAS fermer les overlays. On reste sur l'état
+  // `input` (le toast d'erreur s'affiche, l'utilisateur peut ressaisir).
+  // Seul `success_created` déclenche la fermeture (effet ci-dessus).
 
   // Enrichir le menu avec les deliveryHours de la boutique
   useEffect(() => {

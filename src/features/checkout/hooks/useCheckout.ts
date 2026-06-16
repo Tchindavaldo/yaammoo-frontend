@@ -295,6 +295,9 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     // la capsule) pour que le resync vers "input" sur erreur fonctionne toujours.
     setPaymentState('waiting');
 
+    // Commande complète à payer (le backend déduit le fastFoodId des items).
+    const order = createOrder('pending');
+
     try {
       const response = await axios.post(`${Config.apiUrl}/transaction`, {
         payBy: 'mobilemoney',
@@ -303,6 +306,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         network: paymentNetwork === 'orange' ? 'Orangemoney' : 'MTN',
         email: userData?.infos?.email || 'user@yaammoo.com',
         userId: userData.uid,
+        items: order ? [order] : [],
       });
 
       console.log('Transaction response:', response.data);
@@ -335,7 +339,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       setPaymentError(message);
       setPaymentState('input');
     }
-  }, [userData, paymentNetwork, prices.total]);
+  }, [userData, paymentNetwork, prices.total, createOrder]);
 
   const handlePaymentVerdict = useCallback((data: any) => {
     if (data.status === 'successful') {
@@ -348,11 +352,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         setPaymentState('success_created');
       }, 5000);
     } else {
-      setPaymentState('failed');
+      // Échec : pas d'état "failed" dans l'overlay → retour direct à l'input.
+      // Seul le toast top affiche l'erreur.
       setPaymentError('Paiement échoué');
-      setTimeout(() => {
-        setPaymentState('input');
-      }, 2000);
+      setPaymentState('input');
     }
   }, []);
 

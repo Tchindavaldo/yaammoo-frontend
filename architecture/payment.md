@@ -37,7 +37,8 @@ USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
         ▼  capsule BAS passe en WAITING (« Veuillez patienter... » + bordure animée)
 [Frontend] POST /transaction  ────────────────────────► [Backend yaammoo]
   { payBy:'mobilemoney', amount, phone, network,                 │
-    email, userId }                      POST /pay → ai_browser2
+    email, userId, items:[...] }         POST /pay → ai_browser2
+  (items = commande(s) complète(s) ; le backend en déduit le fastFoodId)
                                          (X-Admin-Key)        │
                                          réponse synchrone :  │
                                          { status:'ussd_sent'} │
@@ -159,6 +160,25 @@ par **CheckoutPaymentOverlay** (capsule BAS).
 > ⚠️ La capsule **n'a plus l'étape `network_select`** (mappée vers `input` à l'init).
 > **AnimatedBorderGlow** : bordure lumineuse animée active sur tout état ≠ `input`
 > (remplace les spinners pendant l'attente).
+
+---
+
+## Paiement global du panier (page cart)
+
+Le paiement de **toutes les commandes du panier** (page `app/(tabs)/cart.tsx`) a sa
+propre logique, **isolée de useCheckout** (données propres, aucun partage).
+
+- **Hook** : `src/features/payment/hooks/useCartPayment.ts` — états
+  `total → network_select → input → waiting → ussd_sent → success → success_created / failed`,
+  `handlePaymentConfirm` (POST /transaction), `handlePaymentVerdict` (socket), réseau/numéro/ussd.
+- **UI** : `src/features/payment/components/CartPaymentOverlay.tsx` — capsule unique
+  (au-dessus de la tab bar) qui enchaîne toutes les étapes. Le **choix du réseau est
+  intégré dans la capsule** (état `network_select`), pas d'overlay du haut comme le home.
+- **cart.tsx** : branche le hook + l'overlay + verdict socket + fermeture sur
+  `success_created` (5s → refresh + repos). Capsule de **suppression** d'article séparée.
+- Réutilise `AnimatedBorderGlow` (bordure animée pendant l'attente).
+- `CartCheckoutSheet` (édition d'un article) utilise la même animation d'ouverture
+  que le home (voile fade + sheet slide-up net).
 
 ---
 

@@ -65,7 +65,11 @@ src/features/
 │   ├── orders/                          # Gestion commandes marchand
 │   └── settings/                        # Edit boutique + hours
 │
-├── menu/ restaurants/ profile/ payment/
+├── payment/
+│   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout)
+│   └── components/CartPaymentOverlay.tsx # Capsule paiement panier (réseau intégré)
+│
+├── menu/ restaurants/ profile/
 │
 └── socket/
     └── SocketContext.tsx                # socket.io-client + connection + join(userId)

@@ -23,6 +23,7 @@ const GAP = 12; // espace entre les deux overlays
 type PaymentState =
   | "network_select"
   | "input"
+  | "waiting"
   | "ussd_sent"
   | "success"
   | "success_created"

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Modal, TouchableOpacity, ScrollView, Platform, Text } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Modal, TouchableOpacity, ScrollView, Platform, Text, Animated } from 'react-native';
 import { Toast } from '../../../components/Toast';
 import { Ionicons } from '@expo/vector-icons';
 import { Menu } from '@/src/types';
@@ -50,6 +50,30 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
   const [paymentKey, setPaymentKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [menuWithDeliveryHours, setMenuWithDeliveryHours] = useState<Menu | null>(menu);
+
+  // Animation d'ouverture/fermeture : voile noir en fade, sheet en slide-up net
+  // (contenu jamais estompé) — identique au CheckoutSheet du home.
+  const SHEET_HEIGHT = 384;
+  const sheetTranslate = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const [modalMounted, setModalMounted] = useState(visible);
+
+  useEffect(() => {
+    if (visible) {
+      setModalMounted(true);
+      Animated.parallel([
+        Animated.spring(sheetTranslate, { toValue: 0, useNativeDriver: true, tension: 70, friction: 12 }),
+        Animated.timing(backdropOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(sheetTranslate, { toValue: SHEET_HEIGHT, duration: 240, useNativeDriver: true }),
+        Animated.timing(backdropOpacity, { toValue: 0, duration: 240, useNativeDriver: true }),
+      ]).start(({ finished }) => {
+        if (finished) setModalMounted(false);
+      });
+    }
+  }, [visible, sheetTranslate, backdropOpacity]);
 
   const {
     quantity, setQuantity,
@@ -141,11 +165,22 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
 
   return (
     <>
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={modalMounted} transparent animationType="none">
       <View style={styles.overlay}>
+        {/* Voile noir animé en fade (séparé du contenu) */}
+        <Animated.View
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+          pointerEvents="none"
+        />
         <View style={styles.dismiss} />
-        
-        <View style={[styles.sheetContainer, styles.sheetLight]}>
+
+        <Animated.View
+          style={[
+            styles.sheetContainer,
+            styles.sheetLight,
+            { transform: [{ translateY: sheetTranslate }] },
+          ]}
+        >
           <View style={{ flex: 1 }}>
             <View style={styles.tabsWrapper}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
@@ -259,10 +294,10 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             }}
           />
 
-        </View>
+        </Animated.View>
 
         {isLocationPopupVisible && (
-          <CheckoutLocationOverlay 
+          <CheckoutLocationOverlay
             onClose={() => setIsLocationPopupVisible(false)} 
             address={delivery.address || ''}
             note={delivery.note || ''}
@@ -329,18 +364,19 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             onHide={() => setSheetToast(null)}
           />
         )}
+
+        {/* Toast d'erreur paiement : DANS le Modal pour s'afficher au 1er plan
+            (au-dessus du voile noir), pas masqué dessous. */}
+        {paymentError && (
+          <Toast
+            message={paymentError}
+            type="error"
+            duration={7000}
+            onHide={() => setPaymentError(null)}
+          />
+        )}
       </View>
     </Modal>
-
-    {/* Toast d'erreur paiement : rendu HORS du Modal pour s'afficher au top de l'écran */}
-    {paymentError && (
-      <Toast
-        message={paymentError}
-        type="error"
-        duration={4000}
-        onHide={() => setPaymentError(null)}
-      />
-    )}
     </>
   );
 };

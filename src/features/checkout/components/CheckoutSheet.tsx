@@ -401,7 +401,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
           <Toast
             message={paymentError}
             type="error"
-            duration={4000}
+            duration={7000}
             onHide={() => setPaymentError(null)}
           />
         )}

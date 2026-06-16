@@ -8,12 +8,10 @@ import {
   Alert,
   Platform,
   RefreshControl,
-  TextInput,
   LayoutAnimation,
   UIManager,
   Animated,
   Keyboard,
-  Dimensions,
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,7 +21,6 @@ import { OrderHeader } from "@/src/features/orders/components/OrderHeader";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
 import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrackingHeader";
 import { Theme } from "@/src/theme";
-import { PaymentSheet } from "@/src/features/payment/components/PaymentSheet";
 import { BlurView } from "expo-blur";
 import { BonusScreen } from "@/src/features/bonus/components/BonusScreen";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,11 +30,12 @@ import { Loader } from "@/src/components/Loader";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { Toast } from "@/src/components/Toast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
+import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
+import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
+import { CartPaymentOverlay } from "@/src/features/payment/components/CartPaymentOverlay";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
 import { useLocalSearchParams } from "expo-router";
-import axios from "axios";
-import { Config } from "@/src/api/config";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -59,9 +57,31 @@ export default function OrdersScreen() {
     stats,
   } = useOrders();
   const { userData } = useAuth();
-  
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [isPaying, setIsPaying] = useState(false);
+
+  // Total panier (réactif) — calculé tôt pour alimenter le hook de paiement.
+  const cartTotal = useMemo(() => {
+    const t = pendingToBuy.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
+    return isNaN(t) ? 0 : t;
+  }, [pendingToBuy]);
+
+  // Paiement global du panier (logique propre, isolée de useCheckout).
+  const {
+    paymentPhone,
+    setPaymentPhone,
+    paymentNetwork,
+    setPaymentNetwork,
+    paymentState,
+    setPaymentState,
+    paymentError,
+    setPaymentError,
+    ussdMessage,
+    resetPayment,
+    handlePaymentConfirm,
+    handlePaymentVerdict,
+    registerPaymentHandler,
+    unregisterPaymentHandler,
+  } = useCartPayment(cartTotal);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
@@ -100,12 +120,11 @@ export default function OrdersScreen() {
   }, [orderToEdit]);
 
   // UI states
-  const fadeAnim = React.useRef(new Animated.Value(1)).current;
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (userData?.infos?.numero) {
-      setPhoneNumber(userData.infos.numero.toString());
+      setPaymentPhone(userData.infos.numero.toString());
     }
   }, [userData]);
 
@@ -140,34 +159,33 @@ export default function OrdersScreen() {
     };
   }, []);
 
-  const handlePayerPress = () => {
-    if (isKeyboardVisible) {
-      Keyboard.dismiss();
-    } else if (isPaying) {
-      handlePaymentSuccess();
-    } else {
-      togglePaying();
+  // Verdict paiement via socket : actif tant qu'un paiement est en cours.
+  const paymentActive = paymentState !== "total";
+  useEffect(() => {
+    if (!paymentActive) return;
+    registerPaymentHandler(handlePaymentVerdict);
+    return () => unregisterPaymentHandler();
+  }, [paymentActive, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
+
+  // Après succès complet (success_created, 5s) : rafraîchir + revenir au repos.
+  useEffect(() => {
+    if (paymentState === "success_created") {
+      const timer = setTimeout(() => {
+        resetPayment();
+        refresh();
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [paymentState, resetPayment, refresh]);
 
-  const togglePaying = () => {
-    // Fade out
-    Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-    }).start(() => {
-        setIsPaying(!isPaying);
-        // Fade in
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 250,
-            useNativeDriver: true,
-        }).start();
-    });
+  // Toast d'erreur paiement.
+  useEffect(() => {
+    if (paymentError) {
+      setToast({ message: paymentError, type: 'error' });
+      setPaymentError(null);
+    }
+  }, [paymentError, setPaymentError]);
 
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  };
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
   const HEADER_HEIGHT = 60 + insets.top;
@@ -180,7 +198,6 @@ export default function OrdersScreen() {
     "pending" | "active" | "finished" | "delivered"
   >("pending");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [paymentVisible, setPaymentVisible] = useState(false);
   const [trackingHeaderHeight, setTrackingHeaderHeight] = useState(100);
 
   // Générer les dates disponibles (Aujourd'hui + dates des commandes existantes)
@@ -221,14 +238,6 @@ export default function OrdersScreen() {
       setActiveStatus(section);
     }
   }, [section]);
-
-  const calculateCartTotal = () => {
-    const totalValue = pendingToBuy.reduce((acc, o) => {
-        const itemTotal = o.total || 0;
-        return acc + (Number(itemTotal) || 0);
-    }, 0);
-    return isNaN(totalValue) ? 0 : totalValue;
-  };
 
   const isSameDay = (d1: Date, d2: Date) => {
     return (
@@ -349,40 +358,19 @@ export default function OrdersScreen() {
     return null;
   };
 
-  const handlePaymentSuccess = async () => {
+  // Valide les livraisons puis délègue le paiement au hook useCartPayment.
+  const confirmCartPayment = async (phone: string) => {
     const validationErr = validateAllDeliveries();
     if (validationErr) {
       setToast({ message: validationErr, type: 'error' });
+      // Revenir à l'input pour corriger (sinon coincé en waiting).
+      setPaymentState('input');
       return;
     }
-    setIsSubmitting(true);
-    try {
-      const response = await axios.post(`${Config.apiUrl}/transaction`, {
-        payBy: 'mobilemoney',
-        amount: calculateCartTotal(),
-        phone: phoneNumber.replace(/\s/g, ''),
-        network: phoneNumber.includes('65') || phoneNumber.includes('66') ? 'Orangemoney' : 'MTN',
-        email: userData?.infos?.email || 'user@yaammoo.com',
-        userId: userData.uid,
-      });
-
-      if (response.data.status === 'ussd_sent') {
-        setToast({ message: 'Composez le code USSD reçu par SMS', type: 'success' });
-        // Attendre le verdict via socket ou polling
-      } else {
-        const errMsg = typeof response.data.message === 'object' ? response.data.message.message : response.data.message;
-        setToast({ message: errMsg || 'Erreur paiement', type: 'error' });
-      }
-    } catch (error: any) {
-      let message = error.message || 'Erreur paiement';
-      if (error.response?.data?.message) {
-        const msg = error.response.data.message;
-        message = typeof msg === 'object' ? msg.message : msg;
-      }
-      setToast({ message, type: 'error' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // items = commandes du panier, sanitizées EXACTEMENT comme l'envoi historique
+    // (buyOrders → /order/tabs), via la fonction partagée sanitizeOrder.
+    const items = pendingToBuy.map((o) => sanitizeOrder(o, userData?.uid));
+    await handlePaymentConfirm(phone, items);
   };
 
   const { fastFoods } = useFastFoods();
@@ -664,82 +652,54 @@ export default function OrdersScreen() {
         )}
       </View>
 
-      {currentTab === "cart" && pendingToBuy.length > 0 && (
+      {/* Capsule de confirmation de SUPPRESSION (mode séparé du paiement) */}
+      {currentTab === "cart" && pendingToBuy.length > 0 && orderToDelete && (
         <Animated.View style={[
-            styles.payFooterCapsule, 
-            { 
-                bottom: Animated.add(keyboardHeight, isKeyboardVisible ? 5 : tabBarHeight + 10),
-            }
+            styles.payFooterCapsule,
+            { bottom: tabBarHeight + 10 },
         ]}>
           <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-          
-          {orderToDelete ? (
-            <TouchableOpacity style={styles.closeCircle} onPress={cancelDelete}>
-               <Ionicons name="close" size={16} color="white" />
-            </TouchableOpacity>
-          ) : isPaying ? (
-            !isKeyboardVisible && (
-              <TouchableOpacity style={styles.closeCircle} onPress={togglePaying}>
-                <Ionicons name="close" size={16} color="white" />
-              </TouchableOpacity>
-            )
-          ) : (
-            <View style={styles.totalIconCircle}>
-               <Ionicons name="card-outline" size={16} color="white" />
-            </View>
-          )}
-
-          {orderToDelete ? (
-            <View style={styles.deleteMsgWrapper}>
-              <Text style={styles.deleteMenuTitle} numberOfLines={1}>
-                {((itemToDelete as any)?.menu?.titre || (itemToDelete as any)?.menu?.name || "Article")} - {((itemToDelete as any)?.total || (itemToDelete as any)?.prixTotal || 0)} FCFA
-              </Text>
-              <Text style={styles.deleteMsg}>Voulez-vous vraiment supprimer ?</Text>
-            </View>
-          ) : isPaying ? (
-            <Animated.View style={[styles.inputWrapper, { opacity: fadeAnim }]}>
-              <Ionicons name="call-outline" size={16} color="white" style={styles.inputIcon} />
-              <TextInput
-                style={styles.textInput}
-                placeholder="Numéro de paiement"
-                placeholderTextColor="rgba(255,255,255,0.5)"
-                keyboardType="phone-pad"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                autoFocus
-              />
-            </Animated.View>
-          ) : (
-            <Animated.View style={[styles.totalInfo, { opacity: fadeAnim }]}>
-              <Text style={styles.totalTitle}>Total à payer</Text>
-              <Text style={styles.totalAmount}>{calculateCartTotal()} FCFA</Text>
-            </Animated.View>
-          )}
-
+          <TouchableOpacity style={styles.closeCircle} onPress={cancelDelete}>
+            <Ionicons name="close" size={16} color="white" />
+          </TouchableOpacity>
+          <View style={styles.deleteMsgWrapper}>
+            <Text style={styles.deleteMenuTitle} numberOfLines={1}>
+              {((itemToDelete as any)?.menu?.titre || (itemToDelete as any)?.menu?.name || "Article")} - {((itemToDelete as any)?.total || (itemToDelete as any)?.prixTotal || 0)} FCFA
+            </Text>
+            <Text style={styles.deleteMsg}>Voulez-vous vraiment supprimer ?</Text>
+          </View>
           <TouchableOpacity
-            style={[styles.payerBtnHome, isSubmitting && { opacity: 0.7 }, orderToDelete && { backgroundColor: '#ef4444' }]}
-            onPress={orderToDelete ? handleConfirmDelete : handlePayerPress}
+            style={[styles.payerBtnHome, { backgroundColor: '#ef4444' }, isSubmitting && { opacity: 0.7 }]}
+            onPress={handleConfirmDelete}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Ionicons
-                name={orderToDelete ? "checkmark" : (isKeyboardVisible ? "chevron-down" : "arrow-forward-outline")}
-                size={isKeyboardVisible ? 18 : 16}
-                color="white"
-              />
+              <Ionicons name="checkmark" size={16} color="white" />
             )}
           </TouchableOpacity>
         </Animated.View>
       )}
 
-      <PaymentSheet
-        visible={paymentVisible}
-        onClose={() => setPaymentVisible(false)}
-        amount={calculateCartTotal()}
-        onSuccess={handlePaymentSuccess}
-      />
+      {/* Capsule de PAIEMENT global du panier (total → réseau → input → étapes) */}
+      {currentTab === "cart" && pendingToBuy.length > 0 && !orderToDelete && (
+        <CartPaymentOverlay
+          phone={paymentPhone}
+          onPhoneChange={setPaymentPhone}
+          onConfirm={confirmCartPayment}
+          totalAmount={cartTotal}
+          paymentState={paymentState}
+          setPaymentState={setPaymentState}
+          network={paymentNetwork}
+          onNetworkChange={setPaymentNetwork}
+          ussdMessage={ussdMessage}
+          onClose={resetPayment}
+          onError={(msg) => setToast({ message: msg, type: 'error' })}
+          isKeyboardVisible={isKeyboardVisible}
+          bottom={Animated.add(keyboardHeight, isKeyboardVisible ? 5 : tabBarHeight + 10)}
+        />
+      )}
 
       {toast && (
         <Toast 
@@ -844,14 +804,6 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     left: '2%',
   },
-  totalIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   closeCircle: {
     width: 40,
     height: 40,
@@ -859,41 +811,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  totalInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  totalTitle: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  totalAmount: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  inputWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    height: 45,
-    borderRadius: 22.5,
-    paddingHorizontal: 12,
-    marginHorizontal: 10,
-  },
-  inputIcon: {
-    marginRight: 8,
-  },
-  textInput: {
-    flex: 1,
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '500',
-    padding: 0,
   },
   payerBtnHome: {
     flexDirection: "row",

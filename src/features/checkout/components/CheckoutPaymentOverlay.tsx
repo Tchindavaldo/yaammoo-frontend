@@ -29,6 +29,7 @@ interface CheckoutPaymentOverlayProps {
   paymentState?:
     | "network_select"
     | "input"
+    | "waiting"
     | "ussd_sent"
     | "success"
     | "success_created"
@@ -333,14 +334,6 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
               </Text>
             </View>
           )}
-
-          {/* État FAILED : paiement échoué (2s avant retour à l'input) */}
-          {localPaymentState === "failed" && (
-            <View style={styles.successCreatedContent}>
-              <Ionicons name="close-circle" size={20} color="#ef4444" />
-              <Text style={styles.failedText}>Paiement échoué</Text>
-            </View>
-          )}
           </Animated.View>
         </View>
       </Animated.View>
@@ -560,11 +553,6 @@ const styles = StyleSheet.create({
   },
   successCreatedText: {
     color: "#10b981",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  failedText: {
-    color: "#ef4444",
     fontSize: 14,
     fontWeight: "600",
   },

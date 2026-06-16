@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { Loader } from "../../../components/Loader";
+import { AnimatedBorderGlow } from "./AnimatedBorderGlow";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const SHEET_HEIGHT = 384;
@@ -25,7 +26,6 @@ interface CheckoutPaymentOverlayProps {
   phone: string;
   onPhoneChange: (phone: string) => void;
   onConfirm: (phone: string) => Promise<void>;
-  totalAmount: number;
   paymentState?:
     | "network_select"
     | "input"
@@ -33,7 +33,6 @@ interface CheckoutPaymentOverlayProps {
     | "success"
     | "success_created"
     | "failed";
-  ussdCode?: string;
   ussdMessage?: string;
   onError?: (error: string) => void;
 }
@@ -45,10 +44,9 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
   phone,
   onPhoneChange,
   onConfirm,
-  totalAmount,
   paymentState = "network_select",
-  ussdCode = "#150#",
   ussdMessage,
+  onError,
 }) => {
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -61,6 +59,17 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
 
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
+  // Fondu du contenu lors d'un changement d'étape (input → waiting → ussd_sent…).
+  const contentOpacity = React.useRef(new Animated.Value(1)).current;
+
+  React.useEffect(() => {
+    contentOpacity.setValue(0);
+    Animated.timing(contentOpacity, {
+      toValue: 1,
+      duration: 260,
+      useNativeDriver: true,
+    }).start();
+  }, [localPaymentState, contentOpacity]);
   // Reste monté tant que l'animation de sortie n'est pas terminée.
   const [mounted, setMounted] = React.useState(visible);
 
@@ -145,9 +154,20 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
     if (isKeyboardVisible) {
       Keyboard.dismiss();
     } else {
+      // Validation : ne rien lancer (ni animation, ni masquage) si le numéro
+      // n'est pas rempli → on affiche juste le toast d'erreur.
+      const phone = localPhone.trim();
+      if (!phone) {
+        onError?.("Veuillez remplir le numéro de paiement");
+        return;
+      }
       try {
         setIsProcessing(true);
-        await onConfirm(localPhone);
+        // Masque input/cancel/payer et affiche "Veuillez patienter" + bordure
+        // animée, le temps que le backend réponde (puis passe à ussd_sent).
+        Keyboard.dismiss();
+        setLocalPaymentState("waiting");
+        await onConfirm(phone);
         // NE PAS fermer l'overlay — rester ouvert en état waiting/success/failed
         // Le parent gère la fermeture selon paymentState via le verdict socket
       } catch (error) {
@@ -215,6 +235,13 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
             style={StyleSheet.absoluteFill}
           />
 
+          <AnimatedBorderGlow
+            active={localPaymentState !== "input"}
+            borderRadius={35}
+            strokeWidth={3}
+          />
+
+          <Animated.View style={[styles.contentRow, { opacity: contentOpacity }]}>
           {/* État INPUT : saisie du numéro de téléphone */}
           {localPaymentState === "input" && (
             <>
@@ -274,46 +301,40 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
             </>
           )}
 
-          {/* État USSD_SENT : affichage du message USSD + écoute socket */}
+          {/* État WAITING : requête envoyée, en attente de la réponse backend */}
+          {localPaymentState === "waiting" && (
+            <View style={styles.waitingContent}>
+              <Text style={styles.waitingText}>Veuillez patienter...</Text>
+            </View>
+          )}
+
+          {/* État USSD_SENT : message renvoyé par le backend uniquement.
+              L'attente est matérialisée par la bordure animée (pas de spinner). */}
           {localPaymentState === "ussd_sent" && (
             <View style={styles.ussdSentContent}>
-              <Text style={styles.ussdSentText}>
-                {ussdMessage || `Composez ${ussdCode} sur votre téléphone`}
-              </Text>
-              <Text style={styles.ussdSentSubtext}>
-                Montant : {totalAmount} F
-              </Text>
-              <View style={styles.ussdWaitingLoader}>
-                <Loader size={20} color="white" />
-                <Text style={styles.ussdWaitingText}>
-                  En attente de confirmation...
-                </Text>
-              </View>
+              <Text style={styles.ussdSentText}>{ussdMessage}</Text>
             </View>
           )}
 
           {/* État SUCCESS : paiement réussi + création de commande en cours (5s) */}
           {localPaymentState === "success" && (
             <View style={styles.successContent}>
-              <View>
-                <Text style={styles.successText}>Paiement réussi !</Text>
-                <Text style={styles.successSubtext}>
-                  Création de la commande en cours...
-                </Text>
-              </View>
-              <Loader size={16} color="white" />
+              <Text style={styles.successText}>
+                Paiement réussi ! Création de la commande en cours...
+              </Text>
             </View>
           )}
 
           {/* État SUCCESS_CREATED : commande créée avec succès (5s avant fermeture auto) */}
           {localPaymentState === "success_created" && (
             <View style={styles.successCreatedContent}>
-              <Ionicons name="checkmark-circle" size={40} color="#10b981" />
+              <Ionicons name="checkmark-circle" size={20} color="#10b981" />
               <Text style={styles.successCreatedText}>
                 Commande créée avec succès !
               </Text>
             </View>
           )}
+          </Animated.View>
         </View>
       </Animated.View>
     </Animated.View>
@@ -324,6 +345,13 @@ const styles = StyleSheet.create({
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+  },
+  // Conteneur du contenu (reproduit le flex-row de la capsule) — animé en fondu.
+  contentRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   blurOverlay: {
     position: "absolute",
@@ -517,9 +545,10 @@ const styles = StyleSheet.create({
   },
   successCreatedContent: {
     flex: 1,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
     paddingHorizontal: 20,
   },
   successCreatedText: {

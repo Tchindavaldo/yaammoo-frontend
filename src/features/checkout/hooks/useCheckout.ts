@@ -86,6 +86,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     setDrinkQuantities({});
     setDelivery(new Livraison(false, 0));
     setPaymentPhone('');
+    setPaymentState('network_select');
     setLastOrderId(null);
     setIsInitialized(!initialOrder);
   }, [initialOrder]);
@@ -338,12 +339,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       // Paiement réussi → afficher "Création commande en cours" pendant 5s
       setPaymentState('success');
       setTimeout(() => {
-        // Après 5s, afficher "Commande créée avec succès" pendant 5s
+        // Après 5s, afficher "Commande créée avec succès".
+        // La fermeture des overlays + du checkout est gérée par le parent
+        // (effet sur paymentState === 'success_created').
         setPaymentState('success_created');
-        setTimeout(() => {
-          // Après 5s supplémentaires, fermer l'overlay (géré par le parent)
-          setPaymentState('input');
-        }, 5000);
       }, 5000);
     } else {
       setPaymentState('failed');

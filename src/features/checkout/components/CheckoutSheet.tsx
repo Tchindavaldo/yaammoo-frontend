@@ -331,9 +331,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
             onClose={() => setIsPaymentPopupVisible(false)}
             phone={paymentPhone}
             onPhoneChange={setPaymentPhone}
-            totalAmount={total}
             paymentState={paymentState}
-            ussdCode={ussdCode}
             ussdMessage={ussdMessage || undefined}
             onError={setPaymentError}
             onConfirm={handlePaymentConfirm}

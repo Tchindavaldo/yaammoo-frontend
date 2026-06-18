@@ -23,6 +23,7 @@ import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrack
 import { Theme } from "@/src/theme";
 import { BlurView } from "expo-blur";
 import { BonusScreen } from "@/src/features/bonus/components/BonusScreen";
+import { WalletPanel } from "@/src/features/wallet/components/WalletPanel";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
@@ -585,7 +586,9 @@ export default function OrdersScreen() {
       )}
 
       <View style={{ flex: 1, paddingTop: (currentTab === "status" ? HEADER_HEIGHT + trackingHeaderHeight : HEADER_HEIGHT) }}>
-        {currentTab === "bonus" ? (
+        {currentTab === "wallet" ? (
+          <WalletPanel />
+        ) : currentTab === "bonus" ? (
           <BonusScreen />
         ) : currentTab === "status" ? (
           <ScrollView

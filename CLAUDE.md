@@ -40,18 +40,35 @@ L'architecture doit rester **propre, moderne, modulaire**. Règles non négociab
   SocketContext. Pas de props drilling.
 - **Hooks partagés sous `src/services/`** : useSocketEvents, useNotificationSetup, etc.
 
-## Convention de branches (OBLIGATOIRE)
+## Convention de branches Git (OBLIGATOIRE)
+
+> ⚠️ Cette section parle **exclusivement de branches Git** (`git checkout -b ...`).
+> Elle n'a rien à voir avec l'organisation des dossiers/features dans le code.
+> Quand on dit "isoler un travail", on parle de **l'isoler sur sa propre branche Git**.
+
+**Règle d'or : tout travail de changement — moyen ou important — doit se faire sur
+une NOUVELLE branche Git créée AVANT de toucher au code.** Ne jamais coder
+directement sur `main`. Avant la moindre modification non triviale, créer la branche
+avec le bon préfixe, puis travailler dessus.
+
+Sont concernés (liste non exhaustive) : nouvelle feature, refacto, ajout/duplication
+de composant, modification d'un flux, correction de bug. Seules les retouches
+ultra-mineures (typo, commentaire, log) peuvent rester sur la branche courante.
 
 Toujours préfixer les branches selon leur nature :
 
 - `debug/<sujet>` — **investigation/résolution d'un bug précis**. Une branche par
   bug. Ex: `debug/checkout-validation`, `debug/socket-reconnection`.
 - `feature/<sujet>` — nouvelle fonctionnalité ou durcissement d'une feature.
-  Ex: `feature/payment-integration`, `feature/socket-optimization`.
+  Ex: `feature/payment-integration`, `feature/wallet-panier`.
 - `backup/<sujet>` — sauvegarde d'un état (ne pas y travailler).
 
-Règle: **tout travail de debug commence sur une branche `debug/`**, créée depuis
-la branche d'où vient le problème (pas depuis `main`).
+Règles de création :
+- **Tout travail de debug** commence sur une branche `debug/`, créée depuis la
+  branche d'où vient le problème (pas depuis `main`).
+- **Tout travail de feature / changement moyen ou important** commence sur une
+  branche `feature/`, créée depuis `main` (sauf indication contraire).
+- Une branche = un sujet. Ne pas mélanger plusieurs travaux sur la même branche.
 
 ## État & Contextes (OBLIGATOIRE)
 

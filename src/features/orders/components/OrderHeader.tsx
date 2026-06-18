@@ -7,7 +7,7 @@ import { Theme } from '../../../theme';
 interface OrderHeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
-  counts: { cart: number; status: number; bonus: number };
+  counts: { cart: number; status: number; bonus: number; wallet?: number };
 }
 
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange, counts }) => {
@@ -16,6 +16,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange
     { id: 'cart', label: 'Mon pannier', icon: 'cart-outline', count: counts.cart },
     { id: 'status', label: 'Etat des commandes', icon: 'checkmark-circle-outline', count: counts.status },
     { id: 'bonus', label: 'Mes Bonus', icon: 'gift-outline', count: counts.bonus },
+    { id: 'wallet', label: 'Mon portefeuille', icon: 'wallet-outline', count: counts.wallet ?? 0 },
   ];
 
   return (

@@ -10,6 +10,7 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
 import { OrderProvider } from "@/src/features/orders/context/OrderContext";
 import { MerchantProvider } from "@/src/features/merchant/context/MerchantContext";
+import { WalletProvider } from "@/src/features/wallet/context/WalletContext";
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
@@ -72,9 +73,11 @@ export default function RootLayout() {
         <NotificationProvider>
           <StatusBar style="dark" />
           <MerchantProvider>
-            <FastFoodProvider>
-              <AppContent />
-            </FastFoodProvider>
+            <WalletProvider>
+              <FastFoodProvider>
+                <AppContent />
+              </FastFoodProvider>
+            </WalletProvider>
           </MerchantProvider>
         </NotificationProvider>
       </OrderProvider>

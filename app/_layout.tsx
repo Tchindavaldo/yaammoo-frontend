@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
 import { OrderProvider } from "@/src/features/orders/context/OrderContext";
 import { MerchantProvider } from "@/src/features/merchant/context/MerchantContext";
 import { WalletProvider } from "@/src/features/wallet/context/WalletContext";
+import { MerchantWalletProvider } from "@/src/features/merchant/context/MerchantWalletContext";
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
@@ -73,11 +74,13 @@ export default function RootLayout() {
         <NotificationProvider>
           <StatusBar style="dark" />
           <MerchantProvider>
-            <WalletProvider>
-              <FastFoodProvider>
-                <AppContent />
-              </FastFoodProvider>
-            </WalletProvider>
+            <MerchantWalletProvider>
+              <WalletProvider>
+                <FastFoodProvider>
+                  <AppContent />
+                </FastFoodProvider>
+              </WalletProvider>
+            </MerchantWalletProvider>
           </MerchantProvider>
         </NotificationProvider>
       </OrderProvider>

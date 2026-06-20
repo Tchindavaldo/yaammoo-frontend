@@ -1,52 +1,55 @@
-import { useState, useCallback } from "react";
-import { socketService } from "../../../services/socket";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../../auth/context/AuthContext";
+import { withdrawService } from "../services/withdrawService";
+import {
+  useMerchantWallet,
+  WithdrawalEvent,
+} from "../context/MerchantWalletContext";
 
 export type WithdrawState =
   | "idle"
   | "amount_input"
   | "network_select"
   | "input"
-  | "waiting"
-  | "ussd_sent"
-  | "success"
-  | "success_created"
+  | "waiting"     // requête en vol → "Veuillez patienter…"
+  | "processing"  // réponse reçue (pending) → "Retrait en cours"
+  | "completed"   // socket completed → "Retrait effectué" (+ délai 24h)
   | "failed";
 
 /**
- * Logique de RETRAIT marchand (copie adaptée de useCartPayment).
- * Le marchand saisit un montant à retirer + un numéro + un réseau.
- *
- * ⚠️ Branchement backend NON connecté pour l'instant (visuels + workflow only).
- * L'appel API réel (endpoint retrait) est laissé en TODO ci-dessous.
+ * Logique de RETRAIT marchand.
+ * Flux : saisie montant → réseau → numéro → POST /wallet/withdraw → "en cours"
+ * (dès la réponse) → verdict socket wallet.withdrawal (completed/failed).
  */
+// 🐞 DEBUG : mettre à `true` pour afficher d'emblée l'overlay à l'état "completed"
+// (le message « Retrait réussi… 24h ») sans avoir à refaire un retrait.
+// ⚠️ Remettre à `false` avant de clore.
+export const DEBUG_COMPLETED = false;
+
 export const useWithdraw = () => {
   const { userData } = useAuth();
+  const { registerWithdrawalHandler, unregisterWithdrawalHandler } =
+    useMerchantWallet();
 
   const [withdrawPhone, setWithdrawPhone] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawNetwork, setWithdrawNetwork] = useState<"orange" | "mtn">("orange");
-  const [withdrawState, setWithdrawState] = useState<WithdrawState>("idle");
+  const [withdrawState, setWithdrawState] = useState<WithdrawState>(
+    DEBUG_COMPLETED ? "completed" : "idle",
+  );
   const [withdrawError, setWithdrawError] = useState<string | null>(null);
-  const [ussdMessage, setUssdMessage] = useState<string | null>(null);
 
-  const registerPaymentHandler = useCallback(
-    (handler: (data: any) => void) => socketService.registerPaymentHandler(handler),
-    [],
-  );
-  const unregisterPaymentHandler = useCallback(
-    () => socketService.unregisterPaymentHandler(),
-    [],
-  );
+  // Id du retrait en cours, pour ne réagir qu'à SON verdict socket.
+  const currentWithdrawalId = useRef<string | null>(null);
 
   const resetWithdraw = useCallback(() => {
     setWithdrawState("idle");
     setWithdrawError(null);
-    setUssdMessage(null);
     setWithdrawAmount("");
+    currentWithdrawalId.current = null;
   }, []);
 
-  // Confirme le retrait (numéro + montant + réseau).
+  // Confirme le retrait : POST puis passage en "processing" dès la réponse.
   const handleWithdrawConfirm = useCallback(
     async (phone: string) => {
       const amount = Number(withdrawAmount);
@@ -60,38 +63,67 @@ export const useWithdraw = () => {
       }
       setWithdrawError(null);
       setWithdrawPhone(phone);
-      setWithdrawState("waiting");
+      setWithdrawState("waiting"); // "Veuillez patienter…"
+      console.log("📤 [Retrait FRONT] requête envoyée → état: waiting → message affiché: « Veuillez patienter... »");
 
-      // TODO(backend): brancher l'appel API de retrait quand l'endpoint sera prêt.
-      // Exemple attendu (à valider) :
-      //   await axios.post(`${Config.apiUrl}/withdraw`, {
-      //     payBy: "mobilemoney",
-      //     amount,
-      //     phone: phone.replace(/\s/g, ""),
-      //     network: withdrawNetwork === "orange" ? "Orangemoney" : "MTN",
-      //     userId: userData.uid,
-      //   });
-      // Puis gérer la réponse (ussd_sent / erreur) comme dans useCartPayment.
-      //
-      // En attendant : on simule la transition vers ussd_sent pour valider le workflow visuel.
-      setUssdMessage("Demande de retrait envoyée. Confirmez via le code reçu par SMS.");
-      setWithdrawState("ussd_sent");
+      try {
+        const res = await withdrawService.withdraw({
+          amount,
+          phone: phone.replace(/\s/g, ""),
+          network: withdrawNetwork === "orange" ? "ORANGEMONEY" : "MTN",
+          receiverName: userData?.infos?.email || "user@yaammoo.com",
+        });
+
+        const data = res?.data ?? res;
+        if (res?.success === false) {
+          console.log("❌ [Retrait FRONT] réponse HTTP = échec → état: input → message affiché (toast): «", res?.message || "Échec du retrait", "»");
+          setWithdrawError(res?.message || "Échec du retrait");
+          setWithdrawState("input");
+          return;
+        }
+        // Réponse OK → on connaît le withdrawalId, on passe en "en cours".
+        currentWithdrawalId.current = data?.withdrawalId ?? null;
+        console.log("✅ [Retrait FRONT] réponse HTTP reçue (withdrawalId=" + currentWithdrawalId.current + ") → état: processing → message affiché: « Retrait en cours... »");
+        setWithdrawState("processing");
+      } catch (error: any) {
+        const data = error.response?.data;
+        const message =
+          data?.message || data?.error || error.message || "Échec du retrait";
+        console.log("❌ [Retrait FRONT] erreur HTTP → état: input → message affiché (toast): «", message, "»");
+        setWithdrawError(message);
+        setWithdrawState("input");
+      }
     },
     [userData, withdrawAmount, withdrawNetwork],
   );
 
-  // Verdict reçu via socket (réutilise le même canal que le paiement).
-  const handleWithdrawVerdict = useCallback((data: any) => {
-    if (data.status === "successful") {
-      setWithdrawState("success");
-      setTimeout(() => {
-        setWithdrawState("success_created");
-      }, 5000);
-    } else {
-      setWithdrawError("Retrait échoué");
-      setWithdrawState("idle");
-    }
-  }, []);
+  // Verdict socket : ne réagit qu'au retrait en cours (même withdrawalId).
+  useEffect(() => {
+    const onVerdict = (e: WithdrawalEvent) => {
+      if (
+        currentWithdrawalId.current &&
+        e.withdrawalId &&
+        e.withdrawalId !== currentWithdrawalId.current
+      ) {
+        console.log("⏭️ [Retrait FRONT] socket ignoré (autre withdrawalId=" + e.withdrawalId + ", en cours=" + currentWithdrawalId.current + ")");
+        return; // verdict d'un autre retrait
+      }
+      if (e.status === "completed") {
+        console.log("🎉 [Retrait FRONT] socket status=completed → état: completed → message affiché: « Retrait effectué ! Le montant peut mettre jusqu'à 24h... » (newBalance=" + e.newBalance + ")");
+        setWithdrawState("completed");
+      } else if (e.status === "failed") {
+        console.log("💥 [Retrait FRONT] socket status=failed → état: idle → message affiché (toast): «", e.reason || "Retrait échoué", "»");
+        setWithdrawError(e.reason || "Retrait échoué");
+        setWithdrawState("idle");
+      } else {
+        console.log("⏳ [Retrait FRONT] socket status=" + e.status + " → on reste en « Retrait en cours... »");
+      }
+      // pending : on reste en "processing".
+    };
+
+    registerWithdrawalHandler(onVerdict);
+    return () => unregisterWithdrawalHandler(onVerdict);
+  }, [registerWithdrawalHandler, unregisterWithdrawalHandler]);
 
   return {
     withdrawPhone,
@@ -104,11 +136,7 @@ export const useWithdraw = () => {
     setWithdrawState,
     withdrawError,
     setWithdrawError,
-    ussdMessage,
     resetWithdraw,
     handleWithdrawConfirm,
-    handleWithdrawVerdict,
-    registerPaymentHandler,
-    unregisterPaymentHandler,
   };
 };

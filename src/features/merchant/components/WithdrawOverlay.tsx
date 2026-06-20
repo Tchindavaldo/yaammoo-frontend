@@ -24,7 +24,6 @@ interface WithdrawOverlayProps {
   setWithdrawState: (s: WithdrawState) => void;
   network: "orange" | "mtn";
   onNetworkChange: (n: "orange" | "mtn") => void;
-  ussdMessage?: string | null;
   onClose: () => void;
   onError?: (error: string) => void;
   /** Position depuis le bas (au-dessus de la tab bar / clavier). */
@@ -35,7 +34,7 @@ interface WithdrawOverlayProps {
 /**
  * Capsule de RETRAIT marchand — copie adaptée de CartPaymentOverlay.
  * Flux : idle → amount_input → network_select → input → waiting →
- * ussd_sent → success → success_created / failed.
+ * processing ("retrait en cours") → completed ("retrait effectué") / failed.
  */
 export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
   phone,
@@ -47,7 +46,6 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
   setWithdrawState,
   network,
   onNetworkChange,
-  ussdMessage,
   onClose,
   onError,
   bottom,
@@ -103,9 +101,8 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
       <AnimatedBorderGlow
         active={
           withdrawState === "waiting" ||
-          withdrawState === "ussd_sent" ||
-          withdrawState === "success" ||
-          withdrawState === "success_created"
+          withdrawState === "processing" ||
+          withdrawState === "completed"
         }
         borderRadius={40}
         strokeWidth={3}
@@ -137,9 +134,14 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
                 autoFocus
               />
             </View>
-            <TouchableOpacity style={styles.payerBtn} onPress={handleAmountNext}>
+            <TouchableOpacity
+              style={styles.payerBtn}
+              onPress={handleAmountNext}
+            >
               <Ionicons
-                name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"}
+                name={
+                  isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"
+                }
                 size={16}
                 color="white"
               />
@@ -167,7 +169,12 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
                         setWithdrawState("input");
                       }}
                     >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          active && styles.chipTextActive,
+                        ]}
+                      >
                         {net === "orange" ? "Orange" : "MTN"}
                       </Text>
                     </TouchableOpacity>
@@ -212,7 +219,9 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <Ionicons
-                  name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"}
+                  name={
+                    isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"
+                  }
                   size={16}
                   color="white"
                 />
@@ -221,31 +230,31 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
           </>
         )}
 
-        {/* WAITING */}
+        {/* WAITING : requête en vol */}
         {withdrawState === "waiting" && (
           <Text style={styles.centerText}>Veuillez patienter...</Text>
         )}
 
-        {/* USSD_SENT : message backend uniquement */}
-        {withdrawState === "ussd_sent" && (
+        {/* PROCESSING : réponse reçue, retrait pris en compte */}
+        {withdrawState === "processing" && (
           <Text style={styles.centerText} numberOfLines={2}>
-            {ussdMessage}
+            Retrait en cours...
           </Text>
         )}
 
-        {/* SUCCESS */}
-        {withdrawState === "success" && (
-          <Text style={styles.centerText}>
-            Retrait réussi ! Traitement en cours...
-          </Text>
-        )}
-
-        {/* SUCCESS_CREATED : icône + texte centrés ensemble */}
-        {withdrawState === "success_created" && (
-          <View style={styles.iconTextRow}>
-            <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-            <Text style={[styles.iconTextLabel, { color: "#10b981" }]}>
-              Retrait effectué avec succès !
+        {/* COMPLETED : icône + texte sur une seule ligne */}
+        {withdrawState === "completed" && (
+          <View style={styles.completedBlock}>
+            {/* <Ionicons name="checkmark-circle" size={20} color="#10b981" /> */}
+            <Text
+              style={[
+                styles.iconTextLabel,
+                { color: "#10b981", textAlign: "center" },
+              ]}
+              numberOfLines={2}
+            >
+              Retrait réussi ! Le montant peut mettre jusqu&apos;à 24h pour
+              arriver sur votre numéro.
             </Text>
           </View>
         )}
@@ -298,6 +307,24 @@ const styles = StyleSheet.create({
   iconTextLabel: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  completedBlock: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 24,
+  },
+  completedTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  completedHint: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 10,
+    textAlign: "center",
   },
   closeCircle: {
     width: 40,

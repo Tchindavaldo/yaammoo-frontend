@@ -10,11 +10,14 @@ Interface marchand pour gérer les commandes reçues : visualisation par statut 
 ```
 yaammoo/src/features/merchant/
 ├── context/
-│   └── MerchantContext.tsx            # Provider marchand (boutique, commandes, menus)
+│   ├── MerchantContext.tsx            # Provider marchand (boutique, commandes, menus)
+│   └── MerchantWalletContext.tsx      # Provider stats portefeuille + handlers socket retrait
 ├── hooks/
-│   └── useMerchant.ts                 # Hook d'accès au contexte marchand
+│   ├── useMerchant.ts                 # Hook d'accès au contexte marchand
+│   └── useWithdraw.ts                 # Hook logique retrait (states, POST, verdict socket)
 ├── services/
-│   └── merchantService.ts             # Appels API marchand
+│   ├── merchantService.ts             # Appels API marchand
+│   └── withdrawService.ts             # Appel POST /wallet/withdraw
 └── components/
     ├── OrderManagePanel.tsx            # Panel principal gestion commandes
     ├── MerchantOrderCard.tsx           # Carte commande côté marchand (avec bouton avancer statut)
@@ -24,7 +27,9 @@ yaammoo/src/features/merchant/
     ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
     ├── AddMenuSheetMultiStep.tsx       # Sheet ajout menu multi-étapes
     ├── EditBoutiquePanel.tsx           # Panel édition infos boutique + heures livraison
-    ├── PorteFeuillePanel.tsx           # Panel portefeuille / transactions
+    ├── PorteFeuillePanel.tsx           # Panel portefeuille (solde, historique jours, déclencheur retrait)
+    ├── WithdrawOverlay.tsx             # Overlay retrait (saisie montant → réseau → numéro → verdict)
+    ├── WalletDayStatItem.tsx           # Ligne d'une journée dans l'historique portefeuille
     ├── NoBoutiquePanel.tsx             # Écran si pas encore de boutique créée
     ├── BikeAnimation.tsx               # Animation vélo (livraison en cours)
     └── TransactionItem.tsx             # Ligne d'une transaction
@@ -92,6 +97,54 @@ Permet au marchand d'éditer :
 - Heures de livraison par créneau (stockées dans le document Firestore boutique, lues par `useCheckout` pour le `CheckoutPeriodOverlay`)
 
 Les heures de livraison configurées ici sont ensuite accessibles dans `menu.deliveryHours` (via propagation lors du chargement du menu enrichi dans `CheckoutSheet`).
+
+---
+
+## PorteFeuillePanel.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/PorteFeuillePanel.tsx`
+
+Affiche le solde global du marchand et l'historique par journée. Déclenche le flux de retrait via `useWithdraw`.
+
+**Source de données** : `MerchantWalletContext` (stats patchées en temps réel par les événements socket `wallet.withdrawal`).
+
+**Flux retrait** (déclenché par le bouton "Retirer") :
+1. `withdrawState` passe de `idle` → `amount_input` → `network_select` → `input`
+2. POST `withdrawService.withdraw()` → passage en `waiting` puis `processing` dès la réponse HTTP
+3. Verdict socket `wallet.withdrawal` → `completed` (fermeture auto + refresh stats après 5 s) ou `failed` (toast erreur)
+
+---
+
+## useWithdraw.ts
+
+**Chemin** : `yaammoo/src/features/merchant/hooks/useWithdraw.ts`
+
+Gère l'ensemble de la logique retrait (états, appel API, verdict socket).
+
+**États `WithdrawState`** :
+| État | Description |
+|---|---|
+| `idle` | Overlay fermé |
+| `amount_input` | Saisie du montant |
+| `network_select` | Choix du réseau (Orange / MTN) |
+| `input` | Saisie du numéro de téléphone |
+| `waiting` | Requête en vol — "Veuillez patienter…" |
+| `processing` | Réponse HTTP reçue (withdrawalId connu) — "Retrait en cours…" |
+| `completed` | Socket `completed` reçu — "Retrait effectué !" (fermeture auto 5 s) |
+| `failed` | Erreur HTTP ou socket `failed` |
+
+**`DEBUG_COMPLETED`** : constante exportée à `false` en production. Passer à `true` temporairement pour afficher l'overlay directement en état `completed` sans déclencher un vrai retrait.
+
+---
+
+## MerchantWalletContext.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/context/MerchantWalletContext.tsx`
+
+Provider qui expose :
+- `stats` : solde + séries journalières (chargées via `walletStatsService`)
+- `loading` / `refresh` : pull-to-refresh
+- `registerWithdrawalHandler` / `unregisterWithdrawalHandler` : bus interne pour que `useWithdraw` reçoive les événements socket `wallet.withdrawal`
 
 ---
 

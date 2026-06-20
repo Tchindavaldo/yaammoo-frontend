@@ -1,10 +1,10 @@
-import { TransactionItem } from "@/src/features/merchant/components/TransactionItem";
+import { WalletDayStatItem } from "@/src/features/merchant/components/WalletDayStatItem";
 import { WithdrawOverlay } from "@/src/features/merchant/components/WithdrawOverlay";
-import { useWithdraw } from "@/src/features/merchant/hooks/useWithdraw";
+import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useWithdraw";
+import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
 import { Theme } from "@/src/theme";
-import { Transaction } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -24,19 +24,22 @@ type FilterType = "all" | "credit" | "debit" | "transfer";
 const SHOW_FILTERS = false;
 
 interface PorteFeuilleProps {
-  transactions: Transaction[];
-  loading: boolean;
-  onRefresh: () => void;
+  /** Rafraîchit le contexte marchand parent (ex. après un retrait). Optionnel. */
+  onRefresh?: () => void;
 }
 
-export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
-  transactions,
-  loading,
-  onRefresh,
-}) => {
+export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({ onRefresh }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
 
-  // Retrait (overlay copié du paiement panier).
+  // Stats portefeuille : source de vérité globale (patchée par les events socket).
+  const { stats, loading, refresh: refreshStats } = useMerchantWallet();
+
+  const refreshAll = useCallback(() => {
+    refreshStats();
+    onRefresh?.();
+  }, [refreshStats, onRefresh]);
+
+  // Retrait : POST /wallet/withdraw + verdict socket (géré dans le hook).
   const {
     withdrawPhone,
     setWithdrawPhone,
@@ -48,12 +51,8 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     setWithdrawState,
     withdrawError,
     setWithdrawError,
-    ussdMessage,
     resetWithdraw,
     handleWithdrawConfirm,
-    handleWithdrawVerdict,
-    registerPaymentHandler,
-    unregisterPaymentHandler,
   } = useWithdraw();
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -90,29 +89,18 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     };
   }, []);
 
-  // Verdict retrait via socket : actif tant qu'un retrait est en cours.
-  const withdrawActive = withdrawState !== "idle";
+  // Après "Retrait effectué" (completed, 5s) : fermer + refresh des stats.
+  // 🐞 En mode DEBUG_COMPLETED, on ne ferme pas (l'overlay reste visible).
   useEffect(() => {
-    if (!withdrawActive) return;
-    registerPaymentHandler(handleWithdrawVerdict);
-    return () => unregisterPaymentHandler();
-  }, [
-    withdrawActive,
-    handleWithdrawVerdict,
-    registerPaymentHandler,
-    unregisterPaymentHandler,
-  ]);
-
-  // Après succès complet (success_created, 5s) : revenir au repos + refresh.
-  useEffect(() => {
-    if (withdrawState === "success_created") {
+    if (DEBUG_COMPLETED) return;
+    if (withdrawState === "completed") {
       const timer = setTimeout(() => {
         resetWithdraw();
-        onRefresh();
+        refreshAll();
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [withdrawState, resetWithdraw, onRefresh]);
+  }, [withdrawState, resetWithdraw, refreshAll]);
 
   // Toast d'erreur retrait.
   useEffect(() => {
@@ -122,23 +110,11 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     }
   }, [withdrawError, setWithdrawError]);
 
-  const totalAmount = transactions
-    .filter((t) => t.type === "credit")
-    .reduce((acc, t) => acc + t.amount, 0);
+  // Solde global réel (fourni par le backend).
+  const balance = stats?.balance ?? 0;
 
-  const totalSpend = transactions
-    .filter((t) => t.type === "debit")
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const balance = totalAmount - totalSpend;
-
-  const filteredTransactions = transactions.filter((t) => {
-    if (selectedFilter === "all") return true;
-    if (selectedFilter === "credit") return t.type === "credit";
-    if (selectedFilter === "debit") return t.type === "debit";
-    if (selectedFilter === "transfer") return (t as any).payBy === "transfer";
-    return true;
-  });
+  // Liste = une ligne par jour (series), déjà triée par le backend.
+  const series = stats?.series ?? [];
 
   const filters: { key: FilterType; label: string; icon: string }[] = [
     { key: "all", label: "Historique", icon: "time-outline" },
@@ -228,13 +204,13 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         )}
       </View>
 
-      {/* Liste des transactions */}
+      {/* Chiffre d'affaires par jour (une ligne par jour) */}
       <FlatList
-        data={filteredTransactions}
-        renderItem={({ item }) => <TransactionItem transaction={item} />}
-        keyExtractor={(item) => item.id}
+        data={series}
+        renderItem={({ item }) => <WalletDayStatItem stat={item} />}
+        keyExtractor={(item) => item.period}
         refreshing={loading}
-        onRefresh={onRefresh}
+        onRefresh={refreshAll}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -243,7 +219,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
               size={60}
               color={Theme.colors.gray[200]}
             />
-            <Text style={styles.emptyTitle}>Pas de transaction</Text>
+            <Text style={styles.emptyTitle}>Pas d&apos;activité</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
               onPress={() =>
@@ -271,7 +247,6 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
           setWithdrawState={setWithdrawState}
           network={withdrawNetwork}
           onNetworkChange={setWithdrawNetwork}
-          ussdMessage={ussdMessage}
           onClose={resetWithdraw}
           onError={(msg) => Alert.alert("Retrait", msg)}
           isKeyboardVisible={isKeyboardVisible}

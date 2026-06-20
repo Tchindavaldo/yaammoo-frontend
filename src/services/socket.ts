@@ -19,9 +19,14 @@ class SocketService {
 
         // Verdict de paiement Mobile Money — écouté ici (socket vivant de l'app)
         // et routé vers le handler enregistré par le checkout en cours.
-        this.socket.on('payment.settled', (data) => {
+        // ACK obligatoire (event rejoué par le backend si non acquitté).
+        this.socket.on('payment.settled', (data, ack?: () => void) => {
             console.log('💳 payment.settled:', data);
-            if (this.paymentHandler) this.paymentHandler(data);
+            try {
+                if (this.paymentHandler) this.paymentHandler(data);
+            } finally {
+                ack?.();
+            }
         });
     }
 

@@ -45,7 +45,7 @@ type ActiveTab = 'commande' | 'menu' | 'historique';
 export default function BoutiqueScreen() {
   const insets = useSafeAreaInsets();
   const { userData, loading: authLoading } = useAuth();
-  const { orders, menus, transactions, loading: merchantLoading, stats, refresh, updateStatus, addMenu } = useMerchant();
+  const { orders, menus, loading: merchantLoading, stats, refresh, updateStatus, addMenu } = useMerchant();
   const [activeTab, setActiveTab] = useState<ActiveTab>('commande');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [headerHeight, setHeaderHeight] = useState(70);
@@ -143,11 +143,7 @@ export default function BoutiqueScreen() {
         );
       case 'historique':
         return (
-          <PorteFeuillePanel
-            transactions={transactions}
-            loading={loading}
-            onRefresh={refresh}
-          />
+          <PorteFeuillePanel onRefresh={refresh} />
         );
       default:
         return null;

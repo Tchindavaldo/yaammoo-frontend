@@ -156,8 +156,8 @@ export default function SettingsScreen() {
           <View style={styles.onlineDot} />
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.userName}>{nomComplet}</Text>
-          <Text style={styles.userContact}>{contact}</Text>
+          <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{nomComplet}</Text>
+          <Text style={styles.userContact} numberOfLines={1} ellipsizeMode="tail">{contact}</Text>
           {userData?.isMarchand && (
             <View style={styles.merchantBadge}>
               <Ionicons name="storefront-outline" size={12} color="white" />

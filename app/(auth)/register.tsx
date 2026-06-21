@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     top: 0,
     width: "100%",
     height: "35%",
-    backgroundColor: "red",
+    backgroundColor: "#ec4913",
   },
   cardBack2: {
     position: "absolute",

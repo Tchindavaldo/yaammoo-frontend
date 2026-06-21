@@ -47,6 +47,10 @@ export const userFirestore = {
         return mappedUser;
       }
 
+      // rawData.infos existe mais peut avoir des champs vides — on applique les mêmes fallbacks
+      const infos = rawData.infos;
+      if (!infos.email) infos.email = rawData.email || firebaseUser.email || '';
+      if (!infos.nom) infos.nom = rawData.displayName || (infos.email ? infos.email.split('@')[0] : 'Utilisateur');
       return rawData;
     } catch (error: any) {
       if (error?.response?.status !== 404) {

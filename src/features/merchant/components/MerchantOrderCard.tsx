@@ -74,7 +74,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     
     const deliveryType = (order as any).delivery?.type;
     const isExpress = deliveryType === "express";
-    const deliveryColor = isExpress ? "#dc2626" : "#2563eb";
+    const deliveryColor = isExpress ? "#ec4913" : "#2563eb";
     const deliveryLabel = isExpress ? "Express" : order.delivery?.hour || "Créneau";
     
     const orderCount = allOrders.length;
@@ -115,7 +115,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
               {isGroupDelivering ? (
                 <BikeAnimation />
               ) : isUpdating ? (
-                <ActivityIndicator size="small" color="#dc2626" />
+                <ActivityIndicator size="small" color="#ec4913" />
               ) : (
                 <TouchableOpacity
                   style={styles.summaryValidateBtn}
@@ -147,7 +147,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const menuImage = (order.menu as any)?.coverImage || (order.menu as any)?.image;
   const deliveryRaw = order.delivery;
   const deliveryType = deliveryRaw?.type;
-  const deliveryColor = deliveryType === "express" ? "#dc2626" : deliveryType === "time" ? "#2563eb" : "black";
+  const deliveryColor = deliveryType === "express" ? "#ec4913" : deliveryType === "time" ? "#2563eb" : "black";
 
   const extras = order.extra || [];
   const extrasActiveCount = Array.isArray(extras) ? extras.filter((x: any) => x.status !== false).length : 0;
@@ -162,7 +162,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           {menuImage ? (
             <Image source={{ uri: menuImage }} style={styles.avatarImage} />
           ) : (
-            <Ionicons name="person" size={20} color="#dc2626" />
+            <Ionicons name="person" size={20} color="#ec4913" />
           )}
           <Ionicons
             name="navigate"
@@ -217,7 +217,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
       {isUpdating && (
         <View style={styles.absoluteLoader}>
           <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
-          <ActivityIndicator size="large" color="#dc2626" />
+          <ActivityIndicator size="large" color="#ec4913" />
         </View>
       )}
 
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: -2,
     left: -2,
-    backgroundColor: "#dc2626",
+    backgroundColor: "#ec4913",
     padding: 2,
     borderRadius: 6,
     zIndex: 10,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   summaryPrice: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#dc2626",
+    color: "#ec4913",
   },
   summaryChipsRow: {
     flexDirection: "row",
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#dc2626",
+    color: "#ec4913",
   },
   orderCountBadge: {
     position: "absolute",

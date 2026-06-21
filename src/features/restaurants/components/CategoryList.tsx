@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   chipSelected: {
-    backgroundColor: '#8b0000',
+    backgroundColor: '#ec4913',
   },
   text: {
     color: Theme.colors.primary,

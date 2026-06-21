@@ -298,7 +298,7 @@ export const NoBoutiquePanel = () => {
   return (
     <View style={styles.overlay}>
       <LinearGradient
-        colors={["#911818", "#c0392b", "#e8d5d5"]}
+        colors={["#b8350d", "#ec4913", "#f5d9cd"]}
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFill}
       />

@@ -28,7 +28,7 @@ const TabItem = ({ label, active, onPress, count, icon }: any) => (
       <Ionicons
         name={icon}
         size={12}
-        color={active ? 'white' : 'red'}
+        color={active ? 'white' : Theme.colors.primary}
       />
       <Text style={[styles.label, active && styles.activeLabel]}>{label}</Text>
       {count > 0 && (

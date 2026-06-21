@@ -36,7 +36,7 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
   
   const deliveryRaw = order.delivery;
   const deliveryType = deliveryRaw?.type;
-  const deliveryColor = deliveryType === "express" ? "#dc2626" : deliveryType === "time" ? "#2563eb" : "#ccc";
+  const deliveryColor = deliveryType === "express" ? "#ec4913" : deliveryType === "time" ? "#2563eb" : "#ccc";
 
   const extras = order.extra || [];
   const extrasActiveCount = Array.isArray(extras) ? extras.filter((x: any) => x.status !== false).length : 0;
@@ -52,7 +52,7 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
           {menuImage ? (
             <Image source={{ uri: menuImage }} style={styles.avatarImage} />
           ) : (
-            <Ionicons name="fast-food" size={24} color="#dc2626" />
+            <Ionicons name="fast-food" size={24} color="#ec4913" />
           )}
           <Ionicons
             name="navigate"
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   summaryPrice: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#dc2626",
+    color: "#ec4913",
   },
   summaryChipsRow: {
     flexDirection: "row",

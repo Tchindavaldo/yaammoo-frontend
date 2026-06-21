@@ -34,7 +34,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange
               <Ionicons 
                 name={tab.icon as any} 
                 size={16} 
-                color={activeTab === tab.id ? 'white' : 'red'} 
+                color={activeTab === tab.id ? 'white' : Theme.colors.primary}
                 style={{ marginRight: 5 }}
               />
               <Text style={[
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff5f5', // Light red for unselected chips
+    backgroundColor: '#fff3ee', // Light orange for unselected chips
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 20, // Ionic mode="ios" is very rounded

@@ -81,11 +81,12 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
       Keyboard.dismiss();
       return;
     }
-    const p = phone.trim();
-    if (!p) {
+    const raw = phone.trim().replace(/\s/g, "");
+    if (!raw) {
       onError?.("Veuillez remplir le numéro de retrait");
       return;
     }
+    const p = raw.startsWith("237") ? raw : `237${raw}`;
     try {
       setIsProcessing(true);
       Keyboard.dismiss();
@@ -200,9 +201,10 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
                 color="white"
                 style={styles.inputIcon}
               />
+              <Text style={styles.phonePrefix}>+237</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="saisir le numéro de retrait"
+                placeholder="6XXXXXXXX"
                 placeholderTextColor="rgba(255,255,255,0.5)"
                 keyboardType="phone-pad"
                 value={phone}
@@ -382,6 +384,12 @@ const styles = StyleSheet.create({
   },
   inputIcon: {
     marginRight: 8,
+  },
+  phonePrefix: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+    marginRight: 4,
   },
   textInput: {
     flex: 1,

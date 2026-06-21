@@ -285,17 +285,17 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
               <Ionicons
                 name={tab.icon as any}
                 size={14}
-                color={selectedStatus === tab.key ? 'white' : 'red'}
+                color={selectedStatus === tab.key ? 'white' : Theme.colors.primary}
               />
               <Text style={[
                 styles.statusTabLabel,
-                { color: selectedStatus === tab.key ? 'white' : 'red' },
+                { color: selectedStatus === tab.key ? 'white' : Theme.colors.primary },
               ]}>
                 {tab.label}
               </Text>
               <Text style={[
                 styles.statusTabLabel,
-                { fontWeight: '900', marginLeft: 4, color: selectedStatus === tab.key ? 'white' : 'red' },
+                { fontWeight: '900', marginLeft: 4, color: selectedStatus === tab.key ? 'white' : Theme.colors.primary },
               ]}>
                 ({counts[tab.key]})
               </Text>

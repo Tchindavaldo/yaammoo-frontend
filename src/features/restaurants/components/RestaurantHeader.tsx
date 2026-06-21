@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from 'react';
 import { Theme } from '../../../theme';
 
 interface RestaurantHeaderProps {
@@ -16,6 +17,9 @@ interface RestaurantHeaderProps {
   categories: { name: string; icon: any }[];
   selectedCategory: string;
   onCategorySelect: (category: string) => void;
+  unreadCount?: number;
+  onNotifPress?: () => void;
+  onProfilePress?: () => void;
 }
 
 export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
@@ -29,6 +33,9 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   categories,
   selectedCategory,
   onCategorySelect,
+  unreadCount = 0,
+  onNotifPress,
+  onProfilePress,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -37,13 +44,21 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       {/* Première Barre d'outils (Icons & Location) - Equivalent ion-toolbar baseline */}
       <View style={styles.toolbar1}>
         <View style={styles.colAvatar}>
-          <View style={styles.imgProfile}>
-            <Image
-              source={userPhoto ? { uri: userPhoto } : require('../../../../assets/images/user.png')}
-              style={styles.avatarImg}
-              contentFit="cover"
-            />
-          </View>
+          <TouchableOpacity style={styles.imgProfile} onPress={onProfilePress} activeOpacity={0.8}>
+            {userPhoto ? (
+              <Image
+                source={{ uri: userPhoto }}
+                style={styles.avatarImg}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.avatarInitial}>
+                <Text style={styles.avatarInitialText}>
+                  {userName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
         
         <View style={styles.colLocation}>
@@ -54,8 +69,15 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
         </View>
 
         <View style={styles.colNotification}>
-          <TouchableOpacity style={styles.notifBtn}>
-            <Ionicons name="notifications-outline" size={12} color="rgba(236,73,19,1.00)" />
+          <TouchableOpacity style={styles.notifBtn} onPress={onNotifPress} activeOpacity={0.8}>
+            <Ionicons name="notifications" size={16} color={Theme.colors.primary} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -117,11 +139,23 @@ const styles = StyleSheet.create({
     width: 33,
     borderRadius: 16.5,
     overflow: 'hidden',
-    backgroundColor: '#eee',
+    backgroundColor: 'transparent',
   },
   avatarImg: {
     width: '100%',
     height: '100%',
+  },
+  avatarInitial: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(236,73,19,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitialText: {
+    color: Theme.colors.primary,
+    fontSize: 15,
+    fontWeight: 'bold',
   },
   colLocation: {
     flex: 1,
@@ -150,7 +184,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   notifBtn: {
-    padding: 2,
+    width: 33,
+    height: 33,
+    borderRadius: 16.5,
+    backgroundColor: 'rgba(236,73,19,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: 'white',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 9,
+    fontWeight: 'bold',
   },
   categoryBar: {
     paddingVertical: 12,

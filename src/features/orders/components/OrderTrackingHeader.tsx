@@ -109,9 +109,9 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
 
 const StatusChip = ({ 
   label, icon, count, active, onPress, 
-  activeColor = 'rgba(236,73,19,1.00)', 
-  inactiveBg = '#fff5f5',
-  inactiveIconColor = 'red' 
+  activeColor = 'rgba(236,73,19,1.00)',
+  inactiveBg = '#fff3ee',
+  inactiveIconColor = Theme.colors.primary
 }: any) => (
   <TouchableOpacity 
     style={[styles.statusChip, { backgroundColor: active ? activeColor : inactiveBg }]}
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   dateDay: {
     fontSize: 10,
-    color: '#8b0000bf',
+    color: '#ec4913bf',
     marginRight: 2,
   },
   dateNum: {

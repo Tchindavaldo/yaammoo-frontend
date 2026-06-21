@@ -245,11 +245,11 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
               <Ionicons
                 name={t.icon as any}
                 size={14}
-                color={activeTab === t.key ? 'white' : 'red'}
+                color={activeTab === t.key ? 'white' : Theme.colors.primary}
               />
               <Text style={[
                 styles.subTabLabel,
-                { color: activeTab === t.key ? 'white' : 'red' }
+                { color: activeTab === t.key ? 'white' : Theme.colors.primary }
               ]}>
                 {t.label}
               </Text>

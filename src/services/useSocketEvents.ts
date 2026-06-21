@@ -6,6 +6,7 @@ import { useNotifications } from "../features/notifications/hooks/useNotificatio
 import { useOrders } from "../features/orders/hooks/useOrders";
 import { useMerchant } from "../features/merchant/hooks/useMerchant";
 import { useMerchantWallet } from "../features/merchant/context/MerchantWalletContext";
+import { useWallet } from "../features/wallet/context/WalletContext";
 import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
 
 export const useSocketEvents = () => {
@@ -14,6 +15,7 @@ export const useSocketEvents = () => {
   const { refresh: refreshOrders } = useOrders();
   const { refresh: refreshMerchant } = useMerchant();
   const { applyEvent: applyWalletEvent, handleWithdrawalEvent } = useMerchantWallet();
+  const { refresh: refreshWallet } = useWallet();
   const { refresh: refreshFastFoods } = useFastFoods();
   const socket = socketService.getSocket();
 
@@ -88,7 +90,8 @@ export const useSocketEvents = () => {
     // Transaction Events
     socket.on("newTransaction", withAck((data) => {
       console.log("💰 newTransaction:", data);
-      refreshMerchant(false); // Updates Wallet
+      refreshMerchant(false);   // MAJ wallet marchand
+      refreshWallet(false);     // MAJ transactions client (silencieux, pas de spinner)
     }));
 
     // Wallet Events — patch local du store (pas de refetch).

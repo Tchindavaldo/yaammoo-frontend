@@ -46,6 +46,7 @@ export const useWithdraw = () => {
     setWithdrawState("idle");
     setWithdrawError(null);
     setWithdrawAmount("");
+    setWithdrawPhone("");
     currentWithdrawalId.current = null;
   }, []);
 
@@ -78,6 +79,7 @@ export const useWithdraw = () => {
         if (res?.success === false) {
           console.log("❌ [Retrait FRONT] réponse HTTP = échec → état: input → message affiché (toast): «", res?.message || "Échec du retrait", "»");
           setWithdrawError(res?.message || "Échec du retrait");
+          setWithdrawPhone("");
           setWithdrawState("input");
           return;
         }
@@ -91,6 +93,7 @@ export const useWithdraw = () => {
           data?.message || data?.error || error.message || "Échec du retrait";
         console.log("❌ [Retrait FRONT] erreur HTTP → état: input → message affiché (toast): «", message, "»");
         setWithdrawError(message);
+        setWithdrawPhone("");
         setWithdrawState("input");
       }
     },

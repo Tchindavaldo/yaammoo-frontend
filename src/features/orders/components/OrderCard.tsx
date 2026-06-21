@@ -99,7 +99,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
  
                 {/* Delivery Location */}
                 <View style={styles.infoRow}>
-                  <Ionicons name="navigate-outline" size={14} color="red" />
+                  <Ionicons name="navigate-outline" size={14} color={Theme.colors.primary} />
                   <Text style={styles.addressLabel}>Livraison:</Text>
                   <Text style={styles.addressText} numberOfLines={1}>
                     {order.delivery?.location || 'Quartier Nkomo, Cameroun'}
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   addressLabel: {
     fontSize: 11,
-    color: 'red',
+    color: Theme.colors.primary,
     marginLeft: 8,
     fontWeight: 'bold',
   },

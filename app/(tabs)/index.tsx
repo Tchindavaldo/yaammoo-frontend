@@ -38,10 +38,14 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
+import { useRouter } from "expo-router";
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
   const { userData } = useAuth();
+  const { unreadCount } = useNotifications();
+  const router = useRouter();
   const {
     fastFoods,
     loading,
@@ -107,6 +111,9 @@ export default function HomeScreen() {
           (userData as any)?.photoUrl || (userData as any)?.photo || ""
         }
         location="Banganté, Cameroun"
+        unreadCount={unreadCount}
+        onNotifPress={() => router.push("/(tabs)/notifications")}
+        onProfilePress={() => router.push("/(tabs)/settings")}
         searchVisible={searchOpen}
         onSearchToggle={() => setSearchOpen(!searchOpen)}
         searchQuery={searchQuery}
@@ -141,6 +148,9 @@ export default function HomeScreen() {
               (userData as any)?.photoUrl || (userData as any)?.photo || ""
             }
             location="Banganté, Cameroun"
+            unreadCount={unreadCount}
+            onNotifPress={() => router.push("/(tabs)/notifications")}
+            onProfilePress={() => router.push("/(tabs)/settings")}
             searchVisible={searchOpen}
             onSearchToggle={() => setSearchOpen(!searchOpen)}
             searchQuery={searchQuery}

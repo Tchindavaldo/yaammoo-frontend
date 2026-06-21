@@ -78,7 +78,12 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
   // Patch local : met à jour balance, totals et la ligne du jour concerné.
   const applyEvent = useCallback((e: WalletEvent) => {
     setStats((prev) => {
-      if (!prev) return prev; // pas encore chargé → le prochain refresh récupèrera tout
+      // Pas encore chargé → on refetch tout (sinon l'event serait perdu : ex. un
+      // gain reçu alors que les stats n'avaient jamais abouti au boot).
+      if (!prev) {
+        refresh();
+        return prev;
+      }
       const dayKey = moment(e.date ?? undefined).format("YYYY-MM-DD");
       const payin = e.type === "credit" ? e.amount : 0;
       const payout = e.type === "debit" ? e.amount : 0;
@@ -114,7 +119,7 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
         series,
       };
     });
-  }, []);
+  }, [refresh]);
 
   // Handlers UI abonnés au verdict de retrait (overlay en cours).
   const withdrawalHandlers = useRef<Set<(e: WithdrawalEvent) => void>>(new Set());

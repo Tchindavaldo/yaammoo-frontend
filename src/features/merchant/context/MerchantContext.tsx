@@ -12,6 +12,15 @@ interface MerchantContextType {
   refresh: (showLoading?: boolean) => Promise<void>;
   updateStatus: (orderId: string, status: string) => Promise<boolean>;
   addMenu: (menu: Menu) => Promise<void>;
+  // ── Injection directe depuis les payloads socket (pas de refetch) ──
+  /** newFastFoodOrder / fastFoodOrderUpdated → upsert d'une commande. */
+  upsertOrderFromSocket: (order: any) => void;
+  /** newFastFoodOrders / fastFoodOrdersUpdated / ordersRankUpdated → upsert d'un lot. */
+  upsertOrdersFromSocket: (orders: any[]) => void;
+  /** newFastFoodMenu / newMenu / fastFoodMenuUpdated → upsert d'un menu. */
+  upsertMenuFromSocket: (menu: any) => void;
+  /** fastFoodMenuDeleted → retire un menu. */
+  removeMenuFromSocket: (menuId: string) => void;
   stats: {
     totalOrders: number;
     pendingOrders: number;
@@ -85,6 +94,51 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  // ── Injection socket : upsert/remove sur le state local, sans requête ──
+  const upsertOrderFromSocket = useCallback((order: any) => {
+    if (!order?.id) return;
+    setOrders((prev) => {
+      const idx = prev.findIndex((o) => o.id === order.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...order };
+        return next;
+      }
+      return [order, ...prev];
+    });
+  }, []);
+
+  const upsertOrdersFromSocket = useCallback((incoming: any[]) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    setOrders((prev) => {
+      const byId = new Map(prev.map((o) => [o.id, o]));
+      for (const order of incoming) {
+        if (!order?.id) continue;
+        const existing = byId.get(order.id);
+        byId.set(order.id, existing ? { ...existing, ...order } : order);
+      }
+      return Array.from(byId.values());
+    });
+  }, []);
+
+  const upsertMenuFromSocket = useCallback((menu: any) => {
+    if (!menu?.id) return;
+    setMenus((prev) => {
+      const idx = prev.findIndex((m) => (m as any).id === menu.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...menu };
+        return next;
+      }
+      return [menu, ...prev];
+    });
+  }, []);
+
+  const removeMenuFromSocket = useCallback((menuId: string) => {
+    if (!menuId) return;
+    setMenus((prev) => prev.filter((m) => (m as any).id !== menuId));
+  }, []);
+
   const stats = {
     totalOrders: orders.length,
     pendingOrders: orders.filter(
@@ -111,6 +165,10 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         refresh: fetchData,
         updateStatus,
         addMenu,
+        upsertOrderFromSocket,
+        upsertOrdersFromSocket,
+        upsertMenuFromSocket,
+        removeMenuFromSocket,
         stats,
       }}
     >

@@ -14,6 +14,10 @@ interface OrderContextType {
   deleteOrder: (id: string) => Promise<boolean>;
   updateQuantity: (id: string, newQty: number) => Promise<boolean>;
   updateLocalOrder: (updatedOrder: any) => void;
+  /** Insère ou met à jour une commande depuis un payload socket (newUserOrder / userOrderUpdated). */
+  upsertOrderFromSocket: (order: any) => void;
+  /** Insère ou met à jour un lot de commandes depuis un payload socket (userOrdersUpdated). */
+  upsertOrdersFromSocket: (orders: any[]) => void;
   buyOrders: (ordersToBuy: Commande[]) => Promise<{ success: boolean; message?: string }>;
   pendingToBuy: Commande[];
   pending: Commande[];
@@ -115,6 +119,33 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
   }, []);
 
+  // Upsert : met à jour si la commande existe, sinon l'ajoute en tête.
+  const upsertOrderFromSocket = useCallback((order: any) => {
+    if (!order?.id) return;
+    setOrders((prev) => {
+      const idx = prev.findIndex((o) => o.id === order.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...order };
+        return next;
+      }
+      return [order, ...prev];
+    });
+  }, []);
+
+  const upsertOrdersFromSocket = useCallback((incoming: any[]) => {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    setOrders((prev) => {
+      const byId = new Map(prev.map((o) => [o.id, o]));
+      for (const order of incoming) {
+        if (!order?.id) continue;
+        const existing = byId.get(order.id);
+        byId.set(order.id, existing ? { ...existing, ...order } : order);
+      }
+      return Array.from(byId.values());
+    });
+  }, []);
+
   const buyOrders = async (ordersToBuy: Commande[]): Promise<{ success: boolean; message?: string }> => {
     if (!userData) return { success: false, message: "Utilisateur non connecté" };
     try {
@@ -188,6 +219,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     deleteOrder,
     updateQuantity,
     updateLocalOrder,
+    upsertOrderFromSocket,
+    upsertOrdersFromSocket,
     buyOrders,
     pendingToBuy: getFilteredByStatus(["pendingtobuy"]),
     pending: getFilteredByStatus(["pending"]),

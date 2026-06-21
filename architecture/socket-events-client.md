@@ -5,31 +5,47 @@
 ## Infrastructure client
 
 - **Singleton socket** : `src/services/socket.ts` — instancie `io(Config.apiUrl)` une seule fois au chargement du module (`socketService.getSocket()`).
-- **Handlers globaux** : `src/services/useSocketEvents.ts` — hook monté dans `_layout.tsx` qui abonne le client aux events et dispatch vers les contexts (OrderContext, NotificationContext, MerchantContext, FastFoodContext).
+- **Handlers globaux** : `src/services/useSocketEvents.ts` — hook monté dans `_layout.tsx` qui abonne le client aux events et dispatch vers les contexts (OrderContext, NotificationContext, MerchantContext, MerchantWalletContext, WalletContext, FastFoodContext).
+- **Principe : injection directe du payload (pas de refetch).** Chaque event porte sa donnée complète (`data: order`, `menu`, `data: transaction`, `notification`, …). Le handler l'injecte dans le contexte via une méthode `upsert*FromSocket` / `remove*FromSocket` / `addFromSocket`. Aucun appel HTTP n'est déclenché par un event individuel.
 - **Room** : dès que `AuthContext.userData.uid` est dispo, le client `emit('join_user', uid)` → rejoint sa room `userId` (côté backend).
-- **Catch-up sur `connect`** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)` en mode silencieux (pas de spinner) pour rattraper tout ce qui a pu être manqué pendant la déconnexion (app killed, background long, coupure réseau). `refreshFastFoods` n'est pas appelé car les menus sont rafraîchis par leurs events dédiés (`globalMenuUpdated`, `newFastFoodMenu`).
+- **Catch-up sur `connect` (seul refresh restant)** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)` en mode silencieux pour rattraper les events **fire-and-forget** manqués hors-ligne. Les events **fiabilisés** sont, eux, rejoués par le backend (replay + `__eventId` + ACK) — voir plus bas.
 
 ---
 
 ## Événements reçus → actions
 
-| Event reçu | Action client |
-|---|---|
-| `newUserOrder` | Ajoute la commande localement (OrderContext) |
-| `userOrderUpdated` | `updateLocalOrder(order)` dans OrderContext |
-| `newFastFoodOrder` / `newFastFoodOrders` | Alerte / badge + refresh panel marchand |
-| `fastFoodOrderUpdated` | Met à jour la commande dans le panel marchand |
-| `ordersRankUpdated` | Met à jour les ranks localement |
-| `globalMenuUpdated` | `refreshFastFoods()` → recharge menus / boutiques |
-| `newPeriodKeyDelivering` | Démarre le suivi de livraison |
-| `removePeriodKeyDelivering` | Arrête le suivi de livraison |
-| `newClientIdDelivering` | Identifie le livreur |
-| `removeClientIdDelivering` | Retire l'identification livreur |
-| `newNotification` | `NotificationContext.addFromSocket(notif)` — injection directe dans le state + cache, **pas de refetch** |
-| `isRead` | `refreshNotifications(true)` — sync silencieux multi-device (un autre appareil a lu la notif) |
-| `newFastFoodMenu` / `fastFoodMenuUpdated` | `refreshMerchant(false)` — menus marchand rechargés sans spinner |
-| `newTransaction` | `refreshMerchant(false)` — MAJ wallet marchand |
-| `newGlobalMenu` | `refreshFastFoods()` — liste restaurants rechargée |
+Toutes les actions ci-dessous **injectent le payload directement** dans le contexte (pas de refetch).
+
+| Event reçu | Payload | Action client |
+|---|---|---|
+| `newUserOrder` | `{ data: order }` | `OrderContext.upsertOrderFromSocket(data)` |
+| `userOrderUpdated` | `{ data: order }` | `OrderContext.upsertOrderFromSocket(data)` |
+| `userOrdersUpdated` | `{ orders: order[] }` | `OrderContext.upsertOrdersFromSocket(orders)` |
+| `newFastFoodOrder` | `{ data: order }` | `MerchantContext.upsertOrderFromSocket(data)` |
+| `newFastFoodOrders` | `{ data: order[] }` | `MerchantContext.upsertOrdersFromSocket(data)` |
+| `fastFoodOrderUpdated` | `{ data: order }` | `MerchantContext.upsertOrderFromSocket(data)` |
+| `fastFoodOrdersUpdated` | `{ orders: order[] }` | `MerchantContext.upsertOrdersFromSocket(orders)` |
+| `ordersRankUpdated` | `{ orders: order[] }` | `MerchantContext.upsertOrdersFromSocket(orders)` |
+| `newMenu` | `{ data: menu }` | `MerchantContext.upsertMenuFromSocket(data)` |
+| `newFastFoodMenu` | `{ menu }` | `MerchantContext.upsertMenuFromSocket(menu)` |
+| `fastFoodMenuUpdated` | `{ menuId, menu }` | `MerchantContext.upsertMenuFromSocket(menu)` |
+| `fastFoodMenuDeleted` | `{ fastFood, menuId }` | `MerchantContext.removeMenuFromSocket(menuId)` |
+| `newGlobalMenu` | `{ menu }` | `FastFoodContext.upsertMenuFromSocket(menu)` (normalisé) |
+| `globalMenuUpdated` | `{ menuId, menu }` | `FastFoodContext.upsertMenuFromSocket(menu)` (normalisé) |
+| `globalMenuDeleted` | `{ fastFood, menuId }` | `FastFoodContext.removeMenuFromSocket(ffId, menuId)` |
+| `newFastfood` | `{ fastFood }` | `FastFoodContext.upsertFastFoodFromSocket(fastFood)` (normalisé) |
+| `newTransaction` | `{ data: transaction }` | `WalletContext.upsertTransactionFromSocket(data)` (page transactions client) |
+| `wallet.credited` | tous champs | `MerchantWalletContext.applyEvent` (patch solde, payin) |
+| `wallet.withdrawal` | tous champs | `MerchantWalletContext.handleWithdrawalEvent` (patch solde + overlay) |
+| `newNotification` | `{ notification }` | `NotificationContext.addFromSocket(notif)` |
+| `isRead` | `{ notificationId }` | `refreshNotifications(true)` — sync silencieux multi-device |
+| `newPeriodKeyDelivering` / `removePeriodKeyDelivering` | `{ periodKey }` | Suivi de livraison (log) |
+| `newClientIdDelivering` / `removeClientIdDelivering` | `{ clientId }` | Identification livreur (log) |
+
+### Events fiabilisés (replay) vs fire-and-forget
+
+- **Fiabilisés** (persistés + rejoués à la reconnexion, avec `__eventId` et `__replay: true`) : `wallet.credited`, `wallet.withdrawal`, `payment.settled`, `newFastFoodOrders`, `userOrderUpdated`, `fastFoodOrderUpdated`, `newFastFoodMenu`, `fastFoodMenuUpdated`, `fastFoodMenuDeleted`. Le dédoublonnage est géré par `withAck` (`src/services/socketAck.ts`).
+- **Fire-and-forget** (non rejoués) : `globalMenu*`, `*PeriodKey*`, `*ClientId*`, `ordersRankUpdated`. C'est pour eux que le refresh global au `connect` sert de filet de sécurité.
 
 ---
 
@@ -42,8 +58,8 @@
 ## Reconnexion
 
 - Sur reconnexion, re-join automatique via le handler `connect` dans `useSocketEvents` (émet `join_user`).
-- Catch-up automatique des données (notifications, orders, merchant) en mode silencieux — voir section Infrastructure.
-- Tous les handlers restent montés via `useSocketEvents` (effet dépendant de `[userData, socket]`) pour éviter les abonnements orphelins.
+- Catch-up silencieux (notifications, orders, merchant) pour les events fire-and-forget — voir section Infrastructure. Les events fiabilisés sont rejoués par le backend.
+- Tous les handlers restent montés via `useSocketEvents` (effet dépendant de `[userData, socket, isMarchand]`) pour éviter les abonnements orphelins.
 
 ## Piège connu — backends multiples
 

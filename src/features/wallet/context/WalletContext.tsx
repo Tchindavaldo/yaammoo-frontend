@@ -8,6 +8,8 @@ interface WalletContextType {
   loading: boolean;
   error: string | null;
   refresh: (showLoading?: boolean) => Promise<void>;
+  /** newTransaction → upsert d'une transaction depuis le payload socket (pas de refetch). */
+  upsertTransactionFromSocket: (transaction: any) => void;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -40,6 +42,19 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fetchData();
   }, [fetchData]);
 
+  const upsertTransactionFromSocket = useCallback((transaction: any) => {
+    if (!transaction?.id) return;
+    setTransactions((prev) => {
+      const idx = prev.findIndex((t) => t.id === transaction.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...transaction };
+        return next;
+      }
+      return [transaction, ...prev];
+    });
+  }, []);
+
   return (
     <WalletContext.Provider
       value={{
@@ -47,6 +62,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         loading,
         error,
         refresh: fetchData,
+        upsertTransactionFromSocket,
       }}
     >
       {children}

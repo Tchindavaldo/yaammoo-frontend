@@ -65,8 +65,10 @@ export default function PhoneAuthScreen() {
               await userFirestore.saveUser(userFound, firebaseUser.uid);
             }
 
+            // Redirection pilotée par le guard Stack.Protected dans
+            // app/_layout.tsx (isSignedIn → (tabs)). Pas de router.replace ici :
+            // il devancerait le guard → écran blanc/noir transitoire.
             setUserData(userFound);
-            router.replace("/(tabs)");
           }
         } catch (error: any) {
           setConnect(false);

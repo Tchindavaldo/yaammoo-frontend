@@ -89,18 +89,21 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({ onRefresh }) =>
     };
   }, []);
 
-  // Après "Retrait effectué" (completed, 5s) : fermer + refresh des stats.
+  // Après "Retrait effectué" (completed, 5s) : fermer simplement l'overlay.
+  // ⚠️ PAS de refresh ici : le socket wallet.withdrawal (completed) a déjà patché
+  // le solde + la série du jour via handleWithdrawalEvent → applyEvent. Un refresh
+  // mettrait loading=true → le loader natif du pull-to-refresh s'activerait tout
+  // seul après réception du socket (le bug visible signalé).
   // 🐞 En mode DEBUG_COMPLETED, on ne ferme pas (l'overlay reste visible).
   useEffect(() => {
     if (DEBUG_COMPLETED) return;
     if (withdrawState === "completed") {
       const timer = setTimeout(() => {
         resetWithdraw();
-        refreshAll();
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [withdrawState, resetWithdraw, refreshAll]);
+  }, [withdrawState, resetWithdraw]);
 
   // Toast d'erreur retrait.
   useEffect(() => {

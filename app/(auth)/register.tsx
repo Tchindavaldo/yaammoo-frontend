@@ -91,8 +91,9 @@ export default function RegisterScreen() {
       };
 
       await userFirestore.createUser(newUser as any, userCredential.user);
+      // Redirection pilotée par le guard Stack.Protected (voir app/_layout.tsx).
+      // Pas de router.replace : il devancerait le guard → écran blanc/noir.
       setUserData(newUser as any);
-      router.replace("/(tabs)");
     } catch (error: any) {
       setConnect(false);
       Alert.alert("Erreur", "Impossible de créer le compte.");

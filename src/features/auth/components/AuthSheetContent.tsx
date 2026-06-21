@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
-import { useRouter } from "expo-router";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { handleGoogleSignIn } from "@/src/features/auth/services/googleAuthService";
 import { handleAppleSignIn } from "@/src/features/auth/services/appleAuthService";
@@ -50,7 +49,6 @@ const GoogleIcon = () => (
 );
 
 export default function AuthSheetContent() {
-  const router = useRouter();
   const { setUserData } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -66,14 +64,21 @@ export default function AuthSheetContent() {
     try {
       const result = await handleGoogleSignIn();
       if (result.success && result.userData) {
+        // La redirection vers (tabs) est pilotée par le guard Stack.Protected
+        // dans app/_layout.tsx dès que isSignedIn passe à true. NE PAS appeler
+        // router.replace ici : il s'exécuterait avant que le guard soit prêt
+        // → groupe (tabs) non monté → écran blanc/noir transitoire.
+        // ⚠️ On NE coupe PAS le loader sur succès : on le laisse tourner jusqu'à
+        // ce que la home soit montée (l'écran auth se démonte alors tout seul).
+        // Évite le flash blanc le temps que la home charge.
         setUserData(result.userData);
-        router.replace("/(tabs)");
+        return;
       } else if (result.error && result.error !== "Connexion annulée") {
         Alert.alert("Erreur Google", result.error);
       }
+      setGoogleLoading(false);
     } catch {
       Alert.alert("Erreur", "Connexion Google échouée.");
-    } finally {
       setGoogleLoading(false);
     }
   };
@@ -84,14 +89,15 @@ export default function AuthSheetContent() {
     try {
       const result = await handleAppleSignIn();
       if (result.success && result.userData) {
+        // Loader maintenu jusqu'au montage de la home (voir onGoogle).
         setUserData(result.userData);
-        router.replace("/(tabs)");
+        return;
       } else if (result.error && result.error !== "Connexion annulée") {
         Alert.alert("Erreur Apple", result.error);
       }
+      setAppleLoading(false);
     } catch {
       Alert.alert("Erreur", "Connexion Apple échouée.");
-    } finally {
       setAppleLoading(false);
     }
   };
@@ -106,11 +112,14 @@ export default function AuthSheetContent() {
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const data = await authService.getUserById(cred.user.uid);
-      if (data) setUserData(data);
-      router.replace("/(tabs)");
+      // Loader maintenu jusqu'au montage de la home (voir onGoogle).
+      if (data) {
+        setUserData(data);
+        return;
+      }
+      setLoggingIn(false);
     } catch (err: any) {
       Alert.alert("Erreur", err?.message ?? "Connexion échouée.");
-    } finally {
       setLoggingIn(false);
     }
   };

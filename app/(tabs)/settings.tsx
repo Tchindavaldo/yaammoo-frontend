@@ -37,59 +37,51 @@ export default function SettingsScreen() {
   const [editBoutiqueVisible, setEditBoutiqueVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutVisible, setLogoutVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const REQUIRED_CONFIRM = 'SUPPRIMER';
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const handleLogout = async () => {
-    const performLogout = async () => {
-      // Best-effort: désenregistre ce device des push avant de signer out
-      try {
-        const idToken = await auth.currentUser?.getIdToken();
-        if (idToken) {
-          const deviceId = await getDeviceId();
-          await axios.post(
-            `${Config.apiUrl}/user/push-token/remove`,
-            { deviceId },
-            {
-              headers: {
-                Authorization: `Bearer ${idToken}`,
-                'Content-Type': 'application/json',
-                'ngrok-skip-browser-warning': 'true',
-              },
-            },
-          );
-          console.log('🗑️ [Settings] push-token/remove OK pour ce device');
-        }
-      } catch (e: any) {
-        console.warn('⚠️ [Settings] push-token/remove échoué (on continue le logout):', e?.message);
-      }
+  // Ouvre le modal custom de confirmation de déconnexion.
+  const handleLogout = () => setLogoutVisible(true);
 
-      await signOut(auth);
-      setUserData(null);
-      router.replace('/(auth)');
-    };
+  const cancelLogout = () => {
+    if (isLoggingOut) return;
+    setLogoutVisible(false);
+  };
 
-    if (Platform.OS === 'web') {
-      const confirmed = window.confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
-      if (confirmed) {
-        performLogout();
-      }
-    } else {
-      Alert.alert(
-        'Déconnexion',
-        'Êtes-vous sûr de vouloir vous déconnecter ?',
-        [
-          { text: 'Annuler', style: 'cancel' },
+  const confirmLogout = async () => {
+    setIsLoggingOut(true);
+    // Best-effort: désenregistre ce device des push avant de signer out
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      if (idToken) {
+        const deviceId = await getDeviceId();
+        await axios.post(
+          `${Config.apiUrl}/user/push-token/remove`,
+          { deviceId },
           {
-            text: 'Déconnecter',
-            style: 'destructive',
-            onPress: performLogout,
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
           },
-        ]
-      );
+        );
+        console.log('🗑️ [Settings] push-token/remove OK pour ce device');
+      }
+    } catch (e: any) {
+      console.warn('⚠️ [Settings] push-token/remove échoué (on continue le logout):', e?.message);
     }
+
+    // Le retour vers (auth) est piloté par le guard Stack.Protected dans
+    // app/_layout.tsx. signOut → onAuthStateChanged → userData=null → le groupe
+    // (auth) se monte automatiquement (l'écran settings se démonte alors, pas
+    // besoin de remettre isLoggingOut à false sur succès).
+    await signOut(auth);
+    setUserData(null);
   };
 
   const handleComingSoon = (label: string) => {
@@ -395,6 +387,50 @@ export default function SettingsScreen() {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <Text style={styles.deleteBtnDangerText}>Supprimer</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Déconnexion */}
+      <Modal
+        visible={logoutVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={cancelLogout}
+        statusBarTranslucent
+      >
+        <View style={styles.deleteBackdrop}>
+          <View style={styles.deleteCard}>
+            <View style={[styles.deleteIconWrap, { backgroundColor: Theme.colors.danger + '15' }]}>
+              <Ionicons name="exit-outline" size={32} color={Theme.colors.danger} />
+            </View>
+            <Text style={styles.deleteTitle}>Déconnexion</Text>
+            <Text style={styles.deleteMessage}>
+              Êtes-vous sûr de vouloir vous déconnecter ?
+            </Text>
+
+            <View style={styles.deleteActions}>
+              <TouchableOpacity
+                style={[styles.deleteBtn, styles.deleteBtnCancel]}
+                onPress={cancelLogout}
+                disabled={isLoggingOut}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.deleteBtnCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteBtn, styles.deleteBtnDanger]}
+                onPress={confirmLogout}
+                disabled={isLoggingOut}
+                activeOpacity={0.8}
+              >
+                {isLoggingOut ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.deleteBtnDangerText}>Déconnecter</Text>
                 )}
               </TouchableOpacity>
             </View>

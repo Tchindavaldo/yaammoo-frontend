@@ -99,7 +99,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
               <Ionicons 
                 name={cat.icon} 
                 size={14} 
-                color={isSelected ? 'rgba(236,73,19,1.00)' : 'rgba(236,73,19,1.00)'} 
+                color={isSelected ? 'rgba(236,73,19,1.00)' : '#6b7280'}
               />
               <Text style={[styles.catLabel, isSelected && styles.catLabelActive]}>
                 {cat.name}
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   catLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: 'rgba(236,73,19,1.00)',
+    color: '#6b7280',
   },
   catLabelActive: {
     color: 'rgba(236,73,19,1.00)',

@@ -37,7 +37,7 @@ export interface WithdrawalEvent {
 interface MerchantWalletContextType {
   stats: WalletStats | null;
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: (showLoading?: boolean) => Promise<void>;
   /** Patch local du store à partir d'un event de gain (wallet.credited). */
   applyEvent: (e: WalletEvent) => void;
   /** Traite un event de retrait : patche le solde + notifie l'UI en cours. */
@@ -58,16 +58,19 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
   const [stats, setStats] = useState<WalletStats | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const refresh = useCallback(async () => {
+  // showLoading=false → refresh silencieux (n'active PAS le loader pull-to-refresh).
+  // Utilisé quand un event socket arrive alors que stats===null : on rattrape la
+  // donnée sans faire clignoter le loader natif de la liste.
+  const refresh = useCallback(async (showLoading = true) => {
     if (!userData) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     try {
       const data = await walletStatsService.getStats("month");
       setStats(data);
     } catch (err) {
       console.error("Wallet stats error:", err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [userData]);
 
@@ -78,10 +81,11 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
   // Patch local : met à jour balance, totals et la ligne du jour concerné.
   const applyEvent = useCallback((e: WalletEvent) => {
     setStats((prev) => {
-      // Pas encore chargé → on refetch tout (sinon l'event serait perdu : ex. un
-      // gain reçu alors que les stats n'avaient jamais abouti au boot).
+      // Pas encore chargé → on refetch tout EN SILENCE (sinon l'event serait perdu :
+      // ex. un gain reçu alors que les stats n'avaient jamais abouti au boot).
+      // refresh(false) = sans loading → n'active pas le loader pull-to-refresh.
       if (!prev) {
-        refresh();
+        refresh(false);
         return prev;
       }
       const dayKey = moment(e.date ?? undefined).format("YYYY-MM-DD");

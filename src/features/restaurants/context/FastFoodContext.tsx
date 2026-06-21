@@ -6,6 +6,10 @@ import { FastFood } from '@/src/types';
 interface FastFoodContextType {
   fastFoods: FastFood[];
   loading: boolean;
+  /** true une fois le 1er fetch terminé (succès, liste vide OU erreur). Reste true
+   *  ensuite, même pendant un pull-to-refresh. Sert à savoir quand la home a fini
+   *  son chargement initial → bascule login → home. */
+  hasLoadedOnce: boolean;
   error: string | null;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -65,6 +69,7 @@ const FastFoodContext = createContext<FastFoodContextType | undefined>(undefined
 export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [fastFoods, setFastFoods] = useState<FastFood[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -86,6 +91,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setError('Connection internet indisponible, vérifiez votre réseau');
     } finally {
       setLoading(false);
+      setHasLoadedOnce(true);
     }
   }, []);
 
@@ -145,6 +151,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         fastFoods,
         loading,
+        hasLoadedOnce,
         error,
         searchQuery,
         setSearchQuery,

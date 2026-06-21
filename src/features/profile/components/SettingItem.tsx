@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
 
@@ -8,21 +8,32 @@ interface SettingItemProps {
   title: string;
   onPress?: () => void;
   color?: string;
+  /** Affiche un loader à la place du chevron et désactive le press (action en cours). */
+  loading?: boolean;
 }
 
-export const SettingItem: React.FC<SettingItemProps> = ({ 
-  icon, 
-  title, 
+export const SettingItem: React.FC<SettingItemProps> = ({
+  icon,
+  title,
   onPress,
-  color = Theme.colors.dark 
+  color = Theme.colors.dark,
+  loading = false,
 }) => {
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      disabled={loading}
+    >
       <View style={[styles.iconContainer, { backgroundColor: color + '10' }]}>
         <Ionicons name={icon as any} size={22} color={color} />
       </View>
       <Text style={[styles.title, { color }]}>{title}</Text>
-      <Ionicons name="chevron-forward" size={20} color={Theme.colors.gray[400]} />
+      {loading ? (
+        <ActivityIndicator size="small" color={color} />
+      ) : (
+        <Ionicons name="chevron-forward" size={20} color={Theme.colors.gray[400]} />
+      )}
     </TouchableOpacity>
   );
 };

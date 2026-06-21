@@ -27,6 +27,7 @@ import Svg, {
 } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   useFonts,
   PlusJakartaSans_600SemiBold,
@@ -65,7 +66,16 @@ function Doodle({
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const onLayoutRootView = useHideSplash();
+  const hideSplash = useHideSplash();
+  const { user, userData, loading } = useAuth();
+
+  // On ne cache le splash depuis cet écran QUE si l'auth est résolue et l'user
+  // est réellement non connecté (vrai écran de login au boot). Si l'user est
+  // connecté (transition login → home, ou boot à froid déjà loggé), on laisse
+  // le splash en place : c'est la home qui le cachera une fois prête. Évite de
+  // flasher l'écran de login pendant la transition.
+  const isSignedIn = !!user && !!userData;
+  const onLayoutRootView = !loading && !isSignedIn ? hideSplash : undefined;
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,

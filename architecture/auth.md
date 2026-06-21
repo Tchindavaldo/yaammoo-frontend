@@ -24,7 +24,7 @@ authService.getUserById(uid)  →  GET /user/:uid  [Bearer token]
         ↓
 setUserData() → AuthContext + AsyncStorage
         ↓
-router.replace("/(tabs)")
+(pas de router.replace) → le guard Stack.Protected révèle (tabs)
 ```
 
 ## Flow Google Sign-In
@@ -46,8 +46,70 @@ userFirestore.getUser()  →  fetch données créées
         ↓
 setUserData() → AuthContext + AsyncStorage
         ↓
-router.replace("/(tabs)")
+(pas de router.replace) → le guard Stack.Protected révèle (tabs)
 ```
+
+> ⚠️ **Ne pas appeler `router.replace("/(tabs)")` après `setUserData()`.** La
+> navigation est 100 % pilotée par les guards `Stack.Protected` de
+> `app/_layout.tsx` (voir section suivante). Un `router.replace` impératif
+> s'exécuterait avant que le guard soit prêt → groupe non monté → écran blanc.
+> Sur succès, les handlers d'auth gardent le loader du bouton actif (pas de
+> `setLoading(false)`) jusqu'à ce que l'écran soit démonté par le guard.
+
+---
+
+## Navigation & gating (anti page-blanche)
+
+La bascule entre `(auth)` et `(tabs)` est gérée par deux guards dans
+`app/_layout.tsx`, **sans aucun `router.replace`** :
+
+```
+canEnterApp = authResolved && isSignedIn && homeReady
+guard (tabs) = canEnterApp
+guard (auth) = !canEnterApp        // PAS de authResolved ici (cf. ci-dessous)
+```
+
+Trois signaux :
+- **`authResolved`** = `!loading` (AuthContext) — Firebase a répondu.
+- **`isSignedIn`** = `user && userData` — connecté avec profil.
+- **`homeReady`** = `FastFoodContext.hasLoadedOnce` — le 1er fetch des restaurants
+  est terminé (succès, liste vide **ou** erreur ; jamais de blocage infini).
+
+Règles clés (chacune corrige un bug observé) :
+
+1. **On n'entre dans `(tabs)` que lorsque `homeReady`.** Sinon la home se
+   monterait vide → page blanche. Tant que ce n'est pas prêt, l'écran `(auth)`
+   reste affiché avec le loader de son bouton → transition propre.
+2. **`guard(auth)` n'inclut PAS `authResolved`.** Au login, `onAuthStateChanged`
+   repasse `loading=true` (donc `authResolved=false`) pendant la re-vérif du
+   profil ; si le guard auth dépendait de `authResolved`, les deux groupes
+   seraient démontés en même temps → écran blanc. `!canEnterApp` garde toujours
+   un écran monté.
+3. **`WelcomeScreen` (`app/(auth)/index.tsx`) ne cache le splash que si
+   `!loading && !isSignedIn`.** Évite de flasher l'écran de login au boot à froid
+   quand l'utilisateur est déjà connecté (le splash reste jusqu'à la home).
+4. **Transition par fondu** : `Stack` racine en `animation: "fade"` (même rendu
+   que la disparition du splash), au lieu du slide horizontal par défaut.
+
+`FastFoodContext` expose pour cela `hasLoadedOnce` (passe à `true` dans le
+`finally` du 1er `fetchFastFoods`, reste `true` ensuite même au pull-to-refresh).
+
+## Déconnexion
+
+`app/(tabs)/settings.tsx` : modal **custom** (pas d'`Alert` natif) avec loader
+sur le bouton « Déconnecter » pendant l'opération.
+
+```
+confirmLogout()  →  setIsLoggingOut(true)
+        ↓
+POST /user/push-token/remove (best-effort)  →  signOut(Firebase)  →  setUserData(null)
+        ↓
+onAuthStateChanged → userData=null → guard (auth) → retour login (fondu)
+```
+
+Pas de `router.replace('/(auth)')` : le guard pilote le retour. `SettingItem`
+accepte une prop `loading` (remplace le chevron par un `ActivityIndicator` et
+désactive le press).
 
 ---
 
@@ -63,6 +125,18 @@ router.replace("/(tabs)")
 **Important :** toutes les requêtes incluent le header `Authorization: Bearer <idToken>` requis par le middleware `firebaseAuth` du backend.
 
 ---
+
+## Fixes appliqués (2026-06-21)
+
+- **Page blanche après login supprimée** : navigation 100 % par guards
+  `Stack.Protected` (suppression des `router.replace` manuels dans
+  `AuthSheetContent`, `phone.tsx`, `register.tsx`, `settings.tsx`).
+- `app/_layout.tsx` : `canEnterApp = authResolved && isSignedIn && homeReady` ;
+  `guard(auth) = !canEnterApp` (sans `authResolved`) ; `animation: "fade"`.
+- `FastFoodContext` : nouveau flag `hasLoadedOnce`.
+- `app/(auth)/index.tsx` : splash caché seulement si `!loading && !isSignedIn`.
+- `settings.tsx` : modal custom de déconnexion + loader sur le bouton.
+- `SettingItem` : prop `loading`.
 
 ## Fixes appliqués (2026-04-20)
 

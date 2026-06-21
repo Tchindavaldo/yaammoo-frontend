@@ -97,13 +97,20 @@ AuthProvider
   └─ OrderProvider                  # reçoit events socket via useSocketEvents
        └─ NotificationProvider
             └─ MerchantProvider
-                 └─ FastFoodProvider
-                      └─ <AppContent/>   # Stack Expo Router
+                 └─ MerchantWalletProvider
+                      └─ WalletProvider
+                           └─ FastFoodProvider
+                                └─ <AppContent/>   # Stack Expo Router
 ```
 
 > Le socket est un singleton (`src/services/socket.ts`), initialisé hors de l'arbre
 > de providers ; `useSocketEvents` (monté dans AppContent) abonne aux events et
 > dispatch vers les contexts.
+
+> **Gating de navigation** : `AppContent` est sous `FastFoodProvider` car il lit
+> `useFastFoods().hasLoadedOnce` pour ne révéler `(tabs)` qu'une fois la home
+> chargée. Les guards `Stack.Protected` pilotent toute la bascule `(auth)`↔`(tabs)`
+> (aucun `router.replace`). Détail dans [auth.md](./auth.md#navigation--gating-anti-page-blanche).
 
 ## Convention
 

@@ -42,6 +42,15 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 | `newPeriodKeyDelivering` / `removePeriodKeyDelivering` | `{ periodKey }` | Suivi de livraison (log) |
 | `newClientIdDelivering` / `removeClientIdDelivering` | `{ clientId }` | Identification livreur (log) |
 
+> **Wallet marchand — pas de loader déclenché par un socket.** `applyEvent` patche
+> le solde + la série du jour en local. Seul cas de refetch : si `stats===null`
+> (boot non abouti), `applyEvent` appelle `refresh(false)` **silencieux** (sans
+> `setLoading`) pour ne pas activer le loader natif du pull-to-refresh de
+> `PorteFeuillePanel`. Après un retrait `completed`, l'overlay se ferme **sans**
+> `refreshAll()` (le socket a déjà tout patché). Aucun autre contexte
+> (`Order`, `Merchant`, `Wallet` client, `FastFood`, `Notification`) ne touche
+> `setLoading` dans ses handlers `*FromSocket`.
+
 ### Events fiabilisés (replay) vs fire-and-forget
 
 - **Fiabilisés** (persistés + rejoués à la reconnexion, avec `__eventId` et `__replay: true`) : `wallet.credited`, `wallet.withdrawal`, `payment.settled`, `newFastFoodOrders`, `userOrderUpdated`, `fastFoodOrderUpdated`, `newFastFoodMenu`, `fastFoodMenuUpdated`, `fastFoodMenuDeleted`. Le dédoublonnage est géré par `withAck` (`src/services/socketAck.ts`).

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,12 @@ type FilterType = 'all' | 'credit' | 'debit' | 'transfer';
 // Repasser à `true` pour la réafficher lors d'une future implémentation.
 const SHOW_FILTERS = false;
 
-export const WalletPanel: React.FC = () => {
+interface WalletPanelProps {
+  /** Remonte le solde courant au header parent. */
+  onBalanceChange?: (balance: number) => void;
+}
+
+export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const { transactions, loading, refresh } = useWallet();
 
@@ -29,8 +34,12 @@ export const WalletPanel: React.FC = () => {
   const totalSpend = transactions
     .filter((t) => t.type === 'debit')
     .reduce((acc, t) => acc + t.amount, 0);
-
   const balance = totalAmount - totalSpend;
+
+  // Remonte le solde au header (sous-titre).
+  useEffect(() => {
+    onBalanceChange?.(balance);
+  }, [balance, onBalanceChange]);
 
   const filteredTransactions = transactions.filter((t) => {
     if (selectedFilter === 'all') return true;
@@ -53,24 +62,11 @@ export const WalletPanel: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header balance */}
-      <View style={styles.balanceCard}>
-        <View style={styles.balanceRow}>
-          <View style={styles.balanceItem}>
-            <Text style={styles.balanceLbl}>Solde</Text>
-            <Text style={styles.balanceVal}>{balance.toLocaleString('fr-FR')} F</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.balanceItem}>
-            <Text style={styles.balanceLbl}>Dépense</Text>
-            <Text style={[styles.balanceVal, { color: Theme.colors.danger }]}>
-              {totalSpend.toLocaleString('fr-FR')} F
-            </Text>
-          </View>
-        </View>
+      {/* Solde + dépôt/retrait gérés par le header de page (TabHeader). */}
 
-        {/* Filtres segment */}
-        {SHOW_FILTERS && (
+      {/* Filtres segment */}
+      {SHOW_FILTERS && (
+        <View style={styles.balanceCard}>
         <View style={styles.segmentRow}>
           {filters.map((f) => (
             <TouchableOpacity
@@ -98,8 +94,8 @@ export const WalletPanel: React.FC = () => {
             </TouchableOpacity>
           ))}
         </View>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Liste des transactions */}
       <FlatList
@@ -129,38 +125,12 @@ export const WalletPanel: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.light,
+    backgroundColor: Theme.colors.white,
   },
   balanceCard: {
     backgroundColor: Theme.colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.gray[100],
-  },
-  balanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Theme.spacing.lg,
-    gap: Theme.spacing.lg,
-  },
-  balanceItem: {
-    flex: 1,
-  },
-  divider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Theme.colors.gray[200],
-  },
-  balanceLbl: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  balanceVal: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: Theme.colors.dark,
   },
   segmentRow: {
     flexDirection: 'row',

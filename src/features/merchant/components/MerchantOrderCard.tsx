@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   UIManager,
   View,
-  Image,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import { BikeAnimation } from "./BikeAnimation";
@@ -160,7 +160,12 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
       <TouchableOpacity activeOpacity={0.85} onPress={() => setModalVisible(true)} style={styles.summaryRow}>
         <View style={styles.avatarContainer}>
           {menuImage ? (
-            <Image source={{ uri: menuImage }} style={styles.avatarImage} />
+            <Image
+              source={{ uri: menuImage }}
+              style={styles.avatarImage}
+              cachePolicy="memory-disk"
+              transition={150}
+            />
           ) : (
             <Ionicons name="person" size={20} color="#ec4913" />
           )}
@@ -231,7 +236,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
   },
   summaryRow: {
     flexDirection: "row",

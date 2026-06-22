@@ -17,12 +17,14 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Commande, Menu } from "@/src/types";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
-import { OrderHeader } from "@/src/features/orders/components/OrderHeader";
+import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { SectionSwitcher } from "@/src/components/molecules/SectionSwitcher";
+import { HeaderPill } from "@/src/components/molecules/HeaderPill";
+import { DatePill } from "@/src/components/molecules/DatePill";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
 import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrackingHeader";
 import { Theme } from "@/src/theme";
 import { BlurView } from "expo-blur";
-import { BonusScreen } from "@/src/features/bonus/components/BonusScreen";
 import { WalletPanel } from "@/src/features/wallet/components/WalletPanel";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
@@ -41,6 +43,14 @@ import { useLocalSearchParams } from "expo-router";
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
+
+// Sections du panier + titre/icône, dans l'ordre de cyclage du bouton flottant.
+const CART_SECTIONS: { key: string; title: string; icon: string }[] = [
+  { key: 'cart', title: 'Mon panier', icon: 'cart-outline' },
+  { key: 'status', title: 'Commandes', icon: 'receipt-outline' },
+  // Section "bonus" masquée pour l'instant (réactiver dans une mise à jour).
+  { key: 'wallet', title: 'Portefeuille', icon: 'wallet-outline' },
+];
 export default function OrdersScreen() {
   const {
     loading,
@@ -189,7 +199,11 @@ export default function OrdersScreen() {
 
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
-  const HEADER_HEIGHT = 60 + insets.top;
+  // Hauteur réelle du TabHeader, mesurée via onHeightChange.
+  const [headerHeight, setHeaderHeight] = useState(60 + insets.top);
+  const HEADER_HEIGHT = headerHeight;
+  // Solde remonté par WalletPanel (sous-titre de la section portefeuille).
+  const [walletBalance, setWalletBalance] = useState(0);
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
@@ -215,6 +229,23 @@ export default function OrdersScreen() {
       .sort((a, b) => a.getTime() - b.getTime());
   }, [pending, active, finished, delivered]);
 
+  // Adaptation des dates (Date[]) au format ISO du DatePill du header.
+  const toISO = (d: Date) => d.toISOString().substring(0, 10);
+  const todayISO = toISO(new Date());
+  const dateOptions = useMemo(
+    () =>
+      availableDates.map((d) => ({
+        iso: toISO(d),
+        label: d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
+      })),
+    [availableDates],
+  );
+  const selectedISO = toISO(selectedDate);
+  const handleSelectISO = (iso: string | null) => {
+    const target = availableDates.find((d) => toISO(d) === (iso ?? todayISO));
+    setSelectedDate(target ?? new Date());
+  };
+
   useEffect(() => {
     // Si on switch sur l'onglet status, on s'assure d'avoir un statut sélectionné
     if (currentTab === "status" && !activeStatus) {
@@ -226,15 +257,11 @@ export default function OrdersScreen() {
   const { section } = useLocalSearchParams<{ section?: string }>();
   useEffect(() => {
     if (!section) return;
-    if (section === "bonus") {
-      setCurrentTab("bonus");
-      return;
-    }
     if (section === "cart") {
       setCurrentTab("cart");
       return;
     }
-    if (section === "pending" || section === "active" || section === "finished" || section === "delivered") {
+    if (section === "pending" || section === "active" || section === "finished") {
       setCurrentTab("status");
       setActiveStatus(section);
     }
@@ -294,6 +321,13 @@ export default function OrdersScreen() {
       return isSameDay(d, selectedDate);
     });
   }, [currentTab, selectedDate, pendingToBuy, statusList]);
+
+  // Stats de la date sélectionnée (bloc "x cmd | y FF" du tracking header).
+  const statusOrderCount = filteredOrders.length;
+  const statusFastFoodCount = useMemo(
+    () => new Set(filteredOrders.map((o: any) => o.fastFoodId).filter(Boolean)).size,
+    [filteredOrders],
+  );
 
   // Sections passées non traitées (seulement pending/active, et seulement
   // quand aujourd'hui est la date sélectionnée).
@@ -500,15 +534,15 @@ export default function OrdersScreen() {
     }
 
     return (
-      <View style={{ paddingHorizontal: 16 }}>
+      <View>
         {hasMain ? (
           groupedOrders!.map((g) => renderFastFoodGroup(g))
-        ) : (
+        ) : !hasPast ? (
           <View style={[styles.centered, { paddingTop: 40, paddingBottom: 20 }]}>
             <Ionicons name="receipt-outline" size={50} color={Theme.colors.gray[200]} />
             <Text style={styles.emptyText}>Aucune commande pour aujourd'hui</Text>
           </View>
-        )}
+        ) : null}
 
         {hasPast && (
           <View style={{ marginTop: 24 }}>
@@ -552,27 +586,74 @@ export default function OrdersScreen() {
     );
   };
 
+  const activeSection =
+    CART_SECTIONS.find((s) => s.key === currentTab) ?? CART_SECTIONS[0];
+
+  // Sous-titre du header selon la section.
+  const headerSubtitle = (() => {
+    if (currentTab === "cart")
+      return `${cartTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`;
+    if (currentTab === "status")
+      return selectedISO === todayISO
+        ? "Aujourd'hui"
+        : selectedDate.toLocaleDateString("fr-FR", {
+            weekday: "long",
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+    if (currentTab === "wallet")
+      return `${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`;
+    return undefined;
+  })();
+
+  // Élément de droite du header selon la section.
+  const headerRight = (() => {
+    if (currentTab === "status")
+      return (
+        <DatePill
+          options={dateOptions}
+          selected={selectedISO}
+          todayISO={todayISO}
+          onSelect={handleSelectISO}
+        />
+      );
+    if (currentTab === "cart" && pendingToBuy.length > 0 && !orderToDelete)
+      return (
+        <HeaderPill
+          label="Tout payer"
+          icon="card-outline"
+          onPress={() => setPaymentState("network_select")}
+        />
+      );
+    if (currentTab === "wallet")
+      return (
+        <HeaderPill
+          label="Dépôt / Retrait"
+          icon="swap-horizontal-outline"
+          onPress={() =>
+            setToast({ message: "Dépôt / Retrait bientôt disponible", type: "error" })
+          }
+        />
+      );
+    return null;
+  })();
+
   return (
     <View style={styles.container}>
-      <OrderHeader
-        activeTab={currentTab}
-        onTabChange={setCurrentTab}
-        counts={{
-          cart: pendingToBuy.length,
-          status: pending.length + active.length + finished.length,
-          bonus: 0,
-        }}
+      <TabHeader
+        title={activeSection.title}
+        subtitle={headerSubtitle}
+        right={headerRight}
+        onHeightChange={setHeaderHeight}
       />
 
       {currentTab === "status" && (
         <View
-          style={{ position: 'absolute', top: HEADER_HEIGHT - 10, left: 0, right: 0, zIndex: 999 }}
+          style={{ position: 'absolute', top: HEADER_HEIGHT, left: 0, right: 0, zIndex: 999 }}
           onLayout={(e) => setTrackingHeaderHeight(e.nativeEvent.layout.height)}
         >
           <OrderTrackingHeader
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            availableDates={availableDates}  
             activeStatus={activeStatus}
             onStatusChange={setActiveStatus}
             counts={{
@@ -581,15 +662,15 @@ export default function OrdersScreen() {
               finished: finished.length,
               delivered: delivered.length,
             }}
+            orderCount={statusOrderCount}
+            fastFoodCount={statusFastFoodCount}
           />
         </View>
       )}
 
       <View style={{ flex: 1, paddingTop: (currentTab === "status" ? HEADER_HEIGHT + trackingHeaderHeight : HEADER_HEIGHT) }}>
         {currentTab === "wallet" ? (
-          <WalletPanel />
-        ) : currentTab === "bonus" ? (
-          <BonusScreen />
+          <WalletPanel onBalanceChange={setWalletBalance} />
         ) : currentTab === "status" ? (
           <ScrollView
             contentContainerStyle={[
@@ -685,8 +766,9 @@ export default function OrdersScreen() {
         </Animated.View>
       )}
 
-      {/* Capsule de PAIEMENT global du panier (total → réseau → input → étapes) */}
-      {currentTab === "cart" && pendingToBuy.length > 0 && !orderToDelete && (
+      {/* Capsule de PAIEMENT global du panier — ouverte par la pilule "Tout payer"
+          du header (donc masquée à l'état "total" au repos). */}
+      {currentTab === "cart" && pendingToBuy.length > 0 && !orderToDelete && paymentState !== "total" && (
         <CartPaymentOverlay
           phone={paymentPhone}
           onPhoneChange={setPaymentPhone}
@@ -745,6 +827,14 @@ export default function OrdersScreen() {
         order={selectedOrderDetails}
         allOrders={selectedGroupOrders}
         boutique={fastFoods.find(f => f.id === selectedOrderDetails?.fastFoodId)}
+      />
+
+      {/* Switcher flottant : déploie les autres sections vers le haut */}
+      <SectionSwitcher
+        sections={CART_SECTIONS.map((s) => ({ key: s.key, icon: s.icon }))}
+        activeKey={currentTab}
+        onSelect={setCurrentTab}
+        bottom={insets.bottom + 80}
       />
     </View>
   );
@@ -844,7 +934,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -881,5 +972,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 10,
+    paddingHorizontal: 16,
   },
 });

@@ -41,9 +41,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Theme.spacing.md,
     backgroundColor: Theme.colors.white,
-    marginHorizontal: Theme.spacing.md,
-    marginBottom: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.gray[100],
   },
   iconContainer: {
     width: 40,

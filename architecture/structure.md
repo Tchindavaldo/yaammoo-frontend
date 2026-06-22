@@ -83,6 +83,11 @@ src/
 ├── api/
 │   └── config.ts                # Config.apiUrl, Firebase config, Google Client IDs
 ├── components/                  # Partagés (Toast, Loader, Button…)
+│   └── molecules/               # Briques d'UI réutilisables des en-têtes d'onglets
+│       ├── TabHeader.tsx        # En-tête uniforme (fond orange, safe-area, titre/sous-titre/élément droit)
+│       ├── HeaderPill.tsx       # Pilule d'action dans l'en-tête (style "Tout marquer lu")
+│       ├── DatePill.tsx         # Pilule de dates repliable (chips date + "+N", sélection)
+│       └── SectionSwitcher.tsx  # FAB switch sections (déploiement vertical animé + zone de sécurité)
 ├── theme/                       # Theme.colors, typography, spacing
 ├── types/                       # Commande, Menu, Livraison, User…
 └── services/

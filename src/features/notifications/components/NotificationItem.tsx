@@ -24,8 +24,17 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
       onPress={() => onPress(notification)}
       activeOpacity={0.7}
     >
-      <View style={[styles.iconContainer, { backgroundColor: Theme.colors.primary + '15' }]}>
-        <Ionicons name={iconName} size={22} color={Theme.colors.primary} />
+      <View
+        style={[
+          styles.iconContainer,
+          { backgroundColor: read ? Theme.colors.gray[100] : Theme.colors.primary + '15' },
+        ]}
+      >
+        <Ionicons
+          name={iconName}
+          size={22}
+          color={read ? Theme.colors.dark : Theme.colors.primary}
+        />
       </View>
 
       <View style={styles.content}>

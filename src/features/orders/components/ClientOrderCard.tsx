@@ -4,8 +4,8 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Image,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Commande } from "@/src/types";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
@@ -50,7 +50,12 @@ export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
       <View style={styles.summaryRow}>
         <View style={styles.avatarContainer}>
           {menuImage ? (
-            <Image source={{ uri: menuImage }} style={styles.avatarImage} />
+            <Image
+              source={{ uri: menuImage }}
+              style={styles.avatarImage}
+              cachePolicy="memory-disk"
+              transition={150}
+            />
           ) : (
             <Ionicons name="fast-food" size={24} color="#ec4913" />
           )}
@@ -138,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
   },
   summaryRow: {
     flexDirection: "row",

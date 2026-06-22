@@ -17,7 +17,7 @@ yaammoo/src/features/orders/
     ├── ClientOrderCard.tsx    # Carte commande compacte (liste pending/processing)
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
     ├── OrderHeader.tsx        # Header de la page orders
-    ├── OrderTrackingHeader.tsx # Header avec tracking statut
+    ├── OrderTrackingHeader.tsx # Stats (nb cmd / FF) + chips statut ; dates gérées par le TabHeader de cart.tsx
     └── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande
 ```
 

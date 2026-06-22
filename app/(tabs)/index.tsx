@@ -1,25 +1,31 @@
-import React, { useState, useMemo } from "react";
-import {
-  StyleSheet,
-  FlatList,
-  SafeAreaView,
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  Platform,
-  RefreshControl,
-} from "react-native";
-import { Toast } from "@/src/components/Toast";
-import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
-import { RestaurantHeader } from "@/src/features/restaurants/components/RestaurantHeader";
-import { RestaurantCard } from "@/src/features/restaurants/components/RestaurantCard";
-import { CategoryList } from "@/src/features/restaurants/components/CategoryList";
-import { Theme } from "@/src/theme";
-import { useOrders } from "@/src/features/orders/hooks/useOrders";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
+import { Toast } from "@/src/components/Toast";
+import { useOrders } from "@/src/features/orders/hooks/useOrders";
+import { RestaurantHeader } from "@/src/features/restaurants/components/RestaurantHeader";
+import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { Theme } from "@/src/theme";
+import React, { useMemo, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
+import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
+import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
+import { Menu } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
+
+import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
+import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { useRouter } from "expo-router";
 
 const CATEGORIES = [
   { name: "All", icon: "grid-outline" },
@@ -29,17 +35,6 @@ const CATEGORIES = [
   { name: "Drinks", icon: "beer-outline" },
   { name: "Rice", icon: "restaurant-outline" },
 ];
-
-import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
-import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
-import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
-import { Menu } from "@/src/types";
-import { Ionicons } from "@expo/vector-icons";
-
-import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
-import { useRouter } from "expo-router";
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
@@ -68,7 +63,10 @@ export default function HomeScreen() {
   const [forceLoading, setForceLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const onManualRefresh = async () => {
     setRefreshing(true);
@@ -83,7 +81,7 @@ export default function HomeScreen() {
     setCheckoutVisible(true);
   };
 
-  const showToast = (message: string, type: 'success' | 'error') => {
+  const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
   };
 
@@ -91,7 +89,12 @@ export default function HomeScreen() {
     try {
       const result = await addOrder(order);
       if (result.success) {
-        showToast(order.status === 'pending' ? "Commande envoyée au marchand ! 🚀" : "Article ajouté au panier ! ✨", "success");
+        showToast(
+          order.status === "pending"
+            ? "Commande envoyée au marchand ! 🚀"
+            : "Article ajouté au panier ! ✨",
+          "success",
+        );
         return true;
       } else {
         showToast(result.message || "Une erreur est survenue.", "error");
@@ -139,62 +142,66 @@ export default function HomeScreen() {
     );
   }
 
-
-      return (
-        <View style={styles.container} onLayout={onLayoutRootView}>
-          <RestaurantHeader
-            userName={userData?.infos?.nom || "Utilisateur"}
-            userPhoto={
-              (userData as any)?.photoUrl || (userData as any)?.photo || ""
-            }
-            location="Banganté, Cameroun"
-            unreadCount={unreadCount}
-            onNotifPress={() => router.push("/(tabs)/notifications")}
-            onProfilePress={() => router.push("/(tabs)/settings")}
-            searchVisible={searchOpen}
-            onSearchToggle={() => setSearchOpen(!searchOpen)}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            categories={CATEGORIES}
-            selectedCategory={selectedCategory}
-            onCategorySelect={setSelectedCategory}
-          />
-          <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
-            <FlatList
-              data={fastFoods}
-              ListHeaderComponent={listHeader}
-              renderItem={({ item }) => (
-                <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
-              )}
-              keyExtractor={(item, index) => item.id || index.toString()}
-              contentContainerStyle={[
-                styles.listContent,
-                { paddingBottom: tabBarHeight + 20, paddingHorizontal: Theme.design.horizontalPadding },
-              ]}
-              refreshControl={
-                  <RefreshControl
-                    refreshing={refreshing}
-                    onRefresh={onManualRefresh}
-                    tintColor={Theme.colors.primary}
-                    colors={[Theme.colors.primary]}
-                  />
-                }
-              ListEmptyComponent={
-                <View style={styles.centered}>
-                  <Ionicons
-                    name="search-outline"
-                    size={60}
-                    color={Theme.colors.gray[200]}
-                  />
-                  <Text style={styles.emptyText}>
-                    Aucun restaurant trouvé pour "{searchQuery || selectedCategory}"
-                  </Text>
-                </View>
-              }
+  return (
+    <View style={styles.container} onLayout={onLayoutRootView}>
+      <RestaurantHeader
+        userName={userData?.infos?.nom || "Utilisateur"}
+        userPhoto={
+          (userData as any)?.photoUrl || (userData as any)?.photo || ""
+        }
+        location="Banganté, Cameroun"
+        unreadCount={unreadCount}
+        onNotifPress={() => router.push("/(tabs)/notifications")}
+        onProfilePress={() => router.push("/(tabs)/settings")}
+        onCartPress={() => router.push("/(tabs)/cart?section=cart")}
+        onOrdersPress={() => router.push("/(tabs)/cart?section=pending")}
+        searchVisible={searchOpen}
+        onSearchToggle={() => setSearchOpen(!searchOpen)}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        categories={CATEGORIES}
+        selectedCategory={selectedCategory}
+        onCategorySelect={setSelectedCategory}
+      />
+      <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
+        <FlatList
+          data={fastFoods}
+          ListHeaderComponent={listHeader}
+          renderItem={({ item }) => (
+            <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
+          )}
+          keyExtractor={(item, index) => item.id || index.toString()}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingBottom: tabBarHeight + 20,
+              paddingHorizontal: Theme.design.horizontalPadding,
+            },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onManualRefresh}
+              tintColor={Theme.colors.primary}
+              colors={[Theme.colors.primary]}
             />
-          </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.centered}>
+              <Ionicons
+                name="search-outline"
+                size={60}
+                color={Theme.colors.gray[200]}
+              />
+              <Text style={styles.emptyText}>
+                Aucun restaurant trouvé pour "{searchQuery || selectedCategory}"
+              </Text>
+            </View>
+          }
+        />
+      </View>
       <CheckoutSheet
-        key={selectedMenu?.id || 'checkout'}
+        key={selectedMenu?.id || "checkout"}
         visible={checkoutVisible}
         onClose={() => setCheckoutVisible(false)}
         menu={selectedMenu}
@@ -202,10 +209,10 @@ export default function HomeScreen() {
       />
 
       {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onHide={() => setToast(null)} 
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onHide={() => setToast(null)}
         />
       )}
     </View>
@@ -215,7 +222,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   centered: {
     flex: 1,

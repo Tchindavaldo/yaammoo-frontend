@@ -48,6 +48,9 @@ yaammoo/src/features/merchant/
 | `loading` | boolean | Refresh en cours |
 | `onRefresh` | `() => void` | Callback pull-to-refresh |
 | `onUpdateStatus` | `(id, status) => Promise<void\|boolean>` | Avance le statut d'une commande |
+| `selectedDate` | `string \| null` | Date sélectionnée (contrôlée par le header de page) |
+| `onSelectDate` | `(iso: string \| null) => void` | Remonte le choix de date au header |
+| `onDatesChange` | `(opts: DateOption[]) => void` | Remonte la liste des dates disponibles au header (DatePill) |
 
 **Onglets statut** :
 | Key | Label | Statuts Firestore |
@@ -56,7 +59,11 @@ yaammoo/src/features/merchant/
 | `proccess` | En cours | `processing`, `active`, `in_progress` |
 | `finish` | Terminées | `completed`, `finished`, `done`, `delivering` |
 
-**Filtre par date** : chips horizontaux (Aujourd'hui, Demain, dates suivantes) basés sur `delivery.date` ou `createdAt`.
+**Filtre par date** : les dates disponibles (basées sur `delivery.date` ou `createdAt`) sont
+calculées par le panel puis **remontées au header de page** via `onDatesChange` ; la sélection
+est affichée dans le `DatePill` du `TabHeader` (boutique.tsx) et redescend via `selectedDate`.
+Le panel ne rend plus sa propre ligne de chips date. Pour éviter une boucle de rendu, l'effet
+qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(",")`.
 
 **Tri par rank** :
 - Onglets `pending` et `proccess` : `dateFilteredOrders` triés par `rank ASC` via `useMemo`

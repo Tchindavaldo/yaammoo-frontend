@@ -26,9 +26,17 @@ const SHOW_FILTERS = false;
 interface PorteFeuilleProps {
   /** Rafraîchit le contexte marchand parent (ex. après un retrait). Optionnel. */
   onRefresh?: () => void;
+  /** Remonte le solde courant au header parent. */
+  onBalanceChange?: (balance: number) => void;
+  /** Expose au parent l'action "ouvrir le retrait" (déclenchée depuis la pilule du header). */
+  onRegisterWithdraw?: (open: () => void) => void;
 }
 
-export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({ onRefresh }) => {
+export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
+  onRefresh,
+  onBalanceChange,
+  onRegisterWithdraw,
+}) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
 
   // Stats portefeuille : source de vérité globale (patchée par les events socket).
@@ -116,6 +124,17 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({ onRefresh }) =>
   // Solde global réel (fourni par le backend).
   const balance = stats?.balance ?? 0;
 
+  // Remonte le solde au header parent dès qu'il change.
+  useEffect(() => {
+    onBalanceChange?.(balance);
+  }, [balance, onBalanceChange]);
+
+  // Expose l'ouverture du retrait au header (pilule "Retirer"). Une seule fois au montage.
+  useEffect(() => {
+    onRegisterWithdraw?.(() => setWithdrawState("amount_input"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Liste = une ligne par jour (series), déjà triée par le backend.
   const series = stats?.series ?? [];
 
@@ -135,39 +154,11 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({ onRefresh }) =>
 
   return (
     <View style={styles.container}>
-      {/* Header balance */}
-      <View style={styles.balanceCard}>
-        <View style={styles.balanceRow}>
-          <View style={styles.balanceItem}>
-            <Text style={styles.balanceLbl}>Solde</Text>
-            <Text style={styles.balanceVal}>
-              {balance.toLocaleString("fr-FR")} F
-            </Text>
-          </View>
-          <View style={styles.divider} />
-          <TouchableOpacity
-            style={styles.balanceItem}
-            activeOpacity={0.7}
-            onPress={() => setWithdrawState("amount_input")}
-          >
-            <Text style={styles.balanceLbl}>Retrait</Text>
-            <View style={styles.withdrawRow}>
-              <Text
-                style={[styles.balanceVal, { color: Theme.colors.primary }]}
-              >
-                Retirer
-              </Text>
-              <Ionicons
-                name="arrow-up-circle"
-                size={20}
-                color={Theme.colors.primary}
-              />
-            </View>
-          </TouchableOpacity>
-        </View>
+      {/* Solde + retrait gérés par le header de la page boutique (TabHeader). */}
 
-        {/* Filtres segment */}
-        {SHOW_FILTERS && (
+      {/* Filtres segment */}
+      {SHOW_FILTERS && (
+        <View style={styles.balanceCard}>
           <View style={styles.segmentRow}>
             {filters.map((f) => (
               <TouchableOpacity
@@ -204,8 +195,8 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({ onRefresh }) =>
               </TouchableOpacity>
             ))}
           </View>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Chiffre d'affaires par jour (une ligne par jour) */}
       <FlatList
@@ -263,43 +254,12 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({ onRefresh }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.colors.light,
+    backgroundColor: Theme.colors.white,
   },
   balanceCard: {
     backgroundColor: Theme.colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.gray[100],
-  },
-  balanceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Theme.spacing.lg,
-    gap: Theme.spacing.lg,
-  },
-  balanceItem: {
-    flex: 1,
-  },
-  withdrawRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  divider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Theme.colors.gray[200],
-  },
-  balanceLbl: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  balanceVal: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: Theme.colors.dark,
   },
   segmentRow: {
     flexDirection: "row",

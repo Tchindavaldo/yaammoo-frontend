@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,11 +14,21 @@ import { MerchantOrderCard } from './MerchantOrderCard';
 
 type OrderStatus = 'pending' | 'proccess' | 'finish';
 
+export interface DateOption {
+  iso: string;
+  label: string;
+}
+
 interface OrderManagePanelProps {
   orders: Commande[];
   loading: boolean;
   onRefresh: () => void;
   onUpdateStatus: (orderId: string, status: string) => Promise<void | boolean>;
+  /** Date sélectionnée (ISO YYYY-MM-DD) ou null pour "aujourd'hui". Contrôlée par le header. */
+  selectedDate: string | null;
+  onSelectDate: (iso: string | null) => void;
+  /** Remonte au parent la liste des dates disponibles (pour les chips du header). */
+  onDatesChange?: (dates: DateOption[]) => void;
 }
 
 export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
@@ -26,10 +36,11 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   loading,
   onRefresh,
   onUpdateStatus,
+  selectedDate,
+  onSelectDate,
+  onDatesChange,
 }) => {
-  console.log('📦 OrderManagePanel received orders:', orders.map(o => ({ id: o.id, status: o.status })));
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // 'express' par défaut pour le tab finished. Les sections passées (pending/proccess)
   // utilisent leur propre clé 'past_<iso>', donc elles restent toutes fermées au départ.
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>('express');
@@ -65,19 +76,12 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   };
 
   const todayISO = new Date().toISOString().substring(0, 10);
-  const tomorrowISO = (() => {
-    const t = new Date();
-    t.setDate(t.getDate() + 1);
-    return t.toISOString().substring(0, 10);
-  })();
 
-  // Format d'affichage pour un chip / header de section
+  // Format d'affichage pour un chip / header de section : "10 juin" (jour chiffré + mois).
   const formatDateLabel = (iso: string): string => {
-    if (iso === todayISO) return "Aujourd'hui";
-    if (iso === tomorrowISO) return 'Demain';
     try {
       const d = new Date(iso);
-      return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
     } catch {
       return iso;
     }
@@ -112,13 +116,14 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     return availableDateISOs.filter((d) => d < todayISO).sort().reverse();
   }, [availableDateISOs]);
 
-  const todayLabel = "Aujourd'hui";
-  const currentDate = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  // Remonte au header la liste des dates disponibles (chips).
+  // Dépend d'une clé string stable (et pas du tableau, recréé à chaque render)
+  // pour éviter une boucle setState → render → nouveau tableau → effet.
+  const datesKey = sortedDateISOs.join(",");
+  useEffect(() => {
+    onDatesChange?.(sortedDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datesKey]);
 
   // Trie par rank pour pending/proccess
   const sortByRank = (arr: Commande[]) => {
@@ -167,11 +172,6 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     { key: 'proccess', label: 'En cours', icon: 'restaurant-outline' },
     { key: 'finish', label: 'Terminées', icon: 'checkmark-done-outline' },
   ];
-
-  const getRelativeDateLabel = (dateISO: string | null) => {
-    if (!dateISO) return "aujourd'hui";
-    return formatDateLabel(dateISO).toLowerCase();
-  };
 
   // Grouping logic for the finished orders design (Untitled-1 style)
   const deliveryData = useMemo(() => {
@@ -230,44 +230,19 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Date Header Row */}
-      <View style={styles.dateHeader}>
-        <View style={styles.dateInfo}>
-          <Text style={styles.relativeDate}>{getRelativeDateLabel(selectedDate)}</Text>
-          <Text style={styles.fullDate}>{currentDate}</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
-          {sortedDateISOs.map((iso) => {
-            const isSelected =
-              (selectedDate === null && iso === todayISO) || selectedDate === iso;
-            return (
-              <TouchableOpacity
-                key={iso}
-                style={[styles.dateChip, isSelected && styles.dateChipActive]}
-                onPress={() => setSelectedDate((prev) => (prev === iso ? null : iso))}
-              >
-                <Text style={[styles.dateChipText, isSelected && styles.dateChipTextActive]}>
-                  {formatDateLabel(iso)}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
       {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
              <Text style={styles.statVal}>{dateFilteredOrders.length}</Text>
-             <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>cmd</Text>
+             <Text style={{ fontSize: 25, color: Theme.colors.primary, marginLeft: 8, fontWeight: '900' }}>cmd</Text>
           </View>
           <Text style={styles.statLbl}>Commandes effectue</Text>
         </View>
         <View style={styles.statBox}>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
             <Text style={styles.statVal}>{totalAmount}</Text>
-            <Text style={{ fontSize: 25, color: '#b84e4e', marginLeft: 8, fontWeight: '900' }}>fcfa</Text>
+            <Text style={{ fontSize: 25, color: Theme.colors.primary, marginLeft: 8, fontWeight: '900' }}>fcfa</Text>
           </View>
           <Text style={styles.statLbl}>Montant Total</Text>
         </View>
@@ -280,7 +255,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             <TouchableOpacity
               key={tab.key}
               style={[styles.statusTab, selectedStatus === tab.key && styles.statusTabActive]}
-              onPress={() => { setSelectedStatus(tab.key); setSelectedDate(null); }}
+              onPress={() => { setSelectedStatus(tab.key); onSelectDate(null); }}
             >
               <Ionicons
                 name={tab.icon as any}
@@ -319,7 +294,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
               <Text style={styles.emptyText}>Aucune commande terminée</Text>
             </View>
           ) : deliveryData && (
-            <View style={{ paddingHorizontal: 16 }}>
+            <View>
               {deliveryData.expressGroups.length > 0 && (
                 <View style={{ marginBottom: 15 }}>
                   <TouchableOpacity 
@@ -420,8 +395,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           contentContainerStyle={styles.listContent}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
         >
-          {/* Liste principale (aujourd'hui par défaut, ou date du chip sélectionné) */}
+          {/* Liste principale (aujourd'hui par défaut, ou date du chip sélectionné).
+              Le message vide ne s'affiche que s'il n'y a pas non plus de sections passées. */}
           {dateFilteredOrders.length === 0 ? (
+            pastSections.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons
                 name={selectedStatus === 'pending' ? 'time-outline' : 'restaurant-outline'}
@@ -434,6 +411,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                   : 'Aucune commande en cours'}
               </Text>
             </View>
+            ) : null
           ) : (
             <View style={{ gap: 6 }}>
               {dateFilteredOrders.map((item) => (
@@ -447,8 +425,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           )}
 
           {/* Sections passées non traitées (uniquement vue par défaut) */}
+          {/* marginTop réduit (10 au lieu de 24) pour compenser le paddingVertical:15
+              du listContent côté marchand et matcher l'espace chips→label du client. */}
           {pastSections.length > 0 && (
-            <View style={{ marginTop: 24, paddingHorizontal: 16 }}>
+            <View style={{ marginTop: 10 }}>
               <Text style={styles.sectionLabel}>Commandes des jours précédents</Text>
               {pastSections.map((section) => {
                 const groupId = `past_${section.iso}`;
@@ -503,51 +483,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
-  dateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: 'white',
-  },
-  dateInfo: {
-    marginRight: 10,
-    minWidth: 100,
-  },
-  relativeDate: {
-    fontSize: 18,
-    fontWeight: 'normal',
-    color: '#333',
-    textTransform: 'capitalize',
-  },
-  fullDate: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  dateScroll: {
-    gap: 10,
-  },
-  dateChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    backgroundColor: '#fff5f5',
-    marginRight: 8,
-    minWidth: 50,
-    alignItems: 'center',
-  },
-  dateChipActive: {
-    backgroundColor: 'rgba(236,73,19,1.00)',
-  },
-  dateChipText: {
-    fontSize: 12,
-    color: 'black',
-    fontWeight: 'bold',
-  },
-  dateChipTextActive: {
-    color: 'white',
-  },
   statsRow: {
     flexDirection: 'row',
     backgroundColor: 'white',
@@ -585,7 +520,7 @@ const styles = StyleSheet.create({
   },
   statusScrollContent: {
     paddingHorizontal: 15,
-    gap: 8,
+    gap: 4,
   },
   statusTab: {
     flexDirection: 'row',
@@ -594,7 +529,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: '#fff5f5',
-    marginRight: 8,
     height: 32,
   },
   statusTabActive: {
@@ -628,14 +562,15 @@ const styles = StyleSheet.create({
     color: '#888780',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginTop: 10,
     marginBottom: 10,
+    paddingHorizontal: 16,
   },
   groupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',

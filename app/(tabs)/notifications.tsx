@@ -1,28 +1,34 @@
+import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
+import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { HeaderPill } from "@/src/components/molecules/HeaderPill";
+import { NotificationDetailSheet } from "@/src/features/notifications/components/NotificationDetailSheet";
+import { NotificationItem } from "@/src/features/notifications/components/NotificationItem";
+import {
+  Notification,
+  useNotifications,
+} from "@/src/features/notifications/hooks/useNotifications";
+import { getNotificationRoute } from "@/src/features/notifications/utils/notificationRouting";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { Theme } from "@/src/theme";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  StyleSheet,
   FlatList,
-  View,
+  StyleSheet,
   Text,
-  TouchableOpacity,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-import { Ionicons } from "@expo/vector-icons";
-import {
-  useNotifications,
-  Notification,
-} from "@/src/features/notifications/hooks/useNotifications";
-import { NotificationItem } from "@/src/features/notifications/components/NotificationItem";
-import { NotificationDetailSheet } from "@/src/features/notifications/components/NotificationDetailSheet";
-import { getNotificationRoute } from "@/src/features/notifications/utils/notificationRouting";
-import { useRouter } from "expo-router";
-import { Theme } from "@/src/theme";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
-import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 
 export default function NotificationsScreen() {
-  const { notifications, loading, refresh, markAsRead, isRead: isReadFlag } = useNotifications();
+  const {
+    notifications,
+    loading,
+    refresh,
+    markAsRead,
+    isRead: isReadFlag,
+  } = useNotifications();
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -71,26 +77,23 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <BlurView intensity={80} tint="light" style={[styles.header, { paddingTop: insets.top }]}>
-        <View>
-          <Text style={styles.title}>Notifications</Text>
-          {unreadCount > 0 && (
-            <Text style={styles.subtitle}>
-              {unreadCount} non lue{unreadCount > 1 ? "s" : ""}
-            </Text>
-          )}
-        </View>
-        {unreadCount > 0 && (
-          <TouchableOpacity style={styles.markAllBtn} onPress={markAllAsRead}>
-            <Ionicons
-              name="checkmark-done-outline"
-              size={16}
-              color={Theme.colors.primary}
+      <TabHeader
+        title="Notifications"
+        subtitle={
+          unreadCount > 0
+            ? `${unreadCount} non lue${unreadCount > 1 ? "s" : ""}`
+            : undefined
+        }
+        right={
+          unreadCount > 0 ? (
+            <HeaderPill
+              label="Tout marquer lu"
+              icon="checkmark-done-outline"
+              onPress={markAllAsRead}
             />
-            <Text style={styles.markAllText}>Tout marquer lu</Text>
-          </TouchableOpacity>
-        )}
-      </BlurView>
+          ) : null
+        }
+      />
 
       <FlatList
         data={notifications}
@@ -135,46 +138,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: Theme.spacing.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[100],
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: Theme.colors.dark,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: Theme.colors.primary,
-    marginTop: 2,
-    fontWeight: "600",
-  },
-  markAllBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: Theme.colors.primary + "10",
-  },
-  markAllText: {
-    fontSize: 12,
-    color: Theme.colors.primary,
-    fontWeight: "600",
+    backgroundColor: "#fff",
   },
   centered: {
     flex: 1,

@@ -1,12 +1,15 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Theme } from '@/src/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { Theme } from "@/src/theme";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface OrderTrackingHeaderProps {
-  selectedDate: Date;
-  onDateChange: (date: Date) => void;
-  availableDates: Date[];
   activeStatus: string;
   onStatusChange: (status: any) => void;
   counts: {
@@ -15,111 +18,114 @@ interface OrderTrackingHeaderProps {
     finished: number;
     delivered: number;
   };
+  /** Stats de la date sélectionnée : nb commandes + nb de fastfoods. */
+  orderCount?: number;
+  fastFoodCount?: number;
 }
 
 export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
-  selectedDate,
-  onDateChange,
-  availableDates,
   activeStatus,
   onStatusChange,
-  counts
+  counts,
+  orderCount = 0,
+  fastFoodCount = 0,
 }) => {
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
-  };
-
-  const getRelativeDateLabel = (date: Date) => {
-    if (isToday(date)) return "aujourd'hui";
-    return date.toLocaleDateString('fr-FR', { weekday: 'long' });
-  };
-
   return (
     <View style={styles.container}>
-      {/* Date Selection Row */}
-      <View style={styles.dateHeader}>
-        <View style={styles.dateInfo}>
-          <Text style={styles.relativeDate}>{getRelativeDateLabel(selectedDate)}</Text>
-          <Text style={styles.fullDate}>{selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</Text>
+      {/* Dates gérées par le header de page (TabHeader / DatePill). */}
+
+      {/* Stats Row (identique au manager panel marchand) */}
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          <View style={styles.statValRow}>
+            <Text style={styles.statVal} numberOfLines={1}>
+              {orderCount}
+            </Text>
+            <Text style={styles.statUnit}>cmd</Text>
+          </View>
+          <Text style={styles.statLbl}>Commandes effectue</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateScroll}>
-          {availableDates.map((date, idx) => {
-            const isSelected = date.toDateString() === selectedDate.toDateString();
-            const dayName = date.toLocaleDateString('fr-FR', { weekday: 'short' });
-            const formattedDay = dayName.charAt(0).toUpperCase() + dayName.slice(1, 3); // "Dim"
-            
-            return (
-              <TouchableOpacity
-                key={idx}
-                style={[styles.dateChip, isSelected && styles.activeDateChip]}
-                onPress={() => onDateChange(date)}
-              >
-                <Text style={[styles.dateDay, isSelected && styles.activeDateText]}>
-                  {formattedDay}
-                </Text>
-                <Text style={[styles.dateNum, isSelected && styles.activeDateText]}>
-                  {date.getDate()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        <View style={styles.statBox}>
+          <View style={styles.statValRow}>
+            <Text style={styles.statVal} numberOfLines={1}>
+              {fastFoodCount}
+            </Text>
+            <Text style={styles.statUnit}>FF</Text>
+          </View>
+          <Text style={styles.statLbl}>Fastfood total</Text>
+        </View>
       </View>
 
       {/* Status Chips Row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusScroll}>
-        <StatusChip 
-          label="Cmds en Attente" 
-          icon="time-outline" 
-          count={counts.pending} 
-          active={activeStatus === 'pending'} 
-          onPress={() => onStatusChange('pending')}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.statusScroll}
+      >
+        <StatusChip
+          label="En Attente"
+          icon="time-outline"
+          count={counts.pending}
+          active={activeStatus === "pending"}
+          onPress={() => onStatusChange("pending")}
         />
-        <StatusChip 
-          label="Cmds en cours" 
-          icon="restaurant-outline" 
-          count={counts.processing} 
-          active={activeStatus === 'active'} 
-          onPress={() => onStatusChange('active')}
+        <StatusChip
+          label="En cours"
+          icon="restaurant-outline"
+          count={counts.processing}
+          active={activeStatus === "active"}
+          onPress={() => onStatusChange("active")}
         />
-        <StatusChip 
-          label="Cmds en Terminer" 
-          icon="checkmark-done-outline" 
-          count={counts.finished} 
-          active={activeStatus === 'finished'} 
-          onPress={() => onStatusChange('finished')}
-        />
-        <StatusChip 
-          label="Cmds Livrées" 
-          icon="checkmark-circle-outline" 
-          count={counts.delivered} 
-          active={activeStatus === 'delivered'} 
-          onPress={() => onStatusChange('delivered')}
-          activeColor="#2dd36f"
-          inactiveBg="#e8f5e9"
-          inactiveIconColor="#2dd36f"
+        <StatusChip
+          label="Terminées"
+          icon="checkmark-done-outline"
+          count={counts.finished}
+          active={activeStatus === "finished"}
+          onPress={() => onStatusChange("finished")}
         />
       </ScrollView>
     </View>
   );
 };
 
-const StatusChip = ({ 
-  label, icon, count, active, onPress, 
-  activeColor = 'rgba(236,73,19,1.00)',
-  inactiveBg = '#fff3ee',
-  inactiveIconColor = Theme.colors.primary
+const StatusChip = ({
+  label,
+  icon,
+  count,
+  active,
+  onPress,
+  activeColor = "rgba(236,73,19,1.00)",
+  inactiveBg = "#fff3ee",
+  inactiveIconColor = Theme.colors.primary,
 }: any) => (
-  <TouchableOpacity 
-    style={[styles.statusChip, { backgroundColor: active ? activeColor : inactiveBg }]}
+  <TouchableOpacity
+    style={[
+      styles.statusChip,
+      { backgroundColor: active ? activeColor : inactiveBg },
+    ]}
     onPress={onPress}
   >
-    <Ionicons name={icon as any} size={14} color={active ? 'white' : inactiveIconColor} />
-    <Text style={[styles.statusLabel, { color: active ? 'white' : inactiveIconColor }]}>{label}</Text>
-    <Text style={[styles.statusCount, { color: active ? 'white' : inactiveIconColor }]}>({count})</Text>
+    <Ionicons
+      name={icon as any}
+      size={14}
+      color={active ? "white" : inactiveIconColor}
+    />
+    <Text
+      style={[
+        styles.statusLabel,
+        { color: active ? "white" : inactiveIconColor },
+      ]}
+    >
+      {label}
+    </Text>
+    <Text
+      style={[
+        styles.statusCount,
+        { color: active ? "white" : inactiveIconColor },
+      ]}
+    >
+      ({count})
+    </Text>
   </TouchableOpacity>
 );
 
@@ -128,89 +134,74 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.white,
     paddingTop: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
   },
-  dateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: "white",
     paddingHorizontal: 15,
-    paddingTop: 3,
-    marginBottom: 25,
+    paddingVertical: 15,
+    gap: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f8f8f8",
   },
-  dateInfo: {
-    marginRight: 10,
-    minWidth: 80,
-  },
-  relativeDate: {
-    fontSize: 18,
-    fontWeight: 'normal',
-    color: '#333',
-    textTransform: 'capitalize',
-  },
-  fullDate: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  dateScroll: {
-    gap: 5,
-    paddingRight: 15,
-  },
-  dateChip: {
-    width: 60,
-    height: 30, // Small screen height
+  statBox: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "flex-start",
+    backgroundColor: "white",
+    padding: 10,
     borderRadius: 10,
-    backgroundColor: '#fff5f5',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
+    borderWidth: 1,
+    borderColor: "#f0f0f0",
   },
-  activeDateChip: {
-    backgroundColor: 'rgba(236,73,19,1.00)',
-    shadowColor: 'rgba(236,73,19,1.00)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4,
+  statValRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
   },
-  dateDay: {
-    fontSize: 10,
-    color: '#ec4913bf',
-    marginRight: 2,
+  statVal: {
+    fontSize: 31,
+    fontWeight: "900",
+    color: "black",
+    flexShrink: 1,
   },
-  dateNum: {
-    fontSize: 10,
-    fontWeight: '300',
-    color: 'rgba(236,73,19,1.00)',
+  statUnit: {
+    fontSize: 25,
+    color: Theme.colors.primary,
+    marginLeft: 8,
+    fontWeight: "900",
   },
-  activeDateText: {
-    color: 'white',
+  statLbl: {
+    fontSize: 11,
+    color: "rgba(0,0,0,0.44)",
+    fontWeight: "bold",
+    marginTop: 2,
   },
   statusScroll: {
     paddingHorizontal: 15,
+    paddingTop: 10,
     paddingBottom: 10,
-    gap: 8,
+    gap: 4,
   },
   statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#fff5f5',
-    gap: 6,
-    height: 28,
+    backgroundColor: "#fff5f5",
+    gap: 4,
+    height: 32,
   },
   statusLabel: {
     fontSize: 10,
-    color: 'black',
-    fontWeight: 'bold',
+    color: "black",
+    fontWeight: "bold",
   },
   statusCount: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: 'black',
-    marginLeft: 2,
+    fontSize: 10,
+    fontWeight: "900",
+    color: "black",
+    marginLeft: 0,
   },
 });

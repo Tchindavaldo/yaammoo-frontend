@@ -8,7 +8,6 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { Theme } from '@/src/theme';
 import { Commande } from '@/src/types';
 import { MerchantOrderCard } from './MerchantOrderCard';
@@ -238,15 +237,12 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // La liste démarre sous la barre fixe (header de page + stats/chips).
   const listTopPad = topOffset + barHeight;
 
-  // Barre fixe (stats + chips) en blur, calée sous le header de page.
+  // Barre fixe (stats + chips) calée sous le header de page.
   const fixedBar = (
     <View
       style={[styles.fixedBar, { top: topOffset }]}
       onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
-      pointerEvents="box-none"
     >
-      <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} pointerEvents="none" />
-
       {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
@@ -516,12 +512,11 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 50,
     overflow: 'hidden',
-    // Voile quasi nul (comme le header) : c'est le BlurView qui fait l'effet.
-    backgroundColor: 'rgba(255,255,255,0.015)',
+    backgroundColor: 'white',
   },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: 'transparent',
+    backgroundColor: 'white',
     paddingHorizontal: 15,
     paddingVertical: 15,
     gap: 15,

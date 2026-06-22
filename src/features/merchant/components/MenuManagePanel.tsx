@@ -222,10 +222,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     <View
       style={[styles.fixedBar, { top: topOffset }]}
       onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
-      pointerEvents="box-none"
     >
-      <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} pointerEvents="none" />
-
       {/* Stats Row (Component 1 Style - 3 columns) */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
@@ -390,21 +387,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
-  // Barre fixe (stats + chips) calée sous le header de page, en blur.
+  // Barre fixe (stats + chips) calée sous le header de page.
   fixedBar: {
     position: 'absolute',
     left: 0,
     right: 0,
     zIndex: 50,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.015)',
+    backgroundColor: 'white',
   },
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: 15,
     paddingVertical: 10,
     gap: 10,
-    backgroundColor: 'transparent',
+    backgroundColor: 'white',
   },
   statBox: {
     flex: 1,
@@ -426,7 +423,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   tabRowContainer: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'white',
     paddingBottom: 10,
   },
   tabRow: {

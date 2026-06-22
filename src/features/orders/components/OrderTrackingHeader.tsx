@@ -1,6 +1,5 @@
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import React from "react";
 import {
   ScrollView,
@@ -33,7 +32,6 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
 }) => {
   return (
     <View style={styles.container}>
-      <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} pointerEvents="none" />
       {/* Dates gérées par le header de page (TabHeader / DatePill). */}
 
       {/* Stats Row (identique au manager panel marchand) */}
@@ -133,14 +131,13 @@ const StatusChip = ({
 
 const styles = StyleSheet.create({
   container: {
-    // Voile quasi nul (comme le header) : c'est le BlurView qui fait l'effet.
-    backgroundColor: "rgba(255,255,255,0.015)",
+    backgroundColor: "white",
     paddingTop: 0,
     overflow: "hidden",
   },
   statsRow: {
     flexDirection: "row",
-    backgroundColor: "transparent",
+    backgroundColor: "white",
     paddingHorizontal: 15,
     paddingVertical: 15,
     gap: 15,

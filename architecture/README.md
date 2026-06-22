@@ -12,6 +12,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | Fichier | Feature |
 |---|---|
 | [structure.md](./structure.md) | Arborescence `app/`, `src/features/`, `src/components/`, `src/api/` |
+| [tab-header.md](./tab-header.md) | En-têtes d'onglets uniformes (TabHeader, HeaderPill, DatePill, SectionSwitcher) |
 | [auth.md](./auth.md) | Authentification client (Email/Password, Google Sign-In, AuthContext) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |
@@ -53,7 +54,7 @@ yaammoo/
 │   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs)
 │   ├── theme/                # Theme.colors, typography
 │   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
-│   ├── components/           # Composants partagés (Toast…)
+│   ├── components/           # Composants partagés (Toast…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
 │   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts
 │
 ├── assets/                   # Images, fonts

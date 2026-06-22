@@ -30,6 +30,8 @@ interface MenuManagePanelProps {
   onRefresh: () => void;
   onAddMenu: (menu: any) => Promise<void>;
   loading?: boolean;
+  /** Expose au parent l'action "ouvrir l'ajout de menu" (déclenchée depuis la pilule du header). */
+  onRegisterAddMenu?: (open: () => void) => void;
 }
 
 export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
@@ -37,11 +39,18 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
   onRefresh,
   onAddMenu,
   loading,
+  onRegisterAddMenu,
 }) => {
   const [activeTab, setActiveTab] = useState<MenuManageTab>('list');
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [editingMenu, setEditingMenu] = useState<any>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // Expose l'ouverture de l'ajout de menu au header (pilule "Ajouter"). Une seule fois au montage.
+  React.useEffect(() => {
+    onRegisterAddMenu?.(() => { setEditingMenu(null); setShowAddMenu(true); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [confirmActionType, setConfirmActionType] = useState<'available' | 'unavailable' | 'delete'>('delete');
@@ -99,7 +108,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
       } else if (confirmActionType === 'delete') {
         await axios.delete(`${Config.apiUrl}/menu/${id}`);
       }
-      onRefresh();
+      // ⚠️ Pas de onRefresh() ici : le backend émet fastFoodMenuUpdated /
+      // fastFoodMenuDeleted → upsert/remove socket met déjà le state à jour.
+      // Un refetch mettrait loading=true → pull-refresh fantôme.
       closeConfirmModal();
     } catch (error) {
       setUpdatingId(null);
@@ -115,9 +126,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
 
   const handleSave = async (menuData: any) => {
     if (editingMenu) {
-      // modification
+      // modification — pas de onRefresh() : fastFoodMenuUpdated (socket) met
+      // déjà le state à jour. Un refetch déclencherait un pull-refresh fantôme.
       await axios.put(`${Config.apiUrl}/menu/${editingMenu._id || editingMenu.id}`, menuData);
-      onRefresh();
       setEditingMenu(null);
     } else {
       await onAddMenu(menuData);
@@ -200,22 +211,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     );
   };
 
-  const currentDate = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
   return (
     <View style={styles.container}>
-      {/* Date Header Row */}
-      <View style={styles.dateHeader}>
-        <View style={styles.dateInfo}>
-          <Text style={styles.relativeDate}>aujourd'hui</Text>
-          <Text style={styles.fullDate}>{currentDate}</Text>
-        </View>
-      </View>
+      {/* Titre + ajout gérés par le header de la page boutique (TabHeader). */}
 
       {/* Stats Row (Component 1 Style - 3 columns) */}
       <View style={styles.statsRow}>
@@ -279,10 +277,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
         }
       />
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => { setEditingMenu(null); setShowAddMenu(true); }}>
-        <Ionicons name="add" size={30} color="white" />
-      </TouchableOpacity>
+      {/* Ajout déclenché depuis la pilule "Ajouter" du header. */}
 
       <AddMenuSheetMultiStep
         visible={showAddMenu}
@@ -375,25 +370,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
-  dateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: 'white',
-  },
-  dateInfo: {
-    marginRight: 10,
-  },
-  relativeDate: {
-    fontSize: 18,
-    color: '#333',
-  },
-  fullDate: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: 15,
@@ -429,7 +405,7 @@ const styles = StyleSheet.create({
   },
   tabRow: {
     paddingHorizontal: 15,
-    gap: 8,
+    gap: 4,
   },
   subTab: {
     flexDirection: 'row',
@@ -520,24 +496,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#bbb',
   },
-  fab: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(236,73,19,1.00)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 50,
-    zIndex: 2000,
-    shadowColor: 'black',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  
   // NOUVEAUX STYLES FIDÈLES À RUDAFOOD POUR LES MENUS
   menuItemContainer: {
     paddingVertical: 15,

@@ -14,8 +14,8 @@ export const WalletDayStatItem: React.FC<WalletDayStatItemProps> = ({ stat }) =>
 
   return (
     <View style={styles.container}>
-      <View style={[styles.iconContainer, { backgroundColor: Theme.colors.success + '15' }]}>
-        <Ionicons name="calendar-outline" size={20} color={Theme.colors.success} />
+      <View style={[styles.iconContainer, { backgroundColor: Theme.colors.gray[100] }]}>
+        <Ionicons name="calendar-outline" size={20} color={Theme.colors.dark} />
       </View>
       <View style={styles.details}>
         <Text style={styles.day}>{moment(stat.period).format('dddd DD MMM YYYY')}</Text>
@@ -41,9 +41,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Theme.spacing.md,
     backgroundColor: Theme.colors.white,
-    marginHorizontal: Theme.spacing.md,
-    marginBottom: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.gray[100],
   },
   iconContainer: {
     width: 40,

@@ -86,7 +86,7 @@ export default function BoutiqueScreen() {
 
   if (!userData?.fastFoodId && !loading) {
     return (
-     <View style={{ flex: 1, backgroundColor: 'white', paddingTop: insets.top }}>
+     <View style={{ flex: 1, backgroundColor: 'white' }}>
         <NoBoutiquePanel />
      </View>
     );

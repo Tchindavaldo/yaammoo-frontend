@@ -24,6 +24,12 @@ import { BlurView } from "expo-blur";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { HeaderPill } from "@/src/components/molecules/HeaderPill";
+
+// Hauteur approximative de la tab bar (navbar du bas) à réserver sous le contenu.
+const TAB_BAR_HEIGHT = 60;
 
 const { width, height } = Dimensions.get("window");
 
@@ -38,8 +44,10 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const insets = useSafeAreaInsets();
   const { userData, setUserData } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(70);
 
   // Form fields
   const [name, setName] = useState("");
@@ -282,59 +290,40 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
 
   return (
     <View style={styles.overlay}>
-      <View style={styles.backgroundWhite} />
+      {/* Fond blanc opaque FIXE sous le header : couvre toute la zone de contenu
+          (évite que le settings transparaisse au scroll). Derrière le header, on
+          laisse transparent pour que le BlurView floute le settings. */}
+      <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
-      {/* Backdrop */}
-      <Animated.View
-        style={[styles.backdrop, { opacity: fadeAnim, zIndex: 998 }]}
-        pointerEvents="auto"
-      >
-        <TouchableOpacity
-          style={{ flex: 1 }}
-          activeOpacity={1}
-          onPress={closeModal}
-          pointerEvents="auto"
-        />
-      </Animated.View>
+      <TabHeader
+        title="Gérer ma boutique"
+        subtitle="Informations du fast-food"
+        right={
+          <HeaderPill
+            label="Retour"
+            icon="arrow-back-outline"
+            onPress={closeModal}
+          />
+        }
+        onHeightChange={setHeaderHeight}
+      />
 
       <KeyboardAvoidingView
-        style={[{ flex: 1, zIndex: 999 }]}
+        style={[{ flex: 1, paddingTop: headerHeight }]}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        pointerEvents="box-none"
       >
-        {/* Card — centered in modal */}
-        <Animated.View
-          style={[
-            styles.cardContainer,
-            {
-              opacity: cardFadeAnim,
-              transform: [
-                { translateY: cardSlideAnim },
-                { scale: cardScaleAnim },
-              ],
-              zIndex: 999,
-            },
-          ]}
-          pointerEvents="auto"
-        >
-          <View style={styles.cardWrapper}>
-            <View style={styles.glassCardWrapper}>
-              <View style={styles.whiteBackground} pointerEvents="none" />
-
+        <View style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}>
               <ScrollView
-                contentContainerStyle={styles.cardGrid}
+                contentContainerStyle={[
+                  styles.cardGrid,
+                  { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + 20 },
+                ]}
                 showsVerticalScrollIndicator={false}
-                style={{ flex: 1, zIndex: 1 }}
-                scrollEventThrottle={16}
-                nestedScrollEnabled={true}
-                pointerEvents="auto"
+                style={{ flex: 1 }}
+                keyboardShouldPersistTaps="handled"
               >
-                {/* Header */}
-                <View style={styles.headerSection}>
-                  <Ionicons name="storefront-outline" size={24} color="#ec4913" />
-                  <Text style={styles.headerTitle}>Modifier votre boutique</Text>
-                </View>
-
                 {/* Avatar + Name row */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                   <TouchableOpacity onPress={pickImage} style={styles.avatarCircle}>
@@ -477,43 +466,25 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                   )}
                 </View>
 
-                {/* Buttons row */}
-                <View style={[styles.actionRow, { justifyContent: "flex-end" }]}>
-                  <TouchableOpacity
-                    style={styles.chipBtn}
-                    onPress={closeModal}
-                    disabled={isEntering}
-                  >
-                    <Ionicons name="close" size={18} color="white" />
-                    <Text style={styles.chipText}>Annuler</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.chipBtn, { marginLeft: 10 }]}
-                    onPress={handleUpdate}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <>
-                        <Ionicons
-                          name="checkmark"
-                          size={18}
-                          color="white"
-                        />
-                        <Text style={styles.chipText}>Mettre à jour</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
+                {/* Bouton mettre à jour (pleine largeur, même design que la création) */}
+                <TouchableOpacity
+                  style={styles.updateBtn}
+                  onPress={handleUpdate}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={18} color="white" />
+                      <Text style={styles.updateBtnText}>Mettre à jour</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </ScrollView>
-
-              {/* Subtle border-glow flare */}
-              <View style={styles.cardBorder} pointerEvents="none" />
             </View>
           </View>
-        </Animated.View>
+        </View>
       </KeyboardAvoidingView>
 
       {/* --- TIME PICKERS --- */}
@@ -649,76 +620,40 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1000,
-    justifyContent: "center",
-    alignItems: "center",
+    // Transparent : laisse le settings transparaître DERRIÈRE le header (effet blur).
+    // Le fond blanc est posé sur la zone de contenu uniquement (cardGrid).
+    backgroundColor: "transparent",
   },
-  backgroundWhite: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#ffffff",
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
-    zIndex: 999,
-  },
-  cardContainer: {
-    flex: 1,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 1,
-    maxHeight: "95%",
-  },
-  cardWrapper: {
-    width: "100%",
-    // maxWidth: 480,
-    borderRadius: 30,
-    overflow: "hidden",
-    position: "relative",
-    maxHeight: 650,
-  },
-  glassCardWrapper: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 30,
-    overflow: "hidden",
-    position: "relative",
-  },
-  whiteBackground: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "#ffffff",
-    borderRadius: 30,
-  },
-  glassCard: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#ffffff",
-    borderRadius: 30,
-    zIndex: 10,
-    overflow: "hidden",
-  },
-  cardBorder: {
+  contentBg: {
     position: "absolute",
-    zIndex: 5,
-    width: "100%",
-    height: "100%",
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#fff",
   },
   cardGrid: {
     flexGrow: 1,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  headerSection: {
+  updateBtn: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
-    gap: 10,
+    justifyContent: "center",
+    backgroundColor: Theme.colors.primary,
+    paddingVertical: 15,
+    borderRadius: 14,
+    gap: 8,
+    marginTop: 28,
+    shadowColor: Theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  headerTitle: {
-    color: "#0f172a",
-    fontSize: 16,
+  updateBtnText: {
+    color: "white",
+    fontSize: 15,
     fontWeight: "bold",
   },
   formRow: {
@@ -846,34 +781,10 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   emptyHoursText: {
-    color: "rgba(255,255,255,0.5)",
+    color: "#94a3b8",
     fontSize: 11,
     fontStyle: "italic",
     marginBottom: 2,
-  },
-  actionRow: {
-    flexDirection: "row",
-    marginTop: 2,
-  },
-  chipBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#ec4913",
-    paddingHorizontal: 8,
-    borderRadius: 20,
-    gap: 8,
-    shadowColor: "#ec4913",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-    minHeight: 34,
-  },
-  chipText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "bold",
   },
   // iOS Picker Overlays
   modalOverlay: {

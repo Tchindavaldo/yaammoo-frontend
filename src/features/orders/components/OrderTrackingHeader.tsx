@@ -1,5 +1,6 @@
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import React from "react";
 import {
   ScrollView,
@@ -32,6 +33,7 @@ export const OrderTrackingHeader: React.FC<OrderTrackingHeaderProps> = ({
 }) => {
   return (
     <View style={styles.container}>
+      <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} pointerEvents="none" />
       {/* Dates gérées par le header de page (TabHeader / DatePill). */}
 
       {/* Stats Row (identique au manager panel marchand) */}
@@ -95,7 +97,7 @@ const StatusChip = ({
   active,
   onPress,
   activeColor = "rgba(236,73,19,1.00)",
-  inactiveBg = "#fff3ee",
+  inactiveBg = Theme.colors.primary + "10",
   inactiveIconColor = Theme.colors.primary,
 }: any) => (
   <TouchableOpacity
@@ -131,29 +133,26 @@ const StatusChip = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Theme.colors.white,
+    // Voile quasi nul (comme le header) : c'est le BlurView qui fait l'effet.
+    backgroundColor: "rgba(255,255,255,0.015)",
     paddingTop: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    overflow: "hidden",
   },
   statsRow: {
     flexDirection: "row",
-    backgroundColor: "white",
+    backgroundColor: "transparent",
     paddingHorizontal: 15,
     paddingVertical: 15,
     gap: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f8f8f8",
   },
   statBox: {
     flex: 1,
     minWidth: 0,
     alignItems: "flex-start",
-    backgroundColor: "white",
+    // Même fond que la pilule du header (orange translucide) : marie bien avec le blur.
+    backgroundColor: Theme.colors.primary + "10",
     padding: 10,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#f0f0f0",
   },
   statValRow: {
     flexDirection: "row",
@@ -189,7 +188,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: "#fff5f5",
+    // Même fond que la pilule du header (orange translucide).
+    backgroundColor: Theme.colors.primary + "10",
     gap: 4,
     height: 32,
   },

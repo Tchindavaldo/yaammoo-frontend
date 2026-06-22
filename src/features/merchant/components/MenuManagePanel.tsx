@@ -32,6 +32,8 @@ interface MenuManagePanelProps {
   loading?: boolean;
   /** Expose au parent l'action "ouvrir l'ajout de menu" (déclenchée depuis la pilule du header). */
   onRegisterAddMenu?: (open: () => void) => void;
+  /** Hauteur du header de page : la barre stats+chips s'y cale (en blur), la liste scrolle dessous. */
+  topOffset?: number;
 }
 
 export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
@@ -40,8 +42,10 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
   onAddMenu,
   loading,
   onRegisterAddMenu,
+  topOffset = 0,
 }) => {
   const [activeTab, setActiveTab] = useState<MenuManageTab>('list');
+  const [barHeight, setBarHeight] = useState(0);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [editingMenu, setEditingMenu] = useState<any>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -211,9 +215,16 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     );
   };
 
-  return (
-    <View style={styles.container}>
-      {/* Titre + ajout gérés par le header de la page boutique (TabHeader). */}
+  const listTopPad = topOffset + barHeight;
+
+  // Barre fixe (stats + chips) en blur, calée sous le header de page.
+  const fixedBar = (
+    <View
+      style={[styles.fixedBar, { top: topOffset }]}
+      onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+      pointerEvents="box-none"
+    >
+      <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} pointerEvents="none" />
 
       {/* Stats Row (Component 1 Style - 3 columns) */}
       <View style={styles.statsRow}>
@@ -255,8 +266,12 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
           ))}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* Content */}
+  return (
+    <View style={styles.container}>
+      {/* Content : démarre sous la barre fixe, scrolle dessous (blur). */}
       <FlatList
         data={menus}
         keyExtractor={(item, i) => item._id || item.id || i.toString()}
@@ -265,7 +280,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
             ? renderMenuCard(item, index, activeTab)
             : null
         }
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + 15 }]}
+        scrollIndicatorInsets={{ top: listTopPad }}
+        progressViewOffset={listTopPad}
         refreshing={loading}
         onRefresh={onRefresh}
         ListEmptyComponent={
@@ -361,6 +378,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
           </Animated.View>
         </View>
       )}
+
+      {/* Barre fixe (stats + chips) en blur, par-dessus la liste. */}
+      {fixedBar}
     </View>
   );
 };
@@ -370,21 +390,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
+  // Barre fixe (stats + chips) calée sous le header de page, en blur.
+  fixedBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.015)',
+  },
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: 15,
     paddingVertical: 10,
     gap: 10,
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
   },
   statBox: {
     flex: 1,
     alignItems: 'flex-start',
     padding: 10,
-    backgroundColor: 'white',
+    // Même fond que la pilule du header (orange translucide) : marie bien avec le blur.
+    backgroundColor: Theme.colors.primary + '10',
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
   },
   statVal: {
     fontSize: 31,
@@ -398,9 +426,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   tabRowContainer: {
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: 'transparent',
     paddingBottom: 10,
   },
   tabRow: {
@@ -413,7 +439,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#fff5f5',
+    // Même fond que la pilule du header (orange translucide).
+    backgroundColor: Theme.colors.primary + '10',
     gap: 4,
     height: 32,
   },

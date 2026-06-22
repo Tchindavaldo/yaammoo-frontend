@@ -8,6 +8,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { Theme } from '@/src/theme';
 import { Commande } from '@/src/types';
 import { MerchantOrderCard } from './MerchantOrderCard';
@@ -29,6 +30,9 @@ interface OrderManagePanelProps {
   onSelectDate: (iso: string | null) => void;
   /** Remonte au parent la liste des dates disponibles (pour les chips du header). */
   onDatesChange?: (dates: DateOption[]) => void;
+  /** Hauteur du header de page : la barre stats+chips s'y cale (en blur), la liste
+      scrolle dessous. Défaut 0 (pas d'offset). */
+  topOffset?: number;
 }
 
 export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
@@ -39,7 +43,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   selectedDate,
   onSelectDate,
   onDatesChange,
+  topOffset = 0,
 }) => {
+  // Hauteur mesurée de la barre fixe (stats + chips) pour décaler la liste.
+  const [barHeight, setBarHeight] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
   // 'express' par défaut pour le tab finished. Les sections passées (pending/proccess)
   // utilisent leur propre clé 'past_<iso>', donc elles restent toutes fermées au départ.
@@ -228,8 +235,18 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     );
   };
 
-  return (
-    <View style={styles.container}>
+  // La liste démarre sous la barre fixe (header de page + stats/chips).
+  const listTopPad = topOffset + barHeight;
+
+  // Barre fixe (stats + chips) en blur, calée sous le header de page.
+  const fixedBar = (
+    <View
+      style={[styles.fixedBar, { top: topOffset }]}
+      onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+      pointerEvents="box-none"
+    >
+      <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} pointerEvents="none" />
+
       {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
@@ -278,14 +295,19 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           ))}
         </ScrollView>
       </View>
+    </View>
+  );
 
+  return (
+    <View style={styles.container}>
       {/* Conditional List Rendering */}
       {selectedStatus === 'finish' ? (
-        <ScrollView 
-          style={styles.container} 
-          contentContainerStyle={styles.listContent}
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + 15 }]}
+          scrollIndicatorInsets={{ top: listTopPad }}
           refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={onRefresh} />
+            <RefreshControl refreshing={loading} onRefresh={onRefresh} progressViewOffset={listTopPad} />
           }
         >
           {dateFilteredOrders.length === 0 ? (
@@ -392,8 +414,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
       ) : (
         <ScrollView
           style={styles.container}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} />}
+          contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + 15 }]}
+          scrollIndicatorInsets={{ top: listTopPad }}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} progressViewOffset={listTopPad} />}
         >
           {/* Liste principale (aujourd'hui par défaut, ou date du chip sélectionné).
               Le message vide ne s'affiche que s'il n'y a pas non plus de sections passées. */}
@@ -474,6 +497,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           )}
         </ScrollView>
       )}
+
+      {/* Barre fixe (stats + chips) en blur, par-dessus la liste. */}
+      {fixedBar}
     </View>
   );
 };
@@ -483,23 +509,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
+  // Barre fixe (stats + chips) calée sous le header de page, en blur.
+  fixedBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    overflow: 'hidden',
+    // Voile quasi nul (comme le header) : c'est le BlurView qui fait l'effet.
+    backgroundColor: 'rgba(255,255,255,0.015)',
+  },
   statsRow: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
     paddingHorizontal: 15,
     paddingVertical: 15,
     gap: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f8f8',
   },
   statBox: {
     flex: 1,
     alignItems: 'flex-start',
-    backgroundColor: 'white',
+    // Même fond que la pilule du header (orange translucide) : marie bien avec le blur.
+    backgroundColor: Theme.colors.primary + '10',
     padding: 10,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
   },
   statVal: {
     fontSize: 31,
@@ -513,10 +546,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   statusScrollContainer: {
-    backgroundColor: 'white',
+    backgroundColor: 'transparent',
     paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   statusScrollContent: {
     paddingHorizontal: 15,
@@ -528,7 +559,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: '#fff5f5',
+    // Même fond que la pilule du header (orange translucide) : marie bien avec le blur.
+    backgroundColor: Theme.colors.primary + '10',
     height: 32,
   },
   statusTabActive: {
@@ -544,7 +576,6 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   listContent: {
-    paddingVertical: 15,
     paddingBottom: 100,
   },
   emptyState: {

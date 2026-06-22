@@ -163,6 +163,8 @@ export default function BoutiqueScreen() {
 
     switch (activeTab) {
       case 'commande':
+        // Pilote blur-scroll-under : le panel gère lui-même l'offset du header
+        // (barre stats+chips en blur, liste qui scrolle dessous).
         return (
           <OrderManagePanel
             orders={orders}
@@ -172,6 +174,7 @@ export default function BoutiqueScreen() {
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
             onDatesChange={setDateOptions}
+            topOffset={headerHeight}
           />
         );
       case 'menu':
@@ -182,6 +185,7 @@ export default function BoutiqueScreen() {
             onAddMenu={handleAddMenu}
             loading={loading}
             onRegisterAddMenu={(fn) => setOpenAddMenu(() => fn)}
+            topOffset={headerHeight}
           />
         );
       case 'historique':
@@ -190,6 +194,7 @@ export default function BoutiqueScreen() {
             onRefresh={refresh}
             onBalanceChange={setWalletBalance}
             onRegisterWithdraw={(fn) => setOpenWithdraw(() => fn)}
+            topOffset={headerHeight}
           />
         );
       default:
@@ -200,7 +205,10 @@ export default function BoutiqueScreen() {
   return (
     <View style={styles.container}>
       {renderHeader()}
-      <View style={{ flex: 1, paddingTop: headerHeight }}>
+      {/* Pas de paddingTop ici : le contenu s'étend SOUS le header pour que le
+          BlurView du TabHeader floute la liste qui scrolle dessous. Le panel
+          reçoit headerHeight (topOffset) et décale lui-même son contenu. */}
+      <View style={{ flex: 1 }}>
         {renderContent()}
       </View>
 

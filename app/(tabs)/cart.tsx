@@ -668,19 +668,24 @@ export default function OrdersScreen() {
         </View>
       )}
 
-      <View style={{ flex: 1, paddingTop: (currentTab === "status" ? HEADER_HEIGHT + trackingHeaderHeight : HEADER_HEIGHT) }}>
+      {/* Pas de paddingTop ici : le contenu s'étend SOUS le header pour que le
+          BlurView du TabHeader (et de l'OrderTrackingHeader en status) floute la
+          liste qui scrolle dessous. Chaque liste décale son contentContainer. */}
+      <View style={{ flex: 1 }}>
         {currentTab === "wallet" ? (
-          <WalletPanel onBalanceChange={setWalletBalance} />
+          <WalletPanel onBalanceChange={setWalletBalance} topOffset={HEADER_HEIGHT} />
         ) : currentTab === "status" ? (
           <ScrollView
             contentContainerStyle={[
               styles.listContent,
-              { paddingBottom: tabBarHeight + 100 },
+              { paddingTop: HEADER_HEIGHT + trackingHeaderHeight, paddingBottom: tabBarHeight + 100 },
             ]}
+            scrollIndicatorInsets={{ top: HEADER_HEIGHT + trackingHeaderHeight }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onManualRefresh}
+                progressViewOffset={HEADER_HEIGHT + trackingHeaderHeight}
                 tintColor={Theme.colors.primary}
                 colors={[Theme.colors.primary]}
               />
@@ -712,12 +717,14 @@ export default function OrdersScreen() {
             }
             contentContainerStyle={[
               styles.listContent,
-              { paddingBottom: tabBarHeight + 100 },
+              { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 100 },
             ]}
+            scrollIndicatorInsets={{ top: HEADER_HEIGHT }}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onManualRefresh}
+                progressViewOffset={HEADER_HEIGHT}
                 tintColor={Theme.colors.primary}
                 colors={[Theme.colors.primary]}
               />

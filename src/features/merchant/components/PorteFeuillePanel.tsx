@@ -30,12 +30,15 @@ interface PorteFeuilleProps {
   onBalanceChange?: (balance: number) => void;
   /** Expose au parent l'action "ouvrir le retrait" (déclenchée depuis la pilule du header). */
   onRegisterWithdraw?: (open: () => void) => void;
+  /** Hauteur du header de page : la liste scrolle dessous (effet blur du header). */
+  topOffset?: number;
 }
 
 export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   onRefresh,
   onBalanceChange,
   onRegisterWithdraw,
+  topOffset = 0,
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
 
@@ -205,7 +208,9 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         keyExtractor={(item) => item.period}
         refreshing={loading}
         onRefresh={refreshAll}
-        contentContainerStyle={styles.listContent}
+        progressViewOffset={topOffset}
+        scrollIndicatorInsets={{ top: topOffset }}
+        contentContainerStyle={[styles.listContent, { paddingTop: topOffset + Theme.spacing.sm }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons

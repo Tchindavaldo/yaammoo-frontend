@@ -21,9 +21,11 @@ const SHOW_FILTERS = false;
 interface WalletPanelProps {
   /** Remonte le solde courant au header parent. */
   onBalanceChange?: (balance: number) => void;
+  /** Hauteur du header de page : la liste scrolle dessous (effet blur du header). */
+  topOffset?: number;
 }
 
-export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange }) => {
+export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOffset = 0 }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const { transactions, loading, refresh } = useWallet();
 
@@ -104,7 +106,9 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange }) => 
         keyExtractor={(item) => item.id}
         refreshing={loading}
         onRefresh={refresh}
-        contentContainerStyle={styles.listContent}
+        progressViewOffset={topOffset}
+        scrollIndicatorInsets={{ top: topOffset }}
+        contentContainerStyle={[styles.listContent, { paddingTop: topOffset + 10 }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="receipt-outline" size={60} color={Theme.colors.gray[200]} />

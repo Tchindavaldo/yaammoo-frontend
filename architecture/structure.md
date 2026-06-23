@@ -16,7 +16,7 @@ app/
 ├── (tabs)/                  # Tabs authentifiées
 │   ├── _layout.tsx
 │   ├── index.tsx            # Home (liste restaurants, feed)
-│   ├── boutique.tsx         # Panel marchand (si user.role = merchant)
+│   ├── boutique.tsx         # Commandes marchand (statuts via chips ; menu/portefeuille → Settings)
 │   ├── cart.tsx             # Panier + commandes en cours (client)
 │   ├── notifications.tsx    # Liste notifs + DetailSheet
 │   └── profile.tsx
@@ -87,7 +87,7 @@ src/
 │       ├── TabHeader.tsx        # En-tête uniforme (fond orange, safe-area, titre/sous-titre/élément droit)
 │       ├── HeaderPill.tsx       # Pilule d'action dans l'en-tête (style "Tout marquer lu")
 │       ├── DatePill.tsx         # Pilule de dates repliable (chips date + "+N", sélection)
-│       └── SectionSwitcher.tsx  # FAB switch sections (déploiement vertical animé + zone de sécurité)
+│       └── SectionSwitcher.tsx  # FAB switch sections (animé + zone de sécurité) — utilisé par cart.tsx
 ├── theme/                       # Theme.colors, typography, spacing
 ├── types/                       # Commande, Menu, Livraison, User…
 └── services/

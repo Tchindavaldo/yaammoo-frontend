@@ -1,18 +1,30 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { Theme } from "@/src/theme";
+import { Commande } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   RefreshControl,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Theme } from '@/src/theme';
-import { Commande } from '@/src/types';
-import { MerchantOrderCard } from './MerchantOrderCard';
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
 
-type OrderStatus = 'pending' | 'proccess' | 'finish';
+// Hauteur approximative de la tab bar (navbar du bas) à réserver sous la liste.
+const TAB_BAR_HEIGHT = 65;
+
+type OrderStatus = "pending" | "proccess" | "finish";
 
 export interface DateOption {
   iso: string;
@@ -44,33 +56,42 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   onDatesChange,
   topOffset = 0,
 }) => {
+  const insets = useSafeAreaInsets();
   // Hauteur mesurée de la barre fixe (stats + chips) pour décaler la liste.
   const [barHeight, setBarHeight] = useState(0);
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>('pending');
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>("pending");
   // 'express' par défaut pour le tab finished. Les sections passées (pending/proccess)
   // utilisent leur propre clé 'past_<iso>', donc elles restent toutes fermées au départ.
-  const [expandedGroupId, setExpandedGroupId] = useState<string | null>('express');
-  const [launchedGroups, setLaunchedGroups] = useState<Record<string, boolean>>({});
-  const [launchingGroups, setLaunchingGroups] = useState<Record<string, boolean>>({});
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
+    "express",
+  );
+  const [launchedGroups, setLaunchedGroups] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [launchingGroups, setLaunchingGroups] = useState<
+    Record<string, boolean>
+  >({});
 
   const toggleGroup = (groupId: string) => {
-    setExpandedGroupId(prev => (prev === groupId ? null : groupId));
+    setExpandedGroupId((prev) => (prev === groupId ? null : groupId));
   };
 
   const launchGroup = async (groupId: string, groupOrders: Commande[]) => {
-    setLaunchingGroups(prev => ({ ...prev, [groupId]: true }));
+    setLaunchingGroups((prev) => ({ ...prev, [groupId]: true }));
     try {
-      await Promise.all(groupOrders.map(o => onUpdateStatus(o.id, 'delivering')));
-      setLaunchedGroups(prev => ({ ...prev, [groupId]: true }));
+      await Promise.all(
+        groupOrders.map((o) => onUpdateStatus(o.id, "delivering")),
+      );
+      setLaunchedGroups((prev) => ({ ...prev, [groupId]: true }));
     } finally {
-      setLaunchingGroups(prev => ({ ...prev, [groupId]: false }));
+      setLaunchingGroups((prev) => ({ ...prev, [groupId]: false }));
     }
   };
 
   // Helpers de date : retourne YYYY-MM-DD à partir d'une commande (clé stable)
   const getOrderDateISO = (order: Commande): string => {
     const deliveryDate = order.delivery?.date;
-    const dateStr = deliveryDate || order.createdAt || '';
+    const dateStr = deliveryDate || order.createdAt || "";
     if (!dateStr) return new Date().toISOString().substring(0, 10);
     try {
       const d = new Date(dateStr);
@@ -87,21 +108,20 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const formatDateLabel = (iso: string): string => {
     try {
       const d = new Date(iso);
-      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+      return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
     } catch {
       return iso;
     }
   };
 
-
   const statusMap: Record<OrderStatus, string[]> = {
-    pending: ['pending'],
-    proccess: ['processing', 'active', 'in_progress'],
-    finish: ['completed', 'finished', 'done', 'delivering'],
+    pending: ["pending"],
+    proccess: ["processing", "active", "in_progress"],
+    finish: ["completed", "finished", "done", "delivering"],
   };
 
-   const filteredOrders = orders.filter((o) =>
-    statusMap[selectedStatus].includes(o.status)
+  const filteredOrders = orders.filter((o) =>
+    statusMap[selectedStatus].includes(o.status),
   );
 
   // Dates uniques (ISO YYYY-MM-DD) disponibles pour ce statut
@@ -112,14 +132,20 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // Ordre des chips : futures (asc) → aujourd'hui → passées (desc)
   const sortedDateISOs = useMemo(() => {
     const futures = availableDateISOs.filter((d) => d > todayISO).sort();
-    const past = availableDateISOs.filter((d) => d < todayISO).sort().reverse();
+    const past = availableDateISOs
+      .filter((d) => d < todayISO)
+      .sort()
+      .reverse();
     const hasToday = availableDateISOs.includes(todayISO);
     return [...futures, ...(hasToday ? [todayISO] : []), ...past];
   }, [availableDateISOs]);
 
   // Sections passées (uniquement pour la vue par défaut pending/processing)
   const pastDateISOs = useMemo(() => {
-    return availableDateISOs.filter((d) => d < todayISO).sort().reverse();
+    return availableDateISOs
+      .filter((d) => d < todayISO)
+      .sort()
+      .reverse();
   }, [availableDateISOs]);
 
   // Remonte au header la liste des dates disponibles (chips).
@@ -127,7 +153,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // pour éviter une boucle setState → render → nouveau tableau → effet.
   const datesKey = sortedDateISOs.join(",");
   useEffect(() => {
-    onDatesChange?.(sortedDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })));
+    onDatesChange?.(
+      sortedDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [datesKey]);
 
@@ -147,8 +175,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   //    Pour finish, on n'affiche jamais l'historique en dessous : seulement la date sélectionnée.
   const dateFilteredOrders = useMemo(() => {
     const isoFilter = selectedDate || todayISO;
-    const filtered = filteredOrders.filter((o) => getOrderDateISO(o) === isoFilter);
-    if (selectedStatus === 'pending' || selectedStatus === 'proccess') {
+    const filtered = filteredOrders.filter(
+      (o) => getOrderDateISO(o) === isoFilter,
+    );
+    if (selectedStatus === "pending" || selectedStatus === "proccess") {
       return sortByRank(filtered);
     }
     return filtered;
@@ -157,31 +187,38 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // Groupes par date passée (uniquement quand aucun chip n'est sélectionné et statut pending/proccess)
   const pastSections = useMemo(() => {
     if (selectedDate) return [];
-    if (selectedStatus !== 'pending' && selectedStatus !== 'proccess') return [];
+    if (selectedStatus !== "pending" && selectedStatus !== "proccess")
+      return [];
     return pastDateISOs.map((iso) => ({
       iso,
       label: formatDateLabel(iso),
-      orders: sortByRank(filteredOrders.filter((o) => getOrderDateISO(o) === iso)),
+      orders: sortByRank(
+        filteredOrders.filter((o) => getOrderDateISO(o) === iso),
+      ),
     }));
   }, [pastDateISOs, selectedDate, selectedStatus, filteredOrders]);
 
   const counts = {
     pending: orders.filter((o) => statusMap.pending.includes(o.status)).length,
-    proccess: orders.filter((o) => statusMap.proccess.includes(o.status)).length,
+    proccess: orders.filter((o) => statusMap.proccess.includes(o.status))
+      .length,
     finish: orders.filter((o) => statusMap.finish.includes(o.status)).length,
   };
 
-  const totalAmount = dateFilteredOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  const totalAmount = dateFilteredOrders.reduce(
+    (acc, o) => acc + (o.total || 0),
+    0,
+  );
 
   const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
-    { key: 'pending', label: 'En Attente', icon: 'time-outline' },
-    { key: 'proccess', label: 'En cours', icon: 'restaurant-outline' },
-    { key: 'finish', label: 'Terminées', icon: 'checkmark-done-outline' },
+    { key: "pending", label: "En Attente", icon: "time-outline" },
+    { key: "proccess", label: "En cours", icon: "restaurant-outline" },
+    { key: "finish", label: "Terminées", icon: "checkmark-done-outline" },
   ];
 
   // Grouping logic for the finished orders design (Untitled-1 style)
   const deliveryData = useMemo(() => {
-    if (selectedStatus !== 'finish') return null;
+    if (selectedStatus !== "finish") return null;
 
     const express: Commande[] = [];
     const scheduled: Record<string, Commande[]> = {};
@@ -228,7 +265,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         allOrders={orders}
         isForceLaunched={isForced}
         onUpdateStatus={async (status) => {
-          await Promise.all(orders.map(o => onUpdateStatus(o.id, status)));
+          await Promise.all(orders.map((o) => onUpdateStatus(o.id, status)));
         }}
       />
     );
@@ -236,6 +273,39 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
   // La liste démarre sous la barre fixe (header de page + stats/chips).
   const listTopPad = topOffset + barHeight;
+
+  // Espace réservé au-dessus de la 1re carte (paddingTop interne du contenu).
+  const LIST_PAD_TOP_INNER = 15;
+  // paddingTop total du contentContainer = barre fixe (mesurée) + espace interne.
+  const MAIN_LIST_PAD_TOP = listTopPad + LIST_PAD_TOP_INNER;
+  // Décalage de calage fin du SNAP uniquement (n'affecte pas le padding visuel) :
+  // ajuste où le raccord tombe (padding/bordure carte vs bordure barre fixe).
+  // Augmenter = la carte se cale un peu plus bas. Ajustable.
+  const SNAP_PHASE = 0;
+  const SNAP_ANCHOR = LIST_PAD_TOP_INNER - SNAP_PHASE;
+  // paddingBottom léger : juste de quoi ne pas coller/chevaucher le bas du parent.
+  const listPadBottom = insets.bottom + TAB_BAR_HEIGHT + 24;
+  // Pas de la grille = hauteur carte (mesurée) + gap entre cartes.
+  const CARD_STRIDE = MERCHANT_CARD_HEIGHT + 6;
+
+  // Snap APRÈS-COUP : scroll libre ; à l'arrêt, on aligne la carte la plus proche
+  // PILE sur le bord bas de la barre fixe. La carte i affleure ce bord quand
+  // l'offset vaut y = LIST_PAD_TOP_INNER + i*CARD_STRIDE (indépendant du header,
+  // car listTopPad — header+barre mesurés — s'annule dans le calcul à l'écran).
+  const scrollRef = useRef<ScrollView>(null);
+  const onScrollSettled = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const rel = y - SNAP_ANCHOR;
+      if (rel <= 0) return; // au-dessus de la 1re carte → ne pas toucher
+      const residual = rel % CARD_STRIDE;
+      if (residual < 4 || residual > CARD_STRIDE - 4) return; // déjà ~aligné
+      // Scrolle vers le haut OU le bas vers le bord de carte le plus proche.
+      const target = SNAP_ANCHOR + Math.round(rel / CARD_STRIDE) * CARD_STRIDE;
+      scrollRef.current?.scrollTo({ y: target, animated: true });
+    },
+    [SNAP_ANCHOR, CARD_STRIDE],
+  );
 
   // Barre fixe (stats + chips) calée sous le header de page.
   const fixedBar = (
@@ -246,16 +316,34 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
       {/* Stats Row */}
       <View style={styles.statsRow}>
         <View style={styles.statBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-             <Text style={styles.statVal}>{dateFilteredOrders.length}</Text>
-             <Text style={{ fontSize: 25, color: Theme.colors.primary, marginLeft: 8, fontWeight: '900' }}>cmd</Text>
+          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+            <Text style={styles.statVal}>{dateFilteredOrders.length}</Text>
+            <Text
+              style={{
+                fontSize: 25,
+                color: Theme.colors.primary,
+                marginLeft: 8,
+                fontWeight: "900",
+              }}
+            >
+              cmd
+            </Text>
           </View>
           <Text style={styles.statLbl}>Commandes effectue</Text>
         </View>
         <View style={styles.statBox}>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
             <Text style={styles.statVal}>{totalAmount}</Text>
-            <Text style={{ fontSize: 25, color: Theme.colors.primary, marginLeft: 8, fontWeight: '900' }}>fcfa</Text>
+            <Text
+              style={{
+                fontSize: 25,
+                color: Theme.colors.primary,
+                marginLeft: 8,
+                fontWeight: "900",
+              }}
+            >
+              fcfa
+            </Text>
           </View>
           <Text style={styles.statLbl}>Montant Total</Text>
         </View>
@@ -263,28 +351,56 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
       {/* Status Chips Row */}
       <View style={styles.statusScrollContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statusScrollContent}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.statusScrollContent}
+        >
           {statusTabs.map((tab) => (
             <TouchableOpacity
               key={tab.key}
-              style={[styles.statusTab, selectedStatus === tab.key && styles.statusTabActive]}
-              onPress={() => { setSelectedStatus(tab.key); onSelectDate(null); }}
+              style={[
+                styles.statusTab,
+                selectedStatus === tab.key && styles.statusTabActive,
+              ]}
+              onPress={() => {
+                setSelectedStatus(tab.key);
+                onSelectDate(null);
+              }}
             >
               <Ionicons
                 name={tab.icon as any}
                 size={14}
-                color={selectedStatus === tab.key ? 'white' : Theme.colors.primary}
+                color={
+                  selectedStatus === tab.key ? "white" : Theme.colors.primary
+                }
               />
-              <Text style={[
-                styles.statusTabLabel,
-                { color: selectedStatus === tab.key ? 'white' : Theme.colors.primary },
-              ]}>
+              <Text
+                style={[
+                  styles.statusTabLabel,
+                  {
+                    color:
+                      selectedStatus === tab.key
+                        ? "white"
+                        : Theme.colors.primary,
+                  },
+                ]}
+              >
                 {tab.label}
               </Text>
-              <Text style={[
-                styles.statusTabLabel,
-                { fontWeight: '900', marginLeft: 4, color: selectedStatus === tab.key ? 'white' : Theme.colors.primary },
-              ]}>
+              <Text
+                style={[
+                  styles.statusTabLabel,
+                  {
+                    fontWeight: "900",
+                    marginLeft: 4,
+                    color:
+                      selectedStatus === tab.key
+                        ? "white"
+                        : Theme.colors.primary,
+                  },
+                ]}
+              >
                 ({counts[tab.key]})
               </Text>
             </TouchableOpacity>
@@ -297,139 +413,211 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   return (
     <View style={styles.container}>
       {/* Conditional List Rendering */}
-      {selectedStatus === 'finish' ? (
+      {selectedStatus === "finish" ? (
         <ScrollView
           style={styles.container}
-          contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + 15 }]}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingTop: listTopPad + 15 },
+          ]}
           scrollIndicatorInsets={{ top: listTopPad }}
           refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={onRefresh} progressViewOffset={listTopPad} />
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={onRefresh}
+              progressViewOffset={listTopPad}
+            />
           }
         >
           {dateFilteredOrders.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="checkmark-done-outline" size={50} color="#D3D1C7" />
+              <Ionicons
+                name="checkmark-done-outline"
+                size={50}
+                color="#D3D1C7"
+              />
               <Text style={styles.emptyText}>Aucune commande terminée</Text>
             </View>
-          ) : deliveryData && (
-            <View>
-              {deliveryData.expressGroups.length > 0 && (
-                <View style={{ marginBottom: 15 }}>
-                  <TouchableOpacity 
-                    activeOpacity={0.7} 
-                    onPress={() => toggleGroup('express')}
-                    style={styles.groupHeader}
-                  >
-                    <View style={styles.groupHeaderLeft}>
-                      <Ionicons 
-                        name={expandedGroupId === 'express' ? "chevron-down" : "chevron-forward"} 
-                        size={12} 
-                        color="#888780" 
-                      />
-                      <Text style={styles.groupTitle}>Express</Text>
-                      <View style={styles.groupCountBadge}>
-                        <Text style={styles.groupCountText}>
-                          {deliveryData.expressGroups.length} livraison{deliveryData.expressGroups.length > 1 ? 's' : ''}
-                        </Text>
-                      </View>
-                    </View>
-                    
+          ) : (
+            deliveryData && (
+              <View>
+                {deliveryData.expressGroups.length > 0 && (
+                  <View style={{ marginBottom: 15 }}>
                     <TouchableOpacity
-                       style={[styles.btnLaunchGroup, launchedGroups['express'] && styles.btnLaunchGroupLaunched]}
-                       onPress={(e) => {
-                         e.stopPropagation();
-                         launchGroup('express', deliveryData!.expressGroups.flat());
-                       }}
-                       disabled={launchedGroups['express'] || launchingGroups['express']}
-                    >
-                       <Text style={[styles.btnLaunchGroupText, launchedGroups['express'] && styles.btnLaunchGroupTextLaunched]}>
-                         {launchingGroups['express'] ? "..." : launchedGroups['express'] ? "Lancé ✓" : "Lancer tout"}
-                       </Text>
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                  
-                  {expandedGroupId === 'express' && (
-                    <View style={{ gap: 6 }}>
-                      {deliveryData.expressGroups.map(group => renderUserGroup(group, 'express'))}
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {deliveryData.slots.map((slot, sIdx) => {
-                const groupId = `slot_${sIdx}`;
-                const isExpanded = expandedGroupId === groupId;
-                const isLaunched = launchedGroups[groupId];
-
-                return (
-                  <View key={groupId} style={{ marginBottom: 15 }}>
-                    <TouchableOpacity 
-                      activeOpacity={0.7} 
-                      onPress={() => toggleGroup(groupId)}
+                      activeOpacity={0.7}
+                      onPress={() => toggleGroup("express")}
                       style={styles.groupHeader}
                     >
                       <View style={styles.groupHeaderLeft}>
-                        <Ionicons 
-                          name={isExpanded ? "chevron-down" : "chevron-forward"} 
-                          size={12} 
-                          color="#888780" 
+                        <Ionicons
+                          name={
+                            expandedGroupId === "express"
+                              ? "chevron-down"
+                              : "chevron-forward"
+                          }
+                          size={12}
+                          color="#888780"
                         />
-                        <Text style={styles.groupTitle}>{slot.title}</Text>
+                        <Text style={styles.groupTitle}>Express</Text>
                         <View style={styles.groupCountBadge}>
                           <Text style={styles.groupCountText}>
-                            {slot.userGroups.length} livraison{slot.userGroups.length > 1 ? 's' : ''}
+                            {deliveryData.expressGroups.length} livraison
+                            {deliveryData.expressGroups.length > 1 ? "s" : ""}
                           </Text>
                         </View>
                       </View>
-                      
+
                       <TouchableOpacity
-                         style={[styles.btnLaunchGroup, isLaunched && styles.btnLaunchGroupLaunched]}
-                         onPress={(e) => {
-                           e.stopPropagation();
-                           launchGroup(groupId, slot.userGroups.flat());
-                         }}
-                         disabled={isLaunched || launchingGroups[groupId]}
+                        style={[
+                          styles.btnLaunchGroup,
+                          launchedGroups["express"] &&
+                            styles.btnLaunchGroupLaunched,
+                        ]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          launchGroup(
+                            "express",
+                            deliveryData!.expressGroups.flat(),
+                          );
+                        }}
+                        disabled={
+                          launchedGroups["express"] ||
+                          launchingGroups["express"]
+                        }
                       >
-                         <Text style={[styles.btnLaunchGroupText, isLaunched && styles.btnLaunchGroupTextLaunched]}>
-                           {launchingGroups[groupId] ? "..." : isLaunched ? "Lancé ✓" : "Lancer tout"}
-                         </Text>
+                        <Text
+                          style={[
+                            styles.btnLaunchGroupText,
+                            launchedGroups["express"] &&
+                              styles.btnLaunchGroupTextLaunched,
+                          ]}
+                        >
+                          {launchingGroups["express"]
+                            ? "..."
+                            : launchedGroups["express"]
+                              ? "Lancé ✓"
+                              : "Lancer tout"}
+                        </Text>
                       </TouchableOpacity>
                     </TouchableOpacity>
-                    
-                    {isExpanded && (
+
+                    {expandedGroupId === "express" && (
                       <View style={{ gap: 6 }}>
-                        {slot.userGroups.map(group => renderUserGroup(group, groupId))}
+                        {deliveryData.expressGroups.map((group) =>
+                          renderUserGroup(group, "express"),
+                        )}
                       </View>
                     )}
                   </View>
-                );
-              })}
-            </View>
+                )}
+
+                {deliveryData.slots.map((slot, sIdx) => {
+                  const groupId = `slot_${sIdx}`;
+                  const isExpanded = expandedGroupId === groupId;
+                  const isLaunched = launchedGroups[groupId];
+
+                  return (
+                    <View key={groupId} style={{ marginBottom: 15 }}>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggleGroup(groupId)}
+                        style={styles.groupHeader}
+                      >
+                        <View style={styles.groupHeaderLeft}>
+                          <Ionicons
+                            name={
+                              isExpanded ? "chevron-down" : "chevron-forward"
+                            }
+                            size={12}
+                            color="#888780"
+                          />
+                          <Text style={styles.groupTitle}>{slot.title}</Text>
+                          <View style={styles.groupCountBadge}>
+                            <Text style={styles.groupCountText}>
+                              {slot.userGroups.length} livraison
+                              {slot.userGroups.length > 1 ? "s" : ""}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.btnLaunchGroup,
+                            isLaunched && styles.btnLaunchGroupLaunched,
+                          ]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            launchGroup(groupId, slot.userGroups.flat());
+                          }}
+                          disabled={isLaunched || launchingGroups[groupId]}
+                        >
+                          <Text
+                            style={[
+                              styles.btnLaunchGroupText,
+                              isLaunched && styles.btnLaunchGroupTextLaunched,
+                            ]}
+                          >
+                            {launchingGroups[groupId]
+                              ? "..."
+                              : isLaunched
+                                ? "Lancé ✓"
+                                : "Lancer tout"}
+                          </Text>
+                        </TouchableOpacity>
+                      </TouchableOpacity>
+
+                      {isExpanded && (
+                        <View style={{ gap: 6 }}>
+                          {slot.userGroups.map((group) =>
+                            renderUserGroup(group, groupId),
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )
           )}
         </ScrollView>
       ) : (
         <ScrollView
+          ref={scrollRef}
           style={styles.container}
-          contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + 15 }]}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingTop: MAIN_LIST_PAD_TOP, paddingBottom: listPadBottom },
+          ]}
           scrollIndicatorInsets={{ top: listTopPad }}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} progressViewOffset={listTopPad} />}
+          onMomentumScrollEnd={onScrollSettled}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={onRefresh}
+              progressViewOffset={listTopPad}
+            />
+          }
         >
           {/* Liste principale (aujourd'hui par défaut, ou date du chip sélectionné).
               Le message vide ne s'affiche que s'il n'y a pas non plus de sections passées. */}
           {dateFilteredOrders.length === 0 ? (
             pastSections.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons
-                name={selectedStatus === 'pending' ? 'time-outline' : 'restaurant-outline'}
-                size={50}
-                color={Theme.colors.gray[300]}
-              />
-              <Text style={styles.emptyText}>
-                {selectedStatus === 'pending'
-                  ? 'Aucune commande en attente'
-                  : 'Aucune commande en cours'}
-              </Text>
-            </View>
+              <View style={styles.emptyState}>
+                <Ionicons
+                  name={
+                    selectedStatus === "pending"
+                      ? "time-outline"
+                      : "restaurant-outline"
+                  }
+                  size={50}
+                  color={Theme.colors.gray[300]}
+                />
+                <Text style={styles.emptyText}>
+                  {selectedStatus === "pending"
+                    ? "Aucune commande en attente"
+                    : "Aucune commande en cours"}
+                </Text>
+              </View>
             ) : null
           ) : (
             <View style={{ gap: 6 }}>
@@ -448,7 +636,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
               du listContent côté marchand et matcher l'espace chips→label du client. */}
           {pastSections.length > 0 && (
             <View style={{ marginTop: 10 }}>
-              <Text style={styles.sectionLabel}>Commandes des jours précédents</Text>
+              <Text style={styles.sectionLabel}>
+                Commandes des jours précédents
+              </Text>
               {pastSections.map((section) => {
                 const groupId = `past_${section.iso}`;
                 const isExpanded = expandedGroupId === groupId;
@@ -461,7 +651,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                     >
                       <View style={styles.groupHeaderLeft}>
                         <Ionicons
-                          name={isExpanded ? 'chevron-down' : 'chevron-forward'}
+                          name={isExpanded ? "chevron-down" : "chevron-forward"}
                           size={12}
                           color="#888780"
                         />
@@ -469,7 +659,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                         <View style={styles.groupCountBadge}>
                           <Text style={styles.groupCountText}>
                             {section.orders.length} commande
-                            {section.orders.length > 1 ? 's' : ''}
+                            {section.orders.length > 1 ? "s" : ""}
                           </Text>
                         </View>
                       </View>
@@ -481,7 +671,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                           <MerchantOrderCard
                             key={item.id}
                             order={item}
-                            onUpdateStatus={(status) => onUpdateStatus(item.id, status)}
+                            onUpdateStatus={(status) =>
+                              onUpdateStatus(item.id, status)
+                            }
                           />
                         ))}
                       </View>
@@ -503,45 +695,47 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   // Barre fixe (stats + chips) calée sous le header de page, en blur.
   fixedBar: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     zIndex: 50,
-    overflow: 'hidden',
-    backgroundColor: 'white',
+    backgroundColor: "white",
+    // Trait de séparation bas : délimite la barre fixe de la liste.
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
   },
   statsRow: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
+    flexDirection: "row",
+    backgroundColor: "white",
     paddingHorizontal: 15,
     paddingVertical: 15,
     gap: 15,
   },
   statBox: {
     flex: 1,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
     // Même fond que la pilule du header (orange translucide) : marie bien avec le blur.
-    backgroundColor: Theme.colors.primary + '10',
+    backgroundColor: Theme.colors.primary + "10",
     padding: 10,
     borderRadius: 10,
   },
   statVal: {
     fontSize: 31,
-    fontWeight: '900',
-    color: 'black',
+    fontWeight: "900",
+    color: "black",
   },
   statLbl: {
     fontSize: 11,
-    color: 'rgba(0,0,0,0.44)',
-    fontWeight: 'bold',
+    color: "rgba(0,0,0,0.44)",
+    fontWeight: "bold",
     marginTop: 2,
   },
   statusScrollContainer: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     paddingVertical: 10,
   },
   statusScrollContent: {
@@ -549,32 +743,32 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statusTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
     // Même fond que la pilule du header (orange translucide) : marie bien avec le blur.
-    backgroundColor: Theme.colors.primary + '10',
+    backgroundColor: Theme.colors.primary + "10",
     height: 32,
   },
   statusTabActive: {
-    backgroundColor: 'rgba(236,73,19,1.00)',
+    backgroundColor: "rgba(236,73,19,1.00)",
   },
   statusTabLabel: {
     fontSize: 10,
-    color: 'black',
-    fontWeight: 'bold',
+    color: "black",
+    fontWeight: "bold",
     marginLeft: 4,
   },
   statusTabLabelActive: {
-    color: 'white',
+    color: "white",
   },
   listContent: {
     paddingBottom: 100,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 60,
     gap: 12,
   },
@@ -584,66 +778,66 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#888780',
-    textTransform: 'uppercase',
+    fontWeight: "600",
+    color: "#888780",
+    textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 10,
     paddingHorizontal: 16,
   },
   groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: "#f0f0f0",
     marginBottom: 4,
   },
   groupHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   groupTitle: {
     fontSize: 12,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: "700",
+    color: "#333",
   },
   groupCountBadge: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderWidth: 0.5,
-    borderColor: '#D3D1C7',
+    borderColor: "#D3D1C7",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 12,
   },
   groupCountText: {
     fontSize: 10,
-    color: '#5F5E5A',
-    fontWeight: '500',
+    color: "#5F5E5A",
+    fontWeight: "500",
   },
   btnLaunchGroup: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: 'rgba(236,73,19,0.1)',
+    backgroundColor: "rgba(236,73,19,0.1)",
     borderWidth: 1,
-    borderColor: 'rgba(236,73,19,1.00)',
+    borderColor: "rgba(236,73,19,1.00)",
   },
   btnLaunchGroupText: {
     fontSize: 9,
-    fontWeight: '900',
-    color: 'rgba(236,73,19,1.00)',
-    textTransform: 'uppercase',
+    fontWeight: "900",
+    color: "rgba(236,73,19,1.00)",
+    textTransform: "uppercase",
   },
   btnLaunchGroupLaunched: {
-    backgroundColor: '#C0DD97',
-    borderColor: '#C0DD97',
+    backgroundColor: "#C0DD97",
+    borderColor: "#C0DD97",
   },
   btnLaunchGroupTextLaunched: {
-    color: '#27500A',
+    color: "#27500A",
   },
 });

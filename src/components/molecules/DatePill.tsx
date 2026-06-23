@@ -1,6 +1,6 @@
+import { Theme } from "@/src/theme";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Theme } from "@/src/theme";
 
 export interface DatePillOption {
   iso: string;
@@ -50,7 +50,10 @@ export const DatePill: React.FC<DatePillProps> = ({
             onPress={() => onSelect(selected === iso ? null : iso)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
+            <Text
+              style={[styles.chipText, active && styles.chipTextActive]}
+              numberOfLines={1}
+            >
               {label}
             </Text>
           </TouchableOpacity>
@@ -90,7 +93,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 5,
     borderRadius: 20,
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: "rgba(255,255,255,0.55)",
   },
   chip: {
     paddingHorizontal: 8,

@@ -41,6 +41,8 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   topOffset = 0,
 }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
+  // Hauteur mesurée de la barre fixe (solde + retrait) pour décaler la liste.
+  const [barHeight, setBarHeight] = useState(0);
 
   // Stats portefeuille : source de vérité globale (patchée par les events socket).
   const { stats, loading, refresh: refreshStats } = useMerchantWallet();
@@ -155,10 +157,10 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     );
   };
 
+  const listTopPad = topOffset + barHeight;
+
   return (
     <View style={styles.container}>
-      {/* Solde + retrait gérés par le header de la page boutique (TabHeader). */}
-
       {/* Filtres segment */}
       {SHOW_FILTERS && (
         <View style={styles.balanceCard}>
@@ -208,9 +210,9 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         keyExtractor={(item) => item.period}
         refreshing={loading}
         onRefresh={refreshAll}
-        progressViewOffset={topOffset}
-        scrollIndicatorInsets={{ top: topOffset }}
-        contentContainerStyle={[styles.listContent, { paddingTop: topOffset + Theme.spacing.sm }]}
+        progressViewOffset={listTopPad}
+        scrollIndicatorInsets={{ top: listTopPad }}
+        contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + Theme.spacing.sm }]}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons
@@ -233,6 +235,35 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
           </View>
         }
       />
+
+      {/* Barre fixe (Solde + Retrait) calée sous le header de page. */}
+      <View
+        style={[styles.fixedBar, { top: topOffset }]}
+        onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+      >
+        <View style={styles.balanceRow}>
+          <View style={styles.balanceItem}>
+            <Text style={styles.balanceLbl}>Solde</Text>
+            <Text style={styles.balanceVal}>
+              {balance.toLocaleString("fr-FR")} F
+            </Text>
+          </View>
+          <View style={styles.divider} />
+          <TouchableOpacity
+            style={styles.balanceItem}
+            activeOpacity={0.7}
+            onPress={() => setWithdrawState("amount_input")}
+          >
+            <Text style={styles.balanceLbl}>Retrait</Text>
+            <View style={styles.withdrawRow}>
+              <Text style={[styles.balanceVal, { color: Theme.colors.primary }]}>
+                Retirer
+              </Text>
+              <Ionicons name="arrow-up-circle" size={20} color={Theme.colors.primary} />
+            </View>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Overlay de RETRAIT (copie adaptée du paiement panier) */}
       {withdrawState !== "idle" && (
@@ -260,6 +291,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Theme.colors.white,
+  },
+  // Barre fixe Solde + Retrait, calée sous le header de page.
+  fixedBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    backgroundColor: Theme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.gray[100],
+  },
+  balanceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Theme.spacing.lg,
+    gap: Theme.spacing.lg,
+  },
+  balanceItem: {
+    flex: 1,
+  },
+  withdrawRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  divider: {
+    width: 1,
+    height: 40,
+    backgroundColor: Theme.colors.gray[200],
+  },
+  balanceLbl: {
+    fontSize: 12,
+    color: Theme.colors.gray[500],
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  balanceVal: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: Theme.colors.dark,
   },
   balanceCard: {
     backgroundColor: Theme.colors.white,

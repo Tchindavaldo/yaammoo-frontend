@@ -1,7 +1,7 @@
+import { Theme } from "@/src/theme";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Theme } from "@/src/theme";
 
 interface HeaderPillProps {
   /** Texte affiché dans la pilule (ex. "Tout marquer lu", "Retirer", "Ajouter"). */
@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: "rgba(255,255,255,0.55)",
   },
   pillFilled: {
     backgroundColor: Theme.colors.primary,

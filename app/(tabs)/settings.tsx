@@ -22,6 +22,8 @@ import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'expo-router';
 import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
+import { MenuManageModal } from '@/src/features/merchant/components/MenuManageModal';
+import { WalletManageModal } from '@/src/features/merchant/components/WalletManageModal';
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { getDeviceId } from '@/src/features/notifications/services/deviceId';
@@ -35,6 +37,8 @@ export default function SettingsScreen() {
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [editBoutiqueVisible, setEditBoutiqueVisible] = useState(false);
+  const [menuManageVisible, setMenuManageVisible] = useState(false);
+  const [walletManageVisible, setWalletManageVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -202,6 +206,16 @@ export default function SettingsScreen() {
                 title="Gérer ma boutique"
                 onPress={() => setEditBoutiqueVisible(true)}
               />
+              <SettingItem
+                icon="restaurant-outline"
+                title="Gestion menu"
+                onPress={() => setMenuManageVisible(true)}
+              />
+              <SettingItem
+                icon="wallet-outline"
+                title="Portefeuille"
+                onPress={() => setWalletManageVisible(true)}
+              />
             </View>
           </>
         )}
@@ -322,6 +336,16 @@ export default function SettingsScreen() {
         onSuccess={() => {
           // Refresh if needed
         }}
+      />
+
+      {/* Gestion menu / Portefeuille (modals plein écran) */}
+      <MenuManageModal
+        visible={menuManageVisible}
+        onClose={() => setMenuManageVisible(false)}
+      />
+      <WalletManageModal
+        visible={walletManageVisible}
+        onClose={() => setWalletManageVisible(false)}
       />
 
       {/* Modal Suppression de compte */}

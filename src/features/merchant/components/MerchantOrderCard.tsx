@@ -15,6 +15,9 @@ import { BlurView } from "expo-blur";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import { BikeAnimation } from "./BikeAnimation";
 
+/** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
+export const MERCHANT_CARD_HEIGHT = 94.33;
+
 // Enable LayoutAnimation on Android
 if (
   Platform.OS === "android" &&

@@ -1,7 +1,9 @@
 import { Theme } from "@/src/theme";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface TabHeaderProps {
@@ -11,6 +13,8 @@ interface TabHeaderProps {
   subtitle?: string;
   /** Zone de droite : contenu spécifique à la page (liste de dates, bouton "Tout marquer lu", etc.). */
   right?: React.ReactNode;
+  /** Si fourni, affiche un chevron retour à gauche du titre (écrans en modal/pile). */
+  onBack?: () => void;
   /** Reçoit la hauteur mesurée du header pour décaler le contenu en dessous. */
   onHeightChange?: (height: number) => void;
 }
@@ -24,6 +28,7 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
   title,
   subtitle,
   right,
+  onBack,
   onHeightChange,
 }) => {
   const insets = useSafeAreaInsets();
@@ -34,6 +39,19 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
       onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
     >
       <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} />
+      {/* Dégradé doux orange par-dessus le blur (le texte reste foncé/lisible). */}
+      <LinearGradient
+        colors={[Theme.colors.primary + "0A", Theme.colors.primary + "33"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {!!onBack && (
+        <TouchableOpacity style={styles.backBtn} onPress={onBack} hitSlop={8}>
+          <Ionicons name="chevron-back" size={24} color={Theme.colors.dark} />
+        </TouchableOpacity>
+      )}
       <View style={styles.left}>
         <Text style={styles.title}>{title}</Text>
         {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
@@ -58,6 +76,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.4,
     borderBottomColor: Theme.colors.primary,
     overflow: "hidden",
+  },
+  backBtn: {
+    marginRight: 8,
+    justifyContent: "center",
   },
   left: {
     flexShrink: 0,

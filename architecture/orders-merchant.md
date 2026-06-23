@@ -26,8 +26,10 @@ yaammoo/src/features/merchant/
     ├── MenuManagePanel.tsx             # Panel gestion des menus
     ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
     ├── AddMenuSheetMultiStep.tsx       # Sheet ajout menu multi-étapes
-    ├── EditBoutiquePanel.tsx           # Panel édition infos boutique + heures livraison
-    ├── PorteFeuillePanel.tsx           # Panel portefeuille (solde, historique jours, déclencheur retrait)
+    ├── EditBoutiquePanel.tsx           # Overlay plein écran édition boutique (Settings → "Gérer ma boutique")
+    ├── MenuManageModal.tsx             # Overlay plein écran gestion menus (Settings → "Gestion menu")
+    ├── WalletManageModal.tsx           # Overlay plein écran portefeuille (Settings → "Portefeuille")
+    ├── PorteFeuillePanel.tsx           # Panel portefeuille (barre fixe Solde+Retrait, historique jours)
     ├── WithdrawOverlay.tsx             # Overlay retrait (saisie montant → réseau → numéro → verdict)
     ├── WalletDayStatItem.tsx           # Ligne d'une journée dans l'historique portefeuille
     ├── NoBoutiquePanel.tsx             # Écran si pas encore de boutique créée
@@ -76,6 +78,15 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 
 **Layout "En Attente" / "En cours"** :
 - `FlatList` simple avec `MerchantOrderCard` pour chaque commande
+
+**Barre fixe + scroll-under + snap** :
+- La barre stats+chips est en `position: absolute` (`top: topOffset`, mesurée via
+  `onLayout` → `barHeight`) ; la liste scrolle dessous (`paddingTop = topOffset + barHeight + 15`).
+- **Snap après-coup** : à `onMomentumScrollEnd`, si une carte est coupée au bord bas
+  de la barre fixe, on `scrollTo` la carte la plus proche (haut ou bas). Repose sur
+  une hauteur de carte fixe `MERCHANT_CARD_HEIGHT` (≈94.33, exportée par MerchantOrderCard)
+  + gap de 6. `paddingBottom = insets.bottom + tab bar + 24` pour que le dernier item
+  reste visible (au-dessus de la navbar).
 
 ---
 

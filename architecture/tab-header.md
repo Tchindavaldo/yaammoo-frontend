@@ -43,6 +43,10 @@ blanc + texte orange.
 | `onSelect` | `(iso: string \| null) => void` |
 | `collapsedCount` | number? |
 
+Le `TabHeader` accepte aussi `onBack?: () => void` : affiche un chevron retour à
+gauche du titre (utilisé par les écrans plein écran en overlay — voir EditBoutique,
+MenuManageModal, WalletManageModal).
+
 ### `SectionSwitcher.tsx`
 FAB flottant (bas-droite) qui, au clic, déploie verticalement vers le haut les
 icônes des **autres** sections (animation `Animated.spring`). Taper une icône
@@ -62,11 +66,16 @@ bouton capture tous les taps autour du FAB pour qu'un clic ne traverse PAS vers 
 zone s'étend en capsule vers le haut pour couvrir la colonne d'icônes déployées.
 `hitSlop` sur chaque icône pour des cibles plus tolérantes.
 
+> Utilisé **uniquement par cart.tsx** (client). La page boutique (marchand) n'a
+> plus de switcher : elle n'affiche que les commandes.
+
 ## Intégration par page
 
 - **notifications.tsx** : `TabHeader` + `HeaderPill` (« Tout marquer lu »).
-- **boutique.tsx** : `TabHeader` (titre = section active) + `DatePill`/`HeaderPill`
-  selon la section + `SectionSwitcher` (Boutique / Portefeuille / Mes plats).
+- **boutique.tsx** : `TabHeader` (titre « Boutique ») + `DatePill`. Affiche
+  **uniquement les commandes** (OrderManagePanel). Les statuts se changent via les
+  chips du panel ; menu & portefeuille sont déplacés dans Settings → Boutique
+  (modals plein écran). Plus de `SectionSwitcher`.
 - **cart.tsx** : `TabHeader` (Panier / Commandes / Portefeuille) + `SectionSwitcher`.
 
 > L'état date des panels marchands/clients est **remonté** au `TabHeader` (voir

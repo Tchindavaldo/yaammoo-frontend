@@ -17,8 +17,9 @@ import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
+import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 
 // Le splash natif reste affiché tant qu'on ne l'a pas explicitement caché.
 SplashScreen.preventAutoHideAsync();
@@ -49,6 +50,23 @@ function AppContent() {
   // que la home soit prête avant de se cacher.
   const canEnterApp = authResolved && isSignedIn && homeReady;
 
+  // Animation de bascule de groupe (auth ↔ tabs) :
+  // - Au BOOT, on est monté directement dans le groupe cible pendant que le
+  //   splash natif couvre l'écran. Aucune transition visible n'est souhaitée :
+  //   un fondu ferait apparaître la cible par-dessus l'écran masqué → flash.
+  // - APRÈS le boot (le splash s'est caché une fois), tout changement de groupe
+  //   est une vraie transition utilisateur (login → home, logout → auth) : fade.
+  // On suit le groupe affiché ; le fade ne s'active QUE pour un changement de
+  // groupe survenant après que le splash a disparu.
+  const [splashGone, setSplashGone] = useState(isSplashHidden);
+  useEffect(() => onSplashHidden(() => setSplashGone(true)), []);
+  const prevGroupRef = useRef<"tabs" | "auth" | null>(null);
+  const currentGroup = canEnterApp ? "tabs" : "auth";
+  const groupChanged =
+    prevGroupRef.current !== null && prevGroupRef.current !== currentGroup;
+  prevGroupRef.current = currentGroup;
+  const screenAnimation = splashGone && groupChanged ? "fade" : "none";
+
   // Setup notifications une seule fois, en arrière-plan, après connexion.
   useEffect(() => {
     if (isSignedIn && !notifSetupDone.current) {
@@ -61,13 +79,12 @@ function AppContent() {
 
   return (
     <ThemeProvider value={DefaultTheme}>
-      {/* animation "fade" : transition par fondu (comme le splash) entre (auth)
-          et (tabs), au lieu du slide horizontal par défaut. */}
-      <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+      <Stack screenOptions={{ headerShown: false }}>
         {/* Tant que l'auth n'est pas résolue, aucun groupe n'est monté : le splash
-            natif couvre l'écran. On ne monte le bon groupe qu'une fois l'état connu. */}
+            natif couvre l'écran. On ne monte le bon groupe qu'une fois l'état connu.
+            screenAnimation = "none" sous le splash (boot), "fade" ensuite. */}
         <Stack.Protected guard={canEnterApp}>
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="(tabs)" options={{ animation: screenAnimation }} />
         </Stack.Protected>
         {/* (auth) reste monté tant que (tabs) n'est PAS prêt (canEnterApp false).
             On NE met PAS authResolved ici : sinon, pendant la re-vérification auth
@@ -76,7 +93,9 @@ function AppContent() {
             le splash natif le couvre jusqu'à ce que la home (ou l'écran auth) appelle
             onLayoutRootView → pas de flash. */}
         <Stack.Protected guard={!canEnterApp}>
-          <Stack.Screen name="(auth)" />
+          {/* Vers (auth) : "none" au boot (sous splash), "fade" sur déconnexion
+              (transition douce vers le login). */}
+          <Stack.Screen name="(auth)" options={{ animation: screenAnimation }} />
         </Stack.Protected>
       </Stack>
     </ThemeProvider>

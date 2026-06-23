@@ -88,8 +88,16 @@ Règles clés (chacune corrige un bug observé) :
 3. **`WelcomeScreen` (`app/(auth)/index.tsx`) ne cache le splash que si
    `!loading && !isSignedIn`.** Évite de flasher l'écran de login au boot à froid
    quand l'utilisateur est déjà connecté (le splash reste jusqu'à la home).
-4. **Transition par fondu** : `Stack` racine en `animation: "fade"` (même rendu
-   que la disparition du splash), au lieu du slide horizontal par défaut.
+4. **Animation conditionnelle au splash** : `screenAnimation = isSplashHidden() ? "fade" : "none"`
+   (les deux écrans `(tabs)` et `(auth)` la partagent).
+   - **Sous le splash** (boot, `isSplashHidden()` faux) : `none`. La 1re bascule de
+     groupe (→ home si déjà connecté, → login sinon) a lieu pendant que le splash
+     natif couvre l'écran. Un fondu ferait apparaître la cible par-dessus l'écran
+     masqué → **flash de l'écran login**. Swap instantané = invisible.
+   - **Splash caché** (transitions utilisateur) : `fade`. Sur login → home et
+     logout → auth, fondu doux (même rendu que la disparition du splash).
+   `isSplashHidden()` est un flag module exposé par `useHideSplash`, passé à `true`
+   à la 1re `SplashScreen.hideAsync()` (déclenchée par l'`onLayout` de la home/login).
 
 `FastFoodContext` expose pour cela `hasLoadedOnce` (passe à `true` dans le
 `finally` du 1er `fetchFastFoods`, reste `true` ensuite même au pull-to-refresh).

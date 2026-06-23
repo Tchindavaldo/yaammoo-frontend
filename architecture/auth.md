@@ -96,8 +96,17 @@ Règles clés (chacune corrige un bug observé) :
      masqué → **flash de l'écran login**. Swap instantané = invisible.
    - **Splash caché** (transitions utilisateur) : `fade`. Sur login → home et
      logout → auth, fondu doux (même rendu que la disparition du splash).
-   `isSplashHidden()` est un flag module exposé par `useHideSplash`, passé à `true`
-   à la 1re `SplashScreen.hideAsync()` (déclenchée par l'`onLayout` de la home/login).
+   Le fade n'est activé que si **deux** conditions sont réunies : `splashGone`
+   (state réactif alimenté par `onSplashHidden` de `useHideSplash`) **et**
+   `groupChanged` (le groupe de navigation a réellement changé entre deux rendus).
+   Cela distingue « boot → home » (à ne pas animer) de « login → home » (à animer),
+   alors que les deux vont pourtant vers `(tabs)`.
+
+   > **Expo Go vs build natif** : en Expo Go, `expo-splash-screen` est géré plus
+   > souplement, donc on peut voir un léger fondu splash → home au boot. En build
+   > dev/preview/prod, le splash natif reste jusqu'au `hideAsync` → la 1re bascule
+   > est une coupure nette (`none`), pas de fondu au boot. **Comportement voulu**
+   > (pas de flash possible) ; ne pas chercher à le « corriger ».
 
 `FastFoodContext` expose pour cela `hasLoadedOnce` (passe à `true` dans le
 `finally` du 1er `fetchFastFoods`, reste `true` ensuite même au pull-to-refresh).
@@ -118,6 +127,24 @@ onAuthStateChanged → userData=null → guard (auth) → retour login (fondu)
 Pas de `router.replace('/(auth)')` : le guard pilote le retour. `SettingItem`
 accepte une prop `loading` (remplace le chevron par un `ActivityIndicator` et
 désactive le press).
+
+**Loader jusqu'au démontage** : on ne ferme PAS le modal et on ne remet PAS
+`isLoggingOut` à false sur succès — le loader tourne jusqu'à ce que le guard
+démonte `settings` (comme une transition de login). Le modal de déconnexion est
+en `animationType="none"` : sinon Android joue son fondu de fermeture et révèle
+« settings nu » avant la transition de navigation vers `(auth)`.
+
+## Suppression de compte
+
+`confirmDelete()` (`settings.tsx`) appelle `AuthContext.deleteAccount()` qui fait
+`signOut` + `setUser(null)` + `setUserData(null)` → **le guard bascule
+automatiquement vers `(auth)`**. Mêmes règles que la déconnexion :
+
+- Pas de `router.replace` ni d'`Alert` de succès : redirection pilotée par le guard.
+- Loader plein jusqu'au démontage ; modal en `animationType="none"`.
+- **Aucun `Alert` natif** : la validation du texte `SUPPRIMER` se fait via le
+  bouton `disabled` ; les erreurs s'affichent **inline** dans le modal (state
+  `deleteError`, effacé à la saisie / ouverture / annulation).
 
 ---
 
@@ -140,7 +167,16 @@ désactive le press).
   `Stack.Protected` (suppression des `router.replace` manuels dans
   `AuthSheetContent`, `phone.tsx`, `register.tsx`, `settings.tsx`).
 - `app/_layout.tsx` : `canEnterApp = authResolved && isSignedIn && homeReady` ;
-  `guard(auth) = !canEnterApp` (sans `authResolved`) ; `animation: "fade"`.
+  `guard(auth) = !canEnterApp` (sans `authResolved`).
+
+## Fixes appliqués (2026-06-23)
+
+- **Flash de l'écran login pendant le fondu splash → home supprimé** : l'animation
+  de bascule de groupe est conditionnelle (`splashGone && groupChanged ? "fade" : "none"`).
+  Au boot (sous splash) → `none` ; transitions user (login → home, logout → auth) → `fade`.
+  `useHideSplash` expose `isSplashHidden()` + `onSplashHidden()` (flag réactif).
+- **Déconnexion & suppression de compte** : loader plein jusqu'au démontage,
+  modals en `animationType="none"`, plus d'`Alert` natif (erreurs inline).
 - `FastFoodContext` : nouveau flag `hasLoadedOnce`.
 - `app/(auth)/index.tsx` : splash caché seulement si `!loading && !isSignedIn`.
 - `settings.tsx` : modal custom de déconnexion + loader sur le bouton.

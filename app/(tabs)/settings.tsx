@@ -20,7 +20,6 @@ import { Theme } from '@/src/theme';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
-import { useRouter } from 'expo-router';
 import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
 import { MenuManageModal } from '@/src/features/merchant/components/MenuManageModal';
 import { WalletManageModal } from '@/src/features/merchant/components/WalletManageModal';
@@ -44,9 +43,9 @@ export default function SettingsScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const REQUIRED_CONFIRM = 'SUPPRIMER';
   const insets = useSafeAreaInsets();
-  const router = useRouter();
 
   // Ouvre le modal custom de confirmation de déconnexion.
   const handleLogout = () => setLogoutVisible(true);
@@ -82,8 +81,10 @@ export default function SettingsScreen() {
 
     // Le retour vers (auth) est piloté par le guard Stack.Protected dans
     // app/_layout.tsx. signOut → onAuthStateChanged → userData=null → le groupe
-    // (auth) se monte automatiquement (l'écran settings se démonte alors, pas
-    // besoin de remettre isLoggingOut à false sur succès).
+    // (auth) se monte automatiquement et l'écran settings se DÉMONTE.
+    // On ne ferme PAS le modal et on ne remet PAS isLoggingOut à false : le
+    // loader tourne jusqu'au démontage (comme au login). Fermer le modal ici
+    // ferait voir "settings nu" une frame avant la redirection.
     await signOut(auth);
     setUserData(null);
   };
@@ -98,6 +99,7 @@ export default function SettingsScreen() {
 
   const handleDeleteAccount = () => {
     setDeleteConfirmText('');
+    setDeleteError(null);
     setDeleteVisible(true);
   };
 
@@ -105,32 +107,25 @@ export default function SettingsScreen() {
     if (isDeleting) return;
     setDeleteVisible(false);
     setDeleteConfirmText('');
+    setDeleteError(null);
   };
 
   const confirmDelete = async () => {
-    if (deleteConfirmText.trim().toUpperCase() !== REQUIRED_CONFIRM) {
-      Alert.alert(
-        'Confirmation requise',
-        `Tapez exactement "${REQUIRED_CONFIRM}" pour confirmer.`,
-      );
-      return;
-    }
-
+    // Le bouton "Supprimer" est déjà disabled tant que le texte ≠ REQUIRED_CONFIRM,
+    // donc pas de re-validation ici (et plus d'Alert native).
     setIsDeleting(true);
+    setDeleteError(null);
     try {
+      // deleteAccount() fait signOut + setUserData(null) → le guard Stack.Protected
+      // (app/_layout.tsx) bascule automatiquement vers (auth) et DÉMONTE settings.
+      // On ne ferme PAS le modal et on ne coupe PAS le loader sur succès : il
+      // tourne jusqu'au démontage (comme le logout). Pas d'Alert bloquante avant
+      // la redirection. Sur succès, les lignes après sont injoignables (démontage).
       await deleteAccount();
-      setDeleteVisible(false);
-      setDeleteConfirmText('');
-      setIsDeleting(false);
-      Alert.alert(
-        'Compte supprimé',
-        'Votre compte et toutes vos données ont été supprimés définitivement.',
-        [{ text: 'OK', onPress: () => router.replace('/(auth)') }],
-      );
     } catch (error: any) {
       setIsDeleting(false);
-      Alert.alert(
-        'Erreur',
+      // Erreur affichée INLINE dans le modal (pas d'Alert native).
+      setDeleteError(
         error?.response?.data?.error ||
           error?.response?.data?.message ||
           error?.message ||
@@ -352,7 +347,11 @@ export default function SettingsScreen() {
       <Modal
         visible={deleteVisible}
         transparent
-        animationType="fade"
+        // "none" : même raison que le modal de déconnexion. Sur succès, le modal
+        // est arraché par le démontage de settings (redirection auto vers (auth)) ;
+        // un fondu de fermeture révélerait "settings nu". Le loader reste plein
+        // jusqu'au démontage, puis le fondu de navigation enchaîne.
+        animationType="none"
         onRequestClose={cancelDelete}
         statusBarTranslucent
       >
@@ -377,13 +376,20 @@ export default function SettingsScreen() {
             <TextInput
               style={styles.deleteInput}
               value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
+              onChangeText={(t) => {
+                setDeleteConfirmText(t);
+                if (deleteError) setDeleteError(null);
+              }}
               placeholder={REQUIRED_CONFIRM}
               placeholderTextColor={Theme.colors.gray[300]}
               autoCapitalize="characters"
               autoCorrect={false}
               editable={!isDeleting}
             />
+
+            {deleteError ? (
+              <Text style={styles.deleteErrorText}>{deleteError}</Text>
+            ) : null}
 
             <View style={styles.deleteActions}>
               <TouchableOpacity
@@ -422,7 +428,13 @@ export default function SettingsScreen() {
       <Modal
         visible={logoutVisible}
         transparent
-        animationType="fade"
+        // "none" : pas d'animation de fermeture propre au Modal. Au logout, on ne
+        // ferme jamais ce modal (le démontage de settings l'arrache) ; avec "fade",
+        // Android joue quand même un fondu de fermeture qui révèle "settings nu"
+        // avant la transition de navigation vers (auth). Avec "none", le modal
+        // reste plein (loader visible) jusqu'au démontage, puis le fondu de
+        // navigation enchaîne directement → pas d'étape intermédiaire.
+        animationType="none"
         onRequestClose={cancelLogout}
         statusBarTranslucent
       >
@@ -669,6 +681,14 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.gray[100],
     textAlign: 'center',
     letterSpacing: 2,
+  },
+  deleteErrorText: {
+    color: Theme.colors.danger,
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: -8,
+    marginBottom: 16,
   },
   deleteActions: {
     flexDirection: 'row',

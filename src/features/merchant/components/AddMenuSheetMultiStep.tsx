@@ -2,11 +2,13 @@ import { Config } from "@/src/api/config";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
+import { BlurView } from "expo-blur";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Image,
   Keyboard,
   KeyboardAvoidingView,
@@ -20,6 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { MenuRecap } from "./recap-designs/MenuRecap";
 
 type Step = "nameImage" | "details" | "recap";
 
@@ -35,6 +38,20 @@ interface AddMenuSheetProps {
 }
 
 const STEPS: Step[] = ["nameImage", "details", "recap"];
+
+// Hauteur fixe du modal d'édition (px) — identique sur tous les écrans.
+// = 68% d'un écran de référence de 844px de haut.
+const MODAL_HEIGHT = 574;
+
+// Hauteur auto de l'input description : min (1 ligne) → max (puis scroll interne).
+const DESC_MIN = 44;
+const DESC_MAX = 120;
+// Décalage vertical du KeyboardAvoidingView (compense le footer + l'espace au-dessus
+// de la sheet). Augmenter = le contenu remonte plus ; diminuer = il colle au clavier.
+const KEYBOARD_OFFSET = 90;
+
+// Pressable animable (pour le fondu du backdrop flouté).
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /** Extra ou boisson : nom, prix, quantité, disponibilité. */
 type Item = { name: string; prix: string; quantite: string; status: boolean };
@@ -99,6 +116,16 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const [uploadProgress, setUploadProgress] = useState([0, 0, 0]);
   const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Hauteur auto de l'input description (par prix) : suit le contenu, plafonnée.
+  // Au-delà du plafond, le scroll interne du TextInput prend le relais.
+  const [descHeights, setDescHeights] = useState<[number, number, number]>([
+    0, 0, 0,
+  ]);
+  // Hauteur mesurée de l'input prix → sert de hauteur min à la description
+  // (les deux champs sont alignés sur la même ligne).
+  const [priceColH, setPriceColH] = useState(0);
+  // Ref du ScrollView : pour remonter l'input description au-dessus du clavier au focus.
+  const scrollRef = React.useRef<ScrollView>(null);
   // Champ actuellement focus (bordure orange) et champs en erreur (bordure rouge).
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errorFields, setErrorFields] = useState<string[]>([]);
@@ -169,6 +196,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     setDesc1("");
     setDesc2("");
     setDesc3("");
+    setDescHeights([0, 0, 0]);
     setExtras([]);
     setDrinks([]);
     setAvailability("available");
@@ -176,9 +204,43 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     setUploadProgress([0, 0, 0]);
   };
 
+  // --- Animations du modal (blur en fondu, sheet en translation) ---
+  // anim : 0 = fermé, 1 = ouvert. Pilote l'opacité du blur et le translateY de la sheet.
+  const anim = React.useRef(new Animated.Value(0)).current;
+  // rendered : garde le Modal monté le temps de jouer l'animation de sortie.
+  const [rendered, setRendered] = useState(false);
+
+  React.useEffect(() => {
+    if (embedded) return;
+    if (visible) {
+      setRendered(true);
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }).start();
+    } else if (rendered) {
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }).start(() => setRendered(false));
+    }
+    // anim est stable (ref) ; rendered ne doit pas relancer l'effet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, embedded]);
+
   const handleClose = () => {
-    reset();
-    onClose();
+    // Joue la sortie (blur fade + sheet slide down) puis remonte au parent.
+    Animated.timing(anim, {
+      toValue: 0,
+      duration: 220,
+      useNativeDriver: true,
+    }).start(() => {
+      setRendered(false);
+      reset();
+      onClose();
+    });
   };
 
   const pickImage = async (index: number) => {
@@ -284,7 +346,10 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     // Page details : extras/boissons libres, stock obligatoire (numérique).
     if (step === "details") {
       if (stock.trim() === "" || isNaN(Number(stock)))
-        return { message: "Le stock du menu doit être un nombre", fields: ["stock"] };
+        return {
+          message: "Le stock du menu doit être un nombre",
+          fields: ["stock"],
+        };
     }
     return null;
   };
@@ -337,7 +402,12 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
     const parsedDrinks = parseItems(drinks);
     if (parsedDrinks.length === 0)
-      parsedDrinks.push({ name: "Aucune", status: false, prix: 0, quantite: 0 });
+      parsedDrinks.push({
+        name: "Aucune",
+        status: false,
+        prix: 0,
+        quantite: 0,
+      });
 
     const menuData = {
       name: nom,
@@ -405,10 +475,17 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
       </View>
 
-      <ScrollView
+      <KeyboardAvoidingView
         style={styles.content}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={KEYBOARD_OFFSET}
+      >
+      <ScrollView
+        ref={scrollRef}
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
         {/* Étape 1 : nom + prix + description.
             Pressable : un tap dans le vide ferme le clavier (sortie de la description). */}
@@ -490,12 +567,27 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                     e.filter((f) => f !== `prix${selectedPriceIdx}`),
                   );
                 }}
+                onLayout={(e) => {
+                  const h = e.nativeEvent.layout.height;
+                  if (h && h !== priceColH) setPriceColH(h);
+                }}
                 {...focusProps(`prix${selectedPriceIdx}`)}
               />
               <TextInput
                 style={[
                   styles.input,
                   styles.descCol,
+                  // Hauteur auto : min = hauteur de l'input prix (même ligne),
+                  // grandit avec le contenu jusqu'à DESC_MAX, puis scroll interne.
+                  {
+                    height: Math.min(
+                      DESC_MAX,
+                      Math.max(
+                        priceColH || DESC_MIN,
+                        descHeights[selectedPriceIdx],
+                      ),
+                    ),
+                  },
                   ...fieldStyle(`desc${selectedPriceIdx}`),
                 ]}
                 placeholder={`Description du prix ${selectedPriceIdx + 1}`}
@@ -516,10 +608,17 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                     e.filter((f) => f !== `desc${selectedPriceIdx}`),
                   );
                 }}
-                multiline={focusedField === `desc${selectedPriceIdx}`}
-                numberOfLines={
-                  focusedField === `desc${selectedPriceIdx}` ? 3 : 1
-                }
+                onContentSizeChange={(e) => {
+                  const h = e.nativeEvent.contentSize.height;
+                  setDescHeights((prev) => {
+                    if (prev[selectedPriceIdx] === h) return prev;
+                    const next = [...prev] as [number, number, number];
+                    next[selectedPriceIdx] = h;
+                    return next;
+                  });
+                }}
+                multiline
+                scrollEnabled
                 {...focusProps(`desc${selectedPriceIdx}`)}
               />
             </View>
@@ -573,28 +672,30 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
             {/* Deux sections empilées (Extras puis Boissons), même design que les prix :
                 ligne label + chips scrollables horizontalement, puis ligne d'édition
                 (input nom, input prix, boutons Supprimer / Valider). */}
-            {([
-              {
-                key: "extras",
-                label: "Extras",
-                list: extras,
-                setList: setExtras,
-                draft: extraDraft,
-                setDraft: setExtraDraft,
-                editIdx: extraEditIdx,
-                setEditIdx: setExtraEditIdx,
-              },
-              {
-                key: "drinks",
-                label: "Boissons",
-                list: drinks,
-                setList: setDrinks,
-                draft: drinkDraft,
-                setDraft: setDrinkDraft,
-                editIdx: drinkEditIdx,
-                setEditIdx: setDrinkEditIdx,
-              },
-            ] as const).map((sec) => {
+            {(
+              [
+                {
+                  key: "extras",
+                  label: "Extras",
+                  list: extras,
+                  setList: setExtras,
+                  draft: extraDraft,
+                  setDraft: setExtraDraft,
+                  editIdx: extraEditIdx,
+                  setEditIdx: setExtraEditIdx,
+                },
+                {
+                  key: "drinks",
+                  label: "Boissons",
+                  list: drinks,
+                  setList: setDrinks,
+                  draft: drinkDraft,
+                  setDraft: setDrinkDraft,
+                  editIdx: drinkEditIdx,
+                  setEditIdx: setDrinkEditIdx,
+                },
+              ] as const
+            ).map((sec) => {
               const items = sec.list.filter((i) => i.name.trim());
               // Annule l'édition / vide le draft.
               const resetDraft = () => {
@@ -622,10 +723,17 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
               return (
                 <View
                   key={sec.key}
-                  style={{ marginTop: sec.key === "drinks" ? Theme.spacing.lg : 0 }}
+                  style={{
+                    marginTop: sec.key === "drinks" ? Theme.spacing.lg : 0,
+                  }}
                 >
                   {/* Ligne label + chips scrollables (pas de retour à la ligne) */}
-                  <View style={[styles.priceHeaderRow, { marginBottom: Theme.spacing.sm }]}>
+                  <View
+                    style={[
+                      styles.priceHeaderRow,
+                      { marginBottom: Theme.spacing.sm },
+                    ]}
+                  >
                     <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
                       {sec.label}
                     </Text>
@@ -644,18 +752,24 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                           const realIdx = sec.list.indexOf(it);
                           return (
                             <React.Fragment key={realIdx}>
-                              {i > 0 && <Text style={styles.chipSeparator}>·</Text>}
+                              {i > 0 && (
+                                <Text style={styles.chipSeparator}>·</Text>
+                              )}
                               <TouchableOpacity
                                 style={styles.itemChip}
                                 onPress={() => {
-                                  sec.setDraft({ name: it.name, prix: it.prix });
+                                  sec.setDraft({
+                                    name: it.name,
+                                    prix: it.prix,
+                                  });
                                   sec.setEditIdx(realIdx);
                                 }}
                               >
                                 <Text
                                   style={[
                                     styles.itemChipText,
-                                    sec.editIdx === realIdx && styles.itemChipTextActive,
+                                    sec.editIdx === realIdx &&
+                                      styles.itemChipTextActive,
                                   ]}
                                   numberOfLines={1}
                                 >
@@ -672,29 +786,51 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                   {/* Ligne d'édition : nom, prix, supprimer, valider */}
                   <View style={styles.priceDescRow}>
                     <TextInput
-                      style={[styles.input, styles.itemInputCompact, styles.descCol]}
-                      placeholder={sec.key === "extras" ? "Nom de l'extra" : "Nom de la boisson"}
+                      style={[
+                        styles.input,
+                        styles.itemInputCompact,
+                        styles.descCol,
+                      ]}
+                      placeholder={
+                        sec.key === "extras"
+                          ? "Nom de l'extra"
+                          : "Nom de la boisson"
+                      }
                       value={sec.draft.name}
-                      onChangeText={(t) => sec.setDraft({ ...sec.draft, name: t })}
+                      onChangeText={(t) =>
+                        sec.setDraft({ ...sec.draft, name: t })
+                      }
                     />
                     <TextInput
-                      style={[styles.input, styles.itemInputCompact, styles.priceCol]}
+                      style={[
+                        styles.input,
+                        styles.itemInputCompact,
+                        styles.priceCol,
+                      ]}
                       placeholder="Prix"
                       keyboardType="numeric"
                       value={sec.draft.prix}
-                      onChangeText={(t) => sec.setDraft({ ...sec.draft, prix: t })}
+                      onChangeText={(t) =>
+                        sec.setDraft({ ...sec.draft, prix: t })
+                      }
                     />
                     {/* Supprimer : retire l'item en édition (sinon vide juste le draft) */}
                     <TouchableOpacity
                       style={styles.itemActionBtn}
                       onPress={() => {
                         if (sec.editIdx !== null) {
-                          sec.setList(sec.list.filter((_, i) => i !== sec.editIdx));
+                          sec.setList(
+                            sec.list.filter((_, i) => i !== sec.editIdx),
+                          );
                         }
                         resetDraft();
                       }}
                     >
-                      <Ionicons name="trash-outline" size={18} color={Theme.colors.danger} />
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color={Theme.colors.danger}
+                      />
                     </TouchableOpacity>
                     {/* Valider : ajoute / met à jour */}
                     <TouchableOpacity
@@ -713,17 +849,30 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
               Disponibilité
             </Text>
             <View style={styles.availRow}>
-              {([
-                { key: "available", label: "Disponible", color: Theme.colors.success },
-                { key: "unavailable", label: "Indisponible", color: Theme.colors.danger },
-              ] as const).map((s) => {
+              {(
+                [
+                  {
+                    key: "available",
+                    label: "Disponible",
+                    color: Theme.colors.success,
+                  },
+                  {
+                    key: "unavailable",
+                    label: "Indisponible",
+                    color: Theme.colors.danger,
+                  },
+                ] as const
+              ).map((s) => {
                 const active = availability === s.key;
                 return (
                   <TouchableOpacity
                     key={s.key}
                     style={[
                       styles.availBtn,
-                      active && { backgroundColor: s.color, borderColor: s.color },
+                      active && {
+                        backgroundColor: s.color,
+                        borderColor: s.color,
+                      },
                     ]}
                     onPress={() => setAvailability(s.key)}
                   >
@@ -757,7 +906,10 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                     return (
                       <TouchableOpacity
                         key={n}
-                        style={[styles.tensChip, active && styles.tensChipActive]}
+                        style={[
+                          styles.tensChip,
+                          active && styles.tensChipActive,
+                        ]}
                         onPress={() => {
                           setStock(String(n));
                           setErrorFields((e) => e.filter((f) => f !== "stock"));
@@ -783,7 +935,11 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                       setErrorFields((e) => e.filter((f) => f !== "stock"));
                     }}
                   >
-                    <Ionicons name="remove" size={20} color={Theme.colors.dark} />
+                    <Ionicons
+                      name="remove"
+                      size={20}
+                      color={Theme.colors.dark}
+                    />
                   </TouchableOpacity>
                   <Text style={styles.stockBigValue}>{Number(stock) || 0}</Text>
                   <TouchableOpacity
@@ -801,106 +957,23 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
           </Pressable>
         )}
 
-        {/* Étape récapitulatif */}
+        {/* Étape récapitulatif : 3 designs explorables (Aperçu / Blocs / Édito). */}
         {step === "recap" && (
-          <View>
-            {/* En-tête : nom du menu + pastille de statut */}
-            <View style={styles.recapHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.recapName} numberOfLines={1}>
-                  {nom || "Sans nom"}
-                </Text>
-                <View style={styles.recapStatusRow}>
-                  <View
-                    style={[
-                      styles.recapStatusDot,
-                      {
-                        backgroundColor:
-                          availability === "available"
-                            ? Theme.colors.success
-                            : Theme.colors.danger,
-                      },
-                    ]}
-                  />
-                  <Text style={styles.recapStatusText}>
-                    {availability === "available" ? "Disponible" : "Indisponible"}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.recapStockBadge}>
-                <Text style={styles.recapStockNum}>{Number(stock) || 0}</Text>
-                <Text style={styles.recapStockLabel}>en stock</Text>
-              </View>
-            </View>
-
-            {/* Prix */}
-            <Text style={styles.recapSectionLabel}>Prix</Text>
-            <View style={styles.recapChips}>
-              {[prix1, prix2, prix3]
-                .filter((p) => p && Number(p) > 0)
-                .map((p, i) => (
-                  <View key={i} style={styles.recapChip}>
-                    <Text style={styles.recapChipText}>{p}F</Text>
-                  </View>
-                ))}
-            </View>
-
-            {/* Extras */}
-            <Text style={styles.recapSectionLabel}>
-              Extras
-              {extras.filter((e) => e.name.trim()).length > 0
-                ? ` ×${extras.filter((e) => e.name.trim()).length}`
-                : ""}
-            </Text>
-            <View style={styles.recapChips}>
-              {extras.filter((e) => e.name.trim()).length === 0 ? (
-                <Text style={styles.recapEmpty}>Aucun</Text>
-              ) : (
-                extras
-                  .filter((e) => e.name.trim())
-                  .map((e, i) => (
-                    <View key={i} style={styles.recapChip}>
-                      <Text style={styles.recapChipText}>{e.name}</Text>
-                    </View>
-                  ))
-              )}
-            </View>
-
-            {/* Boissons */}
-            <Text style={styles.recapSectionLabel}>
-              Boissons
-              {drinks.filter((d) => d.name.trim()).length > 0
-                ? ` ×${drinks.filter((d) => d.name.trim()).length}`
-                : ""}
-            </Text>
-            <View style={styles.recapChips}>
-              {drinks.filter((d) => d.name.trim()).length === 0 ? (
-                <Text style={styles.recapEmpty}>Aucune</Text>
-              ) : (
-                drinks
-                  .filter((d) => d.name.trim())
-                  .map((d, i) => (
-                    <View key={i} style={styles.recapChip}>
-                      <Text style={styles.recapChipText}>{d.name}</Text>
-                    </View>
-                  ))
-              )}
-            </View>
-
-            {/* Photos */}
-            <Text style={styles.recapSectionLabel}>Photos</Text>
-            {images.length === 0 ? (
-              <Text style={styles.recapEmpty}>Aucune photo</Text>
-            ) : (
-              <View style={styles.recapPhotos}>
-                {images.map((uri, i) => (
-                  <Image key={i} source={{ uri }} style={styles.recapPhoto} />
-                ))}
-              </View>
-            )}
-          </View>
+          <MenuRecap
+            draft={{
+              nom,
+              prix: [prix1, prix2, prix3],
+              desc: [desc1, desc2, desc3],
+              extras,
+              drinks,
+              availability,
+              stock,
+              images,
+            }}
+          />
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Footer navigation */}
       <View
@@ -952,13 +1025,45 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 
   // Mode modal (modification).
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.overlay}
-      >
-        {inner}
-      </KeyboardAvoidingView>
+    <Modal
+      visible={rendered}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <View style={styles.overlay}>
+        {/* Flou + dégradé orange (comme le header général) — vient en fondu, tap pour fermer */}
+        <AnimatedPressable
+          style={[StyleSheet.absoluteFill, { opacity: anim }]}
+          onPress={handleClose}
+        >
+          <BlurView
+            intensity={40}
+            tint="light"
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.overlayDim} />
+        </AnimatedPressable>
+        {/* La sheet vient en translation (slide up/down) et ne ferme pas au tap */}
+        <Animated.View
+          style={[
+            styles.sheetWrap,
+            {
+              transform: [
+                {
+                  translateY: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [MODAL_HEIGHT, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          {inner}
+        </Animated.View>
+      </View>
     </Modal>
   );
 };
@@ -966,14 +1071,23 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
+  // Voile sombre par-dessus le flou.
+  overlayDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  // Conteneur de la sheet : hauteur fixe en px (identique sur tous les écrans).
+  sheetWrap: {
+    height: MODAL_HEIGHT,
+  },
   sheet: {
+    flex: 1,
     backgroundColor: "white",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "90%",
+    overflow: "hidden",
   },
   // Mode intégré : occupe toute la zone liste, sans radius ni overlay.
   embeddedContainer: {
@@ -990,6 +1104,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     padding: Theme.spacing.lg,
+    paddingTop: Theme.spacing.md,
     paddingBottom: Theme.spacing.sm,
   },
   title: {
@@ -1018,7 +1133,12 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   content: {
+    flex: 1,
+  },
+  contentContainer: {
     padding: Theme.spacing.lg,
+    // Débattement bas pour que le champ focus puisse remonter au-dessus du clavier.
+    paddingBottom: Theme.spacing.lg + 40,
   },
   fieldLabel: {
     fontSize: 14,
@@ -1131,94 +1251,6 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlignVertical: "top",
   },
-  // --- Page récapitulatif ---
-  recapHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Theme.spacing.md,
-    padding: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.lg,
-    backgroundColor: Theme.colors.gray[50],
-    borderWidth: 1,
-    borderColor: Theme.colors.gray[200],
-  },
-  recapName: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: Theme.colors.dark,
-  },
-  recapStatusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-  },
-  recapStatusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  recapStatusText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Theme.colors.gray[600],
-  },
-  recapStockBadge: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: Theme.borderRadius.md,
-    backgroundColor: Theme.colors.primary + "12",
-  },
-  recapStockNum: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: Theme.colors.primary,
-  },
-  recapStockLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: Theme.colors.primary,
-  },
-  recapSectionLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: Theme.colors.gray[500],
-    marginTop: Theme.spacing.lg,
-    marginBottom: Theme.spacing.sm,
-  },
-  recapChips: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  recapChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: Theme.colors.gray[100],
-  },
-  recapChipText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Theme.colors.gray[700],
-  },
-  recapEmpty: {
-    fontSize: 13,
-    fontStyle: "italic",
-    color: Theme.colors.gray[400],
-  },
-  recapPhotos: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  recapPhoto: {
-    width: 64,
-    height: 64,
-    borderRadius: Theme.borderRadius.md,
-    backgroundColor: Theme.colors.gray[100],
-  },
   footer: {
     flexDirection: "row",
     paddingHorizontal: Theme.spacing.lg,
@@ -1288,7 +1320,7 @@ const styles = StyleSheet.create({
   },
   // Inputs nom/prix de la ligne d'édition : un peu moins hauts.
   itemInputCompact: {
-    paddingVertical: 12,
+    paddingVertical: 9,
   },
   // Boutons supprimer / valider de la ligne d'édition.
   itemActionBtn: {

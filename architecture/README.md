@@ -49,7 +49,7 @@ yaammoo/
 │   │   ├── checkout/         # Bottom sheets commande
 │   │   ├── notifications/    # Context + hooks + components
 │   │   ├── orders/           # OrderContext + cartes
-│   │   ├── merchant/         # Panel marchand (boutique, commandes)
+│   │   ├── merchant/         # Panel marchand (boutique, commandes, menu) + components/recap-designs/ (3 designs récapitulatif menu)
 │   │   └── menu/ restaurants/ profile/ payment/
 │   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs)
 │   ├── theme/                # Theme.colors, typography

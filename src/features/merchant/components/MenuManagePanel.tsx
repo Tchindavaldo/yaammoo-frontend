@@ -42,15 +42,13 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
   const [editingMenu, setEditingMenu] = useState<any>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   // Vue de la zone liste : plats disponibles / indisponibles / formulaire d'ajout inline.
-  const [view, setView] = useState<"available" | "unavailable" | "add">(
-    "available",
-  );
+  const [view, setView] = useState<"available" | "unavailable">("available");
 
   // Expose l'ouverture de l'ajout de menu au header (pilule "Ajouter"). Une seule fois au montage.
   React.useEffect(() => {
     onRegisterAddMenu?.(() => {
       setEditingMenu(null);
-      setView("add");
+      setShowAddMenu(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -336,11 +334,11 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
         </View>
 
         <TouchableOpacity
-          style={[styles.addBtn, view === "add" && styles.addBtnActive]}
+          style={styles.addBtn}
           activeOpacity={0.85}
           onPress={() => {
             setEditingMenu(null);
-            setView("add");
+            setShowAddMenu(true);
           }}
         >
           <Ionicons name="add-circle" size={15} color="white" />
@@ -352,24 +350,9 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Vue "Ajouter" : formulaire multi-step intégré dans la zone liste,
-          sous la barre fixe. Sinon : liste filtrée (disponible / indisponible). */}
-      {view === "add" ? (
-        <View
-          style={[styles.addInlineZone, { paddingTop: listTopPad }]}
-        >
-          <AddMenuSheetMultiStep
-            embedded
-            visible
-            onClose={() => setView("available")}
-            onSave={async (menuData) => {
-              await handleSave(menuData);
-              setView("available");
-            }}
-          />
-        </View>
-      ) : (
-        <FlatList
+      {/* Liste filtrée (disponible / indisponible). L'ajout et la modification
+          passent tous deux par le Modal en bas de ce composant. */}
+      <FlatList
           data={visibleMenus}
           keyExtractor={(item, i) => item._id || item.id || i.toString()}
           renderItem={({ item, index }) => renderMenuCard(item, index)}
@@ -402,9 +385,8 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
             </View>
           }
         />
-      )}
 
-      {/* Modal de MODIFICATION (déclenché par le crayon d'un item). */}
+      {/* Modal d'AJOUT / MODIFICATION (bouton "Ajouter" ou crayon d'un item). */}
       <AddMenuSheetMultiStep
         visible={showAddMenu}
         onClose={() => {
@@ -625,17 +607,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  addBtnActive: {
-    backgroundColor: "#b8390f",
-  },
   addBtnText: {
     fontSize: 11,
     color: "white",
     fontWeight: "900",
-  },
-  addInlineZone: {
-    flex: 1,
-    backgroundColor: "white",
   },
   statusTab: {
     flexDirection: "row",

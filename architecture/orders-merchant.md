@@ -26,6 +26,13 @@ yaammoo/src/features/merchant/
     ├── MenuManagePanel.tsx             # Panel gestion des menus (stats + chips filtres Dispo/Indispo + bouton Ajouter ; item calqué sur MerchantOrderCard ; vue ajout inline)
     ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
     ├── AddMenuSheetMultiStep.tsx       # Formulaire menu (Modal pour modif / inline `embedded` pour création) — 3 étapes
+    ├── recap-designs/                  # Designs alternatifs de l'étape récap (switcher)
+    │   ├── MenuDraft.types.ts          # Type `MenuDraft` (snapshot du formulaire) + sélecteurs (validPrices, namedItems)
+    │   ├── MenuRecap.tsx               # Switcher : pills Aperçu/Blocs/Édito/Synthèse → rend le design choisi
+    │   ├── MenuRecapDesign1.tsx        # "Aperçu" — carte client (couverture + tarifs/extras/boissons listés)
+    │   ├── MenuRecapDesign2.tsx        # "Blocs" — hero card + blocs bordés par section
+    │   ├── MenuRecapDesign3.tsx        # "Édito" — mise en page éditoriale
+    │   └── MenuRecapDesign4.tsx        # "Synthèse" — recap bref (bandeau + 4 stat-tuiles + résumés condensés +N)
     ├── EditBoutiquePanel.tsx           # Overlay plein écran édition boutique (Settings → "Gérer ma boutique")
     ├── MenuManageModal.tsx             # Overlay plein écran gestion menus (Settings → "Gestion menu")
     ├── WalletManageModal.tsx           # Overlay plein écran portefeuille (Settings → "Portefeuille")
@@ -165,9 +172,17 @@ Formulaire de création/modification d'un menu.
      (Disponible/Indisponible, vif au clic).
    - **Stock** : label "Stock disponible" + sur la ligne suivante, chiffres `0..200` (pas de
      10) en `ScrollView` **horizontal** scrollable + stepper `− nb +` resserré à droite.
-3. **recap** — en-tête (nom en gros + pastille statut + badge stock orange), puis sections
-   **Prix** / **Extras** (`×N`) / **Boissons** (`×N`) en chips, et **Photos** en miniatures
-   64×64 (ou état "Aucun/Aucune" en italique) ; bouton "Créer le menu" / "Modifier".
+3. **recap** — délégué au composant **`MenuRecap`** (dossier `recap-designs/`) qui propose un
+   **switcher** entre plusieurs rendus du même `MenuDraft` (l'utilisateur choisit celui qu'il
+   préfère) : *Aperçu* (carte client), *Blocs* (hero + blocs), *Édito* (éditorial), *Synthèse*
+   (recap **bref** : bandeau identité + 4 stat-tuiles + lignes résumées « 3 items +N », sans
+   listage exhaustif). Le formulaire construit le `MenuDraft` (nom, prix/desc, extras, drinks,
+   availability, stock, images) et le passe en lecture seule. Suivi du bouton "Créer le menu" /
+   "Modifier".
+
+   > Pour ajouter un design : créer `MenuRecapDesignN.tsx` (props `{ draft: MenuDraft }`,
+   > utiliser `validPrices`/`namedItems`), puis l'enregistrer dans `MenuRecap.tsx` (entrée
+   > `VARIANTS` + branche de rendu). Aucune logique de formulaire ne change.
 
 **UX inputs** : focus = bordure orange (`focusedField`), erreur de validation = bordure rouge
 (`errorFields`, nettoyée à la saisie) ; tap dans le vide ferme le clavier (`Pressable` +

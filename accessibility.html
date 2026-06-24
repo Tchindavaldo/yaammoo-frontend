@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accessibilité — Yaammoo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f9f9f9;
+      color: #1a1a1a;
+      line-height: 1.7;
+    }
+    header {
+      background: #FF5A1F;
+      padding: 24px 0;
+      text-align: center;
+    }
+    header h1 { color: #fff; font-size: 1.6rem; font-weight: 700; }
+    header p { color: rgba(255,255,255,0.85); font-size: 0.9rem; margin-top: 4px; }
+    main { max-width: 760px; margin: 40px auto; padding: 0 20px 60px; }
+    h2 { font-size: 1.15rem; font-weight: 700; margin: 32px 0 10px; color: #FF5A1F; }
+    p { margin-bottom: 12px; font-size: 0.97rem; }
+    ul { margin: 8px 0 12px 20px; font-size: 0.97rem; }
+    ul li { margin-bottom: 6px; }
+    .card { background: #fff; border-radius: 12px; padding: 28px 32px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+    .feature-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
+    .feature-tile {
+      flex: 1; min-width: 200px;
+      background: #fff7f4; border: 1px solid #ffe0d0;
+      border-radius: 10px; padding: 20px;
+    }
+    .feature-tile .icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .feature-tile strong { display: block; margin-bottom: 6px; }
+    a { color: #FF5A1F; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer { text-align: center; font-size: 0.82rem; color: #aaa; padding: 24px 0; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Accessibilité</h1>
+  <p>Yaammoo — Livraison locale au Cameroun</p>
+</header>
+
+<main>
+  <div class="card">
+
+    <p>
+      Yaammoo s'engage à rendre son application accessible au plus grand nombre,
+      y compris aux personnes utilisant des technologies d'assistance sur iPhone.
+    </p>
+
+    <h2>Fonctionnalités prises en charge</h2>
+    <div class="feature-grid">
+
+      <div class="feature-tile">
+        <div class="icon">👁</div>
+        <strong>VoiceOver</strong>
+        <p>
+          Tous les éléments interactifs de l'application (boutons, champs de saisie, listes de produits)
+          sont étiquetés pour être lus correctement par VoiceOver. La navigation par gestes est prise
+          en charge sur l'ensemble des écrans principaux.
+        </p>
+      </div>
+
+      <div class="feature-tile">
+        <div class="icon">Aa</div>
+        <strong>Taille de texte dynamique</strong>
+        <p>
+          L'application respecte la taille de texte définie dans les réglages iOS (Réglages → Accessibilité
+          → Taille du texte). Les textes peuvent être agrandis jusqu'à 200&nbsp;% sans perte de contenu
+          ni chevauchement majeur.
+        </p>
+      </div>
+
+    </div>
+
+    <h2>Bonnes pratiques appliquées</h2>
+    <ul>
+      <li>Contrastes de couleurs conformes aux recommandations WCAG 2.1 (niveau AA).</li>
+      <li>Zones tactiles dimensionnées à 44×44 pt minimum sur les éléments interactifs.</li>
+      <li>Aucun contenu important transmis uniquement par la couleur.</li>
+      <li>Messages d'erreur explicites et accessibles aux lecteurs d'écran.</li>
+    </ul>
+
+    <h2>Signaler un problème d'accessibilité</h2>
+    <p>
+      Si vous rencontrez une difficulté d'accessibilité dans l'application, nous souhaitons le savoir
+      pour l'améliorer. Contactez-nous à :
+      <a href="mailto:support@yaammoo.rauval.com">support@yaammoo.rauval.com</a>
+    </p>
+    <p>
+      Précisez dans votre message : l'écran concerné, la technologie d'assistance utilisée,
+      et une description du problème rencontré. Nous nous engageons à répondre sous 5 jours ouvrés.
+    </p>
+
+  </div>
+</main>
+
+<footer>
+  &copy; 2025 Yaammoo · <a href="https://yaammoo.rauval.com">yaammoo.rauval.com</a>
+  · <a href="https://yaammoo.rauval.com/privacy">Confidentialité</a>
+  · <a href="https://yaammoo.rauval.com/support">Support</a>
+</footer>
+
+</body>
+</html>

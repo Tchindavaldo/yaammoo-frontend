@@ -23,6 +23,17 @@ Documentation d'architecture de l'app mobile (client + marchand).
 
 ---
 
+## URLs App Store Connect
+
+| Champ | URL |
+|---|---|
+| Support URL | `https://yaammoo.rauval.com/support` |
+| Marketing URL | `https://yaammoo.rauval.com` |
+| Privacy Policy URL (App Privacy) | `https://yaammoo.rauval.com/privacy` |
+| Accessibility URL (optionnel) | `https://yaammoo.rauval.com/accessibility` |
+
+---
+
 ## Stack frontend
 
 - **Framework** : React Native + Expo Router

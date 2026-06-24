@@ -11,11 +11,11 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
       return "/(tabs)/notifications";
     case "order_status":
     case "order_delivering":
-      return "/(tabs)/cart?section=finished";
+      return "/(tabs)/settings?section=finished";
     case "order_rank_top":
-      return "/(tabs)/cart?section=pending";
+      return "/(tabs)/settings?section=pending";
     case "bonus":
-      return "/(tabs)/cart?section=bonus";
+      return "/(tabs)/notifications";
     default:
       return "/(tabs)/notifications";
   }

@@ -3,6 +3,7 @@ import axios from "axios";
 import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
 import { useAuth } from "../../auth/context/AuthContext";
+import { REVIEW_DEFAULT_NETWORK, REVIEW_DEFAULT_PHONE } from "../constants/reviewPayment";
 
 export type CartPaymentState =
   | "total"
@@ -93,6 +94,61 @@ export const useCartPayment = (amount: number) => {
     [userData, paymentNetwork, amount],
   );
 
+  // Mode review Apple : commande globale du panier en direct, sans saisie USSD
+  // ET sans attente socket. En review le backend crée les commandes de façon
+  // SYNCHRONE et répond { success: true } (pas de status 'ussd_sent', pas de
+  // payment.settled). On traite donc cette réponse comme un verdict terminal :
+  // success → success_created (le parent rafraîchit + repos).
+  const handleReviewOrder = useCallback(
+    async (items: any[] = []) => {
+      if (!userData) {
+        setPaymentError("Utilisateur non connecté");
+        return;
+      }
+      setPaymentError(null);
+      setPaymentNetwork(REVIEW_DEFAULT_NETWORK);
+      setPaymentPhone(REVIEW_DEFAULT_PHONE);
+      setPaymentState("waiting");
+
+      try {
+        const response = await axios.post(`${Config.apiUrl}/transaction`, {
+          payBy: "mobilemoney",
+          amount,
+          phone: REVIEW_DEFAULT_PHONE,
+          network: REVIEW_DEFAULT_NETWORK === "orange" ? "Orangemoney" : "MTN",
+          email: userData?.infos?.email || "user@yaammoo.com",
+          userId: userData.uid,
+          items,
+        });
+
+        console.log('[CartReviewOrder] response:', JSON.stringify(response.data));
+
+        if (response.data?.success === true) {
+          // Verdict terminal synchrone (review) : pas d'écran de succès → direct
+          // en success_created, le parent rafraîchit/repos aussitôt.
+          setPaymentState("success_created");
+        } else {
+          const raw = response.data?.message;
+          const message = Array.isArray(raw)
+            ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ") || "Erreur commande"
+            : raw || "Erreur commande";
+          setPaymentError(message);
+          setPaymentState("total");
+        }
+      } catch (error: any) {
+        const data = error.response?.data;
+        const raw = data?.message;
+        let message = Array.isArray(raw)
+          ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ")
+          : raw;
+        message = message || data?.error || error.message || "Erreur commande";
+        setPaymentError(message);
+        setPaymentState("total");
+      }
+    },
+    [userData, amount],
+  );
+
   // Verdict reçu via socket (payment.settled).
   const handlePaymentVerdict = useCallback((data: any) => {
     if (data.status === "successful") {
@@ -121,6 +177,7 @@ export const useCartPayment = (amount: number) => {
     ussdMessage,
     resetPayment,
     handlePaymentConfirm,
+    handleReviewOrder,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,

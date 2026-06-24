@@ -10,6 +10,12 @@ interface FastFoodContextType {
    *  ensuite, même pendant un pull-to-refresh. Sert à savoir quand la home a fini
    *  son chargement initial → bascule login → home. */
   hasLoadedOnce: boolean;
+  /** Mode review Apple : renvoyé par GET /fastFood/all. Quand true, le flux
+   *  « buy » (home) et « Tout payer » (panier) crée la commande directement via
+   *  /transaction avec des valeurs de paiement par défaut (pas de saisie USSD) ;
+   *  les items Paiement/Portefeuille des settings sont masqués. En mémoire
+   *  uniquement (rafraîchi à chaque fetch). */
+  appleReviewMode: boolean;
   error: string | null;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -70,6 +76,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [fastFoods, setFastFoods] = useState<FastFood[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [appleReviewMode, setAppleReviewMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -79,6 +86,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
       const response = await axios.get(`${Config.apiUrl}/fastFood/all`);
+
+      // Flag review Apple porté par la réponse (défaut false si absent).
+      setAppleReviewMode(response.data?.appleReviewMode === true);
 
       if (response.data && response.data.data) {
         const data = response.data.data.map((item: any, index: number) =>
@@ -152,6 +162,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         fastFoods,
         loading,
         hasLoadedOnce,
+        appleReviewMode,
         error,
         searchQuery,
         setSearchQuery,

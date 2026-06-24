@@ -153,8 +153,8 @@ export default function HomeScreen() {
         unreadCount={unreadCount}
         onNotifPress={() => router.push("/(tabs)/notifications")}
         onProfilePress={() => router.push("/(tabs)/settings")}
-        onCartPress={() => router.push("/(tabs)/cart?section=cart")}
-        onOrdersPress={() => router.push("/(tabs)/cart?section=pending")}
+        onCartPress={() => router.push("/(tabs)/cart")}
+        onOrdersPress={() => router.push("/(tabs)/settings?section=pending")}
         searchVisible={searchOpen}
         onSearchToggle={() => setSearchOpen(!searchOpen)}
         searchQuery={searchQuery}

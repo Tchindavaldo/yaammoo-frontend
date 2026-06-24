@@ -7,6 +7,7 @@ import { useCheckout } from '../hooks/useCheckout';
 import { styles } from './CartCheckoutSheet.styles';
 import axios from 'axios';
 import { Config } from '@/src/api/config';
+import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
 
 // Shared Components
 import { TabChip } from './shared/TabChip';
@@ -89,6 +90,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     ussdCode,
     ussdMessage,
     handlePaymentConfirm,
+    handleReviewOrder,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,
@@ -98,27 +100,40 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
   } = useCheckout(menuWithDeliveryHours, initialOrder, onChange);
   const [sheetToast, setSheetToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const showError = (message: string) => setSheetToast({ message, type: 'error' });
+  const { appleReviewMode } = useFastFoods();
+  // Mode review : commande directe via « Valider » (loader dans le bouton).
+  const [reviewOrdering, setReviewOrdering] = useState(false);
 
-  // Enregistrer le handler de verdict paiement quand l'overlay est visible
+  // Enregistrer le handler de verdict paiement quand l'overlay est visible OU
+  // pendant une commande review (sans overlay).
   useEffect(() => {
-    if (isPaymentPopupVisible) {
+    if (isPaymentPopupVisible || reviewOrdering) {
       registerPaymentHandler(handlePaymentVerdict);
       return () => {
         unregisterPaymentHandler();
       };
     }
-  }, [isPaymentPopupVisible, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
+  }, [isPaymentPopupVisible, reviewOrdering, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
 
   // Fermer l'overlay automatiquement après 5s en état success_created
   useEffect(() => {
     if (paymentState === 'success_created') {
+      // En review : fermeture quasi-immédiate (~500ms). Sinon flux normal (5s).
       const timer = setTimeout(() => {
         setIsPaymentPopupVisible(false);
+        setReviewOrdering(false);
         onClose();
-      }, 5000);
+      }, appleReviewMode ? 300 : 5000);
       return () => clearTimeout(timer);
     }
-  }, [paymentState, onClose]);
+  }, [paymentState, onClose, appleReviewMode]);
+
+  // Mode review : si la transaction échoue (retour 'input'), couper le loader.
+  useEffect(() => {
+    if (reviewOrdering && paymentState === 'input') {
+      setReviewOrdering(false);
+    }
+  }, [reviewOrdering, paymentState]);
 
   // En cas d'erreur paiement : NE PAS fermer les overlays. On reste sur l'état
   // `input` (le toast d'erreur s'affiche, l'utilisateur peut ressaisir).
@@ -266,7 +281,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             total={total}
             quantity={quantity}
             setQuantity={setQuantity}
-            isLoading={isSubmitting}
+            isLoading={isSubmitting || reviewOrdering}
             isCartMode={isCartMode}
             onAddToCart={async () => {
               const deliveryErr = validateDelivery();
@@ -288,6 +303,12 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
               if (stockErr) { showError(stockErr); return; }
               const deliveryErr = validateDelivery();
               if (deliveryErr) { showError(deliveryErr); return; }
+              if (appleReviewMode) {
+                // Commande directe : pas d'overlay, loader dans le bouton Valider.
+                setReviewOrdering(true);
+                handleReviewOrder();
+                return;
+              }
               setPaymentState('network_select');
               setIsPaymentPopupVisible(true);
               setPaymentKey(prev => prev + 1);

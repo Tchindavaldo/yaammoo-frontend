@@ -17,9 +17,17 @@ yaammoo/src/features/orders/
     ├── ClientOrderCard.tsx    # Carte commande compacte (liste pending/processing)
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
     ├── OrderHeader.tsx        # Header de la page orders
-    ├── OrderTrackingHeader.tsx # Stats (nb cmd / FF) + chips statut ; dates gérées par le TabHeader de cart.tsx
+    ├── OrderTrackingHeader.tsx # Stats (nb cmd / FF) + chips statut
+    ├── CartStatusPanel.tsx    # Panneau suivi autonome (statut/date/groupes/jours passés/détail)
+    ├── UserOrdersModal.tsx    # Modal plein écran « État des commandes » (Settings → Mes activités)
     └── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande
 ```
+
+> **Suivi des commandes déplacé** : le panier (`cart.tsx`) n'affiche plus que le
+> panier (`pendingToBuy`). Le suivi (pending/processing/finished/delivered) vit
+> dans `CartStatusPanel`, ouvert via `UserOrdersModal` depuis Settings →
+> section « Mes activités » (visible user ET marchand). Deep-links commandes →
+> `/(tabs)/settings?section=pending|finished`.
 
 ---
 

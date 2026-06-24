@@ -17,7 +17,7 @@ app/
 │   ├── _layout.tsx
 │   ├── index.tsx            # Home (liste restaurants, feed)
 │   ├── boutique.tsx         # Commandes marchand (statuts via chips ; menu/portefeuille → Settings)
-│   ├── cart.tsx             # Panier + commandes en cours (client)
+│   ├── cart.tsx             # Panier seul (mono-section) ; commandes/portefeuille → Settings « Mes activités »
 │   ├── notifications.tsx    # Liste notifs + DetailSheet
 │   └── profile.tsx
 │
@@ -59,6 +59,8 @@ src/features/
 │   ├── utils/sanitizeOrder.ts           # Sanitization stricte d'une commande (envoi /order, /transaction)
 │   └── components/
 │       ├── OrderCard.tsx                # Carte client
+│       ├── CartStatusPanel.tsx          # Suivi commandes autonome (statut/date/groupes/jours passés/détail)
+│       ├── UserOrdersModal.tsx          # Modal plein écran « État des commandes » (Settings → Mes activités)
 │       └── ...
 │
 ├── merchant/
@@ -67,8 +69,14 @@ src/features/
 │   └── settings/                        # Edit boutique + hours
 │
 ├── payment/
-│   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout)
+│   ├── constants/reviewPayment.ts        # Valeurs paiement par défaut en mode review Apple
+│   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout) + handleReviewOrder
 │   └── components/CartPaymentOverlay.tsx # Capsule paiement panier (réseau intégré)
+
+├── wallet/
+│   └── components/
+│       ├── WalletPanel.tsx              # Liste transactions + solde (user)
+│       └── UserWalletModal.tsx          # Modal plein écran « Portefeuille » (Settings → Mes activités ; caché en review)
 │
 └── menu/ restaurants/ profile/
 ```
@@ -87,7 +95,7 @@ src/
 │       ├── TabHeader.tsx        # En-tête uniforme (fond orange, safe-area, titre/sous-titre/élément droit)
 │       ├── HeaderPill.tsx       # Pilule d'action dans l'en-tête (style "Tout marquer lu")
 │       ├── DatePill.tsx         # Pilule de dates repliable (chips date + "+N", sélection)
-│       └── SectionSwitcher.tsx  # FAB switch sections (animé + zone de sécurité) — utilisé par cart.tsx
+│       └── SectionSwitcher.tsx  # FAB switch sections (animé) — plus utilisé par cart.tsx (panier mono-section)
 ├── theme/                       # Theme.colors, typography, spacing
 ├── types/                       # Commande, Menu, Livraison, User…
 └── services/

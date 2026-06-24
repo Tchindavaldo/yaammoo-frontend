@@ -230,6 +230,57 @@ MOBILEWALLET_WEBHOOK_SECRET=<webhook_secret>
 
 ---
 
+## Mode review Apple (`appleReviewMode`)
+
+Pour la review App Store (Apple n'a pas de Mobile Money), `GET /fastFood/all`
+renvoie `{ success, message, data, appleReviewMode: true|false }`. Le flag est
+exposé en mémoire par **`FastFoodContext`** (`appleReviewMode`, lu via
+`useFastFoods()`), rafraîchi à chaque fetch — pas de persistance AsyncStorage
+(Apple ne peut pas inspecter une var en mémoire).
+
+Quand `appleReviewMode === true` :
+
+- **Home (`CheckoutSheet` → `CheckoutFooter`)** : le bouton « buy » devient
+  « order ». Au clic, pas d'overlay de saisie : on appelle `handleReviewOrder()`
+  (dans `useCheckout`) → `handlePaymentConfirm(REVIEW_DEFAULT_PHONE)` avec réseau
+  par défaut. Loader dans le bouton (`reviewOrdering`) jusqu'au verdict socket.
+- **Édition panier (`CartCheckoutSheet` → `CartCheckoutFooter`)** : « Valider »
+  fait pareil (même `handleReviewOrder` de `useCheckout`).
+- **Panier global (`cart.tsx`)** : la pilule « Tout payer » devient « Commander »
+  (avec loader) ; clic → `handleReviewOrder(items)` de `useCartPayment` (pas
+  d'overlay `CartPaymentOverlay`).
+- **Settings (`settings.tsx`)** : les items « Paiement » (section Compte) et
+  « Portefeuille » (section Boutique) sont masqués.
+
+En review, le backend crée la commande de façon **synchrone** et répond
+directement `{ success: true }` (pas de `status: 'ussd_sent'`, pas de
+`payment.settled` socket). `handleReviewOrder` traite donc cette réponse comme un
+verdict terminal : passe direct en `success_created` (sans écran de succès) → le
+parent ferme le sheet aussitôt (~300ms). Valeurs par défaut :
+`src/features/payment/constants/reviewPayment.ts` (`REVIEW_DEFAULT_PHONE`,
+`REVIEW_DEFAULT_NETWORK`).
+
+### Refonte panier / Settings (indépendant du mode review)
+
+Le **panier (`app/(tabs)/cart.tsx`)** n'a plus de `SectionSwitcher` : il
+n'affiche que **le panier** (commandes `pendingToBuy` + paiement global). Les
+sections « État des commandes » et « Portefeuille » ont migré dans **Settings**,
+sous une section **« Mes activités »** (visible user ET marchand — un marchand
+passe aussi des commandes) :
+
+- `src/features/orders/components/CartStatusPanel.tsx` : panneau suivi/tracking
+  autonome (filtre statut/date, groupes par boutique, jours précédents, détail
+  via `OrderBottomSheet`), extrait de l'ancien cart.tsx.
+- `src/features/orders/components/UserOrdersModal.tsx` : modal plein écran
+  (« État des commandes ») wrappant `CartStatusPanel`.
+- `src/features/wallet/components/UserWalletModal.tsx` : modal plein écran
+  (« Portefeuille ») wrappant `WalletPanel`. **Caché en review**.
+
+Deep-links : `onOrdersPress` (home) et les notifications commandes pointent vers
+`/(tabs)/settings?section=pending|finished` → `settings.tsx` ouvre
+`UserOrdersModal`. Le `?section=cart` du bouton panier est devenu inutile (cart
+est mono-section).
+
 ## Gestion des erreurs
 
 | Cas | Frontend | Backend |

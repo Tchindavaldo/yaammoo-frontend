@@ -12,24 +12,18 @@ import {
   UIManager,
   Animated,
   Keyboard,
-  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Commande, Menu } from "@/src/types";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
-import { SectionSwitcher } from "@/src/components/molecules/SectionSwitcher";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
-import { DatePill } from "@/src/components/molecules/DatePill";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
-import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrackingHeader";
 import { Theme } from "@/src/theme";
 import { BlurView } from "expo-blur";
-import { WalletPanel } from "@/src/features/wallet/components/WalletPanel";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
-import { Loader } from "@/src/components/Loader";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { Toast } from "@/src/components/Toast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
@@ -37,37 +31,24 @@ import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartPaymentOverlay } from "@/src/features/payment/components/CartPaymentOverlay";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
-import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
-import { useLocalSearchParams } from "expo-router";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// Sections du panier + titre/icône, dans l'ordre de cyclage du bouton flottant.
-const CART_SECTIONS: { key: string; title: string; icon: string }[] = [
-  { key: 'cart', title: 'Mon panier', icon: 'cart-outline' },
-  { key: 'status', title: 'Commandes', icon: 'receipt-outline' },
-  // Section "bonus" masquée pour l'instant (réactiver dans une mise à jour).
-  { key: 'wallet', title: 'Portefeuille', icon: 'wallet-outline' },
-];
 export default function OrdersScreen() {
   const {
     loading,
     orders,
     pendingToBuy,
-    pending,
-    active,
-    finished,
-    delivered,
     refresh,
     deleteOrder,
     updateQuantity,
     updateLocalOrder,
     buyOrders,
-    stats,
   } = useOrders();
   const { userData } = useAuth();
+  const { appleReviewMode } = useFastFoods();
 
   // Total panier (réactif) — calculé tôt pour alimenter le hook de paiement.
   const cartTotal = useMemo(() => {
@@ -88,6 +69,7 @@ export default function OrdersScreen() {
     ussdMessage,
     resetPayment,
     handlePaymentConfirm,
+    handleReviewOrder,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,
@@ -100,9 +82,6 @@ export default function OrdersScreen() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<any | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedOrderDetails, setSelectedOrderDetails] = useState<Commande | null>(null);
-  const [selectedGroupOrders, setSelectedGroupOrders] = useState<Commande[]>([]);
-  const [detailVisible, setDetailVisible] = useState(false);
 
   const itemToDelete = useMemo(() => {
     if (!orderToDelete) return null;
@@ -178,16 +157,17 @@ export default function OrdersScreen() {
     return () => unregisterPaymentHandler();
   }, [paymentActive, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
 
-  // Après succès complet (success_created, 5s) : rafraîchir + revenir au repos.
+  // Après succès complet (success_created) : rafraîchir + revenir au repos.
   useEffect(() => {
     if (paymentState === "success_created") {
+      // En review : repos quasi-immédiat (~300ms). Sinon flux normal (5s).
       const timer = setTimeout(() => {
         resetPayment();
         refresh();
-      }, 5000);
+      }, appleReviewMode ? 300 : 5000);
       return () => clearTimeout(timer);
     }
-  }, [paymentState, resetPayment, refresh]);
+  }, [paymentState, resetPayment, refresh, appleReviewMode]);
 
   // Toast d'erreur paiement.
   useEffect(() => {
@@ -202,78 +182,9 @@ export default function OrdersScreen() {
   // Hauteur réelle du TabHeader, mesurée via onHeightChange.
   const [headerHeight, setHeaderHeight] = useState(60 + insets.top);
   const HEADER_HEIGHT = headerHeight;
-  // Solde remonté par WalletPanel (sous-titre de la section portefeuille).
-  const [walletBalance, setWalletBalance] = useState(0);
 
   // For testing: force loader to persist
-  const [forceLoading, setForceLoading] = useState(false);
-
-  const [currentTab, setCurrentTab] = useState("cart");
-  const [activeStatus, setActiveStatus] = useState<
-    "pending" | "active" | "finished" | "delivered"
-  >("pending");
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [trackingHeaderHeight, setTrackingHeaderHeight] = useState(100);
-
-  // Générer les dates disponibles (Aujourd'hui + dates des commandes existantes)
-  const availableDates = useMemo(() => {
-    const dates = [new Date()];
-    [...pending, ...active, ...finished, ...delivered].forEach((o) => {
-      if (o.delivery?.date) {
-        dates.push(new Date(o.delivery.date));
-      }
-    });
-    // Uniq par jour
-    return Array.from(new Set(dates.map((d) => d.toDateString())))
-      .map((s) => new Date(s))
-      .sort((a, b) => a.getTime() - b.getTime());
-  }, [pending, active, finished, delivered]);
-
-  // Adaptation des dates (Date[]) au format ISO du DatePill du header.
-  const toISO = (d: Date) => d.toISOString().substring(0, 10);
-  const todayISO = toISO(new Date());
-  const dateOptions = useMemo(
-    () =>
-      availableDates.map((d) => ({
-        iso: toISO(d),
-        label: d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" }),
-      })),
-    [availableDates],
-  );
-  const selectedISO = toISO(selectedDate);
-  const handleSelectISO = (iso: string | null) => {
-    const target = availableDates.find((d) => toISO(d) === (iso ?? todayISO));
-    setSelectedDate(target ?? new Date());
-  };
-
-  useEffect(() => {
-    // Si on switch sur l'onglet status, on s'assure d'avoir un statut sélectionné
-    if (currentTab === "status" && !activeStatus) {
-      setActiveStatus("pending");
-    }
-  }, [currentTab]);
-
-  // Deep-link via query param `?section=...` (notifications → cart)
-  const { section } = useLocalSearchParams<{ section?: string }>();
-  useEffect(() => {
-    if (!section) return;
-    if (section === "cart") {
-      setCurrentTab("cart");
-      return;
-    }
-    if (section === "pending" || section === "active" || section === "finished") {
-      setCurrentTab("status");
-      setActiveStatus(section);
-    }
-  }, [section]);
-
-  const isSameDay = (d1: Date, d2: Date) => {
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
-  };
+  const [forceLoading] = useState(false);
 
   const handleConfirmDelete = async () => {
     if (!orderToDelete) return;
@@ -294,85 +205,6 @@ export default function OrdersScreen() {
   const cancelDelete = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOrderToDelete(null);
-  };
-  // Récupère la date "métier" d'une commande (livraison.date ou delivery.date), fallback createdAt
-  const getOrderDate = (o: any): Date | null => {
-    const raw = o?.livraison?.date || o?.delivery?.date || o?.createdAt;
-    if (!raw) return null;
-    const d = new Date(raw);
-    return isNaN(d.getTime()) ? null : d;
-  };
-
-  const statusList: Commande[] = useMemo(() => {
-    switch (activeStatus) {
-      case "pending": return pending;
-      case "active": return active;
-      case "finished": return finished;
-      case "delivered": return delivered;
-      default: return [];
-    }
-  }, [activeStatus, pending, active, finished, delivered]);
-
-  const filteredOrders = useMemo(() => {
-    if (currentTab === "cart") return pendingToBuy;
-    return statusList.filter((o: any) => {
-      const d = getOrderDate(o);
-      if (!d) return isSameDay(new Date(), selectedDate);
-      return isSameDay(d, selectedDate);
-    });
-  }, [currentTab, selectedDate, pendingToBuy, statusList]);
-
-  // Stats de la date sélectionnée (bloc "x cmd | y FF" du tracking header).
-  const statusOrderCount = filteredOrders.length;
-  const statusFastFoodCount = useMemo(
-    () => new Set(filteredOrders.map((o: any) => o.fastFoodId).filter(Boolean)).size,
-    [filteredOrders],
-  );
-
-  // Sections passées non traitées (seulement pending/active, et seulement
-  // quand aujourd'hui est la date sélectionnée).
-  const isShowingTodayDefault = useMemo(() => {
-    return (
-      isSameDay(selectedDate, new Date()) &&
-      (activeStatus === "pending" || activeStatus === "active")
-    );
-  }, [selectedDate, activeStatus]);
-
-  const pastSections = useMemo(() => {
-    if (!isShowingTodayDefault) return [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    // Récupère toutes les dates passées (avant aujourd'hui) où il reste des commandes pending/active
-    const byDate = new Map<string, Commande[]>();
-    statusList.forEach((o: any) => {
-      const d = getOrderDate(o);
-      if (!d) return;
-      if (d.getTime() >= today.getTime()) return; // aujourd'hui et futur exclus
-      const key = d.toISOString().substring(0, 10);
-      if (!byDate.has(key)) byDate.set(key, []);
-      byDate.get(key)!.push(o);
-    });
-    // Tri desc (plus récent en premier)
-    return Array.from(byDate.entries())
-      .sort(([a], [b]) => (a > b ? -1 : a < b ? 1 : 0))
-      .map(([iso, orders]) => ({ iso, orders }));
-  }, [isShowingTodayDefault, statusList]);
-
-  const formatPastDateLabel = (iso: string) => {
-    try {
-      const d = new Date(iso);
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      if (isSameDay(d, yesterday)) return "Hier";
-      return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
-    } catch {
-      return iso;
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    const success = await deleteOrder(id);
-    if (!success) Alert.alert("Erreur", "Impossible de retirer cet article");
   };
 
   const handleUpdateQty = async (id: string, qty: number) => {
@@ -408,58 +240,13 @@ export default function OrdersScreen() {
     await handlePaymentConfirm(phone, items);
   };
 
-  const { fastFoods } = useFastFoods();
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const [expandedPastSection, setExpandedPastSection] = useState<string | null>(null);
-
-  const toggleGroup = (id: string) => {
-    setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const togglePastSection = (iso: string) => {
-    setExpandedPastSection(prev => (prev === iso ? null : iso));
-  };
-
-  // Groupe une liste de commandes par fastFood (utilisé pour la liste principale et les sections passées)
-  const groupByFastFood = (orders: Commande[]) => {
-    const groups: Record<string, { name: string; orders: Commande[] }> = {};
-    orders.forEach((o) => {
-      const ffId = o.fastFoodId;
-      if (!ffId) return;
-      if (!groups[ffId]) {
-        const ff = fastFoods.find((f) => f.id === ffId);
-        groups[ffId] = {
-          name: ff?.nom || (ff as any)?.name || "Boutique",
-          orders: [],
-        };
-      }
-      groups[ffId].orders.push(o);
-    });
-    return Object.entries(groups).map(([id, data]) => ({ id, ...data }));
-  };
-
-  const groupedOrders = useMemo(() => {
-    if (currentTab !== "status") return null;
-    const result = groupByFastFood(filteredOrders);
-
-    // Auto-expand first group if nothing is expanded
-    if (result.length > 0 && Object.keys(expandedGroups).length === 0) {
-      setExpandedGroups({ [result[0].id]: true });
-    }
-
-    return result;
-  }, [filteredOrders, currentTab, fastFoods]);
-
   const onManualRefresh = async () => {
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
   };
-  
-  if (
-    (loading && orders.length === 0) ||
-    forceLoading
-  ) {
+
+  if ((loading && orders.length === 0) || forceLoading) {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.centered}>
@@ -470,285 +257,92 @@ export default function OrdersScreen() {
     );
   }
 
-  const renderFastFoodGroup = (group: { id: string; name: string; orders: Commande[] }, keyPrefix = "") => {
-    const groupKey = `${keyPrefix}${group.id}`;
-    const isExpanded = !!expandedGroups[groupKey];
-    return (
-      <View key={groupKey} style={{ marginBottom: 15 }}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => toggleGroup(groupKey)}
-          style={styles.groupHeader}
-        >
-          <View style={styles.groupHeaderLeft}>
-            <Ionicons
-              name={isExpanded ? "chevron-down" : "chevron-forward"}
-              size={12}
-              color="#888780"
-            />
-            <Text style={styles.groupTitle} numberOfLines={1}>{group.name}</Text>
-            <View style={styles.groupCountBadge}>
-              <Text style={styles.groupCountText}>
-                {group.orders.length} commande{group.orders.length > 1 ? 's' : ''}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+  // Sous-titre du header : total du panier.
+  const headerSubtitle = `${cartTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`;
 
-        {isExpanded && (
-          <View style={{ gap: 2 }}>
-            {group.orders.map((order) => {
-              const isFinished = order.status === 'finished' || order.status === 'delivered';
-              return (
-                <ClientOrderCard
-                  key={order.id}
-                  order={order}
-                  onUpdateQuantity={handleUpdateQty}
-                  showActions={false}
-                  hideRanking={isFinished}
-                  onPress={() => {
-                    setSelectedOrderDetails(order);
-                    setSelectedGroupOrders(group.orders);
-                    setDetailVisible(true);
-                  }}
-                />
-              );
-            })}
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  const renderStatusGroups = () => {
-    const hasMain = groupedOrders && groupedOrders.length > 0;
-    const hasPast = pastSections.length > 0;
-
-    if (!hasMain && !hasPast) {
-      return (
-        <View style={[styles.centered, { paddingTop: 100 }]}>
-          <Ionicons name="receipt-outline" size={60} color={Theme.colors.gray[200]} />
-          <Text style={styles.emptyText}>Aucune commande pour cette date</Text>
-        </View>
-      );
-    }
-
-    return (
-      <View>
-        {hasMain ? (
-          groupedOrders!.map((g) => renderFastFoodGroup(g))
-        ) : !hasPast ? (
-          <View style={[styles.centered, { paddingTop: 40, paddingBottom: 20 }]}>
-            <Ionicons name="receipt-outline" size={50} color={Theme.colors.gray[200]} />
-            <Text style={styles.emptyText}>Aucune commande pour aujourd'hui</Text>
-          </View>
-        ) : null}
-
-        {hasPast && (
-          <View style={{ marginTop: 24 }}>
-            <Text style={styles.pastSectionLabel}>Commandes des jours précédents</Text>
-            {pastSections.map((section) => {
-              const sectionKey = `past_${section.iso}`;
-              const isOpen = expandedPastSection === section.iso;
-              const groups = groupByFastFood(section.orders);
-              return (
-                <View key={sectionKey} style={{ marginBottom: 15 }}>
-                  <TouchableOpacity
-                    activeOpacity={0.7}
-                    onPress={() => togglePastSection(section.iso)}
-                    style={styles.groupHeader}
-                  >
-                    <View style={styles.groupHeaderLeft}>
-                      <Ionicons
-                        name={isOpen ? "chevron-down" : "chevron-forward"}
-                        size={12}
-                        color="#888780"
-                      />
-                      <Text style={styles.groupTitle}>{formatPastDateLabel(section.iso)}</Text>
-                      <View style={styles.groupCountBadge}>
-                        <Text style={styles.groupCountText}>
-                          {section.orders.length} commande{section.orders.length > 1 ? 's' : ''}
-                        </Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                  {isOpen && (
-                    <View style={{ marginTop: 6 }}>
-                      {groups.map((g) => renderFastFoodGroup(g, `${sectionKey}_`))}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  const activeSection =
-    CART_SECTIONS.find((s) => s.key === currentTab) ?? CART_SECTIONS[0];
-
-  // Sous-titre du header selon la section.
-  const headerSubtitle = (() => {
-    if (currentTab === "cart")
-      return `${cartTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`;
-    if (currentTab === "status")
-      return selectedISO === todayISO
-        ? "Aujourd'hui"
-        : selectedDate.toLocaleDateString("fr-FR", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          });
-    if (currentTab === "wallet")
-      return `${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`;
-    return undefined;
-  })();
-
-  // Élément de droite du header selon la section.
-  const headerRight = (() => {
-    if (currentTab === "status")
-      return (
-        <DatePill
-          options={dateOptions}
-          selected={selectedISO}
-          todayISO={todayISO}
-          onSelect={handleSelectISO}
-        />
-      );
-    if (currentTab === "cart" && pendingToBuy.length > 0 && !orderToDelete)
-      return (
-        <HeaderPill
-          label="Tout payer"
-          icon="card-outline"
-          onPress={() => setPaymentState("network_select")}
-        />
-      );
-    if (currentTab === "wallet")
-      return (
-        <HeaderPill
-          label="Dépôt / Retrait"
-          icon="swap-horizontal-outline"
-          onPress={() =>
-            setToast({ message: "Dépôt / Retrait bientôt disponible", type: "error" })
+  // Pilule de droite : payer / commander (review).
+  const headerRight =
+    pendingToBuy.length > 0 && !orderToDelete ? (
+      <HeaderPill
+        label={appleReviewMode ? "Commander" : "Tout payer"}
+        icon={appleReviewMode ? "checkmark-circle-outline" : "card-outline"}
+        loading={appleReviewMode && paymentState !== "total"}
+        onPress={() => {
+          if (appleReviewMode) {
+            // Mode review : commande directe du panier, sans overlay de saisie.
+            const validationErr = validateAllDeliveries();
+            if (validationErr) {
+              setToast({ message: validationErr, type: "error" });
+              return;
+            }
+            const items = pendingToBuy.map((o) => sanitizeOrder(o, userData?.uid));
+            handleReviewOrder(items);
+            return;
           }
-        />
-      );
-    return null;
-  })();
+          setPaymentState("network_select");
+        }}
+      />
+    ) : null;
 
   return (
     <View style={styles.container}>
       <TabHeader
-        title={activeSection.title}
+        title="Mon panier"
         subtitle={headerSubtitle}
         right={headerRight}
         onHeightChange={setHeaderHeight}
       />
 
-      {currentTab === "status" && (
-        <View
-          style={{ position: 'absolute', top: HEADER_HEIGHT, left: 0, right: 0, zIndex: 999 }}
-          onLayout={(e) => setTrackingHeaderHeight(e.nativeEvent.layout.height)}
-        >
-          <OrderTrackingHeader
-            activeStatus={activeStatus}
-            onStatusChange={setActiveStatus}
-            counts={{
-              pending: pending.length,
-              processing: active.length,
-              finished: finished.length,
-              delivered: delivered.length,
-            }}
-            orderCount={statusOrderCount}
-            fastFoodCount={statusFastFoodCount}
-          />
-        </View>
-      )}
-
       {/* Pas de paddingTop ici : le contenu s'étend SOUS le header pour que le
-          BlurView du TabHeader (et de l'OrderTrackingHeader en status) floute la
-          liste qui scrolle dessous. Chaque liste décale son contentContainer. */}
+          BlurView du TabHeader floute la liste qui scrolle dessous. */}
       <View style={{ flex: 1 }}>
-        {currentTab === "wallet" ? (
-          <WalletPanel onBalanceChange={setWalletBalance} topOffset={HEADER_HEIGHT} />
-        ) : currentTab === "status" ? (
-          <ScrollView
-            contentContainerStyle={[
-              styles.listContent,
-              { paddingTop: HEADER_HEIGHT + trackingHeaderHeight, paddingBottom: tabBarHeight + 100 },
-            ]}
-            scrollIndicatorInsets={{ top: HEADER_HEIGHT + trackingHeaderHeight }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onManualRefresh}
-                progressViewOffset={HEADER_HEIGHT + trackingHeaderHeight}
-                tintColor={Theme.colors.primary}
-                colors={[Theme.colors.primary]}
-              />
-            }
-          >
-            {renderStatusGroups()}
-          </ScrollView>
-        ) : (
-          <FlatList
-            data={filteredOrders}
-            renderItem={({ item }) => (
-              <ClientOrderCard
-                order={item}
-                onPress={() => {
-                  setOrderToEdit(item);
-                  setEditModalVisible(true);
-                }}
-                onDelete={(id) => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  setOrderToEdit(null);
-                  setOrderToDelete(id);
-                }}
-                onUpdateQuantity={handleUpdateQty}
-                showActions={true}
-              />
-            )}
-            keyExtractor={(item, index) =>
-              (item as any).id?.toString() || (item as any).idCmd?.toString() || index.toString()
-            }
-            contentContainerStyle={[
-              styles.listContent,
-              { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 100 },
-            ]}
-            scrollIndicatorInsets={{ top: HEADER_HEIGHT }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onManualRefresh}
-                progressViewOffset={HEADER_HEIGHT}
-                tintColor={Theme.colors.primary}
-                colors={[Theme.colors.primary]}
-              />
-            }
-            ListEmptyComponent={
-              <View style={[styles.centered, { paddingTop: 100 }]}>
-                <Ionicons
-                  name="cart-outline"
-                  size={60}
-                  color={Theme.colors.gray[200]}
-                />
-                <Text style={styles.emptyText}>Votre panier est vide</Text>
-              </View>
-            }
-          />
-        )}
+        <FlatList
+          data={pendingToBuy}
+          renderItem={({ item }) => (
+            <ClientOrderCard
+              order={item}
+              onPress={() => {
+                setOrderToEdit(item);
+                setEditModalVisible(true);
+              }}
+              onDelete={(id) => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setOrderToEdit(null);
+                setOrderToDelete(id);
+              }}
+              onUpdateQuantity={handleUpdateQty}
+              showActions={true}
+            />
+          )}
+          keyExtractor={(item, index) =>
+            (item as any).id?.toString() || (item as any).idCmd?.toString() || index.toString()
+          }
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 100 },
+          ]}
+          scrollIndicatorInsets={{ top: HEADER_HEIGHT }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onManualRefresh}
+              progressViewOffset={HEADER_HEIGHT}
+              tintColor={Theme.colors.primary}
+              colors={[Theme.colors.primary]}
+            />
+          }
+          ListEmptyComponent={
+            <View style={[styles.centered, { paddingTop: 100 }]}>
+              <Ionicons name="cart-outline" size={60} color={Theme.colors.gray[200]} />
+              <Text style={styles.emptyText}>Votre panier est vide</Text>
+            </View>
+          }
+        />
       </View>
 
       {/* Capsule de confirmation de SUPPRESSION (mode séparé du paiement) */}
-      {currentTab === "cart" && pendingToBuy.length > 0 && orderToDelete && (
-        <Animated.View style={[
-            styles.payFooterCapsule,
-            { bottom: tabBarHeight + 10 },
-        ]}>
+      {pendingToBuy.length > 0 && orderToDelete && (
+        <Animated.View style={[styles.payFooterCapsule, { bottom: tabBarHeight + 10 }]}>
           <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
           <TouchableOpacity style={styles.closeCircle} onPress={cancelDelete}>
             <Ionicons name="close" size={16} color="white" />
@@ -774,8 +368,8 @@ export default function OrdersScreen() {
       )}
 
       {/* Capsule de PAIEMENT global du panier — ouverte par la pilule "Tout payer"
-          du header (donc masquée à l'état "total" au repos). */}
-      {currentTab === "cart" && pendingToBuy.length > 0 && !orderToDelete && paymentState !== "total" && (
+          du header (masquée à l'état "total" au repos et en mode review). */}
+      {pendingToBuy.length > 0 && !orderToDelete && paymentState !== "total" && !appleReviewMode && (
         <CartPaymentOverlay
           phone={paymentPhone}
           onPhoneChange={setPaymentPhone}
@@ -794,10 +388,10 @@ export default function OrdersScreen() {
       )}
 
       {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onHide={() => setToast(null)} 
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onHide={() => setToast(null)}
         />
       )}
 
@@ -823,26 +417,6 @@ export default function OrdersScreen() {
           }}
         />
       )}
-
-      <OrderBottomSheet
-        isVisible={detailVisible}
-        onClose={() => {
-            setDetailVisible(false);
-            setSelectedOrderDetails(null);
-            setSelectedGroupOrders([]);
-        }}
-        order={selectedOrderDetails}
-        allOrders={selectedGroupOrders}
-        boutique={fastFoods.find(f => f.id === selectedOrderDetails?.fastFoodId)}
-      />
-
-      {/* Switcher flottant : déploie les autres sections vers le haut */}
-      <SectionSwitcher
-        sections={CART_SECTIONS.map((s) => ({ key: s.key, icon: s.icon }))}
-        activeKey={currentTab}
-        onSelect={setCurrentTab}
-        bottom={insets.bottom + 80}
-      />
     </View>
   );
 }
@@ -871,18 +445,6 @@ const styles = StyleSheet.create({
     color: Theme.colors.gray[400],
     fontSize: 16,
     textAlign: "center",
-  },
-  browseBtn: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(236,73,19,1.00)",
-  },
-  browseBtnText: {
-    color: "rgba(236,73,19,1.00)",
-    fontWeight: "bold",
   },
   payFooterCapsule: {
     position: "absolute",
@@ -936,49 +498,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
-  },
-  groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    marginBottom: 4,
-  },
-  groupHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  groupTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#333',
-    flex: 1,
-  },
-  groupCountBadge: {
-    backgroundColor: '#FFF',
-    borderWidth: 0.5,
-    borderColor: '#D3D1C7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  groupCountText: {
-    fontSize: 10,
-    color: '#5F5E5A',
-    fontWeight: '500',
-  },
-  pastSectionLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#888780',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 10,
-    paddingHorizontal: 16,
   },
 });

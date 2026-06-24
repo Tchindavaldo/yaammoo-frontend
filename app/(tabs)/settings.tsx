@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -26,6 +26,10 @@ import { WalletManageModal } from '@/src/features/merchant/components/WalletMana
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { getDeviceId } from '@/src/features/notifications/services/deviceId';
+import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
+import { UserOrdersModal } from '@/src/features/orders/components/UserOrdersModal';
+import { UserWalletModal } from '@/src/features/wallet/components/UserWalletModal';
+import { useLocalSearchParams } from 'expo-router';
 
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
@@ -33,11 +37,16 @@ const SectionHeader = ({ title }: { title: string }) => (
 
 export default function SettingsScreen() {
   const { userData, setUserData, deleteAccount } = useAuth();
+  // Mode review Apple : masque les items liés au paiement / portefeuille.
+  const { appleReviewMode } = useFastFoods();
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [editBoutiqueVisible, setEditBoutiqueVisible] = useState(false);
   const [menuManageVisible, setMenuManageVisible] = useState(false);
   const [walletManageVisible, setWalletManageVisible] = useState(false);
+  // Section « Mes activités » (user + marchand) : commandes + portefeuille.
+  const [userOrdersVisible, setUserOrdersVisible] = useState(false);
+  const [userWalletVisible, setUserWalletVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -46,6 +55,14 @@ export default function SettingsScreen() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const REQUIRED_CONFIRM = 'SUPPRIMER';
   const insets = useSafeAreaInsets();
+
+  // Deep-link : notifications / home « Mes commandes » → ouvre le modal commandes.
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  useEffect(() => {
+    if (section === 'pending' || section === 'active' || section === 'finished') {
+      setUserOrdersVisible(true);
+    }
+  }, [section]);
 
   // Ouvre le modal custom de confirmation de déconnexion.
   const handleLogout = () => setLogoutVisible(true);
@@ -166,6 +183,23 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: insets.top + 100, paddingBottom: 40 }}
       >
+        {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
+        <SectionHeader title="Mes activités" />
+        <View style={styles.section}>
+          <SettingItem
+            icon="receipt-outline"
+            title="État des commandes"
+            onPress={() => setUserOrdersVisible(true)}
+          />
+          {!appleReviewMode && (
+            <SettingItem
+              icon="wallet-outline"
+              title="Portefeuille"
+              onPress={() => setUserWalletVisible(true)}
+            />
+          )}
+        </View>
+
         {/* Compte */}
         <SectionHeader title="Compte" />
         <View style={styles.section}>
@@ -179,11 +213,13 @@ export default function SettingsScreen() {
             title="Sécurité"
             onPress={() => handleComingSoon('Sécurité')}
           />
-          <SettingItem
-            icon="card-outline"
-            title="Paiement"
-            onPress={() => handleComingSoon('Paiement')}
-          />
+          {!appleReviewMode && (
+            <SettingItem
+              icon="card-outline"
+              title="Paiement"
+              onPress={() => handleComingSoon('Paiement')}
+            />
+          )}
           <SettingItem
             icon="gift-outline"
             title="Bonus et parrainage"
@@ -206,11 +242,13 @@ export default function SettingsScreen() {
                 title="Gestion menu"
                 onPress={() => setMenuManageVisible(true)}
               />
-              <SettingItem
-                icon="wallet-outline"
-                title="Portefeuille"
-                onPress={() => setWalletManageVisible(true)}
-              />
+              {!appleReviewMode && (
+                <SettingItem
+                  icon="wallet-outline"
+                  title="Portefeuille"
+                  onPress={() => setWalletManageVisible(true)}
+                />
+              )}
             </View>
           </>
         )}
@@ -341,6 +379,16 @@ export default function SettingsScreen() {
       <WalletManageModal
         visible={walletManageVisible}
         onClose={() => setWalletManageVisible(false)}
+      />
+
+      {/* Mes activités : commandes + portefeuille user (plein écran) */}
+      <UserOrdersModal
+        visible={userOrdersVisible}
+        onClose={() => setUserOrdersVisible(false)}
+      />
+      <UserWalletModal
+        visible={userWalletVisible}
+        onClose={() => setUserWalletVisible(false)}
       />
 
       {/* Modal Suppression de compte */}

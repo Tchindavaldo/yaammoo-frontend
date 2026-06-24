@@ -4,6 +4,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 import axios from "axios";
 import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
+import { REVIEW_DEFAULT_NETWORK, REVIEW_DEFAULT_PHONE } from "../../payment/constants/reviewPayment";
 
 export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData } = useAuth();
@@ -341,6 +342,60 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     }
   }, [userData, paymentNetwork, prices.total, createOrder]);
 
+  // Mode review Apple : commande directe sans saisie USSD ET sans attente socket.
+  // En review, le backend crée la commande de façon SYNCHRONE et répond
+  // directement { success: true } (pas de status 'ussd_sent', pas de
+  // payment.settled ensuite). On traite donc cette réponse comme un verdict
+  // terminal : success → success_created (le parent ferme alors le sheet).
+  const handleReviewOrder = useCallback(async () => {
+    if (!userData) {
+      setPaymentError('Utilisateur non connecté');
+      return;
+    }
+    setPaymentError(null);
+    setPaymentNetwork(REVIEW_DEFAULT_NETWORK);
+    setPaymentPhone(REVIEW_DEFAULT_PHONE);
+    setPaymentState('waiting');
+
+    const order = createOrder('pending');
+
+    try {
+      const response = await axios.post(`${Config.apiUrl}/transaction`, {
+        payBy: 'mobilemoney',
+        amount: prices.total,
+        phone: REVIEW_DEFAULT_PHONE,
+        network: REVIEW_DEFAULT_NETWORK === 'orange' ? 'Orangemoney' : 'MTN',
+        email: userData?.infos?.email || 'user@yaammoo.com',
+        userId: userData.uid,
+        items: order ? [order] : [],
+      });
+
+      console.log('[ReviewOrder] response:', JSON.stringify(response.data));
+
+      if (response.data?.success === true) {
+        // Verdict terminal synchrone (review) : pas de socket, pas d'écran de
+        // succès → on passe direct en success_created, le parent ferme aussitôt.
+        setPaymentState('success_created');
+      } else {
+        const raw = response.data?.message;
+        const message = Array.isArray(raw)
+          ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || 'Erreur commande'
+          : raw || 'Erreur commande';
+        setPaymentError(message);
+        setPaymentState('input');
+      }
+    } catch (error: any) {
+      const data = error.response?.data;
+      const raw = data?.message;
+      let message = Array.isArray(raw)
+        ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
+        : raw;
+      message = message || data?.error || error.message || 'Erreur commande';
+      setPaymentError(message);
+      setPaymentState('input');
+    }
+  }, [userData, prices.total, createOrder]);
+
   const handlePaymentVerdict = useCallback((data: any) => {
     if (data.status === 'successful') {
       // Paiement réussi → afficher "Création commande en cours" pendant 5s
@@ -386,6 +441,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     ussdMessage,
     setUssdMessage,
     handlePaymentConfirm,
+    handleReviewOrder,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,

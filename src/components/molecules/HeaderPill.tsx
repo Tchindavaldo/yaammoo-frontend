@@ -1,7 +1,7 @@
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface HeaderPillProps {
   /** Texte affiché dans la pilule (ex. "Tout marquer lu", "Retirer", "Ajouter"). */
@@ -11,6 +11,8 @@ interface HeaderPillProps {
   onPress?: () => void;
   /** Variante pleine (fond orange, texte blanc) au lieu de l'orange clair par défaut. */
   filled?: boolean;
+  /** Affiche un loader à la place de l'icône et désactive le press. */
+  loading?: boolean;
 }
 
 /**
@@ -22,16 +24,21 @@ export const HeaderPill: React.FC<HeaderPillProps> = ({
   icon,
   onPress,
   filled = false,
+  loading = false,
 }) => {
-  const Wrapper: any = onPress ? TouchableOpacity : View;
+  const Wrapper: any = onPress && !loading ? TouchableOpacity : View;
   const tint = filled ? "#fff" : Theme.colors.primary;
   return (
     <Wrapper
-      style={[styles.pill, filled && styles.pillFilled]}
-      onPress={onPress}
+      style={[styles.pill, filled && styles.pillFilled, loading && { opacity: 0.7 }]}
+      onPress={loading ? undefined : onPress}
       activeOpacity={0.7}
     >
-      {!!icon && <Ionicons name={icon} size={16} color={tint} />}
+      {loading ? (
+        <ActivityIndicator size="small" color={tint} />
+      ) : (
+        !!icon && <Ionicons name={icon} size={16} color={tint} />
+      )}
       <Text style={[styles.text, { color: tint }]} numberOfLines={1}>
         {label}
       </Text>

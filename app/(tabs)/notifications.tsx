@@ -9,6 +9,8 @@ import {
 } from "@/src/features/notifications/hooks/useNotifications";
 import { getNotificationRoute } from "@/src/features/notifications/utils/notificationRouting";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -32,6 +34,7 @@ export default function NotificationsScreen() {
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isSignedIn } = useAuthGate();
   const HEADER_HEIGHT = 70 + insets.top;
 
   // For testing: force loader to persist
@@ -60,6 +63,19 @@ export default function NotificationsScreen() {
       .filter((n) => !isReadFlag(n))
       .forEach((n) => markAsRead(n.id, n.idGroup));
   };
+
+  // Invité : les notifications sont liées au compte → on demande la connexion.
+  if (!isSignedIn) {
+    return (
+      <GuestGate
+        icon="notifications-outline"
+        title="Vos notifications"
+        subtitle="Connectez-vous pour suivre l'état de vos commandes et recevoir des alertes."
+      >
+        {null}
+      </GuestGate>
+    );
+  }
 
   if ((loading && notifications.length === 0) || forceLoading) {
     return (

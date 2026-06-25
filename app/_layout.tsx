@@ -15,6 +15,7 @@ import { MerchantWalletProvider } from "@/src/features/merchant/context/Merchant
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
+import { AuthGateProvider } from "@/src/features/auth/context/AuthGateContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
 import { useEffect, useRef, useState } from "react";
@@ -44,11 +45,12 @@ function AppContent() {
   // L'auth est résolue quand Firebase a fini de répondre (loading false).
   const authResolved = !loading;
 
-  // On n'entre dans la home que lorsque ses données ont fini de charger (1er
-  // fetch terminé : données, vide ou erreur). Tant que ce n'est pas prêt, on
-  // GARDE l'écran d'auth affiché (son loader tourne) → comme le splash attend
-  // que la home soit prête avant de se cacher.
-  const canEnterApp = authResolved && isSignedIn && homeReady;
+  // Accès invité (Apple 5.1.1(v)) : on entre dans la home dès que l'auth est
+  // résolue ET que les données ont fini de charger — CONNECTÉ OU NON. Les
+  // invités parcourent home/boutique librement ; les actions liées à un compte
+  // ouvrent la sheet d'auth via AuthGate. isSignedIn n'est PLUS une condition
+  // d'entrée (sinon un invité reste bloqué sur le login).
+  const canEnterApp = authResolved && homeReady;
 
   // Animation de bascule de groupe (auth ↔ tabs) :
   // - Au BOOT, on est monté directement dans le groupe cible pendant que le
@@ -112,7 +114,9 @@ export default function RootLayout() {
             <MerchantWalletProvider>
               <WalletProvider>
                 <FastFoodProvider>
-                  <AppContent />
+                  <AuthGateProvider>
+                    <AppContent />
+                  </AuthGateProvider>
                 </FastFoodProvider>
               </WalletProvider>
             </MerchantWalletProvider>

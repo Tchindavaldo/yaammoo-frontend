@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingItem } from '@/src/features/profile/components/SettingItem';
 import { Theme } from '@/src/theme';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
+import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
 import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
@@ -37,6 +39,7 @@ const SectionHeader = ({ title }: { title: string }) => (
 
 export default function SettingsScreen() {
   const { userData, setUserData, deleteAccount } = useAuth();
+  const { isSignedIn } = useAuthGate();
   // Mode review Apple : masque les items liés au paiement / portefeuille.
   const { appleReviewMode } = useFastFoods();
   const [notifEnabled, setNotifEnabled] = useState(true);
@@ -150,6 +153,19 @@ export default function SettingsScreen() {
       );
     }
   };
+
+  // Invité : le profil est lié au compte → on demande la connexion.
+  if (!isSignedIn) {
+    return (
+      <GuestGate
+        icon="person-circle-outline"
+        title="Votre profil"
+        subtitle="Connectez-vous pour gérer votre compte, vos commandes et vos paramètres."
+      >
+        {null}
+      </GuestGate>
+    );
+  }
 
   const initiales = userData?.infos.nom?.charAt(0)?.toUpperCase() || 'U';
   const nomComplet = [userData?.infos.nom, userData?.infos.prenom].filter(Boolean).join(' ') || 'Utilisateur';

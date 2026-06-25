@@ -9,7 +9,7 @@ import React, {
 import {
   Animated,
   Dimensions,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
@@ -80,10 +80,39 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
     }).start();
   }, [open, slide]);
 
-  const sheetTranslateY = slide.interpolate({
+  // Décalage clavier : on translate le sheet entier vers le haut de la hauteur
+  // du clavier (un KeyboardAvoidingView interne est inopérant ici, le sheet
+  // étant positionné en absolu + transform). Combiné avec l'anim d'ouverture.
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: e.endCoordinates.height,
+        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener(hideEvt, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: 0,
+        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardOffset]);
+
+  const openTranslateY = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [SCREEN_H, 0],
   });
+  // translateY final = position d'ouverture − hauteur clavier (remonte le sheet).
+  const sheetTranslateY = Animated.subtract(openTranslateY, keyboardOffset);
   const backdropOpacity = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
@@ -109,19 +138,14 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
         style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}
         pointerEvents={open ? "auto" : "none"}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1 }}
+        <View style={styles.sheetHandle} />
+        <ScrollView
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.sheetHandle} />
-          <ScrollView
-            bounces={false}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <AuthSheetContent />
-          </ScrollView>
-        </KeyboardAvoidingView>
+          <AuthSheetContent />
+        </ScrollView>
       </Animated.View>
     </AuthGateContext.Provider>
   );

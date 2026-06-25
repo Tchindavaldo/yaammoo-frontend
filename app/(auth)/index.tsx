@@ -10,7 +10,7 @@ import {
   Animated,
   Pressable,
   ScrollView,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -94,15 +94,42 @@ export default function WelcomeScreen() {
     }).start();
   }, [sheetOpen, slide]);
 
+  // Décalage clavier : on remonte le sheet entier de la hauteur du clavier
+  // (le sheet est en absolu + transform, un KeyboardAvoidingView est inopérant).
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: e.endCoordinates.height,
+        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener(hideEvt, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: 0,
+        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
+        useNativeDriver: true,
+      }).start();
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardOffset]);
+
   if (!fontsLoaded) return null;
 
   const onGetStarted = () => setSheetOpen(true);
   const closeSheet = () => setSheetOpen(false);
 
-  const sheetTranslateY = slide.interpolate({
+  const openTranslateY = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [SCREEN_H, 0],
   });
+  const sheetTranslateY = Animated.subtract(openTranslateY, keyboardOffset);
   const backdropOpacity = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
@@ -299,19 +326,14 @@ export default function WelcomeScreen() {
           ]}
           pointerEvents={sheetOpen ? "auto" : "none"}
         >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={{ flex: 1 }}
+          <View style={styles.sheetHandle} />
+          <ScrollView
+            bounces={false}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.sheetHandle} />
-            <ScrollView
-              bounces={false}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <AuthSheetContent />
-            </ScrollView>
-          </KeyboardAvoidingView>
+            <AuthSheetContent />
+          </ScrollView>
         </Animated.View>
       </View>
     </View>

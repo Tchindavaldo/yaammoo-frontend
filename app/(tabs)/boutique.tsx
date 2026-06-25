@@ -5,6 +5,8 @@ import {
   StyleSheet as RNStyleSheet
 } from 'react-native';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
+import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useMerchant } from '@/src/features/merchant/hooks/useMerchant';
 import { Theme } from '@/src/theme';
 import { TabHeader } from '@/src/components/molecules/TabHeader';
@@ -18,6 +20,7 @@ import { Toast } from '@/src/components/Toast';
 // depuis Settings (modals). Les statuts se changent via les chips du panel.
 export default function BoutiqueScreen() {
   const { userData, loading: authLoading } = useAuth();
+  const { isSignedIn } = useAuthGate();
   const { orders, loading: merchantLoading, refresh, updateStatus } = useMerchant();
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [headerHeight, setHeaderHeight] = useState(70);
@@ -55,6 +58,20 @@ export default function BoutiqueScreen() {
   };
 
   const loading = authLoading || merchantLoading;
+
+  // Invité : la boutique est liée au compte → on demande la connexion (comme
+  // les autres tabs) au lieu d'afficher l'écran « Créer votre boutique ».
+  if (!isSignedIn) {
+    return (
+      <GuestGate
+        icon="storefront-outline"
+        title="Votre boutique"
+        subtitle="Connectez-vous pour créer et gérer votre boutique marchand."
+      >
+        {null}
+      </GuestGate>
+    );
+  }
 
   if (!userData?.fastFoodId && !loading) {
     return (

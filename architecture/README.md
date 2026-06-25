@@ -13,7 +13,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 |---|---|
 | [structure.md](./structure.md) | Arborescence `app/`, `src/features/`, `src/components/`, `src/api/` |
 | [tab-header.md](./tab-header.md) | En-têtes d'onglets uniformes (TabHeader, HeaderPill, DatePill, SectionSwitcher) |
-| [auth.md](./auth.md) | Authentification client (Email/Password, Google Sign-In, AuthContext) |
+| [auth.md](./auth.md) | Authentification client (Email/Password, Google/Apple Sign-In, AuthContext, **accès invité / AuthGate**) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |
 | [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank) |

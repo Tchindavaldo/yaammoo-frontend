@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -54,7 +54,7 @@ const GoogleIcon = () => (
 );
 
 export default function AuthSheetContent() {
-  const { setUserData } = useAuth();
+  const { user, userData, setUserData } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   // "social" = boutons Apple/Google ; "login" = email+password (connexion) ;
@@ -66,6 +66,25 @@ export default function AuthSheetContent() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
+
+  // Réinitialise le sheet quand l'utilisateur n'est PAS connecté (boot invité,
+  // ou retour après déconnexion/suppression). Au login on laisse les loaders
+  // actifs jusqu'au démontage ; mais comme ce composant n'est jamais démonté
+  // (écran Welcome + overlay AuthGate), il faut nettoyer dès que le compte
+  // disparaît, sinon on rouvre la sheet avec un loader bloqué / le mode email.
+  const signedOut = !user && !userData;
+  useEffect(() => {
+    if (signedOut) {
+      setEmailMode(false);
+      setIsRegister(false);
+      setGoogleLoading(false);
+      setAppleLoading(false);
+      setLoggingIn(false);
+      setEmail("");
+      setPassword("");
+      setShowPassword(false);
+    }
+  }, [signedOut]);
 
   const onGoogle = async () => {
     if (googleLoading) return;

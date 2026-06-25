@@ -59,6 +59,22 @@ export default function SettingsScreen() {
   const REQUIRED_CONFIRM = 'SUPPRIMER';
   const insets = useSafeAreaInsets();
 
+  // Mode invité : après déconnexion/suppression, settings n'est PLUS démonté
+  // (l'invité reste dans les tabs, on affiche juste le GuestGate via le
+  // early-return). Le loader de logout/delete était laissé actif « jusqu'au
+  // démontage » → il restait bloqué et le modal réapparaissait à la
+  // reconnexion. On réinitialise donc ces états dès qu'on n'est plus connecté.
+  useEffect(() => {
+    if (!isSignedIn) {
+      setLogoutVisible(false);
+      setIsLoggingOut(false);
+      setDeleteVisible(false);
+      setIsDeleting(false);
+      setDeleteConfirmText('');
+      setDeleteError(null);
+    }
+  }, [isSignedIn]);
+
   // Deep-link : notifications / home « Mes commandes » → ouvre le modal commandes.
   const { section } = useLocalSearchParams<{ section?: string }>();
   useEffect(() => {

@@ -50,7 +50,14 @@ function AppContent() {
   // invités parcourent home/boutique librement ; les actions liées à un compte
   // ouvrent la sheet d'auth via AuthGate. isSignedIn n'est PLUS une condition
   // d'entrée (sinon un invité reste bloqué sur le login).
-  const canEnterApp = authResolved && homeReady;
+  //
+  // ⚠️ Anti-flash de l'écran Welcome au login (invité → connecté) : quand le
+  // user se connecte via la sheet overlay, AuthContext repasse loading=true le
+  // temps de re-vérifier le profil → authResolved=false → on quitterait (tabs)
+  // pour (auth) puis on y reviendrait = flash. On garde donc les tabs montées
+  // tant qu'un user Firebase est présent (login en cours), même si loading=true.
+  // Au vrai logout, `user` devient null → on sort proprement vers (auth).
+  const canEnterApp = homeReady && (authResolved || !!user);
 
   // Animation de bascule de groupe (auth ↔ tabs) :
   // - Au BOOT, on est monté directement dans le groupe cible pendant que le

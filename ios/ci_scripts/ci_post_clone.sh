@@ -2,10 +2,10 @@
 
 set -e
 
-export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
 
-# Install CocoaPods via Homebrew (évite le problème de permissions gem)
-brew install cocoapods
+# Node est installé via brew, s'assurer que le PATH inclut brew
+eval "$(/usr/local/bin/brew shellenv)"
 
 cd $CI_PRIMARY_REPOSITORY_PATH
 

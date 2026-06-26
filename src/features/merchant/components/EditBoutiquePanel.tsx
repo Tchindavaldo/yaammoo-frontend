@@ -19,6 +19,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "@/src/theme";
 import axios from "axios";
 import { Config } from "@/src/api/config";
+import {
+  uploadImageToServer,
+  isLocalUri,
+} from "@/src/features/merchant/services/uploadImage";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { BlurView } from "expo-blur";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -247,12 +251,13 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
         deliveryHours: deliveryHours.length > 0 ? deliveryHours : undefined,
       };
 
-      // Add image if it's a new selection (starts with file:// or content://)
-      if (image && (image.startsWith("file://") || image.startsWith("content://"))) {
+      // Nouvelle image sélectionnée (URI locale, y compris blob:/data: sur web) :
+      // on l'upload AVANT l'envoi et on persiste l'URL publique. Si l'image est
+      // déjà une URL (inchangée), on la renvoie telle quelle.
+      if (image && isLocalUri(image)) {
+        updateData.image = await uploadImageToServer(image);
+      } else if (image) {
         updateData.image = image;
-      } else if (!image) {
-        // Optionally clear image if user removes it
-        // updateData.image = "";
       }
 
       const response = await axios.post(

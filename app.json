@@ -15,7 +15,7 @@
       "router": {}
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.rauval.yaammoo",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,

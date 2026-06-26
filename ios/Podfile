@@ -23,6 +23,8 @@ prepare_react_native_project!
 target 'yaammoo' do
   pod 'GoogleUtilities', :modular_headers => true
   pod 'RecaptchaInterop', :modular_headers => true
+  # Force libdav1d to use a pre-built version without git submodules (Xcode Cloud blocks submodule cloning)
+  pod 'libdav1d', :podspec => 'https://raw.githubusercontent.com/SDWebImage/libdav1d-Xcode/master/libdav1d.podspec'
   use_expo_modules!
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'

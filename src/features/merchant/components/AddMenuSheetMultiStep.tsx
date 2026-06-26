@@ -646,14 +646,19 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
             </View>
 
             <Text style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}>
-              Photos du plat (optionnel)
+              Photos du plat (3 requises)
             </Text>
             <View style={styles.imageRow}>
               {[0, 1, 2].map((idx) => (
                 <TouchableOpacity
                   key={idx}
-                  style={styles.imageSlot}
+                  style={[
+                    styles.imageSlot,
+                    uploadingIdx !== null && styles.imageSlotDisabled,
+                  ]}
                   onPress={() => pickImage(idx)}
+                  // Pendant un upload en cours, on bloque toute autre sélection.
+                  disabled={uploadingIdx !== null}
                 >
                   {images[idx] ? (
                     <>
@@ -1179,6 +1184,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: Theme.colors.gray[100],
+  },
+  imageSlotDisabled: {
+    opacity: 0.5,
   },
   imagePreview: {
     width: "100%",

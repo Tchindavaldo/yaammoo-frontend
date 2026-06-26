@@ -61,6 +61,15 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   const [number, setNumber] = useState("");
   const [deliveryHours, setDeliveryHours] = useState<string[]>([]);
   const [newHour, setNewHour] = useState("");
+  // Heure dont on édite les lieux/prix (chip heure actif). null = aucune.
+  const [activeHour, setActiveHour] = useState<string | null>(null);
+  // Lieux + prix par heure (design only pour l'instant, pas envoyé au backend).
+  const [zonesByHour, setZonesByHour] = useState<
+    Record<string, { lieu: string; prix: string }[]>
+  >({});
+  // Ligne d'édition lieu/prix : draft + index de l'item en édition (null = création).
+  const [placeDraft, setPlaceDraft] = useState({ lieu: "", prix: "" });
+  const [placeEditIdx, setPlaceEditIdx] = useState<number | null>(null);
   const [image, setImage] = useState<string>("");
   const [orderLeadTime, setOrderLeadTime] = useState("");
   const [tempDeliveryTime, setTempDeliveryTime] = useState(new Date());
@@ -212,12 +221,63 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
     if (newHour && !deliveryHours.includes(newHour)) {
       const sorted = [...deliveryHours, newHour].sort();
       setDeliveryHours(sorted);
+      setActiveHour(newHour);
       setNewHour("");
     }
   };
 
   const removeDeliveryHour = (hour: string) => {
     setDeliveryHours(deliveryHours.filter((h) => h !== hour));
+    setZonesByHour((prev) => {
+      const next = { ...prev };
+      delete next[hour];
+      return next;
+    });
+    if (activeHour === hour) {
+      setActiveHour(null);
+      resetPlaceDraft();
+    }
+  };
+
+  // ── Lieux / prix de l'heure active (design — pas encore persisté) ──
+  const resetPlaceDraft = () => {
+    setPlaceDraft({ lieu: "", prix: "" });
+    setPlaceEditIdx(null);
+  };
+
+  const selectHour = (hour: string) => {
+    setActiveHour((prev) => (prev === hour ? null : hour));
+    resetPlaceDraft();
+  };
+
+  const validatePlace = () => {
+    if (!activeHour || !placeDraft.lieu.trim()) return;
+    const item = { lieu: placeDraft.lieu.trim(), prix: placeDraft.prix.trim() };
+    setZonesByHour((prev) => {
+      const list = prev[activeHour] ? [...prev[activeHour]] : [];
+      if (placeEditIdx === null) list.push(item);
+      else list[placeEditIdx] = item;
+      return { ...prev, [activeHour]: list };
+    });
+    resetPlaceDraft();
+  };
+
+  const editPlace = (idx: number) => {
+    if (!activeHour) return;
+    const item = zonesByHour[activeHour]?.[idx];
+    if (!item) return;
+    setPlaceDraft({ lieu: item.lieu, prix: item.prix });
+    setPlaceEditIdx(idx);
+  };
+
+  const deletePlace = () => {
+    if (activeHour && placeEditIdx !== null) {
+      setZonesByHour((prev) => ({
+        ...prev,
+        [activeHour]: (prev[activeHour] || []).filter((_, i) => i !== placeEditIdx),
+      }));
+    }
+    resetPlaceDraft();
   };
 
   const pickImage = async () => {
@@ -420,21 +480,51 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                   />
                 </View>
 
-                {/* Delivery Hours Section */}
+                {/* Delivery Section — design calqué sur Extras/Boissons du create menu */}
                 <View style={[styles.inputGroup, { marginTop: 20 }]}>
-                  <Text style={styles.floatingLabel}>Heures de livraison</Text>
-                  <Text style={styles.helperText}>
-                    Sélectionnez les créneaux horaires disponibles pour la livraison
-                  </Text>
+                  {/* Ligne label "Livraison" + ×N + chips heures (scroll horizontal) */}
+                  <View style={styles.chipHeaderRow}>
+                    <Text style={[styles.floatingLabel, { marginBottom: 0 }]}>
+                      Livraison
+                    </Text>
+                    {deliveryHours.length > 0 && (
+                      <Text style={styles.itemCountText}>×{deliveryHours.length}</Text>
+                    )}
+                    {deliveryHours.length > 0 && (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.chipScroll}
+                        contentContainerStyle={styles.chipScrollContent}
+                        keyboardShouldPersistTaps="handled"
+                      >
+                        {deliveryHours.map((hour, i) => (
+                          <React.Fragment key={`${hour}-${i}`}>
+                            {i > 0 && <Text style={styles.chipSeparator}>·</Text>}
+                            <TouchableOpacity onPress={() => selectHour(hour)}>
+                              <Text
+                                style={[
+                                  styles.itemChipText,
+                                  activeHour === hour && styles.itemChipTextActive,
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {hour}
+                                {zonesByHour[hour]?.length
+                                  ? ` (${zonesByHour[hour].length})`
+                                  : ""}
+                              </Text>
+                            </TouchableOpacity>
+                          </React.Fragment>
+                        ))}
+                      </ScrollView>
+                    )}
+                  </View>
 
-                  {/* Add time slot */}
-                  <View style={styles.addHourRow}>
+                  {/* Ligne d'édition heure : time picker + valider (ajoute l'heure) */}
+                  <View style={styles.editRow}>
                     <TouchableOpacity
-                      style={[
-                        styles.glassInput,
-                        styles.timeInput,
-                        { flex: 1, marginRight: 8 },
-                      ]}
+                      style={[styles.glassInput, styles.timeInput, styles.editInput, { flex: 1 }]}
                       onPress={() => setShowTimePicker(true)}
                     >
                       <Text style={styles.timeText}>
@@ -442,43 +532,104 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[
-                        styles.glassInput,
-                        styles.addButton,
-                        {
-                          width: 50,
-                          paddingHorizontal: 0,
-                          opacity: newHour ? 1 : 0.5,
-                        },
-                      ]}
+                      style={[styles.actionBtn, styles.validateBtn, { opacity: newHour ? 1 : 0.5 }]}
                       onPress={addDeliveryHour}
                       disabled={!newHour}
                     >
-                      <Ionicons name="add" size={22} color="#ec4913" />
+                      <Ionicons name="checkmark" size={18} color="white" />
                     </TouchableOpacity>
                   </View>
-
-                  {/* Hours list */}
-                  {deliveryHours.length > 0 && (
-                    <View style={styles.hoursGrid}>
-                      {deliveryHours.map((hour, idx) => (
-                        <View key={`${hour}-${idx}`} style={styles.hourChip}>
-                          <Text style={styles.hourChipText}>{hour}</Text>
-                          <TouchableOpacity
-                            onPress={() => removeDeliveryHour(hour)}
-                            style={styles.hourChipRemove}
-                          >
-                            <Ionicons name="close-outline" size={14} color="white" />
-                          </TouchableOpacity>
-                        </View>
-                      ))}
-                    </View>
-                  )}
 
                   {deliveryHours.length === 0 && (
                     <Text style={styles.emptyHoursText}>
                       Aucune heure configurée (optionnel)
                     </Text>
+                  )}
+
+                  {/* Sous-bloc Lieux/Prix de l'heure active (même design) */}
+                  {activeHour && (
+                    <View style={styles.zoneBlock}>
+                      {/* Ligne label "Lieu / Prix" + ×N + chips lieux */}
+                      <View style={styles.chipHeaderRow}>
+                        <Text style={[styles.floatingLabel, { marginBottom: 0 }]}>
+                          Lieu / Prix · {activeHour}
+                        </Text>
+                        {zonesByHour[activeHour]?.length ? (
+                          <Text style={styles.itemCountText}>
+                            ×{zonesByHour[activeHour].length}
+                          </Text>
+                        ) : null}
+                        {zonesByHour[activeHour]?.length ? (
+                          <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.chipScroll}
+                            contentContainerStyle={styles.chipScrollContent}
+                            keyboardShouldPersistTaps="handled"
+                          >
+                            {zonesByHour[activeHour].map((z, idx) => (
+                              <React.Fragment key={idx}>
+                                {idx > 0 && (
+                                  <Text style={styles.chipSeparator}>·</Text>
+                                )}
+                                <TouchableOpacity onPress={() => editPlace(idx)}>
+                                  <Text
+                                    style={[
+                                      styles.itemChipText,
+                                      placeEditIdx === idx &&
+                                        styles.itemChipTextActive,
+                                    ]}
+                                    numberOfLines={1}
+                                  >
+                                    {z.lieu}
+                                    {z.prix ? ` · ${z.prix}` : ""}
+                                  </Text>
+                                </TouchableOpacity>
+                              </React.Fragment>
+                            ))}
+                          </ScrollView>
+                        ) : null}
+                      </View>
+
+                      {/* Ligne d'édition lieu : input lieu + input prix + supprimer + ajouter */}
+                      <View style={styles.editRow}>
+                        <TextInput
+                          style={[styles.glassInput, styles.editInput, { flex: 1.4 }]}
+                          value={placeDraft.lieu}
+                          onChangeText={(t) =>
+                            setPlaceDraft({ ...placeDraft, lieu: t })
+                          }
+                          placeholder="Localisation"
+                          placeholderTextColor="#cbd5e1"
+                        />
+                        <TextInput
+                          style={[styles.glassInput, styles.editInput, { flex: 1 }]}
+                          value={placeDraft.prix}
+                          onChangeText={(t) =>
+                            setPlaceDraft({ ...placeDraft, prix: t })
+                          }
+                          keyboardType="numeric"
+                          placeholder="Prix"
+                          placeholderTextColor="#cbd5e1"
+                        />
+                        <TouchableOpacity
+                          style={styles.actionBtn}
+                          onPress={deletePlace}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={18}
+                            color="#dc3545"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, styles.validateBtn]}
+                          onPress={validatePlace}
+                        >
+                          <Ionicons name="checkmark" size={18} color="white" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   )}
                 </View>
 
@@ -778,37 +929,68 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontSize: 13,
   },
-  addHourRow: {
+  // ── Design Livraison (chips + ligne d'édition), calqué sur create menu ──
+  // Ligne label + ×N + chips scrollables (ne wrappe jamais).
+  chipHeaderRow: {
     flexDirection: "row",
-    gap: 0,
-    marginBottom: 12,
-  },
-  addButton: {
-    justifyContent: "center",
     alignItems: "center",
+    marginBottom: 8,
   },
-  hoursGrid: {
+  chipScroll: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  chipScrollContent: {
+    alignItems: "center",
+    gap: 6,
+    paddingRight: 4,
+  },
+  itemChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#475569",
+    maxWidth: 160,
+  },
+  itemChipTextActive: {
+    color: "#ec4913",
+  },
+  chipSeparator: {
+    fontSize: 13,
+    color: "#cbd5e1",
+  },
+  itemCountText: {
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#ec4913",
+  },
+  // Ligne d'édition (inputs + boutons supprimer/valider).
+  editRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "stretch",
     gap: 8,
     marginBottom: 12,
   },
-  hourChip: {
-    flexDirection: "row",
+  editInput: {
+    borderRadius: 14,
+    height: 46,
+  },
+  actionBtn: {
+    width: 46,
     alignItems: "center",
-    backgroundColor: "rgba(236,73,19,0.8)",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
+    justifyContent: "center",
+    borderRadius: 14,
+    backgroundColor: "#f1f5f9",
   },
-  hourChipText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "bold",
+  validateBtn: {
+    backgroundColor: "#ec4913",
   },
-  hourChipRemove: {
-    padding: 2,
+  // Sous-bloc Lieux/Prix de l'heure active.
+  zoneBlock: {
+    marginTop: 6,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
   },
   emptyHoursText: {
     color: "#94a3b8",

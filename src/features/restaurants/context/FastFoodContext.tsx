@@ -141,6 +141,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const upsertFastFoodFromSocket = useCallback((rawFastFood: any) => {
     if (!rawFastFood?.id) return;
+    // Le payload contient-il les menus ? (ex. fastfoodUpdated n'envoie que les
+    // infos boutique, sans les plats). Si non, on NE doit pas écraser les menus
+    // déjà chargés — sinon le fast food passerait à menu=[] et disparaîtrait de
+    // la home (filtre « sans plat »).
+    const payloadHasMenus =
+      Array.isArray(rawFastFood.menus) || Array.isArray(rawFastFood.menu);
     setFastFoods((prev) => {
       const idx = prev.findIndex((ff) => ff.id === rawFastFood.id);
       const normalized = normalizeFastFood(
@@ -149,7 +155,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       );
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], ...normalized };
+        next[idx] = {
+          ...next[idx],
+          ...normalized,
+          // Préserve les menus existants si le payload ne les fournit pas.
+          menu: payloadHasMenus ? normalized.menu : next[idx].menu,
+        };
         return next;
       }
       return [...prev, normalized];

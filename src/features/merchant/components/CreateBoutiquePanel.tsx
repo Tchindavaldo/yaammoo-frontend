@@ -18,6 +18,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "@/src/theme";
 import axios from "axios";
 import { Config } from "@/src/api/config";
+import {
+  uploadImageToServer,
+  isLocalUri,
+} from "@/src/features/merchant/services/uploadImage";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { BlurView } from "expo-blur";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -139,13 +143,19 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
     setLoading(true);
     try {
       const userId = userData?.uid;
+      // Upload de l'image AVANT l'envoi : on ne doit jamais persister une URI
+      // locale (file://, blob:…) — le backend/home ne pourrait pas l'afficher.
+      let imageUrl = "";
+      if (image) {
+        imageUrl = isLocalUri(image) ? await uploadImageToServer(image) : image;
+      }
       const response = await axios.post(`${Config.apiUrl}/fastFood`, {
         name,
         openTime: formatTime(openTime),
         closeTime: formatTime(closeTime),
         userId,
         number,
-        image: image || "",
+        image: imageUrl,
         orderLeadTime: orderLeadTime ? parseInt(orderLeadTime, 10) : undefined,
         deliveryHours: deliveryHours.length > 0 ? deliveryHours : undefined,
       });

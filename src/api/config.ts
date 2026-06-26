@@ -1,14 +1,14 @@
 export const Config = {
   // apiUrl: 'http://54.146.156.89:3001',
   // apiUrl: 'http://192.168.8.103:5000',
-  // apiUrl: "http://192.168.8.100:5000",
+  apiUrl: "http://192.168.8.101:5000",
   // apiUrl: "http://192.168.137.206:5000",
   // apiUrl: "http://192.168.11.37:5000",
   // apiUrl: "http://192.168.1.122:5000",
   // apiUrl: "http://172.20.10.4:5000",
   // apiUrl: "http://localhost:5000",
 
-  apiUrl: "https://yaammoo-backend.fly.dev",
+  // apiUrl: "https://yaammoo-backend.fly.dev",
 
   firebaseConfig: {
     apiKey: "AIzaSyCGjhUfAHQncfeUcI0wXpghctQG_O9WCgo",

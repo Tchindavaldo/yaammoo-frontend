@@ -157,6 +157,14 @@ export const useSocketEvents = () => {
       if (data?.fastFood) upsertGlobalFastFood(data.fastFood);
     }));
 
+    // fastfoodUpdated { fastFood } → mêmes données que newFastfood. upsert
+    // (l'édition d'une boutique met à jour son image/horaires sur la home).
+    socket.on("fastfoodUpdated", withAck((data: any) => {
+      console.log("🏬 fastfoodUpdated:", data);
+      const ff = data?.fastFood ?? data;
+      if (ff?.id) upsertGlobalFastFood(ff);
+    }));
+
     // ── Transactions / Wallet ─────────────────────────────────────────
     // newTransaction { data: transaction } → page transactions client (WalletContext).
     socket.on("newTransaction", withAck((data: any) => {
@@ -230,6 +238,7 @@ export const useSocketEvents = () => {
       socket.off("globalMenuUpdated");
       socket.off("globalMenuDeleted");
       socket.off("newFastfood");
+      socket.off("fastfoodUpdated");
       socket.off("newTransaction");
       socket.off("wallet.credited");
       socket.off("wallet.withdrawal");

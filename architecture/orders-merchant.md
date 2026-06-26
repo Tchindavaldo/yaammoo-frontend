@@ -203,6 +203,12 @@ Permet au marchand d'éditer :
 
 Les heures de livraison configurées ici sont ensuite accessibles dans `menu.deliveryHours` (via propagation lors du chargement du menu enrichi dans `CheckoutSheet`).
 
+**Loader au chargement** : à l'ouverture, le panel fetch les données boutique
+(`GET /fastfood/:id`). Pendant la requête (`loadingData`), la zone de formulaire affiche
+un `ActivityIndicator` centré (« Chargement de la boutique… ») **au lieu** des inputs —
+évite l'affichage de champs vides qui se remplissent ensuite. Les inputs n'apparaissent
+qu'une fois les données arrivées.
+
 ---
 
 ## PorteFeuillePanel.tsx

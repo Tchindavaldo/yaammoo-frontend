@@ -2,16 +2,22 @@
 
 set -e
 
-export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin:$PATH"
+# Init Homebrew
+eval "$(/usr/local/bin/brew shellenv 2>/dev/null || /opt/homebrew/bin/brew shellenv)"
 
-# Node est installé via brew, s'assurer que le PATH inclut brew
-eval "$(/usr/local/bin/brew shellenv)"
+# Install Node if missing
+if ! command -v node >/dev/null 2>&1; then
+  brew install node
+fi
 
-cd $CI_PRIMARY_REPOSITORY_PATH
+# Install CocoaPods if missing
+if ! command -v pod >/dev/null 2>&1; then
+  brew install cocoapods
+fi
 
-# Install Node dependencies
+cd "$CI_PRIMARY_REPOSITORY_PATH"
+
 npm install
 
-# Install pods
 cd ios
 pod install

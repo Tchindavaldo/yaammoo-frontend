@@ -51,6 +51,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   const insets = useSafeAreaInsets();
   const { userData, setUserData } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(70);
 
   // Form fields
@@ -121,6 +122,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   useEffect(() => {
     if (visible && userData?.fastFoodId) {
       const loadBoutiqueData = async () => {
+        setLoadingData(true);
         try {
           const response = await axios.get(
             `${Config.apiUrl}/fastfood/${userData.fastFoodId}`,
@@ -152,6 +154,8 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
           }
         } catch (error) {
           console.error("Error loading boutique data:", error);
+        } finally {
+          setLoadingData(false);
         }
       };
       loadBoutiqueData();
@@ -329,6 +333,13 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                 style={{ flex: 1 }}
                 keyboardShouldPersistTaps="handled"
               >
+                {loadingData ? (
+                  <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="large" color={Theme.colors.primary} />
+                    <Text style={styles.loaderText}>Chargement de la boutique…</Text>
+                  </View>
+                ) : (
+                <>
                 {/* Avatar + Name row */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                   <TouchableOpacity onPress={pickImage} style={styles.avatarCircle}>
@@ -486,6 +497,8 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                     </>
                   )}
                 </TouchableOpacity>
+                </>
+                )}
               </ScrollView>
             </View>
           </View>
@@ -640,6 +653,18 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  loaderContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 120,
+    gap: 14,
+  },
+  loaderText: {
+    color: "#94a3b8",
+    fontSize: 13,
+    fontWeight: "600",
   },
   updateBtn: {
     flexDirection: "row",

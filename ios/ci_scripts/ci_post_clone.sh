@@ -2,9 +2,10 @@
 
 set -e
 
-# Fix PATH for Xcode Cloud
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-export PATH="/Users/local/Library/mise/shims:$PATH"
+
+# Install CocoaPods via Homebrew (évite le problème de permissions gem)
+brew install cocoapods
 
 cd $CI_PRIMARY_REPOSITORY_PATH
 

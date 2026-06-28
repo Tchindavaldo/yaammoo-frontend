@@ -82,11 +82,11 @@ yaammoo/src/features/checkout/
 ### Express
 ```
 [ expressRow (flexDirection: row) ]
-  ├── expressCardsCol (flex: 2)
-  │     ├── Location (pleine largeur, marginBottom: 8)
-  │     └── [ Contact | VoiceNote ] (flexDirection: row, gap: 8)
-  └── expressInfoCol (flex: 1)
-        └── flash icon + "Commande livrée dès que terminée"
+  └── expressCardsCol (flex: 1, flexDirection: row, gap: 8)
+        └── [ Location | Contact | VoiceNote ] (3 cartes flex:1, même ligne)
+
+> Pas de card "Commande livrée dès que terminée" : le texte est porté par le
+> sous-texte du bouton de sélection Express ("Livré dès que terminée").
 ```
 
 ### Standard
@@ -105,6 +105,13 @@ yaammoo/src/features/checkout/
 ```
 
 **Cartes colorées** (orange `#ec4913`) quand remplies.
+
+**Répartition verticale** : le conteneur (`deliveryContainer`) a une hauteur fixe de
+`230px` + `justifyContent: space-between`. Deux zones `flex: 1` se partagent cet espace :
+- `topZone` (cartes infos — Express/Standard/Aucune), `justifyContent: flex-start`, `overflow: hidden`
+- `bottomZone` ("Select Type" + grille Express/Heure/Aucun), `justifyContent: center`
+
+Hauteur fixe = les zones ne bougent pas au changement de type de livraison.
 
 ---
 

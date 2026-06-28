@@ -306,7 +306,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, 
               )}
 
               {activeTab === 'delivery' && (
-                <DeliveryTab 
+                <DeliveryTab
                   delivery={delivery}
                   setDelivery={setDelivery}
                   onOpenLocation={() => setIsLocationPopupVisible(true)}

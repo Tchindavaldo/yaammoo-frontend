@@ -221,15 +221,19 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     if (selectedStatus !== "finish") return null;
 
     const express: Commande[] = [];
+    const surplace: Commande[] = [];
     const scheduled: Record<string, Commande[]> = {};
 
     dateFilteredOrders.forEach((o) => {
       const d = (o as any).delivery;
-      const isExpress = d?.type === "express";
-      if (isExpress) {
+      const hasDelivery = d?.status === true;
+      if (!hasDelivery) {
+        surplace.push(o);
+        return;
+      }
+      if (d?.type === "express") {
         express.push(o);
       } else {
-        // Use delivery.time first, then fallback to livraison.hour
         const slot = d?.time || "À définir";
         if (!scheduled[slot]) scheduled[slot] = [];
         scheduled[slot].push(o);
@@ -249,6 +253,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
     return {
       expressGroups: groupByUser(express),
+      surplaceGroups: groupByUser(surplace),
       slots: Object.entries(scheduled).map(([slot, orders]) => ({
         title: slot,
         userGroups: groupByUser(orders),
@@ -505,6 +510,39 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                       <View style={{ gap: 6 }}>
                         {deliveryData.expressGroups.map((group) =>
                           renderUserGroup(group, "express"),
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {deliveryData.surplaceGroups.length > 0 && (
+                  <View style={{ marginBottom: 15 }}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => toggleGroup("surplace")}
+                      style={styles.groupHeader}
+                    >
+                      <View style={styles.groupHeaderLeft}>
+                        <Ionicons
+                          name={expandedGroupId === "surplace" ? "chevron-down" : "chevron-forward"}
+                          size={12}
+                          color="#888780"
+                        />
+                        <Text style={styles.groupTitle}>Sur place</Text>
+                        <View style={styles.groupCountBadge}>
+                          <Text style={styles.groupCountText}>
+                            {deliveryData.surplaceGroups.length} commande
+                            {deliveryData.surplaceGroups.length > 1 ? "s" : ""}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    {expandedGroupId === "surplace" && (
+                      <View style={{ gap: 6 }}>
+                        {deliveryData.surplaceGroups.map((group) =>
+                          renderUserGroup(group, "surplace"),
                         )}
                       </View>
                     )}

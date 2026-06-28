@@ -96,7 +96,7 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
     const nom =
       credential.fullName?.familyName ||
       firebaseUser.displayName?.split(" ").slice(1).join(" ") ||
-      prenom;
+      "";
     const email = credential.email ?? firebaseUser.email ?? "";
 
     const newUser: Users = new Users(

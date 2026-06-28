@@ -39,7 +39,7 @@ const CATEGORIES = [
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
-  const { userData } = useAuth();
+  const { user, userData } = useAuth();
   const { requireAuth } = useAuthGate();
   const { unreadCount } = useNotifications();
   const router = useRouter();
@@ -115,7 +115,7 @@ export default function HomeScreen() {
   const renderHeader = () => (
     <>
       <RestaurantHeader
-        userName={userData?.infos?.nom || "Utilisateur"}
+        userName={[userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(' ') || user?.displayName || "Utilisateur"}
         userPhoto={
           (userData as any)?.photoUrl || (userData as any)?.photo || ""
         }
@@ -151,7 +151,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
       <RestaurantHeader
-        userName={userData?.infos?.nom || "Utilisateur"}
+        userName={[userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(' ') || user?.displayName || "Utilisateur"}
         userPhoto={
           (userData as any)?.photoUrl || (userData as any)?.photo || ""
         }

@@ -227,6 +227,21 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       }
     }
 
+    const clientData = {
+      firstName: userData?.infos?.prenom || user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "Client",
+      lastName: userData?.infos?.nom || user?.displayName?.split(" ").slice(1).join(" ") || "",
+      email: userData?.infos?.email || user?.email || "inconnu@email.com",
+      phoneNumber: Number(userData?.infos?.numero) || 0,
+    };
+    console.log("📦 [useCheckout] userData sources →", {
+      "infos.prenom": userData?.infos?.prenom,
+      "infos.nom": userData?.infos?.nom,
+      "infos.email": userData?.infos?.email,
+      "firebase.displayName": user?.displayName,
+      "firebase.email": user?.email,
+    });
+    console.log("📦 [useCheckout] clientData envoyé →", clientData);
+
     const returnedOrder: any = {
       userId: userData?.uid || "unknown_user",
       fastFoodId: (menu as any).fastFoodId || (menu as any).idFastFood || "1",
@@ -234,12 +249,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       quantity,
       selectedPriceIndex,
       total: prices.total,
-      userData: {
-        firstName: userData?.infos?.prenom || user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "Client",
-        lastName: userData?.infos?.nom || user?.displayName?.split(" ").slice(1).join(" ") || "",
-        email: userData?.infos?.email || user?.email || "inconnu@email.com",
-        phoneNumber: Number(userData?.infos?.numero) || 0,
-      },
+      userData: clientData,
       extra: extraData.length > 0 ? extraData : [{ name: "Aucun", status: false }],
       drink: drinkData,
       delivery: deliveryData,

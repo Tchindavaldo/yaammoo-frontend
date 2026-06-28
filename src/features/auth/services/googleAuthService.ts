@@ -97,7 +97,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     const displayName = firebaseUser.displayName ?? "";
     const nameParts = displayName.trim().split(" ");
     const prenom = nameParts[0] ?? "User";
-    const nom = nameParts.slice(1).join(" ") || prenom;
+    const nom = nameParts.slice(1).join(" ") || "";
 
     const newUser: Users = new Users(
       firebaseUser.uid,

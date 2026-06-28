@@ -38,7 +38,7 @@ const SectionHeader = ({ title }: { title: string }) => (
 );
 
 export default function SettingsScreen() {
-  const { userData, setUserData, deleteAccount } = useAuth();
+  const { user, userData, setUserData, deleteAccount } = useAuth();
   const { isSignedIn } = useAuthGate();
   // Mode review Apple : masque les items liés au paiement / portefeuille.
   const { appleReviewMode } = useFastFoods();
@@ -183,9 +183,10 @@ export default function SettingsScreen() {
     );
   }
 
-  const initiales = userData?.infos.nom?.charAt(0)?.toUpperCase() || 'U';
-  const nomComplet = [userData?.infos.nom, userData?.infos.prenom].filter(Boolean).join(' ') || 'Utilisateur';
-  const contact = userData?.infos.email || userData?.infos.numero?.toString() || '';
+  const firebaseName = user?.displayName || "";
+  const initiales = (userData?.infos.prenom || userData?.infos.nom || firebaseName)?.charAt(0)?.toUpperCase() || 'U';
+  const nomComplet = [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(' ') || firebaseName || 'Utilisateur';
+  const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || '';
 
   return (
     <View style={styles.container}>

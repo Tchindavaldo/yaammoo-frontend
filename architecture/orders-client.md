@@ -139,6 +139,25 @@ yaammoo/src/features/orders/
 | `paused` | boolean | false | Stoppe/nettoie toutes les animations |
 | `hideLabel` | boolean | false | Cache le label "En route..." |
 
+## OrderBottomSheet.tsx
+
+**Chemin** : `yaammoo/src/features/orders/components/OrderBottomSheet.tsx`
+
+Bottom sheet détail d'une commande client. Deux tabs :
+
+### Tab Livraison
+- **Créneau** : mêmes valeurs que le marchand — "Sur place" (pas de `delivery.status`), "Express" (`type === 'express'`), ou `Période (heure)`
+- **Carte droite** : s'adapte au type — vélo animé si `delivering`, icône storefront si "Sur place", flash si Express, clock si programmé
+- **Note de livraison** + **Message vocal** (waveform + play/pause)
+
+### Tab Commandes
+- Même rendu que `MerchantOrderCommandesTab` : icônes 🍽️/➕/🥤, label type (MENU/EXTRA/BOISSON), prix en XAF, total "Total commande"
+- Items scrollables dans une card arrondie (fond `#F9FAFB`, borderRadius 16)
+
+**Navigation multi-commandes** (`allOrders`) : barre de pagination "Cmd 1, Cmd 2…" en bas, avec flèches si > 3 commandes.
+
+---
+
 ## Statuts Commande
 
 ```

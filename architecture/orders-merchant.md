@@ -21,8 +21,10 @@ yaammoo/src/features/merchant/
 └── components/
     ├── OrderManagePanel.tsx            # Panel principal gestion commandes
     ├── MerchantOrderCard.tsx           # Carte commande côté marchand (avec bouton avancer statut)
-    ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile)
-    ├── MerchantOrderBottomSheet.web.tsx # Version web du bottom sheet
+    ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile) — shell + état + nav globale
+    ├── MerchantOrderLivraisonTab.tsx   # Tab Livraison + helpers (InfoCard, Waveform) extraits du sheet
+    ├── MerchantOrderCommandesTab.tsx   # Tab Commande : menu/extras/boissons avec icônes et prix en €
+    ├── MerchantOrderBottomSheet.web.tsx # Version web du bottom sheet (auto-contenu)
     ├── MenuManagePanel.tsx             # Panel gestion des menus (stats + chips filtres Dispo/Indispo + bouton Ajouter ; item calqué sur MerchantOrderCard ; vue ajout inline)
     ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
     ├── AddMenuSheetMultiStep.tsx       # Formulaire menu (Modal pour modif / inline `embedded` pour création) — 3 étapes
@@ -81,6 +83,11 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 **Layout "Terminées"** (onglet `finish`) :
 - Groupement par type de livraison : Express (groupe unique) + Scheduled (groupes par créneau horaire)
 - Chaque groupe : header collapsible + bouton "Lancer tout" (déclenche `onUpdateStatus` avec `delivering`)
+- Au déroulé d'un groupe (Express ou slot horaire), **2 sous-tabs** apparaissent :
+  - **En attente** : commandes du groupe dont le statut ≠ `delivering`
+  - **En cours** : commandes du groupe dont le statut = `delivering`
+  - Chaque sous-tab affiche un badge compteur. L'onglet "En attente" est actif par défaut.
+  - L'état actif par groupe est stocké dans `groupSubTab` (`Record<groupId, 'en_attente'|'en_cours'>`).
 - Les commandes du même utilisateur dans un groupe sont affichées via un seul `MerchantOrderCard` avec `allOrders`
 
 **Layout "En Attente" / "En cours"** :

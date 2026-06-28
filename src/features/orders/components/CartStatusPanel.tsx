@@ -1,20 +1,20 @@
-import React, { useState, useMemo } from "react";
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-  RefreshControl,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Commande } from "@/src/types";
-import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
-import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrackingHeader";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
+import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrackingHeader";
+import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { Theme } from "@/src/theme";
+import { Commande } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo, useState } from "react";
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface CartStatusPanelProps {
   /** Décalage haut (hauteur du header parent) : la liste scrolle dessous. */
@@ -130,17 +130,17 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     setExpandedPastSection((prev) => (prev === iso ? null : iso));
 
   const groupByFastFood = (orders: Commande[]) => {
-    const groups: Record<string, { name: string; orders: Commande[] }> = {};
+    const groups: Record<string, { id: string; name: string; orders: Commande[] }> = {};
     orders.forEach((o) => {
       const ffId = o.fastFoodId;
       if (!ffId) return;
       if (!groups[ffId]) {
         const ff = fastFoods.find((f) => f.id === ffId);
-        groups[ffId] = { name: ff?.nom || (ff as any)?.name || "Boutique", orders: [] };
+        groups[ffId] = { id: ffId, name: ff?.nom || (ff as any)?.name || "Boutique", orders: [] };
       }
       groups[ffId].orders.push(o);
     });
-    return Object.entries(groups).map(([id, data]) => ({ id, ...data }));
+    return Object.values(groups);
   };
 
   const groupedOrders = useMemo(() => {
@@ -163,6 +163,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   ) => {
     const groupKey = `${keyPrefix}${group.id}`;
     const isExpanded = !!expandedGroups[groupKey];
+
     return (
       <View key={groupKey} style={{ marginBottom: 15 }}>
         <TouchableOpacity activeOpacity={0.7} onPress={() => toggleGroup(groupKey)} style={styles.groupHeader}>
@@ -179,7 +180,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         {isExpanded && (
           <View style={{ gap: 2 }}>
             {group.orders.map((order) => {
-              const isFinished = order.status === "finished" || order.status === "delivered";
+              const isFinished = order.status === "finished" || order.status === "delivered" || activeStatus === "finished" || activeStatus === "delivered" || keyPrefix.startsWith("past_");
               return (
                 <ClientOrderCard
                   key={order.id}
@@ -188,7 +189,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
                   hideRanking={isFinished}
                   onPress={() => {
                     setSelectedOrderDetails(order);
-                    setSelectedGroupOrders(group.orders);
+                    setSelectedGroupOrders([]); // Uniquement cette commande
                     setDetailVisible(true);
                   }}
                 />
@@ -297,7 +298,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           setSelectedGroupOrders([]);
         }}
         order={selectedOrderDetails}
-        allOrders={selectedGroupOrders}
+        allOrders={selectedGroupOrders.length > 0 ? selectedGroupOrders : undefined}
         boutique={fastFoods.find((f) => f.id === selectedOrderDetails?.fastFoodId)}
       />
     </View>

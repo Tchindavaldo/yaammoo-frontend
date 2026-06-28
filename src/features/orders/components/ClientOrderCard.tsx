@@ -7,11 +7,13 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
-import { Commande } from "@/src/types";
+import { Commande, FastFood } from "@/src/types";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 
 interface ClientOrderCardProps {
   order: Commande;
+  allOrders?: Commande[];
+  fastFood?: FastFood;
   onDelete?: (id: string) => void;
   onUpdateQuantity?: (id: string, qty: number) => void;
   showActions?: boolean;
@@ -22,12 +24,70 @@ interface ClientOrderCardProps {
 
 export const ClientOrderCard: React.FC<ClientOrderCardProps> = ({
   order,
+  allOrders,
+  fastFood,
   onDelete,
   onUpdateQuantity,
   showActions = false,
   hideRanking = false,
   onPress,
 }) => {
+  if (allOrders && allOrders.length > 0) {
+    const orderCount = allOrders.length;
+    const ffName = fastFood?.nom || fastFood?.name || "Boutique";
+    const initials = ffName.substring(0, 2).toUpperCase();
+    const ffImage = fastFood?.logo || fastFood?.coverImage;
+    
+    // Status delivery group
+    const isAnyDelivering = allOrders.some(o => (o.status || "").toLowerCase() === "delivering");
+    const addressStr = order.delivery?.location || "Sur place";
+    
+    // On calcule le prix total de toutes les commandes du groupe
+    const totalPriceGroup = allOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+    return (
+      <TouchableOpacity activeOpacity={0.8} style={styles.wrapper} onPress={onPress} disabled={!onPress}>
+        <View style={styles.summaryRow}>
+          <View style={styles.avatarContainer}>
+            {ffImage ? (
+              <Image source={{ uri: ffImage }} style={styles.avatarImage} cachePolicy="memory-disk" transition={150} />
+            ) : (
+              <Text style={styles.avatarInitials}>{initials}</Text>
+            )}
+            <View style={[styles.orderCountBadge, { backgroundColor: "#ec4913" }]}>
+              <Text style={styles.orderCountText}>{orderCount}</Text>
+            </View>
+          </View>
+
+          <View style={styles.summaryInfo}>
+            <View style={styles.summaryTopRow}>
+              <View style={styles.summaryTitleContainer}>
+                <Text style={styles.summaryPrice}>{totalPriceGroup} F</Text>
+                <Text style={styles.summaryName} numberOfLines={1}>{ffName}</Text>
+              </View>
+              {isAnyDelivering && (
+                <View style={styles.bikeAnimationTop}>
+                  <BikeAnimation />
+                </View>
+              )}
+            </View>
+
+            <View style={styles.summaryBottomRow}>
+              <View style={styles.summaryChipsRow}>
+                <View style={[styles.smallChip, styles.chipInactive, { paddingLeft: 0 }]}>
+                  <Ionicons name="location-outline" size={14} color="#9ca3af" />
+                  <Text style={[styles.chipText, { color: "#9ca3af" }]} numberOfLines={1}>
+                    {addressStr.length > 25 ? addressStr.slice(0, 25) + '…' : addressStr}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
   const totalPrice = order.total || 0;
   const menuName = (order.menu as any)?.titre || (order.menu as any)?.name || "—";
   const menuImage = (order.menu as any)?.coverImage || (order.menu as any)?.image;
@@ -301,5 +361,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     color: '#6b7280',
-  }
+  },
+  avatarInitials: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: "#ec4913",
+  },
+  orderCountBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "white",
+    zIndex: 10,
+  },
+  orderCountText: {
+    color: "white",
+    fontSize: 9,
+    fontWeight: "900",
+  },
 });

@@ -1,19 +1,19 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { Commande, FastFood } from "@/src/types";
+import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
   Animated,
   Dimensions,
+  Modal,
   PanResponder,
   Pressable,
-  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Commande, FastFood } from "@/src/types";
-import { Audio } from 'expo-av';
-import { Ionicons } from '@expo/vector-icons';
 import { BikeAnimation } from '../../merchant/components/BikeAnimation';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -49,44 +49,45 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const [items, setItems] = useState<OrderItem[]>([]);
+  // Déterminer la commande à afficher (de façon synchrone)
+  const selectedOrder = allOrders ? allOrders[selectedOrderIdx] || order : order;
+
+  // Construire les items dynamiquement (plus besoin de state ni de useEffect pour ça)
+  const items: OrderItem[] = React.useMemo(() => {
+    if (!selectedOrder) return [];
+    const extras = selectedOrder.extra || [];
+    const drinks = selectedOrder.drink || [];
+    const newItems: OrderItem[] = [];
+
+    const priceIdx = ((selectedOrder as any).selectedPriceIndex || 1) - 1;
+    const menuPrice = selectedOrder.menu?.prices?.[priceIdx]?.price || selectedOrder.menu?.prices?.[0]?.price || 0;
+    newItems.push({
+      name: selectedOrder.menu?.titre || selectedOrder.menu?.name || "Menu principal",
+      qty: selectedOrder.quantity || 1,
+      price: `${menuPrice * (selectedOrder.quantity || 1)} F`,
+      unitPrice: menuPrice,
+      hasQty: true,
+    });
+
+    extras.forEach((ex: any) => {
+      if (ex.status === true && ex.name !== "Aucun") {
+        const exPrice = ex.prix || ex.price || 0;
+        newItems.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice, hasQty: false });
+      }
+    });
+
+    drinks.forEach((dr: any) => {
+      if (dr.status === true && dr.name !== "Aucune") {
+        const drPrice = dr.prix || dr.price || 0;
+        const drQty = dr.quantite || 1;
+        newItems.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice, hasQty: true });
+      }
+    });
+    return newItems;
+  }, [selectedOrder]);
 
   useEffect(() => {
     if (isVisible && order) {
-      // Déterminer la commande à afficher
-      const selectedOrder = allOrders ? allOrders[selectedOrderIdx] || order : order;
-
-      // Construire les items
-      const extras = selectedOrder.extra || [];
-      const drinks = selectedOrder.drink || [];
-      const newItems: OrderItem[] = [];
-
-      const priceIdx = ((selectedOrder as any).selectedPriceIndex || 1) - 1;
-      const menuPrice = selectedOrder.menu?.prices?.[priceIdx]?.price || selectedOrder.menu?.prices?.[0]?.price || 0;
-      newItems.push({
-        name: selectedOrder.menu?.titre || selectedOrder.menu?.name || "Menu principal",
-        qty: selectedOrder.quantity || 1,
-        price: `${menuPrice * (selectedOrder.quantity || 1)} F`,
-        unitPrice: menuPrice,
-        hasQty: true,
-      });
-
-      extras.forEach((ex: any) => {
-        if (ex.status === true && ex.name !== "Aucun") {
-          const exPrice = ex.prix || ex.price || 0;
-          newItems.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice, hasQty: false });
-        }
-      });
-
-      drinks.forEach((dr: any) => {
-        if (dr.status === true && dr.name !== "Aucune") {
-          const drPrice = dr.prix || dr.price || 0;
-          const drQty = dr.quantite || 1;
-          newItems.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice, hasQty: true });
-        }
-      });
-      setItems(newItems);
-
       // Animation Open
       translateY.setValue(SHEET_HEIGHT);
       overlayOpacity.setValue(0);
@@ -108,7 +109,7 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
         }),
       ]).start();
     }
-  }, [isVisible, order, allOrders, selectedOrderIdx]);
+  }, [isVisible, order]);
 
   const handleDismiss = () => {
     Animated.parallel([
@@ -148,7 +149,6 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
   ).current;
 
   if (!order) return null;
-
   const initials = (boutique?.nom || "B").substring(0, 2).toUpperCase();
   const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
 
@@ -167,23 +167,19 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
         <Animated.View
           style={[styles.sheet, { transform: [{ translateY }] }]}
         >
-          <View {...panResponder.panHandlers} style={styles.dragZone}>
-            <View style={styles.handle} />
-          </View>
-
-          <View style={styles.header}>
+          <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>
               <View style={[styles.avatar, { backgroundColor: theme.bg }]}>
                 <Text style={[styles.avatarText, { color: theme.text }]}>
                   {initials}
                 </Text>
                 <View style={[styles.badge, { backgroundColor: theme.badge }]}>
-                  <Text style={styles.badgeText}>1</Text>
+                  <Text style={styles.badgeText}>{allOrders ? allOrders.length : 1}</Text>
                 </View>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{boutique?.nom || "Boutique"}</Text>
-                <Text style={styles.userAddr} numberOfLines={1}>{order.delivery?.location || "Sur place"}</Text>
+                <Text style={styles.userAddr} numberOfLines={1}>{selectedOrder.delivery?.location || "Sur place"}</Text>
               </View>
             </View>
             <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
@@ -216,16 +212,58 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
               contentContainerStyle={{ paddingBottom: 24 }}
               showsVerticalScrollIndicator={false}
             >
-              <LivraisonTab order={order} boutiqueName={boutique?.nom || "Boutique"} />
+              <LivraisonTab order={selectedOrder} boutiqueName={boutique?.nom || "Boutique"} />
             </ScrollView>
           ) : (
             <CommandesTab
               items={items}
-              total={order?.total || 0}
-              allOrders={allOrders}
-              selectedIdx={selectedOrderIdx}
-              onSelectOrder={setSelectedOrderIdx}
+              total={selectedOrder?.total || 0}
             />
+          )}
+
+          {/* ── Nav multi-commandes EN BAS (globale) ── */}
+          {allOrders && allOrders.length > 1 && (
+            <View style={styles.cmdNavTabsContainer}>
+              {allOrders.length > 3 && (
+                <TouchableOpacity
+                  onPress={() => setSelectedOrderIdx(Math.max(0, selectedOrderIdx - 1))}
+                  style={styles.navArrow}
+                >
+                  <Ionicons name="chevron-back" size={20} color="#111827" />
+                </TouchableOpacity>
+              )}
+              
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={[
+                  styles.cmdNavTabs,
+                  { justifyContent: allOrders.length > 3 ? 'flex-start' : 'center' }
+                ]}
+                style={{ flexGrow: 0 }}
+              >
+                {allOrders.map((_, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.cmdNavTab, selectedOrderIdx === idx && styles.cmdNavTabActive]}
+                    onPress={() => setSelectedOrderIdx(idx)}
+                  >
+                    <Text style={[styles.cmdNavTabText, selectedOrderIdx === idx && styles.cmdNavTabTextActive]}>
+                      Cmd {idx + 1}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {allOrders.length > 3 && (
+                <TouchableOpacity
+                  onPress={() => setSelectedOrderIdx(Math.min(allOrders.length - 1, selectedOrderIdx + 1))}
+                  style={styles.navArrow}
+                >
+                  <Ionicons name="chevron-forward" size={20} color="#111827" />
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </Animated.View>
       </View>
@@ -335,15 +373,9 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
 function CommandesTab({
   items,
   total,
-  allOrders,
-  selectedIdx,
-  onSelectOrder
 }: {
   items: OrderItem[];
   total: number;
-  allOrders?: Commande[];
-  selectedIdx?: number;
-  onSelectOrder?: (idx: number) => void;
 }) {
   return (
     <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
@@ -443,21 +475,12 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 20,
   },
-  dragZone: {
-    alignItems: 'center',
-    paddingVertical: 14,
-  },
-  handle: {
-    width: 36,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#E5E7EB',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingTop: 24,
     paddingBottom: 16,
   },
   userRow: {
@@ -546,7 +569,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 0,
   },
   mapPlaceholder: {
     backgroundColor: '#F3F4F6',
@@ -745,18 +768,28 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 2,
   },
-  cmdNavTabs: {
+  cmdNavTabsContainer: {
     flexDirection: 'row',
-    gap: 6,
-    marginTop: 12,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingBottom: 32,
+    paddingTop:8,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
-  cmdNavTab: {
+  cmdNavTabs: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 8,
+    // paddingBottom:32,
+  },
+  navArrow: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
+  },
+  cmdNavTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
@@ -767,7 +800,7 @@ const styles = StyleSheet.create({
     borderColor: '#111827',
   },
   cmdNavTabText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: '#6B7280',
   },

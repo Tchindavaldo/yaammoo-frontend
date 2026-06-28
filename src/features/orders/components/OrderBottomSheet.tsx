@@ -1,7 +1,7 @@
 import { Commande, FastFood } from "@/src/types";
-import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
-import React, { useEffect, useRef, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -13,10 +13,10 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { BikeAnimation } from '../../merchant/components/BikeAnimation';
+} from "react-native";
+import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SHEET_HEIGHT = 480;
 
 export type OrderItem = {
@@ -25,13 +25,14 @@ export type OrderItem = {
   price: string;
   unitPrice?: number;
   hasQty?: boolean;
+  type?: string;
 };
 
 const COLORS = [
-  { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' }, 
-  { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' }, 
-  { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' }, 
-  { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' }, 
+  { bg: "#EAF3DE", text: "#4B7C16", badge: "#7CB342" },
+  { bg: "#FDEBD0", text: "#A04000", badge: "#E67E22" },
+  { bg: "#D6EAF8", text: "#1B4F72", badge: "#3498DB" },
+  { bg: "#E8DAEF", text: "#512E5F", badge: "#8E44AD" },
 ];
 
 type Props = {
@@ -42,15 +43,23 @@ type Props = {
   allOrders?: Commande[];
 };
 
-type Tab = 'livraison' | 'commandes';
+type Tab = "livraison" | "commandes";
 
-export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, boutique, allOrders }) => {
-  const [tab, setTab] = useState<Tab>('livraison');
+export const OrderBottomSheet: React.FC<Props> = ({
+  order,
+  isVisible,
+  onClose,
+  boutique,
+  allOrders,
+}) => {
+  const [tab, setTab] = useState<Tab>("livraison");
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   // Déterminer la commande à afficher (de façon synchrone)
-  const selectedOrder = allOrders ? allOrders[selectedOrderIdx] || order : order;
+  const selectedOrder = allOrders
+    ? allOrders[selectedOrderIdx] || order
+    : order;
 
   // Construire les items dynamiquement (plus besoin de state ni de useEffect pour ça)
   const items: OrderItem[] = React.useMemo(() => {
@@ -60,19 +69,33 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
     const newItems: OrderItem[] = [];
 
     const priceIdx = ((selectedOrder as any).selectedPriceIndex || 1) - 1;
-    const menuPrice = selectedOrder.menu?.prices?.[priceIdx]?.price || selectedOrder.menu?.prices?.[0]?.price || 0;
+    const menuPrice =
+      selectedOrder.menu?.prices?.[priceIdx]?.price ||
+      selectedOrder.menu?.prices?.[0]?.price ||
+      0;
     newItems.push({
-      name: selectedOrder.menu?.titre || selectedOrder.menu?.name || "Menu principal",
+      name:
+        selectedOrder.menu?.titre ||
+        selectedOrder.menu?.name ||
+        "Menu principal",
       qty: selectedOrder.quantity || 1,
       price: `${menuPrice * (selectedOrder.quantity || 1)} F`,
       unitPrice: menuPrice,
       hasQty: true,
+      type: "menu",
     });
 
     extras.forEach((ex: any) => {
       if (ex.status === true && ex.name !== "Aucun") {
         const exPrice = ex.prix || ex.price || 0;
-        newItems.push({ name: ex.name, qty: 1, price: `${exPrice} F`, unitPrice: exPrice, hasQty: false });
+        newItems.push({
+          name: ex.name,
+          qty: 1,
+          price: `${exPrice} F`,
+          unitPrice: exPrice,
+          hasQty: false,
+          type: "extra",
+        });
       }
     });
 
@@ -80,7 +103,14 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
       if (dr.status === true && dr.name !== "Aucune") {
         const drPrice = dr.prix || dr.price || 0;
         const drQty = dr.quantite || 1;
-        newItems.push({ name: dr.name, qty: drQty, price: `${drPrice * drQty} F`, unitPrice: drPrice, hasQty: true });
+        newItems.push({
+          name: dr.name,
+          qty: drQty,
+          price: `${drPrice * drQty} F`,
+          unitPrice: drPrice,
+          hasQty: true,
+          type: "drink",
+        });
       }
     });
     return newItems;
@@ -91,7 +121,7 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
       // Animation Open
       translateY.setValue(SHEET_HEIGHT);
       overlayOpacity.setValue(0);
-      setTab('livraison');
+      setTab("livraison");
       setSelectedOrderIdx(0);
 
       Animated.parallel([
@@ -145,7 +175,7 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
           }).start();
         }
       },
-    })
+    }),
   ).current;
 
   if (!order) return null;
@@ -164,9 +194,7 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
           <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss} />
         </Animated.View>
 
-        <Animated.View
-          style={[styles.sheet, { transform: [{ translateY }] }]}
-        >
+        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
           <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>
               <View style={[styles.avatar, { backgroundColor: theme.bg }]}>
@@ -174,12 +202,18 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
                   {initials}
                 </Text>
                 <View style={[styles.badge, { backgroundColor: theme.badge }]}>
-                  <Text style={styles.badgeText}>{allOrders ? allOrders.length : 1}</Text>
+                  <Text style={styles.badgeText}>
+                    {allOrders ? allOrders.length : 1}
+                  </Text>
                 </View>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.userName}>{boutique?.nom || "Boutique"}</Text>
-                <Text style={styles.userAddr} numberOfLines={1}>{selectedOrder.delivery?.location || "Sur place"}</Text>
+                <Text style={styles.userName}>
+                  {boutique?.nom || "Boutique"}
+                </Text>
+                <Text style={styles.userAddr} numberOfLines={1}>
+                  {selectedOrder.delivery?.location || "Sur place"}
+                </Text>
               </View>
             </View>
             <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
@@ -189,36 +223,46 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
 
           <View style={styles.tabBar}>
             <TouchableOpacity
-              style={[styles.tab, tab === 'livraison' && styles.tabActive]}
-              onPress={() => setTab('livraison')}
+              style={[styles.tab, tab === "livraison" && styles.tabActive]}
+              onPress={() => setTab("livraison")}
             >
-              <Text style={[styles.tabText, tab === 'livraison' && styles.tabTextActive]}>
+              <Text
+                style={[
+                  styles.tabText,
+                  tab === "livraison" && styles.tabTextActive,
+                ]}
+              >
                 Livraison
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.tab, tab === 'commandes' && styles.tabActive]}
-              onPress={() => setTab('commandes')}
+              style={[styles.tab, tab === "commandes" && styles.tabActive]}
+              onPress={() => setTab("commandes")}
             >
-              <Text style={[styles.tabText, tab === 'commandes' && styles.tabTextActive]}>
+              <Text
+                style={[
+                  styles.tabText,
+                  tab === "commandes" && styles.tabTextActive,
+                ]}
+              >
                 Commandes
               </Text>
             </TouchableOpacity>
           </View>
 
-          {tab === 'livraison' ? (
+          {tab === "livraison" ? (
             <ScrollView
               style={styles.content}
               contentContainerStyle={{ paddingBottom: 24 }}
               showsVerticalScrollIndicator={false}
             >
-              <LivraisonTab order={selectedOrder} boutiqueName={boutique?.nom || "Boutique"} />
+              <LivraisonTab
+                order={selectedOrder}
+                boutiqueName={boutique?.nom || "Boutique"}
+              />
             </ScrollView>
           ) : (
-            <CommandesTab
-              items={items}
-              total={selectedOrder?.total || 0}
-            />
+            <CommandesTab items={items} total={selectedOrder?.total || 0} />
           )}
 
           {/* ── Nav multi-commandes EN BAS (globale) ── */}
@@ -226,29 +270,42 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
             <View style={styles.cmdNavTabsContainer}>
               {allOrders.length > 3 && (
                 <TouchableOpacity
-                  onPress={() => setSelectedOrderIdx(Math.max(0, selectedOrderIdx - 1))}
+                  onPress={() =>
+                    setSelectedOrderIdx(Math.max(0, selectedOrderIdx - 1))
+                  }
                   style={styles.navArrow}
                 >
                   <Ionicons name="chevron-back" size={20} color="#111827" />
                 </TouchableOpacity>
               )}
-              
+
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={[
                   styles.cmdNavTabs,
-                  { justifyContent: allOrders.length > 3 ? 'flex-start' : 'center' }
+                  {
+                    justifyContent:
+                      allOrders.length > 3 ? "flex-start" : "center",
+                  },
                 ]}
                 style={{ flexGrow: 0 }}
               >
                 {allOrders.map((_, idx) => (
                   <TouchableOpacity
                     key={idx}
-                    style={[styles.cmdNavTab, selectedOrderIdx === idx && styles.cmdNavTabActive]}
+                    style={[
+                      styles.cmdNavTab,
+                      selectedOrderIdx === idx && styles.cmdNavTabActive,
+                    ]}
                     onPress={() => setSelectedOrderIdx(idx)}
                   >
-                    <Text style={[styles.cmdNavTabText, selectedOrderIdx === idx && styles.cmdNavTabTextActive]}>
+                    <Text
+                      style={[
+                        styles.cmdNavTabText,
+                        selectedOrderIdx === idx && styles.cmdNavTabTextActive,
+                      ]}
+                    >
                       Cmd {idx + 1}
                     </Text>
                   </TouchableOpacity>
@@ -257,7 +314,11 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
 
               {allOrders.length > 3 && (
                 <TouchableOpacity
-                  onPress={() => setSelectedOrderIdx(Math.min(allOrders.length - 1, selectedOrderIdx + 1))}
+                  onPress={() =>
+                    setSelectedOrderIdx(
+                      Math.min(allOrders.length - 1, selectedOrderIdx + 1),
+                    )
+                  }
                   style={styles.navArrow}
                 >
                   <Ionicons name="chevron-forward" size={20} color="#111827" />
@@ -271,7 +332,13 @@ export const OrderBottomSheet: React.FC<Props> = ({ order, isVisible, onClose, b
   );
 };
 
-function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: string }) {
+function LivraisonTab({
+  order,
+  boutiqueName,
+}: {
+  order: Commande;
+  boutiqueName: string;
+}) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
@@ -292,7 +359,7 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: order.delivery.voiceNoteUri },
-        { shouldPlay: true }
+        { shouldPlay: true },
       );
       setSound(newSound);
       setIsPlaying(true);
@@ -309,59 +376,214 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
         }
       });
     } catch (error) {
-       console.log(error);
+      console.log(error);
     }
   }
 
   useEffect(() => {
-    return sound ? () => { sound.unloadAsync(); } : undefined;
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
   }, [sound]);
 
   return (
     <>
-      <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, height: 110 }}>
-        <View style={{ width: '42%', gap: 8 }}>
+      <View
+        style={{ flexDirection: "row", gap: 10, marginTop: 10, height: 110 }}
+      >
+        <View style={{ width: "42%", gap: 8 }}>
           <View style={{ flex: 1 }}>
-            <InfoCard label="Créneau" value={order.delivery?.time || "Dès que possible"} compact />
+            <InfoCard
+              label="Créneau"
+              value={
+                !order.delivery?.status
+                  ? "Sur place"
+                  : order.delivery?.type === "express"
+                    ? "Express"
+                    : `Période (${order.delivery?.time || "Dès que possible"})`
+              }
+              compact
+            />
           </View>
           <View style={{ flex: 1 }}>
-            <InfoCard label="Téléphone" value={order.delivery?.phone || "—"} small compact />
+            <InfoCard
+              label="Téléphone"
+              value={order.delivery?.phone || "—"}
+              small
+              compact
+            />
           </View>
         </View>
 
         <View style={{ flex: 1 }}>
-          {order.status === 'delivering' ? (
-            <View style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 8 }]}>
-              <BikeAnimation />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#27500A' }}>Livraison en cours...</Text>
-            </View>
-          ) : (
-            <View style={[styles.mapPlaceholder, { height: '100%', marginBottom: 0, borderRadius: 12, alignItems: 'center', justifyContent: 'center', gap: 8 }]}>
-              <BikeAnimation paused hideLabel />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#9CA3AF' }}>En attente de livraison</Text>
-            </View>
-          )}
+          {(() => {
+            const isSurPlace = !order.delivery?.status;
+            const isExpress = order.delivery?.type === "express";
+            const isDelivering = order.status === "delivering";
+
+            if (isDelivering) {
+              return (
+                <View
+                  style={[
+                    styles.mapPlaceholder,
+                    {
+                      height: "100%",
+                      marginBottom: 0,
+                      borderRadius: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    },
+                  ]}
+                >
+                  <BikeAnimation />
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "600",
+                      color: "#27500A",
+                    }}
+                  >
+                    Livraison en cours...
+                  </Text>
+                </View>
+              );
+            }
+
+            if (isSurPlace) {
+              return (
+                <View
+                  style={[
+                    styles.mapPlaceholder,
+                    {
+                      height: "100%",
+                      marginBottom: 0,
+                      borderRadius: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name="storefront-outline"
+                    size={28}
+                    color="#6B7280"
+                  />
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "600",
+                      color: "#6B7280",
+                    }}
+                  >
+                    Sur place
+                  </Text>
+                </View>
+              );
+            }
+
+            if (isExpress) {
+              return (
+                <View
+                  style={[
+                    styles.mapPlaceholder,
+                    {
+                      height: "100%",
+                      marginBottom: 0,
+                      borderRadius: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    },
+                  ]}
+                >
+                  <Ionicons name="flash-outline" size={28} color="#ec4913" />
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "600",
+                      color: "#ec4913",
+                    }}
+                  >
+                    Express
+                  </Text>
+                  <Text style={{ fontSize: 10, color: "#9CA3AF" }}>
+                    15-20 min
+                  </Text>
+                </View>
+              );
+            }
+
+            // Livraison programmée
+            return (
+              <View
+                style={[
+                  styles.mapPlaceholder,
+                  {
+                    height: "100%",
+                    marginBottom: 0,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                  },
+                ]}
+              >
+                <Ionicons name="time-outline" size={26} color="#2563eb" />
+                <Text
+                  style={{ fontSize: 11, fontWeight: "600", color: "#2563eb" }}
+                >
+                  {order.delivery?.time || "Dès que possible"}
+                </Text>
+                <Text style={{ fontSize: 10, color: "#9CA3AF" }}>
+                  30-45 min
+                </Text>
+              </View>
+            );
+          })()}
         </View>
       </View>
 
       <View style={[styles.infoCard, { marginTop: 12, padding: 12 }]}>
         <Text style={styles.infoLabel}>Note de livraison</Text>
-        <Text style={styles.infoValSm}>{order.delivery?.note || "Aucune note."}</Text>
+        <Text style={styles.infoValSm}>
+          {order.delivery?.note || "Aucune note."}
+        </Text>
       </View>
 
       {order.delivery?.voiceNoteUri ? (
         <>
-          <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>Message vocal</Text>
-          <TouchableOpacity style={styles.voiceBar} activeOpacity={0.7} onPress={playSound}>
+          <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>
+            Message vocal
+          </Text>
+          <TouchableOpacity
+            style={styles.voiceBar}
+            activeOpacity={0.7}
+            onPress={playSound}
+          >
             <View style={styles.playBtn}>
-              <Ionicons name={isPlaying ? "pause" : "play"} size={16} color="#ec4913" />
+              <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={16}
+                color="#ec4913"
+              />
             </View>
             <Waveform active={isPlaying} progress={playbackProgress} />
-            <Text style={styles.waveDur}>{Math.round(playbackProgress * 100)}%</Text>
+            <Text style={styles.waveDur}>
+              {Math.round(playbackProgress * 100)}%
+            </Text>
           </TouchableOpacity>
         </>
       ) : (
-        <View style={[styles.infoCard, { marginTop: 12, padding: 12, opacity: 0.5 }]}>
+        <View
+          style={[
+            styles.infoCard,
+            { marginTop: 12, padding: 12, opacity: 0.5 },
+          ]}
+        >
           <Text style={styles.infoLabel}>Message vocal</Text>
           <Text style={styles.infoValSm}>Aucun message vocal</Text>
         </View>
@@ -370,18 +592,59 @@ function LivraisonTab({ order, boutiqueName }: { order: Commande; boutiqueName: 
   );
 }
 
-function CommandesTab({
-  items,
-  total,
-}: {
-  items: OrderItem[];
-  total: number;
-}) {
+const ITEM_ICONS: Record<string, string> = {
+  menu: "\uD83C\uDF7D\uFE0F",
+  extra: "\u2795",
+  drink: "\uD83E\uDD64",
+};
+
+const ITEM_LABEL: Record<string, string> = {
+  menu: "Menu",
+  extra: "Extra",
+  drink: "Boisson",
+};
+
+const CURRENCY = "XAF";
+
+function CommandesTab({ items, total }: { items: OrderItem[]; total: number }) {
+  if (items.length === 0) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingVertical: 40,
+        }}
+      >
+        <Text style={{ fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
+          Aucun détail de commande disponible
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
-      {/* Container arrondi englobant items + total */}
-      <View style={[styles.infoCard, { flex: 1, padding: 0, overflow: 'hidden', marginBottom: 12 }]}>
-        {/* Items scrollables */}
+    <View
+      style={{
+        flex: 1,
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 8,
+      }}
+    >
+      {/* Container arrondi : items scrollables + total fixe */}
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#F9FAFB",
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: "#F3F4F6",
+          overflow: "hidden",
+          marginBottom: 12,
+        }}
+      >
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
@@ -390,64 +653,173 @@ function CommandesTab({
           {items.map((o, i) => {
             const unitPrice = o.unitPrice || 0;
             const lineTotal = unitPrice * o.qty;
+            const icon = ITEM_ICONS[o.type || "menu"];
+            const typeLabel = ITEM_LABEL[o.type || "menu"];
+
             return (
               <View
                 key={i}
-                style={[
-                  styles.cmdRow,
-                  i < items.length - 1 && styles.cmdRowBorder,
-                ]}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingVertical: 11,
+                  borderBottomWidth: i < items.length - 1 ? 1 : 0,
+                  borderBottomColor: "#F3F4F6",
+                }}
               >
-                <View style={styles.cmdIcon}>
-                  <Text style={{ fontSize: 12 }}>📦</Text>
+                {/* Icône + badge type */}
+                <View
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 9,
+                    backgroundColor:
+                      o.type === "extra"
+                        ? "#FFF7ED"
+                        : o.type === "drink"
+                          ? "#EFF6FF"
+                          : "#F0FDF4",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 13 }}>{icon}</Text>
                 </View>
-                <Text style={[styles.cmdName, { flex: 1 }]}>{o.name}</Text>
-                <Text style={styles.cmdPrice}>
-                  {o.hasQty ? `${unitPrice} x${o.qty} = ${lineTotal} F` : `${unitPrice} F`}
-                </Text>
+
+                {/* Nom + type label */}
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "600",
+                      color: "#111827",
+                    }}
+                    numberOfLines={1}
+                  >
+                    {o.name}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      color: "#9CA3AF",
+                      marginTop: 1,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {typeLabel}
+                  </Text>
+                </View>
+
+                {/* Prix */}
+                <View style={{ alignItems: "flex-end" }}>
+                  {o.hasQty && o.qty > 1 ? (
+                    <>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: "700",
+                          color: "#111827",
+                        }}
+                      >
+                        {lineTotal} {CURRENCY}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 10, color: "#9CA3AF", marginTop: 1 }}
+                      >
+                        {unitPrice} {CURRENCY} × {o.qty}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: "700",
+                        color: "#111827",
+                      }}
+                    >
+                      {unitPrice > 0 ? `${unitPrice} ${CURRENCY}` : "Inclus"}
+                    </Text>
+                  )}
+                </View>
               </View>
             );
           })}
         </ScrollView>
 
-        {/* Total fixe en bas du container */}
-        <View style={{ padding: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
-          <View style={styles.cmdTotal}>
-            <Text style={styles.cmdTotalLabel}>Total</Text>
-            <Text style={styles.cmdTotalVal}>{total} F</Text>
-          </View>
+        {/* Total */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: 14,
+            borderTopWidth: 1,
+            borderTopColor: "#F3F4F6",
+          }}
+        >
+          <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
+            Total commande
+          </Text>
+          <Text style={{ fontSize: 16, fontWeight: "900", color: "#ec4913" }}>
+            {total} {CURRENCY}
+          </Text>
         </View>
       </View>
-
     </View>
   );
 }
 
-function InfoCard({ label, value, small, compact }: { label: string; value: string; small?: boolean; compact?: boolean }) {
+function InfoCard({
+  label,
+  value,
+  small,
+  compact,
+}: {
+  label: string;
+  value: string;
+  small?: boolean;
+  compact?: boolean;
+}) {
   return (
     <View style={[styles.infoCard, compact && { padding: 10, flex: 1 }]}>
-      <Text style={[styles.infoLabel, compact && { marginBottom: 2, fontSize: 9 }]}>{label}</Text>
+      <Text
+        style={[styles.infoLabel, compact && { marginBottom: 2, fontSize: 9 }]}
+      >
+        {label}
+      </Text>
       <Text style={[styles.infoVal, small && styles.infoValSm]}>{value}</Text>
     </View>
   );
 }
 
-function Waveform({ active, progress = 0 }: { active?: boolean; progress?: number }) {
-  const heights = [4, 7, 12, 6, 10, 14, 8, 5, 11, 9, 13, 6, 8, 12, 5, 10, 7, 14, 6, 9, 11, 4, 8, 12, 7, 5, 10, 13, 6, 9];
+function Waveform({
+  active,
+  progress = 0,
+}: {
+  active?: boolean;
+  progress?: number;
+}) {
+  const heights = [
+    4, 7, 12, 6, 10, 14, 8, 5, 11, 9, 13, 6, 8, 12, 5, 10, 7, 14, 6, 9, 11, 4,
+    8, 12, 7, 5, 10, 13, 6, 9,
+  ];
   return (
     <View style={styles.wave}>
       {heights.map((h, i) => {
         const barProgress = (i + 1) / heights.length;
         const isPlayed = progress >= barProgress;
         return (
-          <View 
-            key={i} 
+          <View
+            key={i}
             style={[
-              styles.wavebar, 
-              { height: h }, 
-              (active && isPlayed) && { backgroundColor: '#ec4913' },
-              (active && !isPlayed) && { backgroundColor: 'rgba(236,19,49,0.2)' }
-            ]} 
+              styles.wavebar,
+              { height: h },
+              active && isPlayed && { backgroundColor: "#ec4913" },
+              active && !isPlayed && { backgroundColor: "rgba(236,19,49,0.2)" },
+            ]}
           />
         );
       })}
@@ -458,15 +830,15 @@ function Waveform({ active, progress = 0 }: { active?: boolean; progress?: numbe
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   sheet: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     height: SHEET_HEIGHT,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     shadowColor: "#000",
@@ -476,16 +848,16 @@ const styles = StyleSheet.create({
     elevation: 20,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 16,
   },
   userRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     flex: 1,
   },
@@ -493,10 +865,10 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: "#fff",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -504,67 +876,67 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     right: -4,
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: "#fff",
   },
   badgeText: {
     fontSize: 9,
-    color: '#fff',
-    fontWeight: '800',
+    color: "#fff",
+    fontWeight: "800",
   },
   userName: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
   },
   userAddr: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginTop: 2,
   },
   closeBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
   },
   closeBtnText: {
     fontSize: 14,
-    color: '#4B5563',
+    color: "#4B5563",
   },
   tabBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: "#F3F4F6",
   },
   tab: {
     marginRight: 24,
     paddingVertical: 12,
     borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderBottomColor: "transparent",
   },
   tabActive: {
-    borderBottomColor: '#111827',
+    borderBottomColor: "#111827",
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontWeight: "600",
+    color: "#9CA3AF",
   },
   tabTextActive: {
-    color: '#111827',
+    color: "#111827",
   },
   content: {
     flex: 1,
@@ -572,78 +944,78 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   mapPlaceholder: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
     borderRadius: 20,
     marginBottom: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    position: "relative",
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   mapGridH: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
-    top: '50%',
+    top: "50%",
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.03)',
+    backgroundColor: "rgba(0,0,0,0.03)",
   },
   mapGridV: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     bottom: 0,
-    left: '50%',
+    left: "50%",
     width: 1,
-    backgroundColor: 'rgba(0,0,0,0.03)',
+    backgroundColor: "rgba(0,0,0,0.03)",
   },
   pinContainer: {
-    position: 'absolute',
-    top: '35%',
-    left: '51%',
+    position: "absolute",
+    top: "35%",
+    left: "51%",
   },
   pinRing: {
-    position: 'absolute',
+    position: "absolute",
     top: -6,
     left: -6,
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#EF4444',
+    borderColor: "#EF4444",
     opacity: 0.3,
   },
   pinDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#EF4444',
+    backgroundColor: "#EF4444",
     borderWidth: 2.5,
-    borderColor: '#fff',
+    borderColor: "#fff",
   },
   mapLabel: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 10,
     fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontWeight: "500",
+    color: "#6B7280",
   },
   mapLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(255,255,255,0.85)",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
   },
   mapLoaderCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -651,134 +1023,134 @@ const styles = StyleSheet.create({
   },
   mapLoadingText: {
     fontSize: 10,
-    fontWeight: '700',
-    color: '#ec4913',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    color: "#ec4913",
+    textTransform: "uppercase",
   },
   infoCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: "#F3F4F6",
   },
   infoLabel: {
     fontSize: 10,
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
+    color: "#9CA3AF",
+    textTransform: "uppercase",
     letterSpacing: 0.8,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 6,
   },
   infoVal: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   infoValSm: {
     fontSize: 13,
-    color: '#374151',
+    color: "#374151",
     lineHeight: 20,
   },
   voiceBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: "#F3F4F6",
   },
   playBtn: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#111827",
+    alignItems: "center",
+    justifyContent: "center",
   },
   wave: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 2,
   },
   wavebar: {
     width: 3,
     borderRadius: 2,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: "#E5E7EB",
   },
   waveDur: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#9CA3AF',
+    fontWeight: "600",
+    color: "#9CA3AF",
   },
   cmdRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingVertical: 10,
   },
   cmdRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: "#F3F4F6",
   },
   cmdIcon: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#F0FDF4',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F0FDF4",
+    alignItems: "center",
+    justifyContent: "center",
   },
   cmdName: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   cmdQty: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: "600",
+    color: "#6B7280",
   },
   cmdPrice: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
   },
   cmdTotal: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   cmdTotalLabel: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: "700",
+    color: "#111827",
   },
   cmdTotalVal: {
     fontSize: 15,
-    fontWeight: '900',
-    color: '#EF4444',
+    fontWeight: "900",
+    color: "#EF4444",
   },
   cmdQtyPrice: {
     fontSize: 11,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontWeight: "500",
+    color: "#6B7280",
     marginTop: 2,
   },
   cmdNavTabsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingBottom: 32,
-    paddingTop:8,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: "#F3F4F6",
   },
   cmdNavTabs: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 6,
     paddingHorizontal: 8,
     // paddingBottom:32,
@@ -791,20 +1163,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
   },
   cmdNavTabActive: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: "#111827",
+    borderColor: "#111827",
   },
   cmdNavTabText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontWeight: "600",
+    color: "#6B7280",
   },
   cmdNavTabTextActive: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
 });

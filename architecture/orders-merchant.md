@@ -120,6 +120,57 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 
 ---
 
+## MerchantOrderBottomSheet.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/MerchantOrderBottomSheet.tsx`
+
+Bottom sheet détail d'une commande marchand, refactoré en **shell + 2 tabs** :
+- `MerchantOrderLivraisonTab` : infos livraison (client, adresse, note vocale, montant)
+- `MerchantOrderCommandesTab` : détails de la commande (menu, extras, boissons avec icônes et prix)
+
+La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.
+
+---
+
+## MerchantOrderLivraisonTab.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/MerchantOrderLivraisonTab.tsx`
+
+Tab « Livraison » extrait de l'ancien `MerchantOrderBottomSheet`. Contient :
+- `InfoCard` : carte compacte affichant le nom du client, l'adresse, la note
+- `Waveform` : visualisation de la note vocale (si présente)
+- Récapitulatif des montants
+
+---
+
+## MerchantOrderCommandesTab.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/MerchantOrderCommandesTab.tsx`
+
+Tab « Commande » extrait de l'ancien `MerchantOrderBottomSheet`. Affiche :
+- Le menu commandé avec son prix
+- La liste des extras (icônes, noms, prix)
+- La liste des boissons (icônes, noms, prix)
+- Prix total
+
+---
+
+## MerchantOrderBottomSheet.web.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/MerchantOrderBottomSheet.web.tsx`
+
+**Props** :
+| Prop | Type | Description |
+|---|---|---|
+| `order` | `Commande` | Commande principale à afficher |
+| `allOrders` | `Commande[]` | Toutes les commandes du groupe (optionnel, pour livraisons groupées) |
+| `isForceLaunched` | boolean | État lancé forcé (depuis "Lancer tout") |
+| `onUpdateStatus` | `(status) => Promise<void>` | Callback avancement statut |
+
+**Bouton d'action** : avance le statut selon la transition backend (pas de statut cible envoyé explicitement — le backend détermine le suivant).
+
+---
+
 ## MenuManagePanel.tsx
 
 **Chemin** : `yaammoo/src/features/merchant/components/MenuManagePanel.tsx`

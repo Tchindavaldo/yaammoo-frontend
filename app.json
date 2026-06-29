@@ -2,7 +2,7 @@
   "expo": {
     "name": "yaammoo",
     "slug": "yaammoo",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "yaammoo",
@@ -16,6 +16,7 @@
     },
     "ios": {
       "supportsTablet": false,
+      "buildNumber": "27",
       "bundleIdentifier": "com.rauval.yaammoo",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,

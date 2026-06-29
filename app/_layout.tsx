@@ -22,10 +22,14 @@ import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 import { initSentry, wrapWithSentry } from "@/src/services/sentry";
+import { setupHttp } from "@/src/api/setupHttp";
 
 // Initialise le crash reporting le plus tôt possible (avant tout rendu),
 // pour capturer aussi les crashs au démarrage. No-op tant que le DSN est vide.
 initSentry();
+
+// Configure les headers HTTP globaux (x-app-version, etc.) AVANT toute requête.
+setupHttp();
 
 // Le splash natif reste affiché tant qu'on ne l'a pas explicitement caché.
 SplashScreen.preventAutoHideAsync();

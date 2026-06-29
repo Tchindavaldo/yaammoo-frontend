@@ -31,6 +31,7 @@ import { Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
+import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
 
 // Hauteur approximative de la tab bar (navbar du bas) à réserver sous le contenu.
 const TAB_BAR_HEIGHT = 60;
@@ -201,7 +202,36 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
             setMomoNumber(data.momoNumber || "");
             setWhatsappNumber(data.whatsappNumber || "");
             setSelectedCities(data.cities || []);
-            setDeliveryHours(data.deliveryHours || []);
+
+            // Charger deliveryHours au nouveau format ou rétrocompatibilité
+            const rawHours = data.deliveryHours || [];
+            if (
+              Array.isArray(rawHours) &&
+              rawHours.length > 0 &&
+              typeof rawHours[0] === "object"
+            ) {
+              // Nouveau format : [{ hour, periodic, periodicZones, express, expressZones }]
+              const hours = rawHours.map((h: any) => h.hour).sort();
+              setDeliveryHours(hours);
+              const pEnabled: Record<string, boolean> = {};
+              const eEnabled: Record<string, boolean> = {};
+              const pZones: Record<string, any[]> = {};
+              const eZones: Record<string, any[]> = {};
+              rawHours.forEach((h: any) => {
+                pEnabled[h.hour] = h.periodic === true;
+                eEnabled[h.hour] = h.express === true;
+                pZones[h.hour] = h.periodicZones || [];
+                eZones[h.hour] = h.expressZones || [];
+              });
+              setPeriodicEnabled(pEnabled);
+              setExpressEnabled(eEnabled);
+              setPeriodicZonesByHour(pZones);
+              setExpressZonesByHour(eZones);
+            } else {
+              // Ancien format : simple string[]
+              setDeliveryHours(rawHours);
+            }
+
             setImage(data.image || "");
             setOrderLeadTime(
               data.orderLeadTime !== undefined
@@ -509,7 +539,16 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
         orderLeadTime: orderLeadTime ? parseInt(orderLeadTime, 10) : undefined,
         advanceDays: advanceDays ? parseInt(advanceDays, 10) : undefined,
         pickupOnly,
-        deliveryHours: deliveryHours.length > 0 ? deliveryHours : undefined,
+        deliveryHours:
+          deliveryHours.length > 0
+            ? buildDeliveryPayload(
+                deliveryHours,
+                periodicEnabled,
+                periodicZonesByHour,
+                expressEnabled,
+                expressZonesByHour,
+              )
+            : undefined,
       };
 
       // Nouvelle image sélectionnée (URI locale, y compris blob:/data: sur web) :

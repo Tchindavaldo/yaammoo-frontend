@@ -28,6 +28,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
+import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
 
 const TAB_BAR_HEIGHT = 60;
 
@@ -334,7 +335,16 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
         orderLeadTime: orderLeadTime ? parseInt(orderLeadTime, 10) : undefined,
         advanceDays: advanceDays ? parseInt(advanceDays, 10) : undefined,
         pickupOnly,
-        deliveryHours: deliveryHours.length > 0 ? deliveryHours : undefined,
+        deliveryHours:
+          deliveryHours.length > 0
+            ? buildDeliveryPayload(
+                deliveryHours,
+                periodicEnabled,
+                periodicZonesByHour,
+                expressEnabled,
+                expressZonesByHour,
+              )
+            : undefined,
       });
 
       if (response.data && response.data.success) {

@@ -44,6 +44,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 - **Socket** : socket.io-client
 - **HTTP** : axios (`Config.apiUrl`)
 - **UI** : composants custom + Ionicons
+- **Crash reporting** : `@sentry/react-native` — init dans `src/services/sentry.ts`, activé dès que `Config.sentryDsn` est rempli (no-op sinon, désactivé en dev)
 
 ## Structure racine
 
@@ -67,7 +68,7 @@ yaammoo/
 │   ├── theme/                # Theme.colors, typography
 │   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
 │   ├── components/           # Composants partagés (Toast…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
-│   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts
+│   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)
 │
 ├── assets/                   # Images, fonts
 ├── architecture/             # Ce dossier

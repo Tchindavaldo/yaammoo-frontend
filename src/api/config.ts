@@ -10,6 +10,13 @@ export const Config = {
 
   // apiUrl: "https://yaammoo-backend.fly.dev",
 
+  // ─── Sentry (crash reporting) ──────────────────────────────────────────────
+  // Colle ici le DSN de ton projet Sentry (sentry.io → Settings → Client Keys).
+  // Tant que c'est vide, Sentry est désactivé et l'app fonctionne normalement.
+  // Format attendu : "https://xxxxx@oyyyy.ingest.sentry.io/zzzz"
+  sentryDsn:
+    "https://88b02bd30a2e3b1e7b6a27c3c1ce8bbc@o4511648708755456.ingest.us.sentry.io/4511648729661440",
+
   firebaseConfig: {
     apiKey: "AIzaSyCGjhUfAHQncfeUcI0wXpghctQG_O9WCgo",
     authDomain: "yaammoo-d9de1.firebaseapp.com",

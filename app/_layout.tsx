@@ -21,6 +21,11 @@ import { useNotificationSetup } from "@/src/features/notifications/hooks/useNoti
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
+import { initSentry, wrapWithSentry } from "@/src/services/sentry";
+
+// Initialise le crash reporting le plus tôt possible (avant tout rendu),
+// pour capturer aussi les crashs au démarrage. No-op tant que le DSN est vide.
+initSentry();
 
 // Le splash natif reste affiché tant qu'on ne l'a pas explicitement caché.
 SplashScreen.preventAutoHideAsync();
@@ -111,7 +116,7 @@ function AppContent() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <AuthProvider>
       <OrderProvider>
@@ -133,3 +138,6 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+// wrapWithSentry active la capture native + le suivi des touches avant le crash.
+export default wrapWithSentry(RootLayout);

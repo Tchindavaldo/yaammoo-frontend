@@ -37,6 +37,40 @@ const TAB_BAR_HEIGHT = 60;
 
 const { width, height } = Dimensions.get("window");
 
+// Liste des principales villes du Cameroun
+const CAMEROON_CITIES = [
+  "Douala",
+  "Yaoundé",
+  "Bamenda",
+  "Garoua",
+  "Maroua",
+  "Bafoussam",
+  "Ngaoundéré",
+  "Bertoua",
+  "Edéa",
+  "Loum",
+  "Kumba",
+  "Buéa",
+  "Nkongsamba",
+  "Limbe",
+  "Kousseri",
+  "Dschang",
+  "Mokolo",
+  "Mbalmayo",
+  "Bangangté",
+  "Sangmélima",
+  "Foumban",
+  "Ebolowa",
+  "Mbouda",
+  "Guider",
+  "Meiganga",
+  "Yagoua",
+  "Mballa",
+  "Obala",
+  "Melong",
+  "Kribi",
+];
+
 interface EditBoutiquePanelProps {
   visible: boolean;
   onClose: () => void;
@@ -59,19 +93,40 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   const [openTime, setOpenTime] = useState(new Date());
   const [closeTime, setCloseTime] = useState(new Date());
   const [number, setNumber] = useState("");
+  const [momoNumber, setMomoNumber] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [citySearch, setCitySearch] = useState("");
+  const [showCityPicker, setShowCityPicker] = useState(false);
   const [deliveryHours, setDeliveryHours] = useState<string[]>([]);
   const [newHour, setNewHour] = useState("");
   // Heure dont on édite les lieux/prix (chip heure actif). null = aucune.
   const [activeHour, setActiveHour] = useState<string | null>(null);
-  // Lieux + prix par heure (design only pour l'instant, pas envoyé au backend).
-  const [zonesByHour, setZonesByHour] = useState<
+  // Zones périodiques par heure
+  const [periodicZonesByHour, setPeriodicZonesByHour] = useState<
     Record<string, { lieu: string; prix: string }[]>
   >({});
-  // Ligne d'édition lieu/prix : draft + index de l'item en édition (null = création).
-  const [placeDraft, setPlaceDraft] = useState({ lieu: "", prix: "" });
-  const [placeEditIdx, setPlaceEditIdx] = useState<number | null>(null);
+  // Zones express par heure, préremplies depuis periodic
+  const [expressZonesByHour, setExpressZonesByHour] = useState<
+    Record<string, { lieu: string; prix: string }[]>
+  >({});
+  // Périodique et Express activés par heure
+  const [periodicEnabled, setPeriodicEnabled] = useState<
+    Record<string, boolean>
+  >({});
+  const [expressEnabled, setExpressEnabled] = useState<Record<string, boolean>>(
+    {},
+  );
+  // Drafts d'édition pour les deux blocs
+  const [periodicDraft, setPeriodicDraft] = useState({ lieu: "", prix: "" });
+  const [expressDraft, setExpressDraft] = useState({ lieu: "", prix: "" });
+  const [periodicEditIdx, setPeriodicEditIdx] = useState<number | null>(null);
+  const [expressEditIdx, setExpressEditIdx] = useState<number | null>(null);
   const [image, setImage] = useState<string>("");
   const [orderLeadTime, setOrderLeadTime] = useState("");
+  const [advanceDays, setAdvanceDays] = useState("");
+  const [pickupOnly, setPickupOnly] = useState(false);
+  const [page, setPage] = useState(1);
   const [tempDeliveryTime, setTempDeliveryTime] = useState(new Date());
 
   // Picker states
@@ -137,15 +192,26 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
             `${Config.apiUrl}/fastfood/${userData.fastFoodId}`,
             {
               headers: { "ngrok-skip-browser-warning": "true" },
-            }
+            },
           );
           if (response.data?.data) {
             const data = response.data.data;
             setName(data.name || "");
             setNumber(data.number || "");
+            setMomoNumber(data.momoNumber || "");
+            setWhatsappNumber(data.whatsappNumber || "");
+            setSelectedCities(data.cities || []);
             setDeliveryHours(data.deliveryHours || []);
             setImage(data.image || "");
-            setOrderLeadTime(data.orderLeadTime !== undefined ? String(data.orderLeadTime) : "");
+            setOrderLeadTime(
+              data.orderLeadTime !== undefined
+                ? String(data.orderLeadTime)
+                : "",
+            );
+            setAdvanceDays(
+              data.advanceDays !== undefined ? String(data.advanceDays) : "",
+            );
+            setPickupOnly(data.pickupOnly === true);
 
             // Parse times
             if (data.openTime) {
@@ -218,66 +284,192 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   };
 
   const addDeliveryHour = () => {
-    if (newHour && !deliveryHours.includes(newHour)) {
-      const sorted = [...deliveryHours, newHour].sort();
-      setDeliveryHours(sorted);
+    if (newHour && activeHour && newHour !== activeHour) {
+      // Remplacer l'heure active
+      const transferData = (prev: Record<string, any>) => {
+        const next = { ...prev };
+        if (next[activeHour]) {
+          next[newHour] = next[activeHour];
+          delete next[activeHour];
+        }
+        return next;
+      };
+      setDeliveryHours((prev) =>
+        prev
+          .filter((h) => h !== activeHour)
+          .concat(newHour)
+          .sort(),
+      );
+      setPeriodicZonesByHour(transferData);
+      setExpressZonesByHour(transferData);
+      setExpressEnabled((prev) => {
+        const next = { ...prev };
+        if (next[activeHour] !== undefined) {
+          next[newHour] = next[activeHour];
+          delete next[activeHour];
+        }
+        return next;
+      });
+    } else if (newHour && !deliveryHours.includes(newHour)) {
+      // Nouvelle heure
+      setDeliveryHours((prev) => [...prev, newHour].sort());
       setActiveHour(newHour);
       setNewHour("");
+      return;
     }
+
+    setActiveHour(null);
+    setNewHour("");
   };
 
   const removeDeliveryHour = (hour: string) => {
-    setDeliveryHours(deliveryHours.filter((h) => h !== hour));
-    setZonesByHour((prev) => {
+    setDeliveryHours((prev) => prev.filter((h) => h !== hour));
+    setPeriodicZonesByHour((prev) => {
+      const next = { ...prev };
+      delete next[hour];
+      return next;
+    });
+    setExpressZonesByHour((prev) => {
+      const next = { ...prev };
+      delete next[hour];
+      return next;
+    });
+    setExpressEnabled((prev) => {
       const next = { ...prev };
       delete next[hour];
       return next;
     });
     if (activeHour === hour) {
       setActiveHour(null);
-      resetPlaceDraft();
     }
-  };
-
-  // ── Lieux / prix de l'heure active (design — pas encore persisté) ──
-  const resetPlaceDraft = () => {
-    setPlaceDraft({ lieu: "", prix: "" });
-    setPlaceEditIdx(null);
   };
 
   const selectHour = (hour: string) => {
     setActiveHour((prev) => (prev === hour ? null : hour));
-    resetPlaceDraft();
-  };
+    setNewHour(hour);
+    const [h, m] = hour.split(":").map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    setTempDeliveryTime(d);
+    setPeriodicDraft({ lieu: "", prix: "" });
+    setExpressDraft({ lieu: "", prix: "" });
+    setPeriodicEditIdx(null);
+    setExpressEditIdx(null);
 
-  const validatePlace = () => {
-    if (!activeHour || !placeDraft.lieu.trim()) return;
-    const item = { lieu: placeDraft.lieu.trim(), prix: placeDraft.prix.trim() };
-    setZonesByHour((prev) => {
-      const list = prev[activeHour] ? [...prev[activeHour]] : [];
-      if (placeEditIdx === null) list.push(item);
-      else list[placeEditIdx] = item;
-      return { ...prev, [activeHour]: list };
-    });
-    resetPlaceDraft();
-  };
-
-  const editPlace = (idx: number) => {
-    if (!activeHour) return;
-    const item = zonesByHour[activeHour]?.[idx];
-    if (!item) return;
-    setPlaceDraft({ lieu: item.lieu, prix: item.prix });
-    setPlaceEditIdx(idx);
-  };
-
-  const deletePlace = () => {
-    if (activeHour && placeEditIdx !== null) {
-      setZonesByHour((prev) => ({
+    // Préremplir l'express si activé pour la première fois
+    if (
+      activeHour !== hour &&
+      periodicZonesByHour[hour]?.length &&
+      !expressZonesByHour[hour]?.length
+    ) {
+      setExpressZonesByHour((prev) => ({
         ...prev,
-        [activeHour]: (prev[activeHour] || []).filter((_, i) => i !== placeEditIdx),
+        [hour]: [...(periodicZonesByHour[hour] || [])],
       }));
     }
-    resetPlaceDraft();
+  };
+
+  // ── Validation périodique ──
+  const validatePeriodic = () => {
+    if (!activeHour || !periodicDraft.lieu.trim()) return;
+    const item = {
+      lieu: periodicDraft.lieu.trim(),
+      prix: periodicDraft.prix.trim(),
+    };
+    setPeriodicZonesByHour((prev) => {
+      const list = prev[activeHour] ? [...prev[activeHour]] : [];
+      if (periodicEditIdx === null) list.push(item);
+      else list[periodicEditIdx] = item;
+      return { ...prev, [activeHour]: list };
+    });
+    // Préremplir express si vide
+    setExpressZonesByHour((prev) => {
+      if (prev[activeHour]?.length) return prev;
+      return {
+        ...prev,
+        [activeHour]: [...(periodicZonesByHour[activeHour] || []), item],
+      };
+    });
+    setPeriodicDraft({ lieu: "", prix: "" });
+    setPeriodicEditIdx(null);
+  };
+
+  const editPeriodic = (idx: number) => {
+    if (!activeHour) return;
+    const item = periodicZonesByHour[activeHour]?.[idx];
+    if (!item) return;
+    setPeriodicDraft({ lieu: item.lieu, prix: item.prix });
+    setPeriodicEditIdx(idx);
+  };
+
+  const deletePeriodic = () => {
+    if (activeHour && periodicEditIdx !== null) {
+      setPeriodicZonesByHour((prev) => ({
+        ...prev,
+        [activeHour]: (prev[activeHour] || []).filter(
+          (_, i) => i !== periodicEditIdx,
+        ),
+      }));
+    }
+    setPeriodicDraft({ lieu: "", prix: "" });
+    setPeriodicEditIdx(null);
+  };
+
+  // ── Validation express ──
+  const validateExpress = () => {
+    if (!activeHour || !expressDraft.lieu.trim()) return;
+    const item = {
+      lieu: expressDraft.lieu.trim(),
+      prix: expressDraft.prix.trim(),
+    };
+    setExpressZonesByHour((prev) => {
+      const list = prev[activeHour] ? [...prev[activeHour]] : [];
+      if (expressEditIdx === null) list.push(item);
+      else list[expressEditIdx] = item;
+      return { ...prev, [activeHour]: list };
+    });
+    setExpressDraft({ lieu: "", prix: "" });
+    setExpressEditIdx(null);
+  };
+
+  const editExpress = (idx: number) => {
+    if (!activeHour) return;
+    const item = expressZonesByHour[activeHour]?.[idx];
+    if (!item) return;
+    setExpressDraft({ lieu: item.lieu, prix: item.prix });
+    setExpressEditIdx(idx);
+  };
+
+  const deleteExpress = () => {
+    if (activeHour && expressEditIdx !== null) {
+      setExpressZonesByHour((prev) => ({
+        ...prev,
+        [activeHour]: (prev[activeHour] || []).filter(
+          (_, i) => i !== expressEditIdx,
+        ),
+      }));
+    }
+    setExpressDraft({ lieu: "", prix: "" });
+    setExpressEditIdx(null);
+  };
+
+  // Toggle express pour une heure
+  const toggleExpress = (hour: string) => {
+    setExpressEnabled((prev) => {
+      const next = !prev[hour];
+      if (
+        next &&
+        !expressZonesByHour[hour]?.length &&
+        periodicZonesByHour[hour]?.length
+      ) {
+        // Activer et préremplir depuis périodique
+        setExpressZonesByHour((z) => ({
+          ...z,
+          [hour]: [...(periodicZonesByHour[hour] || [])],
+        }));
+      }
+      return { ...prev, [hour]: next };
+    });
   };
 
   const pickImage = async () => {
@@ -311,7 +503,12 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
         openTime: formatTime(openTime),
         closeTime: formatTime(closeTime),
         number,
+        momoNumber,
+        whatsappNumber,
+        cities: selectedCities,
         orderLeadTime: orderLeadTime ? parseInt(orderLeadTime, 10) : undefined,
+        advanceDays: advanceDays ? parseInt(advanceDays, 10) : undefined,
+        pickupOnly,
         deliveryHours: deliveryHours.length > 0 ? deliveryHours : undefined,
       };
 
@@ -326,7 +523,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
 
       const response = await axios.post(
         `${Config.apiUrl}/fastfood/${userData?.fastFoodId}`,
-        updateData
+        updateData,
       );
 
       if (response.data && response.data.success) {
@@ -362,7 +559,10 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
       {/* Fond blanc opaque FIXE sous le header : couvre toute la zone de contenu
           (évite que le settings transparaisse au scroll). Derrière le header, on
           laisse transparent pour que le BlurView floute le settings. */}
-      <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
+      <View
+        style={[styles.contentBg, { top: headerHeight }]}
+        pointerEvents="none"
+      />
 
       <TabHeader
         title="Gérer ma boutique"
@@ -395,171 +595,237 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
               >
                 {loadingData ? (
                   <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color={Theme.colors.primary} />
-                    <Text style={styles.loaderText}>Chargement de la boutique…</Text>
+                    <ActivityIndicator
+                      size="large"
+                      color={Theme.colors.primary}
+                    />
+                    <Text style={styles.loaderText}>
+                      Chargement de la boutique…
+                    </Text>
+                  </View>
+                ) : page === 1 ? (
+                  // ── PAGE 1 : Infos générales (scroll + bouton fixe en bas) ──
+                  <View style={{ flex: 1 }}>
+                    <ScrollView
+                      style={{ flex: 1 }}
+                      contentContainerStyle={{ paddingBottom: 16 }}
+                      showsVerticalScrollIndicator={false}
+                      keyboardShouldPersistTaps="handled"
+                    >
+                      {/* Avatar + Name row */}
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 12,
+                          marginBottom: 14,
+                        }}
+                      >
+                        <TouchableOpacity
+                          onPress={pickImage}
+                          style={styles.avatarCircle}
+                        >
+                          {image ? (
+                            <Image
+                              source={{ uri: image }}
+                              style={styles.avatarImage}
+                            />
+                          ) : (
+                            <Ionicons
+                              name="image-outline"
+                              size={28}
+                              color="#cbd5e1"
+                            />
+                          )}
+                        </TouchableOpacity>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.floatingLabel}>Nom Boutique</Text>
+                          <TextInput
+                            style={[styles.glassInput, { borderRadius: 20 }]}
+                            value={name}
+                            onChangeText={setName}
+                            placeholder="Entrer le nom de votre boutique"
+                            placeholderTextColor="#cbd5e1"
+                          />
+                        </View>
+                      </View>
+
+                      {/* Heures ouverture/fermeture sur une ligne */}
+                      <View style={[styles.formRow, { marginTop: 10, gap: 6 }]}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.floatingLabel}>Ouverture</Text>
+                          <TouchableOpacity
+                            style={[
+                              styles.glassInput,
+                              styles.timeInput,
+                              { borderRadius: 20 },
+                            ]}
+                            onPress={() => setShowOpenPicker(true)}
+                          >
+                            <Text style={styles.timeText}>
+                              {formatTime(openTime)}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.floatingLabel}>Fermeture</Text>
+                          <TouchableOpacity
+                            style={[
+                              styles.glassInput,
+                              styles.timeInput,
+                              { borderRadius: 20 },
+                            ]}
+                            onPress={() => setShowClosePicker(true)}
+                          >
+                            <Text style={styles.timeText}>
+                              {formatTime(closeTime)}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      {/* Numéros de contact sur une ligne */}
+                      <View style={[styles.formRow, { marginTop: 15, gap: 6 }]}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.floatingLabel}>OM</Text>
+                          <TextInput
+                            style={[styles.glassInput, { borderRadius: 20 }]}
+                            value={number}
+                            onChangeText={setNumber}
+                            keyboardType="numeric"
+                            placeholder="Orange Money"
+                            placeholderTextColor="#cbd5e1"
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.floatingLabel}>MOMO</Text>
+                          <TextInput
+                            style={[styles.glassInput, { borderRadius: 20 }]}
+                            value={momoNumber}
+                            onChangeText={setMomoNumber}
+                            keyboardType="numeric"
+                            placeholder="MTN Mobile Money"
+                            placeholderTextColor="#cbd5e1"
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.floatingLabel}>WhatsApp</Text>
+                          <TextInput
+                            style={[styles.glassInput, { borderRadius: 20 }]}
+                            value={whatsappNumber}
+                            onChangeText={setWhatsappNumber}
+                            keyboardType="numeric"
+                            placeholder="WhatsApp"
+                            placeholderTextColor="#cbd5e1"
+                          />
+                        </View>
+                      </View>
+
+                      {/* Localisation - Villes */}
+                      <View style={[styles.inputGroup, { marginTop: 15 }]}>
+                        <Text style={styles.floatingLabel}>
+                          Localisation
+                          {selectedCities.length > 0
+                            ? ` (${selectedCities.length})`
+                            : ""}
+                        </Text>
+                        <TouchableOpacity
+                          style={[
+                            styles.glassInput,
+                            {
+                              borderRadius: 20,
+                              minHeight: 46,
+                              justifyContent: "center",
+                              paddingVertical: 10,
+                            },
+                          ]}
+                          onPress={() => setShowCityPicker(true)}
+                        >
+                          {selectedCities.length > 0 ? (
+                            <Text
+                              style={{ color: "#334155", fontSize: 14 }}
+                              numberOfLines={2}
+                            >
+                              {selectedCities.join(", ")}
+                            </Text>
+                          ) : (
+                            <Text style={{ color: "#cbd5e1", fontSize: 14 }}>
+                              Sélectionner les villes de livraison
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Délai livraison */}
+                      <View style={[styles.inputGroup, { marginTop: 15 }]}>
+                        <Text style={styles.floatingLabel}>
+                          Délai livraison (minutes)
+                        </Text>
+                        <Text style={styles.helperText}>
+                          Les clients ne pourront plus commander X minutes avant
+                          l'heure de livraison
+                        </Text>
+                        <TextInput
+                          style={[styles.glassInput, { borderRadius: 20 }]}
+                          value={orderLeadTime}
+                          onChangeText={setOrderLeadTime}
+                          keyboardType="numeric"
+                          placeholder="ex: 30"
+                          placeholderTextColor="#cbd5e1"
+                        />
+                      </View>
+
+                      {/* Jours en avance */}
+                      <View style={[styles.inputGroup, { marginTop: 15 }]}>
+                        <Text style={styles.floatingLabel}>
+                          Jours en avance
+                        </Text>
+                        <Text style={styles.helperText}>
+                          Nombre de jours à l'avance qu'un client peut commander
+                          (ex: 3 = aujourd'hui, demain, après-demain)
+                        </Text>
+                        <TextInput
+                          style={[styles.glassInput, { borderRadius: 20 }]}
+                          value={advanceDays}
+                          onChangeText={setAdvanceDays}
+                          keyboardType="numeric"
+                          placeholder="ex: 3"
+                          placeholderTextColor="#cbd5e1"
+                        />
+                      </View>
+                    </ScrollView>
+
+                    {/* Bouton Suivant fixe en bas */}
+                    <TouchableOpacity
+                      style={[styles.updateBtn, { marginTop: 16 }]}
+                      onPress={() => setPage(2)}
+                    >
+                      <Text style={styles.updateBtnText}>Suivant</Text>
+                      <Ionicons
+                        name="arrow-forward-outline"
+                        size={18}
+                        color="white"
+                      />
+                    </TouchableOpacity>
                   </View>
                 ) : (
-                <>
-                {/* Avatar + Name row */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                  <TouchableOpacity onPress={pickImage} style={styles.avatarCircle}>
-                    {image ? (
-                      <Image source={{ uri: image }} style={styles.avatarImage} />
-                    ) : (
-                      <Ionicons name="image-outline" size={28} color="#cbd5e1" />
-                    )}
-                  </TouchableOpacity>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.floatingLabel}>Nom Boutique</Text>
-                    <TextInput
-                      style={[styles.glassInput, { borderRadius: 20 }]}
-                      value={name}
-                      onChangeText={setName}
-                      placeholder="Entrer le nom de votre boutique"
-                      placeholderTextColor="#cbd5e1"
-                    />
-                  </View>
-                </View>
-
-                {/* Time inputs */}
-                <View style={[styles.formRow, { marginTop: 10 }]}>
-                  <View style={{ flex: 1, marginRight: 5 }}>
-                    <Text style={styles.floatingLabel}>Ouverture</Text>
-                    <TouchableOpacity
-                      style={[
-                        styles.glassInput,
-                        styles.timeInput,
-                        { borderRadius: 20 },
-                      ]}
-                      onPress={() => setShowOpenPicker(true)}
-                    >
-                      <Text style={styles.timeText}>{formatTime(openTime)}</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <View style={{ flex: 1, marginLeft: 5 }}>
-                    <Text style={styles.floatingLabel}>Fermeture</Text>
-                    <TouchableOpacity
-                      style={[
-                        styles.glassInput,
-                        styles.timeInput,
-                        { borderRadius: 20 },
-                      ]}
-                      onPress={() => setShowClosePicker(true)}
-                    >
-                      <Text style={styles.timeText}>{formatTime(closeTime)}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                {/* Number input */}
-                <View style={[styles.inputGroup, { marginTop: 15 }]}>
-                  <Text style={styles.floatingLabel}>Numero (OM)</Text>
-                  <TextInput
-                    style={[styles.glassInput, { borderRadius: 20 }]}
-                    value={number}
-                    onChangeText={setNumber}
-                    keyboardType="numeric"
-                    placeholder="Entrer le numero (Orange Money)"
-                    placeholderTextColor="#cbd5e1"
-                  />
-                </View>
-
-                {/* Delivery Cutoff Time input */}
-                <View style={[styles.inputGroup, { marginTop: 15 }]}>
-                  <Text style={styles.floatingLabel}>Délai avant une livraison (minutes)</Text>
-                  <Text style={styles.helperText}>
-                    Les clients ne pourront plus commander X minutes avant l'heure de livraison
-                  </Text>
-                  <TextInput
-                    style={[styles.glassInput, { borderRadius: 20 }]}
-                    value={orderLeadTime}
-                    onChangeText={setOrderLeadTime}
-                    keyboardType="numeric"
-                    placeholder="ex: 30"
-                    placeholderTextColor="#cbd5e1"
-                  />
-                </View>
-
-                {/* Delivery Section — design calqué sur Extras/Boissons du create menu */}
-                <View style={[styles.inputGroup, { marginTop: 20 }]}>
-                  {/* Ligne label "Livraison" + ×N + chips heures (scroll horizontal) */}
-                  <View style={styles.chipHeaderRow}>
-                    <Text style={[styles.floatingLabel, { marginBottom: 0 }]}>
-                      Livraison
-                    </Text>
-                    {deliveryHours.length > 0 && (
-                      <Text style={styles.itemCountText}>×{deliveryHours.length}</Text>
-                    )}
-                    {deliveryHours.length > 0 && (
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.chipScroll}
-                        contentContainerStyle={styles.chipScrollContent}
-                        keyboardShouldPersistTaps="handled"
-                      >
-                        {deliveryHours.map((hour, i) => (
-                          <React.Fragment key={`${hour}-${i}`}>
-                            {i > 0 && <Text style={styles.chipSeparator}>·</Text>}
-                            <TouchableOpacity onPress={() => selectHour(hour)}>
-                              <Text
-                                style={[
-                                  styles.itemChipText,
-                                  activeHour === hour && styles.itemChipTextActive,
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {hour}
-                                {zonesByHour[hour]?.length
-                                  ? ` (${zonesByHour[hour].length})`
-                                  : ""}
-                              </Text>
-                            </TouchableOpacity>
-                          </React.Fragment>
-                        ))}
-                      </ScrollView>
-                    )}
-                  </View>
-
-                  {/* Ligne d'édition heure : time picker + valider (ajoute l'heure) */}
-                  <View style={styles.editRow}>
-                    <TouchableOpacity
-                      style={[styles.glassInput, styles.timeInput, styles.editInput, { flex: 1 }]}
-                      onPress={() => setShowTimePicker(true)}
-                    >
-                      <Text style={styles.timeText}>
-                        {newHour || "Ajouter une heure"}
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.actionBtn, styles.validateBtn, { opacity: newHour ? 1 : 0.5 }]}
-                      onPress={addDeliveryHour}
-                      disabled={!newHour}
-                    >
-                      <Ionicons name="checkmark" size={18} color="white" />
-                    </TouchableOpacity>
-                  </View>
-
-                  {deliveryHours.length === 0 && (
-                    <Text style={styles.emptyHoursText}>
-                      Aucune heure configurée (optionnel)
-                    </Text>
-                  )}
-
-                  {/* Sous-bloc Lieux/Prix de l'heure active (même design) */}
-                  {activeHour && (
-                    <View style={styles.zoneBlock}>
-                      {/* Ligne label "Lieu / Prix" + ×N + chips lieux */}
+                  // ── PAGE 2 : Livraison (heures + zones) ──
+                  <>
+                    {/* Delivery Section */}
+                    <View style={[styles.inputGroup, { marginTop: 20 }]}>
+                      {/* Ligne label "Livraison" + ×N + chips heures (scroll horizontal) */}
                       <View style={styles.chipHeaderRow}>
-                        <Text style={[styles.floatingLabel, { marginBottom: 0 }]}>
-                          Lieu / Prix · {activeHour}
+                        <Text
+                          style={[styles.floatingLabel, { marginBottom: 0 }]}
+                        >
+                          Livraison
                         </Text>
-                        {zonesByHour[activeHour]?.length ? (
+                        {deliveryHours.length > 0 && (
                           <Text style={styles.itemCountText}>
-                            ×{zonesByHour[activeHour].length}
+                            ×{deliveryHours.length}
                           </Text>
-                        ) : null}
-                        {zonesByHour[activeHour]?.length ? (
+                        )}
+                        {deliveryHours.length > 0 && (
                           <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
@@ -567,88 +833,552 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                             contentContainerStyle={styles.chipScrollContent}
                             keyboardShouldPersistTaps="handled"
                           >
-                            {zonesByHour[activeHour].map((z, idx) => (
-                              <React.Fragment key={idx}>
-                                {idx > 0 && (
+                            {deliveryHours.map((hour, i) => (
+                              <React.Fragment key={`${hour}-${i}`}>
+                                {i > 0 && (
                                   <Text style={styles.chipSeparator}>·</Text>
                                 )}
-                                <TouchableOpacity onPress={() => editPlace(idx)}>
+                                <TouchableOpacity
+                                  onPress={() => selectHour(hour)}
+                                >
                                   <Text
                                     style={[
                                       styles.itemChipText,
-                                      placeEditIdx === idx &&
+                                      activeHour === hour &&
                                         styles.itemChipTextActive,
                                     ]}
                                     numberOfLines={1}
                                   >
-                                    {z.lieu}
-                                    {z.prix ? ` · ${z.prix}` : ""}
+                                    {hour}
+                                    {periodicZonesByHour[hour]?.length &&
+                                    expressEnabled[hour]
+                                      ? ` (${periodicZonesByHour[hour].length + (expressZonesByHour[hour]?.length || 0)})`
+                                      : periodicZonesByHour[hour]?.length
+                                        ? ` (${periodicZonesByHour[hour].length})`
+                                        : ""}
                                   </Text>
                                 </TouchableOpacity>
                               </React.Fragment>
                             ))}
                           </ScrollView>
-                        ) : null}
+                        )}
                       </View>
 
-                      {/* Ligne d'édition lieu : input lieu + input prix + supprimer + ajouter */}
+                      {/* Ligne d'édition heure : time picker + supprimer + valider */}
                       <View style={styles.editRow}>
-                        <TextInput
-                          style={[styles.glassInput, styles.editInput, { flex: 1.4 }]}
-                          value={placeDraft.lieu}
-                          onChangeText={(t) =>
-                            setPlaceDraft({ ...placeDraft, lieu: t })
-                          }
-                          placeholder="Localisation"
-                          placeholderTextColor="#cbd5e1"
-                        />
-                        <TextInput
-                          style={[styles.glassInput, styles.editInput, { flex: 1 }]}
-                          value={placeDraft.prix}
-                          onChangeText={(t) =>
-                            setPlaceDraft({ ...placeDraft, prix: t })
-                          }
-                          keyboardType="numeric"
-                          placeholder="Prix"
-                          placeholderTextColor="#cbd5e1"
-                        />
                         <TouchableOpacity
-                          style={styles.actionBtn}
-                          onPress={deletePlace}
+                          style={[
+                            styles.glassInput,
+                            styles.timeInput,
+                            styles.editInput,
+                            { flex: 1 },
+                          ]}
+                          onPress={() => {
+                            if (activeHour) {
+                              setNewHour(activeHour);
+                              const [h, m] = activeHour.split(":").map(Number);
+                              const d = new Date();
+                              d.setHours(h, m, 0, 0);
+                              setTempDeliveryTime(d);
+                            }
+                            setShowTimePicker(true);
+                          }}
                         >
-                          <Ionicons
-                            name="trash-outline"
-                            size={18}
-                            color="#dc3545"
-                          />
+                          <Text style={styles.timeText}>
+                            {newHour || activeHour || "Ajouter une heure"}
+                          </Text>
                         </TouchableOpacity>
+                        {activeHour && (
+                          <TouchableOpacity
+                            style={styles.actionBtn}
+                            onPress={() => removeDeliveryHour(activeHour)}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={18}
+                              color="#dc3545"
+                            />
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
-                          style={[styles.actionBtn, styles.validateBtn]}
-                          onPress={validatePlace}
+                          style={[
+                            styles.actionBtn,
+                            styles.validateBtn,
+                            {
+                              opacity: newHour || activeHour ? 1 : 0.5,
+                            },
+                          ]}
+                          onPress={addDeliveryHour}
+                          disabled={!newHour && !activeHour}
                         >
                           <Ionicons name="checkmark" size={18} color="white" />
                         </TouchableOpacity>
                       </View>
-                    </View>
-                  )}
-                </View>
 
-                {/* Bouton mettre à jour (pleine largeur, même design que la création) */}
-                <TouchableOpacity
-                  style={styles.updateBtn}
-                  onPress={handleUpdate}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <>
-                      <Ionicons name="checkmark" size={18} color="white" />
-                      <Text style={styles.updateBtnText}>Mettre à jour</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-                </>
+                      {deliveryHours.length === 0 && (
+                        <Text style={styles.emptyHoursText}>
+                          Aucune heure configurée (optionnel)
+                        </Text>
+                      )}
+
+                      {/* Blocs Lieux/Prix de l'heure active : périodique + express */}
+                      {activeHour && (
+                        <>
+                          {/* ── Bloc Livraison périodique ── */}
+                          <View
+                            style={[
+                              styles.zoneBlock,
+                              {
+                                opacity: periodicEnabled[activeHour] ? 1 : 0.5,
+                              },
+                            ]}
+                          >
+                            {/* Checkbox pour activer le périodique */}
+                            <TouchableOpacity
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 8,
+                                marginBottom: 10,
+                              }}
+                              onPress={() =>
+                                setPeriodicEnabled((prev) => ({
+                                  ...prev,
+                                  [activeHour]: !prev[activeHour],
+                                }))
+                              }
+                              activeOpacity={0.7}
+                            >
+                              <View
+                                style={{
+                                  width: 22,
+                                  height: 22,
+                                  borderRadius: 6,
+                                  borderWidth: 2,
+                                  borderColor: periodicEnabled[activeHour]
+                                    ? "#10b981"
+                                    : "#cbd5e1",
+                                  backgroundColor: periodicEnabled[activeHour]
+                                    ? "#10b981"
+                                    : "transparent",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                {periodicEnabled[activeHour] && (
+                                  <Ionicons
+                                    name="checkmark"
+                                    size={16}
+                                    color="white"
+                                  />
+                                )}
+                              </View>
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  color: periodicEnabled[activeHour]
+                                    ? "#10b981"
+                                    : "#64748b",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                Livraison périodique · {activeHour}
+                              </Text>
+                            </TouchableOpacity>
+
+                            {periodicEnabled[activeHour] && (
+                              <View style={styles.chipHeaderRow}>
+                                {periodicZonesByHour[activeHour]?.length ? (
+                                  <Text style={styles.itemCountText}>
+                                    ×{periodicZonesByHour[activeHour].length}
+                                  </Text>
+                                ) : null}
+                                {periodicZonesByHour[activeHour]?.length ? (
+                                  <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    style={styles.chipScroll}
+                                    contentContainerStyle={
+                                      styles.chipScrollContent
+                                    }
+                                    keyboardShouldPersistTaps="handled"
+                                  >
+                                    {periodicZonesByHour[activeHour].map(
+                                      (z, idx) => (
+                                        <React.Fragment key={idx}>
+                                          {idx > 0 && (
+                                            <Text style={styles.chipSeparator}>
+                                              ·
+                                            </Text>
+                                          )}
+                                          <TouchableOpacity
+                                            onPress={() => editPeriodic(idx)}
+                                          >
+                                            <Text
+                                              style={[
+                                                styles.itemChipText,
+                                                periodicEditIdx === idx &&
+                                                  styles.itemChipTextActive,
+                                              ]}
+                                              numberOfLines={1}
+                                            >
+                                              {z.lieu}
+                                              {z.prix ? ` · ${z.prix}` : ""}
+                                            </Text>
+                                          </TouchableOpacity>
+                                        </React.Fragment>
+                                      ),
+                                    )}
+                                  </ScrollView>
+                                ) : null}
+                              </View>
+                            )}
+
+                            {periodicEnabled[activeHour] && (
+                              <View style={styles.editRow}>
+                                <TextInput
+                                  style={[
+                                    styles.glassInput,
+                                    styles.editInput,
+                                    { flex: 1.4 },
+                                  ]}
+                                  value={periodicDraft.lieu}
+                                  onChangeText={(t) =>
+                                    setPeriodicDraft({
+                                      ...periodicDraft,
+                                      lieu: t,
+                                    })
+                                  }
+                                  placeholder="Localisation"
+                                  placeholderTextColor="#cbd5e1"
+                                />
+                                <TextInput
+                                  style={[
+                                    styles.glassInput,
+                                    styles.editInput,
+                                    { flex: 1 },
+                                  ]}
+                                  value={periodicDraft.prix}
+                                  onChangeText={(t) =>
+                                    setPeriodicDraft({
+                                      ...periodicDraft,
+                                      prix: t,
+                                    })
+                                  }
+                                  keyboardType="numeric"
+                                  placeholder="Prix"
+                                  placeholderTextColor="#cbd5e1"
+                                />
+                                <TouchableOpacity
+                                  style={styles.actionBtn}
+                                  onPress={deletePeriodic}
+                                >
+                                  <Ionicons
+                                    name="trash-outline"
+                                    size={18}
+                                    color="#dc3545"
+                                  />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[styles.actionBtn, styles.validateBtn]}
+                                  onPress={validatePeriodic}
+                                >
+                                  <Ionicons
+                                    name="checkmark"
+                                    size={18}
+                                    color="white"
+                                  />
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+
+                          {/* ── Bloc Livraison express ── */}
+                          <View
+                            style={[
+                              styles.zoneBlock,
+                              { opacity: expressEnabled[activeHour] ? 1 : 0.5 },
+                            ]}
+                          >
+                            {/* Checkbox pour activer l'express */}
+                            <TouchableOpacity
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                gap: 8,
+                                marginBottom: 10,
+                              }}
+                              onPress={() => toggleExpress(activeHour)}
+                              activeOpacity={0.7}
+                            >
+                              <View
+                                style={{
+                                  width: 22,
+                                  height: 22,
+                                  borderRadius: 6,
+                                  borderWidth: 2,
+                                  borderColor: expressEnabled[activeHour]
+                                    ? "#10b981"
+                                    : "#cbd5e1",
+                                  backgroundColor: expressEnabled[activeHour]
+                                    ? "#10b981"
+                                    : "transparent",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                {expressEnabled[activeHour] && (
+                                  <Ionicons
+                                    name="checkmark"
+                                    size={16}
+                                    color="white"
+                                  />
+                                )}
+                              </View>
+                              <Text
+                                style={{
+                                  fontSize: 13,
+                                  color: expressEnabled[activeHour]
+                                    ? "#10b981"
+                                    : "#64748b",
+                                  fontWeight: "600",
+                                }}
+                              >
+                                Livraison express · {activeHour}
+                              </Text>
+                            </TouchableOpacity>
+
+                            {expressEnabled[activeHour] && (
+                              <>
+                                <View style={styles.chipHeaderRow}>
+                                  {expressZonesByHour[activeHour]?.length ? (
+                                    <Text style={styles.itemCountText}>
+                                      ×{expressZonesByHour[activeHour].length}
+                                    </Text>
+                                  ) : null}
+                                  {expressZonesByHour[activeHour]?.length ? (
+                                    <ScrollView
+                                      horizontal
+                                      showsHorizontalScrollIndicator={false}
+                                      style={styles.chipScroll}
+                                      contentContainerStyle={
+                                        styles.chipScrollContent
+                                      }
+                                      keyboardShouldPersistTaps="handled"
+                                    >
+                                      {expressZonesByHour[activeHour].map(
+                                        (z, idx) => (
+                                          <React.Fragment key={idx}>
+                                            {idx > 0 && (
+                                              <Text
+                                                style={styles.chipSeparator}
+                                              >
+                                                ·
+                                              </Text>
+                                            )}
+                                            <TouchableOpacity
+                                              onPress={() => editExpress(idx)}
+                                            >
+                                              <View
+                                                style={{
+                                                  flexDirection: "row",
+                                                  alignItems: "center",
+                                                  gap: 4,
+                                                }}
+                                              >
+                                                <Ionicons
+                                                  name="flash"
+                                                  size={12}
+                                                  color="#10b981"
+                                                />
+                                                <Text
+                                                  style={[
+                                                    styles.itemChipText,
+                                                    expressEditIdx === idx &&
+                                                      styles.itemChipTextActive,
+                                                  ]}
+                                                  numberOfLines={1}
+                                                >
+                                                  {z.lieu}
+                                                  {z.prix ? ` · ${z.prix}` : ""}
+                                                </Text>
+                                              </View>
+                                            </TouchableOpacity>
+                                          </React.Fragment>
+                                        ),
+                                      )}
+                                    </ScrollView>
+                                  ) : null}
+                                </View>
+
+                                <View style={styles.editRow}>
+                                  <TextInput
+                                    style={[
+                                      styles.glassInput,
+                                      styles.editInput,
+                                      { flex: 1.4 },
+                                    ]}
+                                    value={expressDraft.lieu}
+                                    onChangeText={(t) =>
+                                      setExpressDraft({
+                                        ...expressDraft,
+                                        lieu: t,
+                                      })
+                                    }
+                                    placeholder="Localisation"
+                                    placeholderTextColor="#cbd5e1"
+                                  />
+                                  <TextInput
+                                    style={[
+                                      styles.glassInput,
+                                      styles.editInput,
+                                      { flex: 1 },
+                                    ]}
+                                    value={expressDraft.prix}
+                                    onChangeText={(t) =>
+                                      setExpressDraft({
+                                        ...expressDraft,
+                                        prix: t,
+                                      })
+                                    }
+                                    keyboardType="numeric"
+                                    placeholder="Prix"
+                                    placeholderTextColor="#cbd5e1"
+                                  />
+                                  <TouchableOpacity
+                                    style={styles.actionBtn}
+                                    onPress={deleteExpress}
+                                  >
+                                    <Ionicons
+                                      name="trash-outline"
+                                      size={18}
+                                      color="#dc3545"
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[
+                                      styles.actionBtn,
+                                      styles.validateBtn,
+                                    ]}
+                                    onPress={validateExpress}
+                                  >
+                                    <Ionicons
+                                      name="checkmark"
+                                      size={18}
+                                      color="white"
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              </>
+                            )}
+                          </View>
+                        </>
+                      )}
+                    </View>
+
+                    {/* Carte récupération à la boutique */}
+                    <View
+                      style={{
+                        backgroundColor: "#f8fafc",
+                        borderRadius: 14,
+                        padding: 14,
+                        marginTop: 16,
+                        borderWidth: 1,
+                        borderColor: "#e2e8f0",
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                        onPress={() => setPickupOnly(!pickupOnly)}
+                        activeOpacity={0.7}
+                      >
+                        <View
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 6,
+                            borderWidth: 2,
+                            borderColor: pickupOnly ? "#10b981" : "#cbd5e1",
+                            backgroundColor: pickupOnly
+                              ? "#10b981"
+                              : "transparent",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {pickupOnly && (
+                            <Ionicons
+                              name="checkmark"
+                              size={16}
+                              color="white"
+                            />
+                          )}
+                        </View>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            color: pickupOnly ? "#10b981" : "#475569",
+                            fontWeight: "600",
+                            flexShrink: 1,
+                          }}
+                        >
+                          Le client peut passer à la boutique récupérer la
+                          commande
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Boutons navigation */}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        gap: 10,
+                        marginTop: 28,
+                      }}
+                    >
+                      <TouchableOpacity
+                        style={[
+                          styles.updateBtn,
+                          {
+                            flex: 1,
+                            backgroundColor: "#64748b",
+                          },
+                        ]}
+                        onPress={() => setPage(1)}
+                      >
+                        <Ionicons
+                          name="arrow-back-outline"
+                          size={18}
+                          color="white"
+                        />
+                        <Text style={styles.updateBtnText}>Retour</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.updateBtn, { flex: 1 }]}
+                        onPress={handleUpdate}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <ActivityIndicator size="small" color="white" />
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="checkmark"
+                              size={18}
+                              color="white"
+                            />
+                            <Text style={styles.updateBtnText}>
+                              Mettre à jour
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </>
                 )}
               </ScrollView>
             </View>
@@ -753,6 +1483,119 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                   }
                 }}
               />
+            </BlurView>
+          </View>
+        </Modal>
+      )}
+
+      {/* City Picker Modal */}
+      {showCityPicker && (
+        <Modal transparent={true} visible={true} animationType="fade">
+          <View style={styles.modalOverlay}>
+            <BlurView
+              intensity={90}
+              tint="dark"
+              style={styles.iosPickerContainer}
+            >
+              <View
+                style={{
+                  paddingHorizontal: 16,
+                  paddingTop: 12,
+                  paddingBottom: 8,
+                  gap: 10,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text
+                    style={{ color: "white", fontWeight: "bold", fontSize: 16 }}
+                  >
+                    Villes de livraison
+                  </Text>
+                  <TouchableOpacity onPress={() => setShowCityPicker(false)}>
+                    <Text style={{ color: "#ec4913", fontWeight: "bold" }}>
+                      Terminer
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                <TextInput
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    borderRadius: 12,
+                    paddingHorizontal: 14,
+                    height: 40,
+                    color: "white",
+                    fontSize: 14,
+                    borderWidth: 1,
+                    borderColor: "rgba(255,255,255,0.2)",
+                  }}
+                  value={citySearch}
+                  onChangeText={setCitySearch}
+                  placeholder="Rechercher une ville…"
+                  placeholderTextColor="#94a3b8"
+                />
+              </View>
+              <ScrollView
+                style={{ maxHeight: 320 }}
+                contentContainerStyle={{
+                  paddingHorizontal: 16,
+                  paddingBottom: 16,
+                }}
+                keyboardShouldPersistTaps="handled"
+              >
+                {CAMEROON_CITIES.filter((city) =>
+                  city.toLowerCase().includes(citySearch.toLowerCase()),
+                ).map((city) => {
+                  const isSelected = selectedCities.includes(city);
+                  return (
+                    <TouchableOpacity
+                      key={city}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        paddingVertical: 10,
+                        borderBottomWidth: 1,
+                        borderBottomColor: "rgba(255,255,255,0.08)",
+                      }}
+                      onPress={() => {
+                        setSelectedCities((prev) =>
+                          prev.includes(city)
+                            ? prev.filter((c) => c !== city)
+                            : [...prev, city],
+                        );
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: 6,
+                          borderWidth: 2,
+                          borderColor: isSelected ? "#10b981" : "#64748b",
+                          backgroundColor: isSelected
+                            ? "#10b981"
+                            : "transparent",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {isSelected && (
+                          <Ionicons name="checkmark" size={16} color="white" />
+                        )}
+                      </View>
+                      <Text style={{ color: "white", fontSize: 15 }}>
+                        {city}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </BlurView>
           </View>
         </Modal>

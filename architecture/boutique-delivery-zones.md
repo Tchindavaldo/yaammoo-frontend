@@ -105,3 +105,33 @@ Constante `CAMEROON_CITIES` (30 villes) utilisée dans les deux panneaux pour le
 4. Saisir les lieux/prix dans chaque bloc activé
 5. Option : cocher "Le client peut passer à la boutique"
 6. Clic "Créer ma boutique" / "Mettre à jour"
+
+---
+
+# Checkout — Sélection période (CheckoutPeriodOverlay)
+
+## Rendu
+
+- **Chips dates horizontales** en haut : de aujourd'hui à aujourd'hui + advanceDays
+- **Liste verticale** avec checkbox (design drink tab) : chaque ligne = date + heure + lieu + prix
+- **Bouton VALIDER** en bas
+
+## Comportement
+
+- Pour aujourd'hui : les heures dépassées par orderLeadTime sont filtrées
+- Pour les jours suivants : toutes les heures sont disponibles
+- La date sur chaque checkbox correspond au chip date sélectionné
+
+## Payload envoyé
+
+`onSelectPeriod("YYYY-MM-DD|HH:MM|lieu")` — combine la date + l'heure + le lieu sélectionné.
+
+## Composants impactés
+
+| Fichier | Rôle |
+|---|---|
+| `src/features/checkout/components/CheckoutPeriodOverlay.tsx` | Overlay de sélection période |
+| `src/features/checkout/components/CheckoutSheet.tsx` | Passe les données + advanceDays |
+| `src/features/checkout/components/CartCheckoutSheet.tsx` | Passe les données + advanceDays |
+| `src/features/checkout/components/tabs/DeliveryTab.tsx` | Affiche le prix sélectionné dynamiquement |
+| `src/features/restaurants/utils/deliveryUtils.ts` | getNextDeliveryTime supporte les deux formats |

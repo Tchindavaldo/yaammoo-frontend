@@ -40,6 +40,9 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
 
   const deliveryType = delivery.type;
 
+  // Prix affiché dans les boutons Express/Heure (vient de la période sélectionnée)
+  const selectedPrice = delivery.deliveryPrice || delivery.price || "";
+
   return (
     <View
       style={[
@@ -48,7 +51,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
         { height: 230 },
       ]}
     >
-      {/* Zone haute (cartes infos) — hauteur fixe = 1/4 */}
+      {/* Zone haute (cartes infos) */}
       <View style={localStyles.topZone}>
         {/* Layout Express : 3 cartes sur une ligne */}
         {deliveryType === "express" && (
@@ -157,8 +160,18 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     { color: getTextColor(isPeriodFilled) },
                   ]}
                 >
-                  Period
+                  {delivery.hour || "Période"}
                 </Text>
+                {selectedPrice ? (
+                  <Text
+                    style={[
+                      styles.infoBtnSubText,
+                      { color: getTextColor(isPeriodFilled) },
+                    ]}
+                  >
+                    {selectedPrice}F
+                  </Text>
+                ) : null}
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -214,7 +227,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
         )}
       </View>
 
-      {/* Zone basse (sélection du type) — hauteur fixe = 1/4 */}
+      {/* Zone basse (sélection du type) — prix dynamique depuis la période */}
       <View style={localStyles.bottomZone}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>Select Type</Text>
@@ -237,7 +250,8 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-                Express (1000F)
+                Express
+                {selectedPrice ? ` (${selectedPrice}F)` : ""}
               </Text>
               <Text
                 style={[
@@ -266,7 +280,8 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-                Heure (500F)
+                Heure
+                {selectedPrice ? ` (${selectedPrice}F)` : ""}
               </Text>
               <Text
                 style={[
@@ -274,7 +289,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   delivery.type === "standard" && { color: "#ec4913" },
                 ]}
               >
-                Scheduled
+                {delivery.hour || "Choisir un créneau"}
               </Text>
             </View>
           </TouchableOpacity>
@@ -317,7 +332,6 @@ const localStyles = StyleSheet.create({
   deliveryContainer: {
     justifyContent: "space-between",
   },
-  // Chaque zone occupe ~1/4 de la hauteur dispo ; le space-around gère le reste.
   topZone: {
     flex: 1,
     justifyContent: "flex-start",
@@ -326,7 +340,6 @@ const localStyles = StyleSheet.create({
   bottomZone: {
     flex: 1,
     justifyContent: "center",
-    // overflow: "hidden",
   },
   expressRow: {
     flexDirection: "row",

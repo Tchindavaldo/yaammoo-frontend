@@ -68,7 +68,14 @@
       "@react-native-google-signin/google-signin",
       "expo-apple-authentication",
       "expo-font",
-      "./plugins/withModularHeadersFix"
+      "./plugins/withModularHeadersFix",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "rauval",
+          "project": "react-native"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

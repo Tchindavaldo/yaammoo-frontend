@@ -58,16 +58,57 @@ setUserData() → AuthContext + AsyncStorage
 
 ---
 
+## Accès invité (Apple 5.1.1(v))
+
+Apple exige que les fonctionnalités **non liées à un compte** (parcourir les
+restaurants et menus) soient accessibles **sans inscription**. L'app applique
+donc un modèle **invité → compte** :
+
+- **Boot non connecté** → on entre directement dans `(tabs)` (home + recherche +
+  consultation des menus). Plus de mur d'inscription. Cf. guard ci-dessous :
+  `canEnterApp = authResolved && homeReady` (sans `isSignedIn`).
+- **Action liée au compte** (ouvrir un menu pour commander, panier, profil,
+  notifications) → on ouvre la **sheet d'auth** (Apple/Google/email) en overlay
+  via `AuthGate`, au lieu d'exécuter l'action.
+
+| Fichier | Rôle |
+|---|---|
+| `src/features/auth/context/AuthGateContext.tsx` | Provider + `useAuthGate()` → `requireAuth(action)` ouvre la sheet si invité, sinon exécute `action`. Rend la sheet d'auth en overlay (réutilise `AuthSheetContent`). |
+| `src/features/auth/components/GuestGate.tsx` | Wrapper d'écran 100 % lié au compte (panier, profil, notifications, boutique) : affiche un CTA « Se connecter » → `requireAuth()`. |
+
+**Points de gate** :
+- `app/(tabs)/index.tsx` : `handleMenuClick` → `requireAuth()` avant d'ouvrir le
+  CheckoutSheet (l'ouverture d'un menu mène à la commande).
+- `app/(tabs)/cart.tsx`, `settings.tsx`, `notifications.tsx`, `boutique.tsx` :
+  `GuestGate` en early-return si `!isSignedIn`.
+
+`AuthGateProvider` est monté dans `app/_layout.tsx` autour de `AppContent` (sous
+`FastFoodProvider`). La sheet se ferme automatiquement quand `isSignedIn` passe
+à true.
+
+**Bug Apple 2.1(a) corrigé** : le lien « Sign Up » de `AuthSheetContent` était un
+`<Text>` non cliquable. Il est désormais cliquable et fonctionne **dans le même
+sheet** (aucune navigation) : il bascule `AuthSheetContent` en mode inscription
+email (`emailMode + isRegister`) — mêmes champs email/password que le login, mais
+le bouton « Sign Up » **crée réellement le compte** (`createUserWithEmailAndPassword`
++ `POST /user` + `setUserData`), exactement comme un signup Google/Apple. Le footer
+bascule alors en « Already have an account? Sign In » pour revenir au login.
+
 ## Navigation & gating (anti page-blanche)
 
 La bascule entre `(auth)` et `(tabs)` est gérée par deux guards dans
 `app/_layout.tsx`, **sans aucun `router.replace`** :
 
 ```
-canEnterApp = authResolved && isSignedIn && homeReady
+canEnterApp = authResolved && homeReady   // accès invité : plus de isSignedIn
 guard (tabs) = canEnterApp
 guard (auth) = !canEnterApp        // PAS de authResolved ici (cf. ci-dessous)
 ```
+
+> **Note accès invité** : `isSignedIn` a été retiré de `canEnterApp` pour laisser
+> les invités entrer dans `(tabs)`. Les fonctions liées au compte sont protégées
+> au niveau de l'action via `AuthGate` (voir section « Accès invité » plus haut),
+> pas au niveau de la navigation.
 
 Trois signaux :
 - **`authResolved`** = `!loading` (AuthContext) — Firebase a répondu.

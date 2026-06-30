@@ -23,6 +23,7 @@ import { Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useRouter } from "expo-router";
@@ -38,7 +39,8 @@ const CATEGORIES = [
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
-  const { userData } = useAuth();
+  const { user, userData } = useAuth();
+  const { requireAuth } = useAuthGate();
   const { unreadCount } = useNotifications();
   const router = useRouter();
   const {
@@ -77,8 +79,12 @@ export default function HomeScreen() {
   const listHeader = useMemo(() => <HeroBanner />, []);
 
   const handleMenuClick = (menu: Menu) => {
-    setSelectedMenu(menu);
-    setCheckoutVisible(true);
+    // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
+    // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
+    requireAuth(() => {
+      setSelectedMenu(menu);
+      setCheckoutVisible(true);
+    });
   };
 
   const showToast = (message: string, type: "success" | "error") => {
@@ -109,7 +115,7 @@ export default function HomeScreen() {
   const renderHeader = () => (
     <>
       <RestaurantHeader
-        userName={userData?.infos?.nom || "Utilisateur"}
+        userName={[userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(' ') || user?.displayName || "Utilisateur"}
         userPhoto={
           (userData as any)?.photoUrl || (userData as any)?.photo || ""
         }
@@ -145,7 +151,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
       <RestaurantHeader
-        userName={userData?.infos?.nom || "Utilisateur"}
+        userName={[userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(' ') || user?.displayName || "Utilisateur"}
         userPhoto={
           (userData as any)?.photoUrl || (userData as any)?.photo || ""
         }

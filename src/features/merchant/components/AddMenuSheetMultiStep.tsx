@@ -53,6 +53,18 @@ const KEYBOARD_OFFSET = 90;
 // Pressable animable (pour le fondu du backdrop flouté).
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
+// Wrapper « tap dans le vide ferme le clavier » sur natif. Sur le WEB, un
+// Pressable parent avec onPress intercepte le clic et empêche le focus des
+// TextInput enfants → on rend une simple View (le clavier n'existe pas sur web).
+const DismissKeyboardWrapper: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) =>
+  Platform.OS === "web" ? (
+    <View>{children}</View>
+  ) : (
+    <Pressable onPress={Keyboard.dismiss}>{children}</Pressable>
+  );
+
 /** Extra ou boisson : nom, prix, quantité, disponibilité. */
 type Item = { name: string; prix: string; quantite: string; status: boolean };
 
@@ -320,8 +332,14 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     if (step === "nameImage") {
       if (!nom.trim())
         return { message: "Le nom ne doit pas être vide", fields: ["nom"] };
-      // ⚠️ Obligation des photos désactivée temporairement (à remettre plus tard) :
-      // if (images.length < 3) return '3 images doivent être sélectionnées';
+      // Obligation des 3 photos : il faut 3 images réellement uploadées (URLs).
+      // En modification, les images existantes sont déjà dans uploadedUrls/images.
+      const uploadedCount = uploadedUrls.filter(Boolean).length;
+      if (uploadedCount < 3)
+        return {
+          message: "Vous devez ajouter 3 photos du menu",
+          fields: ["images"],
+        };
       if (!prix1)
         return {
           message: "Le prix 1 ne doit pas être vide",
@@ -446,7 +464,11 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const currentStepIndex = STEPS.indexOf(step);
   const progress = (currentStepIndex + 1) / totalSteps;
 
-  const isLoading = externalLoading || submitting || uploadingIdx !== null;
+  // Loader du bouton « Suivant » : uniquement pour la soumission du menu, PAS
+  // pour l'upload d'image (qui a son propre loader sur la vignette). Pendant un
+  // upload, le bouton reste juste désactivé (isBusy), sans spinner.
+  const isLoading = externalLoading || submitting;
+  const isBusy = isLoading || uploadingIdx !== null;
 
   const inner = (
     <View style={[styles.sheet, embedded && styles.sheetEmbedded]}>
@@ -490,7 +512,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         {/* Étape 1 : nom + prix + description.
             Pressable : un tap dans le vide ferme le clavier (sortie de la description). */}
         {step === "nameImage" && (
-          <Pressable onPress={Keyboard.dismiss}>
+          <DismissKeyboardWrapper>
             <Text style={styles.fieldLabel}>Nom du menu</Text>
             <TextInput
               style={[styles.input, styles.inputCompact, ...fieldStyle("nom")]}
@@ -624,14 +646,19 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
             </View>
 
             <Text style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}>
-              Photos du plat (optionnel)
+              Photos du plat (3 requises)
             </Text>
             <View style={styles.imageRow}>
               {[0, 1, 2].map((idx) => (
                 <TouchableOpacity
                   key={idx}
-                  style={styles.imageSlot}
+                  style={[
+                    styles.imageSlot,
+                    uploadingIdx !== null && styles.imageSlotDisabled,
+                  ]}
                   onPress={() => pickImage(idx)}
+                  // Pendant un upload en cours, on bloque toute autre sélection.
+                  disabled={uploadingIdx !== null}
                 >
                   {images[idx] ? (
                     <>
@@ -663,12 +690,12 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                 </TouchableOpacity>
               ))}
             </View>
-          </Pressable>
+          </DismissKeyboardWrapper>
         )}
 
         {/* Étape détails : extras + boissons (tabs) + stock + statut du menu */}
         {step === "details" && (
-          <Pressable onPress={Keyboard.dismiss}>
+          <DismissKeyboardWrapper>
             {/* Deux sections empilées (Extras puis Boissons), même design que les prix :
                 ligne label + chips scrollables horizontalement, puis ligne d'édition
                 (input nom, input prix, boutons Supprimer / Valider). */}
@@ -954,7 +981,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                 </View>
               </View>
             </View>
-          </Pressable>
+          </DismissKeyboardWrapper>
         )}
 
         {/* Étape récapitulatif : 3 designs explorables (Aperçu / Blocs / Édito). */}
@@ -996,9 +1023,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          style={[styles.nextBtn, isLoading && styles.nextBtnDisabled]}
+          style={[styles.nextBtn, isBusy && styles.nextBtnDisabled]}
           onPress={goNext}
-          disabled={isLoading}
+          disabled={isBusy}
         >
           {isLoading ? (
             <ActivityIndicator color="white" />
@@ -1157,6 +1184,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: Theme.colors.gray[100],
+  },
+  imageSlotDisabled: {
+    opacity: 0.5,
   },
   imagePreview: {
     width: "100%",

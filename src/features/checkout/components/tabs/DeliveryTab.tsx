@@ -40,33 +40,43 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
 
   const deliveryType = delivery.type;
 
+  // Prix affiché dans les boutons Express/Heure (vient de la période sélectionnée)
+  const selectedPrice = delivery.deliveryPrice || delivery.price || "";
+
   return (
-    <View style={styles.deliveryContainer}>
-      {/* Layout Express : 3 cartes à gauche + message à droite */}
-      {deliveryType === "express" && (
-        <View style={localStyles.expressRow}>
-          <View style={localStyles.expressCardsCol}>
-            <TouchableOpacity
-              style={[getBtnStyle(isLocationFilled), { marginBottom: 8 }]}
-              onPress={onOpenLocation}
-            >
-              <Ionicons
-                name="location-outline"
-                size={20}
-                color={getIconColor(isLocationFilled)}
-              />
-              <View style={styles.infoBtnText}>
-                <Text
-                  style={[
-                    styles.infoBtnTitle,
-                    { color: getTextColor(isLocationFilled) },
-                  ]}
-                >
-                  Lieux
-                </Text>
-              </View>
-            </TouchableOpacity>
-            <View style={{ flexDirection: "row", gap: 8 }}>
+    <View
+      style={[
+        styles.deliveryContainer,
+        localStyles.deliveryContainer,
+        { height: 230 },
+      ]}
+    >
+      {/* Zone haute (cartes infos) */}
+      <View style={localStyles.topZone}>
+        {/* Layout Express : 3 cartes sur une ligne */}
+        {deliveryType === "express" && (
+          <View style={localStyles.expressRow}>
+            <View style={localStyles.expressCardsCol}>
+              <TouchableOpacity
+                style={[getBtnStyle(isLocationFilled), { flex: 1 }]}
+                onPress={onOpenLocation}
+              >
+                <Ionicons
+                  name="location-outline"
+                  size={20}
+                  color={getIconColor(isLocationFilled)}
+                />
+                <View style={styles.infoBtnText}>
+                  <Text
+                    style={[
+                      styles.infoBtnTitle,
+                      { color: getTextColor(isLocationFilled) },
+                    ]}
+                  >
+                    Lieux
+                  </Text>
+                </View>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[getBtnStyle(isContactFilled), { flex: 1 }]}
                 onPress={onOpenContact}
@@ -109,233 +119,240 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
               </TouchableOpacity>
             </View>
           </View>
-          <View style={localStyles.expressInfoCol}>
-            <Ionicons name="flash-outline" size={20} color="#ec4913" />
-            <Text style={localStyles.expressInfoText}>
-              Commande livrée dès que terminée
+        )}
+
+        {/* Layout Standard : 4 cartes */}
+        {deliveryType === "standard" && (
+          <View style={styles.infoGrid4}>
+            <TouchableOpacity
+              style={getBtnStyle(isLocationFilled)}
+              onPress={onOpenLocation}
+            >
+              <Ionicons
+                name="location-outline"
+                size={20}
+                color={getIconColor(isLocationFilled)}
+              />
+              <View style={styles.infoBtnText}>
+                <Text
+                  style={[
+                    styles.infoBtnTitle,
+                    { color: getTextColor(isLocationFilled) },
+                  ]}
+                >
+                  Lieux
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={getBtnStyle(isPeriodFilled)}
+              onPress={onOpenPeriod}
+            >
+              <Ionicons
+                name="time-outline"
+                size={20}
+                color={getIconColor(isPeriodFilled)}
+              />
+              <View style={styles.infoBtnText}>
+                <Text
+                  style={[
+                    styles.infoBtnTitle,
+                    { color: getTextColor(isPeriodFilled) },
+                  ]}
+                >
+                  {delivery.hour || "Période"}
+                </Text>
+                {selectedPrice ? (
+                  <Text
+                    style={[
+                      styles.infoBtnSubText,
+                      { color: getTextColor(isPeriodFilled) },
+                    ]}
+                  >
+                    {selectedPrice}F
+                  </Text>
+                ) : null}
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={getBtnStyle(isContactFilled)}
+              onPress={onOpenContact}
+            >
+              <Ionicons
+                name="call-outline"
+                size={20}
+                color={getIconColor(isContactFilled)}
+              />
+              <View style={styles.infoBtnText}>
+                <Text
+                  style={[
+                    styles.infoBtnTitle,
+                    { color: getTextColor(isContactFilled) },
+                  ]}
+                >
+                  Contact
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={getBtnStyle(isVoiceNoteFilled)}
+              onPress={onOpenVoiceNote}
+            >
+              <Ionicons
+                name="mic-outline"
+                size={20}
+                color={getIconColor(isVoiceNoteFilled)}
+              />
+              <View style={styles.infoBtnText}>
+                <Text
+                  style={[
+                    styles.infoBtnTitle,
+                    { color: getTextColor(isVoiceNoteFilled) },
+                  ]}
+                >
+                  Note
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {deliveryType === "aucune" && (
+          <View style={localStyles.aucuneBanner}>
+            <Ionicons name="storefront-outline" size={20} color="#64748b" />
+            <Text style={localStyles.aucuneText}>
+              Vous passerez en boutique récupérer votre commande
             </Text>
           </View>
-        </View>
-      )}
-
-      {/* Layout Standard : 4 cartes */}
-      {deliveryType === "standard" && (
-        <View style={styles.infoGrid4}>
-          <TouchableOpacity
-            style={getBtnStyle(isLocationFilled)}
-            onPress={onOpenLocation}
-          >
-            <Ionicons
-              name="location-outline"
-              size={20}
-              color={getIconColor(isLocationFilled)}
-            />
-            <View style={styles.infoBtnText}>
-              <Text
-                style={[
-                  styles.infoBtnTitle,
-                  { color: getTextColor(isLocationFilled) },
-                ]}
-              >
-                Lieux
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={getBtnStyle(isPeriodFilled)}
-            onPress={onOpenPeriod}
-          >
-            <Ionicons
-              name="time-outline"
-              size={20}
-              color={getIconColor(isPeriodFilled)}
-            />
-            <View style={styles.infoBtnText}>
-              <Text
-                style={[
-                  styles.infoBtnTitle,
-                  { color: getTextColor(isPeriodFilled) },
-                ]}
-              >
-                Period
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={getBtnStyle(isContactFilled)}
-            onPress={onOpenContact}
-          >
-            <Ionicons
-              name="call-outline"
-              size={20}
-              color={getIconColor(isContactFilled)}
-            />
-            <View style={styles.infoBtnText}>
-              <Text
-                style={[
-                  styles.infoBtnTitle,
-                  { color: getTextColor(isContactFilled) },
-                ]}
-              >
-                Contact
-              </Text>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={getBtnStyle(isVoiceNoteFilled)}
-            onPress={onOpenVoiceNote}
-          >
-            <Ionicons
-              name="mic-outline"
-              size={20}
-              color={getIconColor(isVoiceNoteFilled)}
-            />
-            <View style={styles.infoBtnText}>
-              <Text
-                style={[
-                  styles.infoBtnTitle,
-                  { color: getTextColor(isVoiceNoteFilled) },
-                ]}
-              >
-                Note vocale
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {deliveryType === "aucune" && (
-        <View style={localStyles.aucuneBanner}>
-          <Ionicons name="storefront-outline" size={20} color="#64748b" />
-          <Text style={localStyles.aucuneText}>
-            Vous passerez en boutique récupérer votre commande
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionHeaderText}>Select Type</Text>
+        )}
       </View>
 
-      <View style={styles.deliveryTypeGrid}>
-        <TouchableOpacity
-          style={[
-            styles.deliveryTypeBtn,
-            delivery.type === "express" && styles.deliveryTypeActive,
-          ]}
-          onPress={() =>
-            setDelivery({ ...delivery, statut: true, type: "express" })
-          }
-        >
-          <Ionicons
-            name="flash-outline"
-            size={22}
-            color={delivery.type === "express" ? "#ec4913" : "#94a3b8"}
-          />
-          <View style={styles.deliveryTypeText}>
-            <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-              Express (1000F)
-            </Text>
-            <Text
-              style={[
-                styles.deliveryTypeSubText,
-                delivery.type === "express" && { color: "#ec4913" },
-              ]}
-            >
-              15-25 min
-            </Text>
-          </View>
-        </TouchableOpacity>
+      {/* Zone basse (sélection du type) — prix dynamique depuis la période */}
+      <View style={localStyles.bottomZone}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionHeaderText}>Select Type</Text>
+        </View>
 
-        <TouchableOpacity
-          style={[
-            styles.deliveryTypeBtn,
-            delivery.type === "standard" && styles.deliveryTypeActive,
-          ]}
-          onPress={() =>
-            setDelivery({ ...delivery, statut: true, type: "standard" })
-          }
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={22}
-            color={delivery.type === "standard" ? "#ec4913" : "#94a3b8"}
-          />
-          <View style={styles.deliveryTypeText}>
-            <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-              Heure (500F)
-            </Text>
-            <Text
-              style={[
-                styles.deliveryTypeSubText,
-                delivery.type === "standard" && { color: "#ec4913" },
-              ]}
-            >
-              Scheduled
-            </Text>
-          </View>
-        </TouchableOpacity>
+        <View style={[styles.deliveryTypeGrid, localStyles.deliveryTypeGrid]}>
+          <TouchableOpacity
+            style={[
+              styles.deliveryTypeBtn,
+              delivery.type === "express" && styles.deliveryTypeActive,
+            ]}
+            onPress={() =>
+              setDelivery({ ...delivery, statut: true, type: "express" })
+            }
+          >
+            <Ionicons
+              name="flash-outline"
+              size={22}
+              color={delivery.type === "express" ? "#ec4913" : "#94a3b8"}
+            />
+            <View style={styles.deliveryTypeText}>
+              <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
+                Express
+                {selectedPrice ? ` (${selectedPrice}F)` : ""}
+              </Text>
+              <Text
+                style={[
+                  styles.deliveryTypeSubText,
+                  delivery.type === "express" && { color: "#ec4913" },
+                ]}
+              >
+                Livré dès que terminée
+              </Text>
+            </View>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.deliveryTypeBtn,
-            delivery.type === "aucune" && styles.deliveryTypeActive,
-          ]}
-          onPress={() =>
-            setDelivery({ ...delivery, statut: false, type: "aucune" })
-          }
-        >
-          <Ionicons
-            name="remove-circle-outline"
-            size={22}
-            color={delivery.type === "aucune" ? "#ec4913" : "#94a3b8"}
-          />
-          <View style={styles.deliveryTypeText}>
-            <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-              Aucun
-            </Text>
-            <Text
-              style={[
-                styles.deliveryTypeSubText,
-                delivery.type === "aucune" && { color: "#ec4913" },
-              ]}
-            >
-              No rush
-            </Text>
-          </View>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.deliveryTypeBtn,
+              delivery.type === "standard" && styles.deliveryTypeActive,
+            ]}
+            onPress={() =>
+              setDelivery({ ...delivery, statut: true, type: "standard" })
+            }
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={22}
+              color={delivery.type === "standard" ? "#ec4913" : "#94a3b8"}
+            />
+            <View style={styles.deliveryTypeText}>
+              <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
+                Heure
+                {selectedPrice ? ` (${selectedPrice}F)` : ""}
+              </Text>
+              <Text
+                style={[
+                  styles.deliveryTypeSubText,
+                  delivery.type === "standard" && { color: "#ec4913" },
+                ]}
+              >
+                {delivery.hour || "Choisir un créneau"}
+              </Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.deliveryTypeBtn,
+              delivery.type === "aucune" && styles.deliveryTypeActive,
+            ]}
+            onPress={() =>
+              setDelivery({ ...delivery, statut: false, type: "aucune" })
+            }
+          >
+            <Ionicons
+              name="remove-circle-outline"
+              size={22}
+              color={delivery.type === "aucune" ? "#ec4913" : "#94a3b8"}
+            />
+            <View style={styles.deliveryTypeText}>
+              <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
+                Aucun
+              </Text>
+              <Text
+                style={[
+                  styles.deliveryTypeSubText,
+                  delivery.type === "aucune" && { color: "#ec4913" },
+                ]}
+              >
+                No rush
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 };
 
 const localStyles = StyleSheet.create({
+  deliveryContainer: {
+    justifyContent: "space-between",
+  },
+  topZone: {
+    flex: 1,
+    justifyContent: "flex-start",
+    overflow: "hidden",
+  },
+  bottomZone: {
+    flex: 1,
+    justifyContent: "center",
+  },
   expressRow: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 16,
     alignItems: "stretch",
   },
   expressCardsCol: {
-    flex: 2,
-  },
-  expressInfoCol: {
     flex: 1,
-    backgroundColor: "rgba(236, 73, 19, 0.06)",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "rgba(236, 73, 19, 0.18)",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row",
     gap: 8,
-    padding: 10,
   },
-  expressInfoText: {
-    fontSize: 11,
-    color: "#ec4913",
-    fontStyle: "italic",
-    textAlign: "center",
-    lineHeight: 15,
+  deliveryTypeGrid: {
+    marginBottom: 0,
   },
   aucuneBanner: {
     flexDirection: "row",
@@ -344,7 +361,6 @@ const localStyles = StyleSheet.create({
     backgroundColor: "#f1f5f9",
     borderRadius: 12,
     padding: 14,
-    marginBottom: 16,
   },
   aucuneText: {
     flex: 1,

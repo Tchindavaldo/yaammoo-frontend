@@ -71,6 +71,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const [launchingGroups, setLaunchingGroups] = useState<
     Record<string, boolean>
   >({});
+  // Sous-tab actif par groupe : 'en_attente' | 'en_cours'
+  const [groupSubTab, setGroupSubTab] = useState<Record<string, 'en_attente' | 'en_cours'>>({});
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroupId((prev) => (prev === groupId ? null : groupId));
@@ -221,15 +223,19 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     if (selectedStatus !== "finish") return null;
 
     const express: Commande[] = [];
+    const surplace: Commande[] = [];
     const scheduled: Record<string, Commande[]> = {};
 
     dateFilteredOrders.forEach((o) => {
       const d = (o as any).delivery;
-      const isExpress = d?.type === "express";
-      if (isExpress) {
+      const hasDelivery = d?.status === true;
+      if (!hasDelivery) {
+        surplace.push(o);
+        return;
+      }
+      if (d?.type === "express") {
         express.push(o);
       } else {
-        // Use delivery.time first, then fallback to livraison.hour
         const slot = d?.time || "À définir";
         if (!scheduled[slot]) scheduled[slot] = [];
         scheduled[slot].push(o);
@@ -249,6 +255,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
     return {
       expressGroups: groupByUser(express),
+      surplaceGroups: groupByUser(surplace),
       slots: Object.entries(scheduled).map(([slot, orders]) => ({
         title: slot,
         userGroups: groupByUser(orders),
@@ -268,6 +275,94 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           await Promise.all(orders.map((o) => onUpdateStatus(o.id, status)));
         }}
       />
+    );
+  };
+
+  /**
+   * Rend les sous-tabs En attente / En cours + les cartes filtrées
+   * pour un groupe de userGroups donné (Express ou slot horaire).
+   */
+  const renderGroupWithSubTabs = (userGroups: Commande[][], groupId: string) => {
+    const activeSubTab = groupSubTab[groupId] ?? 'en_attente';
+
+    // Sépare les commandes delivering (en cours) des autres (en attente)
+    const allGroupOrders = userGroups.flat();
+    const enCoursOrders = allGroupOrders.filter((o) => o.status === 'delivering');
+    const enAttenteOrders = allGroupOrders.filter((o) => o.status !== 'delivering');
+
+    // Regroupe par utilisateur pour chaque sous-liste
+    const groupByUser = (ordersArr: Commande[]): Commande[][] => {
+      const userMap: Record<string, Commande[]> = {};
+      ordersArr.forEach((o) => {
+        const key = o.userId || o.userData?.email || o.id || `anon_${Math.random()}`;
+        if (!userMap[key]) userMap[key] = [];
+        userMap[key].push(o);
+      });
+      return Object.values(userMap);
+    };
+
+    const enAttenteGroups = groupByUser(enAttenteOrders);
+    const enCoursGroups = groupByUser(enCoursOrders);
+    const activeGroups = activeSubTab === 'en_cours' ? enCoursGroups : enAttenteGroups;
+
+    return (
+      <View style={{ marginTop: 4 }}>
+        {/* Sous-tabs En attente / En cours */}
+        <View style={styles.subTabRow}>
+          <TouchableOpacity
+            style={[
+              styles.subTab,
+              activeSubTab === 'en_attente' && styles.subTabActive,
+            ]}
+            onPress={() => setGroupSubTab((prev) => ({ ...prev, [groupId]: 'en_attente' }))}
+          >
+            <Text style={[styles.subTabLabel, activeSubTab === 'en_attente' && styles.subTabLabelActive]}>
+              En attente
+            </Text>
+            {enAttenteOrders.length > 0 && (
+              <View style={[styles.subTabBadge, activeSubTab === 'en_attente' && styles.subTabBadgeActive]}>
+                <Text style={[styles.subTabBadgeText, activeSubTab === 'en_attente' && styles.subTabBadgeTextActive]}>
+                  {enAttenteOrders.length}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.subTab,
+              activeSubTab === 'en_cours' && styles.subTabActive,
+            ]}
+            onPress={() => setGroupSubTab((prev) => ({ ...prev, [groupId]: 'en_cours' }))}
+          >
+            <Text style={[styles.subTabLabel, activeSubTab === 'en_cours' && styles.subTabLabelActive]}>
+              En cours
+            </Text>
+            {enCoursOrders.length > 0 && (
+              <View style={[styles.subTabBadge, activeSubTab === 'en_cours' && styles.subTabBadgeActive]}>
+                <Text style={[styles.subTabBadgeText, activeSubTab === 'en_cours' && styles.subTabBadgeTextActive]}>
+                  {enCoursOrders.length}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Liste des commandes du sous-tab actif */}
+        {activeGroups.length === 0 ? (
+          <View style={styles.subTabEmpty}>
+            <Text style={styles.subTabEmptyText}>
+              {activeSubTab === 'en_cours'
+                ? 'Aucune livraison en cours'
+                : 'Aucune commande en attente'}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ gap: 6, marginTop: 6 }}>
+            {activeGroups.map((group) => renderUserGroup(group, groupId))}
+          </View>
+        )}
+      </View>
     );
   };
 
@@ -501,10 +596,39 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                       </TouchableOpacity>
                     </TouchableOpacity>
 
-                    {expandedGroupId === "express" && (
+                    {expandedGroupId === "express" &&
+                      renderGroupWithSubTabs(deliveryData.expressGroups, "express")
+                    }
+                  </View>
+                )}
+
+                {deliveryData.surplaceGroups.length > 0 && (
+                  <View style={{ marginBottom: 15 }}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => toggleGroup("surplace")}
+                      style={styles.groupHeader}
+                    >
+                      <View style={styles.groupHeaderLeft}>
+                        <Ionicons
+                          name={expandedGroupId === "surplace" ? "chevron-down" : "chevron-forward"}
+                          size={12}
+                          color="#888780"
+                        />
+                        <Text style={styles.groupTitle}>Sur place</Text>
+                        <View style={styles.groupCountBadge}>
+                          <Text style={styles.groupCountText}>
+                            {deliveryData.surplaceGroups.length} commande
+                            {deliveryData.surplaceGroups.length > 1 ? "s" : ""}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    {expandedGroupId === "surplace" && (
                       <View style={{ gap: 6 }}>
-                        {deliveryData.expressGroups.map((group) =>
-                          renderUserGroup(group, "express"),
+                        {deliveryData.surplaceGroups.map((group) =>
+                          renderUserGroup(group, "surplace"),
                         )}
                       </View>
                     )}
@@ -566,13 +690,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                         </TouchableOpacity>
                       </TouchableOpacity>
 
-                      {isExpanded && (
-                        <View style={{ gap: 6 }}>
-                          {slot.userGroups.map((group) =>
-                            renderUserGroup(group, groupId),
-                          )}
-                        </View>
-                      )}
+                      {isExpanded &&
+                        renderGroupWithSubTabs(slot.userGroups, groupId)
+                      }
                     </View>
                   );
                 })}
@@ -839,5 +959,70 @@ const styles = StyleSheet.create({
   },
   btnLaunchGroupTextLaunched: {
     color: "#27500A",
+  },
+  // Sous-tabs En attente / En cours (intérieur d'un groupe déroulé)
+  subTabRow: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: '#F5F4F0',
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  subTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 5,
+  },
+  subTabActive: {
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  subTabLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#888780',
+  },
+  subTabLabelActive: {
+    color: '#1A1916',
+  },
+  subTabBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#E5E4DF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  subTabBadgeActive: {
+    backgroundColor: Theme.colors.primary,
+  },
+  subTabBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#5F5E5A',
+  },
+  subTabBadgeTextActive: {
+    color: 'white',
+  },
+  subTabEmpty: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    marginHorizontal: 16,
+  },
+  subTabEmptyText: {
+    fontSize: 12,
+    color: '#A8A7A2',
+    fontStyle: 'italic',
   },
 });

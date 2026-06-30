@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingItem } from '@/src/features/profile/components/SettingItem';
 import { Theme } from '@/src/theme';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
+import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
+import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { auth } from '@/src/services/firebase';
 import { signOut } from 'firebase/auth';
 import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
@@ -36,7 +38,8 @@ const SectionHeader = ({ title }: { title: string }) => (
 );
 
 export default function SettingsScreen() {
-  const { userData, setUserData, deleteAccount } = useAuth();
+  const { user, userData, setUserData, deleteAccount } = useAuth();
+  const { isSignedIn } = useAuthGate();
   // Mode review Apple : masque les items liés au paiement / portefeuille.
   const { appleReviewMode } = useFastFoods();
   const [notifEnabled, setNotifEnabled] = useState(true);
@@ -55,6 +58,22 @@ export default function SettingsScreen() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const REQUIRED_CONFIRM = 'SUPPRIMER';
   const insets = useSafeAreaInsets();
+
+  // Mode invité : après déconnexion/suppression, settings n'est PLUS démonté
+  // (l'invité reste dans les tabs, on affiche juste le GuestGate via le
+  // early-return). Le loader de logout/delete était laissé actif « jusqu'au
+  // démontage » → il restait bloqué et le modal réapparaissait à la
+  // reconnexion. On réinitialise donc ces états dès qu'on n'est plus connecté.
+  useEffect(() => {
+    if (!isSignedIn) {
+      setLogoutVisible(false);
+      setIsLoggingOut(false);
+      setDeleteVisible(false);
+      setIsDeleting(false);
+      setDeleteConfirmText('');
+      setDeleteError(null);
+    }
+  }, [isSignedIn]);
 
   // Deep-link : notifications / home « Mes commandes » → ouvre le modal commandes.
   const { section } = useLocalSearchParams<{ section?: string }>();
@@ -151,9 +170,23 @@ export default function SettingsScreen() {
     }
   };
 
-  const initiales = userData?.infos.nom?.charAt(0)?.toUpperCase() || 'U';
-  const nomComplet = [userData?.infos.nom, userData?.infos.prenom].filter(Boolean).join(' ') || 'Utilisateur';
-  const contact = userData?.infos.email || userData?.infos.numero?.toString() || '';
+  // Invité : le profil est lié au compte → on demande la connexion.
+  if (!isSignedIn) {
+    return (
+      <GuestGate
+        icon="person-circle-outline"
+        title="Votre profil"
+        subtitle="Connectez-vous pour gérer votre compte, vos commandes et vos paramètres."
+      >
+        {null}
+      </GuestGate>
+    );
+  }
+
+  const firebaseName = user?.displayName || "";
+  const initiales = (userData?.infos.prenom || userData?.infos.nom || firebaseName)?.charAt(0)?.toUpperCase() || 'U';
+  const nomComplet = [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(' ') || firebaseName || 'Utilisateur';
+  const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || '';
 
   return (
     <View style={styles.container}>

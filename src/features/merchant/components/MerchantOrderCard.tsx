@@ -75,11 +75,13 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const nameToUse = u ? `${customerFirstName} ${customerLastName}`.trim() : "Client Inconnu";
     const initials = (u ? `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}` : "??").toUpperCase();
     
+    const deliveryRawStatus = (order as any).delivery?.status;
+    const hasDelivery = deliveryRawStatus === true;
     const deliveryType = (order as any).delivery?.type;
     const isExpress = deliveryType === "express";
     const deliveryColor = isExpress ? "#ec4913" : "#2563eb";
     const deliveryLabel = isExpress ? "Express" : order.delivery?.hour || "Créneau";
-    
+
     const orderCount = allOrders.length;
     const addressStr = order.delivery?.location || "Adresse non spécifiée";
     const isGroupDelivering = isDelivering || isLaunched;
@@ -115,7 +117,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 </View>
               </View>
               
-              {isGroupDelivering ? (
+              {!hasDelivery ? null : isGroupDelivering ? (
                 <BikeAnimation />
               ) : isUpdating ? (
                 <ActivityIndicator size="small" color="#ec4913" />

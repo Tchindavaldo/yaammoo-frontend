@@ -25,6 +25,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Toast } from "@/src/components/Toast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
@@ -48,6 +50,7 @@ export default function OrdersScreen() {
     buyOrders,
   } = useOrders();
   const { userData } = useAuth();
+  const { isSignedIn } = useAuthGate();
   const { appleReviewMode } = useFastFoods();
 
   // Total panier (réactif) — calculé tôt pour alimenter le hook de paiement.
@@ -245,6 +248,19 @@ export default function OrdersScreen() {
     await refresh();
     setRefreshing(false);
   };
+
+  // Invité : le panier est lié au compte → on demande la connexion.
+  if (!isSignedIn) {
+    return (
+      <GuestGate
+        icon="cart-outline"
+        title="Votre panier vous attend"
+        subtitle="Connectez-vous pour ajouter des plats à votre panier et passer commande."
+      >
+        {null}
+      </GuestGate>
+    );
+  }
 
   if ((loading && orders.length === 0) || forceLoading) {
     return (

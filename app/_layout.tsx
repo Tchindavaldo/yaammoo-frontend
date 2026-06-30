@@ -15,11 +15,21 @@ import { MerchantWalletProvider } from "@/src/features/merchant/context/Merchant
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
+import { AuthGateProvider } from "@/src/features/auth/context/AuthGateContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
+import { initSentry, wrapWithSentry } from "@/src/services/sentry";
+import { setupHttp } from "@/src/api/setupHttp";
+
+// Initialise le crash reporting le plus tôt possible (avant tout rendu),
+// pour capturer aussi les crashs au démarrage. No-op tant que le DSN est vide.
+initSentry();
+
+// Configure les headers HTTP globaux (x-app-version, etc.) AVANT toute requête.
+setupHttp();
 
 // Le splash natif reste affiché tant qu'on ne l'a pas explicitement caché.
 SplashScreen.preventAutoHideAsync();
@@ -44,11 +54,19 @@ function AppContent() {
   // L'auth est résolue quand Firebase a fini de répondre (loading false).
   const authResolved = !loading;
 
-  // On n'entre dans la home que lorsque ses données ont fini de charger (1er
-  // fetch terminé : données, vide ou erreur). Tant que ce n'est pas prêt, on
-  // GARDE l'écran d'auth affiché (son loader tourne) → comme le splash attend
-  // que la home soit prête avant de se cacher.
-  const canEnterApp = authResolved && isSignedIn && homeReady;
+  // Accès invité (Apple 5.1.1(v)) : on entre dans la home dès que l'auth est
+  // résolue ET que les données ont fini de charger — CONNECTÉ OU NON. Les
+  // invités parcourent home/boutique librement ; les actions liées à un compte
+  // ouvrent la sheet d'auth via AuthGate. isSignedIn n'est PLUS une condition
+  // d'entrée (sinon un invité reste bloqué sur le login).
+  //
+  // ⚠️ Anti-flash de l'écran Welcome au login (invité → connecté) : quand le
+  // user se connecte via la sheet overlay, AuthContext repasse loading=true le
+  // temps de re-vérifier le profil → authResolved=false → on quitterait (tabs)
+  // pour (auth) puis on y reviendrait = flash. On garde donc les tabs montées
+  // tant qu'un user Firebase est présent (login en cours), même si loading=true.
+  // Au vrai logout, `user` devient null → on sort proprement vers (auth).
+  const canEnterApp = homeReady && (authResolved || !!user);
 
   // Animation de bascule de groupe (auth ↔ tabs) :
   // - Au BOOT, on est monté directement dans le groupe cible pendant que le
@@ -102,7 +120,7 @@ function AppContent() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <AuthProvider>
       <OrderProvider>
@@ -112,7 +130,9 @@ export default function RootLayout() {
             <MerchantWalletProvider>
               <WalletProvider>
                 <FastFoodProvider>
-                  <AppContent />
+                  <AuthGateProvider>
+                    <AppContent />
+                  </AuthGateProvider>
                 </FastFoodProvider>
               </WalletProvider>
             </MerchantWalletProvider>
@@ -122,3 +142,6 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+// wrapWithSentry active la capture native + le suivi des touches avant le crash.
+export default wrapWithSentry(RootLayout);

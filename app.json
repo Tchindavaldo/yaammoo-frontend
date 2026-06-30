@@ -2,7 +2,7 @@
   "expo": {
     "name": "yaammoo",
     "slug": "yaammoo",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "yaammoo",
@@ -15,7 +15,8 @@
       "router": {}
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
+      "buildNumber": "27",
       "bundleIdentifier": "com.rauval.yaammoo",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
@@ -68,7 +69,14 @@
       "@react-native-google-signin/google-signin",
       "expo-apple-authentication",
       "expo-font",
-      "./plugins/withModularHeadersFix"
+      "./plugins/withModularHeadersFix",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "rauval",
+          "project": "react-native"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

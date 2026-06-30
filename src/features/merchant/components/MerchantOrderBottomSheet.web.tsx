@@ -1,22 +1,22 @@
 // Web-specific version of MerchantOrderBottomSheet
 // react-native-maps is not supported on web, so we replace MapView with a static placeholder
-import React, { useRef, useState, useEffect } from 'react';
+import { Commande } from "@/src/types";
+import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
+import * as Linking from 'expo-linking';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
   Animated,
   Dimensions,
+  Modal,
   PanResponder,
   Pressable,
-  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Commande } from "@/src/types";
-import { Audio } from 'expo-av';
-import { Ionicons } from '@expo/vector-icons';
-import * as Linking from 'expo-linking';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -48,6 +48,7 @@ type Props = {
   order: Commande | null;
   visible: boolean;
   onClose: () => void;
+  allOrders?: Commande[];
 };
 
 type Tab = 'livraison' | 'commandes';
@@ -59,67 +60,86 @@ const COLORS = [
   { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' },
 ];
 
-export default function MerchantOrderBottomSheet({ order, visible, onClose }: Props) {
+function buildItems(order: Commande): OrderItem[] {
+  const items: OrderItem[] = [];
+
+  const priceIdx = ((order as any).selectedPriceIndex || 1) - 1;
+  const menuPrice = order.menu?.prices?.[priceIdx]?.price || order.menu?.prices?.[0]?.price || (order.menu as any)?.prix1 || 0;
+  
+  items.push({
+    name: order.menu?.titre || order.menu?.name || "Menu principal",
+    qty: order.quantity || order.quantite || 1,
+    price: `${menuPrice * (order.quantity || order.quantite || 1)} XAF`,
+    unitPrice: menuPrice,
+    hasQty: true,
+  } as any);
+
+  const extras = order.extra || (order as any).embalage || [];
+  extras.forEach((ex: any) => {
+    if (ex.status === true && ex.name && ex.name !== "Aucun" && ex.name !== "Aucune") {
+      const p = ex.prix || ex.price || 0;
+      items.push({ name: ex.name || ex.type, qty: 1, price: `${p} XAF`, unitPrice: p, hasQty: false } as any);
+    }
+  });
+
+  const drinks = order.drink || [(order as any).boisson];
+  drinks.forEach((dr: any) => {
+    if (dr && dr.status === true && dr.name && dr.name !== "Aucune" && dr.name !== "Aucun") {
+      const p = dr.prix || dr.price || 0;
+      const q = dr.quantite || 1;
+      items.push({ name: dr.name || dr.type, qty: q, price: `${p * q} XAF`, unitPrice: p, hasQty: q > 1 } as any);
+    }
+  });
+
+  return items;
+}
+
+function buildUser(order: Commande): DeliveryUser {
+  const customerFirstName = order.userData?.firstName || "Client";
+  const customerLastName = order.userData?.lastName || "";
+  const initials = `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}`.toUpperCase();
+  const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
+
+  return {
+    initials,
+    name: `${customerFirstName} ${customerLastName}`.trim(),
+    addr: order.delivery?.location || (order as any).livraison?.address || "Adresse non spécifiée",
+    avColor: theme.bg,
+    avTextColor: theme.text,
+    badgeColor: theme.badge,
+    orderCount: (order as any).rank || 1,
+    rating: 4,
+    phone: order.delivery?.phone || (order as any).livraison?.phone || order.userData?.phoneNumber?.toString() || "Non fourni",
+    creneau: !order.delivery?.status
+      ? "Sur place"
+      : order.delivery?.type === 'express'
+        ? "Express"
+        : `Période (${order.delivery?.time || (order as any).livraison?.hour || "Dès que possible"})`,
+    duration: !order.delivery?.status
+      ? "Immédiat"
+      : order.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
+    note: order.delivery?.note || (order as any).livraison?.note || "Aucune note de livraison.",
+    voiceNoteUri: order.delivery?.voiceNoteUri || (order as any).livraison?.voiceNoteUri || "",
+    orders: buildItems(order)
+  };
+}
+
+export default function MerchantOrderBottomSheet({ order, visible, onClose, allOrders }: Props) {
   const [tab, setTab] = useState<Tab>('livraison');
+  const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
-  const [user, setUser] = useState<DeliveryUser | null>(null);
 
-  useEffect(() => {
-    if (order) {
-      const extras = (order as any).extra || order.embalage || [];
-      const drinks = (order as any).drink || [order.boisson];
-
-      const items: OrderItem[] = [];
-      items.push({
-        name: order.menu?.titre || "Menu principal",
-        qty: order.quantite || 1,
-        price: `${order.menu?.prix1 || 0} €`
-      });
-
-      extras.forEach((ex: any) => {
-        if (ex.status !== false) {
-          items.push({ name: ex.name || ex.type, qty: 1, price: "0 €" });
-        }
-      });
-
-      drinks.forEach((dr: any) => {
-        if (dr.name || dr.type) {
-          items.push({ name: dr.name || dr.type, qty: 1, price: "0 €" });
-        }
-      });
-
-      const customerFirstName = (order as any).userData?.firstName || "Client";
-      const customerLastName = (order as any).userData?.lastName || "";
-      const initials = `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}`.toUpperCase();
-      const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
-
-      setUser({
-        initials,
-        name: `${customerFirstName} ${customerLastName}`,
-        addr: (order as any).delivery?.location || order.livraison?.address || "Adresse non spécifiée",
-        avColor: theme.bg,
-        avTextColor: theme.text,
-        badgeColor: theme.badge,
-        orderCount: (order as any).rank || 1,
-        rating: 4,
-        phone: (order as any).delivery?.phone || order.livraison?.phone || (order as any).userData?.phoneNumber || "Non fourni",
-        creneau: (order as any).delivery?.type === 'express'
-          ? "Express"
-          : `Période (${(order as any).delivery?.time || order.livraison?.hour || "Dès que possible"})`,
-        duration: (order as any).delivery?.type === 'express' ? "15-20 min" : "30-45 min",
-        note: (order as any).delivery?.note || order.livraison?.note || "Aucune note de livraison.",
-        voiceNoteUri: (order as any).delivery?.voiceNoteUri || order.livraison?.voiceNoteUri || "",
-        orders: items
-      });
-    }
-  }, [order]);
+  const currentOrder = allOrders ? (allOrders[selectedOrderIdx] ?? order) : order;
+  const user = currentOrder ? buildUser(currentOrder) : null;
+  const hasMultiple = allOrders && allOrders.length > 1;
 
   useEffect(() => {
     if (visible && order) {
       translateY.setValue(SHEET_HEIGHT);
       overlayOpacity.setValue(0);
       setTab('livraison');
+      setSelectedOrderIdx(0);
 
       Animated.parallel([
         Animated.spring(translateY, {
@@ -177,10 +197,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
 
   if (!user) return null;
 
-  const total = user.orders.reduce((sum, o) => {
-    const val = parseFloat(o.price.replace(',', '.').replace(' €', ''));
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
+  const total = user.orders.reduce((sum, o: any) => sum + ((o.unitPrice || 0) * (o.qty || 1)), 0);
 
   return (
     <Modal
@@ -197,11 +214,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
         <Animated.View
           style={[styles.sheet, { transform: [{ translateY }] }]}
         >
-          <View {...panResponder.panHandlers} style={styles.dragZone}>
-            <View style={styles.handle} />
-          </View>
-
-          <View style={styles.header}>
+          <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>
               <View style={[styles.avatar, { backgroundColor: user.avColor }]}>
                 <Text style={[styles.avatarText, { color: user.avTextColor }]}>
@@ -251,6 +264,51 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose }: Pr
               <CommandesTab orders={user.orders} total={total} />
             )}
           </ScrollView>
+
+          {/* ── Nav multi-commandes EN BAS (globale : pilote les 2 tabs) ── */}
+          {hasMultiple && (
+            <View style={styles.navBarContainer}>
+              {allOrders!.length > 3 && (
+                <TouchableOpacity
+                  onPress={() => setSelectedOrderIdx(Math.max(0, selectedOrderIdx - 1))}
+                  style={styles.navArrow}
+                >
+                  <Text style={styles.navArrowText}>{'<'}</Text>
+                </TouchableOpacity>
+              )}
+              
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={[
+                  styles.navBar,
+                  { justifyContent: allOrders!.length > 3 ? 'flex-start' : 'center' }
+                ]}
+                style={{ flexGrow: 0 }}
+              >
+                {allOrders!.map((_, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.navTab, selectedOrderIdx === idx && styles.navTabActive]}
+                    onPress={() => setSelectedOrderIdx(idx)}
+                  >
+                    <Text style={[styles.navTabText, selectedOrderIdx === idx && styles.navTabTextActive]}>
+                      Cmd {idx + 1}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {allOrders!.length > 3 && (
+                <TouchableOpacity
+                  onPress={() => setSelectedOrderIdx(Math.min(allOrders!.length - 1, selectedOrderIdx + 1))}
+                  style={styles.navArrow}
+                >
+                  <Text style={styles.navArrowText}>{'>'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
         </Animated.View>
       </View>
     </Modal>
@@ -423,7 +481,7 @@ function CommandesTab({ orders, total }: { orders: OrderItem[]; total: number })
       <View style={styles.cmdTotal}>
         <Text style={styles.cmdTotalLabel}>Total</Text>
         <Text style={styles.cmdTotalVal}>
-          {total.toFixed(2).replace('.', ',')} €
+          {total} XAF
         </Text>
       </View>
     </View>
@@ -501,9 +559,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 20,
   },
-  dragZone: { alignItems: 'center', paddingVertical: 14 },
-  handle: { width: 36, height: 5, borderRadius: 2.5, backgroundColor: '#E5E7EB' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 2, paddingBottom: 16 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff', shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
   avatarText: { fontSize: 14, fontWeight: '700' },
@@ -546,4 +602,18 @@ const styles = StyleSheet.create({
   cmdTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
   cmdTotalLabel: { fontSize: 13, fontWeight: '700', color: '#374151' },
   cmdTotalVal: { fontSize: 16, fontWeight: '800', color: '#111827' },
+  navBarContainer: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6',
+  },
+  navArrow: { paddingHorizontal: 12, paddingVertical: 8 },
+  navArrowText: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  navBar: { flexDirection: 'row', gap: 6, paddingHorizontal: 8 },
+  navTab: {
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8,
+    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+  },
+  navTabActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  navTabText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
+  navTabTextActive: { color: '#FFFFFF' },
 });

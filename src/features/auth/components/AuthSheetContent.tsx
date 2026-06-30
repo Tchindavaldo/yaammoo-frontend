@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -14,9 +14,14 @@ import Svg, { Path } from "react-native-svg";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { handleGoogleSignIn } from "@/src/features/auth/services/googleAuthService";
 import { handleAppleSignIn } from "@/src/features/auth/services/appleAuthService";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { authService } from "@/src/features/auth/services/authService";
+import { userFirestore } from "@/src/features/auth/services/userFirestore";
+import { Users, UsersInfos } from "@/src/types";
 
 const AppleIcon = () => (
   <Svg width={18} height={18} viewBox="0 0 24 24">
@@ -49,14 +54,37 @@ const GoogleIcon = () => (
 );
 
 export default function AuthSheetContent() {
-  const { setUserData } = useAuth();
+  const { user, userData, setUserData } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
+  // "social" = boutons Apple/Google ; "login" = email+password (connexion) ;
+  // "register" = email+password (création de compte). login/register partagent
+  // la même UI, seuls le bouton et le handler changent.
   const [emailMode, setEmailMode] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
+
+  // Réinitialise le sheet quand l'utilisateur n'est PAS connecté (boot invité,
+  // ou retour après déconnexion/suppression). Au login on laisse les loaders
+  // actifs jusqu'au démontage ; mais comme ce composant n'est jamais démonté
+  // (écran Welcome + overlay AuthGate), il faut nettoyer dès que le compte
+  // disparaît, sinon on rouvre la sheet avec un loader bloqué / le mode email.
+  const signedOut = !user && !userData;
+  useEffect(() => {
+    if (signedOut) {
+      setEmailMode(false);
+      setIsRegister(false);
+      setGoogleLoading(false);
+      setAppleLoading(false);
+      setLoggingIn(false);
+      setEmail("");
+      setPassword("");
+      setShowPassword(false);
+    }
+  }, [signedOut]);
 
   const onGoogle = async () => {
     if (googleLoading) return;
@@ -124,6 +152,37 @@ export default function AuthSheetContent() {
     }
   };
 
+  const onRegister = async () => {
+    if (loggingIn) return;
+    if (!email || !password) {
+      Alert.alert("Erreur", "L'email ou le mot de passe ne doit pas être vide.");
+      return;
+    }
+    setLoggingIn(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = cred.user;
+      // Nom par défaut depuis l'email (le profil pourra être complété plus tard).
+      const nom = email.split("@")[0] || "Utilisateur";
+      const newUser = new Users(
+        firebaseUser.uid,
+        firebaseUser.uid,
+        new UsersInfos(nom, "", 0, 0, email, ""),
+        false,
+        100,
+        [],
+        undefined,
+      );
+      await userFirestore.createUser(newUser, firebaseUser);
+      const data = await userFirestore.getUser(firebaseUser);
+      // Loader maintenu jusqu'au montage de la home (voir onGoogle).
+      setUserData(data ?? newUser);
+    } catch (err: any) {
+      Alert.alert("Erreur", err?.message ?? "Inscription échouée.");
+      setLoggingIn(false);
+    }
+  };
+
   return (
     <View style={styles.content}>
       <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
@@ -186,7 +245,10 @@ export default function AuthSheetContent() {
 
             <TouchableOpacity
               style={[styles.btn, styles.btnPrimary]}
-              onPress={() => setEmailMode(true)}
+              onPress={() => {
+                setIsRegister(false);
+                setEmailMode(true);
+              }}
               activeOpacity={0.85}
             >
               <Ionicons
@@ -251,7 +313,7 @@ export default function AuthSheetContent() {
 
             <TouchableOpacity
               style={[styles.btn, styles.btnPrimary]}
-              onPress={onLogin}
+              onPress={isRegister ? onRegister : onLogin}
               disabled={loggingIn}
               activeOpacity={0.85}
             >
@@ -259,7 +321,7 @@ export default function AuthSheetContent() {
                 <ActivityIndicator size="small" color="#ffffff" />
               ) : (
                 <Text style={[styles.btnText, styles.btnTextPrimary]}>
-                  Login
+                  {isRegister ? "Sign Up" : "Login"}
                 </Text>
               )}
             </TouchableOpacity>
@@ -286,8 +348,35 @@ export default function AuthSheetContent() {
       </View>
 
       <View style={styles.footerLine}>
-        <Text style={styles.footerText}>Don&apos;t have account?</Text>
-        <Text style={styles.footerLink}> Sign Up</Text>
+        {emailMode && isRegister ? (
+          <>
+            <Text style={styles.footerText}>Already have an account?</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setIsRegister(false);
+                setEmailMode(true);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.footerLink}> Sign In</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <Text style={styles.footerText}>Don&apos;t have account?</Text>
+            <TouchableOpacity
+              onPress={() => {
+                setIsRegister(true);
+                setEmailMode(true);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.footerLink}> Sign Up</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );

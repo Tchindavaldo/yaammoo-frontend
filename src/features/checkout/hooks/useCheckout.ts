@@ -7,7 +7,7 @@ import { socketService } from "../../../services/socket";
 import { REVIEW_DEFAULT_NETWORK, REVIEW_DEFAULT_PHONE } from "../../payment/constants/reviewPayment";
 
 export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
-  const { userData } = useAuth();
+  const { userData, user } = useAuth();
   const registerPaymentHandler = useCallback(
     (handler: (data: any) => void) => socketService.registerPaymentHandler(handler),
     [],
@@ -227,6 +227,21 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       }
     }
 
+    const clientData = {
+      firstName: userData?.infos?.prenom || user?.displayName?.split(" ")[0] || user?.email?.split("@")[0] || "Client",
+      lastName: userData?.infos?.nom || user?.displayName?.split(" ").slice(1).join(" ") || "",
+      email: userData?.infos?.email || user?.email || "inconnu@email.com",
+      phoneNumber: Number(userData?.infos?.numero) || 0,
+    };
+    console.log("📦 [useCheckout] userData sources →", {
+      "infos.prenom": userData?.infos?.prenom,
+      "infos.nom": userData?.infos?.nom,
+      "infos.email": userData?.infos?.email,
+      "firebase.displayName": user?.displayName,
+      "firebase.email": user?.email,
+    });
+    console.log("📦 [useCheckout] clientData envoyé →", clientData);
+
     const returnedOrder: any = {
       userId: userData?.uid || "unknown_user",
       fastFoodId: (menu as any).fastFoodId || (menu as any).idFastFood || "1",
@@ -234,12 +249,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       quantity,
       selectedPriceIndex,
       total: prices.total,
-      userData: {
-        firstName: userData?.infos?.prenom || "Inconnu",
-        lastName: userData?.infos?.nom || "Inconnu",
-        email: userData?.infos?.email || "inconnu@email.com",
-        phoneNumber: Number(userData?.infos?.numero) || 0,
-      },
+      userData: clientData,
       extra: extraData.length > 0 ? extraData : [{ name: "Aucun", status: false }],
       drink: drinkData,
       delivery: deliveryData,
@@ -305,7 +315,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         amount: prices.total,
         phone: phone.replace(/\s/g, ''),
         network: paymentNetwork === 'orange' ? 'Orangemoney' : 'MTN',
-        email: userData?.infos?.email || 'user@yaammoo.com',
+        email: userData?.infos?.email || user?.email || 'user@yaammoo.com',
         userId: userData.uid,
         items: order ? [order] : [],
       });
@@ -365,7 +375,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         amount: prices.total,
         phone: REVIEW_DEFAULT_PHONE,
         network: REVIEW_DEFAULT_NETWORK === 'orange' ? 'Orangemoney' : 'MTN',
-        email: userData?.infos?.email || 'user@yaammoo.com',
+        email: userData?.infos?.email || user?.email || 'user@yaammoo.com',
         userId: userData.uid,
         items: order ? [order] : [],
       });

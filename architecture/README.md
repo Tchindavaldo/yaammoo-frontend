@@ -13,13 +13,14 @@ Documentation d'architecture de l'app mobile (client + marchand).
 |---|---|
 | [structure.md](./structure.md) | Arborescence `app/`, `src/features/`, `src/components/`, `src/api/` |
 | [tab-header.md](./tab-header.md) | En-têtes d'onglets uniformes (TabHeader, HeaderPill, DatePill, SectionSwitcher) |
-| [auth.md](./auth.md) | Authentification client (Email/Password, Google Sign-In, AuthContext) |
+| [auth.md](./auth.md) | Authentification client (Email/Password, Google/Apple Sign-In, AuthContext, **accès invité / AuthGate**) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |
 | [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank) |
 | [orders-merchant.md](./orders-merchant.md) | Gestion commandes côté marchand (panel, cartes, statuts) |
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
 | [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
+| [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |
 
 ---
 
@@ -43,6 +44,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 - **Socket** : socket.io-client
 - **HTTP** : axios (`Config.apiUrl`)
 - **UI** : composants custom + Ionicons
+- **Crash reporting** : `@sentry/react-native` — init dans `src/services/sentry.ts`, activé dès que `Config.sentryDsn` est rempli (no-op sinon, désactivé en dev)
 
 ## Structure racine
 
@@ -66,7 +68,7 @@ yaammoo/
 │   ├── theme/                # Theme.colors, typography
 │   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
 │   ├── components/           # Composants partagés (Toast…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
-│   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts
+│   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)
 │
 ├── assets/                   # Images, fonts
 ├── architecture/             # Ce dossier

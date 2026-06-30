@@ -1,33 +1,41 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Modal, TouchableOpacity, ScrollView, Platform, Text, Animated } from 'react-native';
-import { Toast } from '../../../components/Toast';
-import { Ionicons } from '@expo/vector-icons';
-import { Menu } from '@/src/types';
-import { useCheckout } from '../hooks/useCheckout';
-import { styles } from './CartCheckoutSheet.styles';
-import axios from 'axios';
-import { Config } from '@/src/api/config';
-import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Modal,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  Text,
+  Animated,
+} from "react-native";
+import { Toast } from "../../../components/Toast";
+import { Ionicons } from "@expo/vector-icons";
+import { Menu } from "@/src/types";
+import { useCheckout } from "../hooks/useCheckout";
+import { styles } from "./CartCheckoutSheet.styles";
+import axios from "axios";
+import { Config } from "@/src/api/config";
+import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 
 // Shared Components
-import { TabChip } from './shared/TabChip';
+import { TabChip } from "./shared/TabChip";
 
 // Tabs
-import { DetailTab } from './tabs/DetailTab';
-import { ExtrasTab } from './tabs/ExtrasTab';
-import { DrinksTab } from './tabs/DrinksTab';
-import { DeliveryTab } from './tabs/DeliveryTab';
+import { DetailTab } from "./tabs/DetailTab";
+import { ExtrasTab } from "./tabs/ExtrasTab";
+import { DrinksTab } from "./tabs/DrinksTab";
+import { DeliveryTab } from "./tabs/DeliveryTab";
 
 // Footer
-import { CartCheckoutFooter } from './CartCheckoutFooter';
+import { CartCheckoutFooter } from "./CartCheckoutFooter";
 
 // Overlay
-import { CheckoutLocationOverlay } from './CheckoutLocationOverlay';
-import { CheckoutContactOverlay } from './CheckoutContactOverlay';
-import { CheckoutPeriodOverlay } from './CheckoutPeriodOverlay';
-import { CheckoutVoiceNoteOverlay } from './CheckoutVoiceNoteOverlay';
-import { CheckoutPaymentOverlay } from './CheckoutPaymentOverlay';
-import { CheckoutPaymentTopOverlay } from './CheckoutPaymentTopOverlay';
+import { CheckoutLocationOverlay } from "./CheckoutLocationOverlay";
+import { CheckoutContactOverlay } from "./CheckoutContactOverlay";
+import { CheckoutPeriodOverlay } from "./CheckoutPeriodOverlay";
+import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
+import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
+import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -39,10 +47,18 @@ interface CheckoutSheetProps {
   isCartMode?: boolean;
 }
 
-type CheckoutStep = 'detail' | 'extra' | 'drink' | 'delivery';
+type CheckoutStep = "detail" | "extra" | "drink" | "delivery";
 
-export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClose, menu, initialOrder, onConfirm, isCartMode, onChange }) => {
-  const [activeTab, setActiveTab] = useState<CheckoutStep>('detail');
+export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
+  visible,
+  onClose,
+  menu,
+  initialOrder,
+  onConfirm,
+  isCartMode,
+  onChange,
+}) => {
+  const [activeTab, setActiveTab] = useState<CheckoutStep>("detail");
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
   const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
   const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
@@ -50,7 +66,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
   const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
   const [paymentKey, setPaymentKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [menuWithDeliveryHours, setMenuWithDeliveryHours] = useState<Menu | null>(menu);
+  const [menuWithDeliveryHours, setMenuWithDeliveryHours] =
+    useState<Menu | null>(menu);
 
   // Animation d'ouverture/fermeture : voile noir en fade, sheet en slide-up net
   // (contenu jamais estompé) — identique au CheckoutSheet du home.
@@ -63,13 +80,30 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     if (visible) {
       setModalMounted(true);
       Animated.parallel([
-        Animated.spring(sheetTranslate, { toValue: 0, useNativeDriver: true, tension: 70, friction: 12 }),
-        Animated.timing(backdropOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.spring(sheetTranslate, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 70,
+          friction: 12,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
       ]).start();
     } else {
       Animated.parallel([
-        Animated.timing(sheetTranslate, { toValue: SHEET_HEIGHT, duration: 240, useNativeDriver: true }),
-        Animated.timing(backdropOpacity, { toValue: 0, duration: 240, useNativeDriver: true }),
+        Animated.timing(sheetTranslate, {
+          toValue: SHEET_HEIGHT,
+          duration: 240,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 240,
+          useNativeDriver: true,
+        }),
       ]).start(({ finished }) => {
         if (finished) setModalMounted(false);
       });
@@ -77,16 +111,26 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
   }, [visible, sheetTranslate, backdropOpacity]);
 
   const {
-    quantity, setQuantity,
-    selectedPriceIndex, setSelectedPriceIndex,
-    selectedPackaging, setSelectedPackaging,
-    selectedDrinks, setSelectedDrinks,
-    drinkQuantities, setDrinkQuantity,
-    delivery, setDelivery,
-    paymentPhone, setPaymentPhone,
-    paymentNetwork, setPaymentNetwork,
-    paymentState, setPaymentState,
-    paymentError, setPaymentError,
+    quantity,
+    setQuantity,
+    selectedPriceIndex,
+    setSelectedPriceIndex,
+    selectedPackaging,
+    setSelectedPackaging,
+    selectedDrinks,
+    setSelectedDrinks,
+    drinkQuantities,
+    setDrinkQuantity,
+    delivery,
+    setDelivery,
+    paymentPhone,
+    setPaymentPhone,
+    paymentNetwork,
+    setPaymentNetwork,
+    paymentState,
+    setPaymentState,
+    paymentError,
+    setPaymentError,
     ussdCode,
     ussdMessage,
     handlePaymentConfirm,
@@ -94,12 +138,23 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,
-    availablePackaging, availableDrinks,
-    total, menuPrice, extrasPrice, drinksPrice, deliveryPrice,
-    createOrder, validateDelivery, validateStock
+    availablePackaging,
+    availableDrinks,
+    total,
+    menuPrice,
+    extrasPrice,
+    drinksPrice,
+    deliveryPrice,
+    createOrder,
+    validateDelivery,
+    validateStock,
   } = useCheckout(menuWithDeliveryHours, initialOrder, onChange);
-  const [sheetToast, setSheetToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const showError = (message: string) => setSheetToast({ message, type: 'error' });
+  const [sheetToast, setSheetToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+  const showError = (message: string) =>
+    setSheetToast({ message, type: "error" });
   const { appleReviewMode } = useFastFoods();
   // Mode review : commande directe via « Valider » (loader dans le bouton).
   const [reviewOrdering, setReviewOrdering] = useState(false);
@@ -113,24 +168,33 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
         unregisterPaymentHandler();
       };
     }
-  }, [isPaymentPopupVisible, reviewOrdering, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
+  }, [
+    isPaymentPopupVisible,
+    reviewOrdering,
+    handlePaymentVerdict,
+    registerPaymentHandler,
+    unregisterPaymentHandler,
+  ]);
 
   // Fermer l'overlay automatiquement après 5s en état success_created
   useEffect(() => {
-    if (paymentState === 'success_created') {
+    if (paymentState === "success_created") {
       // En review : fermeture quasi-immédiate (~500ms). Sinon flux normal (5s).
-      const timer = setTimeout(() => {
-        setIsPaymentPopupVisible(false);
-        setReviewOrdering(false);
-        onClose();
-      }, appleReviewMode ? 300 : 5000);
+      const timer = setTimeout(
+        () => {
+          setIsPaymentPopupVisible(false);
+          setReviewOrdering(false);
+          onClose();
+        },
+        appleReviewMode ? 300 : 5000,
+      );
       return () => clearTimeout(timer);
     }
   }, [paymentState, onClose, appleReviewMode]);
 
   // Mode review : si la transaction échoue (retour 'input'), couper le loader.
   useEffect(() => {
-    if (reviewOrdering && paymentState === 'input') {
+    if (reviewOrdering && paymentState === "input") {
       setReviewOrdering(false);
     }
   }, [reviewOrdering, paymentState]);
@@ -148,14 +212,21 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
 
     const fetchDeliveryHours = async () => {
       try {
-        const response = await axios.get(`${Config.apiUrl}/fastfood/${(menu as any).fastFoodId}`, {
-          headers: { "ngrok-skip-browser-warning": "true" }
-        });
-        if (response.data?.data?.deliveryHours || response.data?.data?.orderLeadTime) {
+        const response = await axios.get(
+          `${Config.apiUrl}/fastfood/${(menu as any).fastFoodId}`,
+          {
+            headers: { "ngrok-skip-browser-warning": "true" },
+          },
+        );
+        if (
+          response.data?.data?.deliveryHours ||
+          response.data?.data?.orderLeadTime
+        ) {
           setMenuWithDeliveryHours({
             ...menu,
             deliveryHours: response.data.data.deliveryHours,
-            orderLeadTime: response.data.data.orderLeadTime
+            orderLeadTime: response.data.data.orderLeadTime,
+            advanceDays: response.data.data.advanceDays,
           } as any);
         } else {
           setMenuWithDeliveryHours(menu);
@@ -170,8 +241,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
 
   if (!menu) return null;
 
-  const availableHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
+  const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
+  const advanceDays = (menuWithDeliveryHours as any)?.advanceDays;
 
   const handleConfirm = () => {
     const order = createOrder();
@@ -180,192 +252,211 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
 
   return (
     <>
-    <Modal visible={modalMounted} transparent animationType="none">
-      <View style={styles.overlay}>
-        {/* Voile noir animé en fade (séparé du contenu) */}
-        <Animated.View
-          style={[styles.backdrop, { opacity: backdropOpacity }]}
-          pointerEvents="none"
-        />
-        <View style={styles.dismiss} />
+      <Modal visible={modalMounted} transparent animationType="none">
+        <View style={styles.overlay}>
+          {/* Voile noir animé en fade (séparé du contenu) */}
+          <Animated.View
+            style={[styles.backdrop, { opacity: backdropOpacity }]}
+            pointerEvents="none"
+          />
+          <View style={styles.dismiss} />
 
-        <Animated.View
-          style={[
-            styles.sheetContainer,
-            styles.sheetLight,
-            { transform: [{ translateY: sheetTranslate }] },
-          ]}
-        >
-          <View style={{ flex: 1 }}>
-            <View style={styles.tabsWrapper}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsContent}>
-                <TabChip 
-                  isActive={activeTab === 'detail'} 
-                  label="Details" 
-                  icon="information-circle-outline" 
-                  onPress={() => setActiveTab('detail')} 
-                />
-                <TabChip 
-                  isActive={activeTab === 'drink'} 
-                  label="Drinks" 
-                  icon="wine-outline" 
-                  onPress={() => setActiveTab('drink')} 
-                />
-                <TabChip 
-                  isActive={activeTab === 'extra'} 
-                  label="Extras" 
-                  icon="add-circle-outline" 
-                  onPress={() => setActiveTab('extra')} 
-                />
-                <TabChip 
-                  isActive={activeTab === 'delivery'} 
-                  label="Delivery" 
-                  icon="bicycle-outline" 
-                  onPress={() => setActiveTab('delivery')} 
-                />
-              </ScrollView>
-              
-              <TouchableOpacity 
-                style={styles.closeCircle} 
-                onPress={onClose}
+          <Animated.View
+            style={[
+              styles.sheetContainer,
+              styles.sheetLight,
+              { transform: [{ translateY: sheetTranslate }] },
+            ]}
+          >
+            <View style={{ flex: 1 }}>
+              <View style={styles.tabsWrapper}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.tabsContent}
+                >
+                  <TabChip
+                    isActive={activeTab === "detail"}
+                    label="Details"
+                    icon="information-circle-outline"
+                    onPress={() => setActiveTab("detail")}
+                  />
+                  <TabChip
+                    isActive={activeTab === "drink"}
+                    label="Drinks"
+                    icon="wine-outline"
+                    onPress={() => setActiveTab("drink")}
+                  />
+                  <TabChip
+                    isActive={activeTab === "extra"}
+                    label="Extras"
+                    icon="add-circle-outline"
+                    onPress={() => setActiveTab("extra")}
+                  />
+                  <TabChip
+                    isActive={activeTab === "delivery"}
+                    label="Delivery"
+                    icon="bicycle-outline"
+                    onPress={() => setActiveTab("delivery")}
+                  />
+                </ScrollView>
+
+                <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
+                  <Ionicons name="close" size={20} color="white" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={styles.contentScroll}
+                showsVerticalScrollIndicator={false}
               >
-                <Ionicons name="close" size={20} color="white" />
-              </TouchableOpacity>
+                {activeTab === "detail" && (
+                  <DetailTab
+                    menu={menu}
+                    selectedPriceIndex={selectedPriceIndex}
+                    setSelectedPriceIndex={setSelectedPriceIndex}
+                    menuPrice={menuPrice}
+                    extrasPrice={extrasPrice}
+                    drinksPrice={drinksPrice}
+                    deliveryPrice={deliveryPrice}
+                  />
+                )}
+
+                {activeTab === "extra" && (
+                  <ExtrasTab
+                    availablePackaging={availablePackaging}
+                    selectedPackaging={selectedPackaging}
+                    setSelectedPackaging={setSelectedPackaging}
+                  />
+                )}
+
+                {activeTab === "drink" && (
+                  <DrinksTab
+                    availableDrinks={availableDrinks}
+                    selectedDrinks={selectedDrinks}
+                    setSelectedDrinks={setSelectedDrinks}
+                    drinkQuantities={drinkQuantities}
+                    setDrinkQuantity={setDrinkQuantity}
+                  />
+                )}
+
+                {activeTab === "delivery" && (
+                  <DeliveryTab
+                    delivery={delivery}
+                    setDelivery={setDelivery}
+                    onOpenLocation={() => setIsLocationPopupVisible(true)}
+                    onOpenContact={() => setIsContactPopupVisible(true)}
+                    onOpenPeriod={() => setIsPeriodPopupVisible(true)}
+                    onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
+                  />
+                )}
+              </ScrollView>
             </View>
 
-            <ScrollView style={styles.contentScroll} showsVerticalScrollIndicator={false}>
-              {activeTab === 'detail' && (
-                <DetailTab 
-                  menu={menu} 
-                  selectedPriceIndex={selectedPriceIndex} 
-                  setSelectedPriceIndex={setSelectedPriceIndex} 
-                  menuPrice={menuPrice}
-                  extrasPrice={extrasPrice}
-                  drinksPrice={drinksPrice}
-                  deliveryPrice={deliveryPrice}
-                />
-              )}
-
-              {activeTab === 'extra' && (
-                <ExtrasTab 
-                  availablePackaging={availablePackaging}
-                  selectedPackaging={selectedPackaging}
-                  setSelectedPackaging={setSelectedPackaging}
-                />
-              )}
-
-              {activeTab === 'drink' && (
-                <DrinksTab
-                  availableDrinks={availableDrinks}
-                  selectedDrinks={selectedDrinks}
-                  setSelectedDrinks={setSelectedDrinks}
-                  drinkQuantities={drinkQuantities}
-                  setDrinkQuantity={setDrinkQuantity}
-                />
-              )}
-
-              {activeTab === 'delivery' && (
-                <DeliveryTab 
-                  delivery={delivery}
-                  setDelivery={setDelivery}
-                  onOpenLocation={() => setIsLocationPopupVisible(true)}
-                  onOpenContact={() => setIsContactPopupVisible(true)}
-                  onOpenPeriod={() => setIsPeriodPopupVisible(true)}
-                  onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
-                />
-              )}
-            </ScrollView>
-          </View>
-
-          <CartCheckoutFooter
-            total={total}
-            quantity={quantity}
-            setQuantity={setQuantity}
-            isLoading={isSubmitting || reviewOrdering}
-            isCartMode={isCartMode}
-            onAddToCart={async () => {
-              const deliveryErr = validateDelivery();
-              if (deliveryErr) { showError(deliveryErr); return; }
-              try {
-                setIsSubmitting(true);
-                const result = await (onConfirm(createOrder('pendingToBuy')) as any);
-                if (result === true || result?.success) {
-                  onClose();
-                } else if (result?.message) {
-                  showError(result.message);
+            <CartCheckoutFooter
+              total={total}
+              quantity={quantity}
+              setQuantity={setQuantity}
+              isLoading={isSubmitting || reviewOrdering}
+              isCartMode={isCartMode}
+              onAddToCart={async () => {
+                const deliveryErr = validateDelivery();
+                if (deliveryErr) {
+                  showError(deliveryErr);
+                  return;
                 }
-              } finally {
-                setIsSubmitting(false);
+                try {
+                  setIsSubmitting(true);
+                  const result = await (onConfirm(
+                    createOrder("pendingToBuy"),
+                  ) as any);
+                  if (result === true || result?.success) {
+                    onClose();
+                  } else if (result?.message) {
+                    showError(result.message);
+                  }
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+              onBuy={() => {
+                const stockErr = validateStock();
+                if (stockErr) {
+                  showError(stockErr);
+                  return;
+                }
+                const deliveryErr = validateDelivery();
+                if (deliveryErr) {
+                  showError(deliveryErr);
+                  return;
+                }
+                if (appleReviewMode) {
+                  // Commande directe : pas d'overlay, loader dans le bouton Valider.
+                  setReviewOrdering(true);
+                  handleReviewOrder();
+                  return;
+                }
+                setPaymentState("network_select");
+                setIsPaymentPopupVisible(true);
+                setPaymentKey((prev) => prev + 1);
+              }}
+            />
+          </Animated.View>
+
+          {isLocationPopupVisible && (
+            <CheckoutLocationOverlay
+              onClose={() => setIsLocationPopupVisible(false)}
+              address={delivery.address || ""}
+              note={delivery.note || ""}
+              onSave={(addr, note) =>
+                setDelivery({ ...delivery, address: addr, note: note })
               }
-            }}
-            onBuy={() => {
-              const stockErr = validateStock();
-              if (stockErr) { showError(stockErr); return; }
-              const deliveryErr = validateDelivery();
-              if (deliveryErr) { showError(deliveryErr); return; }
-              if (appleReviewMode) {
-                // Commande directe : pas d'overlay, loader dans le bouton Valider.
-                setReviewOrdering(true);
-                handleReviewOrder();
-                return;
+            />
+          )}
+
+          {isContactPopupVisible && (
+            <CheckoutContactOverlay
+              onClose={() => setIsContactPopupVisible(false)}
+              phone={delivery.phone || ""}
+              onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
+            />
+          )}
+
+          {isPeriodPopupVisible && (
+            <CheckoutPeriodOverlay
+              onClose={() => setIsPeriodPopupVisible(false)}
+              selectedPeriod={delivery.hour || "Now"}
+              onSelectPeriod={(period) =>
+                setDelivery({ ...delivery, hour: period })
               }
-              setPaymentState('network_select');
-              setIsPaymentPopupVisible(true);
-              setPaymentKey(prev => prev + 1);
-            }}
+              availableHours={rawHours}
+              orderLeadTime={orderLeadTime}
+              advanceDays={advanceDays}
+            />
+          )}
+
+          {isVoiceNotePopupVisible && (
+            <CheckoutVoiceNoteOverlay
+              onClose={() => setIsVoiceNotePopupVisible(false)}
+              onSave={(uri) => setDelivery({ ...delivery, voiceNoteUri: uri })}
+            />
+          )}
+
+          <CheckoutPaymentTopOverlay
+            visible={isPaymentPopupVisible}
+            menu={menu}
+            menuPrice={menuPrice}
+            extrasPrice={extrasPrice}
+            drinksPrice={drinksPrice}
+            deliveryPrice={deliveryPrice}
+            total={total}
+            paymentState={paymentState}
+            network={paymentNetwork}
+            onNetworkChange={setPaymentNetwork}
+            ussdMessage={ussdMessage || undefined}
           />
 
-        </Animated.View>
-
-        {isLocationPopupVisible && (
-          <CheckoutLocationOverlay
-            onClose={() => setIsLocationPopupVisible(false)} 
-            address={delivery.address || ''}
-            note={delivery.note || ''}
-            onSave={(addr, note) => setDelivery({ ...delivery, address: addr, note: note })}
-          />
-        )}
-
-        {isContactPopupVisible && (
-          <CheckoutContactOverlay 
-            onClose={() => setIsContactPopupVisible(false)} 
-            phone={delivery.phone || ''}
-            onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
-          />
-        )}
-
-        {isPeriodPopupVisible && (
-          <CheckoutPeriodOverlay
-            onClose={() => setIsPeriodPopupVisible(false)}
-            selectedPeriod={delivery.hour || 'Now'}
-            onSelectPeriod={(period) => setDelivery({ ...delivery, hour: period })}
-            availableHours={availableHours}
-            orderLeadTime={orderLeadTime}
-          />
-        )}
-
-        {isVoiceNotePopupVisible && (
-          <CheckoutVoiceNoteOverlay 
-            onClose={() => setIsVoiceNotePopupVisible(false)} 
-            onSave={(uri) => setDelivery({ ...delivery, voiceNoteUri: uri })}
-          />
-        )}
-
-        <CheckoutPaymentTopOverlay
-          visible={isPaymentPopupVisible}
-          menu={menu}
-          menuPrice={menuPrice}
-          extrasPrice={extrasPrice}
-          drinksPrice={drinksPrice}
-          deliveryPrice={deliveryPrice}
-          total={total}
-          paymentState={paymentState}
-          network={paymentNetwork}
-          onNetworkChange={setPaymentNetwork}
-          ussdMessage={ussdMessage || undefined}
-        />
-
-        <CheckoutPaymentOverlay
+          <CheckoutPaymentOverlay
             key={paymentKey}
             visible={isPaymentPopupVisible}
             onRequestClose={() => setIsPaymentPopupVisible(false)}
@@ -378,26 +469,26 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({ visible, onClo
             onConfirm={handlePaymentConfirm}
           />
 
-        {sheetToast && (
-          <Toast
-            message={sheetToast.message}
-            type={sheetToast.type}
-            onHide={() => setSheetToast(null)}
-          />
-        )}
+          {sheetToast && (
+            <Toast
+              message={sheetToast.message}
+              type={sheetToast.type}
+              onHide={() => setSheetToast(null)}
+            />
+          )}
 
-        {/* Toast d'erreur paiement : DANS le Modal pour s'afficher au 1er plan
+          {/* Toast d'erreur paiement : DANS le Modal pour s'afficher au 1er plan
             (au-dessus du voile noir), pas masqué dessous. */}
-        {paymentError && (
-          <Toast
-            message={paymentError}
-            type="error"
-            duration={7000}
-            onHide={() => setPaymentError(null)}
-          />
-        )}
-      </View>
-    </Modal>
+          {paymentError && (
+            <Toast
+              message={paymentError}
+              type="error"
+              duration={7000}
+              onHide={() => setPaymentError(null)}
+            />
+          )}
+        </View>
+      </Modal>
     </>
   );
 };

@@ -18,7 +18,7 @@ yaammoo/src/features/orders/
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
     ├── OrderHeader.tsx        # Header de la page orders
     ├── OrderTrackingHeader.tsx # Stats (nb cmd / FF) + chips statut
-    ├── CartStatusPanel.tsx    # Panneau suivi autonome (statut/date/groupes/jours passés/détail)
+    ├── CartStatusPanel.tsx    # Panneau suivi virtualisé (FlatList, groupes, jours passés, détail)
     ├── UserOrdersModal.tsx    # Modal plein écran « État des commandes » (Settings → Mes activités)
     └── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande
 ```
@@ -87,6 +87,8 @@ yaammoo/src/features/orders/
 | `hideRanking` | boolean | Cache le badge rank/quantité à droite (défaut: false) |
 | `onPress` | `() => void` | Pression sur la carte |
 
+**Optimisation** : wrappé dans `React.memo` — évite les re-renders inutiles.
+
 **Affichage conditionnel (coin bas droit)** :
 - `showActions = true` → bouton poubelle
 - `hideRanking = true` → badge quantité `x{qty}`
@@ -99,6 +101,60 @@ yaammoo/src/features/orders/
 - Autres → gris
 
 **Animation vélo** (`BikeAnimation`) : affichée quand `status === 'delivering'`
+
+---
+
+## CartStatusPanel.tsx
+
+**Chemin** : `yaammoo/src/features/orders/components/CartStatusPanel.tsx`
+
+**Rôle** : Panneau de suivi des commandes (onglets pending/active/finished/delivered).
+
+**Virtualisation** : utilise `FlatList` au lieu de `ScrollView` — seuls les items visibles sont rendus. La hiérarchie (groupes par boutique, sections jours précédents) est aplatie en un tableau d'items typés.
+
+**Optimisations** :
+- `React.memo` sur les sous-composants `GroupHeader` et `PastDateHeader`
+- `useCallback` sur tous les handlers (toggleGroup, renderItem, etc.)
+- Props FlatList : `removeClippedSubviews`, `maxToRenderPerBatch=20`, `windowSize=7`
+
+---
+
+## BikeAnimation.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/BikeAnimation.tsx`
+
+**Rôle** : Animation de vélo (roues qui tournent, bobbing, route qui défile) utilisée dans les cartes de commande en livraison.
+
+**Performance 100% thread natif** :
+- Rotation des roues via `Animated.View` + `transform: rotate` avec `useNativeDriver: true`
+- Bobbing et route via `Animated.View` avec `useNativeDriver: true`
+- Cycle de rotation : `Animated.sequence([timing(0→360), timing(360→0, durée=0)])` dans un `Animated.loop`
+- SVG des roues : `viewBox="-2 -2 18 18"` pour éviter la coupure du cercle aux bords du SVG
+- Rayons avec `strokeLinecap="butt"` pour des extrémités nettes (pas d'arrondi qui dépasse)
+- Les composants hors écran sont détruits par `FlatList` → aucune animation en arrière-plan
+
+**Props** :
+| Prop | Type | Défaut | Description |
+|---|---|---|---|
+| `paused` | boolean | false | Stoppe/nettoie toutes les animations |
+| `hideLabel` | boolean | false | Cache le label "En route..." |
+
+## OrderBottomSheet.tsx
+
+**Chemin** : `yaammoo/src/features/orders/components/OrderBottomSheet.tsx`
+
+Bottom sheet détail d'une commande client. Deux tabs :
+
+### Tab Livraison
+- **Créneau** : mêmes valeurs que le marchand — "Sur place" (pas de `delivery.status`), "Express" (`type === 'express'`), ou `Période (heure)`
+- **Carte droite** : s'adapte au type — vélo animé si `delivering`, icône storefront si "Sur place", flash si Express, clock si programmé
+- **Note de livraison** + **Message vocal** (waveform + play/pause)
+
+### Tab Commandes
+- Même rendu que `MerchantOrderCommandesTab` : icônes 🍽️/➕/🥤, label type (MENU/EXTRA/BOISSON), prix en XAF, total "Total commande"
+- Items scrollables dans une card arrondie (fond `#F9FAFB`, borderRadius 16)
+
+**Navigation multi-commandes** (`allOrders`) : barre de pagination "Cmd 1, Cmd 2…" en bas, avec flèches si > 3 commandes.
 
 ---
 

@@ -33,6 +33,8 @@ export type DeliveryUser = {
   duration: string;
   note: string;
   voiceNoteUri: string;
+  zone: string;
+  deliveryPrice: number;
   orders: OrderItem[];
 };
 
@@ -120,6 +122,8 @@ function buildUser(order: Commande): DeliveryUser {
       : order.delivery?.type === 'express' ? '15-20 min' : '30-45 min',
     note: order.delivery?.note || 'Aucune note de livraison.',
     voiceNoteUri: order.delivery?.voiceNoteUri || '',
+    zone: (order.delivery as any)?.zone || '',
+    deliveryPrice: Number((order.delivery as any)?.prix) || 0,
     orders: buildItems(order),
   };
 }
@@ -189,7 +193,9 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userAddr} numberOfLines={1}>{user.addr}</Text>
+                <Text style={styles.userAddr} numberOfLines={1}>
+                  {user.zone ? `Zone de livraison : ${user.zone}` : user.addr}
+                </Text>
               </View>
             </View>
             <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
@@ -222,7 +228,12 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
               <LivraisonTab user={user} />
             </ScrollView>
           ) : (
-            <CommandesTab orders={user.orders} total={total} />
+            <CommandesTab
+              orders={user.orders}
+              total={total + user.deliveryPrice}
+              zone={user.zone}
+              deliveryPrice={user.deliveryPrice}
+            />
           )}
 
           {/* ── Nav multi-commandes EN BAS (globale : pilote les 2 tabs) ── */}

@@ -41,6 +41,8 @@ export type DeliveryUser = {
   duration: string;
   note: string;
   voiceNoteUri: string;
+  zone: string;
+  deliveryPrice: number;
   orders: OrderItem[];
 };
 
@@ -120,6 +122,8 @@ function buildUser(order: Commande): DeliveryUser {
       : order.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
     note: order.delivery?.note || (order as any).livraison?.note || "Aucune note de livraison.",
     voiceNoteUri: order.delivery?.voiceNoteUri || (order as any).livraison?.voiceNoteUri || "",
+    zone: (order.delivery as any)?.zone || (order as any).livraison?.zone || "",
+    deliveryPrice: Number((order.delivery as any)?.prix) || 0,
     orders: buildItems(order)
   };
 }
@@ -226,7 +230,9 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userAddr} numberOfLines={1}>{user.addr}</Text>
+                <Text style={styles.userAddr} numberOfLines={1}>
+                  {user.zone ? `Zone de livraison : ${user.zone}` : user.addr}
+                </Text>
               </View>
             </View>
             <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
@@ -261,7 +267,12 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
             {tab === 'livraison' ? (
               <LivraisonTab user={user} />
             ) : (
-              <CommandesTab orders={user.orders} total={total} />
+              <CommandesTab
+                orders={user.orders}
+                total={total + user.deliveryPrice}
+                zone={user.zone}
+                deliveryPrice={user.deliveryPrice}
+              />
             )}
           </ScrollView>
 
@@ -459,16 +470,24 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
   );
 }
 
-function CommandesTab({ orders, total }: { orders: OrderItem[]; total: number }) {
+function CommandesTab({
+  orders,
+  total,
+  zone,
+  deliveryPrice,
+}: {
+  orders: OrderItem[];
+  total: number;
+  zone: string;
+  deliveryPrice: number;
+}) {
+  const hasDelivery = deliveryPrice > 0 || !!zone;
   return (
     <View style={styles.infoCard}>
       {orders.map((o, i) => (
         <View
           key={i}
-          style={[
-            styles.cmdRow,
-            i < orders.length - 1 && styles.cmdRowBorder,
-          ]}
+          style={[styles.cmdRow, styles.cmdRowBorder]}
         >
           <View style={styles.cmdIcon}>
             <Text style={{ fontSize: 12 }}>📦</Text>
@@ -478,6 +497,18 @@ function CommandesTab({ orders, total }: { orders: OrderItem[]; total: number })
           <Text style={styles.cmdPrice}>{o.price}</Text>
         </View>
       ))}
+      {hasDelivery && (
+        <View style={[styles.cmdRow, styles.cmdRowBorder]}>
+          <View style={styles.cmdIcon}>
+            <Text style={{ fontSize: 12 }}>🛵</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cmdName}>Livraison</Text>
+            {zone ? <Text style={styles.cmdZone}>{zone}</Text> : null}
+          </View>
+          <Text style={styles.cmdPrice}>{deliveryPrice} XAF</Text>
+        </View>
+      )}
       <View style={styles.cmdTotal}>
         <Text style={styles.cmdTotalLabel}>Total</Text>
         <Text style={styles.cmdTotalVal}>
@@ -597,6 +628,7 @@ const styles = StyleSheet.create({
   cmdRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   cmdIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
   cmdName: { flex: 1, fontSize: 13, color: '#374151', fontWeight: '500' },
+  cmdZone: { fontSize: 11, color: '#6B7280', fontWeight: '600', marginTop: 1 },
   cmdQty: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
   cmdPrice: { fontSize: 13, fontWeight: '700', color: '#111827' },
   cmdTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: '#F3F4F6' },

@@ -20,9 +20,12 @@ const CURRENCY = 'XAF';
 type Props = {
   orders: OrderItem[];
   total: number;
+  zone?: string;
+  deliveryPrice?: number;
 };
 
-export function CommandesTab({ orders, total }: Props) {
+export function CommandesTab({ orders, total, zone = '', deliveryPrice = 0 }: Props) {
+  const hasDelivery = deliveryPrice > 0 || !!zone;
   if (orders.length === 0) {
     return (
       <View style={styles.empty}>
@@ -49,7 +52,10 @@ export function CommandesTab({ orders, total }: Props) {
             return (
               <View
                 key={i}
-                style={[styles.row, i < orders.length - 1 && styles.rowBorder]}
+                style={[
+                  styles.row,
+                  (i < orders.length - 1 || hasDelivery) && styles.rowBorder,
+                ]}
               >
                 {/* Icône + badge type */}
                 <View style={[
@@ -80,6 +86,26 @@ export function CommandesTab({ orders, total }: Props) {
               </View>
             );
           })}
+
+          {/* Ligne livraison : zone + prix */}
+          {hasDelivery && (
+            <View style={styles.row}>
+              <View style={[styles.iconBox, { backgroundColor: '#FEF2F2' }]}>
+                <Text style={{ fontSize: 13 }}>🛵</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemName} numberOfLines={1}>Livraison</Text>
+                {zone ? (
+                  <Text style={styles.itemZone}>{zone}</Text>
+                ) : null}
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.itemPrice}>
+                  {deliveryPrice > 0 ? `${deliveryPrice} ${CURRENCY}` : 'Inclus'}
+                </Text>
+              </View>
+            </View>
+          )}
         </ScrollView>
 
         {/* Total */}
@@ -131,6 +157,12 @@ const styles = StyleSheet.create({
     marginTop: 1,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    fontWeight: '600',
+  },
+  itemZone: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 1,
     fontWeight: '600',
   },
   itemPrice: {

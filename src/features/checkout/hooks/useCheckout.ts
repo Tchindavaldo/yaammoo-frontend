@@ -145,23 +145,24 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     const extrasPrice = selectedPackaging.reduce((acc, p) => acc + p.prix, 0);
     const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix * (drinkQuantities[d.type] || 1), 0);
     // Prix de livraison selon le type actif, indépendant entre express et période.
+    // Le prix vient EXCLUSIVEMENT de la zone/période choisie : aucun fallback.
+    // Tant que l'utilisateur n'a pas sélectionné de lieu/zone, deliveryPrice = 0.
     // - express  → prix de la zone express sélectionnée (delivery.expressPrix)
     // - standard → prix de la période/créneau sélectionné (delivery.prix)
-    // Fallback par défaut si aucun prix explicite (ancien format / non renseigné).
     const periodPrice =
       delivery.prix != null && Number(delivery.prix) > 0
         ? Number(delivery.prix)
-        : null;
+        : 0;
     const expressPrice =
       delivery.expressPrix != null && Number(delivery.expressPrix) > 0
         ? Number(delivery.expressPrix)
-        : null;
+        : 0;
     let deliveryPrice = 0;
     if (delivery.statut) {
       if (delivery.type === "express") {
-        deliveryPrice = expressPrice != null ? expressPrice : 1000;
+        deliveryPrice = expressPrice;
       } else if (delivery.type === "standard") {
-        deliveryPrice = periodPrice != null ? periodPrice : 500;
+        deliveryPrice = periodPrice;
       }
     }
 
@@ -314,8 +315,22 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     if (!delivery.address) return "Adresse de livraison requise";
     if (!delivery.phone) return "Numéro de contact requis";
     if (type === 'standard' && !delivery.hour) return "Période de livraison requise";
+    // Express : exiger le choix d'une zone SI des zones express sont disponibles
+    // (le prix vient exclusivement de la zone choisie, pas d'un défaut).
+    if (type === 'express') {
+      const hours = (menu as any)?.deliveryHours;
+      const hasExpressZones =
+        Array.isArray(hours) &&
+        hours.some(
+          (h: any) =>
+            h && typeof h === 'object' && h.express && h.expressZones?.length > 0,
+        );
+      if (hasExpressZones && !delivery.expressLieu) {
+        return "Zone de livraison express requise";
+      }
+    }
     return null;
-  }, [delivery]);
+  }, [delivery, menu]);
 
   const ussdCode = paymentNetwork === 'orange' ? '#150#' : '*126#';
 

@@ -127,8 +127,11 @@ Hauteur fixe = les zones ne bougent pas au changement de type de livraison.
 - Les deux prix sont **strictement séparés** : choisir un créneau Heure n'affecte
   plus le prix affiché sur Express (et inversement).
 - `useCheckout` calcule `deliveryPrice` selon le **type actif** : `expressPrix`
-  si express, `prix` si standard. Fallback si prix absent : express `1000`,
-  standard `500` (ancien format `deliveryHours`).
+  si express, `prix` si standard. **Aucun prix par défaut** : tant qu'aucune
+  zone/période n'est choisie, `deliveryPrice = 0`. Le prix vient EXCLUSIVEMENT
+  de la sélection (ce sont les lieux/zones qui définissent le prix de livraison).
+- `validateDelivery` bloque le paiement tant que la zone express n'est pas
+  choisie (si des `expressZones` existent) ou que la période n'est pas choisie.
 
 **Rétrocompat versions app/backend** : le backend sert `deliveryHours` en ancien
 (`string[]`) ou nouveau format (`{ hour, periodic, periodicZones, express,

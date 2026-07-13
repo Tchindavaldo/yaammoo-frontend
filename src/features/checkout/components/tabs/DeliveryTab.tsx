@@ -160,18 +160,8 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     { color: getTextColor(isPeriodFilled) },
                   ]}
                 >
-                  {delivery.hour || "Période"}
+                  Période
                 </Text>
-                {selectedPrice ? (
-                  <Text
-                    style={[
-                      styles.infoBtnSubText,
-                      { color: getTextColor(isPeriodFilled) },
-                    ]}
-                  >
-                    {selectedPrice}F
-                  </Text>
-                ) : null}
               </View>
             </TouchableOpacity>
             <TouchableOpacity
@@ -281,7 +271,6 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Heure
-                {selectedPrice ? ` (${selectedPrice}F)` : ""}
               </Text>
               <Text
                 style={[
@@ -289,7 +278,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   delivery.type === "standard" && { color: "#ec4913" },
                 ]}
               >
-                {delivery.hour || "Choisir un créneau"}
+                {selectedPrice ? `${selectedPrice}F` : "Choisir un créneau"}
               </Text>
             </View>
           </TouchableOpacity>

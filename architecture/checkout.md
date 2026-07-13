@@ -136,7 +136,7 @@ Hauteur fixe = les zones ne bougent pas au changement de type de livraison.
 **Rétrocompat versions app/backend** : le backend sert `deliveryHours` en ancien
 (`string[]`) ou nouveau format (`{ hour, periodic, periodicZones, express,
 expressZones }`) selon le header `x-app-version` (voir `src/api/setupHttp.ts`).
-Sans `expressZones`, la card Zone est masquée et les prix par défaut s'appliquent.
+Sans `expressZones`, la card Zone est masquée (aucun prix par défaut n'est appliqué).
 
 **Format des données de zone** (nouveau format) :
 ```json
@@ -148,6 +148,23 @@ Sans `expressZones`, la card Zone est masquée et les prix par défaut s'appliqu
   "expressZones": [{ "lieu": "Bonanjo", "prix": "1000" }]
 }
 ```
+
+**Payload `delivery` envoyé au backend** (`POST /order`, `PUT /order/tabs/:userId`) —
+construit dans `useCheckout.createOrder()` :
+```js
+delivery: {
+  status: true,
+  date: "2026-07-13",
+  type: "time" | "express",   // "time" = standard/Heure
+  prix: 700,                  // prix de livraison UNIQUE (le type distingue les cas)
+  location, phone, note, voiceNoteUri,
+  time: "17:25",              // si type === "time" (heure seule, extraite de delivery.hour)
+  zone: "Banganté",           // lieu/zone sélectionné — envoyé pour "time" ET "express"
+}
+```
+- `prix` et `zone` sont **nouveaux** (optionnels côté backend → rétrocompat descendante).
+- `expressPrix`/`expressLieu` ne sont PAS envoyés : le backend n'a besoin que de
+  `type` + `prix` + `zone`. Ces champs restent internes à l'état frontend (affichage).
 
 ---
 

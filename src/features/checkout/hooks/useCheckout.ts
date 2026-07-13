@@ -238,18 +238,26 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
     if (hasDelivery && finalDeliveryType) {
       deliveryData.type = finalDeliveryType;
+      // Prix de livraison unique (le backend connaît le type via `type`).
       deliveryData.prix = prices.deliveryPrice;
       if (delivery.address) deliveryData.location = delivery.address;
       if (delivery.phone) deliveryData.phone = delivery.phone;
       if (delivery.voiceNoteUri) deliveryData.voiceNoteUri = delivery.voiceNoteUri;
       if (delivery.note) deliveryData.note = delivery.note;
 
+      // `delivery.hour` (standard) est au format "YYYY-MM-DD|HH:mm|lieu".
+      // On en extrait l'heure (time) et le lieu (zone).
       if (finalDeliveryType === "time" && delivery.hour) {
-        deliveryData.time = delivery.hour.replace('h', ':');
+        const parts = delivery.hour.split("|");
+        const isDate = /^\d{4}-\d{2}-\d{2}$/.test(parts[0]);
+        const heure = (isDate ? parts[1] : parts[0]) || "";
+        const lieu = isDate ? parts[2] : parts[1];
+        deliveryData.time = heure.replace("h", ":");
+        if (lieu) deliveryData.zone = lieu;
       }
-      if (finalDeliveryType === "express") {
-        if (delivery.expressLieu) deliveryData.expressLieu = delivery.expressLieu;
-        if (delivery.expressPrix) deliveryData.expressPrix = delivery.expressPrix;
+      // Express : la zone choisie (checkbox lieu/zone).
+      if (finalDeliveryType === "express" && delivery.expressLieu) {
+        deliveryData.zone = delivery.expressLieu;
       }
     }
 

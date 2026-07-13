@@ -119,6 +119,11 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
           if (dData.phone) d.phone = dData.phone;
           if (dData.voiceNoteUri) d.voiceNoteUri = dData.voiceNoteUri;
           if (dData.note) d.note = dData.note;
+          // Note : dData.prix est le prix TOTAL de livraison sauvegardé (pas le
+          // prix période seul) → on ne le remet pas dans d.prix pour ne pas
+          // fausser l'affichage. expressPrix/expressLieu sont eux spécifiques.
+          if (dData.expressLieu) d.expressLieu = dData.expressLieu;
+          if (dData.expressPrix != null) d.expressPrix = Number(dData.expressPrix) || 0;
         } else {
           d.type = 'aucune';
         }
@@ -139,11 +144,26 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     const menuPrice = basePrice * quantity;
     const extrasPrice = selectedPackaging.reduce((acc, p) => acc + p.prix, 0);
     const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix * (drinkQuantities[d.type] || 1), 0);
-    const deliveryPrice = delivery.statut
-      ? delivery.type === "express"
-        ? 1000
-        : 500
-      : 0;
+    // Prix de livraison selon le type actif, indépendant entre express et période.
+    // - express  → prix de la zone express sélectionnée (delivery.expressPrix)
+    // - standard → prix de la période/créneau sélectionné (delivery.prix)
+    // Fallback par défaut si aucun prix explicite (ancien format / non renseigné).
+    const periodPrice =
+      delivery.prix != null && Number(delivery.prix) > 0
+        ? Number(delivery.prix)
+        : null;
+    const expressPrice =
+      delivery.expressPrix != null && Number(delivery.expressPrix) > 0
+        ? Number(delivery.expressPrix)
+        : null;
+    let deliveryPrice = 0;
+    if (delivery.statut) {
+      if (delivery.type === "express") {
+        deliveryPrice = expressPrice != null ? expressPrice : 1000;
+      } else if (delivery.type === "standard") {
+        deliveryPrice = periodPrice != null ? periodPrice : 500;
+      }
+    }
 
     return {
       menuPrice,
@@ -217,6 +237,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
     if (hasDelivery && finalDeliveryType) {
       deliveryData.type = finalDeliveryType;
+      deliveryData.prix = prices.deliveryPrice;
       if (delivery.address) deliveryData.location = delivery.address;
       if (delivery.phone) deliveryData.phone = delivery.phone;
       if (delivery.voiceNoteUri) deliveryData.voiceNoteUri = delivery.voiceNoteUri;
@@ -224,6 +245,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
       if (finalDeliveryType === "time" && delivery.hour) {
         deliveryData.time = delivery.hour.replace('h', ':');
+      }
+      if (finalDeliveryType === "express") {
+        if (delivery.expressLieu) deliveryData.expressLieu = delivery.expressLieu;
+        if (delivery.expressPrix) deliveryData.expressPrix = delivery.expressPrix;
       }
     }
 

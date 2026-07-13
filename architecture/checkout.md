@@ -22,7 +22,8 @@ yaammoo/src/features/checkout/
 │   ├── CartCheckoutFooter.tsx          # Footer panier : Save + Buy individuel
 │   ├── CheckoutLocationOverlay.tsx     # Overlay saisie adresse livraison
 │   ├── CheckoutContactOverlay.tsx      # Overlay saisie numéro de contact
-│   ├── CheckoutPeriodOverlay.tsx       # Overlay sélection créneau horaire
+│   ├── CheckoutPeriodOverlay.tsx       # Overlay sélection créneau horaire (Heure/standard)
+│   ├── CheckoutExpressOverlay.tsx      # Overlay sélection zone express (lieu + prix)
 │   ├── CheckoutVoiceNoteOverlay.tsx    # Overlay enregistrement note vocale
 │   ├── CheckoutPaymentOverlay.tsx      # Overlay paiement BAS (capsule) — saisie n° + étapes
 │   ├── CheckoutPaymentTopOverlay.tsx   # Overlay paiement HAUT — récap commande + choix réseau
@@ -83,10 +84,15 @@ yaammoo/src/features/checkout/
 ```
 [ expressRow (flexDirection: row) ]
   └── expressCardsCol (flex: 1, flexDirection: row, gap: 8)
-        └── [ Location | Contact | VoiceNote ] (3 cartes flex:1, même ligne)
+        └── [ Location | Zone? | Contact | VoiceNote ] (cartes flex:1, même ligne)
 
 > Pas de card "Commande livrée dès que terminée" : le texte est porté par le
 > sous-texte du bouton de sélection Express ("Livré dès que terminée").
+
+> Card **Zone** (lieu express) : affichée UNIQUEMENT si le backend a fourni des
+> `expressZones` (nouveau format `deliveryHours`). Sinon masquée (rétrocompat).
+> Ouvre `CheckoutExpressOverlay`. La card n'affiche AUCUNE donnée (titre "Zone"),
+> seuls ses bords se surlignent en orange quand une zone est sélectionnée.
 ```
 
 ### Standard
@@ -112,6 +118,33 @@ yaammoo/src/features/checkout/
 - `bottomZone` ("Select Type" + grille Express/Heure/Aucun), `justifyContent: center`
 
 Hauteur fixe = les zones ne bougent pas au changement de type de livraison.
+
+**Prix de livraison — Express et Période indépendants** :
+- **Standard/Heure** → prix du créneau sélectionné, stocké dans `delivery.prix`
+  (renseigné par `CheckoutPeriodOverlay`).
+- **Express** → prix de la zone sélectionnée, stocké dans `delivery.expressPrix`
+  + lieu dans `delivery.expressLieu` (renseignés par `CheckoutExpressOverlay`).
+- Les deux prix sont **strictement séparés** : choisir un créneau Heure n'affecte
+  plus le prix affiché sur Express (et inversement).
+- `useCheckout` calcule `deliveryPrice` selon le **type actif** : `expressPrix`
+  si express, `prix` si standard. Fallback si prix absent : express `1000`,
+  standard `500` (ancien format `deliveryHours`).
+
+**Rétrocompat versions app/backend** : le backend sert `deliveryHours` en ancien
+(`string[]`) ou nouveau format (`{ hour, periodic, periodicZones, express,
+expressZones }`) selon le header `x-app-version` (voir `src/api/setupHttp.ts`).
+Sans `expressZones`, la card Zone est masquée et les prix par défaut s'appliquent.
+
+**Format des données de zone** (nouveau format) :
+```json
+{
+  "hour": "08:00",
+  "periodic": true,
+  "periodicZones": [{ "lieu": "Bonanjo", "prix": "500" }],
+  "express": true,
+  "expressZones": [{ "lieu": "Bonanjo", "prix": "1000" }]
+}
+```
 
 ---
 

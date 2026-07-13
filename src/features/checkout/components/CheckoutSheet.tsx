@@ -35,6 +35,7 @@ import { CheckoutFooter } from "./CheckoutFooter";
 import { CheckoutLocationOverlay } from "./CheckoutLocationOverlay";
 import { CheckoutContactOverlay } from "./CheckoutContactOverlay";
 import { CheckoutPeriodOverlay } from "./CheckoutPeriodOverlay";
+import { CheckoutExpressOverlay } from "./CheckoutExpressOverlay";
 import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
 import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
 import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
@@ -58,6 +59,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
   const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
   const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
+  const [isExpressPopupVisible, setIsExpressPopupVisible] = useState(false);
   const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
   const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
   const [paymentKey, setPaymentKey] = useState(0);
@@ -223,6 +225,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
       setIsLocationPopupVisible(false);
       setIsContactPopupVisible(false);
       setIsPeriodPopupVisible(false);
+      setIsExpressPopupVisible(false);
       setIsVoiceNotePopupVisible(false);
       setIsPaymentPopupVisible(false);
     } else {
@@ -375,7 +378,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     onOpenLocation={() => setIsLocationPopupVisible(true)}
                     onOpenContact={() => setIsContactPopupVisible(true)}
                     onOpenPeriod={() => setIsPeriodPopupVisible(true)}
+                    onOpenExpress={() => setIsExpressPopupVisible(true)}
                     onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
+                    availableHours={rawHours}
                   />
                 )}
               </ScrollView>
@@ -455,12 +460,31 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             <CheckoutPeriodOverlay
               onClose={() => setIsPeriodPopupVisible(false)}
               selectedPeriod={delivery.hour || "Now"}
-              onSelectPeriod={(period) =>
-                setDelivery({ ...delivery, hour: period })
+              onSelectPeriod={(period, prix) =>
+                setDelivery({
+                  ...delivery,
+                  hour: period,
+                  prix: prix !== undefined ? prix : delivery.prix,
+                })
               }
               availableHours={rawHours}
               orderLeadTime={orderLeadTime}
               advanceDays={advanceDays}
+            />
+          )}
+
+          {isExpressPopupVisible && (
+            <CheckoutExpressOverlay
+              onClose={() => setIsExpressPopupVisible(false)}
+              selectedLieu={delivery.expressLieu || ""}
+              onSelectExpress={(lieu, prix) =>
+                setDelivery({
+                  ...delivery,
+                  expressLieu: lieu,
+                  expressPrix: prix !== undefined ? prix : delivery.expressPrix,
+                })
+              }
+              availableHours={rawHours}
             />
           )}
 

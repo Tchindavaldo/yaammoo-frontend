@@ -10,7 +10,9 @@ interface DeliveryTabProps {
   onOpenLocation?: () => void;
   onOpenContact?: () => void;
   onOpenPeriod?: () => void;
+  onOpenExpress?: () => void;
   onOpenVoiceNote?: () => void;
+  availableHours?: any[];
 }
 
 export const DeliveryTab: React.FC<DeliveryTabProps> = ({
@@ -19,12 +21,24 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   onOpenLocation,
   onOpenContact,
   onOpenPeriod,
+  onOpenExpress,
   onOpenVoiceNote,
+  availableHours,
 }) => {
   const isLocationFilled = !!delivery.address;
   const isPeriodFilled = !!delivery.hour;
   const isContactFilled = !!delivery.phone;
   const isVoiceNoteFilled = !!delivery.voiceNoteUri;
+  const isExpressFilled = !!delivery.expressLieu;
+
+  // Y a-t-il des zones express dans les données ? (nouveau format uniquement)
+  // Si non (ancien format string[] ou absence), on masque la card Express.
+  const hasExpressZones = Array.isArray(availableHours)
+    ? availableHours.some(
+        (h: any) =>
+          h && typeof h === "object" && h.express && h.expressZones?.length > 0,
+      )
+    : false;
 
   const getBtnStyle = (filled: boolean) => [
     styles.infoBtnLarge,
@@ -40,8 +54,29 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
 
   const deliveryType = delivery.type;
 
-  // Prix affiché dans les boutons Express/Heure (vient de la période sélectionnée)
-  const selectedPrice = delivery.deliveryPrice || delivery.price || "";
+  // Prix de la période (Heure) et prix express, indépendants l'un de l'autre.
+  const periodPrice =
+    delivery.prix != null && Number(delivery.prix) > 0 ? delivery.prix : "";
+  const expressPrice =
+    delivery.expressPrix != null && Number(delivery.expressPrix) > 0
+      ? delivery.expressPrix
+      : "";
+
+  // Parse `delivery.hour` au format "YYYY-MM-DD|HH:mm|lieu" → { date, heure }
+  const parseHour = (raw: string) => {
+    if (!raw) return { date: "", heure: "" };
+    const parts = raw.split("|");
+    const isDate = /^\d{4}-\d{2}-\d{2}$/.test(parts[0]);
+    const rawDate = isDate ? parts[0] : "";
+    const heure = isDate ? parts[1] || "" : parts[0] || "";
+    let date = "";
+    if (rawDate) {
+      const d = new Date(rawDate);
+      date = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+    }
+    return { date, heure };
+  };
+  const { date: selectedDate, heure: selectedHour } = parseHour(delivery.hour);
 
   return (
     <View
@@ -77,6 +112,30 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   </Text>
                 </View>
               </TouchableOpacity>
+              {/* Card zone express : uniquement si des zones express existent.
+                  Bords surlignés quand sélectionné, aucune donnée affichée. */}
+              {hasExpressZones && (
+                <TouchableOpacity
+                  style={[getBtnStyle(isExpressFilled), { flex: 1 }]}
+                  onPress={onOpenExpress}
+                >
+                  <Ionicons
+                    name="flash-outline"
+                    size={20}
+                    color={getIconColor(isExpressFilled)}
+                  />
+                  <View style={styles.infoBtnText}>
+                    <Text
+                      style={[
+                        styles.infoBtnTitle,
+                        { color: getTextColor(isExpressFilled) },
+                      ]}
+                    >
+                      Zone
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={[getBtnStyle(isContactFilled), { flex: 1 }]}
                 onPress={onOpenContact}
@@ -241,7 +300,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Express
-                {selectedPrice ? ` (${selectedPrice}F)` : ""}
+                {expressPrice ? ` (${expressPrice}F)` : ""}
               </Text>
               <Text
                 style={[
@@ -272,13 +331,25 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Heure
               </Text>
+              {selectedDate ? (
+                <Text
+                  style={[
+                    styles.deliveryTypeSubText,
+                    delivery.type === "standard" && { color: "#ec4913" },
+                  ]}
+                >
+                  {selectedDate}
+                </Text>
+              ) : null}
               <Text
                 style={[
                   styles.deliveryTypeSubText,
                   delivery.type === "standard" && { color: "#ec4913" },
                 ]}
               >
-                {selectedPrice ? `${selectedPrice}F` : "Choisir un créneau"}
+                {selectedHour
+                  ? `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
+                  : "Choisir un créneau"}
               </Text>
             </View>
           </TouchableOpacity>

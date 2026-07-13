@@ -34,6 +34,9 @@ export class Livraison {
     public phone: string = "",
     public voiceNoteUri: string = "",
     public note: string = "",
+    // Express : lieu + prix propres à la livraison express (indépendants de la période)
+    public expressLieu: string = "",
+    public expressPrix: number = 0,
   ) { }
 }
 

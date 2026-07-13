@@ -20,7 +20,7 @@ interface PeriodItem {
 interface CheckoutPeriodOverlayProps {
   onClose: () => void;
   selectedPeriod: string;
-  onSelectPeriod: (period: string) => void;
+  onSelectPeriod: (period: string, prix?: number) => void;
   availableHours?: any[];
   orderLeadTime?: number;
   advanceDays?: number;
@@ -111,7 +111,13 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     const value = selectedValue
       ? `${selectedDate}|${selectedValue}`
       : selectedDate;
-    onSelectPeriod(value);
+    // Retrouve le prix de la période sélectionnée pour le remonter au parent
+    const selected = validPeriods.find((p) => {
+      const v = p.lieu ? `${p.hour}|${p.lieu}` : p.hour;
+      return v === selectedValue;
+    });
+    const parsed = selected?.prix ? parseInt(String(selected.prix), 10) : NaN;
+    onSelectPeriod(value, Number.isNaN(parsed) ? undefined : parsed);
     onClose();
   };
 

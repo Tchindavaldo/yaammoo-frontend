@@ -11,6 +11,8 @@ interface MerchantContextType {
   error: string | null;
   refresh: (showLoading?: boolean) => Promise<void>;
   updateStatus: (orderId: string, status: string) => Promise<boolean>;
+  /** Délègue une commande à un livreur (pose driverId, statut inchangé). */
+  delegateOrder: (orderId: string, driverId: string) => Promise<boolean>;
   addMenu: (menu: Menu) => Promise<void>;
   // ── Injection directe depuis les payloads socket (pas de refetch) ──
   /** newFastFoodOrder / fastFoodOrderUpdated → upsert d'une commande. */
@@ -79,6 +81,21 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return true;
     } catch (err) {
       console.error("Failed to update status:", err);
+      return false;
+    }
+  };
+
+  const delegateOrder = async (orderId: string, driverId: string): Promise<boolean> => {
+    try {
+      await merchantService.delegateOrder(orderId, driverId);
+      // Patch local : pose driverId sur la commande (statut inchangé → reste
+      // "En attente" côté marchand, avec le badge "Délégué").
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, driverId } as any : o)),
+      );
+      return true;
+    } catch (err) {
+      console.error("Failed to delegate order:", err);
       return false;
     }
   };
@@ -164,6 +181,7 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         error,
         refresh: fetchData,
         updateStatus,
+        delegateOrder,
         addMenu,
         upsertOrderFromSocket,
         upsertOrdersFromSocket,

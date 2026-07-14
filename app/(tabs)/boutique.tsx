@@ -21,7 +21,7 @@ import { Toast } from '@/src/components/Toast';
 export default function BoutiqueScreen() {
   const { userData, loading: authLoading } = useAuth();
   const { isSignedIn } = useAuthGate();
-  const { orders, loading: merchantLoading, refresh, updateStatus } = useMerchant();
+  const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder } = useMerchant();
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [headerHeight, setHeaderHeight] = useState(70);
 
@@ -97,6 +97,7 @@ export default function BoutiqueScreen() {
         loading={loading}
         onRefresh={refresh}
         onUpdateStatus={handleUpdateStatus}
+        onDelegate={delegateOrder}
         selectedDate={selectedDate}
         onSelectDate={setSelectedDate}
         onDatesChange={setDateOptions}

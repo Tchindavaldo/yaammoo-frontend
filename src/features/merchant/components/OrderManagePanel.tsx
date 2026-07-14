@@ -20,6 +20,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
+import { DelegateDriverSheet } from "./DelegateDriverSheet";
+import type { DriverInfo } from "@/src/features/driver/services/driverService";
 
 // Hauteur approximative de la tab bar (navbar du bas) à réserver sous la liste.
 const TAB_BAR_HEIGHT = 65;
@@ -36,6 +38,8 @@ interface OrderManagePanelProps {
   loading: boolean;
   onRefresh: () => void;
   onUpdateStatus: (orderId: string, status: string) => Promise<void | boolean>;
+  /** Délègue une commande à un livreur (pose driverId). */
+  onDelegate?: (orderId: string, driverId: string) => Promise<void | boolean>;
   /** Date sélectionnée (ISO YYYY-MM-DD) ou null pour "aujourd'hui". Contrôlée par le header. */
   selectedDate: string | null;
   onSelectDate: (iso: string | null) => void;
@@ -51,6 +55,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   loading,
   onRefresh,
   onUpdateStatus,
+  onDelegate,
   selectedDate,
   onSelectDate,
   onDatesChange,
@@ -65,29 +70,38 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
     "express",
   );
-  const [launchedGroups, setLaunchedGroups] = useState<Record<string, boolean>>(
-    {},
-  );
-  const [launchingGroups, setLaunchingGroups] = useState<
-    Record<string, boolean>
-  >({});
+  // États d'affichage du bouton de groupe ("Lancé ✓" / "..."). Le lancement
+  // passe désormais par le sélecteur DelegateDriverSheet (feedback dans le
+  // sheet) ; ces états restent lus mais ne sont plus flippés directement ici.
+  const [launchedGroups] = useState<Record<string, boolean>>({});
+  const [launchingGroups] = useState<Record<string, boolean>>({});
+  // Groupe pour lequel le sélecteur "qui livre" (Lancer tout) est ouvert.
+  const [delegateGroup, setDelegateGroup] = useState<Commande[] | null>(null);
   // Sous-tab actif par groupe : 'en_attente' | 'en_cours'
-  const [groupSubTab, setGroupSubTab] = useState<Record<string, 'en_attente' | 'en_cours'>>({});
+  const [groupSubTab, setGroupSubTab] = useState<Record<string, 'en_attente' | 'en_cours' | 'termine'>>({});
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroupId((prev) => (prev === groupId ? null : groupId));
   };
 
-  const launchGroup = async (groupId: string, groupOrders: Commande[]) => {
-    setLaunchingGroups((prev) => ({ ...prev, [groupId]: true }));
-    try {
-      await Promise.all(
-        groupOrders.map((o) => onUpdateStatus(o.id, "delivering")),
-      );
-      setLaunchedGroups((prev) => ({ ...prev, [groupId]: true }));
-    } finally {
-      setLaunchingGroups((prev) => ({ ...prev, [groupId]: false }));
-    }
+  // Livrer tout le groupe soi-même (choix "Moi-même" du sélecteur Lancer tout).
+  const selfDeliverGroup = async (groupOrders: Commande[]): Promise<boolean> => {
+    const results = await Promise.all(
+      groupOrders.map((o) => onUpdateStatus(o.id, "delivering")),
+    );
+    return !results.some((r) => r === false);
+  };
+
+  // Déléguer tout le groupe à un livreur.
+  const delegateGroupTo = async (
+    groupOrders: Commande[],
+    driverId: string,
+  ): Promise<boolean> => {
+    if (!onDelegate) return false;
+    const results = await Promise.all(
+      groupOrders.map((o) => onDelegate(o.id, driverId)),
+    );
+    return !results.some((r) => r === false);
   };
 
   // Helpers de date : retourne YYYY-MM-DD à partir d'une commande (clé stable)
@@ -119,7 +133,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const statusMap: Record<OrderStatus, string[]> = {
     pending: ["pending"],
     proccess: ["processing", "active", "in_progress"],
-    finish: ["completed", "finished", "done", "delivering"],
+    finish: ["completed", "finished", "done", "delivering", "delivered"],
   };
 
   const filteredOrders = orders.filter((o) =>
@@ -274,6 +288,13 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         onUpdateStatus={async (status) => {
           await Promise.all(orders.map((o) => onUpdateStatus(o.id, status)));
         }}
+        onDelegate={
+          onDelegate
+            ? async (driverId) => {
+                await Promise.all(orders.map((o) => onDelegate(o.id, driverId)));
+              }
+            : undefined
+        }
       />
     );
   };
@@ -285,10 +306,14 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const renderGroupWithSubTabs = (userGroups: Commande[][], groupId: string) => {
     const activeSubTab = groupSubTab[groupId] ?? 'en_attente';
 
-    // Sépare les commandes delivering (en cours) des autres (en attente)
+    // Répartition par statut de LIVRAISON :
+    //  - En attente : prête à livrer, pas encore lancée (`finished`)
+    //  - En cours   : course lancée (`delivering`)
+    //  - Terminé    : livrée (`delivered`)
     const allGroupOrders = userGroups.flat();
+    const enAttenteOrders = allGroupOrders.filter((o) => o.status === 'finished');
     const enCoursOrders = allGroupOrders.filter((o) => o.status === 'delivering');
-    const enAttenteOrders = allGroupOrders.filter((o) => o.status !== 'delivering');
+    const deliveredOrders = allGroupOrders.filter((o) => o.status === 'delivered');
 
     // Regroupe par utilisateur pour chaque sous-liste
     const groupByUser = (ordersArr: Commande[]): Commande[][] => {
@@ -303,49 +328,46 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
     const enAttenteGroups = groupByUser(enAttenteOrders);
     const enCoursGroups = groupByUser(enCoursOrders);
-    const activeGroups = activeSubTab === 'en_cours' ? enCoursGroups : enAttenteGroups;
+    const deliveredGroups = groupByUser(deliveredOrders);
+    const activeGroups =
+      activeSubTab === 'en_cours'
+        ? enCoursGroups
+        : activeSubTab === 'termine'
+          ? deliveredGroups
+          : enAttenteGroups;
+
+    const renderSubTab = (
+      key: 'en_attente' | 'en_cours' | 'termine',
+      label: string,
+      count: number,
+    ) => {
+      const active = activeSubTab === key;
+      return (
+        <TouchableOpacity
+          style={[styles.subTab, active && styles.subTabActive]}
+          onPress={() => setGroupSubTab((prev) => ({ ...prev, [groupId]: key }))}
+        >
+          <Text style={[styles.subTabLabel, active && styles.subTabLabelActive]}>
+            {label}
+          </Text>
+          {count > 0 && (
+            <View style={[styles.subTabBadge, active && styles.subTabBadgeActive]}>
+              <Text style={[styles.subTabBadgeText, active && styles.subTabBadgeTextActive]}>
+                {count}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    };
 
     return (
       <View style={{ marginTop: 4 }}>
-        {/* Sous-tabs En attente / En cours */}
+        {/* Sous-tabs En attente / En cours / Terminé */}
         <View style={styles.subTabRow}>
-          <TouchableOpacity
-            style={[
-              styles.subTab,
-              activeSubTab === 'en_attente' && styles.subTabActive,
-            ]}
-            onPress={() => setGroupSubTab((prev) => ({ ...prev, [groupId]: 'en_attente' }))}
-          >
-            <Text style={[styles.subTabLabel, activeSubTab === 'en_attente' && styles.subTabLabelActive]}>
-              En attente
-            </Text>
-            {enAttenteOrders.length > 0 && (
-              <View style={[styles.subTabBadge, activeSubTab === 'en_attente' && styles.subTabBadgeActive]}>
-                <Text style={[styles.subTabBadgeText, activeSubTab === 'en_attente' && styles.subTabBadgeTextActive]}>
-                  {enAttenteOrders.length}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.subTab,
-              activeSubTab === 'en_cours' && styles.subTabActive,
-            ]}
-            onPress={() => setGroupSubTab((prev) => ({ ...prev, [groupId]: 'en_cours' }))}
-          >
-            <Text style={[styles.subTabLabel, activeSubTab === 'en_cours' && styles.subTabLabelActive]}>
-              En cours
-            </Text>
-            {enCoursOrders.length > 0 && (
-              <View style={[styles.subTabBadge, activeSubTab === 'en_cours' && styles.subTabBadgeActive]}>
-                <Text style={[styles.subTabBadgeText, activeSubTab === 'en_cours' && styles.subTabBadgeTextActive]}>
-                  {enCoursOrders.length}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          {renderSubTab('en_attente', 'En attente', enAttenteOrders.length)}
+          {renderSubTab('en_cours', 'En cours', enCoursOrders.length)}
+          {renderSubTab('termine', 'Terminé', deliveredOrders.length)}
         </View>
 
         {/* Liste des commandes du sous-tab actif */}
@@ -354,7 +376,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             <Text style={styles.subTabEmptyText}>
               {activeSubTab === 'en_cours'
                 ? 'Aucune livraison en cours'
-                : 'Aucune commande en attente'}
+                : activeSubTab === 'termine'
+                  ? 'Aucune livraison terminée'
+                  : 'Aucune commande en attente'}
             </Text>
           </View>
         ) : (
@@ -570,10 +594,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                         ]}
                         onPress={(e) => {
                           e.stopPropagation();
-                          launchGroup(
-                            "express",
-                            deliveryData!.expressGroups.flat(),
-                          );
+                          // Ouvre le sélecteur "qui livre" pour tout le groupe.
+                          setDelegateGroup(deliveryData!.expressGroups.flat());
                         }}
                         disabled={
                           launchedGroups["express"] ||
@@ -671,7 +693,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                           ]}
                           onPress={(e) => {
                             e.stopPropagation();
-                            launchGroup(groupId, slot.userGroups.flat());
+                            setDelegateGroup(slot.userGroups.flat());
                           }}
                           disabled={isLaunched || launchingGroups[groupId]}
                         >
@@ -808,6 +830,14 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
       {/* Barre fixe (stats + chips) en blur, par-dessus la liste. */}
       {fixedBar}
+
+      {/* Sélecteur "qui livre" pour "Lancer tout" (groupe entier). */}
+      <DelegateDriverSheet
+        visible={!!delegateGroup}
+        onClose={() => setDelegateGroup(null)}
+        onSelfDeliver={() => selfDeliverGroup(delegateGroup || [])}
+        onDelegate={(d: DriverInfo) => delegateGroupTo(delegateGroup || [], d.driverId)}
+      />
     </View>
   );
 };

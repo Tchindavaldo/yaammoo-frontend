@@ -5,6 +5,7 @@ import { useAuth } from "../features/auth/context/AuthContext";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useOrders } from "../features/orders/hooks/useOrders";
 import { useMerchant } from "../features/merchant/hooks/useMerchant";
+import { useDriver } from "../features/driver/hooks/useDriver";
 import { useMerchantWallet } from "../features/merchant/context/MerchantWalletContext";
 import { useWallet } from "../features/wallet/context/WalletContext";
 import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
@@ -19,7 +20,19 @@ import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
  * fiabilisés, eux, sont rejoués par le backend avec __eventId + ACK).
  */
 export const useSocketEvents = () => {
-  const { userData } = useAuth();
+  const { userData, setUserData } = useAuth();
+
+  // Patch LOCAL du rôle livreur depuis le payload socket (pas de GET) : maj de
+  // isDriver/driverId sur userData → l'onglet Livraisons apparaît/disparaît en
+  // temps réel. Le payload backend porte l'état résultant du user.
+  const patchDriverRole = (role: { isDriver?: boolean; driverId?: string }) => {
+    if (!userData) return;
+    setUserData({
+      ...userData,
+      isDriver: role.isDriver,
+      driverId: role.driverId,
+    } as typeof userData);
+  };
   const {
     refresh: refreshNotifications,
     addFromSocket: addNotifFromSocket,
@@ -36,6 +49,12 @@ export const useSocketEvents = () => {
     upsertMenuFromSocket: upsertMerchantMenu,
     removeMenuFromSocket: removeMerchantMenu,
   } = useMerchant();
+  const {
+    refresh: refreshDriver,
+    upsertOrderFromSocket: upsertDriverOrder,
+    upsertOrdersFromSocket: upsertDriverOrders,
+    notifyApplicationEvent,
+  } = useDriver();
   const { applyEvent: applyWalletEvent, handleWithdrawalEvent } =
     useMerchantWallet();
   const {
@@ -59,6 +78,7 @@ export const useSocketEvents = () => {
       refreshNotifications(true);
       refreshOrders(true);
       refreshMerchant(false);
+      refreshDriver(false);
     };
 
     socket.on("connect", handleConnect);
@@ -110,6 +130,61 @@ export const useSocketEvents = () => {
     socket.on("ordersRankUpdated", withAck((data: any) => {
       console.log("🔢 ordersRankUpdated:", data);
       if (Array.isArray(data?.orders)) upsertMerchantOrders(data.orders);
+    }));
+
+    // ── Commandes livreur (déléguées) ─────────────────────────────────
+    // driverOrderAssigned { data: order } → une commande vient d'être déléguée
+    socket.on("driverOrderAssigned", withAck((data: any) => {
+      console.log("🛵 driverOrderAssigned:", data);
+      if (data?.data) upsertDriverOrder(data.data);
+    }));
+    // driverOrdersAssigned { data: order[] } → lot délégué
+    socket.on("driverOrdersAssigned", withAck((data: any) => {
+      console.log("🛵 driverOrdersAssigned:", data);
+      if (Array.isArray(data?.data)) upsertDriverOrders(data.data);
+    }));
+    // driverOrderUpdated { data: order } → statut d'une commande déléguée
+    socket.on("driverOrderUpdated", withAck((data: any) => {
+      console.log("🛵 driverOrderUpdated:", data);
+      if (data?.data) upsertDriverOrder(data.data);
+    }));
+
+    // ── Demandes de livraison (temps réel) ────────────────────────────
+    // driverApplicationCreated { data: application } → nouvelle demande (marchand)
+    socket.on("driverApplicationCreated", withAck((data: any) => {
+      console.log("📨 driverApplicationCreated:", data);
+      if (data?.data) notifyApplicationEvent({ type: "created", application: data.data });
+    }));
+    // driverApplicationDecided { data: application } → accepté/refusé (candidat)
+    socket.on("driverApplicationDecided", withAck((data: any) => {
+      console.log("📨 driverApplicationDecided:", data);
+      if (data?.data) notifyApplicationEvent({ type: "decided", application: data.data });
+      // Accepté → patch LOCAL du rôle (onglet en direct) depuis le payload.
+      // Le backend joint role: { isDriver, driverId }.
+      if (data?.data?.status === "accepted" && data?.role) {
+        patchDriverRole(data.role);
+      }
+    }));
+    // driverRemoved { data: { fastFoodId }, role: { isDriver, driverId } }
+    socket.on("driverRemoved", withAck((data: any) => {
+      console.log("📨 driverRemoved:", data);
+      if (data?.data?.fastFoodId) notifyApplicationEvent({ type: "removed", fastFoodId: data.data.fastFoodId });
+      // Patch LOCAL du rôle : si c'était sa dernière boutique, isDriver=false
+      // (onglet masqué en direct). Le backend joint role: { isDriver, driverId }.
+      if (data?.role) patchDriverRole(data.role);
+    }));
+
+    // ── Échos MARCHAND (sync multi-device de la boutique) ──
+    // merchantDriverApplicationDecided { data: application } → une demande a été
+    // acceptée/refusée depuis un autre appareil du même marchand.
+    socket.on("merchantDriverApplicationDecided", withAck((data: any) => {
+      console.log("🏪 merchantDriverApplicationDecided:", data);
+      if (data?.data) notifyApplicationEvent({ type: "merchant_decided", application: data.data });
+    }));
+    // merchantDriverRemoved { data: { driverId } } → un livreur retiré ailleurs.
+    socket.on("merchantDriverRemoved", withAck((data: any) => {
+      console.log("🏪 merchantDriverRemoved:", data);
+      if (data?.data?.driverId) notifyApplicationEvent({ type: "merchant_driver_removed", driverId: data.data.driverId });
     }));
 
     // ── Menus marchand ────────────────────────────────────────────────
@@ -225,6 +300,14 @@ export const useSocketEvents = () => {
       socket.off("newUserOrder");
       socket.off("userOrderUpdated");
       socket.off("userOrdersUpdated");
+      socket.off("driverOrderAssigned");
+      socket.off("driverOrdersAssigned");
+      socket.off("driverOrderUpdated");
+      socket.off("driverApplicationCreated");
+      socket.off("driverApplicationDecided");
+      socket.off("driverRemoved");
+      socket.off("merchantDriverApplicationDecided");
+      socket.off("merchantDriverRemoved");
       socket.off("newFastFoodOrder");
       socket.off("newFastFoodOrders");
       socket.off("fastFoodOrderUpdated");

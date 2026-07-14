@@ -31,6 +31,17 @@ export const merchantService = {
         }
     },
 
+    // Délègue une commande à un livreur (pose driverId sans changer le statut :
+    // la commande reste "finished" = en attente de livraison, mais assignée).
+    async delegateOrder(orderId: string, driverId: string): Promise<void> {
+        try {
+            await axios.put(`${Config.apiUrl}/order`, { id: orderId, driverId });
+        } catch (error) {
+            console.error('Error delegating order:', error);
+            throw error;
+        }
+    },
+
     async getMenus(fastFoodId: string): Promise<Menu[]> {
         try {
             const response = await axios.get(`${Config.apiUrl}/menu/${fastFoodId}`);

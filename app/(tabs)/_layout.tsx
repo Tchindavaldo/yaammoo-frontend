@@ -9,10 +9,14 @@ import { StyleSheet } from "react-native";
 import { HapticTab } from "@/components/haptic-tab";
 import { Theme as Colors } from "@/src/theme";
 import { useColorScheme } from "@/src/hooks/use-color-scheme";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
+  const { userData } = useAuth();
+  // L'onglet "Livraisons" n'apparaît que pour les livreurs délégués.
+  const isDriver = !!userData?.isDriver;
 
   // Hauteur de base de la navbar + safe area bottom
   const TAB_BAR_BASE_HEIGHT = 58;
@@ -89,6 +93,20 @@ export default function TabLayout() {
             <Ionicons
               size={focused ? 22 : 20}
               name={focused ? "storefront" : "storefront-outline"}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="driver"
+        options={{
+          // Masqué (href null) tant que l'utilisateur n'est pas livreur.
+          href: isDriver ? undefined : null,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              size={focused ? 22 : 20}
+              name={focused ? "bicycle" : "bicycle-outline"}
               color={color}
             />
           ),

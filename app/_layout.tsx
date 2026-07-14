@@ -10,6 +10,7 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
 import { OrderProvider } from "@/src/features/orders/context/OrderContext";
 import { MerchantProvider } from "@/src/features/merchant/context/MerchantContext";
+import { DriverProvider } from "@/src/features/driver/context/DriverContext";
 import { WalletProvider } from "@/src/features/wallet/context/WalletContext";
 import { MerchantWalletProvider } from "@/src/features/merchant/context/MerchantWalletContext";
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
@@ -44,7 +45,12 @@ export const unstable_settings = {
 function AppContent() {
   const { user, userData, loading } = useAuth();
   const { hasLoadedOnce: homeReady } = useFastFoods();
-  const notifSetupDone = useRef(false);
+  // uid pour lequel le setup notif a déjà été fait (null = aucun). On mémorise
+  // l'uid (et pas juste un booléen) pour re-déclencher le setup à CHAQUE nouvelle
+  // connexion : reconnexion du même user OU changement de compte, sans fermer
+  // l'app. Un simple ref booléen restait true après logout → le 2e login ne
+  // relançait jamais le get token push / la synchro des états.
+  const notifSetupUid = useRef<string | null>(null);
 
   useSocketEvents();
   const { setup: setupNotifications } = useNotificationSetup();
@@ -85,15 +91,20 @@ function AppContent() {
   prevGroupRef.current = currentGroup;
   const screenAnimation = splashGone && groupChanged ? "fade" : "none";
 
-  // Setup notifications une seule fois, en arrière-plan, après connexion.
+  // Setup notifications (get token push + synchro états) après connexion.
+  // Se rejoue à chaque nouvelle connexion : on compare l'uid connecté au dernier
+  // uid pour lequel le setup a tourné. Au logout, isSignedIn repasse false → on
+  // remet notifSetupUid à null pour que le prochain login le relance.
   useEffect(() => {
-    if (isSignedIn && !notifSetupDone.current) {
-      notifSetupDone.current = true;
+    if (isSignedIn && user && notifSetupUid.current !== user.uid) {
+      notifSetupUid.current = user.uid;
       setupNotifications().catch((error) => {
         console.error("Erreur lors de l'initialisation des notifications:", error);
       });
+    } else if (!isSignedIn) {
+      notifSetupUid.current = null;
     }
-  }, [isSignedIn, setupNotifications]);
+  }, [isSignedIn, user, setupNotifications]);
 
   return (
     <ThemeProvider value={DefaultTheme}>
@@ -127,15 +138,17 @@ function RootLayout() {
         <NotificationProvider>
           <StatusBar style="dark" />
           <MerchantProvider>
-            <MerchantWalletProvider>
-              <WalletProvider>
-                <FastFoodProvider>
-                  <AuthGateProvider>
-                    <AppContent />
-                  </AuthGateProvider>
-                </FastFoodProvider>
-              </WalletProvider>
-            </MerchantWalletProvider>
+            <DriverProvider>
+              <MerchantWalletProvider>
+                <WalletProvider>
+                  <FastFoodProvider>
+                    <AuthGateProvider>
+                      <AppContent />
+                    </AuthGateProvider>
+                  </FastFoodProvider>
+                </WalletProvider>
+              </MerchantWalletProvider>
+            </DriverProvider>
           </MerchantProvider>
         </NotificationProvider>
       </OrderProvider>

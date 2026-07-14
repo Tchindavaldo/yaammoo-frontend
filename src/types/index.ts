@@ -74,6 +74,8 @@ export class Commande {
     public createdAt?: string,
     public updatedAt?: string,
     public rank?: number,
+    // Driver assigned to deliver this order (per-order delegation).
+    public driverId?: string,
   ) { }
 }
 
@@ -86,6 +88,11 @@ export class Users {
     public statistique: number,
     public cmd: Commande[],
     public fastFoodId?: string,
+    // Driver role: `driverId` identifies the driver; `isDriver` is derived
+    // from its presence (like `isMarchand` from `fastFoodId`). Orders are
+    // assigned per-order via `Commande.driverId`.
+    public isDriver?: boolean,
+    public driverId?: string,
   ) { }
 }
 

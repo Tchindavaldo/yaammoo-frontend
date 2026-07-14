@@ -41,6 +41,7 @@ yaammoo/src/features/merchant/
     ├── PorteFeuillePanel.tsx           # Panel portefeuille (barre fixe Solde+Retrait, historique jours)
     ├── WithdrawOverlay.tsx             # Overlay retrait (saisie montant → réseau → numéro → verdict)
     ├── WalletDayStatItem.tsx           # Ligne d'une journée dans l'historique portefeuille
+    ├── DelegateDriverSheet.tsx         # Feuille "Qui livre ?" (Moi-même / déléguer à un livreur)
     ├── NoBoutiquePanel.tsx             # Écran si pas encore de boutique créée
     ├── BikeAnimation.tsx               # Animation vélo (livraison en cours)
     └── TransactionItem.tsx             # Ligne d'une transaction
@@ -59,6 +60,7 @@ yaammoo/src/features/merchant/
 | `loading` | boolean | Refresh en cours |
 | `onRefresh` | `() => void` | Callback pull-to-refresh |
 | `onUpdateStatus` | `(id, status) => Promise<void\|boolean>` | Avance le statut d'une commande |
+| `onDelegate` | `(id, driverId) => Promise<boolean>` | Délègue une commande à un livreur (pose `driverId`, statut inchangé) |
 | `selectedDate` | `string \| null` | Date sélectionnée (contrôlée par le header de page) |
 | `onSelectDate` | `(iso: string \| null) => void` | Remonte le choix de date au header |
 | `onDatesChange` | `(opts: DateOption[]) => void` | Remonte la liste des dates disponibles au header (DatePill) |
@@ -82,12 +84,16 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 
 **Layout "Terminées"** (onglet `finish`) :
 - Groupement par type de livraison : Express (groupe unique) + Scheduled (groupes par créneau horaire)
-- Chaque groupe : header collapsible + bouton "Lancer tout" (déclenche `onUpdateStatus` avec `delivering`)
-- Au déroulé d'un groupe (Express ou slot horaire), **2 sous-tabs** apparaissent :
-  - **En attente** : commandes du groupe dont le statut ≠ `delivering`
-  - **En cours** : commandes du groupe dont le statut = `delivering`
+- Chaque groupe : header collapsible + bouton **"Lancer tout"** → ouvre le `DelegateDriverSheet`
+  pour tout le groupe (`setDelegateGroup`) : le marchand choisit **Moi-même** (`delivering` sur
+  chaque commande) ou **déléguer** à un livreur (pose `driverId` sur chaque commande via `onDelegate`).
+- Au déroulé d'un groupe (Express ou slot horaire), **3 sous-tabs** apparaissent :
+  - **En attente** : commandes du groupe dont le statut = `finished`
+  - **En cours** : commandes du groupe dont le statut = `delivering` (animation vélo)
+  - **Terminé** : commandes du groupe dont le statut = `delivered` (livrées par le livreur)
   - Chaque sous-tab affiche un badge compteur. L'onglet "En attente" est actif par défaut.
-  - L'état actif par groupe est stocké dans `groupSubTab` (`Record<groupId, 'en_attente'|'en_cours'>`).
+  - L'état actif par groupe est stocké dans `groupSubTab` (`Record<groupId, 'en_attente'|'en_cours'|'termine'>`).
+  - `statusMap.finish = ["completed","finished","done","delivering","delivered"]`.
 - Les commandes du même utilisateur dans un groupe sont affichées via un seul `MerchantOrderCard` avec `allOrders`
 
 **Layout "En Attente" / "En cours"** :
@@ -115,8 +121,32 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 | `allOrders` | `Commande[]` | Toutes les commandes du groupe (optionnel, pour livraisons groupées) |
 | `isForceLaunched` | boolean | État lancé forcé (depuis "Lancer tout") |
 | `onUpdateStatus` | `(status) => Promise<void>` | Callback avancement statut |
+| `onDelegate` | `(driverId) => Promise<void\|boolean>\|void` | Délègue la commande à un livreur |
 
 **Bouton d'action** : avance le statut selon la transition backend (pas de statut cible envoyé explicitement — le backend détermine le suivant).
+
+**Bouton "Lancer"** : ouvre le `DelegateDriverSheet` (`setDelegateVisible(true)`) → **Moi-même**
+(`onUpdateStatus("delivering")`) ou **déléguer** (`onDelegate(driver.driverId)`). Une commande déjà
+déléguée (`order.driverId` posé, pas encore en `delivering`) affiche un badge **« Délégué »**.
+
+---
+
+## DelegateDriverSheet.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/DelegateDriverSheet.tsx`
+
+Feuille de choix **« Qui livre cette commande ? »** ouverte par le bouton Lancer (carte
+individuelle) ou "Lancer tout" (groupe).
+
+**Props** : `visible`, `onClose`, `onSelfDeliver` (livrer soi-même → `delivering`),
+`onDelegate(driver)` (pose `driverId`). Les deux callbacks renvoient `Promise<boolean|void>`.
+
+**UX** :
+- `Modal animationType="fade"` : l'overlay noir apparaît **en fondu** (pas de sheet qui monte).
+- Ligne **« Moi-même »** + liste des livreurs de la boutique (`driverService.getDrivers(fastFoodId)`).
+- **Feedback** : au clic sur une ligne, `run(key, action)` garde le sheet ouvert avec un
+  **spinner sur la ligne** choisie (les autres grisées), ferme **au succès**, ou affiche
+  **« Échec, réessayez. »** inline si l'action renvoie `false`/throw.
 
 ---
 

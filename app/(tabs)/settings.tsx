@@ -31,6 +31,10 @@ import { getDeviceId } from '@/src/features/notifications/services/deviceId';
 import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
 import { UserOrdersModal } from '@/src/features/orders/components/UserOrdersModal';
 import { UserWalletModal } from '@/src/features/wallet/components/UserWalletModal';
+import { DriverApplyModal } from '@/src/features/driver/components/DriverApplyModal';
+import { DriverOrdersModal } from '@/src/features/driver/components/DriverOrdersModal';
+import { DriverManageModal } from '@/src/features/driver/components/DriverManageModal';
+import { DriverMyApplicationsModal } from '@/src/features/driver/components/DriverMyApplicationsModal';
 import { useLocalSearchParams } from 'expo-router';
 
 const SectionHeader = ({ title }: { title: string }) => (
@@ -50,6 +54,11 @@ export default function SettingsScreen() {
   // Section « Mes activités » (user + marchand) : commandes + portefeuille.
   const [userOrdersVisible, setUserOrdersVisible] = useState(false);
   const [userWalletVisible, setUserWalletVisible] = useState(false);
+  // Section « Livraison » (user) + item « Livreurs » (boutique).
+  const [driverApplyVisible, setDriverApplyVisible] = useState(false);
+  const [driverOrdersVisible, setDriverOrdersVisible] = useState(false);
+  const [driverManageVisible, setDriverManageVisible] = useState(false);
+  const [driverMyAppsVisible, setDriverMyAppsVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -80,6 +89,12 @@ export default function SettingsScreen() {
   useEffect(() => {
     if (section === 'pending' || section === 'active' || section === 'finished') {
       setUserOrdersVisible(true);
+    } else if (section === 'drivers') {
+      // Notif « demande de livraison » (marchand) → modal Livreurs.
+      setDriverManageVisible(true);
+    } else if (section === 'my-applications') {
+      // Notif « demande décidée » (candidat) → modal Mes demandes.
+      setDriverMyAppsVisible(true);
     }
   }, [section]);
 
@@ -260,7 +275,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Boutique - only show for merchants */}
+        {/* Boutique - only show for merchants (AVANT Livraison) */}
         {userData?.isMarchand && userData?.fastFoodId && (
           <>
             <SectionHeader title="Boutique" />
@@ -275,6 +290,11 @@ export default function SettingsScreen() {
                 title="Gestion menu"
                 onPress={() => setMenuManageVisible(true)}
               />
+              <SettingItem
+                icon="bicycle-outline"
+                title="Livreurs"
+                onPress={() => setDriverManageVisible(true)}
+              />
               {!appleReviewMode && (
                 <SettingItem
                   icon="wallet-outline"
@@ -285,6 +305,30 @@ export default function SettingsScreen() {
             </View>
           </>
         )}
+
+        {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
+        <SectionHeader title="Livraison" />
+        <View style={styles.section}>
+          {/* Un livreur peut servir plusieurs boutiques → toujours pouvoir
+              postuler ailleurs, même déjà livreur. */}
+          {userData?.isDriver && (
+            <SettingItem
+              icon="bicycle-outline"
+              title="Mes livraisons"
+              onPress={() => setDriverOrdersVisible(true)}
+            />
+          )}
+          <SettingItem
+            icon="add-circle-outline"
+            title={userData?.isDriver ? "Postuler à une boutique" : "Devenir livreur"}
+            onPress={() => setDriverApplyVisible(true)}
+          />
+          <SettingItem
+            icon="document-text-outline"
+            title="Mes demandes"
+            onPress={() => setDriverMyAppsVisible(true)}
+          />
+        </View>
 
         {/* Préférences */}
         <SectionHeader title="Préférences" />
@@ -422,6 +466,26 @@ export default function SettingsScreen() {
       <UserWalletModal
         visible={userWalletVisible}
         onClose={() => setUserWalletVisible(false)}
+      />
+
+      {/* Livraison (user) : postuler / gérer ses livraisons */}
+      <DriverApplyModal
+        visible={driverApplyVisible}
+        onClose={() => setDriverApplyVisible(false)}
+      />
+      <DriverOrdersModal
+        visible={driverOrdersVisible}
+        onClose={() => setDriverOrdersVisible(false)}
+      />
+      <DriverMyApplicationsModal
+        visible={driverMyAppsVisible}
+        onClose={() => setDriverMyAppsVisible(false)}
+      />
+
+      {/* Boutique : gérer demandes + livreurs */}
+      <DriverManageModal
+        visible={driverManageVisible}
+        onClose={() => setDriverManageVisible(false)}
       />
 
       {/* Modal Suppression de compte */}

@@ -2,7 +2,12 @@ import { Notification } from "../context/NotificationContext";
 
 export const getNotificationRoute = (notif: Partial<Notification> | null | undefined): string => {
   if (!notif) return "/(tabs)/notifications";
-  if ((notif as any).route) return (notif as any).route;
+  // `route` porté par la notif (backend). Peut être partiel ("settings?section=…")
+  // → on préfixe "/(tabs)/" si ce n'est pas déjà un chemin absolu.
+  const rawRoute = (notif as any).route;
+  if (rawRoute) {
+    return rawRoute.startsWith("/") ? rawRoute : `/(tabs)/${rawRoute}`;
+  }
   switch (notif.type) {
     case "order_new":
       return "/(tabs)/boutique";
@@ -14,6 +19,13 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
       return "/(tabs)/settings?section=finished";
     case "order_rank_top":
       return "/(tabs)/settings?section=pending";
+    // Demande de livraison reçue (→ marchand) : ouvre le modal "Livreurs".
+    case "driver_application":
+      return "/(tabs)/settings?section=drivers";
+    // Demande décidée (→ candidat) : ouvre le modal "Mes demandes".
+    case "driver_application_decided":
+    case "driver_removed":
+      return "/(tabs)/settings?section=my-applications";
     case "bonus":
       return "/(tabs)/notifications";
     default:
@@ -34,6 +46,12 @@ export const getNotificationIcon = (type?: string): string => {
       return "trophy-outline";
     case "order_delivering":
       return "bicycle-outline";
+    case "driver_application":
+      return "person-add-outline";
+    case "driver_application_decided":
+      return "document-text-outline";
+    case "driver_removed":
+      return "person-remove-outline";
     case "bonus":
       return "gift-outline";
     default:

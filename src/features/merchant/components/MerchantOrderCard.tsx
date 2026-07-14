@@ -14,6 +14,8 @@ import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import { BikeAnimation } from "./BikeAnimation";
+import { DelegateDriverSheet } from "./DelegateDriverSheet";
+import type { DriverInfo } from "@/src/features/driver/services/driverService";
 
 /** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
 export const MERCHANT_CARD_HEIGHT = 94.33;
@@ -32,6 +34,8 @@ interface MerchantOrderCardProps {
   onUpdateStatus: (
     status: "processing" | "finished" | "delivering" | "cancelByFastFood",
   ) => Promise<void> | void;
+  /** Délègue le groupe à un livreur (pose driverId sur les commandes). */
+  onDelegate?: (driverId: string) => Promise<void> | void;
   isForceLaunched?: boolean;
 }
 
@@ -39,11 +43,13 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   order,
   allOrders,
   onUpdateStatus,
+  onDelegate,
   isForceLaunched = false,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLaunchedLocal, setIsLaunchedLocal] = useState(false);
+  const [delegateVisible, setDelegateVisible] = useState(false);
 
   const isLaunched = isLaunchedLocal || isForceLaunched;
 
@@ -85,6 +91,9 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const orderCount = allOrders.length;
     const addressStr = order.delivery?.location || "Adresse non spécifiée";
     const isGroupDelivering = isDelivering || isLaunched;
+    // Commande déléguée à un livreur (driverId posé) mais pas encore lancée.
+    const delegatedDriverId = (order as any).driverId;
+    const isDelegated = !!delegatedDriverId && !isGroupDelivering;
 
     return (
       <View style={styles.wrapper}>
@@ -121,11 +130,17 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 <BikeAnimation />
               ) : isUpdating ? (
                 <ActivityIndicator size="small" color="#ec4913" />
+              ) : isDelegated ? (
+                // Déléguée : badge "délégué" (le livreur lancera de son côté).
+                <View style={styles.delegatedBadge}>
+                  <Ionicons name="person-outline" size={12} color="#2563eb" />
+                  <Text style={styles.delegatedText}>Délégué</Text>
+                </View>
               ) : (
                 <TouchableOpacity
                   style={styles.summaryValidateBtn}
                   disabled={isUpdating}
-                  onPress={() => handleUpdateStatus("delivering")}
+                  onPress={() => setDelegateVisible(true)}
                 >
                   <Ionicons name="bicycle-outline" size={14} color="white" />
                   <Text style={styles.summaryValidateBtnText}>Lancer</Text>
@@ -140,6 +155,14 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           allOrders={allOrders}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
+        />
+
+        {/* Choix "qui livre" : moi-même (delivering) ou un livreur (delegate). */}
+        <DelegateDriverSheet
+          visible={delegateVisible}
+          onClose={() => setDelegateVisible(false)}
+          onSelfDeliver={() => onUpdateStatus("delivering")}
+          onDelegate={(d: DriverInfo) => onDelegate?.(d.driverId)}
         />
       </View>
     );
@@ -343,6 +366,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 12,
+  },
+  delegatedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#2563eb15",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  delegatedText: {
+    color: "#2563eb",
+    fontSize: 10,
+    fontWeight: "bold",
   },
   summaryValidateBtnText: {
     color: "white",

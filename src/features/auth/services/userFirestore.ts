@@ -33,6 +33,8 @@ export const userFirestore = {
           id: rawData.id || rawData.uid || firebaseUser.uid,
           isMarchand: !!rawData.fastFoodId,
           fastFoodId: rawData.fastFoodId || undefined,
+          isDriver: !!rawData.driverId,
+          driverId: rawData.driverId || undefined,
           statistique: rawData.statistique || 0,
           cmd: rawData.cmd || [],
           infos: {
@@ -51,6 +53,8 @@ export const userFirestore = {
       const infos = rawData.infos;
       if (!infos.email) infos.email = rawData.email || firebaseUser.email || '';
       if (!infos.nom) infos.nom = rawData.displayName || (infos.email ? infos.email.split('@')[0] : 'Utilisateur');
+      // Derive driver role if the backend already returns a full structure.
+      if (rawData.isDriver === undefined) rawData.isDriver = !!rawData.driverId;
       return rawData;
     } catch (error: any) {
       if (error?.response?.status !== 404) {

@@ -68,6 +68,12 @@ src/features/
 │   ├── orders/                          # Gestion commandes marchand
 │   └── settings/                        # Edit boutique + hours
 │
+├── driver/                             # Rôle driver (commandes déléguées)
+│   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket
+│   ├── hooks/useDriver.ts
+│   ├── services/driverService.ts       # GET /order/driver/:id · PUT /order (avec driverId)
+│   └── components/                      # DriverOrderPanel (clone "Terminées") + DriverOrderCard
+│
 ├── payment/
 │   ├── constants/reviewPayment.ts        # Valeurs paiement par défaut en mode review Apple
 │   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout) + handleReviewOrder
@@ -110,10 +116,11 @@ AuthProvider
   └─ OrderProvider                  # reçoit events socket via useSocketEvents
        └─ NotificationProvider
             └─ MerchantProvider
-                 └─ MerchantWalletProvider
-                      └─ WalletProvider
-                           └─ FastFoodProvider
-                                └─ <AppContent/>   # Stack Expo Router
+                 └─ DriverProvider          # commandes déléguées au driver
+                      └─ MerchantWalletProvider
+                           └─ WalletProvider
+                                └─ FastFoodProvider
+                                     └─ <AppContent/>   # Stack Expo Router
 ```
 
 > Le socket est un singleton (`src/services/socket.ts`), initialisé hors de l'arbre

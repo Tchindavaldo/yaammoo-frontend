@@ -139,11 +139,36 @@ yaammoo/src/features/orders/
 | `paused` | boolean | false | Stoppe/nettoie toutes les animations |
 | `hideLabel` | boolean | false | Cache le label "En route..." |
 
+## DriverInfoTab.tsx
+
+**Chemin** : `yaammoo/src/features/orders/components/DriverInfoTab.tsx`
+
+**Rôle** : Tab « Livreur » affichée dans `OrderBottomSheet` (client) et
+`MerchantOrderBottomSheet` (marchand). Visible si `status ∈ {delivering, delivered}`.
+
+**Props** : `order: Commande`, `allowRating?: boolean` (défaut: true).
+
+**Comportement** :
+- Si `order.driverId` présent → `GET /driver/:driverId` (scope `public`/`merchant`/`self`)
+- Si marchand livre lui-même → `GET /fastFood/:fastFoodId/delivery-stats` (scope `self`/`client`)
+- `showRateBtn` affiché si `isDelivered && !!profile?.canRate` (indépendant de `driverId`)
+- `submitRating` appelle `POST /driver/:driverId/rating` (livreur délégué uniquement)
+
+**Affichage** :
+- Haut : 2 InfoCards (identité + note) à gauche + zone d'état à droite (QR ou BikeAnimation).
+- Bas : stats livraisons + ligne de notation (étoiles + commentaire + envoi).
+
+## RateMenuTab.tsx & ratingService.ts
+
+**RateMenuTab** : notation d'un menu dans la tab « Noter » (`status === delivered`).
+**ratingService** : `rateMenu(orderId, menuId, value, comment?)`,
+`getMenuRatings(menuId)`, `getDriverRatings(driverId)`.
+
 ## OrderBottomSheet.tsx
 
 **Chemin** : `yaammoo/src/features/orders/components/OrderBottomSheet.tsx`
 
-Bottom sheet détail d'une commande client. Deux tabs :
+Bottom sheet détail d'une commande client. **4 tabs** : Livraison — Commandes — Livreur — Noter.
 
 ### Tab Livraison
 - **Créneau** : mêmes valeurs que le marchand — "Sur place" (pas de `delivery.status`), "Express" (`type === 'express'`), ou `Période (heure)`
@@ -153,6 +178,16 @@ Bottom sheet détail d'une commande client. Deux tabs :
 ### Tab Commandes
 - Même rendu que `MerchantOrderCommandesTab` : icônes 🍽️/➕/🥤, label type (MENU/EXTRA/BOISSON), prix en XAF, total "Total commande"
 - Items scrollables dans une card arrondie (fond `#F9FAFB`, borderRadius 16)
+
+### Tab Livreur (`DriverInfoTab`)
+Visible si `status === delivering || status === delivered`.
+- Infos livreur (nom, note, stats) ou infos marchand si c'est lui qui livre
+- **Notation** : bouton « Noter » apparaît si `profile?.canRate` (scope `public` pour livreur, `client` pour marchand)
+- QR code (delivering) ou BikeAnimation + « Livré » (delivered)
+
+### Tab Noter (`RateMenuTab`)
+Visible si `status === delivered && menuId existe`.
+- Notation du plat (étoiles + commentaire)
 
 **Navigation multi-commandes** (`allOrders`) : barre de pagination "Cmd 1, Cmd 2…" en bas, avec flèches si > 3 commandes.
 

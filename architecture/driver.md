@@ -12,6 +12,11 @@ _En cours_ / _Terminé_), avec ses propres composants.
 > `app/(tabs)/driver.tsx` existe toujours mais `href: null` **permanent** dans
 > `(tabs)/_layout.tsx` → aucun onglet affiché. Accès unique via Settings.
 
+> **`isDriver` dérivé de `driverId`** : le composant `Settings` utilise
+> `!!(userData as any)?.driverId` plutôt que `userData.isDriver` pour éviter les
+> incohérences de cache (surtout côté web). `userFirestore.getUser` force aussi
+> `rawData.isDriver = !!rawData.driverId`.
+
 **Sous-tabs (statuts EXACTS, alignés sur le marchand)** :
 `finished` = **En attente** (à livrer) · `delivering` = **En cours** · `delivered` = **Terminé**.
 
@@ -128,13 +133,19 @@ le livreur pour confirmer — encode `{ orderId, driverId, driverEmail, userEmai
 
 Le bouton « Noter » s'affiche selon **`profile.canRate`** (backend : livré ≥1 fois ET pas
 encore noté) ; `profile.hasRated` → « Déjà noté ». Scope `public` fournit
-`myStats`/`hasRated`/`canRate` ; scopes `merchant`/`self` fournissent `stats` globales. Service notation plat :
+`myStats`/`hasRated`/`canRate` ; scopes `merchant`/`self` fournissent `stats` globales.
+
+**⚠️ Notation aussi pour le marchand qui livre lui-même** : `showRateBtn` ne dépend plus de
+`!!driverId` mais seulement de `profile?.canRate`. L'endpoint `GET /fastFood/:fastFoodId/delivery-stats`
+renvoie `canRate`/`hasRated` dans le scope `client`. Service de notation plat :
 `src/features/orders/services/ratingService.ts` (`rateMenu`, `getMenuRatings`, `getDriverRatings`).
 
 **Endpoints** (protégés, token Firebase) :
 - `GET /driver/:id` → profil, contenu selon scope (`public` / `merchant` / `self`) :
   `{ uid, isDriver, nom, prenom, displayName, photo, ratingAvg, ratingCount, stores[], fastFoodId?, stats? }`.
   `stats = { delivered, inProgress, pending, total }`.
+- `GET /fastFood/:fastFoodId/delivery-stats` → stats livraison du marchand, scope `self` ou `client`
+  (avec `canRate`, `hasRated`, `myStats`).
 - `POST /driver/:id/rating { orderId, value, comment? }` → émet `driverRatingUpdated`.
 - `POST /menu/:id/rating { orderId, value, comment? }` → émet `menuRatingUpdated`.
 - `GET /driver/:id/ratings`, `GET /menu/:id/ratings` → listes d'avis.

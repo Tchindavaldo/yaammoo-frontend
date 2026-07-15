@@ -43,6 +43,9 @@ const SectionHeader = ({ title }: { title: string }) => (
 
 export default function SettingsScreen() {
   const { user, userData, setUserData, deleteAccount } = useAuth();
+  // isDriver dérivé de driverId (pas de userData.isDriver qui peut être
+  // incohérent selon le cache côté web).
+  const isDriver = !!(userData as any)?.driverId;
   const { isSignedIn } = useAuthGate();
   // Mode review Apple : masque les items liés au paiement / portefeuille.
   const { appleReviewMode } = useFastFoods();
@@ -311,7 +314,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           {/* Un livreur peut servir plusieurs boutiques → toujours pouvoir
               postuler ailleurs, même déjà livreur. */}
-          {userData?.isDriver && (
+          {isDriver && (
             <SettingItem
               icon="bicycle-outline"
               title="Mes livraisons"
@@ -320,7 +323,7 @@ export default function SettingsScreen() {
           )}
           <SettingItem
             icon="add-circle-outline"
-            title={userData?.isDriver ? "Postuler à une boutique" : "Devenir livreur"}
+            title={isDriver ? "Postuler à une boutique" : "Devenir livreur"}
             onPress={() => setDriverApplyVisible(true)}
           />
           <SettingItem

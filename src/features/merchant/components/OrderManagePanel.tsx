@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
+import { GroupStatusCounts } from "@/src/features/driver/components/GroupStatusCounts";
 
 // Hauteur approximative de la tab bar (navbar du bas) à réserver sous la liste.
 const TAB_BAR_HEIGHT = 65;
@@ -84,22 +85,39 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     setExpandedGroupId((prev) => (prev === groupId ? null : groupId));
   };
 
-  // Livrer tout le groupe soi-même (choix "Moi-même" du sélecteur Lancer tout).
+  // Commandes RÉELLEMENT lançables d'un groupe : prêtes (`finished`) et PAS encore
+  // déléguées (pas de driverId) ni lancées. « Lancer tout » ne doit agir que sur
+  // celles-ci — jamais réassigner une commande déjà déléguée à un livreur.
+  const launchableOf = (groupOrders: Commande[]): Commande[] =>
+    groupOrders.filter(
+      (o) => o.status === "finished" && !(o as any).driverId,
+    );
+
+  // Livrer tout le groupe soi-même : on assigne le fastFoodId comme "driverId"
+  // (le restaurant EST le livreur), puis on passe la commande en `delivering`.
   const selfDeliverGroup = async (groupOrders: Commande[]): Promise<boolean> => {
+    const targets = launchableOf(groupOrders);
+    if (targets.length === 0) return true;
     const results = await Promise.all(
-      groupOrders.map((o) => onUpdateStatus(o.id, "delivering")),
+      targets.map(async (o) => {
+        // Pose driverId = fastFoodId (le resto se livre lui-même).
+        if (onDelegate) await onDelegate(o.id, o.fastFoodId);
+        return onUpdateStatus(o.id, "delivering");
+      }),
     );
     return !results.some((r) => r === false);
   };
 
-  // Déléguer tout le groupe à un livreur.
+  // Déléguer tout le groupe à un livreur (uniquement les commandes lançables).
   const delegateGroupTo = async (
     groupOrders: Commande[],
     driverId: string,
   ): Promise<boolean> => {
     if (!onDelegate) return false;
+    const targets = launchableOf(groupOrders);
+    if (targets.length === 0) return true;
     const results = await Promise.all(
-      groupOrders.map((o) => onDelegate(o.id, driverId)),
+      targets.map((o) => onDelegate(o.id, driverId)),
     );
     return !results.some((r) => r === false);
   };
@@ -578,44 +596,39 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                           color="#888780"
                         />
                         <Text style={styles.groupTitle}>Express</Text>
-                        <View style={styles.groupCountBadge}>
-                          <Text style={styles.groupCountText}>
-                            {deliveryData.expressGroups.length} livraison
-                            {deliveryData.expressGroups.length > 1 ? "s" : ""}
-                          </Text>
-                        </View>
+                        <GroupStatusCounts
+                          orders={deliveryData.expressGroups.flat()}
+                        />
                       </View>
 
-                      <TouchableOpacity
-                        style={[
-                          styles.btnLaunchGroup,
-                          launchedGroups["express"] &&
-                            styles.btnLaunchGroupLaunched,
-                        ]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          // Ouvre le sélecteur "qui livre" pour tout le groupe.
-                          setDelegateGroup(deliveryData!.expressGroups.flat());
-                        }}
-                        disabled={
-                          launchedGroups["express"] ||
-                          launchingGroups["express"]
-                        }
-                      >
-                        <Text
+                      {/* Masqué si aucune commande lançable (toutes déjà déléguées/lancées). */}
+                      {launchableOf(deliveryData.expressGroups.flat()).length > 0 && (
+                        <TouchableOpacity
                           style={[
-                            styles.btnLaunchGroupText,
+                            styles.btnLaunchGroup,
                             launchedGroups["express"] &&
-                              styles.btnLaunchGroupTextLaunched,
+                              styles.btnLaunchGroupLaunched,
                           ]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            // Ouvre le sélecteur "qui livre" : uniquement les lançables.
+                            setDelegateGroup(
+                              launchableOf(deliveryData!.expressGroups.flat()),
+                            );
+                          }}
+                          disabled={launchingGroups["express"]}
                         >
-                          {launchingGroups["express"]
-                            ? "..."
-                            : launchedGroups["express"]
-                              ? "Lancé ✓"
-                              : "Lancer tout"}
-                        </Text>
-                      </TouchableOpacity>
+                          <Text
+                            style={[
+                              styles.btnLaunchGroupText,
+                              launchedGroups["express"] &&
+                                styles.btnLaunchGroupTextLaunched,
+                            ]}
+                          >
+                            {launchingGroups["express"] ? "..." : "Lancer tout"}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                     </TouchableOpacity>
 
                     {expandedGroupId === "express" &&
@@ -678,38 +691,32 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                             color="#888780"
                           />
                           <Text style={styles.groupTitle}>{slot.title}</Text>
-                          <View style={styles.groupCountBadge}>
-                            <Text style={styles.groupCountText}>
-                              {slot.userGroups.length} livraison
-                              {slot.userGroups.length > 1 ? "s" : ""}
-                            </Text>
-                          </View>
+                          <GroupStatusCounts orders={slot.userGroups.flat()} />
                         </View>
 
-                        <TouchableOpacity
-                          style={[
-                            styles.btnLaunchGroup,
-                            isLaunched && styles.btnLaunchGroupLaunched,
-                          ]}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            setDelegateGroup(slot.userGroups.flat());
-                          }}
-                          disabled={isLaunched || launchingGroups[groupId]}
-                        >
-                          <Text
+                        {/* Masqué si aucune commande lançable dans le créneau. */}
+                        {launchableOf(slot.userGroups.flat()).length > 0 && (
+                          <TouchableOpacity
                             style={[
-                              styles.btnLaunchGroupText,
-                              isLaunched && styles.btnLaunchGroupTextLaunched,
+                              styles.btnLaunchGroup,
+                              isLaunched && styles.btnLaunchGroupLaunched,
                             ]}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setDelegateGroup(launchableOf(slot.userGroups.flat()));
+                            }}
+                            disabled={launchingGroups[groupId]}
                           >
-                            {launchingGroups[groupId]
-                              ? "..."
-                              : isLaunched
-                                ? "Lancé ✓"
-                                : "Lancer tout"}
-                          </Text>
-                        </TouchableOpacity>
+                            <Text
+                              style={[
+                                styles.btnLaunchGroupText,
+                                isLaunched && styles.btnLaunchGroupTextLaunched,
+                              ]}
+                            >
+                              {launchingGroups[groupId] ? "..." : "Lancer tout"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </TouchableOpacity>
 
                       {isExpanded &&

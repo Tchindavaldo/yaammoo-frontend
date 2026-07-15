@@ -15,6 +15,8 @@ import {
   View,
 } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
+import { DriverInfoTab } from "./DriverInfoTab";
+import { RateMenuTab } from "./RateMenuTab";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SHEET_HEIGHT = 480;
@@ -43,7 +45,7 @@ type Props = {
   allOrders?: Commande[];
 };
 
-type Tab = "livraison" | "commandes";
+type Tab = "livraison" | "commandes" | "livreur" | "noter";
 
 export const OrderBottomSheet: React.FC<Props> = ({
   order,
@@ -60,6 +62,16 @@ export const OrderBottomSheet: React.FC<Props> = ({
   const selectedOrder = allOrders
     ? allOrders[selectedOrderIdx] || order
     : order;
+
+  // Tab « Livreur » : visible dès que la course est lancée/terminée
+  // (delivering / delivered), qu'un livreur soit délégué OU que le marchand livre.
+  const showDriverTab =
+    selectedOrder?.status === "delivering" ||
+    selectedOrder?.status === "delivered";
+
+  // Tab « Noter » (plat) : commande livrée uniquement.
+  const menuId = (selectedOrder?.menu as any)?.id || (selectedOrder as any)?.menuId;
+  const showRateTab = selectedOrder?.status === "delivered" && !!menuId;
 
   // Construire les items dynamiquement (plus besoin de state ni de useEffect pour ça)
   const items: OrderItem[] = React.useMemo(() => {
@@ -141,6 +153,12 @@ export const OrderBottomSheet: React.FC<Props> = ({
     }
   }, [isVisible, order]);
 
+  // Si on quitte une commande avec livreur pour une sans livreur, revenir à Livraison.
+  useEffect(() => {
+    if (tab === "livreur" && !showDriverTab) setTab("livraison");
+    if (tab === "noter" && !showRateTab) setTab("livraison");
+  }, [tab, showDriverTab, showRateTab]);
+
   const handleDismiss = () => {
     Animated.parallel([
       Animated.spring(translateY, {
@@ -212,7 +230,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
                   {boutique?.nom || "Boutique"}
                 </Text>
                 <Text style={styles.userAddr} numberOfLines={1}>
-                  {selectedOrder.delivery?.location || "Sur place"}
+                  {selectedOrder?.delivery?.location || "Sur place"}
                 </Text>
               </View>
             </View>
@@ -248,16 +266,70 @@ export const OrderBottomSheet: React.FC<Props> = ({
                 Commandes
               </Text>
             </TouchableOpacity>
+            {showDriverTab && (
+              <TouchableOpacity
+                style={[styles.tab, tab === "livreur" && styles.tabActive]}
+                onPress={() => setTab("livreur")}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    tab === "livreur" && styles.tabTextActive,
+                  ]}
+                >
+                  Livreur
+                </Text>
+              </TouchableOpacity>
+            )}
+            {showRateTab && (
+              <TouchableOpacity
+                style={[styles.tab, tab === "noter" && styles.tabActive]}
+                onPress={() => setTab("noter")}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    tab === "noter" && styles.tabTextActive,
+                  ]}
+                >
+                  Noter
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {tab === "livraison" ? (
+          {tab === "noter" && showRateTab ? (
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={{ paddingBottom: 24 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <RateMenuTab
+                menuId={menuId}
+                orderId={selectedOrder!.id}
+                menuName={
+                  selectedOrder?.menu?.titre ||
+                  selectedOrder?.menu?.name ||
+                  "ce plat"
+                }
+              />
+            </ScrollView>
+          ) : tab === "livreur" && showDriverTab ? (
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <DriverInfoTab order={selectedOrder!} allowRating />
+            </ScrollView>
+          ) : tab === "livraison" ? (
             <ScrollView
               style={styles.content}
               contentContainerStyle={{ paddingBottom: 24 }}
               showsVerticalScrollIndicator={false}
             >
               <LivraisonTab
-                order={selectedOrder}
+                order={selectedOrder!}
                 boutiqueName={boutique?.nom || "Boutique"}
               />
             </ScrollView>

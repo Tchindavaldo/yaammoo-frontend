@@ -1,6 +1,16 @@
-import axios from 'axios';
-import { Config } from '@/src/api/config';
-import { Commande } from '@/src/types';
+import axios from "axios";
+import { Config } from "@/src/api/config";
+import { Commande } from "@/src/types";
+import { auth } from "@/src/services/firebase";
+
+/** En-têtes avec le token Firebase (endpoints protégés). */
+async function authHeaders() {
+  const idToken = await auth.currentUser?.getIdToken();
+  return {
+    "ngrok-skip-browser-warning": "true",
+    Authorization: `Bearer ${idToken}`,
+  };
+}
 
 /**
  * Driver API calls.
@@ -19,14 +29,14 @@ export const driverService = {
       );
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching driver orders:', error);
+      console.error("Error fetching driver orders:", error);
       throw error;
     }
   },
 
   /**
    * Update an order status (driver). `driverId` is sent so the backend can
-   * verify the assignment. Allowed statuses: `delivering`, `finished`.
+   * verify the assignment. Allowed statuses: `delivering`, `delivered`.
    */
   async updateOrderStatus(
     orderId: string,
@@ -40,7 +50,7 @@ export const driverService = {
         driverId,
       });
     } catch (error) {
-      console.error('Error updating driver order status:', error);
+      console.error("Error updating driver order status:", error);
       throw error;
     }
   },
@@ -51,9 +61,12 @@ export const driverService = {
    */
   async apply(userId: string, fastFoodIds: string[]): Promise<void> {
     try {
-      await axios.post(`${Config.apiUrl}/driver/apply`, { userId, fastFoodIds });
+      await axios.post(`${Config.apiUrl}/driver/apply`, {
+        userId,
+        fastFoodIds,
+      });
     } catch (error) {
-      console.error('Error applying as driver:', error);
+      console.error("Error applying as driver:", error);
       throw error;
     }
   },
@@ -69,7 +82,7 @@ export const driverService = {
       });
       return response.data.data || [];
     } catch (error) {
-      console.error('Error searching fastfoods:', error);
+      console.error("Error searching fastfoods:", error);
       throw error;
     }
   },
@@ -82,7 +95,7 @@ export const driverService = {
       );
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching my driver applications:', error);
+      console.error("Error fetching my driver applications:", error);
       throw error;
     }
   },
@@ -95,7 +108,7 @@ export const driverService = {
       );
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching driver stores:', error);
+      console.error("Error fetching driver stores:", error);
       throw error;
     }
   },
@@ -108,7 +121,7 @@ export const driverService = {
       );
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching driver applications:', error);
+      console.error("Error fetching driver applications:", error);
       throw error;
     }
   },
@@ -121,7 +134,7 @@ export const driverService = {
       );
       return response.data.data || [];
     } catch (error) {
-      console.error('Error fetching drivers:', error);
+      console.error("Error fetching drivers:", error);
       throw error;
     }
   },
@@ -133,7 +146,7 @@ export const driverService = {
         params: { fastFoodId },
       });
     } catch (error) {
-      console.error('Error removing driver:', error);
+      console.error("Error removing driver:", error);
       throw error;
     }
   },
@@ -141,15 +154,79 @@ export const driverService = {
   /** Fastfood accepts/refuses an application. Accept → user becomes a driver. */
   async decideApplication(
     applicationId: string,
-    decision: 'accepted' | 'refused',
+    decision: "accepted" | "refused",
   ): Promise<void> {
     try {
       await axios.put(`${Config.apiUrl}/driver/applications/${applicationId}`, {
         decision,
       });
     } catch (error) {
-      console.error('Error deciding driver application:', error);
+      console.error("Error deciding driver application:", error);
       throw error;
+    }
+  },
+
+  /**
+   * Infos d'un livreur (protégé). Le backend adapte le contenu au demandeur
+   * (scope public / merchant / self) d'après le token. Voir DriverProfile.
+   */
+  async getDriverInfo(driverId: string): Promise<DriverProfile> {
+    const response = await axios.get(`${Config.apiUrl}/driver/${driverId}`, {
+      headers: await authHeaders(),
+    });
+    return { ...response.data.data, scope: response.data.scope };
+  },
+
+  /** Noter un livreur (client). value 1-5. Le backend émet driverRatingUpdated. */
+  async rateDriver(
+    driverId: string,
+    orderId: string,
+    value: number,
+    comment?: string,
+  ): Promise<void> {
+    await axios.post(
+      `${Config.apiUrl}/driver/${driverId}/rating`,
+      { orderId, value, comment },
+      { headers: await authHeaders() },
+    );
+  },
+
+  /**
+   * Infos/stats du MARCHAND quand il livre lui-même (pas de driverId).
+   * Endpoint : GET /fastFood/:fastFoodId/delivery-stats
+   *
+   * Scope "self" (marchand propriétaire) → données de la boutique + stats globales.
+   * Scope "client" (client ayant commandé ici) → canRate, hasRated, myStats.
+   * Si le client est aussi le marchand (review), scope "self" est renvoyé.
+   */
+  async getMerchantDeliveryInfo(
+    fastFoodId: string,
+  ): Promise<DriverProfile | null> {
+    try {
+      const response = await axios.get(
+        `${Config.apiUrl}/fastfood/${fastFoodId}/delivery-stats`,
+        { headers: await authHeaders() },
+      );
+      const data = response.data.data;
+      const scope = response.data.scope || "self";
+
+      // Mapper les champs du endpoint vers DriverProfile (compatible avec le rendu existant)
+      return {
+        scope,
+        uid: data.userId || data.fastFoodId,
+        isDriver: false,
+        displayName: data.name,
+        photo: data.image,
+        ratingAvg: data.ratingAvg,
+        ratingCount: data.ratingCount,
+        fastFoodId: data.fastFoodId,
+        stats: data.stats,
+        myStats: data.myStats,
+        hasRated: data.hasRated,
+        canRate: data.canRate,
+      };
+    } catch {
+      return null;
     }
   },
 };
@@ -167,11 +244,16 @@ export interface DriverApplication {
   userId: string;
   fastFoodId: string;
   fastFoodName?: string;
-  status: 'pending' | 'accepted' | 'refused';
+  status: "pending" | "accepted" | "refused";
   createdAt?: string;
   updatedAt?: string;
   // Le backend enrichit avec le user (lookup par userId).
-  user?: { uid?: string; infos?: UserInfos; driverId?: string; isDriver?: boolean };
+  user?: {
+    uid?: string;
+    infos?: UserInfos;
+    driverId?: string;
+    isDriver?: boolean;
+  };
 }
 
 // GET /driver/list renvoie les livreurs À PLAT (pas imbriqué dans `user`).
@@ -185,4 +267,31 @@ export interface DriverInfo {
 export interface StoreOption {
   id: string;
   nom: string;
+}
+
+export interface DriverStats {
+  delivered: number;
+  inProgress: number;
+  pending: number;
+  total: number;
+}
+
+/** Réponse de GET /driver/:id — contenu selon le scope (public/merchant/self). */
+export interface DriverProfile {
+  scope: "public" | "merchant" | "self";
+  uid: string;
+  isDriver: boolean;
+  nom?: string;
+  prenom?: string;
+  displayName?: string;
+  photo?: string;
+  ratingAvg?: number;
+  ratingCount?: number;
+  stores?: { fastFoodId: string }[];
+  fastFoodId?: string; // scope merchant
+  stats?: DriverStats; // scope merchant / self
+  // scope public : contexte de la relation user ↔ livreur
+  myStats?: DriverStats; // mes commandes avec ce livreur
+  hasRated?: boolean; // ai-je déjà noté ce livreur
+  canRate?: boolean; // livré ≥1 fois ET pas encore noté
 }

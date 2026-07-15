@@ -9,12 +9,11 @@ import {
   View,
 } from "react-native";
 import MerchantOrderBottomSheet from "../../merchant/components/MerchantOrderBottomSheet";
-import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 
 /** Hauteur fixe d'une carte livreur (alignée sur la carte marchand). */
 export const LIVREUR_CARD_HEIGHT = 94.33;
 
-type DriverStatus = "delivering" | "finished";
+type DriverStatus = "delivering" | "delivered";
 
 interface DriverOrderCardProps {
   order: Commande;
@@ -28,7 +27,7 @@ interface DriverOrderCardProps {
  *
  * Deux transitions possibles :
  *  - `delivering` (Lancer)  : commande prête → le livreur démarre la course.
- *  - `finished`   (Terminer): course en cours → le livreur clôt la livraison.
+ *  - `delivered`  (Terminer): course en cours → le livreur clôt la livraison.
  *
  * Tap sur la carte = détails (réutilise le bottom sheet marchand, en lecture).
  */
@@ -51,6 +50,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
 
   const status = (order.status || "pending").toLowerCase();
   const isDelivering = status === "delivering";
+  const isDelivered = status === "delivered";
 
   const group = allOrders ?? [order];
   const u = (order as any).userData;
@@ -104,17 +104,19 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
 
             {isUpdating ? (
               <ActivityIndicator size="small" color="#ec4913" />
-            ) : isDelivering ? (
-              <View style={styles.actionRow}>
-                <BikeAnimation />
-                <TouchableOpacity
-                  style={styles.finishBtn}
-                  onPress={() => handleUpdateStatus("finished")}
-                >
-                  <Ionicons name="checkmark-done" size={14} color="white" />
-                  <Text style={styles.finishBtnText}>Terminer</Text>
-                </TouchableOpacity>
+            ) : isDelivered ? (
+              <View style={styles.deliveredBadge}>
+                <Ionicons name="checkmark-done" size={14} color="#16a34a" />
+                <Text style={styles.deliveredText}>Livré</Text>
               </View>
+            ) : isDelivering ? (
+              <TouchableOpacity
+                style={styles.finishBtn}
+                onPress={() => handleUpdateStatus("delivered")}
+              >
+                <Ionicons name="checkmark-done" size={14} color="white" />
+                <Text style={styles.finishBtnText}>Terminer</Text>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={styles.launchBtn}
@@ -229,11 +231,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#9ca3af",
   },
-  actionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
   launchBtn: {
     backgroundColor: "black",
     flexDirection: "row",
@@ -258,6 +255,20 @@ const styles = StyleSheet.create({
   },
   finishBtnText: {
     color: "white",
+    fontSize: 10,
+    fontWeight: "bold",
+    marginLeft: 4,
+  },
+  deliveredBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: "#16a34a15",
+  },
+  deliveredText: {
+    color: "#16a34a",
     fontSize: 10,
     fontWeight: "bold",
     marginLeft: 4,

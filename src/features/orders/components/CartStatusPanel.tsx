@@ -35,6 +35,12 @@ type FlatItem =
       isExpanded: boolean;
     }
   | { type: "order-card"; key: string; order: Commande; isFinished: boolean }
+  | {
+      type: "group-subtabs";
+      key: string;
+      groupId: string;
+      counts: { attente: number; cours: number; termine: number };
+    }
   | { type: "past-section-label"; key: string }
   | {
       type: "past-date-header";
@@ -90,6 +96,51 @@ const GroupHeader = React.memo(function GroupHeader({
         </View>
       </View>
     </TouchableOpacity>
+  );
+});
+
+/** Sous-tabs de livraison d'un groupe (onglet Terminées) : calqué marchand. */
+const GroupSubTabs = React.memo(function GroupSubTabs({
+  counts,
+  active,
+  onSelect,
+}: {
+  counts: { attente: number; cours: number; termine: number };
+  active: "attente" | "cours" | "termine";
+  onSelect: (k: "attente" | "cours" | "termine") => void;
+}) {
+  const tab = (
+    key: "attente" | "cours" | "termine",
+    label: string,
+    count: number,
+  ) => {
+    const on = active === key;
+    return (
+      <TouchableOpacity
+        style={[styles.subTab, on && styles.subTabActive]}
+        onPress={() => onSelect(key)}
+      >
+        <Text style={[styles.subTabLabel, on && styles.subTabLabelActive]}>
+          {label}
+        </Text>
+        {count > 0 && (
+          <View style={[styles.subTabBadge, on && styles.subTabBadgeActive]}>
+            <Text
+              style={[styles.subTabBadgeText, on && styles.subTabBadgeTextActive]}
+            >
+              {count}
+            </Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+  return (
+    <View style={styles.subTabRow}>
+      {tab("attente", "En attente", counts.attente)}
+      {tab("cours", "En cours", counts.cours)}
+      {tab("termine", "Terminé", counts.termine)}
+    </View>
   );
 });
 
@@ -184,6 +235,10 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
     {},
   );
+  // Sous-tab de livraison actif par groupe (onglet « Terminées » uniquement).
+  const [groupSubTab, setGroupSubTab] = useState<
+    Record<string, "attente" | "cours" | "termine">
+  >({});
   const [expandedPastSection, setExpandedPastSection] = useState<string | null>(
     null,
   );
@@ -205,7 +260,10 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
       case "active":
         return active;
       case "finished":
-        return finished;
+        // Onglet « Terminées » = TOUTES les commandes de livraison, comme le
+        // marchand. Les 3 statuts (finished/delivering/delivered) sont ensuite
+        // répartis dans les sous-tabs En attente / En cours / Terminé du groupe.
+        return [...finished, ...delivered];
       case "delivered":
         return delivered;
       default:
@@ -313,6 +371,9 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
       return items;
     }
 
+    // L'onglet « Terminées » affiche des sous-tabs de livraison par groupe.
+    const isDeliveryTab = activeStatus === "finished";
+
     // Groupes du jour
     for (const group of groupedOrders) {
       items.push({
@@ -324,14 +385,41 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         isExpanded: !!expandedGroups[group.id],
       });
       if (expandedGroups[group.id]) {
-        for (const order of group.orders) {
+        if (isDeliveryTab) {
+          // Répartition par statut de livraison (comme le marchand).
+          const attente = group.orders.filter((o) => o.status === "finished");
+          const cours = group.orders.filter((o) => o.status === "delivering");
+          const termine = group.orders.filter((o) => o.status === "delivered");
           items.push({
-            type: "order-card",
-            key: `oc:${order.id}`,
-            order,
-            isFinished:
-              activeStatus === "finished" || activeStatus === "delivered",
+            type: "group-subtabs",
+            key: `gst:${group.id}`,
+            groupId: group.id,
+            counts: {
+              attente: attente.length,
+              cours: cours.length,
+              termine: termine.length,
+            },
           });
+          const sub = groupSubTab[group.id] ?? "attente";
+          const visible =
+            sub === "cours" ? cours : sub === "termine" ? termine : attente;
+          for (const order of visible) {
+            items.push({
+              type: "order-card",
+              key: `oc:${order.id}`,
+              order,
+              isFinished: true,
+            });
+          }
+        } else {
+          for (const order of group.orders) {
+            items.push({
+              type: "order-card",
+              key: `oc:${order.id}`,
+              order,
+              isFinished: false,
+            });
+          }
         }
       }
     }
@@ -385,6 +473,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     expandedPastSection,
     groupByFastFood,
     activeStatus,
+    groupSubTab,
   ]);
 
   const onManualRefresh = useCallback(async () => {
@@ -404,6 +493,16 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
               orderCount={item.orderCount}
               isExpanded={item.isExpanded}
               onToggle={() => toggleGroup(item.groupId)}
+            />
+          );
+        case "group-subtabs":
+          return (
+            <GroupSubTabs
+              counts={item.counts}
+              active={groupSubTab[item.groupId] ?? "attente"}
+              onSelect={(k) =>
+                setGroupSubTab((prev) => ({ ...prev, [item.groupId]: k }))
+              }
             />
           );
         case "order-card":
@@ -466,7 +565,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           return null;
       }
     },
-    [toggleGroup, togglePastSection],
+    [toggleGroup, togglePastSection, groupSubTab],
   );
 
   const keyExtractor = useCallback((item: FlatItem) => item.key, []);
@@ -498,7 +597,8 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           counts={{
             pending: pending.length,
             processing: active.length,
-            finished: finished.length,
+            // Onglet « Terminées » = toutes les livraisons (finished + delivered).
+            finished: finished.length + delivered.length,
             delivered: delivered.length,
           }}
           orderCount={statusOrderCount}
@@ -592,6 +692,48 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   groupCountText: { fontSize: 10, color: "#5F5E5A", fontWeight: "500" },
+  // Sous-tabs de livraison (onglet Terminées) — calqué sur le marchand.
+  subTabRow: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+    backgroundColor: "#F5F4F0",
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  subTab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 5,
+  },
+  subTabActive: {
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  subTabLabel: { fontSize: 11, fontWeight: "600", color: "#888780" },
+  subTabLabelActive: { color: "#1A1916" },
+  subTabBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#E5E4DF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  subTabBadgeActive: { backgroundColor: Theme.colors.primary },
+  subTabBadgeText: { fontSize: 9, fontWeight: "700", color: "#5F5E5A" },
+  subTabBadgeTextActive: { color: "white" },
   pastSectionLabel: {
     fontSize: 11,
     fontWeight: "600",

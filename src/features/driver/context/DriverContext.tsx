@@ -30,7 +30,7 @@ interface DriverContextType {
   loading: boolean;
   error: string | null;
   refresh: (showLoading?: boolean) => Promise<void>;
-  /** Transition de statut d'une commande déléguée (`delivering` | `finished`). */
+  /** Transition de statut d'une commande déléguée (`delivering` | `delivered`). */
   updateStatus: (orderId: string, status: string) => Promise<boolean>;
   /** Upsert socket d'une commande déléguée (assignation / mise à jour). */
   upsertOrderFromSocket: (order: any) => void;

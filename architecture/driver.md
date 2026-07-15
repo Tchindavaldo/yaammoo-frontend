@@ -3,12 +3,21 @@
 ## Rôle
 
 Un **driver** (livreur) est un utilisateur à qui un fastFood délègue des commandes,
-**une par une** (`Commande.driverId`). Il a un onglet dédié (`Livraisons`) où il
-retrouve ses commandes assignées, groupées comme la vue "Terminées" du marchand
-(Express / créneaux + sous-tabs _En attente_ / _En cours_), avec ses propres composants.
+**une par une** (`Commande.driverId`). Il accède à ses commandes assignées via
+**Settings → Livraison → « Mes livraisons »** (`DriverOrdersModal`), groupées comme
+la vue "Terminées" du marchand (Express / créneaux + sous-tabs _En attente_ /
+_En cours_ / _Terminé_), avec ses propres composants.
 
-**Actions** : `Lancer` (`delivering`), `Terminer` (`delivered`), voir les détails.
-Rôle dérivé de `userData.isDriver` (← `driverId`). Onglet masqué (`href: null`) sinon.
+> ⚠️ L'ancien **onglet navbar « Livraisons »** a été retiré (navbar trop chargée) :
+> `app/(tabs)/driver.tsx` existe toujours mais `href: null` **permanent** dans
+> `(tabs)/_layout.tsx` → aucun onglet affiché. Accès unique via Settings.
+
+**Sous-tabs (statuts EXACTS, alignés sur le marchand)** :
+`finished` = **En attente** (à livrer) · `delivering` = **En cours** · `delivered` = **Terminé**.
+
+**Actions carte** : `Lancer` (→ `delivering`), `Terminer` (→ `delivered`). En sous-tab
+_Terminé_, la carte affiche un badge **« Livré »** non cliquable (aucune action).
+Rôle dérivé de `userData.isDriver` (← `driverId`).
 
 ## Délégation (côté marchand)
 
@@ -28,10 +37,15 @@ src/features/driver/
 ├── context/DriverContext.tsx   # orders assignées, updateStatus, upsert socket
 ├── hooks/useDriver.ts
 ├── services/driverService.ts   # GET /order/driver/:driverId · PUT /order (+driverId)
+│                                #   getDriverInfo (GET /driver/:id, scope auto) · rateDriver (POST)
 └── components/
-    ├── DriverOrderPanel.tsx     # clone "Terminées" (groupes + sous-tabs)
-    └── DriverOrderCard.tsx      # carte (Lancer / Terminer / détails)
-app/(tabs)/driver.tsx           # onglet (TabHeader + DatePill + panel)
+    ├── DriverOrdersModal.tsx    # écran "Mes livraisons" (Settings) : header (date · X cmd
+    │                            #   en attente), chips boutique en BAS (icône + badge +X),
+    │                            #   icône → DriverFilterSheet. PAS de stat-boxes.
+    ├── DriverFilterSheet.tsx    # bottom sheet filtres : boutiques (nb en attente) + dates
+    ├── DriverOrderPanel.tsx     # clone "Terminées" (groupes + sous-tabs, sans stat-boxes)
+    └── DriverOrderCard.tsx      # carte (Lancer / Terminer / badge "Livré" / détails)
+app/(tabs)/driver.tsx           # route conservée mais HORS navbar (href: null permanent)
 ```
 
 Provider monté dans `app/_layout.tsx` sous `MerchantProvider`.
@@ -94,6 +108,41 @@ agrège les commandes de **toutes** ses boutiques.
 
 Un user devient livreur quand un marchand **accepte** une de ses demandes (le backend
 pose alors `driverId` sur le user).
+
+## Notation & infos livreur (tab « Livreur »)
+
+Le détail commande (bottom sheet) affiche une **tab « Livreur »** si la commande a un
+`driverId` ET `status ∈ {delivering, delivered}` :
+- **Client** (`OrderBottomSheet`) : infos + **notation** du livreur, plus une tab
+  **« Noter »** (plat) si `status === delivered`.
+- **Marchand** (`MerchantOrderBottomSheet`) : infos livreur en **lecture seule**.
+
+Composants partagés dans `src/features/orders/components/` : `DriverInfoTab` (prop
+`order` + `allowRating`), `RateMenuTab` (notation plat).
+
+**Mise en page `DriverInfoTab`** : ligne haut = identité livreur (nom + note) ; bas en
+2 colonnes → **gauche** stats (`myStats` = mes cmd avec ce livreur, sinon `stats`) +
+bouton/formulaire de notation ; **droite** = **QR code** (cmd `delivering`, scanné par
+le livreur pour confirmer — encode `{ orderId, driverId, driverEmail, userEmail }`, lib
+`react-native-qrcode-svg`) OU **BikeAnimation + « Livré »** (cmd `delivered`).
+
+Le bouton « Noter » s'affiche selon **`profile.canRate`** (backend : livré ≥1 fois ET pas
+encore noté) ; `profile.hasRated` → « Déjà noté ». Scope `public` fournit
+`myStats`/`hasRated`/`canRate` ; scopes `merchant`/`self` fournissent `stats` globales. Service notation plat :
+`src/features/orders/services/ratingService.ts` (`rateMenu`, `getMenuRatings`, `getDriverRatings`).
+
+**Endpoints** (protégés, token Firebase) :
+- `GET /driver/:id` → profil, contenu selon scope (`public` / `merchant` / `self`) :
+  `{ uid, isDriver, nom, prenom, displayName, photo, ratingAvg, ratingCount, stores[], fastFoodId?, stats? }`.
+  `stats = { delivered, inProgress, pending, total }`.
+- `POST /driver/:id/rating { orderId, value, comment? }` → émet `driverRatingUpdated`.
+- `POST /menu/:id/rating { orderId, value, comment? }` → émet `menuRatingUpdated`.
+- `GET /driver/:id/ratings`, `GET /menu/:id/ratings` → listes d'avis.
+
+**Sockets `driverRatingUpdated` / `menuRatingUpdated`** (payload
+`{ data: { driverId|menuId, ratingAvg, ratingCount, value } }`) : **pas encore branchés
+côté front** (aucune vue persistante de la note ; `DriverInfoTab` recharge à l'ouverture).
+À câbler quand une vue affichera la moyenne en continu.
 
 ## Backend à créer
 

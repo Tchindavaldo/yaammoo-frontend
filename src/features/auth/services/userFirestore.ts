@@ -53,8 +53,11 @@ export const userFirestore = {
       const infos = rawData.infos;
       if (!infos.email) infos.email = rawData.email || firebaseUser.email || '';
       if (!infos.nom) infos.nom = rawData.displayName || (infos.email ? infos.email.split('@')[0] : 'Utilisateur');
-      // Derive driver role if the backend already returns a full structure.
-      if (rawData.isDriver === undefined) rawData.isDriver = !!rawData.driverId;
+      // Forcer isDriver à partir de driverId (le backend peut être incohérent
+      // entre ces deux champs). Le front se base sur driverId pour les requêtes
+      // et sur isDriver pour l'affichage des items dans Settings.
+      rawData.isDriver = !!rawData.driverId;
+      console.log("📦 [getUser] final isDriver =", rawData.isDriver, "driverId =", rawData.driverId);
       return rawData;
     } catch (error: any) {
       if (error?.response?.status !== 404) {

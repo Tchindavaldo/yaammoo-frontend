@@ -13,7 +13,6 @@ import {
 import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
-import { BikeAnimation } from "./BikeAnimation";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
 
@@ -32,7 +31,12 @@ interface MerchantOrderCardProps {
   order: Commande;
   allOrders?: Commande[];
   onUpdateStatus: (
-    status: "processing" | "finished" | "delivering" | "cancelByFastFood",
+    status:
+      | "processing"
+      | "finished"
+      | "delivering"
+      | "delivered"
+      | "cancelByFastFood",
   ) => Promise<void> | void;
   /** Délègue le groupe à un livreur (pose driverId sur les commandes). */
   onDelegate?: (driverId: string) => Promise<void> | void;
@@ -54,7 +58,12 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const isLaunched = isLaunchedLocal || isForceLaunched;
 
   const handleUpdateStatus = async (
-    newStatus: "processing" | "finished" | "delivering" | "cancelByFastFood",
+    newStatus:
+      | "processing"
+      | "finished"
+      | "delivering"
+      | "delivered"
+      | "cancelByFastFood",
   ) => {
     setIsUpdating(true);
     try {
@@ -72,6 +81,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const isActive = status === "active" || status === "processing" || status === "in_progress";
   const isFinished = status === "completed" || status === "finished" || status === "done";
   const isDelivering = status === "delivering";
+  const isDelivered = status === "delivered";
 
   // --- Design Variant: Grouped Finished ---
   if (allOrders) {
@@ -91,9 +101,12 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const orderCount = allOrders.length;
     const addressStr = order.delivery?.location || "Adresse non spécifiée";
     const isGroupDelivering = isDelivering || isLaunched;
-    // Commande déléguée à un livreur (driverId posé) mais pas encore lancée.
+    // Commande confiée à un livreur (driverId posé) : le marchand ne livre pas
+    // lui-même → chip "Délégué" (le livreur gère lancement + fin de course).
     const delegatedDriverId = (order as any).driverId;
-    const isDelegated = !!delegatedDriverId && !isGroupDelivering;
+    const isDelegated = !!delegatedDriverId;
+    // Le marchand livre lui-même (delivering SANS driverId) → chip "Terminer".
+    const isSelfDelivering = isGroupDelivering && !delegatedDriverId;
 
     return (
       <View style={styles.wrapper}>
@@ -126,16 +139,30 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 </View>
               </View>
               
-              {!hasDelivery ? null : isGroupDelivering ? (
-                <BikeAnimation />
+              {!hasDelivery ? null : isDelivered ? (
+                // Livrée : badge non cliquable (aucune action possible).
+                <View style={styles.deliveredBadge}>
+                  <Ionicons name="checkmark-done" size={14} color="#16a34a" />
+                  <Text style={styles.deliveredText}>Livré</Text>
+                </View>
               ) : isUpdating ? (
                 <ActivityIndicator size="small" color="#ec4913" />
               ) : isDelegated ? (
-                // Déléguée : badge "délégué" (le livreur lancera de son côté).
+                // Confiée à un livreur : badge "Délégué" (le livreur gère la course).
                 <View style={styles.delegatedBadge}>
                   <Ionicons name="person-outline" size={12} color="#2563eb" />
                   <Text style={styles.delegatedText}>Délégué</Text>
                 </View>
+              ) : isSelfDelivering ? (
+                // Le marchand livre lui-même : chip "Terminer" pour clôturer.
+                <TouchableOpacity
+                  style={styles.finishBtn}
+                  disabled={isUpdating}
+                  onPress={() => handleUpdateStatus("delivered")}
+                >
+                  <Ionicons name="checkmark-done" size={14} color="white" />
+                  <Text style={styles.finishBtnText}>Terminer</Text>
+                </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   style={styles.summaryValidateBtn}
@@ -161,7 +188,11 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
         <DelegateDriverSheet
           visible={delegateVisible}
           onClose={() => setDelegateVisible(false)}
-          onSelfDeliver={() => onUpdateStatus("delivering")}
+          onSelfDeliver={async () => {
+            // Le resto se livre lui-même : driverId = fastFoodId, puis delivering.
+            await onDelegate?.(order.fastFoodId);
+            await onUpdateStatus("delivering");
+          }}
           onDelegate={(d: DriverInfo) => onDelegate?.(d.driverId)}
         />
       </View>
@@ -378,6 +409,34 @@ const styles = StyleSheet.create({
   },
   delegatedText: {
     color: "#2563eb",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  deliveredBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#16a34a15",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  deliveredText: {
+    color: "#16a34a",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  finishBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#16a34a",
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  finishBtnText: {
+    color: "white",
     fontSize: 10,
     fontWeight: "bold",
   },

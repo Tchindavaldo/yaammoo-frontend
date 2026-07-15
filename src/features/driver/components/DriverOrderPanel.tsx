@@ -12,8 +12,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DriverOrderCard } from "./DriverOrderCard";
+import { GroupStatusCounts } from "./GroupStatusCounts";
 
-const TAB_BAR_HEIGHT = 65;
+// Espace réservé en bas : navbar (tabs) + barre de chips « boutique » de la modal.
+const TAB_BAR_HEIGHT = 58 + 64;
 
 export interface DateOption {
   iso: string;
@@ -31,6 +33,8 @@ interface DriverOrderPanelProps {
   topOffset?: number;
   /** Filtre par boutique (fastFoodId) ; null = toutes. Multi-fastfood. */
   storeFilter?: string | null;
+  /** Filtre période : "express", un créneau ("12h"), ou null = toutes. */
+  periodFilter?: string | null;
 }
 
 /**
@@ -49,12 +53,12 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
   onDatesChange,
   topOffset = 0,
   storeFilter = null,
+  periodFilter = null,
 }) => {
   const insets = useSafeAreaInsets();
-  const [barHeight, setBarHeight] = useState(0);
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>("express");
   const [groupSubTab, setGroupSubTab] = useState<
-    Record<string, "en_attente" | "en_cours">
+    Record<string, "en_attente" | "en_cours" | "termine">
   >({});
 
   const toggleGroup = (groupId: string) => {
@@ -86,16 +90,27 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
     }
   };
 
-  // Statuts pertinents pour un livreur : prêt à livrer, en cours, terminé.
-  const relevantStatuses = ["completed", "finished", "done", "delivering"];
+  // Les 3 statuts EXACTS du cycle livreur :
+  //  finished = à livrer (En attente) · delivering = En cours · delivered = Terminé
+  const relevantStatuses = ["finished", "delivering", "delivered"];
+  const matchesPeriod = (o: Commande): boolean => {
+    if (!periodFilter) return true;
+    const d = (o as any).delivery;
+    if (periodFilter === "express") return d?.type === "express";
+    // Créneau précis : compare au slot dérivé (même logique que le groupement).
+    const slot = d?.type === "express" ? "express" : d?.time || d?.hour || "À définir";
+    return slot === periodFilter;
+  };
+
   const filteredOrders = useMemo(
     () =>
       orders.filter(
         (o) =>
           relevantStatuses.includes(o.status) &&
-          (!storeFilter || o.fastFoodId === storeFilter),
+          (!storeFilter || o.fastFoodId === storeFilter) &&
+          matchesPeriod(o),
       ),
-    [orders, storeFilter],
+    [orders, storeFilter, periodFilter],
   );
 
   const availableDateISOs = useMemo(
@@ -125,11 +140,6 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
     const isoFilter = selectedDate || todayISO;
     return filteredOrders.filter((o) => getOrderDateISO(o) === isoFilter);
   }, [filteredOrders, selectedDate]);
-
-  const totalAmount = dateFilteredOrders.reduce(
-    (acc, o) => acc + (o.total || 0),
-    0,
-  );
 
   // Groupement Express / créneaux (les commandes sans livraison sont ignorées :
   // le livreur ne livre que des commandes avec livraison).
@@ -183,8 +193,13 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
   const renderGroupWithSubTabs = (userGroups: Commande[][], groupId: string) => {
     const activeSubTab = groupSubTab[groupId] ?? "en_attente";
     const allGroupOrders = userGroups.flat();
+    // Aligné sur le marchand ("Terminées") :
+    //  - En attente : prête à livrer, pas encore lancée (`finished`)
+    //  - En cours   : course lancée (`delivering`)
+    //  - Terminé    : livrée (`delivered`)
+    const enAttenteOrders = allGroupOrders.filter((o) => o.status === "finished");
     const enCoursOrders = allGroupOrders.filter((o) => o.status === "delivering");
-    const enAttenteOrders = allGroupOrders.filter((o) => o.status !== "delivering");
+    const termineOrders = allGroupOrders.filter((o) => o.status === "delivered");
 
     const groupByUser = (arr: Commande[]): Commande[][] => {
       const map: Record<string, Commande[]> = {};
@@ -199,11 +214,16 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
 
     const enAttenteGroups = groupByUser(enAttenteOrders);
     const enCoursGroups = groupByUser(enCoursOrders);
+    const termineGroups = groupByUser(termineOrders);
     const activeGroups =
-      activeSubTab === "en_cours" ? enCoursGroups : enAttenteGroups;
+      activeSubTab === "en_cours"
+        ? enCoursGroups
+        : activeSubTab === "termine"
+          ? termineGroups
+          : enAttenteGroups;
 
     const renderSubTab = (
-      key: "en_attente" | "en_cours",
+      key: "en_attente" | "en_cours" | "termine",
       label: string,
       count: number,
     ) => {
@@ -237,6 +257,7 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
         <View style={styles.subTabRow}>
           {renderSubTab("en_attente", "En attente", enAttenteOrders.length)}
           {renderSubTab("en_cours", "En cours", enCoursOrders.length)}
+          {renderSubTab("termine", "Terminé", termineOrders.length)}
         </View>
 
         {activeGroups.length === 0 ? (
@@ -244,7 +265,9 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
             <Text style={styles.subTabEmptyText}>
               {activeSubTab === "en_cours"
                 ? "Aucune livraison en cours"
-                : "Aucune commande en attente"}
+                : activeSubTab === "termine"
+                  ? "Aucune livraison terminée"
+                  : "Aucune commande en attente"}
             </Text>
           </View>
         ) : (
@@ -256,35 +279,11 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
     );
   };
 
-  const listTopPad = topOffset + barHeight;
+  const listTopPad = topOffset;
   const listPadBottom = insets.bottom + TAB_BAR_HEIGHT + 24;
 
   const hasContent =
     deliveryData.expressGroups.length > 0 || deliveryData.slots.length > 0;
-
-  const fixedBar = (
-    <View
-      style={[styles.fixedBar, { top: topOffset }]}
-      onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
-    >
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-            <Text style={styles.statVal}>{dateFilteredOrders.length}</Text>
-            <Text style={styles.statUnit}>cmd</Text>
-          </View>
-          <Text style={styles.statLbl}>Livraisons du jour</Text>
-        </View>
-        <View style={styles.statBox}>
-          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-            <Text style={styles.statVal}>{totalAmount}</Text>
-            <Text style={styles.statUnit}>fcfa</Text>
-          </View>
-          <Text style={styles.statLbl}>Montant Total</Text>
-        </View>
-      </View>
-    </View>
-  );
 
   return (
     <View style={styles.container}>
@@ -328,12 +327,9 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
                       color="#888780"
                     />
                     <Text style={styles.groupTitle}>Express</Text>
-                    <View style={styles.groupCountBadge}>
-                      <Text style={styles.groupCountText}>
-                        {deliveryData.expressGroups.length} livraison
-                        {deliveryData.expressGroups.length > 1 ? "s" : ""}
-                      </Text>
-                    </View>
+                    <GroupStatusCounts
+                      orders={deliveryData.expressGroups.flat()}
+                    />
                   </View>
                 </TouchableOpacity>
 
@@ -359,12 +355,7 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
                         color="#888780"
                       />
                       <Text style={styles.groupTitle}>{slot.title}</Text>
-                      <View style={styles.groupCountBadge}>
-                        <Text style={styles.groupCountText}>
-                          {slot.userGroups.length} livraison
-                          {slot.userGroups.length > 1 ? "s" : ""}
-                        </Text>
-                      </View>
+                      <GroupStatusCounts orders={slot.userGroups.flat()} />
                     </View>
                   </TouchableOpacity>
 
@@ -376,8 +367,6 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
           </View>
         )}
       </ScrollView>
-
-      {fixedBar}
     </View>
   );
 };
@@ -386,46 +375,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "white",
-  },
-  fixedBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    zIndex: 50,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-  },
-  statsRow: {
-    flexDirection: "row",
-    backgroundColor: "white",
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    gap: 15,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: "flex-start",
-    backgroundColor: Theme.colors.primary + "10",
-    padding: 10,
-    borderRadius: 10,
-  },
-  statVal: {
-    fontSize: 31,
-    fontWeight: "900",
-    color: "black",
-  },
-  statUnit: {
-    fontSize: 25,
-    color: Theme.colors.primary,
-    marginLeft: 8,
-    fontWeight: "900",
-  },
-  statLbl: {
-    fontSize: 11,
-    color: "rgba(0,0,0,0.44)",
-    fontWeight: "bold",
-    marginTop: 2,
   },
   listContent: {
     paddingBottom: 100,
@@ -459,19 +408,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: "#333",
-  },
-  groupCountBadge: {
-    backgroundColor: "#FFF",
-    borderWidth: 0.5,
-    borderColor: "#D3D1C7",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  groupCountText: {
-    fontSize: 10,
-    color: "#5F5E5A",
-    fontWeight: "500",
   },
   subTabRow: {
     flexDirection: "row",

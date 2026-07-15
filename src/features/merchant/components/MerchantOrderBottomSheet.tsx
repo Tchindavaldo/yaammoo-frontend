@@ -6,6 +6,7 @@ import {
 import { Commande } from '@/src/types';
 import { LivraisonTab } from './MerchantOrderLivraisonTab';
 import { CommandesTab } from './MerchantOrderCommandesTab';
+import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
 
 const SHEET_HEIGHT = 520;
 
@@ -38,7 +39,7 @@ export type DeliveryUser = {
   orders: OrderItem[];
 };
 
-type Tab = 'livraison' | 'commandes';
+type Tab = 'livraison' | 'commandes' | 'livreur';
 
 type Props = {
   order: Commande | null;
@@ -138,6 +139,12 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
   // Commande sélectionnée (globale : pilote Livraison ET Commande)
   const currentOrder = allOrders ? (allOrders[selectedOrderIdx] ?? order) : order;
   const user = currentOrder ? buildUser(currentOrder) : null;
+
+  // Tab « Livreur » (lecture seule côté marchand) : course lancée/terminée,
+  // qu'un livreur soit délégué ou que le marchand livre lui-même.
+  const showDriverTab =
+    currentOrder?.status === 'delivering' ||
+    currentOrder?.status === 'delivered';
   const total = user ? user.orders.reduce((s, o) => s + (o.unitPrice || 0) * o.qty, 0) : 0;
   const hasMultiple = allOrders && allOrders.length > 1;
 
@@ -153,6 +160,11 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
       ]).start();
     }
   }, [visible, order]);
+
+  // Revenir à Livraison si la commande courante n'a plus de tab Livreur.
+  useEffect(() => {
+    if (tab === 'livreur' && !showDriverTab) setTab('livraison');
+  }, [tab, showDriverTab]);
 
   const handleDismiss = () => {
     Animated.parallel([
@@ -203,23 +215,37 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
             </TouchableOpacity>
           </View>
 
-          {/* Top tabs : Livraison | Commande */}
+          {/* Top tabs : Livraison | Commande | (Livreur) */}
           <View style={styles.tabBar}>
-            {(['livraison', 'commandes'] as Tab[]).map((t) => (
+            {(
+              ['livraison', 'commandes', ...(showDriverTab ? ['livreur'] : [])] as Tab[]
+            ).map((t) => (
               <TouchableOpacity
                 key={t}
                 style={[styles.tab, tab === t && styles.tabActive]}
                 onPress={() => setTab(t)}
               >
                 <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                  {t === 'livraison' ? 'Livraison' : 'Commande'}
+                  {t === 'livraison'
+                    ? 'Livraison'
+                    : t === 'commandes'
+                      ? 'Commande'
+                      : 'Livreur'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
           {/* Contenu (change avec le tab, réactif à selectedOrderIdx) */}
-          {tab === 'livraison' ? (
+          {tab === 'livreur' && showDriverTab ? (
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={{ paddingTop: 16, paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <DriverInfoTab order={currentOrder!} allowRating={false} />
+            </ScrollView>
+          ) : tab === 'livraison' ? (
             <ScrollView
               style={styles.content}
               contentContainerStyle={{ paddingBottom: 16 }}

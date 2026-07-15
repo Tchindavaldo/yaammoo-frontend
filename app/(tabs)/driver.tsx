@@ -52,7 +52,7 @@ export default function DriverScreen() {
       ok
         ? showToast("🚲 Livraison lancée !", "success")
         : showToast("Erreur lors du lancement", "error");
-    } else if (status === "finished") {
+    } else if (status === "delivered") {
       ok
         ? showToast("✅ Livraison terminée", "success")
         : showToast("Erreur lors de la mise à jour", "error");

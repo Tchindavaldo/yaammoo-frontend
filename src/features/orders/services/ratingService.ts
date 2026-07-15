@@ -19,6 +19,29 @@ export interface RatingReview {
   createdAt?: string;
 }
 
+/** Ventilation par statut (scope self uniquement). */
+export interface MenuStatsBucket {
+  delivered: number;
+  inProgress: number;
+  pending: number;
+}
+
+/** Réponse de GET /menu/:menuId/stats — contenu selon le scope. */
+export interface MenuStatsProfile {
+  scope: "client" | "self" | string;
+  menuId: string;
+  fastFoodId: string;
+  name: string;
+  image?: string;
+  ratingAvg?: number;
+  ratingCount?: number; // nombre de votes du rating
+  totalOrders?: number; // total du plat depuis sa création (popularité)
+  myTotalOrders?: number; // mes commandes sur ce plat (scope client)
+  stats?: MenuStatsBucket; // ventilation par statut (scope self)
+  hasRated?: boolean;
+  canRate?: boolean;
+}
+
 export const ratingService = {
   /** Noter un plat (menu). value 1-5. Le backend émet menuRatingUpdated. */
   async rateMenu(
@@ -32,6 +55,23 @@ export const ratingService = {
       { orderId, value, comment },
       { headers: await authHeaders() },
     );
+  },
+
+  /**
+   * Stats/contexte d'un plat pour l'user connecté.
+   * GET /menu/:menuId/stats — protégé firebaseAuth. Renvoie ratingAvg/Count,
+   * stats (popularité), myStats, hasRated, canRate. Voir MenuStatsProfile.
+   */
+  async getMenuStats(menuId: string): Promise<MenuStatsProfile | null> {
+    try {
+      const res = await axios.get(`${Config.apiUrl}/menu/${menuId}/stats`, {
+        headers: await authHeaders(),
+      });
+      const data = res.data.data || {};
+      return { ...data, scope: res.data.scope };
+    } catch {
+      return null;
+    }
   },
 
   /** Liste des avis d'un plat. */
@@ -48,5 +88,23 @@ export const ratingService = {
       headers: await authHeaders(),
     });
     return res.data.data || [];
+  },
+
+  /**
+   * Note de l'user pour sa commande (menuRating + driverRating).
+   * GET /rating/order/:orderId — protégé firebaseAuth.
+   */
+  async getOrderRating(
+    orderId: string,
+  ): Promise<{ menuRating?: RatingReview; driverRating?: RatingReview } | null> {
+    try {
+      const res = await axios.get(
+        `${Config.apiUrl}/rating/order/${orderId}`,
+        { headers: await authHeaders() },
+      );
+      return res.data.data || null;
+    } catch {
+      return null;
+    }
   },
 };

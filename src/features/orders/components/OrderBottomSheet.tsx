@@ -312,6 +312,11 @@ export const OrderBottomSheet: React.FC<Props> = ({
                   selectedOrder?.menu?.name ||
                   "ce plat"
                 }
+                menuImage={
+                  selectedOrder?.menu?.image ||
+                  selectedOrder?.menu?.images?.[0] ||
+                  undefined
+                }
               />
             </ScrollView>
           ) : tab === "livreur" && showDriverTab ? (
@@ -334,7 +339,12 @@ export const OrderBottomSheet: React.FC<Props> = ({
               />
             </ScrollView>
           ) : (
-            <CommandesTab items={items} total={selectedOrder?.total || 0} />
+            <CommandesTab
+              items={items}
+              total={selectedOrder?.total || 0}
+              zone={(selectedOrder?.delivery as any)?.zone || ""}
+              deliveryPrice={Number((selectedOrder?.delivery as any)?.prix) || 0}
+            />
           )}
 
           {/* ── Nav multi-commandes EN BAS (globale) ── */}
@@ -678,7 +688,18 @@ const ITEM_LABEL: Record<string, string> = {
 
 const CURRENCY = "XAF";
 
-function CommandesTab({ items, total }: { items: OrderItem[]; total: number }) {
+function CommandesTab({
+  items,
+  total,
+  zone = "",
+  deliveryPrice = 0,
+}: {
+  items: OrderItem[];
+  total: number;
+  zone?: string;
+  deliveryPrice?: number;
+}) {
+  const hasDelivery = deliveryPrice > 0 || !!zone;
   if (items.length === 0) {
     return (
       <View
@@ -736,7 +757,8 @@ function CommandesTab({ items, total }: { items: OrderItem[]; total: number }) {
                   alignItems: "center",
                   gap: 12,
                   paddingVertical: 11,
-                  borderBottomWidth: i < items.length - 1 ? 1 : 0,
+                  borderBottomWidth:
+                    i < items.length - 1 || hasDelivery ? 1 : 0,
                   borderBottomColor: "#F3F4F6",
                 }}
               >
@@ -819,6 +841,58 @@ function CommandesTab({ items, total }: { items: OrderItem[]; total: number }) {
               </View>
             );
           })}
+
+          {/* Ligne livraison : zone + prix (comme la tab Commandes marchand) */}
+          {hasDelivery && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                paddingVertical: 11,
+              }}
+            >
+              <View
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 9,
+                  backgroundColor: "#FEF2F2",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ fontSize: 13 }}>🛵</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{ fontSize: 13, fontWeight: "600", color: "#111827" }}
+                  numberOfLines={1}
+                >
+                  Livraison
+                </Text>
+                {zone ? (
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: "#6B7280",
+                      marginTop: 1,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {zone}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={{ alignItems: "flex-end" }}>
+                <Text
+                  style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}
+                >
+                  {deliveryPrice > 0 ? `${deliveryPrice} ${CURRENCY}` : "Inclus"}
+                </Text>
+              </View>
+            </View>
+          )}
         </ScrollView>
 
         {/* Total */}

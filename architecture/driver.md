@@ -138,7 +138,9 @@ encore noté) ; `profile.hasRated` → « Déjà noté ». Scope `public` fourni
 **⚠️ Notation aussi pour le marchand qui livre lui-même** : `showRateBtn` ne dépend plus de
 `!!driverId` mais seulement de `profile?.canRate`. L'endpoint `GET /fastFood/:fastFoodId/delivery-stats`
 renvoie `canRate`/`hasRated` dans le scope `client`. Service de notation plat :
-`src/features/orders/services/ratingService.ts` (`rateMenu`, `getMenuRatings`, `getDriverRatings`).
+`src/features/orders/services/ratingService.ts` (`rateMenu`, `getMenuStats`,
+`getMenuRatings`, `getDriverRatings`, `getOrderRating`). Détail des tabs Livreur /
+Noter : voir [orders-client.md](orders-client.md).
 
 **Endpoints** (protégés, token Firebase) :
 - `GET /driver/:id` → profil, contenu selon scope (`public` / `merchant` / `self`) :
@@ -151,9 +153,15 @@ renvoie `canRate`/`hasRated` dans le scope `client`. Service de notation plat :
 - `GET /driver/:id/ratings`, `GET /menu/:id/ratings` → listes d'avis.
 
 **Sockets `driverRatingUpdated` / `menuRatingUpdated`** (payload
-`{ data: { driverId|menuId, ratingAvg, ratingCount, value } }`) : **pas encore branchés
-côté front** (aucune vue persistante de la note ; `DriverInfoTab` recharge à l'ouverture).
-À câbler quand une vue affichera la moyenne en continu.
+`{ data: { driverId|menuId, ratingAvg, ratingCount, value } }`) : **branchés côté
+front**. `DriverInfoTab` écoute `driverRatingUpdated`, `RateMenuTab` écoute
+`menuRatingUpdated` → mettent `ratingAvg`/`ratingCount` à jour en direct (dans la vue
++ dans `ratingStatsCache`). Les handlers lisent `payload.data` (fallback `payload`).
+
+**Cache anti-refetch** (`src/features/orders/services/ratingStatsCache.ts`) : les
+deux tabs servent le profil depuis un cache mémoire (clé `kind:id:orderId`) → plus
+de loader à chaque ré-ouverture, refetch silencieux en fond. Purgé après que l'user
+note (`invalidate`) ; patché par les sockets (`patchRating`).
 
 ## Backend à créer
 

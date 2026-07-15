@@ -1,21 +1,33 @@
-import React, { useEffect, useState } from "react";
+import {
+  DriverProfile,
+  driverService,
+} from "@/src/features/driver/services/driverService";
+import { BikeAnimation } from "@/src/features/merchant/components/BikeAnimation";
+import { ratingService } from "@/src/features/orders/services/ratingService";
+import { ratingStatsCache } from "@/src/features/orders/services/ratingStatsCache";
+import { socketService } from "@/src/services/socket";
+import { Theme } from "@/src/theme";
+import { Commande } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Keyboard,
+  Modal,
+  Platform,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import QRCode from "react-native-qrcode-svg";
-import { Commande } from "@/src/types";
-import { Theme } from "@/src/theme";
-import {
-  driverService,
-  DriverProfile,
-} from "@/src/features/driver/services/driverService";
-import { BikeAnimation } from "@/src/features/merchant/components/BikeAnimation";
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+// Même hauteur de référence que CheckoutContactOverlay (base du blur + container).
+const SHEET_H = 384;
 
 interface DriverInfoTabProps {
   order: Commande;
@@ -48,29 +60,156 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isModifying, setIsModifying] = useState(false); // mode modification
+
+  // ── Animation clavier (même système/logique que CheckoutLocationOverlay) ──
+  // Une seule Animated.Value pilotée par la hauteur du clavier ; le calage de la
+  // carte se fait via une interpolation BORNÉE (comme la card note livraison),
+  // pas via -(kbHeight - 60) qui faisait remonter la carte beaucoup trop haut.
+  const keyboardHeight = useRef(new Animated.Value(0)).current;
+  // Opacité du blur d'overlay : FONDU (0 → 1) piloté par la présence du clavier.
+  const blurOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (event) => {
+        Animated.parallel([
+          Animated.spring(keyboardHeight, {
+            toValue: event.endCoordinates.height,
+            useNativeDriver: false,
+            tension: 40,
+            friction: 8,
+          }),
+          Animated.timing(blurOpacity, {
+            toValue: 1,
+            duration: 220,
+            useNativeDriver: false,
+          }),
+        ]).start();
+      },
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        Animated.parallel([
+          Animated.spring(keyboardHeight, {
+            toValue: 0,
+            useNativeDriver: false,
+            tension: 40,
+            friction: 8,
+          }),
+          Animated.timing(blurOpacity, {
+            toValue: 0,
+            duration: 220,
+            useNativeDriver: false,
+          }),
+        ]).start();
+      },
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const closeCommentOverlay = () => {
+    Keyboard.dismiss();
+    setCommentOpen(false);
+  };
+
+  // Clé de cache : driverId réel, ou fastFoodId quand le marchand livre.
+  const cacheId = driverId || order.fastFoodId;
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
+    // Cache : affichage instantané SANS loader si déjà chargé, refetch en fond.
+    const cached = ratingStatsCache.get<DriverProfile>(
+      "driver",
+      cacheId,
+      order.id,
+    );
+    if (cached) {
+      setProfile(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    // 1. Charger le profil (driver ou marchand)
     const req = driverId
       ? driverService.getDriverInfo(driverId)
       : driverService.getMerchantDeliveryInfo(order.fastFoodId);
-    req
-      .then((p) => alive && setProfile(p))
-      .catch(() => alive && setProfile(null))
+    Promise.all([
+      req,
+      // 2. Charger la note existante de l'user pour cette commande
+      ratingService.getOrderRating(order.id),
+    ])
+      .then(([p, rating]) => {
+        if (!alive) return;
+        if (p) {
+          setProfile(p);
+          ratingStatsCache.set("driver", cacheId, order.id, p);
+        } else if (!cached) {
+          setProfile(null);
+        }
+        // Préremplir avec la note existante si présente
+        if (rating?.driverRating) {
+          setStars(rating.driverRating.value);
+          setComment(rating.driverRating.comment || "");
+        }
+      })
+      .catch(() => {
+        if (alive && !cached) setProfile(null);
+      })
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, [driverId, order.fastFoodId]);
+  }, [driverId, order.fastFoodId, order.id, cacheId]);
+
+  // Socket : la note moyenne du livreur change en direct quand un autre user note.
+  // Payload backend : { data: { driverId, ratingAvg, ratingCount } } (enveloppé).
+  useEffect(() => {
+    if (!driverId) return;
+    const sock = socketService.getSocket();
+    const onUpdate = (payload: any) => {
+      const d = payload?.data ?? payload;
+      if (!d || d.driverId !== driverId) return;
+      ratingStatsCache.patchRating("driver", cacheId, d.ratingAvg, d.ratingCount);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              ratingAvg: d.ratingAvg ?? prev.ratingAvg,
+              ratingCount: d.ratingCount ?? prev.ratingCount,
+            }
+          : prev,
+      );
+    };
+    sock.on("driverRatingUpdated", onUpdate);
+    return () => {
+      sock.off("driverRatingUpdated", onUpdate);
+    };
+  }, [driverId, cacheId]);
 
   const submitRating = async () => {
     if (stars < 1 || submitting || !driverId) return;
     setSubmitting(true);
+    // Temps minimum d'affichage du loader (l'appel peut être trop rapide sinon
+    // le loader flashe et l'user ne voit rien se passer).
+    const minDelay = new Promise((r) => setTimeout(r, 600));
     try {
-      await driverService.rateDriver(driverId, order.id, stars, comment.trim());
+      await Promise.all([
+        driverService.rateDriver(driverId, order.id, stars, comment.trim()),
+        minDelay,
+      ]);
       setSubmitted(true);
+      setIsModifying(false);
       setCommentOpen(false);
+      // Ma note vient de changer → purger le cache (refetch propre ensuite).
+      ratingStatsCache.invalidate("driver", driverId, order.id);
     } catch {
       // erreur silencieuse
     } finally {
@@ -102,32 +241,46 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
 
   const stats = profile?.myStats || profile?.stats;
   const isDelivered = order.status === "delivered";
-  // Note possible seulement sur une cmd LIVRÉE par un livreur délégué, si le
-  // backend l'autorise (canRate = livré ≥1 fois ET pas encore noté).
-  // La notation est possible si :
-  //   - Livreur délégué (driverId) : canRate venant de GET /driver/:id (scope public)
-  //   - Marchand livre lui-même (isMerchantDelivery) : canRate venant de GET /fastFood/:id/delivery-stats (scope client)
+  const scope = profile?.scope;
+
+  // Déterminer qui consulte la tab :
+  const viewerIsSelf = scope === "self"; // le livreur lui-même
+  const viewerIsMerchant = scope === "merchant"; // le marchand
+
+  // Message d'info selon le contexte
+  // Affiché dans tous les cas où la notation n'est pas possible/pertinente :
+  // - Auto-notation (livreur, marchand)
+  // - Commande en cours (client)
+  // - Commande livrée sans possibilité de noter (canRate absent)
+  // - Marchand livre lui-même (isMerchantDelivery) : le restaurant assure la livraison
+  let infoMessage: string | null = null;
+  if (viewerIsSelf) {
+    infoMessage = "Vous ne pouvez pas vous noter vous-même";
+  } else if (viewerIsMerchant) {
+    infoMessage = "Vous ne pouvez pas noter votre propre livraison";
+  } else if (isMerchantDelivery) {
+    infoMessage = isDelivered
+      ? "Livré par le restaurant"
+      : "Livraison par le restaurant";
+  } else if (!isDelivered) {
+    infoMessage = "Notez le livreur après réception";
+  }
+
+  // Commande livrée : peut-on noter ? déjà noté ?
+  // isModifying permet de rouvrir le formulaire même si hasRated est vrai
   const canRateDelivery = !!profile?.canRate && isDelivered;
   const showRateBtn =
-    allowRating && isDelivered && canRateDelivery && !submitted;
-  const alreadyRated = !isDelivered ? false : submitted || !!profile?.hasRated;
+    allowRating && isDelivered && canRateDelivery && !submitted && !isModifying;
+  const showRateFormModify =
+    allowRating && isDelivered && (isModifying || submitting);
+  const alreadyRated = !isDelivered
+    ? false
+    : submitted || (!!profile?.hasRated && !isModifying);
 
-  // DEBUG — pourquoi la ligne de note ne s'affiche pas :
-  console.log("⭐ DriverInfoTab rating debug:", {
-    orderId: order.id,
-    status: order.status,
-    rawDriverId: (order as any).driverId,
-    fastFoodId: order.fastFoodId,
-    isMerchantDelivery,
-    driverId,
-    allowRating,
-    isDelivered,
-    scope: profile?.scope,
-    canRate: profile?.canRate,
-    hasRated: profile?.hasRated,
-    showRateBtn,
-    alreadyRated,
-  });
+  // Si déjà noté : on permet la modification (réaffiche le formulaire avec les valeurs existantes)
+  const handleModify = () => {
+    setIsModifying(true);
+  };
 
   const qrValue = JSON.stringify({
     orderId: order.id,
@@ -138,8 +291,53 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
       : { fastFoodId: order.fastFoodId }),
   });
 
-  return (
+  // Contenu interne de la card commentaire.
+  const commentCardContent = (
     <>
+      <View style={styles.commentInlineHeader}>
+        <View style={styles.commentHeaderLeft}>
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={20}
+            color="#94a3b8"
+          />
+          <Text style={styles.commentInlineTitle}>Commentaire</Text>
+          <TouchableOpacity
+            onPress={() => Keyboard.dismiss()}
+            style={styles.keyboardSmallBtn}
+          >
+            <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          onPress={closeCommentOverlay}
+          style={styles.commentInlineClose}
+        >
+          <Ionicons name="close" size={20} color="#94a3b8" />
+        </TouchableOpacity>
+      </View>
+      <TextInput
+        style={styles.commentModalInput}
+        placeholder="Votre commentaire…"
+        placeholderTextColor="#9CA3AF"
+        value={comment}
+        onChangeText={setComment}
+        multiline
+        textAlignVertical="top"
+        autoFocus
+      />
+      <TouchableOpacity
+        style={styles.commentValidateBtn}
+        onPress={closeCommentOverlay}
+      >
+        <Ionicons name="checkmark" size={18} color="#fff" />
+        <Text style={styles.commentValidateText}>Valider</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
       {/* ── Haut : 2 InfoCards à gauche + zone d'état à droite (comme Livraison) ── */}
       <View
         style={{ flexDirection: "row", gap: 10, marginTop: 10, height: 110 }}
@@ -157,7 +355,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
               label="Note"
               value={
                 profile?.ratingAvg != null
-                  ? `★ ${profile.ratingAvg.toFixed(1)} (${profile.ratingCount ?? 0})`
+                  ? `★ ${profile.ratingAvg.toFixed(1)}`
                   : "—"
               }
               small
@@ -169,7 +367,8 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
         <View style={{ flex: 1 }}>
           {isDelivered ? (
             <View style={styles.statePlaceholder}>
-              <BikeAnimation />
+              {/* Commande livrée : vélo figé (plus d'animation, il est arrivé). */}
+              <BikeAnimation paused />
               <Text style={styles.deliveredText}>Livré</Text>
             </View>
           ) : (
@@ -182,22 +381,63 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
 
       {/* ── Bloc bas : stats + notation (à la place de Note/vocal) ── */}
       {stats && (
-        <View style={[styles.infoCard, { marginTop: 12, padding: 12 }]}>
-          <Text style={styles.infoLabel}>Livraisons</Text>
-          <View style={styles.statsRow}>
-            <Stat label="Livrées" value={stats.delivered} />
-            <Stat label="En cours" value={stats.inProgress} />
-            <Stat label="En attente" value={stats.pending} />
-          </View>
+        <View style={styles.statsCardsRow}>
+          <StatCard
+            title={"Cmd\nlivré"}
+            value={stats.delivered}
+            label="livraisons"
+          />
+          <StatCard
+            title={"Cmd\nen cours"}
+            value={stats.inProgress}
+            label="livraisons"
+          />
+          <StatCard
+            title={"Cmd nen\ attente"}
+            value={stats.pending}
+            label="livraisons"
+          />
+          <StatCard
+            title={"Nombre\nvote"}
+            value={profile?.ratingCount ?? 0}
+            label="vote"
+          />
         </View>
       )}
 
-      {alreadyRated ? (
+      {/* Message info pour les commandes en cours ou auto-notation */}
+      {infoMessage && (
+        <View style={[styles.infoCard, styles.infoMsgCard]}>
+          <Ionicons
+            name="information-circle-outline"
+            size={18}
+            color="#6B7280"
+          />
+          <Text style={styles.infoMsgText}>{infoMessage}</Text>
+        </View>
+      )}
+
+      {/* Message déjà noté + bouton modifier (caché en mode modification) */}
+      {alreadyRated && !isModifying ? (
         <View style={[styles.infoCard, styles.ratedCard]}>
           <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
-          <Text style={styles.ratedText}>Vous avez noté ce livreur</Text>
+          <Text style={styles.ratedText}>
+            {viewerIsSelf
+              ? "Vous avez noté"
+              : viewerIsMerchant
+                ? "Noté"
+                : "Vous avez noté ce livreur"}
+          </Text>
+          <TouchableOpacity style={styles.modifyBtn} onPress={handleModify}>
+            <Ionicons
+              name="pencil-outline"
+              size={16}
+              color={Theme.colors.primary}
+            />
+            <Text style={styles.modifyBtnText}>Modifier</Text>
+          </TouchableOpacity>
         </View>
-      ) : showRateBtn ? (
+      ) : showRateFormModify || showRateBtn ? (
         <View style={{ marginTop: 12, gap: 10 }}>
           {/* Ligne de notation : 5 étoiles + 2 boutons (commenter / envoyer) */}
           <View style={styles.rateRow}>
@@ -215,7 +455,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
             <View style={styles.rateActions}>
               <TouchableOpacity
                 style={[styles.iconBtn, commentOpen && styles.iconBtnActive]}
-                onPress={() => setCommentOpen((v) => !v)}
+                onPress={() => setCommentOpen(true)}
               >
                 <Ionicons
                   name="chatbubble-ellipses-outline"
@@ -224,11 +464,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
                 />
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.iconBtn,
-                  styles.sendBtn,
-                  stars < 1 && styles.submitDisabled,
-                ]}
+                style={[styles.sendBtn, stars < 1 && styles.submitDisabled]}
                 onPress={submitRating}
                 disabled={stars < 1 || submitting}
               >
@@ -240,30 +476,65 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
               </TouchableOpacity>
             </View>
           </View>
-
-          {/* Input commentaire — design/taille de la tab Commande */}
-          {commentOpen && (
-            <View style={styles.commentBox}>
-              <TextInput
-                style={styles.commentInput}
-                placeholder="Votre commentaire…"
-                placeholderTextColor="#9CA3AF"
-                value={comment}
-                onChangeText={setComment}
-                multiline
-              />
-            </View>
-          )}
         </View>
       ) : null}
-    </>
+
+      {/* ── OVERLAY COMMENTAIRE : Modal, blur plein écran en fondu piloté par le
+          clavier + card opaque. Remontée BORNÉE. ── */}
+      <Modal
+        visible={commentOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeCommentOverlay}
+      >
+        <View style={styles.keyboardWrapper}>
+          <AnimatedBlurView
+            intensity={40}
+            tint="light"
+            pointerEvents="none"
+            style={[styles.blurOverlay, { opacity: blurOpacity }]}
+          />
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={closeCommentOverlay}
+          />
+          <Animated.View
+            style={[
+              styles.commentContainer,
+              {
+                transform: [
+                  {
+                    translateY: keyboardHeight.interpolate({
+                      inputRange: [0, 100],
+                      outputRange: [0, -90],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.commentModalCard}>{commentCardContent}</View>
+          </Animated.View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
-const Stat = ({ label, value }: { label: string; value: number }) => (
-  <View style={styles.statBox}>
-    <Text style={styles.statVal}>{value}</Text>
-    <Text style={styles.statLbl}>{label}</Text>
+/** Card stat individuelle : titre (haut, 2 lignes via \n) + chiffre + label. */
+const StatCard = ({
+  title,
+  value,
+  label,
+}: {
+  title: string;
+  value: number;
+  label: string;
+}) => (
+  <View style={[styles.infoCard, styles.statCard]}>
+    <Text style={styles.statCardTitle}>{title}</Text>
+    <Text style={styles.statCardVal}>{value}</Text>
+    <Text style={styles.statCardLbl}>{label}</Text>
   </View>
 );
 
@@ -297,6 +568,94 @@ function InfoCard({
 }
 
 const styles = StyleSheet.create({
+  container: {
+    position: "relative",
+    minHeight: 200,
+  },
+  // ── Overlay commentaire : même structure que CheckoutContactOverlay ──
+  keyboardWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+  },
+  blurOverlay: {
+    // Plein écran, rendu via l'opacity (fondu) quand le clavier est ouvert.
+    ...StyleSheet.absoluteFillObject,
+  },
+  commentContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SHEET_H,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+  },
+  commentModalCard: {
+    backgroundColor: "white",
+    borderRadius: 24,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  commentInlineHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  commentHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  keyboardSmallBtn: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  commentInlineTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#0f172a",
+  },
+  commentInlineClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f8fafc",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  commentModalInput: {
+    height: 140,
+    fontSize: 15,
+    color: "#334155",
+    textAlignVertical: "top",
+    backgroundColor: "#f8fafc",
+    borderRadius: 16,
+    padding: 16,
+  },
+  commentValidateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 14,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: Theme.colors.primary,
+  },
+  commentValidateText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#fff",
+  },
   centered: {
     alignItems: "center",
     justifyContent: "center",
@@ -334,18 +693,25 @@ const styles = StyleSheet.create({
   },
   infoVal: { fontSize: 14, fontWeight: "600", color: "#111827" },
   infoValSm: { fontSize: 13, color: "#374151", lineHeight: 20 },
-  statsRow: { flexDirection: "row", gap: 8, marginTop: 2 },
-  statBox: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
+  // Cards stats individuelles côte à côte (titre 2 lignes + chiffre + label).
+  statsCardsRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  statCard: { flex: 1, padding: 10, alignItems: "flex-start" },
+  statCardTitle: {
+    fontSize: 9,
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    fontWeight: "700",
+    marginBottom: 4,
+    lineHeight: 12,
   },
-  statVal: { fontSize: 17, fontWeight: "900", color: "#111827" },
-  statLbl: { fontSize: 9, color: "#6B7280", fontWeight: "600", marginTop: 2 },
+  statCardVal: { fontSize: 20, fontWeight: "900", color: "#111827" },
+  statCardLbl: {
+    fontSize: 9,
+    color: "#6B7280",
+    fontWeight: "600",
+    marginTop: 2,
+  },
   ratedCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -354,6 +720,35 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   ratedText: { fontSize: 13, fontWeight: "600", color: "#166534" },
+  modifyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginLeft: "auto",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: Theme.colors.primary + "15",
+  },
+  modifyBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Theme.colors.primary,
+  },
+  infoMsgCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    padding: 14,
+    borderColor: "#E5E7EB",
+  },
+  infoMsgText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#6B7280",
+  },
   // Ligne notation : étoiles (gauche) + 2 boutons icônes (droite).
   rateRow: {
     flexDirection: "row",
@@ -371,20 +766,13 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.primary + "15",
   },
   iconBtnActive: { backgroundColor: Theme.colors.primary },
-  sendBtn: { backgroundColor: Theme.colors.primary },
   submitDisabled: { opacity: 0.4 },
-  // Input commentaire — même design que le conteneur de la tab Commande.
-  commentBox: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
-    padding: 12,
-  },
-  commentInput: {
-    fontSize: 13,
-    color: "#111827",
-    minHeight: 44,
-    textAlignVertical: "top",
+  sendBtn: {
+    backgroundColor: Theme.colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

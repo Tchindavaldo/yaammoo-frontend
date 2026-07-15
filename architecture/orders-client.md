@@ -13,6 +13,9 @@ yaammoo/src/features/orders/
 │   └── OrderContext.tsx       # Provider + état global des commandes client
 ├── hooks/
 │   └── useOrders.ts           # Re-export de useOrdersContext (simplicité d'import)
+├── services/
+│   ├── ratingService.ts       # API notation (menu + livreur) : rate, stats, avis
+│   └── ratingStatsCache.ts    # Cache mémoire des stats notation (anti-refetch/loader)
 └── components/
     ├── ClientOrderCard.tsx    # Carte commande compacte (liste pending/processing)
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
@@ -20,6 +23,8 @@ yaammoo/src/features/orders/
     ├── OrderTrackingHeader.tsx # Stats (nb cmd / FF) + chips statut
     ├── CartStatusPanel.tsx    # Panneau suivi virtualisé (FlatList, groupes, jours passés, détail)
     ├── UserOrdersModal.tsx    # Modal plein écran « État des commandes » (Settings → Mes activités)
+    ├── DriverInfoTab.tsx      # Tab « Livreur » (infos + stats + notation livreur)
+    ├── RateMenuTab.tsx        # Tab « Noter » (image plat + stats + notation plat)
     └── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande
 ```
 
@@ -155,14 +160,73 @@ yaammoo/src/features/orders/
 - `submitRating` appelle `POST /driver/:driverId/rating` (livreur délégué uniquement)
 
 **Affichage** :
-- Haut : 2 InfoCards (identité + note) à gauche + zone d'état à droite (QR ou BikeAnimation).
-- Bas : stats livraisons + ligne de notation (étoiles + commentaire + envoi).
+- Haut : 2 InfoCards à gauche — identité + **Note** (juste `★ moyenne`, sans le
+  nombre de votes) — + zone d'état à droite (QR ou BikeAnimation `paused` si livré).
+- Bas : **cards stats individuelles** (titre 2 lignes + chiffre + label) — Cmd
+  livré / en cours / en attente + **Nombre de vote** (`ratingCount`) — puis ligne
+  de notation (étoiles + bouton commentaire + envoi).
 
-## RateMenuTab.tsx & ratingService.ts
+**Overlay commentaire** : `Modal` transparent, blur plein écran en **fondu** piloté
+par le clavier (`blurOpacity`), card blanche opaque qui remonte de façon **bornée**
+(`interpolate [0,100] → [0,-90]`) — même logique que `CheckoutContactOverlay`.
 
-**RateMenuTab** : notation d'un menu dans la tab « Noter » (`status === delivered`).
-**ratingService** : `rateMenu(orderId, menuId, value, comment?)`,
-`getMenuRatings(menuId)`, `getDriverRatings(driverId)`.
+**Loader d'envoi** : `submitRating` garde un délai minimum (600 ms via `Promise.all`)
+pour que le spinner reste visible même si l'API répond instantanément.
+
+**Cache + socket** (voir `ratingStatsCache`) : à la 1ʳᵉ ouverture → loader + GET ;
+aux suivantes → affichage instantané depuis le cache + refetch silencieux. Écoute
+`driverRatingUpdated` pour mettre `ratingAvg`/`ratingCount` à jour en direct.
+
+## RateMenuTab.tsx
+
+**Chemin** : `yaammoo/src/features/orders/components/RateMenuTab.tsx`
+
+**Rôle** : Tab « Noter » — le client note le **plat** d'une commande livrée.
+**Copie fidèle du design de `DriverInfoTab`**, adaptée au menu.
+
+**Props** : `menuId`, `orderId`, `menuName`, `menuImage?` (fallback image depuis
+la commande si le backend n'en renvoie pas).
+
+**Chargement** : `GET /menu/:menuId/stats` (`ratingService.getMenuStats`) +
+`GET /rating/order/:orderId` (pré-remplissage `menuRating`).
+
+**Affichage** :
+- Haut : InfoCards **Plat** + **Note** (`★ moyenne`) à gauche + **image réelle du
+  plat** à droite (`expo-image`, `cachePolicy="memory-disk"`, `transition={0}` →
+  pas de flash au remontage). Icône fast-food en dernier recours si aucune image.
+- Bas : 3 cards stats individuelles — **Total plat** (`totalOrders`, popularité) /
+  **Mes Cmd passées** (`myTotalOrders`) / **Nombre vote** (`ratingCount`).
+- Notation identique à `DriverInfoTab` (étoiles + overlay commentaire + envoi 600 ms).
+
+**Auto-notation** : si `scope === "self"` (marchand propriétaire du plat) → message
+« Vous ne pouvez pas noter votre propre plat », pas de formulaire.
+
+**Cache + socket** : idem `DriverInfoTab` mais clé `menu:menuId:orderId` et écoute
+`menuRatingUpdated`.
+
+**Envoi** : `POST /menu/:menuId/rating` (`ratingService.rateMenu`) — le backend
+émet `menuRatingUpdated`.
+
+## ratingService.ts & ratingStatsCache.ts
+
+**Chemin** : `yaammoo/src/features/orders/services/`
+
+**ratingService** :
+| Méthode | Endpoint | Description |
+|---|---|---|
+| `rateMenu(menuId, orderId, value, comment?)` | `POST /menu/:menuId/rating` | Noter un plat |
+| `getMenuStats(menuId)` | `GET /menu/:menuId/stats` | Stats plat : `ratingAvg/Count`, `totalOrders`, `myTotalOrders`, `hasRated`, `canRate` (`MenuStatsProfile`) |
+| `getMenuRatings(menuId)` | `GET /menu/:menuId/ratings` | Liste des avis d'un plat |
+| `getDriverRatings(driverId)` | `GET /driver/:driverId/ratings` | Liste des avis d'un livreur |
+| `getOrderRating(orderId)` | `GET /rating/order/:orderId` | Note existante (`menuRating` + `driverRating`) |
+
+> Notation du **livreur** : `rateDriver` / `getDriverInfo` vivent dans
+> `driverService` (feature `driver`), pas ici.
+
+**ratingStatsCache** (module singleton, cache mémoire par `(kind, id, orderId)`) :
+- `get/set` : sert le profil déjà chargé sans refaire de loader.
+- `patchRating(kind, id, avg, count)` : maj de la note en direct (sockets).
+- `invalidate(kind, id, orderId)` : purge après que l'user note (refetch propre).
 
 ## OrderBottomSheet.tsx
 
@@ -178,6 +242,10 @@ Bottom sheet détail d'une commande client. **4 tabs** : Livraison — Commandes
 ### Tab Commandes
 - Même rendu que `MerchantOrderCommandesTab` : icônes 🍽️/➕/🥤, label type (MENU/EXTRA/BOISSON), prix en XAF, total "Total commande"
 - Items scrollables dans une card arrondie (fond `#F9FAFB`, borderRadius 16)
+- **Ligne Livraison** 🛵 (zone + prix, ou « Inclus ») affichée sous les items,
+  avant le total — `zone`/`deliveryPrice` dérivés de `selectedOrder.delivery.zone`
+  / `.prix`. Le `total` client **inclut déjà la livraison** ([useCheckout](checkout.md)),
+  donc pas ajouté à nouveau (contrairement au marchand).
 
 ### Tab Livreur (`DriverInfoTab`)
 Visible si `status === delivering || status === delivered`.
@@ -187,7 +255,8 @@ Visible si `status === delivering || status === delivered`.
 
 ### Tab Noter (`RateMenuTab`)
 Visible si `status === delivered && menuId existe`.
-- Notation du plat (étoiles + commentaire)
+- Image réelle du plat + stats (Total plat / Mes Cmd / Nombre vote) + notation
+  (étoiles + commentaire). Design copié sur `DriverInfoTab`. Voir section dédiée.
 
 **Navigation multi-commandes** (`allOrders`) : barre de pagination "Cmd 1, Cmd 2…" en bas, avec flèches si > 3 commandes.
 

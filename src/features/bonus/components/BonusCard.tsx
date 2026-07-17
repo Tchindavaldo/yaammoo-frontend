@@ -1,215 +1,217 @@
-import React, { useRef } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions,
-  ActivityIndicator,
-} from 'react-native';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-import { Theme } from '@/src/theme';
-import { Bonus } from '@/src/features/bonus/hooks/useBonus';
-import { BlurView } from 'expo-blur';
-
-const { width: SCREEN_W } = Dimensions.get('window');
-const CARD_W = SCREEN_W * 0.75;
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Theme } from "@/src/theme";
+import type { Bonus, BonusClaimStatus, BonusRequestStatus } from "../types/bonus.types";
+import { getBonusDescriptor } from "../config/bonusRegistry";
+import { useBonusEligibility } from "../hooks/useBonusEligibility";
+import { BonusProgressBar } from "./BonusProgressBar";
 
 interface BonusCardProps {
   bonus: Bonus;
-  orderCount: number;
-  eligible: boolean;
-  restant: number;
-  onClaim: () => void;
-  claiming: boolean;
+  claimStatus?: BonusClaimStatus;
+  onClaim: (bonus: Bonus) => void;
 }
 
-export const BonusCard: React.FC<BonusCardProps> = ({
-  bonus,
-  orderCount,
-  eligible,
-  restant,
-  onClaim,
-  claiming,
-}) => {
-  const isWelcome = bonus.type === 'welcome_bonus';
+const fmt = (n: number) => n.toLocaleString("fr-FR");
+const numOrDash = (n?: number) => (typeof n === "number" ? fmt(n) : "—");
+
+// La carte se fond dans le fond coloré : pas de fond ni bordure, tout en blanc.
+const LIGHT = "#ffffff";
+const LIGHT_DIM = "rgba(255,255,255,0.82)";
+const GLASS = "rgba(255,255,255,0.18)";
+const TRACK = "rgba(255,255,255,0.28)";
+const LINE = "rgba(255,255,255,0.22)";
+
+const rewardText = (bonus: Bonus): string => {
+  const r = bonus.reward;
+  if (r?.label) return r.label;
+  if (typeof r?.value === "number") return `${fmt(r.value)}${r.unit ? " " + r.unit : ""}`;
+  return getBonusDescriptor(bonus.type).label;
+};
+
+const STATUS_META: Record<BonusRequestStatus, { icon: any; text: string }> = {
+  none: { icon: "ellipse-outline", text: "Pas encore réclamé" },
+  pending: { icon: "hourglass-outline", text: "En attente de validation" },
+  approved: { icon: "checkmark-circle", text: "Validé par le fastfood" },
+};
+
+/**
+ * Carte "hero" d'un bonus — sans fond, fondue dans le fond coloré global.
+ * Occupe toute la hauteur disponible (répartition haut / milieu / bas) et
+ * expose : récompense, description, stats du bonus (proposés / pris), statut
+ * de la demande, progression + CTA.
+ */
+export const BonusCard: React.FC<BonusCardProps> = ({ bonus, claimStatus = "idle", onClaim }) => {
+  const d = getBonusDescriptor(bonus.type);
+  const p = useBonusEligibility(bonus);
+
+  // Statut effectif : une réclamation locale en cours prime sur le backend.
+  const reqStatus: BonusRequestStatus =
+    claimStatus === "pending" ? "pending" : bonus.requestStatus ?? "none";
+  const status = STATUS_META[reqStatus];
+
+  const progressLabel = p.measurable
+    ? p.unit === "FCFA"
+      ? `${fmt(p.current)} / ${fmt(p.target)} FCFA`
+      : `${p.current} / ${p.target} commande${p.target > 1 ? "s" : ""}`
+    : "";
 
   return (
     <View style={styles.card}>
-      {/* Fond décoratif */}
-      <View style={styles.bgCircle1} />
-      <View style={styles.bgCircle2} />
-
-      {/* Badge de type */}
-      {bonus.isFastFoodBonus && (
-        <View style={styles.ffBadge}>
-          <Ionicons name="storefront-outline" size={12} color="white" />
-          <Text style={styles.ffBadgeText}>FastFood</Text>
+      {/* HAUT : médaillon + provenance */}
+      <View style={styles.top}>
+        <View style={styles.medallion}>
+          <Ionicons name={d.icon} size={30} color={LIGHT} />
         </View>
-      )}
-
-      {/* Image illustrative */}
-      <Image
-        source={require('@/assets/blur3.jpg')}
-        style={styles.bonusImage}
-      />
-
-      {/* Nom du bonus */}
-      <View style={styles.nameBadge}>
-        <Text style={styles.nameText}>{bonus.data.name}</Text>
+        <View style={styles.originPill}>
+          <Ionicons name={bonus.isFastFoodBonus ? "storefront" : "sparkles"} size={11} color={LIGHT} />
+          <Text style={styles.originText} numberOfLines={1}>
+            {bonus.isFastFoodBonus ? bonus.fastFoodName || "Fastfood" : "Yaammoo"}
+          </Text>
+        </View>
       </View>
 
-      {/* Description */}
-      <Text style={styles.description}>{bonus.data.description}</Text>
+      {/* MILIEU : récompense, nom, description, stats bonus, statut demande */}
+      <View style={styles.middle}>
+        <Text style={styles.rewardLabel}>Récompense</Text>
+        <Text style={styles.rewardValue} numberOfLines={2}>{rewardText(bonus)}</Text>
+        <Text style={styles.name} numberOfLines={1}>{bonus.name}</Text>
+        {!!bonus.description && (
+          <Text style={styles.description} numberOfLines={2}>{bonus.description}</Text>
+        )}
 
-      {/* Progression */}
-      {bonus.type === 'order_count_bonus' && (
-        <View style={styles.progressBlock}>
-          <Text style={styles.progressLabel}>
-            Commandes restantes pour être éligible
-          </Text>
-          <Text style={styles.progressValue}>{restant}</Text>
+        {/* Stats du bonus */}
+        <View style={styles.metaGrid}>
+          <Meta value={numOrDash(bonus.fastFoodBonusCount)} label="Proposés" />
+          <View style={styles.metaSep} />
+          <Meta value={numOrDash(bonus.userClaimedCount)} label="Pris (moi)" />
+          <View style={styles.metaSep} />
+          <Meta value={numOrDash(bonus.totalClaimedCount)} label="Pris (tous)" />
         </View>
-      )}
 
-      {/* Bouton */}
-      <View style={styles.btnRow}>
-        {!isWelcome && !eligible ? (
-          <View style={styles.ineligibleBadge}>
-            <Text style={styles.ineligibleText}>NON ÉLIGIBLE</Text>
+        {/* Statut de la demande */}
+        <View style={styles.statusRow}>
+          <Ionicons name={status.icon} size={14} color={LIGHT} />
+          <Text style={styles.statusText}>{status.text}</Text>
+        </View>
+      </View>
+
+      {/* BAS : progression + CTA */}
+      <View style={styles.bottom}>
+        {p.measurable && p.target > 0 && (
+          <View style={styles.progressWrap}>
+            <BonusProgressBar progress={p.progress} color={LIGHT} trackColor={TRACK} label={progressLabel} />
+            <Text style={styles.stats}>
+              {p.unit === "FCFA"
+                ? `${fmt(p.current)} FCFA dépensés`
+                : `${p.current} commande${p.current > 1 ? "s" : ""} payée${p.current > 1 ? "s" : ""}`}
+            </Text>
           </View>
-        ) : (
+        )}
+
+        {reqStatus === "pending" ? (
+          <Badge icon="hourglass-outline" text="Demande en cours" />
+        ) : reqStatus === "approved" ? (
+          <Badge icon="checkmark-circle" text="Bonus validé" />
+        ) : p.eligible ? (
           <TouchableOpacity
-            style={[styles.claimBtn, claiming && styles.claimBtnDisabled]}
-            onPress={onClaim}
-            disabled={claiming}
+            style={styles.claimBtn}
+            onPress={() => onClaim(bonus)}
+            disabled={claimStatus === "posting"}
+            activeOpacity={0.85}
           >
-            {claiming ? (
-              <ActivityIndicator color="white" size="small" />
+            {claimStatus === "posting" ? (
+              <ActivityIndicator color={d.color} size="small" />
             ) : (
-              <Text style={styles.claimBtnText}>Recevoir</Text>
+              <>
+                <Ionicons name="gift" size={17} color={d.color} />
+                <Text style={[styles.claimText, { color: d.color }]}>Réclamer</Text>
+              </>
             )}
           </TouchableOpacity>
+        ) : p.measurable ? (
+          <Badge
+            icon="lock-closed-outline"
+            text={p.unit === "FCFA" ? `Encore ${fmt(p.remaining)} FCFA` : `Encore ${p.remaining} commande${p.remaining > 1 ? "s" : ""}`}
+          />
+        ) : (
+          <Badge icon="information-circle-outline" text="Voir conditions" />
         )}
       </View>
     </View>
   );
 };
 
+const Meta = ({ value, label }: { value: string; label: string }) => (
+  <View style={styles.meta}>
+    <Text style={styles.metaValue}>{value}</Text>
+    <Text style={styles.metaLabel}>{label}</Text>
+  </View>
+);
+
+const Badge = ({ icon, text }: { icon: any; text: string }) => (
+  <View style={styles.badge}>
+    <Ionicons name={icon} size={15} color={LIGHT} />
+    <Text style={styles.badgeText}>{text}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  card: {
-    width: CARD_W,
-    backgroundColor: '#1a0a0a',
-    borderRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-    marginHorizontal: 12,
-    overflow: 'hidden',
-    position: 'relative',
-    minHeight: 380,
-    justifyContent: 'center',
-  },
-  bgCircle1: {
-    position: 'absolute',
-    top: -50,
-    right: -50,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(190,30,30,0.2)',
-  },
-  bgCircle2: {
-    position: 'absolute',
-    bottom: -30,
-    left: -30,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(190,30,30,0.1)',
-  },
-  ffBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#be1e1e',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginBottom: 12,
+  card: { flex: 1, alignItems: "center", justifyContent: "space-between", paddingHorizontal: 8, paddingVertical: 12 },
+  top: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" },
+  medallion: { width: 60, height: 60, borderRadius: 22, backgroundColor: GLASS, justifyContent: "center", alignItems: "center" },
+  originPill: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
+    backgroundColor: GLASS,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Theme.borderRadius.pill,
+    maxWidth: 160,
   },
-  ffBadgeText: {
-    color: 'white',
-    fontSize: 11,
-    fontWeight: 'bold',
+  originText: { color: LIGHT, fontSize: 11, fontWeight: "700" },
+  middle: { alignItems: "center", width: "100%", gap: 4 },
+  rewardLabel: { color: LIGHT_DIM, fontSize: 11, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.8 },
+  rewardValue: { color: LIGHT, fontSize: 30, fontWeight: "800", textAlign: "center", lineHeight: 34 },
+  name: { color: LIGHT, fontSize: 17, fontWeight: "700", textAlign: "center", marginTop: 4 },
+  description: { color: LIGHT_DIM, fontSize: 13, lineHeight: 18, textAlign: "center" },
+  metaGrid: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 14,
+    paddingVertical: 4,
   },
-  bonusImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 3,
-    borderColor: '#be1e1e',
-    marginBottom: 16,
-  },
-  nameBadge: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 12,
-  },
-  nameText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  description: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  progressBlock: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  progressLabel: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  progressValue: {
-    color: '#be1e1e',
-    fontSize: 36,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-  btnRow: {
-    marginTop: 8,
-  },
-  ineligibleBadge: {
-    backgroundColor: '#be1e1e',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  ineligibleText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
-    letterSpacing: 1,
-  },
+  meta: { flex: 1, alignItems: "center" },
+  metaValue: { color: LIGHT, fontSize: 19, fontWeight: "800" },
+  metaLabel: { color: LIGHT_DIM, fontSize: 10, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.4 },
+  metaSep: { width: 1, height: 30, backgroundColor: LINE },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 12 },
+  statusText: { color: LIGHT, fontSize: 12, fontWeight: "600" },
+  bottom: { width: "100%", gap: 12 },
+  progressWrap: { width: "100%", gap: 6 },
+  stats: { fontSize: 11, color: LIGHT_DIM, textAlign: "center" },
   claimBtn: {
-    backgroundColor: '#22c55e',
-    paddingHorizontal: 30,
-    paddingVertical: 12,
-    borderRadius: 25,
-    minWidth: 120,
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: Theme.borderRadius.pill,
+    backgroundColor: LIGHT,
   },
-  claimBtnDisabled: {
-    opacity: 0.6,
+  claimText: { fontWeight: "800", fontSize: 15 },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: Theme.borderRadius.pill,
+    backgroundColor: GLASS,
   },
-  claimBtnText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
+  badgeText: { color: LIGHT, fontSize: 13, fontWeight: "700" },
 });

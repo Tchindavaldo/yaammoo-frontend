@@ -1,41 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  Alert,
-  TouchableOpacity,
-  Switch,
-  Platform,
-  Modal,
-  TextInput,
-  ActivityIndicator,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SettingItem } from '@/src/features/profile/components/SettingItem';
-import { Theme } from '@/src/theme';
+import { Config } from '@/src/api/config';
+import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
-import { GuestGate } from '@/src/features/auth/components/GuestGate';
-import { auth } from '@/src/services/firebase';
-import { signOut } from 'firebase/auth';
+import { UserBonusModal } from '@/src/features/bonus/components/UserBonusModal';
+import { DriverApplyModal } from '@/src/features/driver/components/DriverApplyModal';
+import { DriverManageModal } from '@/src/features/driver/components/DriverManageModal';
+import { DriverMyApplicationsModal } from '@/src/features/driver/components/DriverMyApplicationsModal';
+import { DriverOrdersModal } from '@/src/features/driver/components/DriverOrdersModal';
 import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
 import { MenuManageModal } from '@/src/features/merchant/components/MenuManageModal';
 import { WalletManageModal } from '@/src/features/merchant/components/WalletManageModal';
-import axios from 'axios';
-import { Config } from '@/src/api/config';
 import { getDeviceId } from '@/src/features/notifications/services/deviceId';
-import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
 import { UserOrdersModal } from '@/src/features/orders/components/UserOrdersModal';
+import { SettingItem } from '@/src/features/profile/components/SettingItem';
+import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
 import { UserWalletModal } from '@/src/features/wallet/components/UserWalletModal';
-import { DriverApplyModal } from '@/src/features/driver/components/DriverApplyModal';
-import { DriverOrdersModal } from '@/src/features/driver/components/DriverOrdersModal';
-import { DriverManageModal } from '@/src/features/driver/components/DriverManageModal';
-import { DriverMyApplicationsModal } from '@/src/features/driver/components/DriverMyApplicationsModal';
-import { useLocalSearchParams } from 'expo-router';
+import { auth } from '@/src/services/firebase';
+import { Theme } from '@/src/theme';
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import { BlurView } from 'expo-blur';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
+import { signOut } from 'firebase/auth';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
@@ -57,6 +58,11 @@ export default function SettingsScreen() {
   // Section « Mes activités » (user + marchand) : commandes + portefeuille.
   const [userOrdersVisible, setUserOrdersVisible] = useState(false);
   const [userWalletVisible, setUserWalletVisible] = useState(false);
+  // Bonus (Settings → Bonus et parrainage).
+  const [userBonusVisible, setUserBonusVisible] = useState(false);
+  // 2e disposition de test (carte étalée) — comparaison de design.
+  const [userBonusV2Visible, setUserBonusV2Visible] = useState(false);
+  const [userBonusV3Visible, setUserBonusV3Visible] = useState(false);
   // Section « Livraison » (user) + item « Livreurs » (boutique).
   const [driverApplyVisible, setDriverApplyVisible] = useState(false);
   const [driverOrdersVisible, setDriverOrdersVisible] = useState(false);
@@ -70,6 +76,45 @@ export default function SettingsScreen() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const REQUIRED_CONFIRM = 'SUPPRIMER';
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+
+  // Page Bonus V2 (fond blanc pur) : l'ombre montante de la tab bar crée une
+  // bande grise disgracieuse. On la retire tant que la modale V2 est ouverte,
+  // puis on restaure le style par défaut à la fermeture (navbar inchangée sinon).
+  useEffect(() => {
+    const base = {
+      height: 58 + insets.bottom,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      backgroundColor: 'rgba(255, 255, 255, 0.7)',
+      borderTopWidth: 0,
+      position: 'absolute' as const,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      paddingBottom: insets.bottom,
+      paddingTop: 8,
+    };
+    navigation.setOptions({
+      tabBarStyle: userBonusV2Visible
+        ? {
+            ...base,
+            elevation: 2,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 3,
+          }
+        : {
+            ...base,
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 8,
+          },
+    });
+  }, [userBonusV2Visible, navigation, insets.bottom]);
 
   // Mode invité : après déconnexion/suppression, settings n'est PLUS démonté
   // (l'invité reste dans les tabs, on affiche juste le GuestGate via le
@@ -98,6 +143,9 @@ export default function SettingsScreen() {
     } else if (section === 'my-applications') {
       // Notif « demande décidée » (candidat) → modal Mes demandes.
       setDriverMyAppsVisible(true);
+    } else if (section === 'bonus') {
+      // Notif « bonus éligible » → modal Bonus.
+      setUserBonusVisible(true);
     }
   }, [section]);
 
@@ -274,7 +322,17 @@ export default function SettingsScreen() {
           <SettingItem
             icon="gift-outline"
             title="Bonus et parrainage"
-            onPress={() => handleComingSoon('Bonus et parrainage')}
+            onPress={() => setUserBonusVisible(true)}
+          />
+          <SettingItem
+            icon="sparkles-outline"
+            title="Bonus (disposition 2)"
+            onPress={() => setUserBonusV2Visible(true)}
+          />
+          <SettingItem
+            icon="color-palette-outline"
+            title="Bonus (disposition 3)"
+            onPress={() => setUserBonusV3Visible(true)}
           />
         </View>
 
@@ -469,6 +527,24 @@ export default function SettingsScreen() {
       <UserWalletModal
         visible={userWalletVisible}
         onClose={() => setUserWalletVisible(false)}
+      />
+
+      {/* Bonus et parrainage (plein écran) */}
+      <UserBonusModal
+        visible={userBonusVisible}
+        onClose={() => setUserBonusVisible(false)}
+      />
+      {/* Bonus — 2e disposition (carte étalée, comparaison de design) */}
+      <UserBonusModal
+        visible={userBonusV2Visible}
+        onClose={() => setUserBonusV2Visible(false)}
+        variant="spread"
+      />
+      {/* Bonus — 3e disposition (fond mesh par carte, page neutre) */}
+      <UserBonusModal
+        visible={userBonusV3Visible}
+        onClose={() => setUserBonusV3Visible(false)}
+        variant="mesh"
       />
 
       {/* Livraison (user) : postuler / gérer ses livraisons */}

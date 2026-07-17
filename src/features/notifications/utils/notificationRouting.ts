@@ -26,8 +26,9 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
     case "driver_application_decided":
     case "driver_removed":
       return "/(tabs)/settings?section=my-applications";
+    // Bonus éligible / mis à jour → ouvre le modal Bonus (Settings).
     case "bonus":
-      return "/(tabs)/notifications";
+      return "/(tabs)/settings?section=bonus";
     default:
       return "/(tabs)/notifications";
   }

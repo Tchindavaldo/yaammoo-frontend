@@ -103,7 +103,7 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 | `order_rank_top` | `/(tabs)/cart?section=pending` | User — rang top 5 |
 | `order_cancel_by_user` | `/(tabs)/notifications` | Marchand — annulation client |
 | `order_cancel_by_merchant` | `/(tabs)/notifications` | User — annulation marchand |
-| `bonus` | `/(tabs)/cart?section=bonus` | User — bonus attribué |
+| `bonus` | `/(tabs)/settings?section=bonus` | User — bonus éligible (ouvre UserBonusModal) |
 | *(inconnu)* | `/(tabs)/notifications` | Fallback |
 
 ### Routes réelles émises par le backend (override via `notif.route`)
@@ -129,7 +129,7 @@ La page [`app/(tabs)/cart.tsx`](../app/(tabs)/cart.tsx) lit `useLocalSearchParam
 |---|---|
 | `cart` | `currentTab = "cart"` (panier) |
 | `pending` / `active` / `finished` / `delivered` | `currentTab = "status"` + `activeStatus = <section>` |
-| `bonus` | `currentTab = "bonus"` (BonusScreen) |
+| `bonus` | `/settings?section=bonus` (ouvre UserBonusModal dans Settings) |
 
 ---
 
@@ -195,4 +195,4 @@ frontend user : FCM reçu, tap → '/(tabs)/cart'
 5. **Offline-first markAsRead** : state + storage mis à jour instantanément (format array matchant le serveur), réseau en arrière-plan, queue persistante en cas d'échec. `pendingReadIdsRef` protège contre l'écrasement par un refresh serveur concurrent. Pas de spinner au click.
 6. **Helper `isRead` unifié** : `isNotifRead` centralisé dans le context gère tous les formats historiques (boolean/string/array), tous les composants UI l'utilisent via `useNotifications().isRead` — zéro duplication.
 7. **Catch-up socket-driven** : pull-to-refresh = fetch explicite utilisateur. Les fetchs automatiques (au login + à chaque reconnect socket) sont **silencieux** (pas de loader). Résultat : aucune UX-pollution par des spinners inattendus.
-8. **Deep-link par section** : query param `?section=...` sur `/(tabs)/cart` pour cibler pending/active/finished/bonus sans créer de routes séparées.
+8. **Deep-link par section** : query param `?section=...` sur `/(tabs)/cart` (pending/active/finished) ou `/(tabs)/settings` (bonus/my-applications) pour cibler sans créer de routes séparées.

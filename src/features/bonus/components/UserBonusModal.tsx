@@ -477,8 +477,8 @@ const styles = StyleSheet.create({
   },
   // V2 (fond blanc pur) : bordure fine + léger relief pour détacher la carte.
   pagCardOutlined: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.06)",
+    borderWidth: 0.5,
+    borderColor: "rgba(0,0,0,0.04)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: "transparent",
     backgroundColor: "rgba(0,0,0,0.04)",
   },

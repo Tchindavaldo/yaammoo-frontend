@@ -19,7 +19,7 @@ import { BonusProgressBar } from "./BonusProgressBar";
 import { BonusSparkline } from "./BonusSparkline";
 import { BonusUsageRing } from "./BonusUsageRing";
 
-interface BonusCardV2Props {
+interface BonusCardProps {
   bonus: Bonus;
   claimStatus?: BonusClaimStatus;
   onClaim: (bonus: Bonus) => void;
@@ -84,7 +84,7 @@ const durationText = (bonus: Bonus) => {
  * couleur du bonus en accent). Différence gérée par UserBonusModal : la page V2
  * a un fond global BLANC PUR (alors que V3 est sur fond gris neutre).
  */
-export const BonusCardV2: React.FC<BonusCardV2Props> = ({
+export const BonusCard: React.FC<BonusCardProps> = ({
   bonus,
   claimStatus = "idle",
   onClaim,

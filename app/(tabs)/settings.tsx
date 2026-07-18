@@ -60,9 +60,6 @@ export default function SettingsScreen() {
   const [userWalletVisible, setUserWalletVisible] = useState(false);
   // Bonus (Settings → Bonus et parrainage).
   const [userBonusVisible, setUserBonusVisible] = useState(false);
-  // 2e disposition de test (carte étalée) — comparaison de design.
-  const [userBonusV2Visible, setUserBonusV2Visible] = useState(false);
-  const [userBonusV3Visible, setUserBonusV3Visible] = useState(false);
   // Section « Livraison » (user) + item « Livreurs » (boutique).
   const [driverApplyVisible, setDriverApplyVisible] = useState(false);
   const [driverOrdersVisible, setDriverOrdersVisible] = useState(false);
@@ -96,7 +93,7 @@ export default function SettingsScreen() {
       paddingTop: 8,
     };
     navigation.setOptions({
-      tabBarStyle: userBonusV2Visible
+      tabBarStyle: userBonusVisible
         ? {
             ...base,
             elevation: 2,
@@ -114,7 +111,7 @@ export default function SettingsScreen() {
             shadowRadius: 8,
           },
     });
-  }, [userBonusV2Visible, navigation, insets.bottom]);
+  }, [userBonusVisible, navigation, insets.bottom]);
 
   // Mode invité : après déconnexion/suppression, settings n'est PLUS démonté
   // (l'invité reste dans les tabs, on affiche juste le GuestGate via le
@@ -324,16 +321,6 @@ export default function SettingsScreen() {
             title="Bonus et parrainage"
             onPress={() => setUserBonusVisible(true)}
           />
-          <SettingItem
-            icon="sparkles-outline"
-            title="Bonus (disposition 2)"
-            onPress={() => setUserBonusV2Visible(true)}
-          />
-          <SettingItem
-            icon="color-palette-outline"
-            title="Bonus (disposition 3)"
-            onPress={() => setUserBonusV3Visible(true)}
-          />
         </View>
 
         {/* Boutique - only show for merchants (AVANT Livraison) */}
@@ -533,18 +520,6 @@ export default function SettingsScreen() {
       <UserBonusModal
         visible={userBonusVisible}
         onClose={() => setUserBonusVisible(false)}
-      />
-      {/* Bonus — 2e disposition (carte étalée, comparaison de design) */}
-      <UserBonusModal
-        visible={userBonusV2Visible}
-        onClose={() => setUserBonusV2Visible(false)}
-        variant="spread"
-      />
-      {/* Bonus — 3e disposition (fond mesh par carte, page neutre) */}
-      <UserBonusModal
-        visible={userBonusV3Visible}
-        onClose={() => setUserBonusV3Visible(false)}
-        variant="mesh"
       />
 
       {/* Livraison (user) : postuler / gérer ses livraisons */}

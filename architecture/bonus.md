@@ -8,22 +8,18 @@ stats** (commandes + montant, jour/sem./mois) · **carte principale** (récompen
 de statut, description, progression, Début/Fin/Durée) · **mini-cartes** (Proposés /
 Mes reçus / Distribués) · **ligne de réclamation**. Navigation par **carrousel** + une
 **carte de pagination** en bas (galerie de mini-cartes à gauche, compteur « Bonus N°x »
-+ flèches/dots à droite). L'éligibilité et les stats se calculent **en direct** à
-partir des commandes (`OrderContext`).
++ flèches/dots à droite). Fond de page **blanc pur**. L'éligibilité et les stats se
+calculent **en direct** à partir des commandes (`OrderContext`).
 
-### Trois designs (variantes) — fichiers dédiés, jamais partagés
-Sélectionnés via la prop `variant` de `UserBonusModal` (montée 3× dans `settings.tsx`) :
-| variant | Composant carte | Fond de page | Style cartes |
-|---|---|---|---|
-| `default` | `BonusCard` | mesh **coloré global** animé | cartes « flat » sans fond, texte blanc |
-| `spread` (design 2) | `BonusCardV2` | **blanc pur** (overlay + contentBg blancs) | cartes blanches + **bordure fine** `rgba(236,236,241,1)` + ombre très douce |
-| `mesh` (design 3) | `BonusCardV3` | **gris neutre** `#f3f4f6` | cartes blanches épurées, **sans bordure/ombre** |
+### Design unique
+`UserBonusModal` ne rend plus qu'un seul design (l'ancien « design 2 / spread ») :
+**fond de page blanc pur**, cartes blanches (`BonusCard`) avec **bordure fine**
+`rgba(0,0,0,0.04)` + ombre très douce, couleur du bonus en accent. La carte de
+pagination du bas est **outlined** (`pagCardOutlined`). Plus de prop `variant`,
+plus de fond mesh coloré animé.
 
-> V2 et V3 sont **identiques** au pixel près (même corps de carte, couleur du bonus en
-> accent) ; **seuls diffèrent le fond de page et la bordure/ombre** (gérés dans
-> `UserBonusModal` via `isFlat`/`pageBg`). Les deux vivent dans des **fichiers séparés**.
-> Sur V2, l'ombre montante de la tab bar est **atténuée** pendant l'ouverture de la
-> modale (voir `settings.tsx`, effet sur `userBonusV2Visible`) pour éviter une bande grise.
+> L'ombre montante de la tab bar est **atténuée** pendant l'ouverture de la modale
+> (voir `settings.tsx`, effet sur `userBonusVisible`) pour éviter une bande grise.
 
 > **Évolutivité (exigence clé)** : un futur type de bonus créé côté fastfood
 > s'affiche automatiquement, sans toucher au code, grâce au **registre de types**
@@ -47,13 +43,11 @@ src/features/bonus/
 │   ├── useBonusEligibility.ts    # ⭐ Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
 └── components/
-    ├── UserBonusModal.tsx        # Coquille : header + stats + carrousel plein écran + pagination bas + fond mesh animé
+    ├── UserBonusModal.tsx        # Coquille : header + carrousel plein écran + carte de pagination bas (fond blanc pur)
     ├── BonusStatsPanel.tsx       # Panneau haut sans fond : blocs Commandes | Montant (périodes horizontales)
     ├── BonusCarousel.tsx         # Carrousel centré (forwardRef goTo, onIndexChange, peek voisins) — remplit la hauteur
-        ├── BonusSparkline.tsx      # Petit graphique sparkline (tendance commandes)
-    ├── BonusCard.tsx             # Design 1 (défaut) : carte "flat" sur fond global coloré
-    ├── BonusCardV2.tsx           # Design 2 (STABLE) : cartes claires sur fond global coloré — ⚠️ fichier dédié, ne pas y mettre d'autre design
-    ├── BonusCardV3.tsx           # Design 3 : fond coloré "mesh" porté par CHAQUE carte, page en fond neutre — ⚠️ fichier dédié
+    ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes)
+    ├── BonusCard.tsx             # ⭐ Carte bonus (design unique) : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
     ├── BonusProgressBar.tsx      # Barre de progression animée réutilisable
     ├── BonusUsageRing.tsx        # Anneau de progression `used/limit` (utilisations du code)
     └── BonusStates.tsx           # BonusSkeleton + BonusEmptyState
@@ -90,10 +84,10 @@ Bonus {
 }
 ```
 
-**Rendu (design) :** fond de page **plein à la couleur du bonus centré** (transition
-au scroll) + blobs flous + dégradé (effet mesh). Les cartes et le panneau de stats
-n'ont **aucun fond** : texte en blanc/blanc translucide pour se fondre dans le fond.
-Pagination (flèches ‹ ›  autour des points) en bas, au-dessus de la navbar.
+**Rendu (design) :** fond de page **blanc pur**. Cartes blanches (bordure fine
+`rgba(0,0,0,0.04)` + ombre très douce), couleur du bonus en accent. Carte de
+pagination outlined en bas, au-dessus de la navbar (galerie à slider + compteur
+« Bonus N°x » + flèches/dots).
 
 ### Critères d'éligibilité (`BonusCriteria.kind`)
 | kind | Mesure | Éligible quand |

@@ -1,10 +1,20 @@
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import { useBonusEligibility } from "../hooks/useBonusEligibility";
-import type { Bonus, BonusClaimStatus, BonusRequestStatus } from "../types/bonus.types";
+import type {
+  Bonus,
+  BonusClaimStatus,
+  BonusRequestStatus,
+} from "../types/bonus.types";
 import { BonusProgressBar } from "./BonusProgressBar";
 import { BonusSparkline } from "./BonusSparkline";
 import { BonusUsageRing } from "./BonusUsageRing";
@@ -28,7 +38,8 @@ const LIGHT = "#ffffff";
 const rewardText = (bonus: Bonus): string => {
   const r = bonus.reward;
   if (r?.label) return r.label;
-  if (typeof r?.value === "number") return `${fmt(r.value)}${r.unit ? " " + r.unit : ""}`;
+  if (typeof r?.value === "number")
+    return `${fmt(r.value)}${r.unit ? " " + r.unit : ""}`;
   return getBonusDescriptor(bonus.type).label;
 };
 
@@ -44,7 +55,11 @@ const fmtDate = (iso?: string) => {
 const usageInfo = (bonus: Bonus) => {
   if (typeof bonus.usageLimit !== "number") return null;
   const used = bonus.usageCount ?? 0;
-  return { used, limit: bonus.usageLimit, remaining: Math.max(0, bonus.usageLimit - used) };
+  return {
+    used,
+    limit: bonus.usageLimit,
+    remaining: Math.max(0, bonus.usageLimit - used),
+  };
 };
 
 /** Date de fin = date de réclamation + durée. "—" si pas encore réclamé. */
@@ -69,19 +84,24 @@ const durationText = (bonus: Bonus) => {
  * couleur du bonus en accent). Différence gérée par UserBonusModal : la page V2
  * a un fond global BLANC PUR (alors que V3 est sur fond gris neutre).
  */
-export const BonusCardV2: React.FC<BonusCardV2Props> = ({ bonus, claimStatus = "idle", onClaim }) => {
+export const BonusCardV2: React.FC<BonusCardV2Props> = ({
+  bonus,
+  claimStatus = "idle",
+  onClaim,
+}) => {
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
 
   const reqStatus: BonusRequestStatus =
-    claimStatus === "pending" ? "pending" : bonus.requestStatus ?? "none";
+    claimStatus === "pending" ? "pending" : (bonus.requestStatus ?? "none");
 
   // ── Détermination de l'état effectif du bonus ──
   const isInactive = bonus.active === false;
   const isRedeemed = bonus.redeemed === true;
   const isPending = reqStatus === "pending";
   const isApproved = reqStatus === "approved";
-  const isEligible = !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
+  const isEligible =
+    !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
 
   const u = usageInfo(bonus);
 
@@ -125,11 +145,15 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({ bonus, claimStatus = "
     return "Pas encore disponible";
   };
   const claimDesc = (): string => {
-    if (isInactive) return "Le fastfood n'a pas encore activé cette offre. Reviens plus tard.";
-    if (isRedeemed) return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
-    if (isApproved) return "Ton code est prêt ! Tu peux l'obtenir dès maintenant.";
+    if (isInactive)
+      return "Le fastfood n'a pas encore activé cette offre. Reviens plus tard.";
+    if (isRedeemed)
+      return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
+    if (isApproved)
+      return "Ton code est prêt ! Tu peux l'obtenir dès maintenant.";
     if (isPending) return "En attente de validation par le fastfood.";
-    if (isEligible) return "Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.";
+    if (isEligible)
+      return "Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.";
     if (p.measurable && p.target > 0) {
       return p.unit === "FCFA"
         ? `Encore ${fmt(p.remaining)} FCFA à dépenser.`
@@ -140,7 +164,9 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({ bonus, claimStatus = "
   const claimAction = (): React.ReactNode => {
     if (isInactive) return null;
     if (isRedeemed) {
-      return u ? <BonusUsageRing used={u.used} limit={u.limit} color={d.color} /> : null;
+      return u ? (
+        <BonusUsageRing used={u.used} limit={u.limit} color={d.color} />
+      ) : null;
     }
     if (isApproved) {
       return (
@@ -188,20 +214,37 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({ bonus, claimStatus = "
       <View style={styles.card}>
         <View style={styles.top}>
           <View style={styles.rewardBlock}>
-            <Text style={styles.rewardValue} numberOfLines={1}>{rewardText(bonus)}</Text>
+            <Text style={styles.rewardValue} numberOfLines={1}>
+              {rewardText(bonus)}
+            </Text>
           </View>
-          <View style={[styles.statusPill, { backgroundColor: `${statusColor()}1f` }]}>
-            <Text style={[styles.statusPillText, { color: statusColor() }]}>{statusText}</Text>
+          <View
+            style={[
+              styles.statusPill,
+              { backgroundColor: `${statusColor()}1f` },
+            ]}
+          >
+            <Text style={[styles.statusPillText, { color: statusColor() }]}>
+              {statusText}
+            </Text>
           </View>
         </View>
 
-        <Text style={styles.name} numberOfLines={1}>{bonus.name}</Text>
+        <Text style={styles.name} numberOfLines={1}>
+          {bonus.name}
+        </Text>
         {!!bonus.description && (
-          <Text style={styles.description} numberOfLines={2}>{bonus.description}</Text>
+          <Text style={styles.description} numberOfLines={2}>
+            {bonus.description}
+          </Text>
         )}
 
         <View style={styles.progressWrap}>
-          <BonusProgressBar progress={p.measurable ? p.progress : 1} color={d.color} trackColor={Theme.colors.gray[200]} />
+          <BonusProgressBar
+            progress={p.measurable ? p.progress : 1}
+            color={d.color}
+            trackColor={Theme.colors.gray[200]}
+          />
           {p.measurable && p.target > 0 && (
             <Text style={styles.progressText}>
               {p.unit === "FCFA"
@@ -213,22 +256,48 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({ bonus, claimStatus = "
 
         <View style={styles.infoRow}>
           <Info label="Début" value={fmtDate(bonus.claimedAt)} />
-          <Info label="Fin" value={fmtEndDate(bonus.claimedAt, bonus.claimDuration)} />
+          <Info
+            label="Fin"
+            value={fmtEndDate(bonus.claimedAt, bonus.claimDuration)}
+          />
           <Info label="Durée" value={durationText(bonus)} />
         </View>
       </View>
 
       {/* Mini-cartes stats (sparkline + barre) */}
       <View style={styles.miniRow}>
-        <MiniStat color={d.color} variant={0} title="Proposés" sub="par le fastfood" value={numOrDash(proposed)} ratio={(proposed ?? 0) / max} />
-        <MiniStat color={d.color} variant={1} title="Mes reçus" sub="sur ce bonus" value={numOrDash(mine)} ratio={(mine ?? 0) / max} />
-        <MiniStat color={d.color} variant={2} title="Distribués" sub="tous les users" value={numOrDash(total)} ratio={(total ?? 0) / max} />
+        <MiniStat
+          color={d.color}
+          variant={0}
+          title="Proposés"
+          sub="par le fastfood"
+          value={numOrDash(proposed)}
+          ratio={(proposed ?? 0) / max}
+        />
+        <MiniStat
+          color={d.color}
+          variant={1}
+          title="Mes reçus"
+          sub="sur ce bonus"
+          value={numOrDash(mine)}
+          ratio={(mine ?? 0) / max}
+        />
+        <MiniStat
+          color={d.color}
+          variant={2}
+          title="Distribués"
+          sub="tous les users"
+          value={numOrDash(total)}
+          ratio={(total ?? 0) / max}
+        />
       </View>
 
       {/* Ligne de réclamation */}
       <View style={styles.claimRow}>
         <View style={styles.claimRowLeft}>
-          <View style={[styles.claimRowIcon, { backgroundColor: statusColor() }]}>
+          <View
+            style={[styles.claimRowIcon, { backgroundColor: statusColor() }]}
+          >
             <Ionicons name={claimIcon()} size={20} color={LIGHT} />
           </View>
           <View style={styles.claimRowText}>
@@ -260,15 +329,21 @@ const StatsPanel = ({
           </View>
           <View style={stylesStats.cells}>
             <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>{stats.day.count}</Text>
+              <Text style={[stylesStats.cellValue, { color }]}>
+                {stats.day.count}
+              </Text>
               <Text style={stylesStats.cellKey}>Jour</Text>
             </View>
             <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>{stats.week.count}</Text>
+              <Text style={[stylesStats.cellValue, { color }]}>
+                {stats.week.count}
+              </Text>
               <Text style={stylesStats.cellKey}>Sem.</Text>
             </View>
             <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>{stats.month.count}</Text>
+              <Text style={[stylesStats.cellValue, { color }]}>
+                {stats.month.count}
+              </Text>
               <Text style={stylesStats.cellKey}>Mois</Text>
             </View>
           </View>
@@ -281,11 +356,15 @@ const StatsPanel = ({
           </View>
           <View style={stylesStats.cells}>
             <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>{fmtK(stats.week.amount)}</Text>
+              <Text style={[stylesStats.cellValue, { color }]}>
+                {fmtK(stats.week.amount)}
+              </Text>
               <Text style={stylesStats.cellKey}>Sem.</Text>
             </View>
             <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>{fmtK(stats.month.amount)}</Text>
+              <Text style={[stylesStats.cellValue, { color }]}>
+                {fmtK(stats.month.amount)}
+              </Text>
               <Text style={stylesStats.cellKey}>Mois</Text>
             </View>
           </View>
@@ -318,14 +397,26 @@ const MiniStat = ({
   ratio: number;
 }) => (
   <View style={styles.mini}>
-    <Text style={styles.miniTitle} numberOfLines={1}>{title}</Text>
-    <Text style={styles.miniSub} numberOfLines={1}>{sub}</Text>
+    <Text style={styles.miniTitle} numberOfLines={1}>
+      {title}
+    </Text>
+    <Text style={styles.miniSub} numberOfLines={1}>
+      {sub}
+    </Text>
     <View style={styles.miniChart}>
       <BonusSparkline color={color} variant={variant} height={34} />
     </View>
     <View style={styles.miniBottom}>
       <View style={styles.miniBar}>
-        <View style={[styles.miniBarFill, { width: `${Math.max(6, Math.min(100, ratio * 100))}%`, backgroundColor: color }]} />
+        <View
+          style={[
+            styles.miniBarFill,
+            {
+              width: `${Math.max(6, Math.min(100, ratio * 100))}%`,
+              backgroundColor: color,
+            },
+          ]}
+        />
       </View>
       <Text style={styles.miniValue}>{value}</Text>
     </View>
@@ -345,18 +436,28 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 18,
     gap: 10,
-    borderWidth: 1,
-    borderColor: "rgba(236, 236, 241, 1)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
-  top: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
+  top: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
   rewardBlock: { flex: 1 },
   rewardValue: { color: DARK, fontSize: 24, fontWeight: "800", marginTop: 2 },
-  statusPill: { backgroundColor: DARK, paddingHorizontal: 14, paddingVertical: 8, borderRadius: Theme.borderRadius.pill },
+  statusPill: {
+    backgroundColor: DARK,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Theme.borderRadius.pill,
+  },
   statusPillText: { color: LIGHT, fontSize: 12, fontWeight: "700" },
   name: { color: DARK, fontSize: 16, fontWeight: "700", marginTop: -2 },
   description: { color: GRAY, fontSize: 13, lineHeight: 18, marginTop: -6 },
@@ -373,8 +474,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 10,
     gap: 2,
-    borderWidth: 1,
-    borderColor: "#ECECF1",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -385,7 +486,13 @@ const styles = StyleSheet.create({
   miniSub: { color: GRAY_L, fontSize: 10, fontWeight: "500" },
   miniChart: { height: 34, marginVertical: 4 },
   miniBottom: { flexDirection: "row", alignItems: "center", gap: 6 },
-  miniBar: { flex: 1, height: 5, borderRadius: 3, backgroundColor: Theme.colors.gray[100], overflow: "hidden" },
+  miniBar: {
+    flex: 1,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: Theme.colors.gray[100],
+    overflow: "hidden",
+  },
   miniBarFill: { height: "100%", borderRadius: 3 },
   miniValue: { color: DARK, fontSize: 13, fontWeight: "800" },
 
@@ -400,15 +507,20 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     paddingRight: 6,
     gap: 8,
-    borderWidth: 1,
-    borderColor: "rgba(236, 236, 241, 1)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
-  claimRowLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
+  claimRowLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    flex: 1,
+  },
   claimRowIcon: {
     width: 40,
     height: 40,
@@ -432,8 +544,8 @@ const stylesStats = StyleSheet.create({
   card: {
     backgroundColor: LIGHT,
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "#ECECF1",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -442,7 +554,12 @@ const stylesStats = StyleSheet.create({
   },
   row: { flexDirection: "row", alignItems: "stretch", paddingVertical: 14 },
   block: { flex: 1, gap: 4 },
-  head: { flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "center" },
+  head: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    justifyContent: "center",
+  },
   title: {
     fontSize: 11,
     fontWeight: "700",
@@ -454,5 +571,10 @@ const stylesStats = StyleSheet.create({
   cell: { flex: 1, alignItems: "center" },
   cellValue: { fontSize: 18, fontWeight: "800", color: Theme.colors.dark },
   cellKey: { fontSize: 10, color: Theme.colors.gray[600], marginTop: 1 },
-  sep: { width: 1, backgroundColor: Theme.colors.gray[200], marginHorizontal: 14, marginVertical: 4 },
+  sep: {
+    width: 1,
+    backgroundColor: Theme.colors.gray[200],
+    marginHorizontal: 14,
+    marginVertical: 4,
+  },
 });

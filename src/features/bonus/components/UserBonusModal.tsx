@@ -1,20 +1,31 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
-import { View, StyleSheet, TouchableOpacity, Text, Animated, ScrollView } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
+import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Toast } from "@/src/components/Toast";
 import { Theme } from "@/src/theme";
-import type { Bonus } from "../types/bonus.types";
-import { useBonus } from "../hooks/useBonus";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import {
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { BonusCarousel, CAROUSEL_INTERVAL, BonusCarouselHandle } from "./BonusCarousel";
+import { useBonus } from "../hooks/useBonus";
+import type { Bonus } from "../types/bonus.types";
 import { BonusCard } from "./BonusCard";
 import { BonusCardV2 } from "./BonusCardV2";
 import { BonusCardV3 } from "./BonusCardV3";
-import { BonusSkeleton, BonusEmptyState } from "./BonusStates";
+import {
+  BonusCarousel,
+  BonusCarouselHandle,
+  CAROUSEL_INTERVAL,
+} from "./BonusCarousel";
+import { BonusEmptyState, BonusSkeleton } from "./BonusStates";
 
 interface UserBonusModalProps {
   visible: boolean;
@@ -44,24 +55,39 @@ const TAB_BAR_HEIGHT = 58;
  * (fond coloré à la couleur du bonus centré). Bas : pagination (flèches + dots)
  * juste au-dessus de la navbar.
  */
-export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose, variant = "default" }) => {
+export const UserBonusModal: React.FC<UserBonusModalProps> = ({
+  visible,
+  onClose,
+  variant = "default",
+}) => {
   const insets = useSafeAreaInsets();
   // V2 (spread) et V3 (mesh) partagent la même mise en page épurée (page neutre
   // + carte de pagination). Seule la couleur du fond de page diffère :
   // V2 = blanc pur, V3 = gris neutre.
   const isFlat = variant === "mesh" || variant === "spread";
   const pageBg = variant === "spread" ? LIGHT : NEUTRAL_BG;
-  const CardComponent = variant === "mesh" ? BonusCardV3 : variant === "spread" ? BonusCardV2 : BonusCard;
+  const CardComponent =
+    variant === "mesh"
+      ? BonusCardV3
+      : variant === "spread"
+        ? BonusCardV2
+        : BonusCard;
   const [headerHeight, setHeaderHeight] = useState(70);
   const [index, setIndex] = useState(0);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
   const carouselRef = useRef<BonusCarouselHandle>(null);
 
   const { bonuses, loading, error, claims, claimBonus, refresh } = useBonus();
 
   // Fond de page PLEIN à la couleur du bonus centré (transition continue au scroll).
   const scrollX = useRef(new Animated.Value(0)).current;
-  const colors = useMemo(() => bonuses.map((b) => getBonusDescriptor(b.type).color), [bonuses]);
+  const colors = useMemo(
+    () => bonuses.map((b) => getBonusDescriptor(b.type).color),
+    [bonuses],
+  );
   const animatedBg = useMemo(() => {
     if (colors.length < 2) return colors[0] || Theme.colors.primary;
     return scrollX.interpolate({
@@ -76,7 +102,10 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
       const res = await claimBonus(bonus);
       setToast(
         res.success
-          ? { message: "🎉 Demande envoyée ! Tu recevras une notification.", type: "success" }
+          ? {
+              message: "🎉 Demande envoyée ! Tu recevras une notification.",
+              type: "success",
+            }
           : { message: res.message || "Échec de la demande", type: "error" },
       );
     },
@@ -88,17 +117,38 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
   const hasBonuses = !loading && !error && bonuses.length > 0;
 
   return (
-    <View style={[styles.overlay, variant === "spread" && { backgroundColor: LIGHT }]}>
+    <View
+      style={[
+        styles.overlay,
+        variant === "spread" && { backgroundColor: LIGHT },
+      ]}
+    >
       {/* Fond de page : neutre en "mesh" (le coloré est sur les cartes),
           sinon couleur pleine animée + blobs + dégradé (effet mesh global). */}
       {isFlat ? (
-        <View style={[styles.contentBg, { top: headerHeight, backgroundColor: pageBg }]} pointerEvents="none" />
+        <View
+          style={[
+            styles.contentBg,
+            { top: headerHeight, backgroundColor: pageBg },
+          ]}
+          pointerEvents="none"
+        />
       ) : (
-        <Animated.View style={[styles.contentBg, { top: headerHeight, backgroundColor: animatedBg }]} pointerEvents="none">
+        <Animated.View
+          style={[
+            styles.contentBg,
+            { top: headerHeight, backgroundColor: animatedBg },
+          ]}
+          pointerEvents="none"
+        >
           <View style={styles.blobTop} />
           <View style={styles.blobBottom} />
           <LinearGradient
-            colors={["rgba(255,255,255,0.16)", "rgba(255,255,255,0)", "rgba(0,0,0,0.22)"]}
+            colors={[
+              "rgba(255,255,255,0.16)",
+              "rgba(255,255,255,0)",
+              "rgba(0,0,0,0.22)",
+            ]}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
           />
@@ -108,13 +158,29 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
       <TabHeader
         title="Bonus"
         subtitle="Tes récompenses fidélité"
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        right={
+          <HeaderPill
+            label="Retour"
+            icon="arrow-back-outline"
+            onPress={onClose}
+          />
+        }
         onHeightChange={setHeaderHeight}
       />
 
-      <View style={[styles.body, { paddingTop: headerHeight + 10, paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 8 }]}>
+      <View
+        style={[
+          styles.body,
+          {
+            paddingTop: headerHeight + 10,
+            paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 8,
+          },
+        ]}
+      >
         {loading ? (
-          <View style={styles.state}><BonusSkeleton /></View>
+          <View style={styles.state}>
+            <BonusSkeleton />
+          </View>
         ) : error ? (
           <View style={styles.state}>
             <BonusEmptyState icon="cloud-offline-outline" title={error} />
@@ -153,12 +219,19 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
               disabled={index === 0}
               activeOpacity={0.8}
             >
-              <Ionicons name="chevron-back" size={20} color={index === 0 ? FADED : LIGHT} />
+              <Ionicons
+                name="chevron-back"
+                size={20}
+                color={index === 0 ? FADED : LIGHT}
+              />
             </TouchableOpacity>
 
             <View style={styles.dots}>
               {bonuses.map((_, i) => (
-                <View key={i} style={[styles.dot, i === index && styles.dotActive]} />
+                <View
+                  key={i}
+                  style={[styles.dot, i === index && styles.dotActive]}
+                />
               ))}
             </View>
 
@@ -168,7 +241,11 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
               disabled={index === bonuses.length - 1}
               activeOpacity={0.8}
             >
-              <Ionicons name="chevron-forward" size={20} color={index === bonuses.length - 1 ? FADED : LIGHT} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={index === bonuses.length - 1 ? FADED : LIGHT}
+              />
             </TouchableOpacity>
           </View>
         )}
@@ -176,7 +253,12 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
         {/* Pagination V3 (mesh) : CARTE = galerie des pages à slider (gauche)
             + compteur 2/5 et contrôles flèches/dots (droite). */}
         {hasBonuses && bonuses.length > 1 && isFlat && (
-          <View style={[styles.pagCard, variant === "spread" && styles.pagCardOutlined]}>
+          <View
+            style={[
+              styles.pagCard,
+              variant === "spread" && styles.pagCardOutlined,
+            ]}
+          >
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -192,21 +274,40 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
                     key={b.id ?? i}
                     onPress={() => carouselRef.current?.goTo(i)}
                     activeOpacity={0.85}
-                    style={[styles.galleryCard, active && { borderColor: c, backgroundColor: `${c}12` }]}
+                    style={[
+                      styles.galleryCard,
+                      active && { borderColor: c, backgroundColor: `${c}12` },
+                    ]}
                   >
                     <View style={styles.galleryCardTop}>
-                      <View style={[styles.galleryIcon, { backgroundColor: `${c}1f` }]}>
+                      <View
+                        style={[
+                          styles.galleryIcon,
+                          { backgroundColor: `${c}1f` },
+                        ]}
+                      >
                         <Ionicons name={desc.icon} size={15} color={c} />
                       </View>
                     </View>
                     <Text
-                      style={[styles.galleryName, active && { color: DARK_ICON, fontWeight: "800" }]}
+                      style={[
+                        styles.galleryName,
+                        active && { color: DARK_ICON, fontWeight: "800" },
+                      ]}
                       numberOfLines={1}
                     >
                       Bonus {i + 1}
                     </Text>
                     <View style={styles.galleryBar}>
-                      <View style={[styles.galleryBarFill, { backgroundColor: c, width: active ? "100%" : "34%" }]} />
+                      <View
+                        style={[
+                          styles.galleryBarFill,
+                          {
+                            backgroundColor: c,
+                            width: active ? "100%" : "34%",
+                          },
+                        ]}
+                      />
                     </View>
                   </TouchableOpacity>
                 );
@@ -214,8 +315,21 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
             </ScrollView>
 
             <View style={styles.pagRight}>
-              <View style={[styles.counterPill, { backgroundColor: `${colors[index] || Theme.colors.primary}1f` }]}>
-                <Text style={[styles.counterText, { color: colors[index] || Theme.colors.primary }]} numberOfLines={1}>
+              <View
+                style={[
+                  styles.counterPill,
+                  {
+                    backgroundColor: `${colors[index] || Theme.colors.primary}1f`,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.counterText,
+                    { color: colors[index] || Theme.colors.primary },
+                  ]}
+                  numberOfLines={1}
+                >
                   Bonus N°{index + 1} · {bonuses[index]?.name}
                 </Text>
               </View>
@@ -226,7 +340,11 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
                   disabled={index === 0}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="chevron-back" size={18} color={index === 0 ? DARK_FADED : DARK_ICON} />
+                  <Ionicons
+                    name="chevron-back"
+                    size={18}
+                    color={index === 0 ? DARK_FADED : DARK_ICON}
+                  />
                 </TouchableOpacity>
 
                 <View style={styles.dots}>
@@ -236,7 +354,10 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
                       style={[
                         styles.dot,
                         { backgroundColor: DARK_DOT },
-                        i === index && { width: 20, backgroundColor: DARK_ICON },
+                        i === index && {
+                          width: 20,
+                          backgroundColor: DARK_ICON,
+                        },
                       ]}
                     />
                   ))}
@@ -248,7 +369,13 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
                   disabled={index === bonuses.length - 1}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="chevron-forward" size={18} color={index === bonuses.length - 1 ? DARK_FADED : DARK_ICON} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={
+                      index === bonuses.length - 1 ? DARK_FADED : DARK_ICON
+                    }
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -256,25 +383,85 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({ visible, onClose
         )}
       </View>
 
-      {toast && <Toast message={toast.message} type={toast.type} onHide={() => setToast(null)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onHide={() => setToast(null)}
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 1000, backgroundColor: "transparent" },
-  contentBg: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: "#fff", overflow: "hidden" },
-  blobTop: { position: "absolute", top: -50, right: -70, width: 260, height: 260, borderRadius: 130, backgroundColor: "rgba(255,255,255,0.16)" },
-  blobBottom: { position: "absolute", bottom: -70, left: -60, width: 280, height: 280, borderRadius: 140, backgroundColor: "rgba(0,0,0,0.12)" },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1000,
+    backgroundColor: "transparent",
+  },
+  contentBg: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  blobTop: {
+    position: "absolute",
+    top: -50,
+    right: -70,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: "rgba(255,255,255,0.16)",
+  },
+  blobBottom: {
+    position: "absolute",
+    bottom: -70,
+    left: -60,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(0,0,0,0.12)",
+  },
   body: { flex: 1 },
   state: { flex: 1, justifyContent: "center" },
   carouselZone: { flex: 1 },
-  retry: { flexDirection: "row", alignSelf: "center", alignItems: "center", gap: 6, marginTop: 4, paddingHorizontal: 18, paddingVertical: 10 },
+  retry: {
+    flexDirection: "row",
+    alignSelf: "center",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 4,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
   retryText: { color: LIGHT, fontWeight: "700", fontSize: 14 },
-  pagination: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 14, paddingVertical: 6 },
-  navBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: GLASS, justifyContent: "center", alignItems: "center" },
+  pagination: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+    paddingVertical: 6,
+  },
+  navBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: GLASS,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   navBtnMesh: { backgroundColor: "rgba(0,0,0,0.06)" },
-  navBtnSm: { width: 30, height: 30, borderRadius: 15, justifyContent: "center", alignItems: "center" },
+  navBtnSm: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   // Carte de pagination (design mesh) : galerie à slider + compteur + contrôles
   pagCard: {
@@ -290,8 +477,8 @@ const styles = StyleSheet.create({
   },
   // V2 (fond blanc pur) : bordure fine + léger relief pour détacher la carte.
   pagCardOutlined: {
-    borderWidth: 1,
-    borderColor: "rgba(236, 236, 241, 1)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -299,27 +486,62 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   galleryScroll: { flex: 1 },
-  gallery: { flexDirection: "row", alignItems: "stretch", gap: 8, paddingRight: 4 },
+  gallery: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 8,
+    paddingRight: 4,
+  },
   galleryCard: {
     width: 72,
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 14,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: "transparent",
     backgroundColor: "rgba(0,0,0,0.04)",
   },
   galleryCardTop: { flexDirection: "row", alignItems: "center" },
-  galleryIcon: { width: 26, height: 26, borderRadius: 8, justifyContent: "center", alignItems: "center" },
+  galleryIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   galleryName: { fontSize: 12, fontWeight: "700", color: "rgba(0,0,0,0.7)" },
-  galleryBar: { height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.08)", overflow: "hidden" },
+  galleryBar: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,0,0,0.08)",
+    overflow: "hidden",
+  },
   galleryBarFill: { height: "100%", borderRadius: 2 },
   pagRight: { width: 150, alignItems: "stretch", gap: 6 },
-  counterPill: { backgroundColor: "rgba(0,0,0,0.06)", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
-  counterText: { textAlign: "center", fontSize: 11, fontWeight: "800", color: Theme.colors.dark },
-  pagNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  counterPill: {
+    backgroundColor: "rgba(0,0,0,0.06)",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  counterText: {
+    textAlign: "center",
+    fontSize: 11,
+    fontWeight: "800",
+    color: Theme.colors.dark,
+  },
+  pagNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   dots: { flexDirection: "row", alignItems: "center", gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.4)" },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
   dotActive: { width: 22, backgroundColor: LIGHT },
 });

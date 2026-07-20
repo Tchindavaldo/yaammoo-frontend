@@ -7,23 +7,51 @@ depuis **Settings → « Bonus et parrainage »**. Chaque page (carte) empile : 
 stats** (commandes + montant, jour/sem./mois) · **carte principale** (récompense, chip
 de statut, description, progression, Début/Fin/Durée) · **mini-cartes** (Proposés /
 Mes reçus / Distribués) · **ligne de réclamation**. Navigation par **carrousel** + une
-**carte de pagination** en bas (galerie de mini-cartes à gauche, compteur « Bonus N°x »
-+ flèches/dots à droite). L'éligibilité et les stats se calculent **en direct** à
-partir des commandes (`OrderContext`).
+**carte de pagination** en bas (galerie de mini-cartes à gauche, panneau « héro »
+du bonus courant à droite). Fond de page **blanc pur**. L'éligibilité et les stats se
+calculent **en direct** à partir des commandes (`OrderContext`).
 
-### Trois designs (variantes) — fichiers dédiés, jamais partagés
-Sélectionnés via la prop `variant` de `UserBonusModal` (montée 3× dans `settings.tsx`) :
-| variant | Composant carte | Fond de page | Style cartes |
+### Design unique
+`UserBonusModal` ne rend plus qu'un seul design (l'ancien « design 2 / spread ») :
+**fond de page blanc pur**, cartes blanches (`BonusCard`) avec **bordure fine**
+`rgba(0,0,0,0.04)` + ombre très douce, couleur du bonus en accent. La carte de
+pagination du bas est **outlined** (`pagCardOutlined`). Plus de prop `variant`,
+plus de fond mesh coloré animé.
+
+> L'ombre montante de la tab bar est **atténuée** pendant l'ouverture de la modale
+> (voir `settings.tsx`, effet sur `userBonusVisible`) pour éviter une bande grise.
+
+### Alignement sur le header
+Le `TabHeader` pose son texte à `Theme.spacing.md` (16 px) du bord. Les cartes
+s'alignent sur **le texte** : chaque bloc porte une marge `GUTTER − son padding
+interne`, si bien que `marge + padding = 16` et que les libellés tombent sur la
+même verticale que « Bonus » dans le header.
+
+Les paddings sont volontairement **proches** (10 à 12) pour que les marges qui en
+découlent le soient aussi (+4 à +6) : les bordures forment ainsi une colonne
+régulière. ⚠️ Un padding nettement plus grand (ex. 18) produirait une marge
+négative et une carte qui déborde visiblement des autres — c'est ce qu'il faut
+éviter en touchant ces constantes.
+
+| Bloc | Constante | Padding | Marge |
 |---|---|---|---|
-| `default` | `BonusCard` | mesh **coloré global** animé | cartes « flat » sans fond, texte blanc |
-| `spread` (design 2) | `BonusCardV2` | **blanc pur** (overlay + contentBg blancs) | cartes blanches + **bordure fine** `rgba(236,236,241,1)` + ombre très douce |
-| `mesh` (design 3) | `BonusCardV3` | **gris neutre** `#f3f4f6` | cartes blanches épurées, **sans bordure/ombre** |
+| Panneau stats | `CARD_PAD` | 10 | +6 |
+| Carte principale | `CARD_PAD` | 10 | +6 |
+| Mini-cartes | `MINI_PAD` | 10 | +6 |
+| Ligne réclamation | `CLAIM_PAD` | 12 | +4 |
+| Pagination | `PAG_PAD` | 10 | +6 |
 
-> V2 et V3 sont **identiques** au pixel près (même corps de carte, couleur du bonus en
-> accent) ; **seuls diffèrent le fond de page et la bordure/ombre** (gérés dans
-> `UserBonusModal` via `isFlat`/`pageBg`). Les deux vivent dans des **fichiers séparés**.
-> Sur V2, l'ombre montante de la tab bar est **atténuée** pendant l'ouverture de la
-> modale (voir `settings.tsx`, effet sur `userBonusV2Visible`) pour éviter une bande grise.
+**Panneau stats.** Ses colonnes sont en `flex: 1` / `alignItems: "center"` : le
+texte est centré *dans sa colonne* et aucun padding ne le ramène au bord. Les
+colonnes extrêmes portent donc l'alignement — `cellStart` sur « Jour », `cellEnd`
+sur le dernier « Mois », `headStart` sur le titre « Commandes ».
+
+### Pull-to-refresh
+`UserBonusModal` englobe le carrousel dans un `ScrollView` **vertical**
+(`refreshControl={pullControl}`) : le carrousel étant horizontal, il ne peut pas
+capter le geste lui-même. Le rechargement est **silencieux** (`refresh(true)`) pour
+éviter le skeleton plein écran, et l'état local `refreshing` pilote le spinner.
+Les états **vide** et **erreur** sont eux aussi tirables.
 
 > **Évolutivité (exigence clé)** : un futur type de bonus créé côté fastfood
 > s'affiche automatiquement, sans toucher au code, grâce au **registre de types**
@@ -45,15 +73,19 @@ src/features/bonus/
 ├── hooks/
 │   ├── useBonus.ts               # GET /bonus/all + normalizeBonus() + claim (POST /bonus-request) + fallback démo
 │   ├── useBonusEligibility.ts    # ⭐ Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
+│   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
 └── components/
-    ├── UserBonusModal.tsx        # Coquille : header + stats + carrousel plein écran + pagination bas + fond mesh animé
+    ├── UserBonusModal.tsx        # Coquille : header + carrousel plein écran + carte de pagination bas (fond blanc pur)
     ├── BonusStatsPanel.tsx       # Panneau haut sans fond : blocs Commandes | Montant (périodes horizontales)
     ├── BonusCarousel.tsx         # Carrousel centré (forwardRef goTo, onIndexChange, peek voisins) — remplit la hauteur
-        ├── BonusSparkline.tsx      # Petit graphique sparkline (tendance commandes)
-    ├── BonusCard.tsx             # Design 1 (défaut) : carte "flat" sur fond global coloré
-    ├── BonusCardV2.tsx           # Design 2 (STABLE) : cartes claires sur fond global coloré — ⚠️ fichier dédié, ne pas y mettre d'autre design
-    ├── BonusCardV3.tsx           # Design 3 : fond coloré "mesh" porté par CHAQUE carte, page en fond neutre — ⚠️ fichier dédié
+    ├── BonusPagerInfo.tsx        # Colonne droite pagination — panneau « héro » : n° géant en filigrane, icône+émetteur+reste, nom, statut, jauge de position
+    ├── BonusGalleryCard.tsx      # Mini-carte de la galerie de pagination : fond + barre de progression interpolés sur scrollX (sans bordure)
+    ├── gallery.constants.ts      # Dimensions de la galerie (largeur/gap/pas/radius)
+    ├── BonusClaimRow.tsx         # Ligne de réclamation du bonus courant (statut + boutons Réclamer / Profil / Compte)
+    ├── BonusCredentialsSheet.tsx # Bottom sheet des identifiants livrés (profil, code, email, mot de passe — copiables)
+    ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes)
+    ├── BonusCard.tsx             # ⭐ Carte bonus (design unique) : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
     ├── BonusProgressBar.tsx      # Barre de progression animée réutilisable
     ├── BonusUsageRing.tsx        # Anneau de progression `used/limit` (utilisations du code)
     └── BonusStates.tsx           # BonusSkeleton + BonusEmptyState
@@ -79,21 +111,99 @@ héritées (`order_count`, `type: *_bonus`, `minOrderAmount`…) :
 Bonus {
   id, type,                // type = chaîne libre : 'netflix' | 'free_delivery' | 'free_meal' | 'discount' | <futur>
   name, description,
-  reward: { value?, unit?, label? },
-  criteria: { kind, target?, fastFoodId? },
-  isFastFoodBonus?, fastFoodName?, validUntil?, createdAt?,
+  criteria: { kind, period?, target?, fastFoodId? },
+  fastFoodId?,           // null = bonus plateforme yaammoo
+  fastFoodName?,         // ⭐ émetteur — affiché en GROS TITRE de la carte ("yaammoo" par défaut)
+  active?, createdAt?, claimDuration?,
+  // Code délivré après approbation (fournis par le backend) :
+  code?, claimedAt?, expiresAt?, expired?,
+  usageLimit?, usageCount?, remainingUses?, redeemed?,
   // Stats affichées sur la carte (fournies par le backend) :
   fastFoodBonusCount?,   // bonus proposés par le fastfood
   userClaimedCount?,     // fois où CE user a pris ce bonus
   totalClaimedCount?,    // fois où TOUS les users l'ont pris
-  requestStatus?         // 'none' | 'pending' | 'approved' (validation fastfood)
+  requestStatus?,        // 'none' | 'pending' | 'approved' (validation fastfood)
+  bonusStats?            // { day, week, month } × { count, amount }
 }
 ```
 
-**Rendu (design) :** fond de page **plein à la couleur du bonus centré** (transition
-au scroll) + blobs flous + dégradé (effet mesh). Les cartes et le panneau de stats
-n'ont **aucun fond** : texte en blanc/blanc translucide pour se fondre dans le fond.
-Pagination (flèches ‹ ›  autour des points) en bas, au-dessus de la navbar.
+> **Alignement strict backend.** Le frontend ne consomme que les champs réellement
+> envoyés par `GET /bonus/all`. Les champs `reward`, `isFastFoodBonus` et
+> `validUntil` ont été **supprimés** (jamais renvoyés par le backend ;
+> `isFastFoodBonus`/`validUntil` n'étaient de toute façon lus nulle part au rendu).
+> `normalizeBonus()` ne fait plus d'inférence sur des formes héritées
+> (`order_count`, `minOrderAmount`…) : il lit le payload tel quel.
+
+**Rendu (design) :** fond de page **blanc pur**. Cartes blanches (bordure fine
+`rgba(0,0,0,0.04)` + ombre très douce), couleur du bonus en accent. Carte de
+pagination outlined en bas, au-dessus de la navbar (galerie à slider à gauche +
+panneau « héro » du bonus courant à droite). Pas de flèches prev/next : la
+navigation se fait au swipe ou au tap sur une mini-carte, et l'espace libéré
+revient au panneau.
+
+**Colonne gauche — galerie (`BonusGalleryCard`).** Mini-cartes **sans bordure ni
+cadre** : la carte active se distingue par sa **barre de progression** (largeur
+34%→100% interpolée sur `scrollX`), un fond légèrement teinté et le `fontWeight`
+de son libellé (piloté par `active`, `Animated` ne sachant pas l'interpoler).
+L'ancien surlignage de cadre (deux variantes `slide`/`grow`, composants
+`BonusGalleryHighlight`/`BonusGalleryEdge` + constante `GALLERY_HIGHLIGHT_MODE`) a
+été **entièrement supprimé** — on ne garde que le langage « barre de progression ».
+
+**Colonne droite — panneau « héro » (`BonusPagerInfo`).** Refonte : le contenu
+est calé **en bas** (asymétrie), un **numéro géant en filigrane** (96px, opacité
+7%) ancre le panneau. Par-dessus, de haut en bas : ligne condensée (badge icône du
+type + émetteur + reste d'utilisations si plafond) · nom du bonus en poids fort ·
+statut (dot + label coloré via `useBonusStatus`) · **jauge de position**. La jauge
+remplace les anciens dots : sa portion pleine suit `scrollX` de **0 % (premier
+bonus) à 100 % (dernier bonus)** — formule `index / (N−1)`, elle n'atteint donc le
+plein que sur la toute dernière carte et progresse en continu au swipe.
+
+Le compteur/le contenu textuel, qui n'est pas un style, ne peut pas être
+interpolé : il est rafraîchi via `scrollX.addListener` dès le franchissement de la
+moitié d'une carte. **Verrou anti-flash** : lors d'un tap direct sur une
+mini-carte (`goToBonus`), `scrollX` traverse toutes les cartes intermédiaires
+pendant l'animation — un `jumpTarget` (ref) fait ignorer ces étapes au listener,
+sinon le titre et la ligne de réclamation défileraient en accéléré jusqu'à la
+destination.
+
+Le carrousel reste en
+`useNativeDriver: false` car le parent interpole `scrollX` vers des couleurs, ce que
+le driver natif ne supporte pas.
+
+### Récompense livrée (`rewardCredentials`)
+
+Provisionnée manuellement puis poussée par socket `bonus.reward_credentials`
+(également présente sur `GET /bonus/all`). Structure :
+
+```jsonc
+{ "login": "...", "password": "...",
+  "profile": { "name": "Profil 3", "code": "4821" } }
+```
+
+`profile` est **optionnel** — `undefined` sur les bonus non concernés (non-Netflix).
+Le payload traverse `applyClaimPayload` (`useBonus.ts`) qui affecte
+`rewardCredentials` en bloc : aucun champ à déclarer côté flux de données.
+
+Quand des identifiants sont livrés, `BonusClaimRow` affiche deux boutons :
+**Profil** (outlined, seulement si `profile` existe) et **Compte** (plein). Ils
+ouvrent `BonusCredentialsSheet` sur des contenus **disjoints**, via la prop
+`section` :
+
+| `section` | Lignes affichées | Titre |
+|-----------|------------------|-------|
+| `"account"` (défaut) | Email, Mot de passe | Tes identifiants |
+| `"profile"` | Profil, Code du profil | Ton profil |
+
+La sheet ne rend rien si `section="profile"` sur un bonus sans profil.
+
+Quand le bonus livre un **code** (et non des identifiants), la ligne affiche
+**Activer** (outlined) + **Copier** (plein). ⚠️ `onActivate` n'est **pas encore
+branchée** : l'endpoint backend reste à définir, le bouton est visuel seulement.
+
+**Hauteur fixe** : `BonusClaimRow` est bornée à `CLAIM_ROW_H` (52px) — la
+description variait de 1 à 3 lignes selon le statut, ce qui faisait « sauter » la
+carte de pagination à chaque slide. Titre en `numberOfLines={1}`, description en
+`numberOfLines={2}` : le texte s'ellipse au lieu de pousser la carte.
 
 ### Critères d'éligibilité (`BonusCriteria.kind`)
 | kind | Mesure | Éligible quand |
@@ -101,6 +211,11 @@ Pagination (flèches ‹ ›  autour des points) en bas, au-dessus de la navbar.
 | `welcome` | — | toujours |
 | `order_count` | nb de commandes payées | `current >= target` |
 | `amount_spent` | montant cumulé payé (FCFA) | `current >= target` |
+
+`criteria.period` (`day` \| `week` \| `month`) est **purement informatif au rendu** :
+elle s'affiche en suffixe du compteur sous la barre de progression
+(« 19 150 / 50 000 FCFA · sur le mois »). Le moteur d'éligibilité mesure toujours
+sur **tout l'historique** — il ne filtre pas sur la fenêtre temporelle.
 
 > **Pas d'expiration de bonus.** Un bonus ne s'affiche jamais « expiré ». La seule
 > échéance est celle du **code après réclamation** (`claimedAt + claimDuration`) :
@@ -154,6 +269,12 @@ Feedback via `Toast` (succès/erreur).
 |---|---|---|
 | GET | `/bonus/all` | Liste des bonus |
 | POST | `/bonus-request` | Réclamer un bonus |
+
+Les deux endpoints exigent `Authorization: Bearer <idToken>`. Le helper
+`authHeaders()` (dans `useBonus.ts`) appelle `auth.currentUser?.getIdToken()`
+**à chaque requête** : le SDK sert le cache si le token est encore valide et le
+régénère sinon. ⚠️ Ne jamais mémoriser ce token dans une variable au login —
+les appels partiraient en 401 au bout d'une heure.
 
 ## Deep-link
 Notification `type: "bonus"` → `/(tabs)/settings?section=bonus` → ouvre `UserBonusModal`

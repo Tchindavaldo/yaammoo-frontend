@@ -11,6 +11,8 @@ import { BonusCard } from "./BonusCard";
 
 /** Signature attendue d'un composant de carte de bonus (variantes de dispo). */
 export type BonusCardComponent = React.ComponentType<{
+  /** Image de fond de la carte principale (outil de réglage, cf. UserBonusModal). */
+  cardImage?: string | null;
   bonus: Bonus;
   claimStatus?: BonusClaimStatus;
   onClaim: (bonus: Bonus) => void;
@@ -26,6 +28,8 @@ interface BonusCarouselProps {
   onIndexChange: (index: number) => void;
   /** Composant de carte à rendre (permet les variantes de disposition). */
   CardComponent?: BonusCardComponent;
+  /** Relayé tel quel à chaque carte. */
+  cardImage?: string | null;
 }
 
 /** Méthodes impératives exposées au parent (piloter les flèches de pagination). */
@@ -46,7 +50,18 @@ const INTERVAL = CAROUSEL_INTERVAL;
  * ne sont pas visibles. La pagination (flèches + points) est gérée par le parent.
  */
 export const BonusCarousel = forwardRef<BonusCarouselHandle, BonusCarouselProps>(
-  ({ bonuses, claims, onClaim, scrollX, onIndexChange, CardComponent = BonusCard }, ref) => {
+  (
+    {
+      bonuses,
+      claims,
+      onClaim,
+      scrollX,
+      onIndexChange,
+      CardComponent = BonusCard,
+      cardImage,
+    },
+    ref,
+  ) => {
     const scrollRef = useRef<any>(null);
 
     useImperativeHandle(ref, () => ({
@@ -77,7 +92,12 @@ export const BonusCarousel = forwardRef<BonusCarouselHandle, BonusCarouselProps>
         {bonuses.map((bonus, i) => {
           return (
             <Animated.View key={bonus.id} style={styles.slide}>
-              <CardComponent bonus={bonus} claimStatus={claims[bonus.id]} onClaim={onClaim} />
+              <CardComponent
+                bonus={bonus}
+                claimStatus={claims[bonus.id]}
+                onClaim={onClaim}
+                cardImage={cardImage}
+              />
             </Animated.View>
           );
         })}

@@ -12,21 +12,17 @@
  */
 export type BonusCriteriaKind = "order_count" | "amount_spent" | "welcome";
 
+/** Fenêtre temporelle sur laquelle porte le critère (affichée sous la barre). */
+export type BonusCriteriaPeriod = "day" | "week" | "month";
+
 export interface BonusCriteria {
   kind: BonusCriteriaKind;
   /** Palier à atteindre : nombre de commandes ou montant cumulé (FCFA). */
   target?: number;
+  /** Période de référence du palier (ex. 50 000 FCFA "sur un mois"). */
+  period?: BonusCriteriaPeriod;
   /** Restreint le calcul aux commandes d'un fastfood précis (fidélité ciblée). */
   fastFoodId?: string;
-}
-
-export interface BonusReward {
-  /** Valeur numérique de la récompense (montant, pourcentage, nb de mois…). */
-  value?: number;
-  /** Unité affichée : "FCFA", "%", "mois", "repas"… */
-  unit?: string;
-  /** Libellé libre si la récompense ne se résume pas à un nombre. */
-  label?: string;
 }
 
 /**
@@ -39,26 +35,45 @@ export interface Bonus {
   type: string;
   name: string;
   description?: string;
-  reward?: BonusReward;
   criteria: BonusCriteria;
-  /** true = bonus créé par un fastfood ; false/absent = bonus plateforme yaammoo. */
-  isFastFoodBonus?: boolean;
+  /** Émetteur du bonus : nom du fastfood, ou "yaammoo" pour la plateforme. */
   fastFoodName?: string;
+  /** null = bonus plateforme yaammoo ; sinon id du fastfood émetteur. */
+  fastFoodId?: string | null;
   /** Si false = le fastfood n'a pas encore activé cette offre. */
   active?: boolean;
-  /** ISO8601 — date limite de l'offre (au-delà, plus éligible). */
-  validUntil?: string;
   createdAt?: string;
   /** Durée de validité du code bonus une fois réclamé (en jours). */
   claimDuration?: number;
-  /** ISO8601 — date à laquelle le user a réclamé le bonus. */
-  claimedAt?: string;
+  /** ISO8601 — date à laquelle le user a réclamé le bonus (null = jamais). */
+  claimedAt?: string | null;
   /** true = le code a été entièrement consommé (toutes les utilisations faites). */
   redeemed?: boolean;
   /** Nombre total d'utilisations autorisées du code une fois réclamé. */
   usageLimit?: number;
   /** Nombre d'utilisations déjà consommées. Quand il atteint usageLimit → non éligible. */
   usageCount?: number;
+  /** Utilisations restantes du code (fourni par le backend). */
+  remainingUses?: number;
+  /** Code bonus délivré après approbation (ex. "YAM-5PBQRH"). */
+  code?: string | null;
+  /**
+   * Identifiants du service offert (Netflix, etc.), livrés manuellement après
+   * traitement. null tant que la récompense n'est pas provisionnée.
+   */
+  rewardCredentials?: {
+    login: string;
+    password: string;
+    /**
+     * Profil à utiliser sur le compte partagé (Netflix…) : nom affiché + code
+     * PIN de déverrouillage. `undefined` sur les bonus non concernés.
+     */
+    profile?: { name: string; code: string } | null;
+  } | null;
+  /** ISO8601 — expiration du code, calculée backend (claimedAt + claimDuration). */
+  expiresAt?: string | null;
+  /** true = le code a dépassé expiresAt. */
+  expired?: boolean;
 
   // --- Statistiques fournies par le backend (affichées sur la carte) ---
   /** Nombre total de bonus proposés par ce fastfood. */

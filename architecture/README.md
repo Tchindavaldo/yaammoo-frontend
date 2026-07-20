@@ -20,6 +20,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [orders-merchant.md](./orders-merchant.md) | Gestion commandes côté marchand (panel, cartes, statuts) |
 | [bonus.md](./bonus.md) | Bonus côté client (registre évolutif, moteur d'éligibilité, vues Liste/Roadmap, claim) |
 | [driver.md](./driver.md) | Rôle driver — commandes déléguées (onglet, panel, carte, socket, contrat backend) |
+| [bonus.md](./bonus.md) | Bonus & récompenses client (carte unique, carrousel, éligibilité, API) |
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
 | [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |

@@ -1,111 +1,90 @@
 // ============================================================================
-// Moteur d'éligibilité — calcule la progression d'un bonus depuis les commandes
+// Moteur d'éligibilité — dérive la progression d'un bonus depuis `bonusStats`
 // ----------------------------------------------------------------------------
-// Source de vérité : OrderContext (useOrders). Une commande "compte" dès
-// qu'elle est PAYÉE, c.-à-d. dès le statut `pending` et au-delà (finished,
-// delivering, delivered). On exclut le panier (pendingToBuy) et les annulations.
+// Source de vérité : LE BACKEND. Il segmente lui-même les commandes payées par
+// période (jour / semaine / mois) et expose le résultat dans `bonus.bonusStats`.
+// On ne recalcule RIEN localement : un cumul fait depuis OrderContext ignorerait
+// la période du critère et produirait une éligibilité fausse.
+// Pas de stats backend → { measurable: false } : le bonus reste consultable,
+// mais on n'invente ni progression ni bouton "Réclamer".
 // ============================================================================
 import { useMemo } from "react";
-import { Commande } from "@/src/types";
-import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import type { Bonus, BonusProgress } from "../types/bonus.types";
 
-/** Statuts d'une commande considérée comme payée (compte pour l'éligibilité). */
+/** Statuts d'une commande considérée comme payée. */
 export const PAID_STATUSES = ["pending", "finished", "delivering", "delivered"];
-
-const isPaid = (o: Commande) =>
-  PAID_STATUSES.includes((o.status || "").toLowerCase());
-
-/** Filtre les commandes payées, optionnellement restreintes à un fastfood. */
-const paidOrders = (orders: Commande[], fastFoodId?: string) => {
-  const paid = orders.filter(isPaid);
-  return fastFoodId ? paid.filter((o) => o.fastFoodId === fastFoodId) : paid;
-};
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
+/** Progression non mesurable : bonus affiché, mais aucune assertion chiffrée. */
+const UNMEASURABLE: BonusProgress = {
+  measurable: false,
+  eligible: false,
+  current: 0,
+  target: 0,
+  remaining: 0,
+  progress: 0,
+  unit: "",
+};
+
+/** Assemble une progression à partir du compteur backend et du palier visé. */
+const build = (
+  current: number,
+  target: number,
+  unit: string,
+): BonusProgress => ({
+  measurable: true,
+  eligible: target > 0 && current >= target,
+  current,
+  target,
+  remaining: Math.max(0, target - current),
+  progress: target > 0 ? clamp01(current / target) : 0,
+  unit,
+});
+
 /**
  * Calcul pur (testable, réutilisable hors React) de la progression d'un bonus.
- * Un critère inconnu → { measurable: false } (le bonus reste consultable).
+ * Un critère inconnu ou des stats manquantes → { measurable: false }.
  */
-export const computeEligibility = (
-  bonus: Bonus,
-  orders: Commande[],
-): BonusProgress => {
-  const { kind, target = 0, fastFoodId } = bonus.criteria || ({} as any);
+export const computeEligibility = (bonus: Bonus): BonusProgress => {
+  const { kind, target = 0, period } = bonus.criteria || ({} as any);
+
+  // Bonus de bienvenue : toujours éligible, aucun compteur requis.
+  if (kind === "welcome") {
+    return {
+      measurable: true,
+      eligible: true,
+      current: 1,
+      target: 1,
+      remaining: 0,
+      progress: 1,
+      unit: "",
+    };
+  }
+
+  const stats = period ? bonus.bonusStats?.[period] : undefined;
+  if (!stats) return UNMEASURABLE;
 
   switch (kind) {
-    case "welcome":
-      // Bonus de bienvenue : toujours éligible.
-      return {
-        measurable: true,
-        eligible: true,
-        current: 1,
-        target: 1,
-        remaining: 0,
-        progress: 1,
-        unit: "",
-      };
-
-    case "order_count": {
-      const current = paidOrders(orders, fastFoodId).length;
-      const eligible = target > 0 && current >= target;
-      return {
-        measurable: true,
-        eligible,
-        current,
-        target,
-        remaining: Math.max(0, target - current),
-        progress: target > 0 ? clamp01(current / target) : 0,
-        unit: "commande",
-      };
-    }
-
-    case "amount_spent": {
-      const current = paidOrders(orders, fastFoodId).reduce(
-        (sum, o) => sum + (o.total || 0),
-        0,
-      );
-      const eligible = target > 0 && current >= target;
-      return {
-        measurable: true,
-        eligible,
-        current,
-        target,
-        remaining: Math.max(0, target - current),
-        progress: target > 0 ? clamp01(current / target) : 0,
-        unit: "FCFA",
-      };
-    }
-
+    case "order_count":
+      return build(stats.count, target, "commande");
+    case "amount_spent":
+      return build(stats.amount, target, "FCFA");
     default:
-      // Critère non reconnu : bonus affiché mais non mesurable (consultation).
-      return {
-        measurable: false,
-        eligible: false,
-        current: 0,
-        target: 0,
-        remaining: 0,
-        progress: 0,
-        unit: "",
-      };
+      return UNMEASURABLE;
   }
 };
 
-/** Progression d'un seul bonus, recalculée en direct au fil des commandes. */
-export const useBonusEligibility = (bonus: Bonus): BonusProgress => {
-  const { orders } = useOrders();
-  return useMemo(() => computeEligibility(bonus, orders), [bonus, orders]);
-};
+/** Progression d'un seul bonus. */
+export const useBonusEligibility = (bonus: Bonus): BonusProgress =>
+  useMemo(() => computeEligibility(bonus), [bonus]);
 
 /** Progression d'un lot de bonus (Map par id) — pour la vue roadmap. */
 export const useBonusEligibilityMap = (
   bonuses: Bonus[],
-): Record<string, BonusProgress> => {
-  const { orders } = useOrders();
-  return useMemo(() => {
+): Record<string, BonusProgress> =>
+  useMemo(() => {
     const map: Record<string, BonusProgress> = {};
-    for (const b of bonuses) map[b.id] = computeEligibility(b, orders);
+    for (const b of bonuses) map[b.id] = computeEligibility(b);
     return map;
-  }, [bonuses, orders]);
-};
+  }, [bonuses]);

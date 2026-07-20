@@ -14,6 +14,7 @@ import { DriverProvider } from "@/src/features/driver/context/DriverContext";
 import { WalletProvider } from "@/src/features/wallet/context/WalletContext";
 import { MerchantWalletProvider } from "@/src/features/merchant/context/MerchantWalletContext";
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
+import { BonusProvider } from "@/src/features/bonus/context/BonusContext";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
 import { AuthGateProvider } from "@/src/features/auth/context/AuthGateContext";
@@ -24,6 +25,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 import { initSentry, wrapWithSentry } from "@/src/services/sentry";
 import { setupHttp } from "@/src/api/setupHttp";
+import { prefetchBonusBackground } from "@/src/features/bonus/components/BonusPageBackground";
 
 // Initialise le crash reporting le plus tôt possible (avant tout rendu),
 // pour capturer aussi les crashs au démarrage. No-op tant que le DSN est vide.
@@ -34,6 +36,10 @@ setupHttp();
 
 // Le splash natif reste affiché tant qu'on ne l'a pas explicitement caché.
 SplashScreen.preventAutoHideAsync();
+
+// Décode le fond de la page Bonus pendant le splash : sans ça, sa première
+// ouverture peint une frame vide le temps que le bitmap soit prêt.
+prefetchBonusBackground();
 
 // Masque les notifications LogBox (toast d'erreur en bas) en dev.
 LogBox.ignoreAllLogs();
@@ -142,9 +148,11 @@ function RootLayout() {
               <MerchantWalletProvider>
                 <WalletProvider>
                   <FastFoodProvider>
-                    <AuthGateProvider>
-                      <AppContent />
-                    </AuthGateProvider>
+                    <BonusProvider>
+                      <AuthGateProvider>
+                        <AppContent />
+                      </AuthGateProvider>
+                    </BonusProvider>
                   </FastFoodProvider>
                 </WalletProvider>
               </MerchantWalletProvider>

@@ -1,13 +1,7 @@
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import { useBonusEligibility } from "../hooks/useBonusEligibility";
 import type {
@@ -15,14 +9,17 @@ import type {
   BonusClaimStatus,
   BonusRequestStatus,
 } from "../types/bonus.types";
+import { BonusGlassCard, GLASS_BORDER } from "./BonusGlassCard";
+import { USE_IMAGE_BG } from "./BonusPageBackground";
 import { BonusProgressBar } from "./BonusProgressBar";
 import { BonusSparkline } from "./BonusSparkline";
-import { BonusUsageRing } from "./BonusUsageRing";
 
-interface BonusCardV2Props {
+interface BonusCardProps {
   bonus: Bonus;
   claimStatus?: BonusClaimStatus;
   onClaim: (bonus: Bonus) => void;
+  /** Image de fond de la carte principale (URI locale). null = asset par défaut. */
+  cardImage?: string | null;
 }
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
@@ -34,17 +31,36 @@ const DARK = Theme.colors.dark;
 const GRAY = Theme.colors.gray[600];
 const GRAY_L = Theme.colors.gray[400];
 const LIGHT = "#ffffff";
+// Glassmorphism : c'est BonusGlassCard qui porte le fond (blur + blanc très
+// translucide). Les cartes elles-mêmes ne peignent plus rien, sinon l'aplat
+// masquerait le verre. `USE_IMAGE_BG` = false rétablit l'aplat gris d'origine.
+const CARD_BG = USE_IMAGE_BG ? "transparent" : Theme.colors.gray[100];
+// Pistes de progression : assombries sur fond image, sinon elles s'y noient.
+const TRACK = USE_IMAGE_BG ? "rgba(0,0,0,0.16)" : Theme.colors.gray[200];
+// Liseré : sur verre, une arête CLAIRE (et non sombre) fait l'effet de vitre.
+const BORDER = USE_IMAGE_BG ? GLASS_BORDER : "rgba(0,0,0,0.01)";
 
-const rewardText = (bonus: Bonus): string => {
-  const r = bonus.reward;
-  if (r?.label) return r.label;
-  if (typeof r?.value === "number")
-    return `${fmt(r.value)}${r.unit ? " " + r.unit : ""}`;
-  return getBonusDescriptor(bonus.type).label;
+// ── Alignement optique sur le header ──
+// Le TabHeader pose son texte à `Theme.spacing.md` (16) du bord. Pour que le
+// TEXTE des cartes tombe sur la même verticale, chaque carte est décalée de
+// GUTTER MOINS son propre padding interne : marge + padding = 16.
+const GUTTER = Theme.spacing.md;
+const CARD_PAD = 10;
+const CLAIM_PAD = 12;
+const MINI_PAD = 10;
+
+/** Titre principal de la carte : l'émetteur du bonus (fastfood ou yaammoo). */
+const issuerText = (bonus: Bonus): string => bonus.fastFoodName || "yaammoo";
+
+/** Suffixe de période affiché après le compteur : "sur le mois", etc. */
+const PERIOD_LABEL: Record<string, string> = {
+  day: "sur le jour",
+  week: "sur la semaine",
+  month: "sur le mois",
 };
 
 /** Formate une date ISO en "12 juil.", ou "—" si absente/invalide. */
-const fmtDate = (iso?: string) => {
+const fmtDate = (iso?: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
@@ -58,16 +74,21 @@ const usageInfo = (bonus: Bonus) => {
   return {
     used,
     limit: bonus.usageLimit,
-    remaining: Math.max(0, bonus.usageLimit - used),
+    // Le backend fait autorité sur le reste ; sinon on le déduit.
+    remaining: bonus.remainingUses ?? Math.max(0, bonus.usageLimit - used),
   };
 };
 
-/** Date de fin = date de réclamation + durée. "—" si pas encore réclamé. */
-const fmtEndDate = (claimedAt?: string, claimDuration?: number) => {
-  if (!claimedAt || !claimDuration) return "—";
-  const d = new Date(claimedAt);
+/**
+ * Date de fin du code : `expiresAt` fourni par le backend. Fallback sur
+ * `claimedAt + claimDuration` si absent. "—" si pas encore réclamé.
+ */
+const fmtEndDate = (bonus: Bonus) => {
+  if (bonus.expiresAt) return fmtDate(bonus.expiresAt);
+  if (!bonus.claimedAt || !bonus.claimDuration) return "—";
+  const d = new Date(bonus.claimedAt);
   if (isNaN(d.getTime())) return "—";
-  d.setDate(d.getDate() + claimDuration);
+  d.setDate(d.getDate() + bonus.claimDuration);
   return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 };
 
@@ -84,13 +105,17 @@ const durationText = (bonus: Bonus) => {
  * couleur du bonus en accent). Différence gérée par UserBonusModal : la page V2
  * a un fond global BLANC PUR (alors que V3 est sur fond gris neutre).
  */
-export const BonusCardV2: React.FC<BonusCardV2Props> = ({
+export const BonusCard: React.FC<BonusCardProps> = ({
   bonus,
   claimStatus = "idle",
   onClaim,
+  cardImage,
 }) => {
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
+  const periodLabel = bonus.criteria?.period
+    ? PERIOD_LABEL[bonus.criteria.period]
+    : "";
 
   const reqStatus: BonusRequestStatus =
     claimStatus === "pending" ? "pending" : (bonus.requestStatus ?? "none");
@@ -119,14 +144,6 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({
             ? "Éligible"
             : "Non éligible";
 
-  const claimIcon = (): keyof typeof Ionicons.glyphMap => {
-    if (isInactive) return "eye-off-outline";
-    if (isRedeemed) return "checkmark-done-outline";
-    if (isApproved) return "checkmark-circle";
-    if (isPending) return "hourglass-outline";
-    if (isEligible) return "gift";
-    return "lock-closed-outline";
-  };
   // Couleur associée au statut (chip + icône de réclamation) — 1 couleur par état.
   const statusColor = (): string => {
     if (isInactive) return "#6366f1"; // indigo — offre non activée
@@ -136,68 +153,6 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({
     if (isEligible) return d.color; // couleur du bonus — éligible
     return "#ef4444"; // rouge — non éligible
   };
-  const claimTitle = (): string => {
-    if (isInactive) return "Offre non activée";
-    if (isRedeemed) return "Bonus déjà utilisé";
-    if (isApproved) return "Bonus validé";
-    if (isPending) return "Demande en cours";
-    if (isEligible) return "Réclamer ce bonus";
-    return "Pas encore disponible";
-  };
-  const claimDesc = (): string => {
-    if (isInactive)
-      return "Le fastfood n'a pas encore activé cette offre. Reviens plus tard.";
-    if (isRedeemed)
-      return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
-    if (isApproved)
-      return "Ton code est prêt ! Tu peux l'obtenir dès maintenant.";
-    if (isPending) return "En attente de validation par le fastfood.";
-    if (isEligible)
-      return "Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.";
-    if (p.measurable && p.target > 0) {
-      return p.unit === "FCFA"
-        ? `Encore ${fmt(p.remaining)} FCFA à dépenser.`
-        : `Encore ${p.remaining} commande${p.remaining > 1 ? "s" : ""}.`;
-    }
-    return "Remplis les conditions pour débloquer ce bonus.";
-  };
-  const claimAction = (): React.ReactNode => {
-    if (isInactive) return null;
-    if (isRedeemed) {
-      return u ? (
-        <BonusUsageRing used={u.used} limit={u.limit} color={d.color} />
-      ) : null;
-    }
-    if (isApproved) {
-      return (
-        <TouchableOpacity
-          style={[styles.claimRowBtn, { backgroundColor: "#16a34a" }]}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.claimRowBtnText}>Obtenir code</Text>
-        </TouchableOpacity>
-      );
-    }
-    if (isPending) return null;
-    if (isEligible) {
-      return (
-        <TouchableOpacity
-          style={[styles.claimRowBtn, { backgroundColor: d.color }]}
-          onPress={() => onClaim(bonus)}
-          disabled={claimStatus === "posting"}
-          activeOpacity={0.85}
-        >
-          {claimStatus === "posting" ? (
-            <ActivityIndicator color={LIGHT} size="small" />
-          ) : (
-            <Text style={styles.claimRowBtnText}>Réclamer</Text>
-          )}
-        </TouchableOpacity>
-      );
-    }
-    return null;
-  };
-
   const proposed = bonus.fastFoodBonusCount;
   const mine = bonus.userClaimedCount;
   const total = bonus.totalClaimedCount;
@@ -210,12 +165,18 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({
       {/* Stats du bonus (Commandes / Montant) */}
       {bs ? <StatsPanel stats={bs} color={d.color} /> : null}
 
-      {/* Carte principale */}
-      <View style={styles.card}>
+      {/* Carte principale — seule carte à porter l'image de fond, en plus du
+          verre : c'est elle qui doit se détacher des autres blocs. */}
+      <BonusGlassCard
+        style={styles.card}
+        radius={24}
+        image
+        imageUri={cardImage}
+      >
         <View style={styles.top}>
-          <View style={styles.rewardBlock}>
-            <Text style={styles.rewardValue} numberOfLines={1}>
-              {rewardText(bonus)}
+          <View style={styles.issuerBlock}>
+            <Text style={styles.issuerValue} numberOfLines={1}>
+              {issuerText(bonus)}
             </Text>
           </View>
           <View
@@ -243,26 +204,25 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({
           <BonusProgressBar
             progress={p.measurable ? p.progress : 1}
             color={d.color}
-            trackColor={Theme.colors.gray[200]}
+            // Plus foncé que CARD_BG, sinon la piste disparaît sur le fond gris.
+            trackColor={TRACK}
           />
           {p.measurable && p.target > 0 && (
             <Text style={styles.progressText}>
               {p.unit === "FCFA"
                 ? `${fmt(p.current)} / ${fmt(p.target)} FCFA`
                 : `${p.current} / ${p.target} commandes payées`}
+              {periodLabel ? ` · ${periodLabel}` : ""}
             </Text>
           )}
         </View>
 
         <View style={styles.infoRow}>
           <Info label="Début" value={fmtDate(bonus.claimedAt)} />
-          <Info
-            label="Fin"
-            value={fmtEndDate(bonus.claimedAt, bonus.claimDuration)}
-          />
+          <Info label="Fin" value={fmtEndDate(bonus)} />
           <Info label="Durée" value={durationText(bonus)} />
         </View>
-      </View>
+      </BonusGlassCard>
 
       {/* Mini-cartes stats (sparkline + barre) */}
       <View style={styles.miniRow}>
@@ -291,22 +251,6 @@ export const BonusCardV2: React.FC<BonusCardV2Props> = ({
           ratio={(total ?? 0) / max}
         />
       </View>
-
-      {/* Ligne de réclamation */}
-      <View style={styles.claimRow}>
-        <View style={styles.claimRowLeft}>
-          <View
-            style={[styles.claimRowIcon, { backgroundColor: statusColor() }]}
-          >
-            <Ionicons name={claimIcon()} size={20} color={LIGHT} />
-          </View>
-          <View style={styles.claimRowText}>
-            <Text style={styles.claimRowTitle}>{claimTitle()}</Text>
-            <Text style={styles.claimRowDesc}>{claimDesc()}</Text>
-          </View>
-        </View>
-        {claimAction()}
-      </View>
     </View>
   );
 };
@@ -320,56 +264,68 @@ const StatsPanel = ({
   color: string;
 }) => {
   return (
-    <View style={stylesStats.card}>
-      <View style={stylesStats.row}>
-        <View style={stylesStats.block}>
-          <View style={stylesStats.head}>
-            <Ionicons name="receipt-outline" size={14} color={color} />
-            <Text style={stylesStats.title}>Commandes</Text>
+    <View style={stylesStats.row}>
+      <BonusGlassCard
+        style={[stylesStats.block, stylesStats.blockOrders]}
+        radius={16}
+      >
+        <View style={[stylesStats.head, stylesStats.headStart]}>
+          <Ionicons name="receipt-outline" size={14} color={color} />
+          <Text style={stylesStats.title}>Commandes</Text>
+        </View>
+        <View style={stylesStats.cells}>
+          {/* Première colonne calée à gauche : son texte tombe sur la même
+                verticale que le header et les autres cartes. */}
+          <View style={[stylesStats.cell, stylesStats.cellStart]}>
+            <Text style={[stylesStats.cellValue, { color }]}>
+              {stats.day.count}
+            </Text>
+            <Text style={stylesStats.cellKey}>Jour</Text>
           </View>
-          <View style={stylesStats.cells}>
-            <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>
-                {stats.day.count}
-              </Text>
-              <Text style={stylesStats.cellKey}>Jour</Text>
-            </View>
-            <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>
-                {stats.week.count}
-              </Text>
-              <Text style={stylesStats.cellKey}>Sem.</Text>
-            </View>
-            <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>
-                {stats.month.count}
-              </Text>
-              <Text style={stylesStats.cellKey}>Mois</Text>
-            </View>
+          <View style={stylesStats.cell}>
+            <Text style={[stylesStats.cellValue, { color }]}>
+              {stats.week.count}
+            </Text>
+            <Text style={stylesStats.cellKey}>Sem.</Text>
+          </View>
+          <View style={stylesStats.cell}>
+            <Text style={[stylesStats.cellValue, { color }]}>
+              {stats.month.count}
+            </Text>
+            <Text style={stylesStats.cellKey}>Mois</Text>
           </View>
         </View>
-        <View style={stylesStats.sep} />
-        <View style={stylesStats.block}>
-          <View style={stylesStats.head}>
-            <Ionicons name="cash-outline" size={14} color={color} />
-            <Text style={stylesStats.title}>Montant</Text>
+      </BonusGlassCard>
+      <BonusGlassCard
+        style={[stylesStats.block, stylesStats.blockAmount]}
+        radius={16}
+      >
+        <View style={stylesStats.head}>
+          <Ionicons name="cash-outline" size={14} color={color} />
+          <Text style={stylesStats.title}>Montant</Text>
+        </View>
+        <View style={stylesStats.cells}>
+          <View style={stylesStats.cell}>
+            <Text style={[stylesStats.cellValue, { color }]}>
+              {fmtK(stats.day.amount)}
+            </Text>
+            <Text style={stylesStats.cellKey}>Jour</Text>
           </View>
-          <View style={stylesStats.cells}>
-            <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>
-                {fmtK(stats.week.amount)}
-              </Text>
-              <Text style={stylesStats.cellKey}>Sem.</Text>
-            </View>
-            <View style={stylesStats.cell}>
-              <Text style={[stylesStats.cellValue, { color }]}>
-                {fmtK(stats.month.amount)}
-              </Text>
-              <Text style={stylesStats.cellKey}>Mois</Text>
-            </View>
+          <View style={stylesStats.cell}>
+            <Text style={[stylesStats.cellValue, { color }]}>
+              {fmtK(stats.week.amount)}
+            </Text>
+            <Text style={stylesStats.cellKey}>Sem.</Text>
+          </View>
+          {/* Dernière colonne calée à droite : symétrique de la première. */}
+          <View style={[stylesStats.cell, stylesStats.cellEnd]}>
+            <Text style={[stylesStats.cellValue, { color }]}>
+              {fmtK(stats.month.amount)}
+            </Text>
+            <Text style={stylesStats.cellKey}>Mois</Text>
           </View>
         </View>
-      </View>
+      </BonusGlassCard>
     </View>
   );
 };
@@ -396,7 +352,7 @@ const MiniStat = ({
   value: string;
   ratio: number;
 }) => (
-  <View style={styles.mini}>
+  <BonusGlassCard style={styles.mini} radius={16}>
     <Text style={styles.miniTitle} numberOfLines={1}>
       {title}
     </Text>
@@ -420,24 +376,25 @@ const MiniStat = ({
       </View>
       <Text style={styles.miniValue}>{value}</Text>
     </View>
-  </View>
+  </BonusGlassCard>
 );
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     justifyContent: "space-around",
-    paddingHorizontal: 16,
   },
 
   card: {
-    backgroundColor: LIGHT,
+    // marge + paddingHorizontal = GUTTER → le texte s'aligne sur le header.
+    marginHorizontal: GUTTER - CARD_PAD,
+    backgroundColor: CARD_BG,
     borderRadius: 24,
     paddingVertical: 14,
-    paddingHorizontal: 18,
+    paddingHorizontal: CARD_PAD,
     gap: 10,
-    borderWidth: 0.5,
-    borderColor: "rgba(0,0,0,0.04)",
+    borderWidth: USE_IMAGE_BG ? 1 : 0.5,
+    borderColor: BORDER,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -450,8 +407,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
   },
-  rewardBlock: { flex: 1 },
-  rewardValue: { color: DARK, fontSize: 24, fontWeight: "800", marginTop: 2 },
+  issuerBlock: { flex: 1 },
+  issuerValue: { color: DARK, fontSize: 24, fontWeight: "800", marginTop: 2 },
   statusPill: {
     backgroundColor: DARK,
     paddingHorizontal: 14,
@@ -467,15 +424,19 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   infoLabel: { color: GRAY, fontSize: 12, fontWeight: "500" },
   infoValue: { color: DARK, fontSize: 16, fontWeight: "800", marginTop: 2 },
-  miniRow: { flexDirection: "row", gap: 10 },
+  miniRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginHorizontal: GUTTER - MINI_PAD,
+  },
   mini: {
     flex: 1,
-    backgroundColor: LIGHT,
+    backgroundColor: CARD_BG,
     borderRadius: 16,
-    padding: 10,
+    padding: MINI_PAD,
     gap: 2,
-    borderWidth: 0.5,
-    borderColor: "rgba(0,0,0,0.02)",
+    borderWidth: USE_IMAGE_BG ? 1 : 0.5,
+    borderColor: BORDER,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
@@ -490,91 +451,73 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 5,
     borderRadius: 3,
-    backgroundColor: Theme.colors.gray[100],
+    // Plus foncé que CARD_BG (gray[100]), sinon la piste s'y confond.
+    backgroundColor: TRACK,
     overflow: "hidden",
   },
   miniBarFill: { height: "100%", borderRadius: 3 },
   miniValue: { color: DARK, fontSize: 13, fontWeight: "800" },
 
-  // Ligne de réclamation : icône + texte + bouton
-  claimRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: LIGHT,
-    borderRadius: 20,
-    paddingVertical: 12,
-    paddingLeft: 12,
-    paddingRight: 6,
-    gap: 8,
-    borderWidth: 0.5,
-    borderColor: "rgba(0,0,0,0.04)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  claimRowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    flex: 1,
-  },
-  claimRowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  claimRowText: { flex: 1, gap: 1 },
-  claimRowTitle: { color: DARK, fontSize: 14, fontWeight: "700" },
-  claimRowDesc: { color: GRAY, fontSize: 11, lineHeight: 15 },
-  claimRowBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: Theme.borderRadius.pill,
-  },
-  claimRowBtnText: { color: LIGHT, fontWeight: "800", fontSize: 13 },
+  // Ligne de réclamation : 2 cartes distinctes (infos à gauche, action à droite).
+  // Variante identifiants : le verre porte l'apparence de la carte, le
+  // Touchable interne se contente de la disposition + de la zone de tap.
 });
 
 // Styles du panneau stats propre à chaque bonus
 const stylesStats = StyleSheet.create({
-  card: {
-    backgroundColor: LIGHT,
-    borderRadius: 24,
-    borderWidth: 0.5,
-    borderColor: "rgba(0,0,0,0.04)",
+  // Les deux blocs sont des cartes autonomes (comme les mini-cartes de la ligne
+  // 3) : pas de carte englobante, sinon un niveau d'imbrication de plus ajoute
+  // son propre padding et casse le rythme vertical des autres lignes.
+  row: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    marginHorizontal: GUTTER - MINI_PAD,
+    gap: 10,
+  },
+  block: {
+    gap: 4,
+    padding: MINI_PAD,
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    borderWidth: USE_IMAGE_BG ? 1 : 0.5,
+    borderColor: BORDER,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
   },
-  row: { flexDirection: "row", alignItems: "stretch", paddingVertical: 14 },
-  block: { flex: 1, gap: 4 },
+  // Commandes : 2 colonnes → moins large. Montant : 3 colonnes (Jour/Sem./Mois)
+  // et des valeurs plus longues ("19,1k") → part plus généreuse.
+  blockOrders: { flex: 4 },
+  blockAmount: { flex: 5 },
   head: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    justifyContent: "center",
+    // Les deux titres commencent à gauche, au-dessus de leur 1re colonne.
+    justifyContent: "flex-start",
   },
+  headStart: { justifyContent: "flex-start" },
   title: {
     fontSize: 11,
     fontWeight: "700",
-    color: Theme.colors.gray[600],
+    color: GRAY,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  cells: { flexDirection: "row", marginTop: 4 },
-  cell: { flex: 1, alignItems: "center" },
-  cellValue: { fontSize: 18, fontWeight: "800", color: Theme.colors.dark },
-  cellKey: { fontSize: 10, color: Theme.colors.gray[600], marginTop: 1 },
-  sep: {
-    width: 1,
-    backgroundColor: Theme.colors.gray[200],
-    marginHorizontal: 14,
-    marginVertical: 4,
+  cells: {
+    flexDirection: "row",
+    marginTop: 4,
+    // Espaces égaux entre colonnes (et non des tiers centrés) : les valeurs
+    // respirent de la même façon quel que soit le nombre de colonnes.
+    justifyContent: "space-between",
   },
+  cell: { alignItems: "flex-start" },
+  // Colonnes extrêmes : calées sur leur bord (et non centrées dans leur tiers)
+  // pour tomber sur la verticale de texte commune aux autres cartes.
+  cellStart: { alignItems: "flex-start" },
+  cellEnd: { alignItems: "flex-end" },
+  cellValue: { fontSize: 18, fontWeight: "800", color: DARK },
+  cellKey: { fontSize: 10, color: GRAY, marginTop: 1 },
 });

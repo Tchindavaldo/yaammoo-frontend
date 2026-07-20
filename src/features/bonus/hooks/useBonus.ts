@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Config } from "@/src/api/config";
+import { auth } from "@/src/services/firebase";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import type {
   Bonus,
@@ -19,61 +20,59 @@ import { DEFAULT_BONUSES, USE_DEFAULT_BONUSES } from "../config/defaultBonuses";
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
 
 /**
- * Déduit un critère d'éligibilité à partir d'un payload libre. Supporte la forme
- * canonique (`criteria`) ET des formes héritées (`order_count`, `type` en
- * `*_bonus`, `minOrderAmount`…). Défaut : bonus de bienvenue (toujours éligible).
+ * Headers authentifiés : le token est relu à CHAQUE appel (getIdToken sert le cache
+ * s'il est valide, régénère sinon). Ne jamais le mémoriser dans une variable.
  */
-const inferCriteria = (raw: any): BonusCriteria => {
-  if (raw?.criteria?.kind) return raw.criteria;
-
-  const type = String(raw?.type || "").toLowerCase();
-  const fastFoodId = raw?.fastFoodId ?? raw?.criteria?.fastFoodId;
-
-  if (typeof raw?.order_count === "number" && raw.order_count > 0)
-    return { kind: "order_count", target: raw.order_count, fastFoodId };
-  if (typeof raw?.orderCount === "number" && raw.orderCount > 0)
-    return { kind: "order_count", target: raw.orderCount, fastFoodId };
-  if (typeof raw?.minOrderAmount === "number" && raw.minOrderAmount > 0)
-    return { kind: "amount_spent", target: raw.minOrderAmount, fastFoodId };
-  if (type.includes("welcome")) return { kind: "welcome" };
-
-  return { kind: "welcome" };
+const authHeaders = async () => {
+  const idToken = await auth.currentUser?.getIdToken();
+  return { ...HEADERS, Authorization: `Bearer ${idToken}` };
 };
 
-/** Convertit un bonus backend (forme libre) en forme canonique tolérante. */
-export const normalizeBonus = (raw: any): Bonus => {
-  const data = raw?.data && typeof raw.data === "object" ? raw.data : raw;
-  return {
-    id: String(raw?.id ?? data?.id ?? Math.random().toString(36).slice(2)),
-    type: String(raw?.type ?? data?.type ?? "generic").toLowerCase(),
-    name: raw?.name ?? data?.name ?? "Bonus",
-    description: raw?.description ?? data?.description ?? "",
-    reward: raw?.reward ??
-      data?.reward ?? {
-        value: raw?.value ?? raw?.amount ?? data?.value ?? data?.amount,
-      },
-    criteria: inferCriteria({ ...data, ...raw }),
-    isFastFoodBonus: !!(raw?.isFastFoodBonus ?? data?.isFastFoodBonus ?? raw?.fastFoodId),
-    fastFoodName: raw?.fastFoodName ?? data?.fastFoodName,
-    active: raw?.active ?? data?.active ?? true,
-    redeemed: raw?.redeemed ?? data?.redeemed ?? false,
-    validUntil: raw?.validUntil ?? data?.validUntil,
-    createdAt: raw?.createdAt ?? data?.createdAt,
-    claimDuration: raw?.claimDuration ?? data?.claimDuration,
-    claimedAt: raw?.claimedAt ?? data?.claimedAt,
-    usageLimit: raw?.usageLimit ?? data?.usageLimit,
-    usageCount: raw?.usageCount ?? data?.usageCount,
-    fastFoodBonusCount: raw?.fastFoodBonusCount ?? data?.fastFoodBonusCount,
-    userClaimedCount: raw?.userClaimedCount ?? data?.userClaimedCount,
-    totalClaimedCount: raw?.totalClaimedCount ?? data?.totalClaimedCount,
-    requestStatus: raw?.requestStatus ?? data?.requestStatus,
-  };
+/**
+ * Critère d'éligibilité. Le backend envoie la forme canonique
+ * (`criteria: { kind, period?, target? }`) ; on la reprend telle quelle en
+ * rattachant le `fastFoodId` du bonus. Absent → bienvenue (toujours éligible).
+ */
+const readCriteria = (raw: any): BonusCriteria => {
+  const fastFoodId = raw?.fastFoodId ?? undefined;
+  if (raw?.criteria?.kind) return { ...raw.criteria, fastFoodId };
+  return { kind: "welcome", fastFoodId };
 };
+
+/** Convertit un bonus backend en forme canonique. */
+export const normalizeBonus = (raw: any): Bonus => ({
+  id: String(raw?.id ?? Math.random().toString(36).slice(2)),
+  type: String(raw?.type ?? "generic").toLowerCase(),
+  name: raw?.name ?? "Bonus",
+  description: raw?.description ?? "",
+  criteria: readCriteria(raw),
+  fastFoodId: raw?.fastFoodId ?? null,
+  fastFoodName: raw?.fastFoodName,
+  active: raw?.active ?? true,
+  createdAt: raw?.createdAt,
+  claimDuration: raw?.claimDuration,
+  claimedAt: raw?.claimedAt,
+  redeemed: raw?.redeemed ?? false,
+  usageLimit: raw?.usageLimit,
+  usageCount: raw?.usageCount,
+  remainingUses: raw?.remainingUses,
+  code: raw?.code ?? null,
+  rewardCredentials: raw?.rewardCredentials ?? null,
+  expiresAt: raw?.expiresAt ?? null,
+  expired: raw?.expired ?? false,
+  fastFoodBonusCount: raw?.fastFoodBonusCount,
+  userClaimedCount: raw?.userClaimedCount,
+  totalClaimedCount: raw?.totalClaimedCount,
+  requestStatus: raw?.requestStatus,
+  bonusStats: raw?.bonusStats,
+});
 
 export const useBonus = () => {
   const { userData } = useAuth();
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
-  const [loading, setLoading] = useState(false);
+  // `true` dès le départ : le premier fetch part au montage, sans ça la page
+  // affiche un écran vide le temps que `fetchBonuses` passe `loading` à true.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   /** Statut local de réclamation par bonusId (optimiste). */
   const [claims, setClaims] = useState<Record<string, BonusClaimStatus>>({});
@@ -82,7 +81,9 @@ export const useBonus = () => {
     try {
       if (!quiet) setLoading(true);
       setError(null);
-      const res = await axios.get(`${Config.apiUrl}/bonus/all`, { headers: HEADERS });
+      const res = await axios.get(`${Config.apiUrl}/bonus/all`, {
+        headers: await authHeaders(),
+      });
       const list = res.data?.data ?? res.data ?? [];
       const normalized = Array.isArray(list) ? list.map(normalizeBonus) : [];
       // Fallback démo : si aucun bonus réel, on affiche les bonus par défaut
@@ -103,7 +104,61 @@ export const useBonus = () => {
 
   useEffect(() => {
     if (userData) fetchBonuses();
+    // Pas d'utilisateur (déconnecté / session expirée) : aucun fetch ne partira,
+    // il faut donc lever `loading` nous-mêmes, sinon le squelette tourne à vide.
+    else setLoading(false);
   }, [userData, fetchBonuses]);
+
+  /**
+   * Applique le solde recalculé par le backend : une map { bonusId → stats }
+   * couvrant TOUS les bonus, chacun selon sa portée (plateforme = toutes les
+   * commandes, fastfood = ses commandes seules).
+   *
+   * Pot commun : réclamer chez un fastfood décrémente aussi le solde plateforme
+   * et inversement — d'où une map globale plutôt qu'une entrée isolée.
+   *
+   * Sources : event `bonus.stats_updated` et réponse HTTP du claim (redondants
+   * à dessein, si le socket est déconnecté). Idempotent : appliquer deux fois
+   * la même map ne change rien.
+   */
+  const applyBonusStats = useCallback((statsMap: any) => {
+    if (!statsMap || typeof statsMap !== "object") return;
+    setBonuses((list) =>
+      list.map((b) => (statsMap[b.id] ? { ...b, bonusStats: statsMap[b.id] } : b)),
+    );
+  }, []);
+
+  /**
+   * Applique un payload de claim/livraison sur le bonus concerné.
+   * Partagé par la réponse HTTP du claim et les events `bonus.claimed` /
+   * `bonus.reward_credentials` — même forme pour les trois. Seuls les champs présents
+   * écrasent l'existant (`bonus.claimed` n'envoie pas `rewardCredentials`).
+   *
+   * Le solde n'est PAS traité ici : il arrive sous forme de map globale via
+   * `applyBonusStats` — un seul chemin fait autorité dessus.
+   */
+  const applyClaimPayload = useCallback((p: any) => {
+    const id = p?.bonusId;
+    if (!id) return;
+    setBonuses((list) =>
+      list.map((b) =>
+        b.id !== id
+          ? b
+          : {
+              ...b,
+              ...(p.requestStatus !== undefined && {
+                requestStatus: p.requestStatus,
+              }),
+              ...(p.code !== undefined && { code: p.code }),
+              ...(p.rewardCredentials !== undefined && {
+                rewardCredentials: p.rewardCredentials,
+              }),
+              ...(p.claimedAt !== undefined && { claimedAt: p.claimedAt }),
+              ...(p.expiresAt !== undefined && { expiresAt: p.expiresAt }),
+            },
+      ),
+    );
+  }, []);
 
   /** Réclame un bonus. Optimiste : passe le statut local à "pending" au succès. */
   const claimBonus = useCallback(
@@ -117,17 +172,18 @@ export const useBonus = () => {
         return { success: true };
       }
       try {
-        await axios.post(
-          `${Config.apiUrl}/bonus-request`,
-          {
-            userId: userData.uid,
-            bonusId: bonus.id,
-            bonusType: bonus.type,
-            status: ["pending"],
-          },
-          { headers: HEADERS },
+        const res = await axios.post(
+          `${Config.apiUrl}/bonus/${bonus.id}/claim`,
+          {},
+          { headers: await authHeaders() },
         );
-        setClaims((c) => ({ ...c, [bonus.id]: "pending" }));
+        // Le backend renvoie l'état résultant : on l'applique tel quel, sans
+        // refetch. Redondant avec les sockets, mais indispensable si la socket
+        // est déconnectée au moment du claim (les deux sont idempotents).
+        const payload = res.data?.data ?? res.data;
+        applyBonusStats(payload?.bonusStats);
+        applyClaimPayload(payload);
+        setClaims((c) => ({ ...c, [bonus.id]: "idle" }));
         return { success: true };
       } catch (e: any) {
         setClaims((c) => ({ ...c, [bonus.id]: "error" }));
@@ -146,6 +202,10 @@ export const useBonus = () => {
     error,
     claims,
     claimBonus,
+    /** Injection depuis les events socket `bonus.claimed` / `bonus.reward_credentials`. */
+    applyClaimPayload,
+    /** Injection depuis l'event socket `bonus.stats_updated`. */
+    applyBonusStats,
     refresh: fetchBonuses,
   };
 };

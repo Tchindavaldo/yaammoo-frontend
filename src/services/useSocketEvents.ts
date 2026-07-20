@@ -9,6 +9,7 @@ import { useDriver } from "../features/driver/hooks/useDriver";
 import { useMerchantWallet } from "../features/merchant/context/MerchantWalletContext";
 import { useWallet } from "../features/wallet/context/WalletContext";
 import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
+import { useBonusContext } from "../features/bonus/context/BonusContext";
 
 /**
  * Handlers globaux des events socket. Principe : chaque event PORTE sa donnée
@@ -67,6 +68,8 @@ export const useSocketEvents = () => {
     removeMenuFromSocket: removeGlobalMenu,
     upsertFastFoodFromSocket: upsertGlobalFastFood,
   } = useFastFoods();
+  const { applyClaimPayload: applyBonusPayload, applyBonusStats } =
+    useBonusContext();
   const socket = socketService.getSocket();
 
   useEffect(() => {
@@ -245,6 +248,24 @@ export const useSocketEvents = () => {
     socket.on("newTransaction", withAck((data: any) => {
       console.log("💰 newTransaction:", data);
       if (data?.data) upsertClientTransaction(data.data);
+    }));
+    // bonus.stats_updated : solde recalculé de TOUS les bonus (map par id).
+    // Seul event faisant autorité sur le solde — émis au claim, à chaque
+    // nouvelle commande et à tout changement de statut (annulation).
+    socket.on("bonus.stats_updated", withAck((data: any) => {
+      console.log("📊 bonus.stats_updated:", data);
+      applyBonusStats(data?.data?.bonusStats);
+    }));
+    // bonus.claimed : écho du claim (code, statut). Ne porte pas le solde.
+    socket.on("bonus.claimed", withAck((data: any) => {
+      console.log("🎁 bonus.claimed:", data);
+      if (data?.data) applyBonusPayload(data.data);
+    }));
+    // bonus.reward_credentials : récompense provisionnée (identifiants Netflix…),
+    // souvent longtemps après le claim → d'où l'état bonus en contexte global.
+    socket.on("bonus.reward_credentials", withAck((data: any) => {
+      console.log("🎁 bonus.reward_credentials:", data);
+      if (data?.data) applyBonusPayload(data.data);
     }));
     // wallet.credited : gain marchand (payin) → patch local du solde.
     socket.on("wallet.credited", withAck((data: any) => {

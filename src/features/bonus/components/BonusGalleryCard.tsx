@@ -34,7 +34,11 @@ export const BonusGalleryCard = ({
   onPress,
 }: BonusGalleryCardProps) => {
   const desc = getBonusDescriptor(bonus.type);
-  const c = desc.color || Theme.colors.primary;
+  // Couleur pleine du bonus, appliquée UNIQUEMENT quand la carte est centrée.
+  // Le passage couleur ↔ neutre suit `scrollX` en TEMPS RÉEL (comme la barre) :
+  // au centre = couleur du bonus, ailleurs = gris neutre.
+  const full = desc.color || Theme.colors.primary;
+  const NEUTRAL = "rgba(0,0,0,0.35)";
 
   const inputRange = [
     (position - 1) * CAROUSEL_INTERVAL,
@@ -44,6 +48,17 @@ export const BonusGalleryCard = ({
   const interpolate = (outputRange: string[]) =>
     scrollX.interpolate({ inputRange, outputRange, extrapolate: "clamp" });
 
+  // Fond du badge : interpolé en temps réel (View → OK avec Animated).
+  const iconBg = interpolate([
+    "rgba(0,0,0,0.06)",
+    `${full}1f`,
+    "rgba(0,0,0,0.06)",
+  ]);
+  const barColor = interpolate([NEUTRAL, full, NEUTRAL]);
+  // Couleur de l'icône : NON animée (Ionicons n'a pas setNativeProps sous
+  // Fabric → crash). Bascule nette selon `active`, comme le panneau héro.
+  const iconColor = active ? full : NEUTRAL;
+
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
       <Animated.View
@@ -52,7 +67,7 @@ export const BonusGalleryCard = ({
           {
             backgroundColor: interpolate([
               "rgba(0,0,0,0.04)",
-              `${c}12`,
+              `${full}12`,
               "rgba(0,0,0,0.04)",
             ]),
           },
@@ -60,9 +75,9 @@ export const BonusGalleryCard = ({
       >
         <Animated.View style={styles.galleryCardTop}>
           <Animated.View
-            style={[styles.galleryIcon, { backgroundColor: `${c}1f` }]}
+            style={[styles.galleryIcon, { backgroundColor: iconBg }]}
           >
-            <Ionicons name={desc.icon} size={15} color={c} />
+            <Ionicons name={desc.icon} size={15} color={iconColor} />
           </Animated.View>
         </Animated.View>
         <Text
@@ -79,7 +94,7 @@ export const BonusGalleryCard = ({
             style={[
               styles.galleryBarFill,
               {
-                backgroundColor: c,
+                backgroundColor: barColor,
                 width: scrollX.interpolate({
                   inputRange,
                   outputRange: ["34%", "100%", "34%"],

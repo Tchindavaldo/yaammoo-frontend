@@ -117,7 +117,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
 
   const claimDesc = (): string => {
     if (isInactive)
-      return "Le fastfood n'a pas encore activé cette offre. Reviens plus tard.";
+      return "Cette offre n'est pas encore activée par le fastfood. Elle deviendra réclamable dès qu'il la mettra en ligne — reviens bientôt pour en profiter.";
     if (isRedeemed)
       return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
     // Approuvé mais rien à délivrer encore : la récompense est provisionnée
@@ -128,16 +128,16 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
         : "Récompense en cours de préparation. Tu seras notifié dès qu'elle est prête.";
     if (isPending)
       return bonus.fastFoodId
-        ? "En attente de validation par le fastfood."
-        : "Demande en cours de traitement.";
+        ? "Ta demande a bien été envoyée et attend la validation du fastfood. Tu recevras une notification dès qu'elle est acceptée."
+        : "Ta demande est en cours de traitement. Tu seras notifié dès qu'elle est validée et que ton bonus est disponible.";
     if (isEligible)
       return "Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.";
     if (p.measurable && p.target > 0) {
       return p.unit === "FCFA"
-        ? `Encore ${fmt(p.remaining)} FCFA à dépenser.`
-        : `Encore ${p.remaining} commande${p.remaining > 1 ? "s" : ""}.`;
+        ? `Tu y es presque ! Encore ${fmt(p.remaining)} FCFA à dépenser pour remplir les conditions et débloquer ce bonus.`
+        : `Tu y es presque ! Encore ${p.remaining} commande${p.remaining > 1 ? "s" : ""} à passer pour remplir les conditions et débloquer ce bonus.`;
     }
-    return "Remplis les conditions pour débloquer ce bonus.";
+    return "Continue de commander pour remplir les conditions de ce bonus. Il se débloquera automatiquement dès que tu y seras.";
   };
 
   const handleCopy = (value: string) => {
@@ -146,78 +146,100 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     setTimeout(() => setCopied(null), 2000);
   };
 
+  /** Bouton plein (non cliquable) affiché à droite pour les états passifs :
+   *  inactif, en attente, non éligible. Même forme que « Réclamer », couleur
+   *  du statut. */
+  const infoButton = (label: string): React.ReactNode => (
+    <View style={[styles.btn, { backgroundColor: statusColor }]}>
+      <Text style={styles.btnText}>{label}</Text>
+    </View>
+  );
+
+  /**
+   * Boutons de délivrance d'une récompense (dès qu'il y a un code / des
+   * identifiants) : Profil + Compte pour des identifiants (Netflix…), sinon
+   * Activer + Copier pour un simple code. Communs aux états VALIDÉ et UTILISÉ.
+   */
+  const rewardButtons = (): React.ReactNode => {
+    if (cred) {
+      // Identifiants (Netflix…) : trop de champs pour la ligne. Deux boutons
+      // ouvrent la sheet sur des contenus disjoints — Compte (email + mot de
+      // passe) et Profil (nom + code), ce dernier seulement s'il est fourni.
+      return (
+        <View style={styles.btnGroup}>
+          {cred.profile && (
+            <TouchableOpacity
+              style={[styles.btnGhost, { borderColor: d.color }]}
+              onPress={() => {
+                setSheetSection("profile");
+                setSheetOpen(true);
+              }}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="person-outline" size={14} color={d.color} />
+              <Text style={[styles.btnGhostText, { color: d.color }]}>
+                Profil
+              </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.btn, styles.btnCompact, { backgroundColor: d.color }]}
+            onPress={() => {
+              setSheetSection("account");
+              setSheetOpen(true);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.btnText}>Compte</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.btnGroup}>
+        {/*
+         * TODO(backend) : l'activation du code n'est pas encore branchée —
+         * l'endpoint reste à définir. Bouton visuel uniquement pour l'instant.
+         */}
+        <TouchableOpacity
+          style={[styles.btnGhost, { borderColor: d.color }]}
+          onPress={() => onActivate?.(bonus)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="flash-outline" size={14} color={d.color} />
+          <Text style={[styles.btnGhostText, { color: d.color }]}>
+            Activer
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.btn, styles.btnCompact, { backgroundColor: d.color }]}
+          onPress={() => handleCopy(fields[0].value)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.btnText}>{copied ? "Copié !" : "Copier"}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const claimAction = (): React.ReactNode => {
-    if (isInactive) return null;
+    if (isInactive) return infoButton("Bientôt");
+    // UTILISÉ : s'il reste un code / des identifiants à consulter, on affiche
+    // les boutons de délivrance (Activer/Copier ou Profil/Compte) plutôt que le
+    // seul anneau. Sinon, l'anneau nb/nb résume l'usage.
     if (isRedeemed) {
+      if (fields.length > 0) return rewardButtons();
       return u ? (
         <BonusUsageRing used={u.used} limit={u.limit} color={d.color} />
       ) : null;
     }
     if (isApproved) {
-      // Identifiants (Netflix…) : trop de champs pour la ligne. Deux boutons
-      // ouvrent la sheet sur des contenus disjoints — Compte (email + mot de
-      // passe) et Profil (nom + code), ce dernier seulement s'il est fourni.
-      if (cred) {
-        return (
-          <View style={styles.btnGroup}>
-            {cred.profile && (
-              <TouchableOpacity
-                style={[styles.btnGhost, { borderColor: "#16a34a" }]}
-                onPress={() => {
-                  setSheetSection("profile");
-                  setSheetOpen(true);
-                }}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="person-outline" size={14} color="#16a34a" />
-                <Text style={[styles.btnGhostText, { color: "#16a34a" }]}>
-                  Profil
-                </Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.btn, styles.btnCompact, { backgroundColor: "#16a34a" }]}
-              onPress={() => {
-                setSheetSection("account");
-                setSheetOpen(true);
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.btnText}>Compte</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      }
       // Rien de délivré (récompense en cours de provisionnement) : pas de
       // bouton mort, le message de statut suffit.
-      if (fields.length === 0) return null;
-      return (
-        <View style={styles.btnGroup}>
-          {/*
-           * TODO(backend) : l'activation du code n'est pas encore branchée —
-           * l'endpoint reste à définir. Bouton visuel uniquement pour l'instant.
-           */}
-          <TouchableOpacity
-            style={[styles.btnGhost, { borderColor: "#16a34a" }]}
-            onPress={() => onActivate?.(bonus)}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="flash-outline" size={14} color="#16a34a" />
-            <Text style={[styles.btnGhostText, { color: "#16a34a" }]}>
-              Activer
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btn, styles.btnCompact, { backgroundColor: "#16a34a" }]}
-            onPress={() => handleCopy(fields[0].value)}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.btnText}>{copied ? "Copié !" : "Copier"}</Text>
-          </TouchableOpacity>
-        </View>
-      );
+      if (!cred && fields.length === 0) return null;
+      return rewardButtons();
     }
-    if (isPending) return null;
+    if (isPending) return infoButton("En attente");
     if (isEligible) {
       return (
         <TouchableOpacity
@@ -234,7 +256,8 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
         </TouchableOpacity>
       );
     }
-    return null;
+    // Non éligible : bouton informatif verrouillé.
+    return infoButton("Verrouillé");
   };
 
   const action = claimAction();

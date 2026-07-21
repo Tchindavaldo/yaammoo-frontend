@@ -2,7 +2,7 @@ import { Config } from '@/src/api/config';
 import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
-import { UserBonusModal } from '@/src/features/bonus/components/UserBonusModal';
+import { UserBonusSheet } from '@/src/features/bonus/components/UserBonusSheet';
 import { DriverApplyModal } from '@/src/features/driver/components/DriverApplyModal';
 import { DriverManageModal } from '@/src/features/driver/components/DriverManageModal';
 import { DriverMyApplicationsModal } from '@/src/features/driver/components/DriverMyApplicationsModal';
@@ -58,7 +58,7 @@ export default function SettingsScreen() {
   // Section « Mes activités » (user + marchand) : commandes + portefeuille.
   const [userOrdersVisible, setUserOrdersVisible] = useState(false);
   const [userWalletVisible, setUserWalletVisible] = useState(false);
-  // Bonus (Settings → Bonus et parrainage).
+  // Bonus (Settings → Bonus et parrainage) : bottom sheet.
   const [userBonusVisible, setUserBonusVisible] = useState(false);
   // Section « Livraison » (user) + item « Livreurs » (boutique).
   const [driverApplyVisible, setDriverApplyVisible] = useState(false);
@@ -516,8 +516,8 @@ export default function SettingsScreen() {
         onClose={() => setUserWalletVisible(false)}
       />
 
-      {/* Bonus et parrainage (plein écran) */}
-      <UserBonusModal
+      {/* Bonus et parrainage (bottom sheet) */}
+      <UserBonusSheet
         visible={userBonusVisible}
         onClose={() => setUserBonusVisible(false)}
       />

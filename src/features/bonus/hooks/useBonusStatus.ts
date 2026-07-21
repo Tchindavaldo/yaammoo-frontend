@@ -51,17 +51,9 @@ export const useBonusStatus = (
             ? "Éligible"
             : "Non éligible";
 
-  const color = isInactive
-    ? "#6366f1" // indigo — offre non activée
-    : isRedeemed
-      ? "#8b5cf6" // violet — utilisé
-      : isApproved
-        ? "#16a34a" // vert — validé
-        : isPending
-          ? "#f59e0b" // orange — en attente
-          : isEligible
-            ? d.color // couleur du bonus — éligible
-            : "#ef4444"; // rouge — non éligible
+  // Teinte UNIFORME : quel que soit l'état, on garde la couleur du bonus.
+  // (plus de code couleur par statut — indigo/violet/vert/orange/rouge retirés).
+  const color = d.color;
 
   return {
     isInactive,

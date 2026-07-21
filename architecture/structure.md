@@ -84,6 +84,15 @@ src/features/
 │       ├── WalletPanel.tsx              # Liste transactions + solde (user)
 │       └── UserWalletModal.tsx          # Modal plein écran « Portefeuille » (Settings → Mes activités ; caché en review)
 │
+├── bonus/                               # Bonus & récompenses client — cf. bonus.md
+│   ├── context/BonusContext.tsx         # BonusProvider + useBonusContext (consommé par useSocketEvents)
+│   ├── config/bonusRegistry.tsx         # Descripteur (icône/couleur/label) par type + fallback
+│   ├── hooks/                           # useBonus · useBonusEligibility · useBonusStatus · useOrderPeriodStats
+│   └── components/
+│       ├── UserBonusSheet.tsx           # Bottom sheet « Bonus et parrainage » (Settings)
+│       ├── BonusCarousel.tsx            # Carrousel des cartes bonus
+│       └── ...                          # BonusCard, BonusClaimRow, BonusPagerInfo, BonusGalleryCard…
+│
 └── menu/ restaurants/ profile/
 ```
 

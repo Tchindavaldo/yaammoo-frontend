@@ -103,7 +103,7 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 | `order_rank_top` | `/(tabs)/cart?section=pending` | User — rang top 5 |
 | `order_cancel_by_user` | `/(tabs)/notifications` | Marchand — annulation client |
 | `order_cancel_by_merchant` | `/(tabs)/notifications` | User — annulation marchand |
-| `bonus` | `/(tabs)/settings?section=bonus` | User — bonus éligible (ouvre UserBonusModal) |
+| `bonus` | `/(tabs)/settings?section=bonus` | User — bonus éligible (ouvre UserBonusSheet) |
 | *(inconnu)* | `/(tabs)/notifications` | Fallback |
 
 ### Routes réelles émises par le backend (override via `notif.route`)
@@ -129,7 +129,7 @@ La page [`app/(tabs)/cart.tsx`](../app/(tabs)/cart.tsx) lit `useLocalSearchParam
 |---|---|
 | `cart` | `currentTab = "cart"` (panier) |
 | `pending` / `active` / `finished` / `delivered` | `currentTab = "status"` + `activeStatus = <section>` |
-| `bonus` | `/settings?section=bonus` (ouvre UserBonusModal dans Settings) |
+| `bonus` | `/settings?section=bonus` (ouvre UserBonusSheet dans Settings) |
 
 ---
 

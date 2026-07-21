@@ -2,23 +2,30 @@
 
 ## Rôle
 Interface **client** de consultation, de suivi d'éligibilité et de réclamation des
-bonus proposés par les fastfoods (ou la plateforme yaammoo). Ouverte en plein écran
-depuis **Settings → « Bonus et parrainage »**. Chaque page (carte) empile : **panneau
-stats** (commandes + montant, jour/sem./mois) · **carte principale** (récompense, chip
-de statut, description, progression, Début/Fin/Durée) · **mini-cartes** (Proposés /
-Mes reçus / Distribués) · **ligne de réclamation**. Navigation par **carrousel** + une
-**carte de pagination** en bas (galerie de mini-cartes à gauche, panneau « héro »
-du bonus courant à droite). Fond de page **blanc pur**. L'éligibilité et les stats se
+bonus proposés par les fastfoods (ou la plateforme yaammoo). Ouverte en **bottom
+sheet** depuis **Settings → « Bonus et parrainage »**. L'éligibilité et les stats se
 calculent **en direct** à partir des commandes (`OrderContext`).
 
-### Design unique
-`UserBonusModal` ne rend plus qu'un seul design (l'ancien « design 2 / spread ») :
-**fond de page blanc pur**, cartes blanches (`BonusCard`) avec **bordure fine**
-`rgba(0,0,0,0.04)` + ombre très douce, couleur du bonus en accent. La carte de
-pagination du bas est **outlined** (`pagCardOutlined`). Plus de prop `variant`,
-plus de fond mesh coloré animé.
+### Design courant — bottom sheet
+`UserBonusSheet` présente la feature en **bottom sheet de hauteur fixe**
+(`SHEET_HEIGHT = 400`), réduite à l'essentiel :
 
-> L'ombre montante de la tab bar est **atténuée** pendant l'ouverture de la modale
+1. **Carte principale** du bonus courant (`BonusCard` dans le carrousel) —
+   récompense, chip de statut, description, progression, Début/Fin/Durée ;
+2. **Carte de pagination** du bas, intégrale, qui porte les **deux** lignes :
+   la ligne de réclamation (`BonusClaimRow`) **et** la ligne de pagination
+   (galerie de mini-cartes à gauche + panneau « héro » à droite).
+
+Cartes blanches (`BonusCard`) : **bordure fine** + ombre très douce, couleur du
+bonus en accent. Navigation au **swipe** du carrousel ou au **tap** sur une
+mini-carte. Pas de prop `variant`, pas de fond mesh coloré animé.
+
+> **Retirés par rapport à l'ancien design plein écran** : le **panneau stats** du
+> haut (`BonusStatsPanel`, commandes + montant par jour/sem./mois) et la ligne de
+> **mini-cartes** (Proposés / Mes reçus / Distribués). Le hook
+> `useOrderPeriodStats` reste présent (réserve).
+
+> L'ombre montante de la tab bar est **atténuée** pendant l'ouverture
 > (voir `settings.tsx`, effet sur `userBonusVisible`) pour éviter une bande grise.
 
 ### Alignement sur le header
@@ -35,19 +42,12 @@ négative et une carte qui déborde visiblement des autres — c'est ce qu'il fa
 
 | Bloc | Constante | Padding | Marge |
 |---|---|---|---|
-| Panneau stats | `CARD_PAD` | 10 | +6 |
 | Carte principale | `CARD_PAD` | 10 | +6 |
-| Mini-cartes | `MINI_PAD` | 10 | +6 |
 | Ligne réclamation | `CLAIM_PAD` | 12 | +4 |
 | Pagination | `PAG_PAD` | 10 | +6 |
 
-**Panneau stats.** Ses colonnes sont en `flex: 1` / `alignItems: "center"` : le
-texte est centré *dans sa colonne* et aucun padding ne le ramène au bord. Les
-colonnes extrêmes portent donc l'alignement — `cellStart` sur « Jour », `cellEnd`
-sur le dernier « Mois », `headStart` sur le titre « Commandes ».
-
 ### Pull-to-refresh
-`UserBonusModal` englobe le carrousel dans un `ScrollView` **vertical**
+`UserBonusSheet` englobe le carrousel dans un `ScrollView` **vertical**
 (`refreshControl={pullControl}`) : le carrousel étant horizontal, il ne peut pas
 capter le geste lui-même. Le rechargement est **silencieux** (`refresh(true)`) pour
 éviter le skeleton plein écran, et l'état local `refreshing` pilote le spinner.
@@ -76,8 +76,7 @@ src/features/bonus/
 │   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
 └── components/
-    ├── UserBonusModal.tsx        # Coquille : header + carrousel plein écran + carte de pagination bas (fond blanc pur)
-    ├── BonusStatsPanel.tsx       # Panneau haut sans fond : blocs Commandes | Montant (périodes horizontales)
+    ├── UserBonusSheet.tsx        # ⭐ Coquille : BOTTOM SHEET (hauteur fixe 400) — carrousel + carte de pagination bas
     ├── BonusCarousel.tsx         # Carrousel centré (forwardRef goTo, onIndexChange, peek voisins) — remplit la hauteur
     ├── BonusPagerInfo.tsx        # Colonne droite pagination — panneau « héro » : n° géant en filigrane, icône+émetteur+reste, nom, statut, jauge de position
     ├── BonusGalleryCard.tsx      # Mini-carte de la galerie de pagination : fond + barre de progression interpolés sur scrollX (sans bordure)
@@ -85,7 +84,9 @@ src/features/bonus/
     ├── BonusClaimRow.tsx         # Ligne de réclamation du bonus courant (statut + boutons Réclamer / Profil / Compte)
     ├── BonusCredentialsSheet.tsx # Bottom sheet des identifiants livrés (profil, code, email, mot de passe — copiables)
     ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes)
-    ├── BonusCard.tsx             # ⭐ Carte bonus (design unique) : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
+    ├── BonusCard.tsx             # ⭐ Carte bonus : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
+    ├── BonusGlassCard.tsx        # Fond « verre » des cartes (blur + blanc translucide) — CARD_IMAGE_BG / CARD_BG_COLOR
+    ├── BonusPageBackground.tsx   # Fond de page + `prefetchBonusBackground()` (préchargé au boot, cf. app/_layout.tsx)
     ├── BonusProgressBar.tsx      # Barre de progression animée réutilisable
     ├── BonusUsageRing.tsx        # Anneau de progression `used/limit` (utilisations du code)
     └── BonusStates.tsx           # BonusSkeleton + BonusEmptyState
@@ -95,9 +96,15 @@ src/features/bonus/
 > (constante `PAID_STATUSES`). Sert à la fois au moteur d'éligibilité et aux stats de période.
 
 Point d'entrée monté dans [`app/(tabs)/settings.tsx`](../app/(tabs)/settings.tsx)
-(`<UserBonusModal>`, état `userBonusVisible`). Pattern identique aux panneaux
-« Mes activités » (`UserOrdersModal`, `UserWalletModal`) : **View absolue** (pas de
-`<Modal>` natif) + `TabHeader` + `HeaderPill` « Retour ».
+(`<UserBonusSheet>`, état `userBonusVisible`). Contrairement aux panneaux « Mes
+activités » (`UserOrdersModal`, `UserWalletModal`, en View absolue), la sheet
+utilise un **`<Modal>` natif** `transparent` + `animationType="slide"`, avec un
+backdrop tapable pour fermer.
+
+> ⚠️ La `<Modal>` **ne démonte pas** son contenu à la fermeture (elle le masque).
+> D'où le compteur `openKey`, incrémenté à chaque ouverture, qui ré-arme les
+> listeners `scrollX` et force le remontage du carrousel — sans lui, les
+> abonnements posés au 1er montage ne suivent plus le carrousel recréé.
 
 ---
 
@@ -277,7 +284,7 @@ régénère sinon. ⚠️ Ne jamais mémoriser ce token dans une variable au log
 les appels partiraient en 401 au bout d'une heure.
 
 ## Deep-link
-Notification `type: "bonus"` → `/(tabs)/settings?section=bonus` → ouvre `UserBonusModal`
+Notification `type: "bonus"` → `/(tabs)/settings?section=bonus` → ouvre `UserBonusSheet`
 (voir `notificationRouting.ts` + le `useEffect` sur `section` dans `settings.tsx`).
 
 ## À venir (non implémenté)

@@ -11,7 +11,7 @@ import { BonusCard } from "./BonusCard";
 
 /** Signature attendue d'un composant de carte de bonus (variantes de dispo). */
 export type BonusCardComponent = React.ComponentType<{
-  /** Image de fond de la carte principale (outil de réglage, cf. UserBonusModal). */
+  /** Image de fond de la carte principale (outil de réglage, cf. UserBonusSheet). */
   cardImage?: string | null;
   bonus: Bonus;
   claimStatus?: BonusClaimStatus;

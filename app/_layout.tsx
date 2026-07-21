@@ -15,6 +15,7 @@ import { WalletProvider } from "@/src/features/wallet/context/WalletContext";
 import { MerchantWalletProvider } from "@/src/features/merchant/context/MerchantWalletContext";
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { BonusProvider } from "@/src/features/bonus/context/BonusContext";
+import { BonusV2Provider } from "@/src/features/bonus-v2/context/BonusV2Context";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
 import { AuthGateProvider } from "@/src/features/auth/context/AuthGateContext";
@@ -149,9 +150,11 @@ function RootLayout() {
                 <WalletProvider>
                   <FastFoodProvider>
                     <BonusProvider>
-                      <AuthGateProvider>
-                        <AppContent />
-                      </AuthGateProvider>
+                      <BonusV2Provider>
+                        <AuthGateProvider>
+                          <AppContent />
+                        </AuthGateProvider>
+                      </BonusV2Provider>
                     </BonusProvider>
                   </FastFoodProvider>
                 </WalletProvider>

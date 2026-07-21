@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { useBonusStatus } from "../hooks/useBonusStatus";
+import { useBonusV2Status } from "../hooks/useBonusV2Status";
 import type { Bonus } from "../types/bonus.types";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
 
@@ -43,7 +43,7 @@ export const BonusPagerInfo = ({
 }: BonusPagerInfoProps) => {
   const bonus = bonuses[index];
   const desc = getBonusDescriptor(bonus?.type);
-  const status = useBonusStatus(bonus);
+  const status = useBonusV2Status(bonus);
   const issuer = bonus?.fastFoodName || "yaammoo";
   const remaining = remainingUses(bonus);
 
@@ -88,27 +88,22 @@ export const BonusPagerInfo = ({
           )}
         </View>
 
-        <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={styles.name} numberOfLines={2}>
           {bonus?.name}
         </Text>
 
-        {/* Statut + jauge de progression sur LA MÊME LIGNE. */}
         <View style={styles.statusRow}>
           <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-          <Text
-            style={[styles.statusText, { color: status.color }]}
-            numberOfLines={1}
-          >
+          <Text style={[styles.statusText, { color: status.color }]} numberOfLines={1}>
             {status.label}
           </Text>
-          <View style={styles.gaugeTrack}>
-            <Animated.View
-              style={[
-                styles.gaugeFill,
-                { width: gaugeWidth, backgroundColor: dotColor },
-              ]}
-            />
-          </View>
+        </View>
+
+        {/* Jauge de progression dans la pile de bonus. */}
+        <View style={styles.gaugeTrack}>
+          <Animated.View
+            style={[styles.gaugeFill, { width: gaugeWidth, backgroundColor: dotColor }]}
+          />
         </View>
       </View>
     </View>
@@ -129,13 +124,7 @@ const styles = StyleSheet.create({
     letterSpacing: -4,
   },
   content: { gap: 6 },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    // Sans width fixe, `issuer` (flexShrink) tronque avant de pousser `remaining`.
-    width: "100%",
-  },
+  topRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   iconBadge: {
     width: 22,
     height: 22,
@@ -143,20 +132,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // flexShrink : un nom de fastfood trop long s'ellipse au lieu de déborder.
-  issuer: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "rgba(0,0,0,0.6)",
-    flexShrink: 1,
-  },
-  // Ne rétrécit pas : le compteur « N restantes » reste toujours lisible.
-  remaining: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: "rgba(0,0,0,0.35)",
-    flexShrink: 0,
-  },
+  issuer: { fontSize: 11, fontWeight: "700", color: "rgba(0,0,0,0.6)" },
+  remaining: { fontSize: 10, fontWeight: "600", color: "rgba(0,0,0,0.35)" },
   name: {
     fontSize: 14,
     fontWeight: "800",
@@ -165,17 +142,13 @@ const styles = StyleSheet.create({
   },
   statusRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
-  // flexShrink : le label cède la place à la jauge s'il est long.
-  statusText: { fontSize: 11, fontWeight: "800", flexShrink: 1 },
+  statusText: { fontSize: 11, fontWeight: "800" },
   gaugeTrack: {
-    // Prend l'espace restant sur la ligne du statut, à sa droite.
-    flex: 1,
     height: 3,
     borderRadius: 2,
     backgroundColor: "rgba(0,0,0,0.08)",
     overflow: "hidden",
-    // Petite marge gauche pour ne pas coller le label.
-    marginLeft: 4,
+    marginTop: 2,
   },
   gaugeFill: { height: "100%", borderRadius: 2 },
 });

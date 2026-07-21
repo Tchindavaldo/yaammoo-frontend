@@ -1,23 +1,18 @@
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { useBonusEligibility } from "../hooks/useBonusEligibility";
+import { useBonusV2Eligibility } from "../hooks/useBonusV2Eligibility";
 import type {
   Bonus,
   BonusClaimStatus,
   BonusRequestStatus,
 } from "../types/bonus.types";
-import {
-  BonusGlassCard,
-  CARD_BG_COLOR,
-  CARD_IMAGE_BG,
-  GLASS_BORDER,
-} from "./BonusGlassCard";
+import { BonusGlassCard, GLASS_BORDER } from "./BonusGlassCard";
+import { USE_IMAGE_BG } from "./BonusPageBackground";
 import { BonusProgressBar } from "./BonusProgressBar";
 import { BonusSparkline } from "./BonusSparkline";
-import { BonusUsageRing } from "./BonusUsageRing";
 
 interface BonusCardProps {
   bonus: Bonus;
@@ -38,13 +33,12 @@ const GRAY_L = Theme.colors.gray[400];
 const LIGHT = "#ffffff";
 // Glassmorphism : c'est BonusGlassCard qui porte le fond (blur + blanc très
 // translucide). Les cartes elles-mêmes ne peignent plus rien, sinon l'aplat
-// masquerait le verre. `CARD_IMAGE_BG` = false rétablit un aplat.
-// Couleur pilotée par la constante globale CARD_BG_COLOR (BonusGlassCard.tsx).
-const CARD_BG = CARD_IMAGE_BG ? "transparent" : CARD_BG_COLOR;
+// masquerait le verre. `USE_IMAGE_BG` = false rétablit l'aplat gris d'origine.
+const CARD_BG = USE_IMAGE_BG ? "transparent" : Theme.colors.gray[100];
 // Pistes de progression : assombries sur fond image, sinon elles s'y noient.
-const TRACK = CARD_IMAGE_BG ? "rgba(0,0,0,0.16)" : Theme.colors.gray[200];
+const TRACK = USE_IMAGE_BG ? "rgba(0,0,0,0.16)" : Theme.colors.gray[200];
 // Liseré : sur verre, une arête CLAIRE (et non sombre) fait l'effet de vitre.
-const BORDER = CARD_IMAGE_BG ? GLASS_BORDER : "rgba(0,0,0,0.01)";
+const BORDER = USE_IMAGE_BG ? GLASS_BORDER : "rgba(0,0,0,0.01)";
 
 // ── Alignement optique sur le header ──
 // Le TabHeader pose son texte à `Theme.spacing.md` (16) du bord. Pour que le
@@ -85,33 +79,17 @@ const usageInfo = (bonus: Bonus) => {
   };
 };
 
-/** Formate une date en mois seul ("juil."). */
-const fmtMonth = (d: Date) => d.toLocaleDateString("fr-FR", { month: "short" });
-
 /**
- * Date de début affichée : `claimedAt` (jour + mois) s'il existe. Sinon dates
- * inconnues → on projette le MOIS actuel seul (pas de jour).
- */
-const fmtStartDate = (bonus: Bonus) =>
-  bonus.claimedAt ? fmtDate(bonus.claimedAt) : fmtMonth(new Date());
-
-/**
- * Date de fin du code : `expiresAt` (jour + mois) fourni par le backend, ou
- * `claimedAt + claimDuration`. Si dates inconnues → MOIS seul après la durée.
- * "—" seulement si aucune durée.
+ * Date de fin du code : `expiresAt` fourni par le backend. Fallback sur
+ * `claimedAt + claimDuration` si absent. "—" si pas encore réclamé.
  */
 const fmtEndDate = (bonus: Bonus) => {
   if (bonus.expiresAt) return fmtDate(bonus.expiresAt);
-  if (!bonus.claimDuration) return "—";
-  if (bonus.claimedAt) {
-    const d = new Date(bonus.claimedAt);
-    if (isNaN(d.getTime())) return "—";
-    d.setDate(d.getDate() + bonus.claimDuration);
-    return fmtDate(d.toISOString());
-  }
-  const d = new Date();
+  if (!bonus.claimedAt || !bonus.claimDuration) return "—";
+  const d = new Date(bonus.claimedAt);
+  if (isNaN(d.getTime())) return "—";
   d.setDate(d.getDate() + bonus.claimDuration);
-  return fmtMonth(d);
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 };
 
 /** Texte de durée : "N j" ou "N mois". */
@@ -123,8 +101,9 @@ const durationText = (bonus: Bonus) => {
 };
 
 /**
- * Carte bonus : design minimaliste / épuré — carte blanche, bordure fine + ombre
- * douce, couleur du bonus en accent. Rendue dans le carrousel de `UserBonusSheet`.
+ * Design V2 des bonus : identique à V3 (minimaliste / épuré, cartes blanches,
+ * couleur du bonus en accent). Différence gérée par UserBonusV2Modal : la page V2
+ * a un fond global BLANC PUR (alors que V3 est sur fond gris neutre).
  */
 export const BonusCard: React.FC<BonusCardProps> = ({
   bonus,
@@ -133,7 +112,7 @@ export const BonusCard: React.FC<BonusCardProps> = ({
   cardImage,
 }) => {
   const d = getBonusDescriptor(bonus.type);
-  const p = useBonusEligibility(bonus);
+  const p = useBonusV2Eligibility(bonus);
   const periodLabel = bonus.criteria?.period
     ? PERIOD_LABEL[bonus.criteria.period]
     : "";
@@ -165,13 +144,26 @@ export const BonusCard: React.FC<BonusCardProps> = ({
             ? "Éligible"
             : "Non éligible";
 
-  // Teinte UNIFORME : la pilule de statut prend toujours la couleur du bonus,
-  // quel que soit l'état (plus de couleur dédiée par statut).
-  const statusColor = (): string => d.color;
+  // Couleur associée au statut (chip + icône de réclamation) — 1 couleur par état.
+  const statusColor = (): string => {
+    if (isInactive) return "#6366f1"; // indigo — offre non activée
+    if (isRedeemed) return "#8b5cf6"; // violet — utilisé
+    if (isApproved) return "#16a34a"; // vert — validé
+    if (isPending) return "#f59e0b"; // orange — en attente
+    if (isEligible) return d.color; // couleur du bonus — éligible
+    return "#ef4444"; // rouge — non éligible
+  };
+  const proposed = bonus.fastFoodBonusCount;
+  const mine = bonus.userClaimedCount;
+  const total = bonus.totalClaimedCount;
+  const max = Math.max(proposed ?? 0, mine ?? 0, total ?? 0, 1);
+
+  const bs = bonus.bonusStats;
 
   return (
     <View style={styles.root}>
-      {/* Ligne de stats (Commandes / Montant) retirée dans ce design. */}
+      {/* Stats du bonus (Commandes / Montant) */}
+      {bs ? <StatsPanel stats={bs} color={d.color} /> : null}
 
       {/* Carte principale — seule carte à porter l'image de fond, en plus du
           verre : c'est elle qui doit se détacher des autres blocs. */}
@@ -203,7 +195,7 @@ export const BonusCard: React.FC<BonusCardProps> = ({
           {bonus.name}
         </Text>
         {!!bonus.description && (
-          <Text style={styles.description} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={styles.description} numberOfLines={2}>
             {bonus.description}
           </Text>
         )}
@@ -226,21 +218,39 @@ export const BonusCard: React.FC<BonusCardProps> = ({
         </View>
 
         <View style={styles.infoRow}>
-          <Info label="Début" value={fmtStartDate(bonus)} />
+          <Info label="Début" value={fmtDate(bonus.claimedAt)} />
           <Info label="Fin" value={fmtEndDate(bonus)} />
           <Info label="Durée" value={durationText(bonus)} />
-          {u && (
-            <BonusUsageRing
-              used={u.remaining}
-              limit={u.limit}
-              color={d.color}
-              size={40}
-            />
-          )}
         </View>
       </BonusGlassCard>
 
-      {/* Ligne mini-cartes (Proposés / Mes reçus / Distribués) retirée. */}
+      {/* Mini-cartes stats (sparkline + barre) */}
+      <View style={styles.miniRow}>
+        <MiniStat
+          color={d.color}
+          variant={0}
+          title="Proposés"
+          sub="par le fastfood"
+          value={numOrDash(proposed)}
+          ratio={(proposed ?? 0) / max}
+        />
+        <MiniStat
+          color={d.color}
+          variant={1}
+          title="Mes reçus"
+          sub="sur ce bonus"
+          value={numOrDash(mine)}
+          ratio={(mine ?? 0) / max}
+        />
+        <MiniStat
+          color={d.color}
+          variant={2}
+          title="Distribués"
+          sub="tous les users"
+          value={numOrDash(total)}
+          ratio={(total ?? 0) / max}
+        />
+      </View>
     </View>
   );
 };
@@ -380,11 +390,10 @@ const styles = StyleSheet.create({
     marginHorizontal: GUTTER - CARD_PAD,
     backgroundColor: CARD_BG,
     borderRadius: 24,
-    paddingTop: 4,
-    paddingBottom: 4,
+    paddingVertical: 14,
     paddingHorizontal: CARD_PAD,
     gap: 10,
-    borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
+    borderWidth: USE_IMAGE_BG ? 1 : 0.5,
     borderColor: BORDER,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -411,7 +420,7 @@ const styles = StyleSheet.create({
   description: { color: GRAY, fontSize: 13, lineHeight: 18, marginTop: -6 },
   progressWrap: { gap: 6 },
   progressText: { color: GRAY, fontSize: 12, fontWeight: "500" },
-  infoRow: { flexDirection: "row", alignItems: "center" },
+  infoRow: { flexDirection: "row", justifyContent: "space-between" },
   info: { flex: 1 },
   infoLabel: { color: GRAY, fontSize: 12, fontWeight: "500" },
   infoValue: { color: DARK, fontSize: 16, fontWeight: "800", marginTop: 2 },
@@ -426,7 +435,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: MINI_PAD,
     gap: 2,
-    borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
+    borderWidth: USE_IMAGE_BG ? 1 : 0.5,
     borderColor: BORDER,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -470,7 +479,7 @@ const stylesStats = StyleSheet.create({
     padding: MINI_PAD,
     backgroundColor: CARD_BG,
     borderRadius: 16,
-    borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
+    borderWidth: USE_IMAGE_BG ? 1 : 0.5,
     borderColor: BORDER,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },

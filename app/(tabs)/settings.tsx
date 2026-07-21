@@ -2,7 +2,8 @@ import { Config } from '@/src/api/config';
 import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
-import { UserBonusModal } from '@/src/features/bonus/components/UserBonusModal';
+import { UserBonusSheet } from '@/src/features/bonus/components/UserBonusSheet';
+import { UserBonusV2Modal } from '@/src/features/bonus-v2/components/UserBonusV2Modal';
 import { DriverApplyModal } from '@/src/features/driver/components/DriverApplyModal';
 import { DriverManageModal } from '@/src/features/driver/components/DriverManageModal';
 import { DriverMyApplicationsModal } from '@/src/features/driver/components/DriverMyApplicationsModal';
@@ -58,8 +59,10 @@ export default function SettingsScreen() {
   // Section « Mes activités » (user + marchand) : commandes + portefeuille.
   const [userOrdersVisible, setUserOrdersVisible] = useState(false);
   const [userWalletVisible, setUserWalletVisible] = useState(false);
-  // Bonus (Settings → Bonus et parrainage).
+  // Bonus (Settings → Bonus et parrainage) : bottom sheet, design courant.
   const [userBonusVisible, setUserBonusVisible] = useState(false);
+  // Bonus V2 : ancien design (modal plein écran), gardé pour comparaison.
+  const [userBonusV2Visible, setUserBonusV2Visible] = useState(false);
   // Section « Livraison » (user) + item « Livreurs » (boutique).
   const [driverApplyVisible, setDriverApplyVisible] = useState(false);
   const [driverOrdersVisible, setDriverOrdersVisible] = useState(false);
@@ -321,6 +324,11 @@ export default function SettingsScreen() {
             title="Bonus et parrainage"
             onPress={() => setUserBonusVisible(true)}
           />
+          <SettingItem
+            icon="gift-outline"
+            title="Bonus V2"
+            onPress={() => setUserBonusV2Visible(true)}
+          />
         </View>
 
         {/* Boutique - only show for merchants (AVANT Livraison) */}
@@ -516,10 +524,16 @@ export default function SettingsScreen() {
         onClose={() => setUserWalletVisible(false)}
       />
 
-      {/* Bonus et parrainage (plein écran) */}
-      <UserBonusModal
+      {/* Bonus et parrainage (bottom sheet) */}
+      <UserBonusSheet
         visible={userBonusVisible}
         onClose={() => setUserBonusVisible(false)}
+      />
+
+      {/* Bonus V2 : ancien design en modal plein écran (comparaison) */}
+      <UserBonusV2Modal
+        visible={userBonusV2Visible}
+        onClose={() => setUserBonusV2Visible(false)}
       />
 
       {/* Livraison (user) : postuler / gérer ses livraisons */}

@@ -18,7 +18,7 @@ import { StyleSheet, View } from "react-native";
  * revenir au fond gris d'origine (page blanche + cartes grises) — le composant
  * ne rend alors rien et les cartes reprennent leur aplat.
  */
-export const USE_IMAGE_BG = false;
+export const USE_IMAGE_BG = true;
 
 /** Image de fond de la page (réutilisée par BonusGlassCard, cf. prop `image`). */
 export const BACKGROUND = require("../../../../assets/images/purre-avocat-tomate-legume-flouter.png");
@@ -43,10 +43,10 @@ export const prefetchBonusBackground = () =>
 const IMAGE_SCALE = 1.2;
 
 /** Intensité du blur natif appliqué par-dessus l'image (déjà floutée). */
-const BLUR_INTENSITY = 81;
+const BLUR_INTENSITY = 1;
 /** Voile clair par-dessus le blur : garantit le contraste du texte foncé. */
 const VEIL = "rgba(255, 255, 255, 0.95)"; // valeur final valider
-// const VEIL = "rgba(2, 1, 1, 0.55)"; // valeur test
+// const VEIL = "rgba(255,255,255,0.55)"; // valeur test
 
 /**
  * Dégradé de couleur posé par-dessus le voile : réchauffe le blanc laiteux et

@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { useBonusContext } from "../context/BonusContext";
+import { useBonusV2Context } from "../context/BonusV2Context";
 import type { Bonus } from "../types/bonus.types";
 import { BonusCard } from "./BonusCard";
 import {
@@ -31,7 +31,7 @@ import { BonusPagerInfo } from "./BonusPagerInfo";
 import { BonusPageBackground, USE_IMAGE_BG } from "./BonusPageBackground";
 import { BonusEmptyState, BonusSkeleton } from "./BonusStates";
 
-interface UserBonusModalProps {
+interface UserBonusV2ModalProps {
   visible: boolean;
   onClose: () => void;
 }
@@ -52,7 +52,7 @@ const PAG_PAD = 10;
  * blanches, couleur du bonus en accent — BonusCard). Bas : carte de pagination
  * (galerie à slider + compteur + flèches/dots) juste au-dessus de la navbar.
  */
-export const UserBonusModal: React.FC<UserBonusModalProps> = ({
+export const UserBonusV2Modal: React.FC<UserBonusV2ModalProps> = ({
   visible,
   onClose,
 }) => {
@@ -67,7 +67,7 @@ export const UserBonusModal: React.FC<UserBonusModalProps> = ({
   const carouselRef = useRef<BonusCarouselHandle>(null);
 
   const { bonuses, loading, error, claims, claimBonus, refresh } =
-    useBonusContext();
+    useBonusV2Context();
 
   /**
    * Image de fond choisie pour la carte principale (ligne 2). Volontairement en

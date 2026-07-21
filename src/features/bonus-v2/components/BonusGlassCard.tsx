@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, View, type ViewProps } from "react-native";
-import { BACKGROUND } from "./BonusPageBackground";
+import { BACKGROUND, USE_IMAGE_BG } from "./BonusPageBackground";
 
 /**
  * Surface « verre » des cartes de la page bonus (glassmorphism).
@@ -16,23 +16,8 @@ import { BACKGROUND } from "./BonusPageBackground";
  * (les styles portent alors l'aplat gris d'origine).
  */
 
-/**
- * Active l'effet « verre + image » sur les CARTES, indépendamment du fond de
- * page (`USE_IMAGE_BG`). Mettre à `false` rend les cartes en View simple (aplat),
- * même si le fond de page image est actif — et inversement.
- */
-export const CARD_IMAGE_BG = false;
-
-/**
- * ⭐ Couleur de fond de relais des cartes quand `CARD_IMAGE_BG = false`
- * (plus d'image/verre). Constante globale : la modifier ici change TOUTES les
- * cartes (carte principale, mini-cartes, carte de pagination). #fff par
- * défaut — volontairement différent du gris #F2F2F7 du V1.
- */
-export const CARD_BG_COLOR = "#ffffff";
-
 /** Blur du verre lui-même. Léger : le fond de page est déjà flouté. */
-const GLASS_BLUR = 0;
+const GLASS_BLUR = 81;
 /** Teinte du verre. Assez basse pour rester translucide, assez haute pour lire. */
 const GLASS_TINT = "rgba(0, 0, 0, 0.05)";
 /** Liseré clair : c'est lui qui donne l'arête « vitre » au bord de la carte. */
@@ -69,7 +54,7 @@ export const BonusGlassCard: React.FC<BonusGlassCardProps> = ({
   children,
   ...rest
 }) => {
-  if (!CARD_IMAGE_BG) {
+  if (!USE_IMAGE_BG) {
     return (
       <View style={style} {...rest}>
         {children}

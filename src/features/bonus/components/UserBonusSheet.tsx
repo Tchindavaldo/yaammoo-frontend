@@ -89,6 +89,32 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     }
   }, [visible, scrollX]);
 
+  /**
+   * Progression d'ouverture (0 = fermé, 1 = ouvert) : pilote À LA FOIS l'opacité
+   * du voile et la translation de la sheet, pour qu'ils restent synchronisés.
+   */
+  const anim = useRef(new Animated.Value(0)).current;
+  /**
+   * Montage de la Modal, découplé de `visible` : à la fermeture on garde la
+   * Modal montée le temps de l'animation de sortie, sinon le contenu
+   * disparaîtrait d'un coup sans transition.
+   */
+  const [mounted, setMounted] = useState(visible);
+
+  useEffect(() => {
+    if (visible) setMounted(true);
+    const t = Animated.timing(anim, {
+      toValue: visible ? 1 : 0,
+      duration: visible ? 260 : 200,
+      // Opacité et transform sont toutes deux gérées par le driver natif.
+      useNativeDriver: true,
+    });
+    t.start(({ finished }) => {
+      if (finished && !visible) setMounted(false);
+    });
+    return () => t.stop();
+  }, [visible, anim]);
+
   // Ref de la galerie de mini-cartes : on la fait défiler auto pour garder la
   // carte active visible (n'en montre que ~2 à la fois).
   const galleryRef = useRef<ScrollView>(null);
@@ -165,23 +191,38 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
 
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
-      animationType="slide"
+      // `none` : l'animation native s'appliquerait à TOUT le contenu, backdrop
+      // compris — le voile monterait du bas avec la sheet. On anime donc
+      // nous-mêmes, séparément : fade sur le voile, translate sur la sheet.
+      animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent
     >
       <View style={styles.root}>
-        {/* Fond assombri : tap pour fermer. */}
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        {/* Fond assombri : tap pour fermer. Fondu seul, jamais translaté. */}
+        <Animated.View style={[styles.backdrop, { opacity: anim }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
 
-        <View
+        <Animated.View
           style={[
             styles.sheet,
             { paddingBottom: insets.bottom + 12 },
             // Sur fond image, la sheet doit être transparente : un aplat blanc
             // recouvrirait BonusPageBackground.
             USE_IMAGE_BG && { backgroundColor: "transparent" },
+            {
+              transform: [
+                {
+                  translateY: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [SHEET_HEIGHT + insets.bottom + 12, 0],
+                  }),
+                },
+              ],
+            },
           ]}
         >
           {/* Fond de la sheet : image de plat floutée + blur (piloté dans
@@ -269,7 +310,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
               )}
             </BonusGlassCard>
           )}
-        </View>
+        </Animated.View>
 
         {toast && (
           <Toast

@@ -94,7 +94,7 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
   const [image, setImage] = useState<string>("");
   const [orderLeadTime, setOrderLeadTime] = useState("");
   const [advanceDays, setAdvanceDays] = useState("");
-  const [pickupOnly, setPickupOnly] = useState(false);
+  const [pickupAllowed, setPickupAllowed] = useState(false);
   const [tempDeliveryTime, setTempDeliveryTime] = useState(new Date());
   const [periodicEnabled, setPeriodicEnabled] = useState<
     Record<string, boolean>
@@ -334,7 +334,7 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
         image: imageUrl,
         orderLeadTime: orderLeadTime ? parseInt(orderLeadTime, 10) : undefined,
         advanceDays: advanceDays ? parseInt(advanceDays, 10) : undefined,
-        pickupOnly,
+        pickupAllowed,
         deliveryHours:
           deliveryHours.length > 0
             ? buildDeliveryPayload(
@@ -917,20 +917,20 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
             <View style={styles.pickupCard}>
               <TouchableOpacity
                 style={styles.checkboxRow}
-                onPress={() => setPickupOnly(!pickupOnly)}
+                onPress={() => setPickupAllowed(!pickupAllowed)}
                 activeOpacity={0.7}
               >
                 <View
-                  style={[styles.checkbox, pickupOnly && styles.checkboxActive]}
+                  style={[styles.checkbox, pickupAllowed && styles.checkboxActive]}
                 >
-                  {pickupOnly && (
+                  {pickupAllowed && (
                     <Ionicons name="checkmark" size={16} color="white" />
                   )}
                 </View>
                 <Text
                   style={[
                     styles.checkboxLabel,
-                    pickupOnly && { color: "#10b981" },
+                    pickupAllowed && { color: "#10b981" },
                   ]}
                 >
                   Le client peut passer à la boutique récupérer la commande

@@ -43,3 +43,21 @@
         -gerer ces horaires
         -permettre le lancement de l'execution de la cmd une fois au restaut
         -permettre le lancement de l'execution de la cmd une fois a un certaine distance du restaut
+
+[ ] ⚠️ IMPORTANT — À GÉRER AVANT LE DÉPLOIEMENT FINAL EN PROD
+    afficher les commandes groupées d'un panier dans la liste du fastfood
+    - les cmd passées depuis le panier partagent un champ `groupId` (renseigné par le backend au passage en `pending`)
+    - côté marchand : regrouper visuellement les cmd d'un même `groupId` (un seul client, une seule livraison)
+    - utile car une cmd = un plat : un panier de 3 plats arrive comme 3 cmd distinctes
+    - le backend ne facture qu'UNE course par (panier, boutique) — cf. backend architecture/pricing.md
+    - côté client aussi : voir ses cmd groupées par panier dans l'historique
+
+[ ] ⚠️ IMPORTANT — À GÉRER AVANT LE DÉPLOIEMENT FINAL EN PROD
+    retirer l'option "sans livraison" de l'onglet delivery
+    - aujourd'hui le user peut choisir "à emporter" alors que le prix affiché inclut déjà la livraison
+      (fondue dans le prix du plat depuis le home) → il paie une course qu'il ne reçoit pas
+    - le backend trace déjà ce cas : order_deliveries.delivered = false → marge pure (cf. backend architecture/pricing.md)
+    - à remplacer plus tard par :
+        - VIP delivery (option premium)
+        - ou réservation d'une place au fastfood pour consommer sur place
+    - à croiser avec la tâche "gestion livraison surplace" plus haut

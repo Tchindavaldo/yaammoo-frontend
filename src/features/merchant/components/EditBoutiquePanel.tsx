@@ -126,7 +126,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   const [image, setImage] = useState<string>("");
   const [orderLeadTime, setOrderLeadTime] = useState("");
   const [advanceDays, setAdvanceDays] = useState("");
-  const [pickupOnly, setPickupOnly] = useState(false);
+  const [pickupAllowed, setPickupAllowed] = useState(false);
   const [page, setPage] = useState(1);
   const [tempDeliveryTime, setTempDeliveryTime] = useState(new Date());
 
@@ -241,7 +241,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
             setAdvanceDays(
               data.advanceDays !== undefined ? String(data.advanceDays) : "",
             );
-            setPickupOnly(data.pickupOnly === true);
+            setPickupAllowed(data.pickupAllowed === true);
 
             // Parse times
             if (data.openTime) {
@@ -538,7 +538,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
         cities: selectedCities,
         orderLeadTime: orderLeadTime ? parseInt(orderLeadTime, 10) : undefined,
         advanceDays: advanceDays ? parseInt(advanceDays, 10) : undefined,
-        pickupOnly,
+        pickupAllowed,
         deliveryHours:
           deliveryHours.length > 0
             ? buildDeliveryPayload(
@@ -1332,7 +1332,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                           alignItems: "center",
                           gap: 10,
                         }}
-                        onPress={() => setPickupOnly(!pickupOnly)}
+                        onPress={() => setPickupAllowed(!pickupAllowed)}
                         activeOpacity={0.7}
                       >
                         <View
@@ -1341,15 +1341,15 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                             height: 22,
                             borderRadius: 6,
                             borderWidth: 2,
-                            borderColor: pickupOnly ? "#10b981" : "#cbd5e1",
-                            backgroundColor: pickupOnly
+                            borderColor: pickupAllowed ? "#10b981" : "#cbd5e1",
+                            backgroundColor: pickupAllowed
                               ? "#10b981"
                               : "transparent",
                             alignItems: "center",
                             justifyContent: "center",
                           }}
                         >
-                          {pickupOnly && (
+                          {pickupAllowed && (
                             <Ionicons
                               name="checkmark"
                               size={16}
@@ -1360,7 +1360,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
                         <Text
                           style={{
                             fontSize: 13,
-                            color: pickupOnly ? "#10b981" : "#475569",
+                            color: pickupAllowed ? "#10b981" : "#475569",
                             fontWeight: "600",
                             flexShrink: 1,
                           }}

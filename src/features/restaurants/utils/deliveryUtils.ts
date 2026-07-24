@@ -1,3 +1,6 @@
+import { useEffect, useState } from "react";
+import { AppState } from "react-native";
+
 /**
  * Extrait le string "HH:MM" depuis un item du nouveau format ou le retourne tel quel.
  */
@@ -53,12 +56,48 @@ export const getNextDeliveryTime = (
     }
   }
 
-  // Si aucune heure n'est trouvée, utiliser la dernière heure disponible
+  // Si aucun créneau du jour n'est encore valide (tous passés),
+  // on repart sur le PREMIER créneau — soit demain. Afficher la dernière
+  // heure du jour (déjà passée) serait incohérent avec l'heure actuelle.
   if (!closestHour) {
-    closestHour = hours[hours.length - 1];
+    closestHour = hours[0];
   }
 
   // Convertir format "HH:MM" à "HHh" (ex: "12:00" → "12h")
   const [hoursStr] = closestHour.split(":");
   return `${hoursStr}h`;
+};
+
+/**
+ * Version réactive de getNextDeliveryTime : recalcule chaque minute et au
+ * retour de l'app en foreground, pour que l'heure affichée ne prenne jamais
+ * de retard sur l'heure réelle (bug de valeur figée au premier render).
+ */
+export const useNextDeliveryTime = (
+  deliveryHours?: any[],
+  orderLeadTime: number = 0,
+): string => {
+  const [time, setTime] = useState(() =>
+    getNextDeliveryTime(deliveryHours, orderLeadTime),
+  );
+
+  useEffect(() => {
+    const recompute = () =>
+      setTime(getNextDeliveryTime(deliveryHours, orderLeadTime));
+
+    recompute();
+    const interval = setInterval(recompute, 60_000);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") recompute();
+    });
+
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+    // deliveryHours est un array — on le sérialise pour une dépendance stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(deliveryHours), orderLeadTime]);
+
+  return time;
 };

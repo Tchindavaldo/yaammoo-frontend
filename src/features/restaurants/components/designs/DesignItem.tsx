@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
-import { getNextDeliveryTime } from '../../utils/deliveryUtils';
+import { useNextDeliveryTime } from '../../utils/deliveryUtils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const V1_COLORS = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
@@ -39,7 +39,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
 }) => {
   const isAvailable = menu.disponibilite === 'available' || menu.disponibilite === 'Disponible';
   const price = `${menu.prix1} F`;
-  const deliveryTime = getNextDeliveryTime(deliveryHours, orderLeadTime);
+  const deliveryTime = useNextDeliveryTime(deliveryHours, orderLeadTime);
 
   // --- DESIGN 1: SPECIAL OFFERS (Ex-D3) ---
   if (variant === 1) {

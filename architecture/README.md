@@ -12,6 +12,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | Fichier | Feature |
 |---|---|
 | [structure.md](./structure.md) | Arborescence `app/`, `src/features/`, `src/components/`, `src/api/` |
+| [http-versioning.md](./http-versioning.md) | Versioning d'app dans les requêtes HTTP (`x-app-version`, `setupHttp.ts`, headers globaux) |
 | [tab-header.md](./tab-header.md) | En-têtes d'onglets uniformes (TabHeader, HeaderPill, DatePill, SectionSwitcher) |
 | [auth.md](./auth.md) | Authentification client (Email/Password, Google/Apple Sign-In, AuthContext, **accès invité / AuthGate**) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
@@ -66,7 +67,7 @@ yaammoo/
 │   │   ├── orders/           # OrderContext + cartes
 │   │   ├── merchant/         # Panel marchand (boutique, commandes, menu) + components/recap-designs/ (3 designs récapitulatif menu)
 │   │   └── menu/ restaurants/ profile/ payment/
-│   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs)
+│   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs) + version.ts + setupHttp.ts (headers globaux x-app-version)
 │   ├── theme/                # Theme.colors, typography
 │   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
 │   ├── components/           # Composants partagés (Toast…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)

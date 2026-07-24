@@ -56,15 +56,18 @@ yaammoo/src/features/checkout/
 | `selectedPackaging` | Embalage[] | Extras sélectionnés |
 | `selectedDrinks` | Boisson[] | Boissons sélectionnées |
 | `drinkQuantities` | Record<string, number> | Quantités par boisson |
-| `delivery` | Livraison | Objet livraison complet |
+| `delivery` | Livraison | Objet livraison complet (dont `delivery.bonus: { type, code } \| null` — bonus livraison appliqué) |
 | `isInitialized` | boolean | Init terminée (évite reset lors de rerenders) |
 
 **Helpers exportés** :
 - `validateDelivery()` → `string | null` — vérifie que les champs requis selon `delivery.type` sont remplis
 - `validateStock()` → `string | null` — vérifie que `menu.stock >= quantity` (frontend guard avant API)
 - `resetCheckout()` — réinitialise tout l'état
-- `buildOrderPayload(fastFoodId, userId, status)` — construit le payload complet à envoyer au backend
-- `total` (computed) — prix total avec extras et boissons
+- `createOrder(status = "pendingToBuy")` — construit le payload complet à envoyer au backend (renvoie `null` si invalide)
+- **Calculs (computed)** : `total`, `deliveryPrice`, `isDeliveryFree`, `displayDeliveryPrice`,
+  `displayTotal` — `isDeliveryFree` vrai si `deliveryOffer.active` OU code bonus saisi
+  (`delivery.bonus?.code`) ; les `display*` masquent le coût livraison à l'écran mais
+  la requête envoie toujours le vrai prix dans `delivery.prix`.
 
 **Règles métier** :
 - Si `menu.stock` n'est pas un `number` → pas de blocage stock
@@ -134,10 +137,21 @@ Hauteur fixe = les zones ne bougent pas au changement de type de livraison.
 - `validateDelivery` bloque le paiement tant que la zone express n'est pas
   choisie (si des `expressZones` existent) ou que la période n'est pas choisie.
 
-**Rétrocompat versions app/backend** : le backend sert `deliveryHours` en ancien
-(`string[]`) ou nouveau format (`{ hour, periodic, periodicZones, express,
-expressZones }`) selon le header `x-app-version` (voir `src/api/setupHttp.ts`).
-Sans `expressZones`, la card Zone est masquée (aucun prix par défaut n'est appliqué).
+**Affichage « Offert » sur la grille Select Type (gratuité)** : `DeliveryTab` reçoit
+`deliveryOffer` (passé par `CheckoutSheet`/`CartCheckoutSheet`). Quand `deliveryOffer.active`
+(`deliveryFree`), les cartes **Express** et **Heure** :
+- affichent **« · Offert »** (orange) dans le titre à la place du prix — par défaut,
+  même sans zone/créneau choisi.
+- dès qu'une zone/un créneau est sélectionné, affichent en plus le **prix réel barré**
+  à la suite du sous-texte (Express : « Livré dès que terminée · ~~500F~~ » ; Heure :
+  « {heure} · ~~{prix}F~~ »). Style `localStyles.strikePrice` (gris, `line-through`).
+
+Hors gratuité, comportement inchangé (`Express (500F)`, `{heure} · {prix}F`).
+
+**Formats `deliveryHours`** : le backend sert ce champ en ancien (`string[]`) ou
+nouveau format (`{ hour, periodic, periodicZones, express, expressZones }`) selon
+la version du client (voir [http-versioning.md](./http-versioning.md)). Sans
+`expressZones`, la card Zone est masquée (aucun prix par défaut n'est appliqué).
 
 **Format des données de zone** (nouveau format) :
 ```json
@@ -204,6 +218,11 @@ seule ligne** : tout le texte à **gauche**, le(s) bouton(s) à **droite**.
 Le code saisi n'est appliqué (gratuité) que s'il **correspond au `bonusCode`**
 de l'offre du fastfood (source unique de vérité — pas d'appel API de vérif).
 
+**Liste des zones (overlays Période/Express) en cas de gratuité** : chaque ligne de
+zone affiche le **prix normal barré** au-dessus de **« Offert »** (orange), via le
+conteneur `pricePair` + styles `strikePrix` / `freePrix`. La valeur normale reste
+visible même quand la livraison est offerte.
+
 **Payload order** : quand un bonus s'applique (offre active OU code valide), le
 hook `useCheckout` ajoute à la **racine** du payload :
 ```js
@@ -224,7 +243,10 @@ gratuité ou non (le backend applique la remise via `bonus`).
 3. Clique "Add to Cart" → `POST /order` avec `status: pendingToBuy`
 4. Clique "Buy" → `validateStock()` → `validateDelivery()` → `POST /order` avec `status: pending`
 
-**Note** : Les heures de livraison disponibles sont chargées depuis le menu via `GET /menu/:id` (enrichissement de `menuWithDeliveryHours`).
+**Note** : Les heures de livraison (`deliveryHours`, `orderLeadTime`, `advanceDays`,
+`deliveryOffer`) sont déjà attachées au menu par `DesignRouter` depuis `GET /fastfood/all`.
+`CheckoutSheet` recopie simplement `menu` dans `menuWithDeliveryHours` (**aucun refetch**
+`GET /fastfood/:id` / `GET /menu/:id`).
 
 ---
 

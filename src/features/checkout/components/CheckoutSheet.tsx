@@ -355,6 +355,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     onOpenExpress={() => setIsExpressPopupVisible(true)}
                     onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
                     availableHours={rawHours}
+                    deliveryOffer={deliveryOffer}
                   />
                 )}
               </ScrollView>

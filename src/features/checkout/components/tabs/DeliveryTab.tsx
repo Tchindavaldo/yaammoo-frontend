@@ -1,4 +1,4 @@
-import { Livraison } from "@/src/types";
+import { DeliveryOffer, Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -13,6 +13,7 @@ interface DeliveryTabProps {
   onOpenExpress?: () => void;
   onOpenVoiceNote?: () => void;
   availableHours?: any[];
+  deliveryOffer?: DeliveryOffer | null;
 }
 
 export const DeliveryTab: React.FC<DeliveryTabProps> = ({
@@ -24,6 +25,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   onOpenExpress,
   onOpenVoiceNote,
   availableHours,
+  deliveryOffer,
 }) => {
   const isLocationFilled = !!delivery.address;
   const isPeriodFilled = !!delivery.hour;
@@ -61,6 +63,11 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
     delivery.expressPrix != null && Number(delivery.expressPrix) > 0
       ? delivery.expressPrix
       : "";
+
+  // Livraison offerte détectée (offre backend active) : la card Express affiche
+  // « Offert » à la place du prix. Dès qu'une zone est choisie, on affiche en
+  // plus le prix réel — barré — à la suite de « Livré dès que terminée ».
+  const deliveryFree = !!deliveryOffer?.active;
 
   // Parse `delivery.hour` au format "YYYY-MM-DD|HH:mm|lieu" → { date, heure }
   const parseHour = (raw: string) => {
@@ -300,7 +307,13 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Express
-                {expressPrice ? ` (${expressPrice}F)` : ""}
+                {deliveryFree ? (
+                  <Text style={{ color: "#ec4913" }}> · Offert</Text>
+                ) : expressPrice ? (
+                  ` (${expressPrice}F)`
+                ) : (
+                  ""
+                )}
               </Text>
               <Text
                 style={[
@@ -309,6 +322,11 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                 ]}
               >
                 Livré dès que terminée
+                {deliveryFree && expressPrice ? (
+                  <Text style={localStyles.strikePrice}> · {expressPrice}F</Text>
+                ) : (
+                  ""
+                )}
               </Text>
             </View>
           </TouchableOpacity>
@@ -330,6 +348,11 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Heure
+                {deliveryFree ? (
+                  <Text style={{ color: "#ec4913" }}> · Offert</Text>
+                ) : (
+                  ""
+                )}
               </Text>
               {selectedDate ? (
                 <Text
@@ -347,9 +370,23 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   delivery.type === "standard" && { color: "#ec4913" },
                 ]}
               >
-                {selectedHour
-                  ? `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
-                  : "Choisir un créneau"}
+                {selectedHour ? (
+                  deliveryFree ? (
+                    <>
+                      {selectedHour}
+                      {periodPrice ? (
+                        <Text style={localStyles.strikePrice}>
+                          {" "}
+                          · {periodPrice}F
+                        </Text>
+                      ) : null}
+                    </>
+                  ) : (
+                    `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
+                  )
+                ) : (
+                  "Choisir un créneau"
+                )}
               </Text>
             </View>
           </TouchableOpacity>
@@ -391,6 +428,10 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
 const localStyles = StyleSheet.create({
   deliveryContainer: {
     justifyContent: "space-between",
+  },
+  strikePrice: {
+    textDecorationLine: "line-through",
+    color: "#94a3b8",
   },
   topZone: {
     flex: 1,

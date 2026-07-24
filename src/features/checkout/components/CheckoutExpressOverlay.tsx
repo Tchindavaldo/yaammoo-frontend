@@ -170,7 +170,10 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
                     </View>
                     {item.prix ? (
                       isFree ? (
-                        <Text style={styles.freePrix}>Offert</Text>
+                        <View style={styles.pricePair}>
+                          <Text style={styles.strikePrix}>{item.prix} F</Text>
+                          <Text style={styles.freePrix}>Offert</Text>
+                        </View>
                       ) : (
                         <Text
                           style={[

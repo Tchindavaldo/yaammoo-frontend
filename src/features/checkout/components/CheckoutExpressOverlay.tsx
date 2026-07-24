@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { DeliveryOffer } from "@/src/types";
+import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 
 const SHEET_HEIGHT = 384;
 
@@ -19,8 +21,13 @@ interface ExpressZone {
 interface CheckoutExpressOverlayProps {
   onClose: () => void;
   selectedLieu: string;
-  onSelectExpress: (lieu: string, prix?: number) => void;
+  onSelectExpress: (
+    lieu: string,
+    prix?: number,
+    bonus?: { type: string; code: string } | null,
+  ) => void;
   availableHours?: any[];
+  deliveryOffer?: DeliveryOffer | null;
 }
 
 /**
@@ -37,6 +44,7 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   selectedLieu,
   onSelectExpress,
   availableHours,
+  deliveryOffer,
 }) => {
   const buildZones = (): ExpressZone[] => {
     if (!availableHours || availableHours.length === 0) return [];
@@ -61,13 +69,40 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   const zones = buildZones();
 
   const [selectedValue, setSelectedValue] = useState<string>(selectedLieu || "");
+  const [bonusCode, setBonusCode] = useState("");
+  const [codeInputOpen, setCodeInputOpen] = useState(false);
+
+  const selectedZone = zones.find((z) => z.lieu === selectedValue);
+
+  // Le code saisi rend-il la livraison gratuite ? Il doit correspondre au
+  // bonusCode de l'offre du fastfood (source unique de vérité).
+  const bonusApplied =
+    !!bonusCode &&
+    !!deliveryOffer?.bonusCode &&
+    bonusCode.trim().toUpperCase() === deliveryOffer.bonusCode.toUpperCase();
+
+  // Livraison offerte → on barre les prix de la liste des zones.
+  const isFree = !!deliveryOffer?.active || bonusApplied;
 
   const handleValidate = () => {
-    const selected = zones.find((z) => z.lieu === selectedValue);
-    const parsed = selected?.prix
-      ? parseInt(String(selected.prix), 10)
+    const parsed = selectedZone?.prix
+      ? parseInt(String(selectedZone.prix), 10)
       : NaN;
-    onSelectExpress(selectedValue, Number.isNaN(parsed) ? undefined : parsed);
+    // Bonus remonté : offre backend active, ou code saisi valide.
+    let bonus: { type: string; code: string } | null = null;
+    if (deliveryOffer?.active) {
+      bonus = {
+        type: deliveryOffer.reason,
+        code: deliveryOffer.bonusCode || "",
+      };
+    } else if (bonusApplied && deliveryOffer) {
+      bonus = { type: deliveryOffer.reason, code: bonusCode.trim() };
+    }
+    onSelectExpress(
+      selectedValue,
+      Number.isNaN(parsed) ? undefined : parsed,
+      bonus,
+    );
     onClose();
   };
 
@@ -134,14 +169,18 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
                       </Text>
                     </View>
                     {item.prix ? (
-                      <Text
-                        style={[
-                          styles.periodPrix,
-                          isSelected && { color: "#ec4913" },
-                        ]}
-                      >
-                        {item.prix} F
-                      </Text>
+                      isFree ? (
+                        <Text style={styles.freePrix}>Offert</Text>
+                      ) : (
+                        <Text
+                          style={[
+                            styles.periodPrix,
+                            isSelected && { color: "#ec4913" },
+                          ]}
+                        >
+                          {item.prix} F
+                        </Text>
+                      )
                     ) : null}
                   </TouchableOpacity>
                 );
@@ -149,9 +188,18 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
             )}
           </ScrollView>
 
-          <TouchableOpacity style={styles.checkBtn} onPress={handleValidate}>
-            <Text style={styles.checkBtnText}>VALIDER</Text>
-          </TouchableOpacity>
+          <DeliveryValidateRow
+            hasSelection={!!selectedValue}
+            selectedLabel={selectedZone?.lieu}
+            selectedPrice={selectedZone?.prix}
+            deliveryOffer={deliveryOffer}
+            bonusCode={bonusCode}
+            onChangeBonusCode={setBonusCode}
+            codeInputOpen={codeInputOpen}
+            onToggleCodeInput={() => setCodeInputOpen((v) => !v)}
+            onValidate={handleValidate}
+            bonusApplied={bonusApplied}
+          />
         </View>
       </View>
     </View>
@@ -273,23 +321,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#0f172a",
   },
-  checkBtn: {
-    width: "100%",
-    height: 48,
-    backgroundColor: "#ec4913",
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#ec4913",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    marginTop: 12,
+  pricePair: {
+    alignItems: "flex-end",
   },
-  checkBtnText: {
-    color: "white",
-    fontSize: 14,
+  strikePrix: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#94a3b8",
+    textDecorationLine: "line-through",
+  },
+  freePrix: {
+    fontSize: 13,
     fontWeight: "bold",
+    color: "#ec4913",
   },
 });

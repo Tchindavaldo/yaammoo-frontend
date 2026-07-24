@@ -15,8 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Menu } from "@/src/types";
 import { useCheckout } from "../hooks/useCheckout";
 import { styles } from "./CheckoutSheet.styles";
-import axios from "axios";
-import { Config } from "@/src/api/config";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 
 // Shared Components
@@ -144,6 +142,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     extrasPrice,
     drinksPrice,
     deliveryPrice,
+    isDeliveryFree,
+    displayDeliveryPrice,
+    displayTotal,
     createOrder,
     resetCheckout,
     validateDelivery,
@@ -234,40 +235,11 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     }
   }, [visible]);
 
-  // Enrichir le menu avec les deliveryHours de la boutique
+  // Le menu porte déjà toutes les infos de livraison du fastfood parent
+  // (deliveryHours, orderLeadTime, advanceDays, deliveryOffer), attachées par
+  // `DesignRouter` depuis `GET /fastfood/all`. Aucun refetch `GET /fastfood/:id`.
   useEffect(() => {
-    if (!menu || !(menu as any).fastFoodId) {
-      setMenuWithDeliveryHours(menu);
-      return;
-    }
-
-    const fetchDeliveryHours = async () => {
-      try {
-        const response = await axios.get(
-          `${Config.apiUrl}/fastfood/${(menu as any).fastFoodId}`,
-          {
-            headers: { "ngrok-skip-browser-warning": "true" },
-          },
-        );
-        if (
-          response.data?.data?.deliveryHours ||
-          response.data?.data?.orderLeadTime
-        ) {
-          setMenuWithDeliveryHours({
-            ...menu,
-            deliveryHours: response.data.data.deliveryHours,
-            orderLeadTime: response.data.data.orderLeadTime,
-            advanceDays: response.data.data.advanceDays,
-          } as any);
-        } else {
-          setMenuWithDeliveryHours(menu);
-        }
-      } catch {
-        setMenuWithDeliveryHours(menu);
-      }
-    };
-
-    fetchDeliveryHours();
+    setMenuWithDeliveryHours(menu);
   }, [menu]);
 
   if (!menu) return null;
@@ -275,6 +247,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
   const advanceDays = (menuWithDeliveryHours as any)?.advanceDays;
+  const deliveryOffer = (menuWithDeliveryHours as any)?.deliveryOffer || null;
 
   const handleConfirm = () => {
     const order = createOrder();
@@ -350,6 +323,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     extrasPrice={extrasPrice}
                     drinksPrice={drinksPrice}
                     deliveryPrice={deliveryPrice}
+                    isDeliveryFree={isDeliveryFree}
                   />
                 )}
 
@@ -460,16 +434,18 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             <CheckoutPeriodOverlay
               onClose={() => setIsPeriodPopupVisible(false)}
               selectedPeriod={delivery.hour || "Now"}
-              onSelectPeriod={(period, prix) =>
+              onSelectPeriod={(period, prix, bonus) =>
                 setDelivery({
                   ...delivery,
                   hour: period,
                   prix: prix !== undefined ? prix : delivery.prix,
+                  bonus: bonus ?? null,
                 })
               }
               availableHours={rawHours}
               orderLeadTime={orderLeadTime}
               advanceDays={advanceDays}
+              deliveryOffer={deliveryOffer}
             />
           )}
 
@@ -477,14 +453,16 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             <CheckoutExpressOverlay
               onClose={() => setIsExpressPopupVisible(false)}
               selectedLieu={delivery.expressLieu || ""}
-              onSelectExpress={(lieu, prix) =>
+              onSelectExpress={(lieu, prix, bonus) =>
                 setDelivery({
                   ...delivery,
                   expressLieu: lieu,
                   expressPrix: prix !== undefined ? prix : delivery.expressPrix,
+                  bonus: bonus ?? null,
                 })
               }
               availableHours={rawHours}
+              deliveryOffer={deliveryOffer}
             />
           )}
 
@@ -501,8 +479,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             menuPrice={menuPrice}
             extrasPrice={extrasPrice}
             drinksPrice={drinksPrice}
-            deliveryPrice={deliveryPrice}
-            total={total}
+            deliveryPrice={displayDeliveryPrice}
+            isDeliveryFree={isDeliveryFree}
+            total={displayTotal}
             paymentState={paymentState}
             network={paymentNetwork}
             onNetworkChange={setPaymentNetwork}

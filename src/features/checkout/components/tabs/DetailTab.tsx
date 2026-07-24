@@ -14,17 +14,24 @@ interface DetailTabProps {
   extrasPrice: number;
   drinksPrice: number;
   deliveryPrice: number;
+  isDeliveryFree?: boolean;
 }
 
-export const DetailTab: React.FC<DetailTabProps> = ({ 
-  menu, 
-  selectedPriceIndex, 
+export const DetailTab: React.FC<DetailTabProps> = ({
+  menu,
+  selectedPriceIndex,
   setSelectedPriceIndex,
   menuPrice,
   extrasPrice,
   drinksPrice,
-  deliveryPrice
+  deliveryPrice,
+  isDeliveryFree
 }) => {
+  // Livraison offerte : le total affiché n'inclut PAS la livraison, et la ligne
+  // Livraison affiche « Gratuit ». La requête garde le vrai prix (côté hook).
+  const totalDisplay = isDeliveryFree
+    ? menuPrice + extrasPrice + drinksPrice
+    : menuPrice + extrasPrice + drinksPrice + deliveryPrice;
   const images = menu.images && menu.images.length > 0 ? menu.images : [menu.image];
 
   return (
@@ -90,10 +97,14 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         </View>
 
         <View style={styles.gridBtn}>
-          <Ionicons name="bicycle-outline" size={18} color={deliveryPrice > 0 ? "#ec4913" : "#94a3b8"} />
+          <Ionicons name="bicycle-outline" size={18} color={isDeliveryFree || deliveryPrice > 0 ? "#ec4913" : "#94a3b8"} />
           <View style={styles.gridTextCenter}>
             <Text style={[styles.gridTitle, styles.textDark]}>Livraison</Text>
-            <Text style={styles.gridSubText}>{deliveryPrice} FCFA</Text>
+            {isDeliveryFree ? (
+              <Text style={[styles.gridSubText, { fontWeight: 'bold', color: '#ec4913' }]}>Gratuit</Text>
+            ) : (
+              <Text style={styles.gridSubText}>{deliveryPrice} FCFA</Text>
+            )}
           </View>
         </View>
 
@@ -102,7 +113,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
           <View style={styles.gridTextCenter}>
             <Text style={[styles.gridTitle, styles.textDark]}>Total</Text>
             <Text style={[styles.gridSubText, { fontWeight: 'bold', color: '#ec4913' }]}>
-              {menuPrice + extrasPrice + drinksPrice + deliveryPrice} FCFA
+              {totalDisplay} FCFA
             </Text>
           </View>
         </View>

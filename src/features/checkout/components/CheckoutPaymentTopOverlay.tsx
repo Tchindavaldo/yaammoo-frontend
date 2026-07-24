@@ -36,6 +36,7 @@ interface CheckoutPaymentTopOverlayProps {
   extrasPrice: number;
   drinksPrice: number;
   deliveryPrice: number;
+  isDeliveryFree?: boolean;
   total: number;
   paymentState?: PaymentState;
   network?: "orange" | "mtn";
@@ -74,16 +75,23 @@ const PriceRecap: React.FC<{
   drinksPrice: number;
   extrasPrice: number;
   deliveryPrice: number;
-}> = ({ menuPrice, drinksPrice, extrasPrice, deliveryPrice }) => {
+  isDeliveryFree?: boolean;
+}> = ({ menuPrice, drinksPrice, extrasPrice, deliveryPrice, isDeliveryFree }) => {
   const rows: {
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
     value: number;
+    free?: boolean;
   }[] = [
     { icon: "fast-food-outline", label: "Menu", value: menuPrice },
     { icon: "wine-outline", label: "Boisson", value: drinksPrice },
     { icon: "add-circle-outline", label: "Extras", value: extrasPrice },
-    { icon: "bicycle-outline", label: "Livraison", value: deliveryPrice },
+    {
+      icon: "bicycle-outline",
+      label: "Livraison",
+      value: deliveryPrice,
+      free: isDeliveryFree,
+    },
   ];
   return (
     <View style={styles.recapRow}>
@@ -91,7 +99,11 @@ const PriceRecap: React.FC<{
         <View key={r.label} style={styles.recapItem}>
           <Ionicons name={r.icon} size={16} color="#ec4913" />
           <Text style={styles.recapLabel}>{r.label}</Text>
-          <Text style={styles.recapValue}>{r.value} F</Text>
+          {r.free ? (
+            <Text style={[styles.recapValue, styles.recapFree]}>Gratuit</Text>
+          ) : (
+            <Text style={styles.recapValue}>{r.value} F</Text>
+          )}
         </View>
       ))}
     </View>
@@ -151,6 +163,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
   extrasPrice,
   drinksPrice,
   deliveryPrice,
+  isDeliveryFree,
   total,
   paymentState = "network_select",
   network = "orange",
@@ -220,6 +233,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
             drinksPrice={drinksPrice}
             extrasPrice={extrasPrice}
             deliveryPrice={deliveryPrice}
+            isDeliveryFree={isDeliveryFree}
           />
 
           {/* Total affiché à part, plus grand */}
@@ -312,6 +326,10 @@ const styles = StyleSheet.create({
     color: "#1f2937",
     fontSize: 12,
     fontWeight: "600",
+  },
+  recapFree: {
+    color: "#ec4913",
+    fontWeight: "800",
   },
   // --- Total ---
   totalRow: {

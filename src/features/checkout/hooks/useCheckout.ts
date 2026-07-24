@@ -135,7 +135,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
   const prices = useMemo(() => {
-    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0 };
+    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0, isDeliveryFree: false, displayDeliveryPrice: 0, displayTotal: 0 };
 
     let basePrice = menu.prix1;
     if (selectedPriceIndex === 2 && menu.prix2 > 0) basePrice = menu.prix2;
@@ -166,12 +166,29 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       }
     }
 
+    const total = menuPrice + extrasPrice + drinksPrice + deliveryPrice;
+
+    // Livraison offerte (affichage UNIQUEMENT) : offre backend active OU un code
+    // bonus appliqué. La requête envoie toujours les vrais prix — ces valeurs
+    // `display*` ne servent qu'au récap montré au user.
+    const deliveryOffer = (menu as any)?.deliveryOffer;
+    const isDeliveryFree =
+      delivery.statut &&
+      delivery.type !== "aucune" &&
+      (!!deliveryOffer?.active || !!delivery.bonus?.code);
+
+    const displayDeliveryPrice = isDeliveryFree ? 0 : deliveryPrice;
+    const displayTotal = isDeliveryFree ? total - deliveryPrice : total;
+
     return {
       menuPrice,
       extrasPrice,
       drinksPrice,
       deliveryPrice,
-      total: menuPrice + extrasPrice + drinksPrice + deliveryPrice,
+      total,
+      isDeliveryFree,
+      displayDeliveryPrice,
+      displayTotal,
     };
   }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery]);
 
@@ -289,6 +306,16 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       delivery: deliveryData,
       status,
     };
+
+    // Bonus livraison (code saisi ou offre détectée) → racine du payload.
+    // Toujours envoyé si présent, indépendamment de la gratuité (le prix de
+    // livraison sélectionné reste dans deliveryData.prix dans tous les cas).
+    if (hasDelivery && delivery.bonus?.code) {
+      returnedOrder.bonus = {
+        type: delivery.bonus.type,
+        code: delivery.bonus.code,
+      };
+    }
 
     if (initialOrder) {
       if (initialOrder.id) {
@@ -511,6 +538,10 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     extrasPrice: prices.extrasPrice,
     drinksPrice: prices.drinksPrice,
     deliveryPrice: prices.deliveryPrice,
+    // Affichage récap uniquement (livraison offerte). Requête inchangée.
+    isDeliveryFree: prices.isDeliveryFree,
+    displayDeliveryPrice: prices.displayDeliveryPrice,
+    displayTotal: prices.displayTotal,
     createOrder,
     resetCheckout,
     validateDelivery,

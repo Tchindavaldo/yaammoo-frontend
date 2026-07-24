@@ -23,6 +23,22 @@ export class Boisson {
   ) { }
 }
 
+/**
+ * Offre de livraison gratuite greffée par le backend sur chaque fastfood
+ * (`GET /fastfood/all` et `GET /fastfood/:id`). Décrit si la livraison est
+ * offerte, pour quelle raison (campagne plateforme ou bonus armé du user), et
+ * par qui elle est couverte. `null` = aucune offre → livraison payante.
+ */
+export interface DeliveryOffer {
+  active: boolean;
+  reason: "campaign" | "bonus";
+  coveredBy: "platform" | "fastfood";
+  bonusId: string | null;
+  bonusCode: string | null;
+  bonusName: string | null;
+  fastFoodId: string | null;
+}
+
 export class Livraison {
   constructor(
     public statut: boolean,
@@ -37,6 +53,9 @@ export class Livraison {
     // Express : lieu + prix propres à la livraison express (indépendants de la période)
     public expressLieu: string = "",
     public expressPrix: number = 0,
+    // Bonus livraison appliqué (code saisi ou offre détectée) — envoyé à la
+    // racine du payload order sous `bonus: { type, code }`.
+    public bonus: { type: string; code: string } | null = null,
   ) { }
 }
 

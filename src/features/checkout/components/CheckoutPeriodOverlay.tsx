@@ -8,6 +8,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { DeliveryOffer } from "@/src/types";
+import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 
 const SHEET_HEIGHT = 384;
 
@@ -20,10 +22,15 @@ interface PeriodItem {
 interface CheckoutPeriodOverlayProps {
   onClose: () => void;
   selectedPeriod: string;
-  onSelectPeriod: (period: string, prix?: number) => void;
+  onSelectPeriod: (
+    period: string,
+    prix?: number,
+    bonus?: { type: string; code: string } | null,
+  ) => void;
   availableHours?: any[];
   orderLeadTime?: number;
   advanceDays?: number;
+  deliveryOffer?: DeliveryOffer | null;
 }
 
 export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
@@ -33,6 +40,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   availableHours,
   orderLeadTime = 0,
   advanceDays,
+  deliveryOffer,
 }) => {
   const maxDays = advanceDays && advanceDays > 0 ? advanceDays : 7;
 
@@ -106,18 +114,43 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   const [selectedValue, setSelectedValue] = useState<string>(
     selectedPeriod || "",
   );
+  const [bonusCode, setBonusCode] = useState("");
+  const [codeInputOpen, setCodeInputOpen] = useState(false);
+
+  // Période sélectionnée (pour l'affichage de la ligne de validation)
+  const selectedPeriodItem = validPeriods.find((p) => {
+    const v = p.lieu ? `${p.hour}|${p.lieu}` : p.hour;
+    return v === selectedValue;
+  });
+  const selectedLabel = selectedPeriodItem
+    ? [selectedPeriodItem.hour, selectedPeriodItem.lieu].filter(Boolean).join(" · ")
+    : "";
+
+  const bonusApplied =
+    !!bonusCode &&
+    !!deliveryOffer?.bonusCode &&
+    bonusCode.trim().toUpperCase() === deliveryOffer.bonusCode.toUpperCase();
+
+  // Livraison offerte → on barre les prix de la liste des périodes.
+  const isFree = !!deliveryOffer?.active || bonusApplied;
 
   const handleValidate = () => {
     const value = selectedValue
       ? `${selectedDate}|${selectedValue}`
       : selectedDate;
-    // Retrouve le prix de la période sélectionnée pour le remonter au parent
-    const selected = validPeriods.find((p) => {
-      const v = p.lieu ? `${p.hour}|${p.lieu}` : p.hour;
-      return v === selectedValue;
-    });
-    const parsed = selected?.prix ? parseInt(String(selected.prix), 10) : NaN;
-    onSelectPeriod(value, Number.isNaN(parsed) ? undefined : parsed);
+    const parsed = selectedPeriodItem?.prix
+      ? parseInt(String(selectedPeriodItem.prix), 10)
+      : NaN;
+    let bonus: { type: string; code: string } | null = null;
+    if (deliveryOffer?.active) {
+      bonus = {
+        type: deliveryOffer.reason,
+        code: deliveryOffer.bonusCode || "",
+      };
+    } else if (bonusApplied && deliveryOffer) {
+      bonus = { type: deliveryOffer.reason, code: bonusCode.trim() };
+    }
+    onSelectPeriod(value, Number.isNaN(parsed) ? undefined : parsed, bonus);
     onClose();
   };
 
@@ -221,23 +254,36 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
                     ) : null}
                   </View>
                   {item.prix ? (
-                    <Text
-                      style={[
-                        styles.periodPrix,
-                        isSelected && { color: "#ec4913" },
-                      ]}
-                    >
-                      {item.prix} F
-                    </Text>
+                    isFree ? (
+                      <Text style={styles.freePrix}>Offert</Text>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.periodPrix,
+                          isSelected && { color: "#ec4913" },
+                        ]}
+                      >
+                        {item.prix} F
+                      </Text>
+                    )
                   ) : null}
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
-          <TouchableOpacity style={styles.checkBtn} onPress={handleValidate}>
-            <Text style={styles.checkBtnText}>VALIDER</Text>
-          </TouchableOpacity>
+          <DeliveryValidateRow
+            hasSelection={!!selectedValue}
+            selectedLabel={selectedLabel}
+            selectedPrice={selectedPeriodItem?.prix}
+            deliveryOffer={deliveryOffer}
+            bonusCode={bonusCode}
+            onChangeBonusCode={setBonusCode}
+            codeInputOpen={codeInputOpen}
+            onToggleCodeInput={() => setCodeInputOpen((v) => !v)}
+            onValidate={handleValidate}
+            bonusApplied={bonusApplied}
+          />
         </View>
       </View>
     </View>
@@ -384,23 +430,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#0f172a",
   },
-  checkBtn: {
-    width: "100%",
-    height: 48,
-    backgroundColor: "#ec4913",
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#ec4913",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-    marginTop: 12,
+  pricePair: {
+    alignItems: "flex-end",
   },
-  checkBtnText: {
-    color: "white",
-    fontSize: 14,
+  strikePrix: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#94a3b8",
+    textDecorationLine: "line-through",
+  },
+  freePrix: {
+    fontSize: 13,
     fontWeight: "bold",
+    color: "#ec4913",
   },
 });

@@ -147,6 +147,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     extrasPrice,
     drinksPrice,
     deliveryPrice,
+    isDeliveryFree,
+    displayDeliveryPrice,
+    displayTotal,
     createOrder,
     validateDelivery,
     validateStock,
@@ -157,7 +160,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   } | null>(null);
   const showError = (message: string) =>
     setSheetToast({ message, type: "error" });
-  const { appleReviewMode } = useFastFoods();
+  const { appleReviewMode, fastFoods } = useFastFoods();
   // Mode review : commande directe via « Valider » (loader dans le bouton).
   const [reviewOrdering, setReviewOrdering] = useState(false);
 
@@ -205,17 +208,25 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   // `input` (le toast d'erreur s'affiche, l'utilisateur peut ressaisir).
   // Seul `success_created` déclenche la fermeture (effet ci-dessus).
 
-  // Enrichir le menu avec les deliveryHours de la boutique
+  // Enrichir le menu (édition d'une commande du panier). `deliveryOffer`
+  // provient EXCLUSIVEMENT du contexte FastFood (chargé via `GET /fastfood/all`
+  // — le seul endpoint qui le porte), retrouvé par `fastFoodId`. Les
+  // `deliveryHours`/`orderLeadTime` sont récupérés via `GET /fastfood/:id`
+  // (le menu d'une commande stockée peut ne pas les porter à jour).
   useEffect(() => {
     if (!menu || !(menu as any).fastFoodId) {
       setMenuWithDeliveryHours(menu);
       return;
     }
 
+    const ffId = (menu as any).fastFoodId;
+    const ctxFastFood = fastFoods.find((f) => f.id === ffId) as any;
+    const deliveryOffer = ctxFastFood?.deliveryOffer ?? null;
+
     const fetchDeliveryHours = async () => {
       try {
         const response = await axios.get(
-          `${Config.apiUrl}/fastfood/${(menu as any).fastFoodId}`,
+          `${Config.apiUrl}/fastfood/${ffId}`,
           {
             headers: { "ngrok-skip-browser-warning": "true" },
           },
@@ -229,23 +240,25 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             deliveryHours: response.data.data.deliveryHours,
             orderLeadTime: response.data.data.orderLeadTime,
             advanceDays: response.data.data.advanceDays,
+            deliveryOffer,
           } as any);
         } else {
-          setMenuWithDeliveryHours(menu);
+          setMenuWithDeliveryHours({ ...menu, deliveryOffer } as any);
         }
       } catch {
-        setMenuWithDeliveryHours(menu);
+        setMenuWithDeliveryHours({ ...menu, deliveryOffer } as any);
       }
     };
 
     fetchDeliveryHours();
-  }, [menu]);
+  }, [menu, fastFoods]);
 
   if (!menu) return null;
 
   const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
   const advanceDays = (menuWithDeliveryHours as any)?.advanceDays;
+  const deliveryOffer = (menuWithDeliveryHours as any)?.deliveryOffer || null;
 
   const handleConfirm = () => {
     const order = createOrder();
@@ -321,6 +334,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     extrasPrice={extrasPrice}
                     drinksPrice={drinksPrice}
                     deliveryPrice={deliveryPrice}
+                    isDeliveryFree={isDeliveryFree}
                   />
                 )}
 
@@ -430,16 +444,18 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             <CheckoutPeriodOverlay
               onClose={() => setIsPeriodPopupVisible(false)}
               selectedPeriod={delivery.hour || "Now"}
-              onSelectPeriod={(period, prix) =>
+              onSelectPeriod={(period, prix, bonus) =>
                 setDelivery({
                   ...delivery,
                   hour: period,
                   prix: prix !== undefined ? prix : delivery.prix,
+                  bonus: bonus ?? null,
                 })
               }
               availableHours={rawHours}
               orderLeadTime={orderLeadTime}
               advanceDays={advanceDays}
+              deliveryOffer={deliveryOffer}
             />
           )}
 
@@ -447,14 +463,16 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             <CheckoutExpressOverlay
               onClose={() => setIsExpressPopupVisible(false)}
               selectedLieu={delivery.expressLieu || ""}
-              onSelectExpress={(lieu, prix) =>
+              onSelectExpress={(lieu, prix, bonus) =>
                 setDelivery({
                   ...delivery,
                   expressLieu: lieu,
                   expressPrix: prix !== undefined ? prix : delivery.expressPrix,
+                  bonus: bonus ?? null,
                 })
               }
               availableHours={rawHours}
+              deliveryOffer={deliveryOffer}
             />
           )}
 
@@ -471,8 +489,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             menuPrice={menuPrice}
             extrasPrice={extrasPrice}
             drinksPrice={drinksPrice}
-            deliveryPrice={deliveryPrice}
-            total={total}
+            deliveryPrice={displayDeliveryPrice}
+            isDeliveryFree={isDeliveryFree}
+            total={displayTotal}
             paymentState={paymentState}
             network={paymentNetwork}
             onNetworkChange={setPaymentNetwork}

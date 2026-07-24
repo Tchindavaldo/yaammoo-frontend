@@ -31,7 +31,8 @@ yaammoo/src/features/checkout/
 │   ├── shared/
 │   │   ├── TabChip.tsx                 # Chip onglet (Detail / Extras / Boisson / Livraison)
 │   │   ├── PriceChip.tsx               # Chip sélection taille/prix
-│   │   └── ImageSlider.tsx             # Slider d'images du menu
+│   │   ├── ImageSlider.tsx             # Slider d'images du menu
+│   │   └── DeliveryValidateRow.tsx     # Ligne bas des overlays Période/Express : code bonus + détails zone + VALIDER
 │   └── tabs/
 │       ├── DetailTab.tsx               # Onglet détail menu (image, prix, quantité)
 │       ├── ExtrasTab.tsx               # Onglet extras/emballages
@@ -165,6 +166,51 @@ delivery: {
 - `prix` et `zone` sont **nouveaux** (optionnels côté backend → rétrocompat descendante).
 - `expressPrix`/`expressLieu` ne sont PAS envoyés : le backend n'a besoin que de
   `type` + `prix` + `zone`. Ces champs restent internes à l'état frontend (affichage).
+
+---
+
+## Bonus livraison & offre gratuite (`deliveryOffer`)
+
+Le backend greffe un objet **`deliveryOffer`** sur chaque fastfood
+(`GET /fastfood/all` et `GET /fastfood/:id`). Il décrit si la livraison est
+**offerte** et par qui. Type `DeliveryOffer` (dans `src/types/index.ts`) :
+
+```ts
+{
+  active: boolean;
+  reason: "campaign" | "bonus";        // campagne plateforme OU bonus armé du user
+  coveredBy: "platform" | "fastfood";
+  bonusId: string | null;
+  bonusCode: string | null;            // code que le user peut aussi saisir manuellement
+  bonusName: string | null;            // ex. "Livraison offerte"
+  fastFoodId: string | null;
+}
+```
+`deliveryOffer: null` = aucune offre → livraison payante.
+
+**Câblage** : `CheckoutSheet`/`CartCheckoutSheet` greffent `deliveryOffer` sur
+`menuWithDeliveryHours` (déjà récupéré par `GET /fastfood/:id`), puis le passent
+aux overlays Période/Express.
+
+**Ligne de validation (`DeliveryValidateRow`)** — bas des deux overlays, **une
+seule ligne** : tout le texte à **gauche**, le(s) bouton(s) à **droite**.
+- Offre `active` → gauche affiche direct « Livraison offerte · <émetteur>
+  (Promo yaammoo / nom du bonus) », un seul bouton VALIDER.
+- Pas d'offre, aucune zone choisie → **input code bonus** à gauche + bouton VALIDER.
+  Un bouton pastille (à droite) ouvre/ferme l'input.
+- Zone choisie → **détails** (lieu + prix, ou « offerte » si le code saisi
+  correspond au `bonusCode`) à gauche + 2 boutons (code / VALIDER) à droite.
+
+Le code saisi n'est appliqué (gratuité) que s'il **correspond au `bonusCode`**
+de l'offre du fastfood (source unique de vérité — pas d'appel API de vérif).
+
+**Payload order** : quand un bonus s'applique (offre active OU code valide), le
+hook `useCheckout` ajoute à la **racine** du payload :
+```js
+bonus: { type, code }   // type = deliveryOffer.reason ("campaign" | "bonus")
+```
+Le **prix de livraison sélectionné est TOUJOURS envoyé** dans `delivery.prix`,
+gratuité ou non (le backend applique la remise via `bonus`).
 
 ---
 

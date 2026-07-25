@@ -114,16 +114,37 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
         if (hasDelivery) {
           if (dData.type === 'time') d.type = 'standard';
           else if (dData.type === 'express') d.type = 'express';
-          if (dData.time || dData.hour) d.hour = dData.time || dData.hour;
+          // La commande persiste `time` ("HH:mm") + `zone` séparément, alors que
+          // `d.hour` attend "YYYY-MM-DD|HH:mm|lieu" (format lu par l'overlay
+          // Période). On recompose donc, sinon la période/zone déjà choisie
+          // n'apparaît pas sélectionnée à la réouverture.
+          const rawHour = dData.time || dData.hour;
+          if (rawHour) {
+            d.hour = String(rawHour).includes("|")
+              ? rawHour
+              : [dData.date, rawHour, dData.zone].filter(Boolean).join("|");
+          }
+          if (dData.date) d.date = dData.date;
           if (dData.location || dData.address) d.address = dData.location || dData.address;
           if (dData.phone) d.phone = dData.phone;
           if (dData.voiceNoteUri) d.voiceNoteUri = dData.voiceNoteUri;
           if (dData.note) d.note = dData.note;
-          // Note : dData.prix est le prix TOTAL de livraison sauvegardé (pas le
-          // prix période seul) → on ne le remet pas dans d.prix pour ne pas
-          // fausser l'affichage. expressPrix/expressLieu sont eux spécifiques.
-          if (dData.expressLieu) d.expressLieu = dData.expressLieu;
-          if (dData.expressPrix != null) d.expressPrix = Number(dData.expressPrix) || 0;
+          // Express : la zone est persistée sous `zone` (cf. createOrder) ;
+          // `expressLieu` n'existe que dans l'état local, d'où le fallback.
+          const lieu = dData.expressLieu || (dData.type === "express" ? dData.zone : null);
+          if (lieu) d.expressLieu = lieu;
+          // Idem pour le prix : `expressPrix` est local, la commande ne porte
+          // que `prix`. On le restaure dans le champ correspondant au type,
+          // sinon le prix de livraison retombe à 0 à la réouverture.
+          const savedPrix = Number(dData.expressPrix ?? dData.prix) || 0;
+          if (savedPrix > 0) {
+            if (d.type === "express") d.expressPrix = savedPrix;
+            else d.prix = savedPrix;
+          }
+          // Le code bonus n'est JAMAIS restauré : il est à usage unique et déjà
+          // consommé par la commande d'origine. Le réappliquer offrirait la
+          // livraison indéfiniment à chaque réédition. Pour en bénéficier de
+          // nouveau, le user resaisit un code → POST /bonus/verify tranche.
         } else {
           d.type = 'aucune';
         }
@@ -168,14 +189,14 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
     const total = menuPrice + extrasPrice + drinksPrice + deliveryPrice;
 
-    // Livraison offerte (affichage UNIQUEMENT) : offre backend active OU un code
-    // bonus appliqué. La requête envoie toujours les vrais prix — ces valeurs
-    // `display*` ne servent qu'au récap montré au user.
+    // Livraison offerte : offre backend active OU code bonus appliqué.
+    // Le VRAI prix de livraison reste envoyé dans `delivery.prix` (le livreur
+    // doit être payé), mais le montant débité (`displayTotal`) l'exclut.
     const deliveryOffer = (menu as any)?.deliveryOffer;
     const isDeliveryFree =
       delivery.statut &&
       delivery.type !== "aucune" &&
-      (!!deliveryOffer?.active || !!delivery.bonus?.code);
+      (!!deliveryOffer?.active || !!delivery.bonusCode);
 
     const displayDeliveryPrice = isDeliveryFree ? 0 : deliveryPrice;
     const displayTotal = isDeliveryFree ? total - deliveryPrice : total;
@@ -299,7 +320,11 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       menu: mappedMenu,
       quantity,
       selectedPriceIndex,
-      total: prices.total,
+      // Montant dû pour CETTE commande. La livraison y est incluse au tarif
+      // normal, SAUF si un bonus s'applique : dans ce cas elle est exclue du
+      // total (le vrai prix reste envoyé dans `delivery.prix` ci-dessus, le
+      // livreur devant être payé). `amount` = Σ des `total` du panier.
+      total: prices.displayTotal,
       userData: clientData,
       extra: extraData.length > 0 ? extraData : [{ name: "Aucun", status: false }],
       drink: drinkData,
@@ -307,14 +332,12 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       status,
     };
 
-    // Bonus livraison (code saisi ou offre détectée) → racine du payload.
-    // Toujours envoyé si présent, indépendamment de la gratuité (le prix de
-    // livraison sélectionné reste dans deliveryData.prix dans tous les cas).
-    if (hasDelivery && delivery.bonus?.code) {
-      returnedOrder.bonus = {
-        type: delivery.bonus.type,
-        code: delivery.bonus.code,
-      };
+    // Code bonus livraison (saisi par le user ou issu de l'offre détectée) →
+    // racine du payload, en clé plate `bonusCode`. Toujours envoyé si présent,
+    // indépendamment de la gratuité (le prix de livraison sélectionné reste
+    // dans deliveryData.prix dans tous les cas).
+    if (hasDelivery && delivery.bonusCode) {
+      returnedOrder.bonusCode = delivery.bonusCode;
     }
 
     if (initialOrder) {
@@ -387,7 +410,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     try {
       const response = await axios.post(`${Config.apiUrl}/transaction`, {
         payBy: 'mobilemoney',
-        amount: prices.total,
+        amount: prices.displayTotal,
         phone: phone.replace(/\s/g, ''),
         network: paymentNetwork === 'orange' ? 'Orangemoney' : 'MTN',
         email: userData?.infos?.email || user?.email || 'user@yaammoo.com',
@@ -425,7 +448,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       setPaymentError(message);
       setPaymentState('input');
     }
-  }, [userData, paymentNetwork, prices.total, createOrder]);
+  }, [userData, paymentNetwork, prices.displayTotal, createOrder]);
 
   // Mode review Apple : commande directe sans saisie USSD ET sans attente socket.
   // En review, le backend crée la commande de façon SYNCHRONE et répond
@@ -447,7 +470,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     try {
       const response = await axios.post(`${Config.apiUrl}/transaction`, {
         payBy: 'mobilemoney',
-        amount: prices.total,
+        amount: prices.displayTotal,
         phone: REVIEW_DEFAULT_PHONE,
         network: REVIEW_DEFAULT_NETWORK === 'orange' ? 'Orangemoney' : 'MTN',
         email: userData?.infos?.email || user?.email || 'user@yaammoo.com',
@@ -479,7 +502,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       setPaymentError(message);
       setPaymentState('input');
     }
-  }, [userData, prices.total, createOrder]);
+  }, [userData, prices.displayTotal, createOrder]);
 
   const handlePaymentVerdict = useCallback((data: any) => {
     if (data.status === 'successful') {

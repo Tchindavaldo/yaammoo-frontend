@@ -53,9 +53,9 @@ export class Livraison {
     // Express : lieu + prix propres à la livraison express (indépendants de la période)
     public expressLieu: string = "",
     public expressPrix: number = 0,
-    // Bonus livraison appliqué (code saisi ou offre détectée) — envoyé à la
-    // racine du payload order sous `bonus: { type, code }`.
-    public bonus: { type: string; code: string } | null = null,
+    // Code bonus livraison (saisi par le user ou issu de l'offre détectée) —
+    // envoyé tel quel à la racine du payload order sous `bonusCode`.
+    public bonusCode: string | null = null,
   ) { }
 }
 

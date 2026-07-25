@@ -53,6 +53,11 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
         if (d.record) base.record = d.record;
         if (d.note) base.note = d.note;
         if (d.type === "time" && d.time) base.time = d.time;
+        // `prix` et `zone` sont indispensables au backend : sans eux il ne peut
+        // ni vérifier le montant, ni mutualiser les frais de livraison entre
+        // commandes d'un même groupe (fastfood + zone [+ créneau]).
+        if (d.prix != null) base.prix = Number(d.prix) || 0;
+        if (d.zone) base.zone = d.zone;
       }
       return base;
     })(),
@@ -79,6 +84,9 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
       status: o.menu.status || "available",
     };
   }
+
+  // Code bonus livraison : justifie côté backend un total sans frais de port.
+  if (o.bonusCode) sanitized.bonusCode = o.bonusCode;
 
   if (o.createdAt) sanitized.createdAt = o.createdAt;
   if (o.updatedAt) sanitized.updatedAt = o.updatedAt;

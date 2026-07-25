@@ -38,6 +38,10 @@ yaammoo/src/features/checkout/
 │       ├── ExtrasTab.tsx               # Onglet extras/emballages
 │       ├── DrinksTab.tsx               # Onglet boissons
 │       └── DeliveryTab.tsx             # Onglet livraison (type + cartes infos)
+├── services/
+│   └── verifyBonusCode.ts              # POST /bonus/verify — vérif d'un code bonus (lecture seule)
+└── utils/
+    └── cartDeliveryTotal.ts            # Total panier + mutualisation des frais de livraison
 ```
 
 ---
@@ -56,7 +60,7 @@ yaammoo/src/features/checkout/
 | `selectedPackaging` | Embalage[] | Extras sélectionnés |
 | `selectedDrinks` | Boisson[] | Boissons sélectionnées |
 | `drinkQuantities` | Record<string, number> | Quantités par boisson |
-| `delivery` | Livraison | Objet livraison complet (dont `delivery.bonus: { type, code } \| null` — bonus livraison appliqué) |
+| `delivery` | Livraison | Objet livraison complet (dont `delivery.bonusCode: string \| null` — code bonus vérifié appliqué) |
 | `isInitialized` | boolean | Init terminée (évite reset lors de rerenders) |
 
 **Helpers exportés** :
@@ -65,9 +69,10 @@ yaammoo/src/features/checkout/
 - `resetCheckout()` — réinitialise tout l'état
 - `createOrder(status = "pendingToBuy")` — construit le payload complet à envoyer au backend (renvoie `null` si invalide)
 - **Calculs (computed)** : `total`, `deliveryPrice`, `isDeliveryFree`, `displayDeliveryPrice`,
-  `displayTotal` — `isDeliveryFree` vrai si `deliveryOffer.active` OU code bonus saisi
-  (`delivery.bonus?.code`) ; les `display*` masquent le coût livraison à l'écran mais
-  la requête envoie toujours le vrai prix dans `delivery.prix`.
+  `displayTotal` — `isDeliveryFree` vrai si `deliveryOffer.active` OU code bonus vérifié
+  (`delivery.bonusCode`). `displayTotal` = `total` moins la livraison quand elle est
+  offerte ; c'est lui qui part dans `order.total` et dans `amount`. Le **vrai** prix
+  de livraison reste toujours envoyé dans `delivery.prix` (le livreur doit être payé).
 
 **Règles métier** :
 - Si `menu.stock` n'est pas un `number` → pas de blocage stock
@@ -212,24 +217,48 @@ seule ligne** : tout le texte à **gauche**, le(s) bouton(s) à **droite**.
   (Promo yaammoo / nom du bonus) », un seul bouton VALIDER.
 - Pas d'offre, aucune zone choisie → **input code bonus** à gauche + bouton VALIDER.
   Un bouton pastille (à droite) ouvre/ferme l'input.
-- Zone choisie → **détails** (lieu + prix, ou « offerte » si le code saisi
-  correspond au `bonusCode`) à gauche + 2 boutons (code / VALIDER) à droite.
+- Zone choisie → **détails** (lieu + prix, ou « offerte » si le code a été
+  vérifié) à gauche + 2 boutons (code / VALIDER) à droite.
 
-Le code saisi n'est appliqué (gratuité) que s'il **correspond au `bonusCode`**
-de l'offre du fastfood (source unique de vérité — pas d'appel API de vérif).
+**Vérification du code — `POST /bonus/verify`** (`services/verifyBonusCode.ts`).
+Le code saisi n'est **jamais** validé localement : au clic sur VALIDER, si un
+code est présent, l'overlay appelle l'endpoint (lecture seule, ne consomme rien)
+avec `{ code, fastFoodId }`.
+- `{ valid: true, … }` → le code est retenu, l'overlay **se ferme**, la livraison
+  passe en « Offert ».
+- `{ valid: false, reason }` → **toast d'erreur**, l'overlay **reste ouvert**
+  pour ressaisie (`code_not_found`, expiré, épuisé, mauvaise boutique…).
+
+Pendant l'appel, le bouton VALIDER affiche un `ActivityIndicator` et est
+désactivé (`verifying`). Règles associées :
+- Modifier le code après vérification **annule** celle-ci (`verifiedCode → null`).
+- Un code saisi **sans zone/période sélectionnée** est refusé (toast) : sans
+  livraison choisie, il n'y a rien à offrir.
+- Un code déjà vérifié et inchangé ne redéclenche pas d'appel réseau.
+- `deliveryOffer.active` (offre automatique du `GET /fastfood/all`) est
+  **indépendant** : il rend la livraison offerte sans aucune saisie ni appel.
 
 **Liste des zones (overlays Période/Express) en cas de gratuité** : chaque ligne de
 zone affiche le **prix normal barré** au-dessus de **« Offert »** (orange), via le
 conteneur `pricePair` + styles `strikePrix` / `freePrix`. La valeur normale reste
 visible même quand la livraison est offerte.
 
-**Payload order** : quand un bonus s'applique (offre active OU code valide), le
-hook `useCheckout` ajoute à la **racine** du payload :
+**Payload order** : quand le user a saisi un code **vérifié valide**, `useCheckout`
+ajoute à la **racine** du payload une clé plate :
 ```js
-bonus: { type, code }   // type = deliveryOffer.reason ("campaign" | "bonus")
+bonusCode: "ABC123"     // uniquement sur saisie du user, jamais déduit d'une offre auto
 ```
+Une offre `deliveryOffer.active` sans saisie n'envoie **rien** : c'est au backend
+de la redériver.
+
 Le **prix de livraison sélectionné est TOUJOURS envoyé** dans `delivery.prix`,
-gratuité ou non (le backend applique la remise via `bonus`).
+gratuité ou non. Seul `order.total` (= `displayTotal`) l'exclut quand un bonus
+s'applique.
+
+**Non-restauration du code** : `bonusCode` n'est **jamais** rechargé depuis une
+commande existante (`initialOrder`). Un code est à usage unique et déjà consommé ;
+le restaurer offrirait la livraison indéfiniment à chaque réédition. Pour en
+rebénéficier, le user resaisit un code → nouvelle vérification.
 
 ---
 
@@ -324,3 +353,46 @@ pendingToBuy  ←  Add to Cart (POST /order)
     ↓
   pending     ←  Buy (PUT /order/tabs/:userId) — décrémente stock
 ```
+
+---
+
+## Mutualisation des frais de livraison (panier)
+
+**Chemin** : `yaammoo/src/features/checkout/utils/cartDeliveryTotal.ts`
+
+Le user ne doit pas payer plusieurs fois la même course : deux commandes livrées
+au même endroit (et au même moment en mode période) = **un seul déplacement**.
+
+**Clé de groupe** (`deliveryGroupKey`) :
+- `express` → `fastFoodId + zone`
+- `time`    → `fastFoodId + zone + date + heure`
+- commande en retrait (`delivery.status !== true`) ou prix nul → aucune course
+
+**`computeCartTotal(orders)`** = Σ des `order.total` **+** une seule livraison par
+groupe encore due. Une commande portant un `bonusCode` est **exclue du
+groupement** : elle ne paie rien et ne « consomme » pas la course du groupe —
+une autre commande de la même zone/créneau paie donc sa livraison normalement.
+
+Utilisé par `app/(tabs)/cart.tsx` (`cartTotal`), qui alimente `useCartPayment`
+→ `amount` de `POST /transaction`.
+
+⚠️ `delivery.prix` est envoyé sur **chaque** commande (le livreur doit être payé) ;
+seule son inclusion dans les totaux/`amount` varie.
+
+**Vérifié bout-en-bout** contre `POST /transaction` (vrais menus de
+`GET /fastfood/all`) : 2 ou 3 commandes identiques → 1 seule livraison facturée ;
+zones différentes, fastfoods différents → aucune déduction. Le backend **refuse**
+par ailleurs qu'une même boutique porte deux livraisons différentes (type, zone
+ou heure divergents) — ces paniers ne peuvent pas exister.
+
+---
+
+## Sanitization avant paiement (`sanitizeOrder`)
+
+**Chemin** : `yaammoo/src/features/orders/utils/sanitizeOrder.ts`
+
+Recopie une liste **fermée** de champs avant l'envoi dans `items` de
+`POST /transaction`. Doivent impérativement y figurer, sous peine que le backend
+ne puisse ni vérifier le montant ni mutualiser :
+- `delivery.prix` et `delivery.zone`
+- `bonusCode` (racine) — justifie un total sans frais de port

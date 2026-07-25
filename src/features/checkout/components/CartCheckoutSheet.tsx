@@ -142,7 +142,6 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     unregisterPaymentHandler,
     availablePackaging,
     availableDrinks,
-    total,
     menuPrice,
     extrasPrice,
     drinksPrice,
@@ -373,7 +372,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             </View>
 
             <CartCheckoutFooter
-              total={total}
+              total={displayTotal}
               quantity={quantity}
               setQuantity={setQuantity}
               isLoading={isSubmitting || reviewOrdering}
@@ -444,19 +443,21 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
           {isPeriodPopupVisible && (
             <CheckoutPeriodOverlay
               onClose={() => setIsPeriodPopupVisible(false)}
-              selectedPeriod={delivery.hour || "Now"}
-              onSelectPeriod={(period, prix, bonus) =>
+              selectedPeriod={delivery.hour || ""}
+              onSelectPeriod={(period, prix, bonusCode) =>
                 setDelivery({
                   ...delivery,
                   hour: period,
                   prix: prix !== undefined ? prix : delivery.prix,
-                  bonus: bonus ?? null,
+                  bonusCode: bonusCode ?? null,
                 })
               }
               availableHours={rawHours}
               orderLeadTime={orderLeadTime}
               advanceDays={advanceDays}
               deliveryOffer={deliveryOffer}
+              fastFoodId={(menu as any)?.fastFoodId}
+              onError={showError}
             />
           )}
 
@@ -464,16 +465,18 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             <CheckoutExpressOverlay
               onClose={() => setIsExpressPopupVisible(false)}
               selectedLieu={delivery.expressLieu || ""}
-              onSelectExpress={(lieu, prix, bonus) =>
+              onSelectExpress={(lieu, prix, bonusCode) =>
                 setDelivery({
                   ...delivery,
                   expressLieu: lieu,
                   expressPrix: prix !== undefined ? prix : delivery.expressPrix,
-                  bonus: bonus ?? null,
+                  bonusCode: bonusCode ?? null,
                 })
               }
               availableHours={rawHours}
               deliveryOffer={deliveryOffer}
+              fastFoodId={(menu as any)?.fastFoodId}
+              onError={showError}
             />
           )}
 

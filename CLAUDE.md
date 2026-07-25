@@ -3,6 +3,28 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
+## Style de réponse (OBLIGATOIRE)
+
+**Réponses COURTES.** Aller droit au but : le résultat, pas le cheminement.
+
+- Pas de récapitulatif exhaustif des fichiers modifiés ni de tableaux explicatifs
+  si l'utilisateur ne les demande pas. Quelques lignes suffisent.
+- Ne pas reformuler la demande, ne pas annoncer ce qu'on va faire : le faire.
+- Signaler un problème réel en 1 phrase, sans développer les alternatives.
+- Répondre à une question posée = la réponse seule, sans contexte superflu.
+
+## Périmètre : NE JAMAIS aller dans le backend sans permission (OBLIGATOIRE)
+
+**Interdit d'ouvrir, lire, explorer ou modifier `BACKEND/` (ou `../BACKEND/`)
+sans demande ou autorisation EXPLICITE de l'utilisateur.** Pas de `Read`, pas de
+`grep`, pas d'agent, même « juste pour comprendre » ou « pour vérifier un
+contrat d'API ».
+
+- Le travail par défaut se fait UNIQUEMENT dans le frontend.
+- Si un contrat backend est nécessaire, l'utilisateur le fournit. À défaut,
+  faire un `curl` sur l'endpoint — jamais lire le code source du backend.
+- En cas de doute réel et bloquant : demander la permission, puis attendre.
+
 ## À lire en DÉBUT de session (OBLIGATOIRE)
 
 Lis **`architecture/README.md`** (à la racine) avant de travailler : il donne une vision

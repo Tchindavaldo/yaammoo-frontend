@@ -56,12 +56,10 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     };
   }, []);
 
-  // Auto-refresh location if current address looks like GPS coords
-  React.useEffect(() => {
-    if (address && /^-?\d+\.\d+,\s*-?\d+\.\d+$/.test(address)) {
-      handleGetLocation();
-    }
-  }, []);
+  // Pas d'auto-refresh GPS à l'ouverture : si une position est déjà enregistrée
+  // (coordonnées de la commande), on la réutilise telle quelle. Relancer le GPS
+  // ici écrasait le lieu choisi par la position courante du user. Le bouton
+  // « position actuelle » reste disponible pour un rafraîchissement volontaire.
 
   const handleClose = () => {
     Keyboard.dismiss();

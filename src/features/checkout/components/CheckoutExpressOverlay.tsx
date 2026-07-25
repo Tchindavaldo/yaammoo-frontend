@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
+import { verifyBonusCode } from "../services/verifyBonusCode";
 
 const SHEET_HEIGHT = 384;
 
@@ -24,10 +25,14 @@ interface CheckoutExpressOverlayProps {
   onSelectExpress: (
     lieu: string,
     prix?: number,
-    bonus?: { type: string; code: string } | null,
+    bonusCode?: string | null,
   ) => void;
   availableHours?: any[];
   deliveryOffer?: DeliveryOffer | null;
+  /** Boutique visée — transmise à `POST /bonus/verify`. */
+  fastFoodId?: string | null;
+  /** Toast d'erreur du sheet parent (code bonus refusé). */
+  onError?: (message: string) => void;
 }
 
 /**
@@ -45,6 +50,8 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   onSelectExpress,
   availableHours,
   deliveryOffer,
+  fastFoodId,
+  onError,
 }) => {
   const buildZones = (): ExpressZone[] => {
     if (!availableHours || availableHours.length === 0) return [];
@@ -74,36 +81,71 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
 
   const selectedZone = zones.find((z) => z.lieu === selectedValue);
 
-  // Le code saisi rend-il la livraison gratuite ? Il doit correspondre au
-  // bonusCode de l'offre du fastfood (source unique de vérité).
-  const bonusApplied =
-    !!bonusCode &&
-    !!deliveryOffer?.bonusCode &&
-    bonusCode.trim().toUpperCase() === deliveryOffer.bonusCode.toUpperCase();
+  // Code validé par le serveur (`POST /bonus/verify`). Seule cette réponse fait
+  // foi : on ne compare plus le code localement au bonusCode de l'offre.
+  const [verifiedCode, setVerifiedCode] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const bonusApplied = !!verifiedCode;
 
   // Livraison offerte → on barre les prix de la liste des zones.
   const isFree = !!deliveryOffer?.active || bonusApplied;
 
-  const handleValidate = () => {
+  const validateAndClose = (code: string | null) => {
     const parsed = selectedZone?.prix
       ? parseInt(String(selectedZone.prix), 10)
       : NaN;
-    // Bonus remonté : offre backend active, ou code saisi valide.
-    let bonus: { type: string; code: string } | null = null;
-    if (deliveryOffer?.active) {
-      bonus = {
-        type: deliveryOffer.reason,
-        code: deliveryOffer.bonusCode || "",
-      };
-    } else if (bonusApplied && deliveryOffer) {
-      bonus = { type: deliveryOffer.reason, code: bonusCode.trim() };
-    }
     onSelectExpress(
       selectedValue,
       Number.isNaN(parsed) ? undefined : parsed,
-      bonus,
+      code,
     );
     onClose();
+  };
+
+  // Modifier le code annule la vérification précédente : sinon un code validé
+  // puis édité laisserait la livraison affichée comme offerte à tort.
+  const handleChangeBonusCode = (code: string) => {
+    setBonusCode(code);
+    if (verifiedCode) setVerifiedCode(null);
+  };
+
+  const handleValidate = async () => {
+    if (verifying) return;
+    const typed = bonusCode.trim();
+
+    // Un code ne s'applique qu'à une livraison précise : sans zone choisie,
+    // il n'y a rien à offrir → on refuse et l'overlay reste ouvert.
+    if (typed && !selectedValue) {
+      onError?.("Sélectionnez d'abord une zone de livraison.");
+      return;
+    }
+
+    // Aucun code saisi → validation directe. Une offre active sans saisie
+    // n'envoie rien : c'est au backend de la redériver.
+    if (!typed) {
+      validateAndClose(null);
+      return;
+    }
+
+    // Code déjà vérifié et inchangé → pas de second appel réseau.
+    if (verifiedCode && verifiedCode.toUpperCase() === typed.toUpperCase()) {
+      validateAndClose(verifiedCode);
+      return;
+    }
+
+    setVerifying(true);
+    const result = await verifyBonusCode(typed, fastFoodId);
+    setVerifying(false);
+
+    // Code refusé → toast d'erreur, l'overlay RESTE ouvert pour ressaisie.
+    if (!result.valid) {
+      setVerifiedCode(null);
+      onError?.(result.message || "Code bonus invalide.");
+      return;
+    }
+
+    setVerifiedCode(typed);
+    validateAndClose(typed);
   };
 
   return (
@@ -197,11 +239,12 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
             selectedPrice={selectedZone?.prix}
             deliveryOffer={deliveryOffer}
             bonusCode={bonusCode}
-            onChangeBonusCode={setBonusCode}
+            onChangeBonusCode={handleChangeBonusCode}
             codeInputOpen={codeInputOpen}
             onToggleCodeInput={() => setCodeInputOpen((v) => !v)}
             onValidate={handleValidate}
             bonusApplied={bonusApplied}
+            verifying={verifying}
           />
         </View>
       </View>

@@ -33,6 +33,7 @@ import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartPaymentOverlay } from "@/src/features/payment/components/CartPaymentOverlay";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -54,10 +55,12 @@ export default function OrdersScreen() {
   const { appleReviewMode } = useFastFoods();
 
   // Total panier (réactif) — calculé tôt pour alimenter le hook de paiement.
-  const cartTotal = useMemo(() => {
-    const t = pendingToBuy.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
-    return isNaN(t) ? 0 : t;
-  }, [pendingToBuy]);
+  // Les frais de livraison sont mutualisés : une seule livraison facturée par
+  // zone (express) ou par zone + période (heure) pour un même fastfood.
+  const cartTotal = useMemo(
+    () => computeCartTotal(pendingToBuy),
+    [pendingToBuy],
+  );
 
   // Paiement global du panier (logique propre, isolée de useCheckout).
   const {

@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
+import { verifyBonusCode } from "../services/verifyBonusCode";
 
 const SHEET_HEIGHT = 384;
 
@@ -25,12 +26,16 @@ interface CheckoutPeriodOverlayProps {
   onSelectPeriod: (
     period: string,
     prix?: number,
-    bonus?: { type: string; code: string } | null,
+    bonusCode?: string | null,
   ) => void;
   availableHours?: any[];
   orderLeadTime?: number;
   advanceDays?: number;
   deliveryOffer?: DeliveryOffer | null;
+  /** Boutique visée — transmise à `POST /bonus/verify`. */
+  fastFoodId?: string | null;
+  /** Toast d'erreur du sheet parent (code bonus refusé). */
+  onError?: (message: string) => void;
 }
 
 export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
@@ -41,6 +46,8 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   orderLeadTime = 0,
   advanceDays,
   deliveryOffer,
+  fastFoodId,
+  onError,
 }) => {
   const maxDays = advanceDays && advanceDays > 0 ? advanceDays : 7;
 
@@ -111,8 +118,18 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     ? periods.filter((p) => isHourValid(p.hour))
     : periods;
 
+  // `delivery.hour` est stocké au format "YYYY-MM-DD|HH:mm|lieu" (cf.
+  // handleValidate), alors que les valeurs de la liste sont "HH:mm|lieu".
+  // On retire donc la date de tête pour retrouver la période déjà choisie,
+  // sinon aucune ligne n'apparaît sélectionnée à la réouverture.
+  const stripDate = (value: string): string => {
+    if (!value) return "";
+    const parts = value.split("|");
+    return /^\d{4}-\d{2}-\d{2}$/.test(parts[0]) ? parts.slice(1).join("|") : value;
+  };
+
   const [selectedValue, setSelectedValue] = useState<string>(
-    selectedPeriod || "",
+    stripDate(selectedPeriod || ""),
   );
   const [bonusCode, setBonusCode] = useState("");
   const [codeInputOpen, setCodeInputOpen] = useState(false);
@@ -126,32 +143,70 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     ? [selectedPeriodItem.hour, selectedPeriodItem.lieu].filter(Boolean).join(" · ")
     : "";
 
-  const bonusApplied =
-    !!bonusCode &&
-    !!deliveryOffer?.bonusCode &&
-    bonusCode.trim().toUpperCase() === deliveryOffer.bonusCode.toUpperCase();
+  // Code validé par le serveur (`POST /bonus/verify`). Seule cette réponse fait
+  // foi : on ne compare plus le code localement au bonusCode de l'offre.
+  const [verifiedCode, setVerifiedCode] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const bonusApplied = !!verifiedCode;
 
   // Livraison offerte → on barre les prix de la liste des périodes.
   const isFree = !!deliveryOffer?.active || bonusApplied;
 
-  const handleValidate = () => {
+  const validateAndClose = (code: string | null) => {
     const value = selectedValue
       ? `${selectedDate}|${selectedValue}`
       : selectedDate;
     const parsed = selectedPeriodItem?.prix
       ? parseInt(String(selectedPeriodItem.prix), 10)
       : NaN;
-    let bonus: { type: string; code: string } | null = null;
-    if (deliveryOffer?.active) {
-      bonus = {
-        type: deliveryOffer.reason,
-        code: deliveryOffer.bonusCode || "",
-      };
-    } else if (bonusApplied && deliveryOffer) {
-      bonus = { type: deliveryOffer.reason, code: bonusCode.trim() };
-    }
-    onSelectPeriod(value, Number.isNaN(parsed) ? undefined : parsed, bonus);
+    onSelectPeriod(value, Number.isNaN(parsed) ? undefined : parsed, code);
     onClose();
+  };
+
+  // Modifier le code annule la vérification précédente : sinon un code validé
+  // puis édité laisserait la livraison affichée comme offerte à tort.
+  const handleChangeBonusCode = (code: string) => {
+    setBonusCode(code);
+    if (verifiedCode) setVerifiedCode(null);
+  };
+
+  const handleValidate = async () => {
+    if (verifying) return;
+    const typed = bonusCode.trim();
+
+    // Un code ne s'applique qu'à une livraison précise : sans période choisie,
+    // il n'y a rien à offrir → on refuse et l'overlay reste ouvert.
+    if (typed && !selectedValue) {
+      onError?.("Sélectionnez d'abord une période de livraison.");
+      return;
+    }
+
+    // Aucun code saisi → validation directe. Une offre active sans saisie
+    // n'envoie rien : c'est au backend de la redériver.
+    if (!typed) {
+      validateAndClose(null);
+      return;
+    }
+
+    // Code déjà vérifié et inchangé → pas de second appel réseau.
+    if (verifiedCode && verifiedCode.toUpperCase() === typed.toUpperCase()) {
+      validateAndClose(verifiedCode);
+      return;
+    }
+
+    setVerifying(true);
+    const result = await verifyBonusCode(typed, fastFoodId);
+    setVerifying(false);
+
+    // Code refusé → toast d'erreur, l'overlay RESTE ouvert pour ressaisie.
+    if (!result.valid) {
+      setVerifiedCode(null);
+      onError?.(result.message || "Code bonus invalide.");
+      return;
+    }
+
+    setVerifiedCode(typed);
+    validateAndClose(typed);
   };
 
   return (
@@ -281,11 +336,12 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
             selectedPrice={selectedPeriodItem?.prix}
             deliveryOffer={deliveryOffer}
             bonusCode={bonusCode}
-            onChangeBonusCode={setBonusCode}
+            onChangeBonusCode={handleChangeBonusCode}
             codeInputOpen={codeInputOpen}
             onToggleCodeInput={() => setCodeInputOpen((v) => !v)}
             onValidate={handleValidate}
             bonusApplied={bonusApplied}
+            verifying={verifying}
           />
         </View>
       </View>

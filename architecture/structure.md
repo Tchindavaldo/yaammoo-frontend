@@ -38,6 +38,8 @@ src/features/
 │
 ├── checkout/
 │   ├── hooks/useCheckout.ts             # État commande, prix, validation, verdict paiement
+│   ├── services/verifyBonusCode.ts      # POST /bonus/verify — vérif code bonus (lecture seule)
+│   ├── utils/cartDeliveryTotal.ts       # Total panier + mutualisation frais de livraison
 │   └── components/                      # BottomSheets (home, cart) + overlays paiement
 │       ├── CheckoutSheet / CartCheckoutSheet
 │       ├── CheckoutPaymentOverlay       # Capsule BAS (saisie n° + étapes paiement)

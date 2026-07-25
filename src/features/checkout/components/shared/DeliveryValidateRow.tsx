@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DeliveryOffer } from "@/src/types";
@@ -35,8 +36,10 @@ interface DeliveryValidateRowProps {
   codeInputOpen: boolean;
   onToggleCodeInput: () => void;
   onValidate: () => void;
-  /** true si `bonusCode` correspond au `bonusCode` de l'offre → livraison offerte. */
+  /** true si le code a été validé par `POST /bonus/verify` → livraison offerte. */
   bonusApplied?: boolean;
+  /** Vérification du code en cours : loader dans VALIDER, bouton désactivé. */
+  verifying?: boolean;
 }
 
 const offerIssuer = (offer: DeliveryOffer): string =>
@@ -53,6 +56,7 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
   onToggleCodeInput,
   onValidate,
   bonusApplied,
+  verifying,
 }) => {
   const offerActive = !!deliveryOffer?.active;
   const isFree = offerActive || bonusApplied;
@@ -140,8 +144,16 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
             />
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={styles.validateBtn} onPress={onValidate}>
-          <Text style={styles.validateText}>VALIDER</Text>
+        <TouchableOpacity
+          style={[styles.validateBtn, verifying && styles.validateBtnBusy]}
+          onPress={onValidate}
+          disabled={verifying}
+        >
+          {verifying ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Text style={styles.validateText}>VALIDER</Text>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -240,6 +252,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  validateBtnBusy: {
+    opacity: 0.75,
   },
   validateText: {
     color: "white",

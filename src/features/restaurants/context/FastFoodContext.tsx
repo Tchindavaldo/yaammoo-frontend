@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { Config } from '@/src/api/config';
+import { auth } from '@/src/services/firebase';
+import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { FastFood } from '@/src/types';
 
 interface FastFoodContextType {
@@ -73,6 +75,9 @@ export const normalizeFastFood = (item: any, designIndex = 0) => {
 const FastFoodContext = createContext<FastFoodContextType | undefined>(undefined);
 
 export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // `user` (Firebase User) plutôt que `userData` : c'est lui qui porte le token,
+  // et il devient disponible dès la restauration de session.
+  const { user } = useAuth();
   const [fastFoods, setFastFoods] = useState<FastFood[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -85,7 +90,16 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(`${Config.apiUrl}/fastFood/all`);
+      // Route PUBLIQUE mais à auth OPTIONNELLE : sans Bearer, le backend ne sait
+      // pas quel user demande et renvoie `deliveryOffer: null` sur TOUS les
+      // fastfoods — silencieusement, sans erreur HTTP. Le token est donc envoyé
+      // dès qu'un user est connecté, pour que ses bonus livraison ARMÉS soient
+      // résolus. Visiteur anonyme (ou token indisponible) : appel sans header,
+      // la route continue de répondre normalement.
+      const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+      const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
+        headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+      });
 
       // Flag review Apple porté par la réponse (défaut false si absent).
       setAppleReviewMode(response.data?.appleReviewMode === true);
@@ -105,9 +119,13 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  // Refetch à CHAQUE changement d'identité (y compris `null` → user au boot :
+  // la restauration de session Firebase est asynchrone et se termine APRÈS le
+  // montage). Sans ce second passage, le premier appel partirait sans Bearer et
+  // la home resterait sur des `deliveryOffer: null` jusqu'au prochain reload.
   useEffect(() => {
     fetchFastFoods();
-  }, [fetchFastFoods]);
+  }, [fetchFastFoods, user?.uid]);
 
   // ── Injection socket : upsert/remove sur le state local, sans requête ──
   const upsertMenuFromSocket = useCallback((rawMenu: any) => {

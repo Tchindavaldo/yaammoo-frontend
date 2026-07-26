@@ -299,6 +299,21 @@ Feedback via `Toast` (succès/erreur).
 | POST | `/bonus/:id/arm` | Armer un bonus réclamé (sans body) |
 | DELETE | `/bonus/:id/arm` | Désarmer un bonus (sans body) |
 
+### ⚠️ `GET /fastFood/all` doit porter le Bearer
+
+C'est là que l'armement devient **visible** : le backend résout les bonus livraison
+armés du user et renseigne `deliveryOffer` sur chaque fastfood. La route est
+publique (**auth optionnelle**) — sans token elle répond `200` mais avec
+`deliveryOffer: null` **partout**, silencieusement, sans erreur HTTP.
+
+`FastFoodContext` envoie donc `Authorization: Bearer <idToken>` dès qu'un user est
+connecté, et **refetch sur `user?.uid`** : la restauration de session Firebase est
+asynchrone et se termine après le montage du provider, si bien que le tout premier
+appel partirait sinon en anonyme.
+
+> `deliveryOffer` ne met **pas** `delivery.prix` à 0 : le prix réel est conservé,
+> c'est le front qui affiche la gratuité (prix barré, cf. `checkout.md`).
+
 Les deux endpoints exigent `Authorization: Bearer <idToken>`. Le helper
 `authHeaders()` (dans `useBonus.ts`) appelle `auth.currentUser?.getIdToken()`
 **à chaque requête** : le SDK sert le cache si le token est encore valide et le

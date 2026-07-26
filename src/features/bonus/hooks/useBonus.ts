@@ -52,6 +52,7 @@ export const normalizeBonus = (raw: any): Bonus => ({
   createdAt: raw?.createdAt,
   claimDuration: raw?.claimDuration,
   claimedAt: raw?.claimedAt,
+  startsAt: raw?.startsAt ?? null,
   redeemed: raw?.redeemed ?? false,
   usageLimit: raw?.usageLimit,
   usageCount: raw?.usageCount,
@@ -157,6 +158,7 @@ export const useBonus = () => {
                 rewardCredentials: p.rewardCredentials,
               }),
               ...(p.claimedAt !== undefined && { claimedAt: p.claimedAt }),
+              ...(p.startsAt !== undefined && { startsAt: p.startsAt }),
               ...(p.expiresAt !== undefined && { expiresAt: p.expiresAt }),
             },
       ),
@@ -211,6 +213,7 @@ export const useBonus = () => {
           code: null,
           rewardCredentials: null,
           claimedAt: null,
+          startsAt: null,
           expiresAt: null,
           // Un bonus épuisé ne peut plus être armé : l'offre ne s'applique plus.
           armed: false,

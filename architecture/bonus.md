@@ -123,7 +123,7 @@ Bonus {
   fastFoodName?,         // ⭐ émetteur — affiché en GROS TITRE de la carte ("yaammoo" par défaut)
   active?, createdAt?, claimDuration?,
   // Code délivré après approbation (fournis par le backend) :
-  code?, claimedAt?, expiresAt?, expired?,
+  code?, claimedAt?, startsAt?, expiresAt?, expired?,
   armed?,                // ⭐ bonus activé → s'applique au prochain checkout éligible
   usageLimit?, usageCount?, remainingUses?, redeemed?,
   // Stats affichées sur la carte (fournies par le backend) :
@@ -244,6 +244,17 @@ elle s'affiche en suffixe du compteur sous la barre de progression
 (« 19 150 / 50 000 FCFA · sur le mois »). Le moteur d'éligibilité mesure toujours
 sur **tout l'historique** — il ne filtre pas sur la fenêtre temporelle.
 
+### Dates affichées sur `BonusCard`
+
+| Ligne | Source | Repli |
+|---|---|---|
+| **Début** | `startsAt` | mois courant seul si absent |
+| **Fin** | `expiresAt`, sinon `startsAt + claimDuration` | mois seul (depuis aujourd'hui) si pas de `startsAt` ; `—` sans `claimDuration` |
+| **Durée** | `claimDuration` | `—` |
+
+> `startsAt` est la **date de début de validité** posée par le backend ; `claimedAt`
+> (date de la réclamation) reste dans le modèle mais n'alimente plus l'affichage.
+
 > **Pas d'expiration de bonus.** Un bonus ne s'affiche jamais « expiré ». La seule
 > échéance est celle du **code après réclamation** (`claimedAt + claimDuration`) :
 > une fois passée, les compteurs se réinitialisent avec le statut et le bonus
@@ -353,7 +364,7 @@ ses critères**, comme s'il n'avait jamais été réclamé :
 |---|---|---|
 | `requestStatus` | `"none"` | sinon « Bonus validé » resterait affiché |
 | `redeemed` | `false` | `true` ⇒ état « Utilisé », qui bloque `isEligible` |
-| `code`, `rewardCredentials`, `claimedAt`, `expiresAt` | `null` | plus rien à délivrer |
+| `code`, `rewardCredentials`, `claimedAt`, `startsAt`, `expiresAt` | `null` | plus rien à délivrer |
 | `usageCount` / `remainingUses` | `0` / `undefined` | compteurs remis à zéro |
 | `armed` | `false` | un bonus épuisé ne peut plus être armé |
 

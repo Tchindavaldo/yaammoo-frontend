@@ -89,22 +89,22 @@ const usageInfo = (bonus: Bonus) => {
 const fmtMonth = (d: Date) => d.toLocaleDateString("fr-FR", { month: "short" });
 
 /**
- * Date de début affichée : `claimedAt` (jour + mois) s'il existe. Sinon dates
+ * Date de début affichée : `startsAt` (jour + mois) s'il existe. Sinon dates
  * inconnues → on projette le MOIS actuel seul (pas de jour).
  */
 const fmtStartDate = (bonus: Bonus) =>
-  bonus.claimedAt ? fmtDate(bonus.claimedAt) : fmtMonth(new Date());
+  bonus.startsAt ? fmtDate(bonus.startsAt) : fmtMonth(new Date());
 
 /**
  * Date de fin du code : `expiresAt` (jour + mois) fourni par le backend, ou
- * `claimedAt + claimDuration`. Si dates inconnues → MOIS seul après la durée.
+ * `startsAt + claimDuration`. Si dates inconnues → MOIS seul après la durée.
  * "—" seulement si aucune durée.
  */
 const fmtEndDate = (bonus: Bonus) => {
   if (bonus.expiresAt) return fmtDate(bonus.expiresAt);
   if (!bonus.claimDuration) return "—";
-  if (bonus.claimedAt) {
-    const d = new Date(bonus.claimedAt);
+  if (bonus.startsAt) {
+    const d = new Date(bonus.startsAt);
     if (isNaN(d.getTime())) return "—";
     d.setDate(d.getDate() + bonus.claimDuration);
     return fmtDate(d.toISOString());

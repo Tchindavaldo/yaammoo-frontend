@@ -47,6 +47,11 @@ export interface Bonus {
   claimDuration?: number;
   /** ISO8601 — date à laquelle le user a réclamé le bonus (null = jamais). */
   claimedAt?: string | null;
+  /**
+   * ISO8601 — date de DÉBUT de validité du bonus (null = non démarré).
+   * C'est elle qui alimente l'affichage « Début » et le calcul de « Fin ».
+   */
+  startsAt?: string | null;
   /** true = le code a été entièrement consommé (toutes les utilisations faites). */
   redeemed?: boolean;
   /** Nombre total d'utilisations autorisées du code une fois réclamé. */

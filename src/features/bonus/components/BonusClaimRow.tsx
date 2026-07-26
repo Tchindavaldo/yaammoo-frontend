@@ -21,10 +21,13 @@ interface BonusClaimRowProps {
   claimStatus?: BonusClaimStatus;
   onClaim: (bonus: Bonus) => void;
   /**
-   * Activation du code livré. Non branchée : l'endpoint backend reste à
-   * définir — le bouton est présent mais sans effet tant que la prop est omise.
+   * Bascule l'ARMEMENT du bonus (`POST`/`DELETE /bonus/:id/arm`) : un bonus armé
+   * s'applique automatiquement au prochain checkout éligible. Le bouton reflète
+   * `bonus.armed` — « Activer » quand il est désarmé, « Désactiver » sinon.
    */
   onActivate?: (bonus: Bonus) => void;
+  /** Requête d'armement en vol : le bouton passe en spinner. */
+  arming?: boolean;
 }
 
 const DARK = Theme.colors.dark;
@@ -60,6 +63,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   claimStatus = "idle",
   onClaim,
   onActivate,
+  arming = false,
 }) => {
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
@@ -195,21 +199,42 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
         </View>
       );
     }
+    // Armement : bouton à DEUX ÉTATS piloté par `bonus.armed`. Désarmé il est
+    // outlined (« Activer », éclair creux) ; armé il se remplit de la couleur du
+    // bonus (« Désactiver », éclair plein) — l'état est ainsi lisible sans texte
+    // d'aide, et le même bouton sert aux deux sens (POST / DELETE /arm).
+    const armed = !!bonus.armed;
     return (
       <View style={styles.btnGroup}>
-        {/*
-         * TODO(backend) : l'activation du code n'est pas encore branchée —
-         * l'endpoint reste à définir. Bouton visuel uniquement pour l'instant.
-         */}
         <TouchableOpacity
-          style={[styles.btnGhost, { borderColor: d.color }]}
+          style={[
+            styles.btnGhost,
+            { borderColor: d.color },
+            armed && { backgroundColor: d.color },
+          ]}
           onPress={() => onActivate?.(bonus)}
+          disabled={arming}
           activeOpacity={0.85}
         >
-          <Ionicons name="flash-outline" size={14} color={d.color} />
-          <Text style={[styles.btnGhostText, { color: d.color }]}>
-            Activer
-          </Text>
+          {arming ? (
+            <ActivityIndicator size="small" color={armed ? LIGHT : d.color} />
+          ) : (
+            <>
+              <Ionicons
+                name={armed ? "flash" : "flash-outline"}
+                size={14}
+                color={armed ? LIGHT : d.color}
+              />
+              <Text
+                style={[
+                  styles.btnGhostText,
+                  { color: armed ? LIGHT : d.color },
+                ]}
+              >
+                {armed ? "Désactiver" : "Activer"}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.btn, styles.btnCompact, { backgroundColor: d.color }]}

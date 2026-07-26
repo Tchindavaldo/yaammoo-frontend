@@ -124,6 +124,7 @@ Bonus {
   active?, createdAt?, claimDuration?,
   // Code délivré après approbation (fournis par le backend) :
   code?, claimedAt?, expiresAt?, expired?,
+  armed?,                // ⭐ bonus activé → s'applique au prochain checkout éligible
   usageLimit?, usageCount?, remainingUses?, redeemed?,
   // Stats affichées sur la carte (fournies par le backend) :
   fastFoodBonusCount?,   // bonus proposés par le fastfood
@@ -204,8 +205,27 @@ ouvrent `BonusCredentialsSheet` sur des contenus **disjoints**, via la prop
 La sheet ne rend rien si `section="profile"` sur un bonus sans profil.
 
 Quand le bonus livre un **code** (et non des identifiants), la ligne affiche
-**Activer** (outlined) + **Copier** (plein). ⚠️ `onActivate` n'est **pas encore
-branchée** : l'endpoint backend reste à définir, le bouton est visuel seulement.
+**Activer** + **Copier** (plein).
+
+#### Armement (bouton Activer / Désactiver)
+
+Le bouton « Activer » est un **toggle à deux états** piloté par `bonus.armed` :
+un bonus **armé** s'applique automatiquement au prochain checkout éligible.
+
+| État | Rendu | Appel |
+|---|---|---|
+| `armed: false` | outlined, éclair creux, « Activer » | `POST /bonus/:id/arm` |
+| `armed: true` | **plein** (couleur du bonus), éclair plein, « Désactiver » | `DELETE /bonus/:id/arm` |
+
+Aucun body, juste le Bearer token. Réponse :
+`{ success, message, data: { bonusId, armed, disarmedBonusIds, deliveryOffer } }`.
+
+`armBonus(bonus, next?)` (dans `useBonus.ts`) est **optimiste** : la bascule est
+appliquée immédiatement, puis `applyArmPayload()` réaligne sur l'état backend —
+lui seul connaît les `disarmedBonusIds`, les bonus **auto-désarmés car recouverts**
+par celui qu'on vient d'armer. En cas d'échec HTTP, l'état d'origine est restauré
+et un toast d'erreur s'affiche. `arming[bonusId]` met le bouton en spinner
+pendant la requête.
 
 **Hauteur fixe** : `BonusClaimRow` est bornée à `CLAIM_ROW_H` (52px) — la
 description variait de 1 à 3 lignes selon le statut, ce qui faisait « sauter » la
@@ -276,6 +296,8 @@ Feedback via `Toast` (succès/erreur).
 |---|---|---|
 | GET | `/bonus/all` | Liste des bonus |
 | POST | `/bonus-request` | Réclamer un bonus |
+| POST | `/bonus/:id/arm` | Armer un bonus réclamé (sans body) |
+| DELETE | `/bonus/:id/arm` | Désarmer un bonus (sans body) |
 
 Les deux endpoints exigent `Authorization: Bearer <idToken>`. Le helper
 `authHeaders()` (dans `useBonus.ts`) appelle `auth.currentUser?.getIdToken()`

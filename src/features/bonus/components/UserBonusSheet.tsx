@@ -71,7 +71,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   } | null>(null);
   const carouselRef = useRef<BonusCarouselHandle>(null);
 
-  const { bonuses, loading, error, claims, claimBonus } = useBonusContext();
+  const { bonuses, loading, error, claims, claimBonus, arming, armBonus } =
+    useBonusContext();
 
   // Suivi du scroll horizontal du carousel (transition couleur des cartes).
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -187,6 +188,25 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     [claimBonus],
   );
 
+  /** Bascule l'armement du bonus courant depuis le bouton Activer/Désactiver. */
+  const handleActivate = useCallback(
+    async (bonus: Bonus) => {
+      const next = !bonus.armed;
+      const res = await armBonus(bonus, next);
+      setToast(
+        res.success
+          ? {
+              message: next
+                ? "⚡ Bonus activé : il s'appliquera à ta prochaine commande."
+                : "Bonus désactivé.",
+              type: "success",
+            }
+          : { message: res.message || "Échec de l'opération", type: "error" },
+      );
+    },
+    [armBonus],
+  );
+
   const hasBonuses = !loading && !error && bonuses.length > 0;
 
   return (
@@ -271,6 +291,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 bonus={bonuses[index]}
                 claimStatus={claims[bonuses[index]?.id]}
                 onClaim={handleClaim}
+                onActivate={handleActivate}
+                arming={!!arming[bonuses[index]?.id]}
               />
 
               {bonuses.length > 1 && <View style={styles.pagDivider} />}

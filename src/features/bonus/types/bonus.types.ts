@@ -74,6 +74,13 @@ export interface Bonus {
   expiresAt?: string | null;
   /** true = le code a dépassé expiresAt. */
   expired?: boolean;
+  /**
+   * Bonus ARMÉ : le user l'a activé, il s'appliquera automatiquement au prochain
+   * checkout éligible. Piloté par `POST /bonus/:id/arm` (armer) et
+   * `DELETE /bonus/:id/arm` (désarmer). Un seul bonus peut couvrir une portée
+   * donnée : armer l'un désarme ceux qu'il recouvre (`disarmedBonusIds`).
+   */
+  armed?: boolean;
 
   // --- Statistiques fournies par le backend (affichées sur la carte) ---
   /** Nombre total de bonus proposés par ce fastfood. */

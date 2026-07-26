@@ -60,6 +60,7 @@ export const normalizeBonus = (raw: any): Bonus => ({
   rewardCredentials: raw?.rewardCredentials ?? null,
   expiresAt: raw?.expiresAt ?? null,
   expired: raw?.expired ?? false,
+  armed: raw?.armed ?? false,
   fastFoodBonusCount: raw?.fastFoodBonusCount,
   userClaimedCount: raw?.userClaimedCount,
   totalClaimedCount: raw?.totalClaimedCount,
@@ -76,6 +77,8 @@ export const useBonus = () => {
   const [error, setError] = useState<string | null>(null);
   /** Statut local de réclamation par bonusId (optimiste). */
   const [claims, setClaims] = useState<Record<string, BonusClaimStatus>>({});
+  /** Requête d'armement en vol par bonusId (spinner sur le bouton Activer). */
+  const [arming, setArming] = useState<Record<string, boolean>>({});
 
   const fetchBonuses = useCallback(async (quiet = false) => {
     try {
@@ -196,12 +199,85 @@ export const useBonus = () => {
     [userData],
   );
 
+  /**
+   * Applique l'état d'armement renvoyé par le backend : le bonus visé prend
+   * `armed`, et les bonus qu'il recouvre (`disarmedBonusIds`) sont désarmés.
+   * Un seul chemin d'écriture pour la réponse HTTP comme pour un futur event.
+   */
+  const applyArmPayload = useCallback((p: any) => {
+    const id = p?.bonusId;
+    if (!id) return;
+    const disarmed: string[] = Array.isArray(p?.disarmedBonusIds)
+      ? p.disarmedBonusIds
+      : [];
+    setBonuses((list) =>
+      list.map((b) => {
+        if (b.id === id) return { ...b, armed: !!p.armed };
+        if (disarmed.includes(b.id)) return { ...b, armed: false };
+        return b;
+      }),
+    );
+  }, []);
+
+  /**
+   * Arme / désarme un bonus. `POST /bonus/:id/arm` pour armer,
+   * `DELETE /bonus/:id/arm` pour désarmer — sans body, juste le Bearer token.
+   * Optimiste : l'UI bascule tout de suite, et on repart de l'état backend
+   * (qui seul connaît les bonus auto-désarmés) à la réponse ; en cas d'échec on
+   * restaure l'état d'origine.
+   */
+  const armBonus = useCallback(
+    async (
+      bonus: Bonus,
+      next = !bonus.armed,
+    ): Promise<{ success: boolean; message?: string }> => {
+      if (!userData) return { success: false, message: "Non connecté" };
+      const previous = !!bonus.armed;
+      setArming((a) => ({ ...a, [bonus.id]: true }));
+      setBonuses((list) =>
+        list.map((b) => (b.id === bonus.id ? { ...b, armed: next } : b)),
+      );
+      // Bonus de démo : pas d'appel réseau, la bascule optimiste fait foi.
+      if (bonus.id.startsWith("mock-")) {
+        setArming((a) => ({ ...a, [bonus.id]: false }));
+        return { success: true };
+      }
+      try {
+        const url = `${Config.apiUrl}/bonus/${bonus.id}/arm`;
+        const headers = await authHeaders();
+        const res = next
+          ? await axios.post(url, {}, { headers })
+          : await axios.delete(url, { headers });
+        applyArmPayload(res.data?.data ?? res.data);
+        return { success: true };
+      } catch (e: any) {
+        // Rollback : on remet l'état d'avant la bascule optimiste.
+        setBonuses((list) =>
+          list.map((b) => (b.id === bonus.id ? { ...b, armed: previous } : b)),
+        );
+        return {
+          success: false,
+          message:
+            e?.response?.data?.message ||
+            (next ? "Échec de l'activation" : "Échec de la désactivation"),
+        };
+      } finally {
+        setArming((a) => ({ ...a, [bonus.id]: false }));
+      }
+    },
+    [userData, applyArmPayload],
+  );
+
   return {
     bonuses,
     loading,
     error,
     claims,
     claimBonus,
+    arming,
+    armBonus,
+    /** Injection depuis une réponse/event d'armement. */
+    applyArmPayload,
     /** Injection depuis les events socket `bonus.claimed` / `bonus.reward_credentials`. */
     applyClaimPayload,
     /** Injection depuis l'event socket `bonus.stats_updated`. */

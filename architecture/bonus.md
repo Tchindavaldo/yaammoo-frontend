@@ -332,6 +332,44 @@ toutes les boutiques ; offre ciblée → la sienne seulement. Au désarmement le
 backend envoie `deliveryOffer: null` sans portée, on efface donc partout (un user
 n'a qu'une offre livraison active à la fois).
 
+### Socket `bonus.redeemed` — consommation d'une utilisation
+
+Room `<userId>`, via `reliableEmit`. Émis à **chaque** utilisation du code :
+
+```json
+{ "data": { "bonusId": "abc123", "code": "A1B2C3", "usageCount": 2,
+            "usageLimit": 5, "remainingUses": 3, "redeemed": false,
+            "expiresAt": "2026-07-27T10:30:00.000Z" } }
+```
+
+Tant qu'il reste des utilisations, `applyRedeemedPayload` ne fait qu'appliquer les
+compteurs — l'anneau `BonusUsageRing`, la carte et le panneau héro les lisent déjà,
+le décrément se propage donc seul.
+
+**À épuisement** (`redeemed: true` ou `remainingUses <= 0`) le bonus **repart sur
+ses critères**, comme s'il n'avait jamais été réclamé :
+
+| Champ | Valeur forcée | Pourquoi |
+|---|---|---|
+| `requestStatus` | `"none"` | sinon « Bonus validé » resterait affiché |
+| `redeemed` | `false` | `true` ⇒ état « Utilisé », qui bloque `isEligible` |
+| `code`, `rewardCredentials`, `claimedAt`, `expiresAt` | `null` | plus rien à délivrer |
+| `usageCount` / `remainingUses` | `0` / `undefined` | compteurs remis à zéro |
+| `armed` | `false` | un bonus épuisé ne peut plus être armé |
+
+Conséquence UI **automatique** (aucun cas particulier dans les composants) : `fields`
+devient vide et `claimAction()` retombe sur **Réclamer** ou **Verrouillé** selon le
+moteur d'éligibilité — plus de code affiché, ni de boutons Activer/Copier.
+
+> Ces valeurs sont forcées **côté front** : le backend fait de même, mais le payload
+> de l'event ne porte pas `requestStatus` et attendre un refetch laisserait l'UI
+> incohérente.
+
+Côté checkout, l'épuisement se comporte comme un désarmement — à ceci près que
+l'effacement est **ciblé** : `clearDeliveryOfferForBonus(bonusId)` ne retire que
+l'offre issue de CE bonus, préservant celle d'un autre bonus ou d'une campagne
+(là où `applyDeliveryOffer(null)` effacerait partout).
+
 > `DesignRouter` recopie `deliveryOffer` dans le menu **au clic** : un armement
 > survenant alors qu'un checkout est DÉJÀ ouvert n'y sera pas reflété (il faut
 > ressortir puis rouvrir le plat). Cas marginal, non traité.

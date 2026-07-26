@@ -163,6 +163,62 @@ export const useBonus = () => {
     );
   }, []);
 
+  /**
+   * `bonus.redeemed` — une utilisation du code vient d'être consommée. Le
+   * payload porte les compteurs recalculés par le backend, on les applique tels
+   * quels.
+   *
+   * ÉPUISEMENT (`redeemed: true` / plus d'utilisation restante) : le bonus doit
+   * repartir sur ses CRITÈRES d'éligibilité, comme s'il n'avait jamais été
+   * réclamé. On remet donc `requestStatus: "none"` et on efface ce qui a été
+   * délivré (code, identifiants, échéance) — sans quoi la ligne continuerait
+   * d'afficher « Bonus validé » avec les boutons Activer/Copier sur un code mort.
+   * Le backend fait de même de son côté ; on l'anticipe ici car le payload de cet
+   * event ne porte pas `requestStatus`, et attendre un refetch laisserait l'UI
+   * dans un état incohérent.
+   */
+  const applyRedeemedPayload = useCallback((p: any) => {
+    const id = p?.bonusId;
+    if (!id) return;
+    setBonuses((list) =>
+      list.map((b) => {
+        if (b.id !== id) return b;
+        const next: Bonus = {
+          ...b,
+          ...(p.usageCount !== undefined && { usageCount: p.usageCount }),
+          ...(p.usageLimit !== undefined && { usageLimit: p.usageLimit }),
+          ...(p.remainingUses !== undefined && {
+            remainingUses: p.remainingUses,
+          }),
+          ...(p.redeemed !== undefined && { redeemed: p.redeemed }),
+          ...(p.expiresAt !== undefined && { expiresAt: p.expiresAt }),
+        };
+        // Épuisé : on se fie à `redeemed`, avec `remainingUses` en garde-fou.
+        const exhausted =
+          next.redeemed === true ||
+          (typeof next.remainingUses === "number" && next.remainingUses <= 0);
+        if (!exhausted) return next;
+        return {
+          ...next,
+          requestStatus: "none",
+          // `redeemed` est REMIS À FALSE volontairement : il signifie « code en
+          // cours d'utilisation, épuisé » et pilote l'état « Utilisé » qui
+          // bloquerait `isEligible`. Le cycle étant terminé, le bonus redevient
+          // un bonus ordinaire jugé sur ses seules stats.
+          redeemed: false,
+          usageCount: 0,
+          remainingUses: undefined,
+          code: null,
+          rewardCredentials: null,
+          claimedAt: null,
+          expiresAt: null,
+          // Un bonus épuisé ne peut plus être armé : l'offre ne s'applique plus.
+          armed: false,
+        };
+      }),
+    );
+  }, []);
+
   /** Réclame un bonus. Optimiste : passe le statut local à "pending" au succès. */
   const claimBonus = useCallback(
     async (bonus: Bonus): Promise<{ success: boolean; message?: string }> => {
@@ -278,6 +334,8 @@ export const useBonus = () => {
     armBonus,
     /** Injection depuis une réponse/event d'armement. */
     applyArmPayload,
+    /** Injection depuis l'event socket `bonus.redeemed` (consommation du code). */
+    applyRedeemedPayload,
     /** Injection depuis les events socket `bonus.claimed` / `bonus.reward_credentials`. */
     applyClaimPayload,
     /** Injection depuis l'event socket `bonus.stats_updated`. */

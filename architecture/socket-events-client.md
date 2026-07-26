@@ -39,6 +39,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 | `bonus.claimed` | `{ data: {...} }` | `BonusContext.applyClaimPayload(data)` |
 | `bonus.reward_credentials` | `{ data: {...} }` | `BonusContext.applyClaimPayload(data)` — récompense provisionnée (Netflix…) |
 | `bonus.armed` / `bonus.disarmed` | `{ data: { bonusId, armed, disarmedBonusIds, deliveryOffer } }` | **Double** : `BonusContext.applyArmPayload(data)` **+** `FastFoodContext.applyDeliveryOffer(data.deliveryOffer)` |
+| `bonus.redeemed` | `{ data: { bonusId, code, usageCount, usageLimit, remainingUses, redeemed, expiresAt } }` | `BonusContext.applyRedeemedPayload(data)` ; si épuisé, **+** `FastFoodContext.clearDeliveryOfferForBonus(bonusId)` |
 
 > **`bonus.armed` / `bonus.disarmed` — pourquoi deux appels.** Le payload est
 > identique à la réponse HTTP de `POST`/`DELETE /bonus/:id/arm`. Le 1er appel met à

@@ -36,6 +36,11 @@ interface FastFoodContextType {
    * armé sans refetch. Voir `applyDeliveryOffer` pour la règle de portée.
    */
   applyDeliveryOffer: (offer: DeliveryOffer | null) => void;
+  /**
+   * `bonus.redeemed` épuisé → retire l'offre issue de CE bonus uniquement
+   * (celles d'autres bonus / campagnes sont préservées).
+   */
+  clearDeliveryOfferForBonus: (bonusId: string) => void;
 }
 
 // ── Normalisation (partagée entre le fetch HTTP et l'injection socket) ──
@@ -199,6 +204,19 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    * backend envoie `deliveryOffer: null` sans portée : on efface donc partout,
    * le user ne pouvant avoir qu'une offre livraison active à la fois.
    */
+  const clearDeliveryOfferForBonus = useCallback((bonusId: string) => {
+    if (!bonusId) return;
+    setFastFoods((prev) =>
+      prev.map((ff) => {
+        const offer = (ff as any).deliveryOffer;
+        // Ciblé : on n'efface QUE si l'offre affichée vient bien de ce bonus —
+        // une offre issue d'un autre bonus (ou d'une campagne) doit survivre.
+        if (!offer || offer.bonusId !== bonusId) return ff;
+        return { ...ff, deliveryOffer: null } as FastFood;
+      }),
+    );
+  }, []);
+
   const applyDeliveryOffer = useCallback((offer: DeliveryOffer | null) => {
     setFastFoods((prev) =>
       prev.map((ff) => {
@@ -227,6 +245,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         removeMenuFromSocket,
         upsertFastFoodFromSocket,
         applyDeliveryOffer,
+        clearDeliveryOfferForBonus,
       }}
     >
       {children}

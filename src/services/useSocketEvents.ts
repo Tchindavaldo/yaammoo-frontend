@@ -68,11 +68,13 @@ export const useSocketEvents = () => {
     removeMenuFromSocket: removeGlobalMenu,
     upsertFastFoodFromSocket: upsertGlobalFastFood,
     applyDeliveryOffer,
+    clearDeliveryOfferForBonus,
   } = useFastFoods();
   const {
     applyClaimPayload: applyBonusPayload,
     applyBonusStats,
     applyArmPayload,
+    applyRedeemedPayload,
   } = useBonusContext();
   const socket = socketService.getSocket();
 
@@ -291,6 +293,22 @@ export const useSocketEvents = () => {
       console.log("⚡ bonus.disarmed:", data);
       handleArmEvent(data);
     }));
+    // bonus.redeemed : une utilisation du code vient d'être consommée →
+    // compteurs recalculés (usageCount / remainingUses / redeemed).
+    socket.on("bonus.redeemed", withAck((data: any) => {
+      console.log("🎟️ bonus.redeemed:", data);
+      const p = data?.data;
+      if (!p) return;
+      applyRedeemedPayload(p);
+      // Épuisé : le code ne vaut plus rien, l'offre de livraison qu'il portait
+      // doit disparaître du checkout — exactement comme un désarmement. Sans
+      // ça, la livraison resterait affichée « Offert » alors que le bonus est
+      // consommé, jusqu'au prochain GET /fastFood/all.
+      const exhausted =
+        p.redeemed === true ||
+        (typeof p.remainingUses === "number" && p.remainingUses <= 0);
+      if (exhausted) clearDeliveryOfferForBonus(p.bonusId);
+    }));
     // wallet.credited : gain marchand (payin) → patch local du solde.
     socket.on("wallet.credited", withAck((data: any) => {
       console.log("🟢 wallet.credited:", data);
@@ -373,6 +391,7 @@ export const useSocketEvents = () => {
       socket.off("bonus.reward_credentials");
       socket.off("bonus.armed");
       socket.off("bonus.disarmed");
+      socket.off("bonus.redeemed");
       socket.off("wallet.credited");
       socket.off("wallet.withdrawal");
       socket.off("newNotification");

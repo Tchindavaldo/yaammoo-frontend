@@ -30,10 +30,11 @@ export const deliveryGroupKey = (order: AnyOrder): string | null => {
   const fastFoodId = order.fastFoodId || order.menu?.fastFoodId || "";
   const zone = d.zone || d.expressLieu || d.location || "";
 
-  // Express : le créneau n'entre pas en compte (livraison immédiate).
-  if (d.type === "express") return `express|${fastFoodId}|${zone}`;
+  // Express : pas de créneau (la course part dès que c'est prêt), mais la DATE
+  // compte quand même — deux jours différents sont deux déplacements.
+  if (d.type === "express") return `express|${fastFoodId}|${zone}|${d.date || ""}`;
 
-  // Période : zone ET créneau doivent coïncider.
+  // Période : zone, date ET créneau doivent coïncider.
   const time = d.time || d.hour || "";
   return `time|${fastFoodId}|${zone}|${d.date || ""}|${time}`;
 };
@@ -45,38 +46,52 @@ const deliveryPriceOf = (order: AnyOrder): number => {
 };
 
 /**
- * Total du panier = Σ des `total` de chaque commande (déjà HORS livraison)
- *                 + une seule livraison par groupe encore dû.
+ * Total du panier = Σ des `total` de chaque commande (livraison INCLUSE)
+ *                 − les livraisons comptées en double dans un même groupe.
  *
- * Une commande dont la livraison est offerte (`bonusCode`) est EXCLUE du
- * groupement : elle ne paie rien et ne « consomme » pas la course du groupe.
- * Deux commandes même zone+créneau, dont une offerte, laissent donc l'autre
- * payer sa livraison normalement.
+ * ⚠️ Le `total` d'une commande contient DÉJÀ ses frais de livraison
+ * (plat 1000 + livraison 250 → `total` 1250). Sommer les `total` revient donc à
+ * facturer UNE course PAR COMMANDE. Or un groupe de N commandes ne représente
+ * qu'UN déplacement : il faut retirer les `N − 1` courses en trop.
+ *
+ * C'est exactement le calcul du backend (`validatePaymentAmount.js`) ; toute
+ * divergence ici fait refuser le paiement pour « montant incohérent ».
+ *
+ * > Ne PAS remplacer la déduction par un simple « ajouter une course par
+ * > groupe » : ça supposerait des `total` hors livraison, ce qu'ils ne sont pas.
+ *
+ * Une commande dont la livraison est offerte (`bonusCode`) ne porte pas de frais
+ * dans son `total` : elle est exclue du groupement — rien à déduire pour elle, et
+ * elle ne « consomme » pas la course du groupe.
  *
  * `delivery.prix` reste envoyé au backend dans tous les cas (le livreur doit
- * être payé) ; il n'est simplement pas ajouté au montant débité quand l'offre
- * s'applique.
+ * être payé) ; il n'est simplement pas facturé deux fois au client.
  */
 export const computeCartTotal = (orders: AnyOrder[]): number => {
   if (!Array.isArray(orders) || orders.length === 0) return 0;
 
-  const billed = new Set<string>();
+  const groups = new Map<string, AnyOrder[]>();
   let total = 0;
 
   for (const order of orders) {
+    // Le `total` porte déjà sa propre livraison.
     total += Number(order?.total) || 0;
 
-    // Livraison offerte → rien à facturer, et le groupe reste "non payé".
+    // Livraison offerte → aucun frais dans son total, rien à mutualiser.
     if (order?.bonusCode) continue;
 
     const key = deliveryGroupKey(order);
     if (!key) continue;
 
-    // Première commande payante du groupe → elle porte l'unique course.
-    if (!billed.has(key)) {
-      billed.add(key);
-      total += deliveryPriceOf(order);
-    }
+    const group = groups.get(key);
+    if (group) group.push(order);
+    else groups.set(key, [order]);
+  }
+
+  // Un groupe de N commandes = 1 seule course : on retire les N − 1 en trop.
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    total -= (group.length - 1) * deliveryPriceOf(group[0]);
   }
 
   return Number.isNaN(total) ? 0 : Math.max(0, total);

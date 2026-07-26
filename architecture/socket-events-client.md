@@ -35,6 +35,17 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 | `globalMenuDeleted` | `{ fastFood, menuId }` | `FastFoodContext.removeMenuFromSocket(ffId, menuId)` |
 | `newFastfood` | `{ fastFood }` | `FastFoodContext.upsertFastFoodFromSocket(fastFood)` (normalisé) |
 | `newTransaction` | `{ data: transaction }` | `WalletContext.upsertTransactionFromSocket(data)` (page transactions client) |
+| `bonus.stats_updated` | `{ data: { bonusStats } }` | `BonusContext.applyBonusStats(bonusStats)` — solde de TOUS les bonus (map par id) |
+| `bonus.claimed` | `{ data: {...} }` | `BonusContext.applyClaimPayload(data)` |
+| `bonus.reward_credentials` | `{ data: {...} }` | `BonusContext.applyClaimPayload(data)` — récompense provisionnée (Netflix…) |
+| `bonus.armed` / `bonus.disarmed` | `{ data: { bonusId, armed, disarmedBonusIds, deliveryOffer } }` | **Double** : `BonusContext.applyArmPayload(data)` **+** `FastFoodContext.applyDeliveryOffer(data.deliveryOffer)` |
+
+> **`bonus.armed` / `bonus.disarmed` — pourquoi deux appels.** Le payload est
+> identique à la réponse HTTP de `POST`/`DELETE /bonus/:id/arm`. Le 1er appel met à
+> jour l'état du bonus ; le 2nd propage `deliveryOffer` aux fastfoods du contexte —
+> sans lui, la livraison offerte resterait invisible **au checkout** (qui lit
+> `FastFoodContext`) jusqu'au prochain `GET /fastFood/all`. Détail de la portée :
+> [`bonus.md`](bonus.md).
 | `wallet.credited` | tous champs | `MerchantWalletContext.applyEvent` (patch solde, payin) |
 | `wallet.withdrawal` | tous champs | `MerchantWalletContext.handleWithdrawalEvent` (patch solde + overlay) |
 | `newNotification` | `{ notification }` | `NotificationContext.addFromSocket(notif)` |
@@ -69,6 +80,18 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 - Sur reconnexion, re-join automatique via le handler `connect` dans `useSocketEvents` (émet `join_user`).
 - Catch-up silencieux (notifications, orders, merchant) pour les events fire-and-forget — voir section Infrastructure. Les events fiabilisés sont rejoués par le backend.
 - Tous les handlers restent montés via `useSocketEvents` (effet dépendant de `[userData, socket, isMarchand]`) pour éviter les abonnements orphelins.
+
+> ⚠️ **Un `socket.on` = un `socket.off` dans le cleanup.** L'effet rejoue à chaque
+> changement de `userData`, et `socket.on` **empile** les handlers au lieu de les
+> remplacer. Un event oublié dans le cleanup finit donc exécuté N fois : N ACK
+> renvoyés pour le même `__eventId`, et les copies obsolètes travaillent sur un
+> `userData` périmé (capturé en closure). Les 3 events bonus souffraient de ce
+> défaut. Contrôle rapide, qui doit ne rien renvoyer :
+>
+> ```bash
+> comm -23 <(grep -oP 'socket\.on\("\K[^"]+' src/services/useSocketEvents.ts | sort -u) \
+>          <(grep -oP 'socket\.off\("\K[^"]+' src/services/useSocketEvents.ts | sort -u)
+> ```
 
 ## Piège connu — backends multiples
 

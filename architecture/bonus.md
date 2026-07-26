@@ -314,6 +314,28 @@ appel partirait sinon en anonyme.
 > `deliveryOffer` ne met **pas** `delivery.prix` à 0 : le prix réel est conservé,
 > c'est le front qui affiche la gratuité (prix barré, cf. `checkout.md`).
 
+### Sockets `bonus.armed` / `bonus.disarmed`
+
+Room `<userId>`. Le payload est **identique à la réponse HTTP** de `/arm`
+(`{ data: { bonusId, armed, disarmedBonusIds, deliveryOffer } }`), ce qui permet
+de réutiliser `applyArmPayload` tel quel. Émis quel que soit l'appareil à
+l'origine de la bascule — c'est ce qui synchronise les sessions.
+
+Chaque event a **deux effets**, d'où le double appel dans `useSocketEvents` :
+
+1. `applyArmPayload(p)` → état du bonus (`armed` + `disarmedBonusIds`) ;
+2. `applyDeliveryOffer(p.deliveryOffer)` (`FastFoodContext`) → propage l'offre aux
+   fastfoods, **sans refetch** de `/fastFood/all`.
+
+Portée dans `applyDeliveryOffer` : offre **plateforme** (`fastFoodId: null`) →
+toutes les boutiques ; offre ciblée → la sienne seulement. Au désarmement le
+backend envoie `deliveryOffer: null` sans portée, on efface donc partout (un user
+n'a qu'une offre livraison active à la fois).
+
+> `DesignRouter` recopie `deliveryOffer` dans le menu **au clic** : un armement
+> survenant alors qu'un checkout est DÉJÀ ouvert n'y sera pas reflété (il faut
+> ressortir puis rouvrir le plat). Cas marginal, non traité.
+
 Les deux endpoints exigent `Authorization: Bearer <idToken>`. Le helper
 `authHeaders()` (dans `useBonus.ts`) appelle `auth.currentUser?.getIdToken()`
 **à chaque requête** : le SDK sert le cache si le token est encore valide et le

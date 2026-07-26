@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
-import { FastFood } from '@/src/types';
+import { DeliveryOffer, FastFood } from '@/src/types';
 
 interface FastFoodContextType {
   fastFoods: FastFood[];
@@ -31,6 +31,11 @@ interface FastFoodContextType {
   removeMenuFromSocket: (fastFoodId: string, menuId: string) => void;
   /** newFastfood → ajoute un restaurant à la liste. */
   upsertFastFoodFromSocket: (fastFood: any) => void;
+  /**
+   * `bonus.armed` / `bonus.disarmed` → applique l'offre de livraison du bonus
+   * armé sans refetch. Voir `applyDeliveryOffer` pour la règle de portée.
+   */
+  applyDeliveryOffer: (offer: DeliveryOffer | null) => void;
 }
 
 // ── Normalisation (partagée entre le fetch HTTP et l'injection socket) ──
@@ -185,6 +190,26 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   }, []);
 
+  /**
+   * Applique l'offre de livraison portée par `bonus.armed` / `bonus.disarmed`,
+   * exactement comme le ferait `GET /fastFood/all` — sans refetch.
+   *
+   * Portée : une offre **plateforme** (`fastFoodId: null`) couvre TOUTES les
+   * boutiques ; une offre ciblée ne touche que la sienne. Au désarmement le
+   * backend envoie `deliveryOffer: null` sans portée : on efface donc partout,
+   * le user ne pouvant avoir qu'une offre livraison active à la fois.
+   */
+  const applyDeliveryOffer = useCallback((offer: DeliveryOffer | null) => {
+    setFastFoods((prev) =>
+      prev.map((ff) => {
+        const targets =
+          !offer || offer.fastFoodId == null || offer.fastFoodId === ff.id;
+        if (!targets) return ff;
+        return { ...ff, deliveryOffer: offer ?? null } as FastFood;
+      }),
+    );
+  }, []);
+
   return (
     <FastFoodContext.Provider
       value={{
@@ -201,6 +226,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         upsertMenuFromSocket,
         removeMenuFromSocket,
         upsertFastFoodFromSocket,
+        applyDeliveryOffer,
       }}
     >
       {children}

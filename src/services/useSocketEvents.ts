@@ -67,9 +67,13 @@ export const useSocketEvents = () => {
     upsertMenuFromSocket: upsertGlobalMenu,
     removeMenuFromSocket: removeGlobalMenu,
     upsertFastFoodFromSocket: upsertGlobalFastFood,
+    applyDeliveryOffer,
   } = useFastFoods();
-  const { applyClaimPayload: applyBonusPayload, applyBonusStats } =
-    useBonusContext();
+  const {
+    applyClaimPayload: applyBonusPayload,
+    applyBonusStats,
+    applyArmPayload,
+  } = useBonusContext();
   const socket = socketService.getSocket();
 
   useEffect(() => {
@@ -267,6 +271,26 @@ export const useSocketEvents = () => {
       console.log("🎁 bonus.reward_credentials:", data);
       if (data?.data) applyBonusPayload(data.data);
     }));
+    // bonus.armed / bonus.disarmed : le user a activé/désactivé un bonus (ici
+    // ou sur un autre appareil). Deux effets, d'où le double appel :
+    //   1. l'état du bonus lui-même (`armed` + les bonus auto-désarmés) ;
+    //   2. `deliveryOffer`, propagé aux fastfoods concernés — c'est ce qui rend
+    //      la livraison offerte visible au checkout SANS refetch de /fastFood/all
+    //      (route dont l'offre dépend du user, cf. architecture/bonus.md).
+    const handleArmEvent = (data: any) => {
+      const p = data?.data;
+      if (!p) return;
+      applyArmPayload(p);
+      applyDeliveryOffer(p.deliveryOffer ?? null);
+    };
+    socket.on("bonus.armed", withAck((data: any) => {
+      console.log("⚡ bonus.armed:", data);
+      handleArmEvent(data);
+    }));
+    socket.on("bonus.disarmed", withAck((data: any) => {
+      console.log("⚡ bonus.disarmed:", data);
+      handleArmEvent(data);
+    }));
     // wallet.credited : gain marchand (payin) → patch local du solde.
     socket.on("wallet.credited", withAck((data: any) => {
       console.log("🟢 wallet.credited:", data);
@@ -344,6 +368,8 @@ export const useSocketEvents = () => {
       socket.off("newFastfood");
       socket.off("fastfoodUpdated");
       socket.off("newTransaction");
+      socket.off("bonus.armed");
+      socket.off("bonus.disarmed");
       socket.off("wallet.credited");
       socket.off("wallet.withdrawal");
       socket.off("newNotification");

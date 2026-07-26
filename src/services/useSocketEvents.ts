@@ -368,6 +368,9 @@ export const useSocketEvents = () => {
       socket.off("newFastfood");
       socket.off("fastfoodUpdated");
       socket.off("newTransaction");
+      socket.off("bonus.stats_updated");
+      socket.off("bonus.claimed");
+      socket.off("bonus.reward_credentials");
       socket.off("bonus.armed");
       socket.off("bonus.disarmed");
       socket.off("wallet.credited");

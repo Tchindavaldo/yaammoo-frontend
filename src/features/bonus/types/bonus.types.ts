@@ -10,15 +10,22 @@
  * Nature du critère qui rend un bonus éligible. Évolutif : ajouter une valeur
  * ici + un `case` dans `computeEligibility` suffit, le reste de l'UI ne bouge pas.
  */
-export type BonusCriteriaKind = "order_count" | "amount_spent" | "welcome";
+export type BonusCriteriaKind =
+  | "order_count"
+  | "amount_spent"
+  | "welcome"
+  | "status_view";
 
 /** Fenêtre temporelle sur laquelle porte le critère (affichée sous la barre). */
 export type BonusCriteriaPeriod = "day" | "week" | "month";
 
 export interface BonusCriteria {
   kind: BonusCriteriaKind;
-  /** Palier à atteindre : nombre de commandes ou montant cumulé (FCFA). */
-  target?: number;
+  /**
+   * Palier à atteindre : nombre de commandes ou montant cumulé (FCFA).
+   * `null` sur les critères sans palier (ex. `status_view`).
+   */
+  target?: number | null;
   /** Période de référence du palier (ex. 50 000 FCFA "sur un mois"). */
   period?: BonusCriteriaPeriod;
   /** Restreint le calcul aux commandes d'un fastfood précis (fidélité ciblée). */

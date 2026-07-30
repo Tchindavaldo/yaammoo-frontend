@@ -73,6 +73,7 @@ src/features/bonus/
 ├── hooks/
 │   ├── useBonus.ts               # GET /bonus/all + normalizeBonus() + claim (POST /bonus-request) + fallback démo
 │   ├── useBonusEligibility.ts    # ⭐ Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
+│   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer + cache + partage natif (status_view)
 │   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
 └── components/
@@ -238,6 +239,14 @@ carte de pagination à chaque slide. Titre en `numberOfLines={1}`, description e
 | `welcome` | — | toujours |
 | `order_count` | nb de commandes payées | `current >= target` |
 | `amount_spent` | montant cumulé payé (FCFA) | `current >= target` |
+| `status_view` | — (`target: null`) | toujours, si le bonus est actif |
+
+> **`status_view` — barre horaire.** Seul critère dont la progression ne mesure
+> pas un avancement vers l'éligibilité : elle reflète **l'heure courante ramenée
+> sur 24 h** (`dayProgress()` — minuit 0 %, midi 50 %), et repart à zéro chaque
+> jour. Le `case` est placé AVANT le garde `if (!stats)` : il ne lit ni
+> `bonusStats` ni `period`. `useDayTick` monte un `setInterval` d'1 min
+> **uniquement** pour ce kind, sans quoi la barre resterait figée au montage.
 
 `criteria.period` (`day` \| `week` \| `month`) est **purement informatif au rendu** :
 elle s'affiche en suffixe du compteur sous la barre de progression
@@ -309,6 +318,25 @@ Feedback via `Toast` (succès/erreur).
 | POST | `/bonus-request` | Réclamer un bonus |
 | POST | `/bonus/:id/arm` | Armer un bonus réclamé (sans body) |
 | DELETE | `/bonus/:id/arm` | Désarmer un bonus (sans body) |
+| GET | `/bonus/:id/flyer` | Flyer d'un bonus `status_view` (sans body) |
+
+### Téléchargement du flyer — `useBonusFlyer.ts`
+
+Sur un bonus `status_view` éligible, la ligne de réclamation ne propose pas
+« Réclamer » mais **« Télécharger »** (`isFlyerStep` dans `BonusClaimRow`), et sa
+description reprend `bonus.description` (« Poste le flyer en statut WhatsApp »)
+plutôt que le texte générique de réclamation.
+
+`GET /bonus/:id/flyer` répond
+`{ data: { bonusId, flyerUrl, downloadedAt, lastDownloadedAt, downloadCount,
+claimDelayHours, claimableAt } }`. Le fichier est rapatrié dans `Paths.cache`
+(`File.downloadFileAsync`, API objet d'`expo-file-system` v19 — pas
+`FileSystem.downloadAsync`, déprécié et *throw* au runtime), puis passé à
+`Sharing.shareAsync` : la feuille native offre « Enregistrer l'image » (galerie)
+ou l'envoi direct vers WhatsApp.
+
+> Le bouton **reste actif** après un premier téléchargement — le user peut
+> retélécharger autant de fois qu'il veut, `downloadCount` suit côté backend.
 
 ### ⚠️ `GET /fastFood/all` doit porter le Bearer
 

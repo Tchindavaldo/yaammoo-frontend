@@ -8,7 +8,8 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
   if (rawRoute) {
     return rawRoute.startsWith("/") ? rawRoute : `/(tabs)/${rawRoute}`;
   }
-  switch (notif.type) {
+  // Minuscules : le push `bonus.activation_changed` envoie `type: "Bonus"`.
+  switch (String(notif.type ?? "").toLowerCase()) {
     case "order_new":
       return "/(tabs)/boutique";
     case "order_cancel_by_user":

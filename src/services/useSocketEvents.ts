@@ -75,6 +75,8 @@ export const useSocketEvents = () => {
     applyBonusStats,
     applyArmPayload,
     applyRedeemedPayload,
+    applyActivationPayload,
+    refresh: refreshBonuses,
   } = useBonusContext();
   const socket = socketService.getSocket();
 
@@ -309,6 +311,24 @@ export const useSocketEvents = () => {
         (typeof p.remainingUses === "number" && p.remainingUses <= 0);
       if (exhausted) clearDeliveryOfferForBonus(p.bonusId);
     }));
+    // bonus.created : un bonus vient d'être créé (broadcast global, SANS payload)
+    // → seule option, refetch silencieux de la liste.
+    socket.on("bonus.created", withAck(() => {
+      console.log("🆕 bonus.created");
+      refreshBonuses(true);
+    }));
+    // bonus.activation_changed : le bonus a été activé/désactivé côté émetteur.
+    // Broadcast GLOBAL (pas de room) → reçu même pour un bonus absent de la
+    // liste locale, cas traité dans applyActivationPayload (refetch silencieux).
+    socket.on("bonus.activation_changed", withAck((data: any) => {
+      console.log("🔔 bonus.activation_changed:", data);
+      const p = data?.data;
+      if (!p) return;
+      applyActivationPayload(p);
+      // Désactivé : l'offre de livraison qu'il portait ne vaut plus rien au
+      // checkout — même effacement ciblé que sur un bonus épuisé.
+      if (p.active === false) clearDeliveryOfferForBonus(p.bonusId);
+    }));
     // wallet.credited : gain marchand (payin) → patch local du solde.
     socket.on("wallet.credited", withAck((data: any) => {
       console.log("🟢 wallet.credited:", data);
@@ -392,6 +412,8 @@ export const useSocketEvents = () => {
       socket.off("bonus.armed");
       socket.off("bonus.disarmed");
       socket.off("bonus.redeemed");
+      socket.off("bonus.activation_changed");
+      socket.off("bonus.created");
       socket.off("wallet.credited");
       socket.off("wallet.withdrawal");
       socket.off("newNotification");

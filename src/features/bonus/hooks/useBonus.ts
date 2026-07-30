@@ -5,7 +5,7 @@
 // POST /bonus-request  → réclame un bonus (flux request → approbation)
 // normalizeBonus() rend l'UI robuste aux formes partielles / héritées.
 // ============================================================================
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import { Config } from "@/src/api/config";
 import { auth } from "@/src/services/firebase";
@@ -80,6 +80,9 @@ export const useBonus = () => {
   const [claims, setClaims] = useState<Record<string, BonusClaimStatus>>({});
   /** Requête d'armement en vol par bonusId (spinner sur le bouton Activer). */
   const [arming, setArming] = useState<Record<string, boolean>>({});
+  /** Miroir synchrone de `bonuses` (lecture depuis les handlers socket). */
+  const bonusesRef = useRef<Bonus[]>([]);
+  bonusesRef.current = bonuses;
 
   const fetchBonuses = useCallback(async (quiet = false) => {
     try {
@@ -222,6 +225,41 @@ export const useBonus = () => {
     );
   }, []);
 
+  /**
+   * `bonus.activation_changed` — le fastfood (ou yaammoo) a activé/désactivé un
+   * bonus. Broadcast GLOBAL : tout le monde le reçoit, y compris pour un bonus
+   * absent de la liste locale.
+   *
+   * - bonus connu → on patche `active`, le rendu « Offre non activée » /
+   *   « Bientôt » suit tout seul (`useBonusStatus`) ;
+   * - bonus inconnu ET activé → il vient d'apparaître côté backend, on refetch
+   *   en silencieux pour le faire entrer dans la liste.
+   *
+   * Un bonus désactivé est aussi **désarmé** localement : armé, il continuerait
+   * de s'annoncer applicable au prochain checkout.
+   */
+  const applyActivationPayload = useCallback(
+    (p: any) => {
+      const id = p?.bonusId;
+      if (!id || typeof p?.active !== "boolean") return;
+      const active = p.active;
+      // `bonusesRef` et non l'updater de `setBonuses` : celui-ci n'est pas
+      // exécuté de façon synchrone, on ne peut pas en tirer le « connu / inconnu »
+      // dont dépend le refetch.
+      const known = bonusesRef.current.some((b) => b.id === id);
+      if (!known) {
+        if (active) fetchBonuses(true);
+        return;
+      }
+      setBonuses((list) =>
+        list.map((b) =>
+          b.id !== id ? b : { ...b, active, ...(active ? {} : { armed: false }) },
+        ),
+      );
+    },
+    [fetchBonuses],
+  );
+
   /** Réclame un bonus. Optimiste : passe le statut local à "pending" au succès. */
   const claimBonus = useCallback(
     async (bonus: Bonus): Promise<{ success: boolean; message?: string }> => {
@@ -341,6 +379,8 @@ export const useBonus = () => {
     applyRedeemedPayload,
     /** Injection depuis les events socket `bonus.claimed` / `bonus.reward_credentials`. */
     applyClaimPayload,
+    /** Injection depuis l'event socket `bonus.activation_changed`. */
+    applyActivationPayload,
     /** Injection depuis l'event socket `bonus.stats_updated`. */
     applyBonusStats,
     refresh: fetchBonuses,

@@ -385,6 +385,41 @@ l'offre issue de CE bonus, préservant celle d'un autre bonus ou d'une campagne
 > survenant alors qu'un checkout est DÉJÀ ouvert n'y sera pas reflété (il faut
 > ressortir puis rouvrir le plat). Cas marginal, non traité.
 
+### Socket `bonus.created` — nouveau bonus
+
+Émis par `POST /bonus` en **broadcast global**, **sans aucun payload** (la réponse
+HTTP est inchangée). Le front ne peut donc rien injecter : il refait
+`GET /bonus/all` via `refresh(true)` (silencieux, pas de skeleton). C'est la seule
+entorse assumée au principe « injection directe, pas de refetch ».
+
+### Socket `bonus.activation_changed` — activation/désactivation par l'émetteur
+
+**Broadcast global** (`io.emit`, aucune room) : tout appareil connecté le reçoit.
+
+```json
+{ "data": { "bonusId": "bns_123", "active": false, "type": "netflix",
+            "name": "1 mois Netflix offert", "fastFoodId": null,
+            "fastFoodName": "Yaammoo", "changedAt": "2026-07-30T10:00:00.000Z" } }
+```
+
+`applyActivationPayload` (`useBonus.ts`) patche `bonus.active` — le rendu suit
+seul (`useBonusStatus` → « Offre non activée », `BonusClaimRow` → « Bientôt »).
+Deux effets de bord :
+
+| Cas | Traitement |
+|---|---|
+| `active: false` | le bonus est aussi **désarmé** localement (armé, il s'annoncerait applicable au prochain checkout) **+** `clearDeliveryOfferForBonus(bonusId)` |
+| `active: true` sur un bonusId **absent** de la liste | bonus tout juste créé côté backend → `refresh(true)` silencieux pour le faire entrer dans la liste |
+
+Le « connu / inconnu » se lit sur `bonusesRef` (miroir synchrone de l'état) :
+l'updater de `setBonuses` n'est pas exécuté de façon synchrone et ne peut donc
+pas décider du refetch.
+
+**Push associé** — `data: { type: "Bonus", event: "bonus.activation_changed",
+bonusId, active }`. `getNotificationRoute` compare le `type` **en minuscules**
+(le push envoie `"Bonus"`, les notifications stockées `"bonus"`) → deep-link vers
+`/(tabs)/settings?section=bonus`.
+
 Les deux endpoints exigent `Authorization: Bearer <idToken>`. Le helper
 `authHeaders()` (dans `useBonus.ts`) appelle `auth.currentUser?.getIdToken()`
 **à chaque requête** : le SDK sert le cache si le token est encore valide et le

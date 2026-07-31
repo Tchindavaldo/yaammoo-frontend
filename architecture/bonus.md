@@ -73,7 +73,8 @@ src/features/bonus/
 ├── hooks/
 │   ├── useBonus.ts               # GET /bonus/all + normalizeBonus() + claim (POST /bonus-request) + fallback démo
 │   ├── useBonusEligibility.ts    # ⭐ Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
-│   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer + cache + partage natif (status_view)
+│   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer (partage natif) + POST /bonus/:id/claim (preuve vidéo)
+│   ├── useCampaignPhase.ts       # ⭐ Phase de campagne status_view (dates → titre/desc/action)
 │   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
 └── components/
@@ -126,6 +127,9 @@ Bonus {
   // Code délivré après approbation (fournis par le backend) :
   code?, claimedAt?, startsAt?, expiresAt?, expired?,
   armed?,                // ⭐ bonus activé → s'applique au prochain checkout éligible
+  // Campagne `status_view` (cf. useCampaignPhase) — droits backend + calendrier :
+  canDownload?, canUpload?,
+  campaignSchedule?,     // { downloadDate, postDate, postWindowStart, postWindowEnd }
   usageLimit?, usageCount?, remainingUses?, redeemed?,
   // Stats affichées sur la carte (fournies par le backend) :
   fastFoodBonusCount?,   // bonus proposés par le fastfood
@@ -319,6 +323,7 @@ Feedback via `Toast` (succès/erreur).
 | POST | `/bonus/:id/arm` | Armer un bonus réclamé (sans body) |
 | DELETE | `/bonus/:id/arm` | Désarmer un bonus (sans body) |
 | GET | `/bonus/:id/flyer` | Flyer d'un bonus `status_view` (sans body) |
+| POST | `/bonus/:id/claim` | Réclamation `status_view` (multipart, `proofVideo`) |
 
 ### Téléchargement du flyer — `useBonusFlyer.ts`
 
@@ -337,6 +342,41 @@ ou l'envoi direct vers WhatsApp.
 
 > Le bouton **reste actif** après un premier téléchargement — le user peut
 > retélécharger autant de fois qu'il veut, `downloadCount` suit côté backend.
+
+### Calendrier de campagne — `useCampaignPhase.ts`
+
+Le bonus porte `canDownload`, `canUpload` et `campaignSchedule`
+(`downloadDate`, `postDate`, `postWindowStart/End`). `computeCampaignPhase()`
+(pur, `now` injectable) en dérive une phase, ses textes et son action :
+
+| Phase | Quand | Titre / action |
+|---|---|---|
+| `upload` | `canUpload: true` | « Envoie ta preuve » · bouton **Envoyer** |
+| `before_download` | `canDownload: false` | « Téléchargement demain / le 5 août » · bouton **Télécharger** actif |
+| `await_post` | jour de `postDate` ou après | « Poste ton statut aujourd'hui » (+ fenêtre horaire) |
+| `download` | cas nominal | « Télécharge ton flyer aujourd'hui » · **Télécharger** |
+| `none` | aucun calendrier | retombe sur `bonus.description` |
+
+> ⚠️ **`canDownload` / `canUpload` font autorité, jamais l'horloge du téléphone.**
+> Les dates ne servent qu'à formuler le message. Le message de téléchargement
+> rappelle systématiquement le jour de publication (« À poster demain. »), et la
+> proximité est verbalisée (aujourd'hui / demain / mardi 5 août / le …).
+
+En `before_download` le bouton **reste cliquable** (choix produit) : le clic
+remonte `blockedReason` via `onBlocked` → toast `info` porté par
+`UserBonusSheet`, plutôt qu'un bouton grisé sans explication. Les refus backend
+(400/409) empruntent le même canal.
+
+### Réclamation `status_view` — `POST /bonus/:id/claim`
+
+`multipart/form-data`, champ **`proofVideo`** (vidéo choisie via
+`expo-image-picker`), Bearer requis. Réponse 201 → `data` de la même forme que
+le socket `bonus.claimed`, donc **`applyClaimPayload` la consomme telle quelle**
+(`onProofSent` → `UserBonusSheet`) : le bonus passe en `pending` sans refetch.
+
+Erreurs 400 (flyer jamais téléchargé, délai non écoulé, vidéo absente) et 409
+(réclamation déjà active) — les contrôles tournent **avant** l'upload, un claim
+refusé ne stocke jamais le fichier.
 
 ### ⚠️ `GET /fastFood/all` doit porter le Bearer
 

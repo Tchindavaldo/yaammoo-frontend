@@ -71,8 +71,16 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   } | null>(null);
   const carouselRef = useRef<BonusCarouselHandle>(null);
 
-  const { bonuses, loading, error, claims, claimBonus, arming, armBonus } =
-    useBonusContext();
+  const {
+    bonuses,
+    loading,
+    error,
+    claims,
+    claimBonus,
+    arming,
+    armBonus,
+    applyClaimPayload,
+  } = useBonusContext();
 
   // Suivi du scroll horizontal du carousel (transition couleur des cartes).
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -188,6 +196,27 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     [claimBonus],
   );
 
+  /**
+   * Action impossible : hors période de campagne (contrôle local) ou refusée par
+   * le backend (flyer non téléchargé, délai non écoulé…). Informatif dans les
+   * deux cas — le user doit revenir plus tard, rien n'a échoué de son fait.
+   */
+  const handleBlocked = useCallback((reason: string) => {
+    setToast({ message: reason, type: "info" });
+  }, []);
+
+  /** Preuve vidéo acceptée : le bonus passe en attente de livraison. */
+  const handleProofSent = useCallback(
+    (payload: any) => {
+      applyClaimPayload(payload);
+      setToast({
+        message: "🎬 Preuve envoyée ! Ton bonus est en cours de traitement.",
+        type: "success",
+      });
+    },
+    [applyClaimPayload],
+  );
+
   /** Bascule l'armement du bonus courant depuis le bouton Activer/Désactiver. */
   const handleActivate = useCallback(
     async (bonus: Bonus) => {
@@ -293,6 +322,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 onClaim={handleClaim}
                 onActivate={handleActivate}
                 arming={!!arming[bonuses[index]?.id]}
+                onBlocked={handleBlocked}
+                onProofSent={handleProofSent}
               />
 
               {bonuses.length > 1 && <View style={styles.pagDivider} />}

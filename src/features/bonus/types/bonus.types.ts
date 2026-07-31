@@ -52,6 +52,23 @@ export interface Bonus {
   createdAt?: string;
   /** Durée de validité du code bonus une fois réclamé (en jours). */
   claimDuration?: number;
+
+  // --- Campagne `status_view` (publication d'un statut) ---
+  /** true = le flyer peut être téléchargé maintenant (fait autorité sur les dates). */
+  canDownload?: boolean;
+  /** true = le user peut envoyer sa vidéo de preuve (réclamation ouverte). */
+  canUpload?: boolean;
+  /** Calendrier de la campagne — dates ISO posées par le backend. */
+  campaignSchedule?: {
+    /** "YYYY-MM-DD" — jour où le flyer devient téléchargeable. */
+    downloadDate?: string;
+    /** "YYYY-MM-DD" — jour où le statut doit être publié. */
+    postDate?: string;
+    /** ISO8601 — début de la fenêtre de publication. */
+    postWindowStart?: string;
+    /** ISO8601 — fin de la fenêtre de publication. */
+    postWindowEnd?: string;
+  } | null;
   /** ISO8601 — date à laquelle le user a réclamé le bonus (null = jamais). */
   claimedAt?: string | null;
   /**

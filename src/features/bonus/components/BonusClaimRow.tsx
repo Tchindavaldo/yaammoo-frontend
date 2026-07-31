@@ -151,7 +151,9 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     if (isFlyerStep)
       return campaign.action === "upload"
         ? "videocam-outline"
-        : "download-outline";
+        : campaign.phase === "before_download"
+          ? "time-outline"
+          : "download-outline";
     if (isEligible) return "gift";
     return "lock-closed-outline";
   };
@@ -166,7 +168,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     if (isRedeemed) return "Bonus déjà utilisé";
     if (isApproved) return "Bonus validé";
     if (isPending) return "Demande en cours";
-    if (isFlyerStep) return "Télécharger le flyer";
+    if (isFlyerStep) return campaign.title || "Télécharger le flyer";
     if (isEligible) return "Réclamer ce bonus";
     return "Pas encore disponible";
   };
@@ -194,11 +196,12 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
       return bonus.fastFoodId
         ? "Ta demande a bien été envoyée et attend la validation du fastfood. Tu recevras une notification dès qu'elle est acceptée."
         : "Ta demande est en cours de traitement. Tu seras notifié dès qu'elle est validée et que ton bonus est disponible.";
-    // La consigne du bonus fait foi. Le calendrier de campagne (« disponible
-    // demain », « à poster mardi ») ne s'affiche PAS ici : il masquait le
-    // contenu du bonus. Il ne sort qu'en toast, au clic sur le bouton.
+    // Campagne datée : le message suit la phase (avant téléchargement, jour J,
+    // publication, envoi de la preuve). À défaut de calendrier, la consigne du
+    // bonus fait foi — plus précise que n'importe quel texte générique.
     if (isFlyerStep)
       return (
+        campaign.desc ||
         bonus.description ||
         "Télécharge le flyer et publie-le en statut pour obtenir ce bonus."
       );

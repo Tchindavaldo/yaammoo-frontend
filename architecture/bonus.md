@@ -73,7 +73,7 @@ src/features/bonus/
 ├── hooks/
 │   ├── useBonus.ts               # GET /bonus/all + normalizeBonus() + claim (POST /bonus-request) + fallback démo
 │   ├── useBonusEligibility.ts    # Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
-│   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer (partage natif) + POST /bonus/:id/claim (preuve vidéo)
+│   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer (partage natif) + POST /bonus/:id/claim (preuve vidéo : compression >7 Mo + progression)
 │   ├── useCampaignPhase.ts       # Phase de campagne status_view (dates → titre/desc/action)
 │   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
@@ -377,6 +377,30 @@ le socket `bonus.claimed`, donc **`applyClaimPayload` la consomme telle quelle**
 Erreurs 400 (flyer jamais téléchargé, délai non écoulé, vidéo absente) et 409
 (réclamation déjà active) — les contrôles tournent **avant** l'upload, un claim
 refusé ne stocke jamais le fichier.
+
+#### Compression + progression
+
+Au-delà de **7 Mo** (`COMPRESS_THRESHOLD_MB`) la vidéo est recompressée par
+`react-native-compressor` (`compressionMethod: "auto"`) avant l'envoi. En
+dessous elle part telle quelle : recompresser une petite vidéo coûte du CPU pour
+un gain nul. Si la taille est introuvable (`fileSize` absent de l'asset, puis
+`getVideoMetaData` en échec), **on ne compresse pas** plutôt que de compresser à
+l'aveugle.
+
+> ⚠️ Compression et upload sont **séquentiels** — le fichier doit exister en
+> entier avant que le multipart parte. L'utilisateur ne voit qu'une seule barre
+> continue : `COMPRESS_SHARE = 0.4` alloue les 40 premiers % à la compression,
+> les 60 suivants à l'envoi.
+
+`uploading` est un `Record<string, { phase, progress }>` (clé absente = aucun
+envoi en cours). La progression d'upload vient de `onUploadProgress` d'axios ;
+si `e.total` manque (variable selon la plateforme) la barre **conserve sa
+dernière valeur** au lieu de reculer. `BonusClaimRow` en tire le pourcentage du
+bouton, l'icône (`cog-outline` / `cloud-upload-outline`) et le message
+(« Compression… » / « Envoi… »), qui priment sur les textes de campagne.
+
+> `react-native-compressor` est un **module natif** : un nouveau build dev est
+> requis, un reload JS ne suffit pas.
 
 ### ⚠️ `GET /fastFood/all` doit porter le Bearer
 

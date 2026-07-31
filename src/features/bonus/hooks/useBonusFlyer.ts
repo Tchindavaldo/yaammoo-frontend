@@ -13,9 +13,34 @@ import { File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
 import { useCallback, useState } from "react";
+import { Video as VideoCompressor, getVideoMetaData } from "react-native-compressor";
 import type { Bonus } from "../types/bonus.types";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
+
+/**
+ * Au-delà de ce poids, la vidéo est recompressée avant l'envoi. En dessous,
+ * elle part telle quelle : recompresser une petite vidéo coûte du temps CPU
+ * pour un gain nul, et dégrade l'image pour rien.
+ */
+const COMPRESS_THRESHOLD_MB = 7;
+const MB = 1024 * 1024;
+
+/**
+ * Part de la barre de progression allouée à la compression. Compression et
+ * envoi sont SÉQUENTIELS (le fichier doit exister en entier avant le multipart)
+ * mais l'utilisateur ne voit qu'une seule barre continue de 0 à 100.
+ */
+const COMPRESS_SHARE = 0.4;
+
+/** Étape courante de l'envoi — pilote le libellé affiché sous le bouton. */
+export type UploadPhase = "compressing" | "uploading";
+
+export interface UploadState {
+  phase: UploadPhase;
+  /** Progression globale (compression + envoi) sur 0 → 1. */
+  progress: number;
+}
 
 /** Headers authentifiés — token relu à chaque appel (cf. useBonus.ts). */
 const authHeaders = async () => {
@@ -56,12 +81,17 @@ const fileNameFor = (bonus: Bonus, url: string): string => {
 };
 
 /**
- * Télécharge le flyer d'un bonus puis ouvre le partage natif.
- * `downloading` pilote le spinner du bouton ; `error` porte le message d'échec.
+ * Télécharge le flyer d'un bonus (partage natif) et envoie la vidéo de preuve.
+ *
+ * `downloading` pilote un spinner indéterminé — l'API fichier d'Expo v19
+ * n'expose pas la progression d'un téléchargement. `uploading` porte en
+ * revanche une vraie progression, compression comprise. `error` porte le
+ * message d'échec commun aux deux opérations.
  */
 export const useBonusFlyer = () => {
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
-  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+  // Absent de la map = aucun envoi en cours pour ce bonus.
+  const [uploading, setUploading] = useState<Record<string, UploadState>>({});
   const [error, setError] = useState<string | null>(null);
 
   const downloadFlyer = useCallback(
@@ -121,12 +151,45 @@ export const useBonusFlyer = () => {
       if (picked.canceled || !picked.assets?.length) return null;
 
       const asset = picked.assets[0];
-      setUploading((s) => ({ ...s, [bonus.id]: true }));
+      const setPhase = (phase: UploadPhase, progress: number) =>
+        setUploading((s) => ({ ...s, [bonus.id]: { phase, progress } }));
+
+      setPhase("compressing", 0);
       try {
+        // --- 1. Compression, seulement si la vidéo dépasse le seuil ---------
+        // `size` est absent de l'asset sur certaines plateformes : on interroge
+        // alors le fichier. Taille inconnue = on ne compresse pas plutôt que de
+        // compresser à l'aveugle.
+        let uri = asset.uri;
+        let bytes = asset.fileSize;
+        if (typeof bytes !== "number") {
+          bytes = await getVideoMetaData(asset.uri)
+            .then((m) => m.size)
+            .catch(() => undefined);
+        }
+
+        if (typeof bytes === "number" && bytes > COMPRESS_THRESHOLD_MB * MB) {
+          uri = await VideoCompressor.compress(
+            asset.uri,
+            {
+              compressionMethod: "auto",
+              // La lib ignore d'elle-même les fichiers sous ce poids : filet de
+              // sécurité si notre propre mesure de taille était fausse.
+              minimumFileSizeForCompress: COMPRESS_THRESHOLD_MB,
+              // Sans diviseur, le natif émet un événement par pourcent et
+              // sature le pont JS sur les vidéos longues.
+              progressDivider: 5,
+            },
+            (p) => setPhase("compressing", p * COMPRESS_SHARE),
+          );
+        }
+
+        // --- 2. Envoi multipart --------------------------------------------
+        setPhase("uploading", COMPRESS_SHARE);
         const form = new FormData();
         // RN attend cette forme d'objet (et non un Blob) pour un fichier local.
         form.append("proofVideo", {
-          uri: asset.uri,
+          uri,
           name: asset.fileName ?? `proof-${bonus.id}.mp4`,
           type: asset.mimeType ?? "video/mp4",
         } as any);
@@ -139,6 +202,13 @@ export const useBonusFlyer = () => {
               ...(await authHeaders()),
               "Content-Type": "multipart/form-data",
             },
+            // `total` peut manquer selon la plateforme : on garde alors la
+            // dernière valeur connue plutôt que de faire reculer la barre.
+            onUploadProgress: (e) => {
+              if (!e.total) return;
+              const sent = e.loaded / e.total;
+              setPhase("uploading", COMPRESS_SHARE + sent * (1 - COMPRESS_SHARE));
+            },
           },
         );
         return res.data?.data ?? null;
@@ -150,7 +220,11 @@ export const useBonusFlyer = () => {
         );
         return null;
       } finally {
-        setUploading((s) => ({ ...s, [bonus.id]: false }));
+        setUploading((s) => {
+          const next = { ...s };
+          delete next[bonus.id];
+          return next;
+        });
       }
     },
     [],

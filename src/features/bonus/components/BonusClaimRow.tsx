@@ -107,7 +107,9 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     if (error) onBlocked?.(error);
   }, [error, onBlocked]);
   const campaign = useCampaignPhase(bonus);
-  const busy = !!downloading[bonus.id] || !!uploading[bonus.id];
+  // Envoi en cours : porte la phase (compression / upload) et sa progression.
+  const upload = uploading[bonus.id];
+  const busy = !!downloading[bonus.id] || !!upload;
 
   const u = usageInfo(bonus);
   const cred = bonus.rewardCredentials;
@@ -132,6 +134,10 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   const isFlyerStep = isStatusView && isEligible;
 
   const claimIcon = (): keyof typeof Ionicons.glyphMap => {
+    if (upload)
+      return upload.phase === "compressing"
+        ? "cog-outline"
+        : "cloud-upload-outline";
     if (isInactive) return "eye-off-outline";
     if (isRedeemed) return "checkmark-done-outline";
     if (isApproved) return "checkmark-circle";
@@ -147,6 +153,10 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   };
 
   const claimTitle = (): string => {
+    if (upload)
+      return upload.phase === "compressing"
+        ? "Compression en cours"
+        : "Envoi en cours";
     if (isInactive) return "Offre non activée";
     if (isRedeemed) return "Bonus déjà utilisé";
     if (isApproved) return "Bonus validé";
@@ -157,6 +167,12 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   };
 
   const claimDesc = (): string => {
+    // Envoi en cours : la phase prime sur le message de campagne — le user doit
+    // comprendre pourquoi ça dure (une compression peut prendre une minute).
+    if (upload)
+      return upload.phase === "compressing"
+        ? "Compression de ta vidéo en cours… Garde l'application ouverte."
+        : "Envoi de ta vidéo en cours… Garde l'application ouverte.";
     if (isInactive)
       return "Cette offre n'est pas encore activée par le fastfood. Elle deviendra réclamable dès qu'il la mettra en ligne — reviens bientôt pour en profiter.";
     if (isRedeemed)
@@ -328,7 +344,13 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
           disabled={busy}
           activeOpacity={0.85}
         >
-          {busy ? (
+          {/* Envoi : pourcentage réel (compression puis upload). Téléchargement :
+              spinner seul, l'API fichier d'Expo n'expose pas de progression. */}
+          {upload ? (
+            <Text style={styles.btnText}>
+              {Math.round(upload.progress * 100)} %
+            </Text>
+          ) : busy ? (
             <ActivityIndicator color={LIGHT} size="small" />
           ) : (
             <Text style={styles.btnText}>

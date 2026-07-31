@@ -85,6 +85,7 @@ src/features/bonus/
     ├── gallery.constants.ts      # Dimensions de la galerie (largeur/gap/pas/radius)
     ├── BonusClaimRow.tsx         # Ligne de réclamation du bonus courant (statut + boutons Réclamer / Profil / Compte)
     ├── BonusCredentialsSheet.tsx # Bottom sheet des identifiants livrés (profil, code, email, mot de passe — copiables)
+    ├── BonusUploadToast.tsx      # Verdict d'envoi de preuve (succès/échec) affiché hors de la sheet — monté par BonusProvider
     ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes)
     ├── BonusCard.tsx             # Carte bonus : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
     ├── BonusGlassCard.tsx        # Fond « verre » des cartes (blur + blanc translucide) — CARD_IMAGE_BG / CARD_BG_COLOR
@@ -405,6 +406,29 @@ bouton, l'icône (`cog-outline` / `cloud-upload-outline`) et le message
 
 > `react-native-compressor` est un **module natif** : un nouveau build dev est
 > requis, un reload JS ne suffit pas.
+
+#### Survie à la fermeture de la sheet
+
+`useBonusFlyer` est monté par **`BonusProvider`**, pas par `BonusClaimRow` :
+fermer la bottom sheet démontait le hook en plein envoi — progression perdue,
+payload jamais appliqué, échec invisible. Porté par le contexte, l'envoi
+continue et l'état est retrouvé intact à la réouverture.
+
+Conséquences :
+
+- le hook reçoit `applyClaimPayload` en paramètre et applique le résultat
+  lui-même (la sheet a pu disparaître entre-temps) ;
+- `uploadSuccess` / `uploadFailure` alimentent **`BonusUploadToast`**, monté avec
+  le provider : le verdict s'affiche même si le user est sur une autre page ;
+- la prop `onProofSent` de `BonusClaimRow` a disparu — elle ferait double emploi.
+
+> ⚠️ L'upload ne survit PAS à une mise en veille prolongée : iOS suspend le
+> processus et la requête meurt sans erreur exploitable. Au retour au premier
+> plan (`AppState`), un envoi encore marqué « en cours » est donc déclaré
+> interrompu et signalé par toast — l'utilisateur relance manuellement, rien
+> n'est mémorisé. Un vrai upload de fond exigerait `URLSession` (iOS) /
+> `WorkManager` (Android) : `expo-file-system` ne l'expose qu'à partir du **SDK
+> 57** (`UploadTask`, `sessionType: 'background'`), et iOS seulement.
 
 ### ⚠️ `GET /fastFood/all` doit porter le Bearer
 

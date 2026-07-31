@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import { useBonusEligibility } from "../hooks/useBonusEligibility";
-import { useBonusFlyer, type ClaimPayload } from "../hooks/useBonusFlyer";
+import { useBonusContext } from "../context/BonusContext";
 import { useBonusStatus } from "../hooks/useBonusStatus";
 import { useCampaignPhase } from "../hooks/useCampaignPhase";
 import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
@@ -35,11 +35,6 @@ interface BonusClaimRowProps {
    * du refus au parent, qui l'affiche en toast.
    */
   onBlocked?: (reason: string) => void;
-  /**
-   * Preuve envoyée avec succès (`POST /bonus/:id/claim`) : le parent applique le
-   * payload à l'état, sans attendre le socket `bonus.claimed` ni un refetch.
-   */
-  onProofSent?: (payload: ClaimPayload) => void;
 }
 
 const DARK = Theme.colors.dark;
@@ -77,7 +72,6 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   onActivate,
   arming = false,
   onBlocked,
-  onProofSent,
 }) => {
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
@@ -99,8 +93,10 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     color: statusColor,
   } = useBonusStatus(bonus, claimStatus === "pending");
 
+  // Depuis le CONTEXTE, pas d'instance locale : fermer la sheet en plein envoi
+  // démontait le hook et perdait la progression.
   const { downloadFlyer, downloading, uploadProof, uploading, error } =
-    useBonusFlyer();
+    useBonusContext();
   // Les refus backend (flyer non téléchargé, délai non écoulé, 409…) passent par
   // le même canal que les refus locaux : un toast porté par le parent.
   React.useEffect(() => {
@@ -366,7 +362,9 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
           onPress={() => {
             if (campaign.blockedReason) return onBlocked?.(campaign.blockedReason);
             if (!isUpload) return downloadFlyer(bonus);
-            return uploadProof(bonus).then((p) => p && onProofSent?.(p));
+            // Le contexte applique lui-même le payload : la sheet a pu être
+            // fermée avant la réponse, son callback n'existerait plus.
+            return uploadProof(bonus);
           }}
           disabled={busy}
           activeOpacity={0.85}

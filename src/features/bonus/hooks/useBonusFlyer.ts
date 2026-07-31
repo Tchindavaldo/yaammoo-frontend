@@ -12,7 +12,8 @@ import axios from "axios";
 import { File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { Video as VideoCompressor, getVideoMetaData } from "react-native-compressor";
 import type { Bonus } from "../types/bonus.types";
 
@@ -88,11 +89,28 @@ const fileNameFor = (bonus: Bonus, url: string): string => {
  * revanche une vraie progression, compression comprise. `error` porte le
  * message d'échec commun aux deux opérations.
  */
-export const useBonusFlyer = () => {
+export const useBonusFlyer = (
+  /**
+   * Applique le payload du claim à l'état bonus. Injecté par le contexte : le
+   * hook vit hors de la sheet, il ne peut plus compter sur un callback de
+   * composant qui disparaît au démontage.
+   */
+  applyClaimPayload?: (payload: ClaimPayload) => void,
+) => {
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   // Absent de la map = aucun envoi en cours pour ce bonus.
   const [uploading, setUploading] = useState<Record<string, UploadState>>({});
   const [error, setError] = useState<string | null>(null);
+  /**
+   * Dernier échec d'envoi, à signaler PARTOUT dans l'app (toast global) : le
+   * user peut avoir quitté la page bonus pendant l'upload. Consommé puis remis
+   * à null par `clearUploadFailure`.
+   */
+  const [uploadFailure, setUploadFailure] = useState<string | null>(null);
+  const clearUploadFailure = useCallback(() => setUploadFailure(null), []);
+  /** Idem pour la réussite : la sheet peut être fermée quand la réponse arrive. */
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const clearUploadSuccess = useCallback(() => setUploadSuccess(null), []);
 
   const downloadFlyer = useCallback(
     async (bonus: Bonus): Promise<FlyerPayload | null> => {
@@ -211,13 +229,25 @@ export const useBonusFlyer = () => {
             },
           },
         );
-        return res.data?.data ?? null;
+        const payload: ClaimPayload | null = res.data?.data ?? null;
+        // Appliqué ICI : la sheet a pu être fermée entre-temps, son callback
+        // n'existe plus. Le contexte, lui, est toujours monté.
+        if (payload) {
+          applyClaimPayload?.(payload);
+          setUploadSuccess(
+            "Preuve envoyée ! Ton bonus est en cours de traitement.",
+          );
+        }
+        return payload;
       } catch (e: any) {
-        setError(
+        const msg =
           e?.response?.data?.message ??
-            e?.message ??
-            "Envoi de la preuve impossible.",
-        );
+          e?.message ??
+          "Envoi de la preuve impossible.";
+        setError(msg);
+        // Doublé en échec GLOBAL : sans ça, un envoi qui échoue alors que le
+        // user a quitté la page bonus ne lui est jamais signalé.
+        setUploadFailure(msg);
         return null;
       } finally {
         setUploading((s) => {
@@ -230,5 +260,33 @@ export const useBonusFlyer = () => {
     [],
   );
 
-  return { downloadFlyer, downloading, uploadProof, uploading, error };
+  // L'upload ne survit PAS à une mise en veille prolongée : iOS suspend le
+  // processus, la requête meurt sans lever d'erreur exploitable. Au retour au
+  // premier plan, un envoi encore marqué « en cours » est donc considéré comme
+  // interrompu — mieux vaut le dire que laisser un pourcentage figé.
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state !== "active") return;
+      setUploading((s) => {
+        if (Object.keys(s).length === 0) return s;
+        setUploadFailure(
+          "L'envoi a été interrompu par la mise en veille. Relance-le depuis la page bonus.",
+        );
+        return {};
+      });
+    });
+    return () => sub.remove();
+  }, []);
+
+  return {
+    downloadFlyer,
+    downloading,
+    uploadProof,
+    uploading,
+    error,
+    uploadFailure,
+    clearUploadFailure,
+    uploadSuccess,
+    clearUploadSuccess,
+  };
 };

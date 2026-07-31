@@ -446,6 +446,17 @@ Conséquences :
   le provider : le verdict s'affiche même si le user est sur une autre page ;
 - la prop `onProofSent` de `BonusClaimRow` a disparu — elle ferait double emploi.
 
+> ⚠️ **`flyerError`, surtout pas `error`.** `useBonus` expose déjà `error` ;
+> fusionnés dans le contexte (`{...bonus, ...flyer}`), celui du flyer écrasait
+> celui du fetch. `UserBonusSheet` prenait alors un simple refus de
+> téléchargement (date non atteinte, 400/409) pour une panne de chargement et
+> affichait `BonusEmptyState` **plein écran** à la place des bonus.
+>
+> Le refus est **acquitté** dès son affichage (`clearFlyerError`) : vivant dans
+> le contexte, un `flyerError` non consommé survit à la fermeture de la sheet et
+> rejoue son toast à chaque réouverture. Même principe pour `uploadSuccess` /
+> `uploadFailure`, acquittés par le `onHide` du `Toast`.
+
 > ⚠️ L'upload ne survit PAS à une mise en veille prolongée : iOS suspend le
 > processus et la requête meurt sans erreur exploitable. Au retour au premier
 > plan (`AppState`), un envoi encore marqué « en cours » est donc déclaré

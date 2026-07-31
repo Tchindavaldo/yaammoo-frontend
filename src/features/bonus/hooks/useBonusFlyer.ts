@@ -102,6 +102,12 @@ export const useBonusFlyer = (
   const [uploading, setUploading] = useState<Record<string, UploadState>>({});
   const [error, setError] = useState<string | null>(null);
   /**
+   * Acquitte le refus courant. Indispensable depuis que le hook vit dans le
+   * contexte : sans remise à zéro, `flyerError` survit à la fermeture de la
+   * sheet et le toast se rejoue à CHAQUE réouverture.
+   */
+  const clearFlyerError = useCallback(() => setError(null), []);
+  /**
    * Dernier échec d'envoi, à signaler PARTOUT dans l'app (toast global) : le
    * user peut avoir quitté la page bonus pendant l'upload. Consommé puis remis
    * à null par `clearUploadFailure`.
@@ -288,6 +294,7 @@ export const useBonusFlyer = (
     // téléchargement (date non atteinte, 400/409) pour une panne de chargement
     // et afficherait un état vide plein écran à la place des bonus.
     flyerError: error,
+    clearFlyerError,
     uploadFailure,
     clearUploadFailure,
     uploadSuccess,

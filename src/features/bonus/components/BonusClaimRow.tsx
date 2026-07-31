@@ -10,8 +10,8 @@ import {
   View,
 } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { useBonusEligibility } from "../hooks/useBonusEligibility";
 import { useBonusContext } from "../context/BonusContext";
+import { useBonusEligibility } from "../hooks/useBonusEligibility";
 import { useBonusStatus } from "../hooks/useBonusStatus";
 import { useCampaignPhase } from "../hooks/useCampaignPhase";
 import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
@@ -65,7 +65,7 @@ const usageInfo = (bonus: Bonus) => {
  * Vit hors du carrousel — dans la carte commune du bas, avec la pagination —
  * et suit donc le bonus sélectionné plutôt que de défiler avec les cartes.
  */
-export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
+const BonusClaimRowBase: React.FC<BonusClaimRowProps> = ({
   bonus,
   claimStatus = "idle",
   onClaim,
@@ -193,7 +193,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     if (inactiveWithReward)
       return "Le fastfood a retiré cette offre, mais ta récompense reste valable — tu peux toujours y accéder.";
     if (isInactive)
-      return "Cette offre n'est pas encore activée par le fastfood. Elle deviendra réclamable dès qu'il la mettra en ligne — reviens bientôt pour en profiter.";
+      return "Cette offre n'est pas encore activée. reviens bientôt pour en profiter.";
     if (isRedeemed)
       return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
     // Approuvé mais rien à délivrer encore : la récompense est provisionnée
@@ -268,7 +268,11 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[styles.btn, styles.btnCompact, { backgroundColor: d.color }]}
+            style={[
+              styles.btn,
+              styles.btnCompact,
+              { backgroundColor: d.color },
+            ]}
             onPress={() => {
               setSheetSection("account");
               setSheetOpen(true);
@@ -370,7 +374,8 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
         <TouchableOpacity
           style={[styles.btn, { backgroundColor: d.color }]}
           onPress={() => {
-            if (campaign.blockedReason) return onBlocked?.(campaign.blockedReason);
+            if (campaign.blockedReason)
+              return onBlocked?.(campaign.blockedReason);
             if (!isUpload) return downloadFlyer(bonus);
             // Le contexte applique lui-même le payload : la sheet a pu être
             // fermée avant la réponse, son callback n'existerait plus.
@@ -453,6 +458,26 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     </View>
   );
 };
+
+/**
+ * Mémoïsée : la sheet re-rend à chaque changement d'index du carrousel, et
+ * cette ligne recalcule alors éligibilité, statut et phase de campagne. Sur des
+ * slides rapides successifs, ce travail retardait sa propre mise à jour.
+ *
+ * Les callbacks du parent sont déjà stables (`useCallback`), donc seul un vrai
+ * changement de bonus ou de statut la re-rend. Elle reste évidemment sensible
+ * au contexte bonus, qu'aucune comparaison de props ne peut court-circuiter.
+ */
+export const BonusClaimRow = React.memo(
+  BonusClaimRowBase,
+  (a, b) =>
+    a.bonus === b.bonus &&
+    a.claimStatus === b.claimStatus &&
+    a.arming === b.arming &&
+    a.onClaim === b.onClaim &&
+    a.onActivate === b.onActivate &&
+    a.onBlocked === b.onBlocked,
+);
 
 const styles = StyleSheet.create({
   // Hauteur fixe : la description varie de 1 à 3 lignes selon le statut, ce qui

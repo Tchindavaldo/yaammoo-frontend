@@ -16,7 +16,8 @@ interface BonusGalleryCardProps {
   /** Vrai quand la carte est celle centrée : porte les styles non interpolables. */
   active: boolean;
   activeTextColor: string;
-  onPress: () => void;
+  /** Reçoit la `position` de la carte : garde le callback stable côté parent. */
+  onPress: (position: number) => void;
 }
 
 /**
@@ -25,7 +26,7 @@ interface BonusGalleryCardProps {
  * fond légèrement teinté et le `fontWeight` de son libellé (piloté par `active`,
  * non interpolable par Animated).
  */
-export const BonusGalleryCard = ({
+const BonusGalleryCardBase = ({
   bonus,
   position,
   scrollX,
@@ -60,7 +61,7 @@ export const BonusGalleryCard = ({
   const iconColor = active ? full : NEUTRAL;
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity onPress={() => onPress(position)} activeOpacity={0.85}>
       <Animated.View
         style={[
           styles.galleryCard,
@@ -108,6 +109,18 @@ export const BonusGalleryCard = ({
     </TouchableOpacity>
   );
 };
+
+/**
+ * Mémoïsé : la galerie re-rend ses N mini-cartes à CHAQUE changement d'index,
+ * et chacune reconstruit ses interpolations `scrollX`. Sur des slides rapides
+ * successifs, ce travail s'accumulait sur le thread JS et retardait la mise à
+ * jour de la ligne de réclamation.
+ *
+ * `scrollX`, `bonus` et `onPress` sont stables par référence (ce dernier reçoit
+ * la `position` en argument plutôt qu'une fermeture par carte) ; seul `active`
+ * change réellement d'une carte à l'autre.
+ */
+export const BonusGalleryCard = React.memo(BonusGalleryCardBase);
 
 const styles = StyleSheet.create({
   galleryCard: {

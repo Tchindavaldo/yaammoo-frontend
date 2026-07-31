@@ -46,6 +46,30 @@ négative et une carte qui déborde visiblement des autres — c'est ce qu'il fa
 | Ligne réclamation | `CLAIM_PAD` | 12 | +4 |
 | Pagination | `PAG_PAD` | 10 | +6 |
 
+### Performance du slide (⚠️ à préserver)
+
+Le carrousel pilote `scrollX` avec `useNativeDriver: false` — obligatoire, les
+interpolations de couleur ne sont pas supportées par le driver natif. Chaque
+frame traverse donc le pont JS, et tout travail ajouté dans un listener
+`scrollX` se paie ~60 fois par seconde.
+
+Quatre garde-fous, à ne pas défaire :
+
+| Mesure | Où | Pourquoi |
+|---|---|---|
+| Miroirs hors-React `indexRef` / `lastGalleryX` | `UserBonusSheet` | Ne déclencher `setIndex` / `scrollTo` qu'en cas de changement réel — sinon un rendu complet par frame |
+| `memo` sur `BonusCarousel` | `BonusCarousel` | Il ne dépend pas de l'index mais re-rendait toutes ses cartes plein écran à chaque `setIndex` — poste le plus lourd |
+| `memo` sur `BonusGalleryCard` et `BonusClaimRow` | idem | La galerie reconstruit N jeux d'interpolations ; la ligne recalcule éligibilité + statut + phase |
+| `onPress={goToBonus}` (et non `() => goToBonus(i)`) | galerie | Une fermeture par carte serait recréée à chaque rendu et annulerait le `memo` |
+
+> ⚠️ **Toutes les sources d'index passent par `indexRef`** — listener `scrollX`,
+> `handleIndexChange` (fin de geste) et `goToBonus` (tap). Deux sources qui se
+> désynchroniseraient figeraient la ligne de réclamation.
+
+> Le rattrapage socket du retour d'arrière-plan est différé de 500 ms
+> (`CATCH_UP_DELAY_MS`, `useSocketEvents.ts`) : lancé immédiatement, il volait
+> les premières frames et l'animation décrochait puis rattrapait d'un coup.
+
 ### Pull-to-refresh
 `UserBonusSheet` englobe le carrousel dans un `ScrollView` **vertical**
 (`refreshControl={pullControl}`) : le carrousel étant horizontal, il ne peut pas

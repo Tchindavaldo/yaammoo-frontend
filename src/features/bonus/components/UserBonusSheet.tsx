@@ -184,10 +184,24 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   }, [scrollX, openKey]);
 
   /** Navigation directe : pose le verrou puis délègue au carousel. */
+  /**
+   * Index remonté par le carrousel en fin de geste. Passe par le miroir pour
+   * rester cohérent avec le listener `scrollX` — deux sources d'index qui se
+   * désynchroniseraient figeraient la ligne de réclamation.
+   */
+  const handleIndexChange = useCallback((i: number) => {
+    if (indexRef.current === i) return;
+    indexRef.current = i;
+    setIndex(i);
+  }, []);
+
   const goToBonus = useCallback(
     (i: number) => {
       const target = Math.max(0, Math.min(bonuses.length - 1, i));
       jumpTarget.current = target;
+      // Le miroir suit, sinon le listener `scrollX` croirait l'index inchangé
+      // au retour sur cette carte et ne rafraîchirait pas la ligne.
+      indexRef.current = target;
       setIndex(target);
       carouselRef.current?.goTo(target);
     },
@@ -308,7 +322,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 claims={claims}
                 onClaim={handleClaim}
                 scrollX={scrollX}
-                onIndexChange={setIndex}
+                onIndexChange={handleIndexChange}
                 CardComponent={BonusCard}
                 cardImage={null}
               />
@@ -351,7 +365,10 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                           scrollX={scrollX}
                           active={i === index}
                           activeTextColor={DARK_ICON}
-                          onPress={() => goToBonus(i)}
+                          // `goToBonus` reçoit la position : une fermeture
+                          // `() => goToBonus(i)` serait recréée par carte à
+                          // chaque rendu et casserait la mémoïsation.
+                          onPress={goToBonus}
                         />
                       ))}
                     </Animated.ScrollView>

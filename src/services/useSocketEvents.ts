@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppState, type AppStateStatus } from "react-native";
 import { socketService } from "./socket";
 import { withAck } from "./socketAck";
 import { useAuth } from "../features/auth/context/AuthContext";
@@ -83,24 +84,58 @@ export const useSocketEvents = () => {
   useEffect(() => {
     if (!userData || !socket) return;
 
-    const handleConnect = () => {
-      socket.emit("join_user", userData?.uid);
-      // Catch-up des events fire-and-forget manqués hors-ligne (silencieux).
+    /**
+     * Rattrapage silencieux de l'état : events fire-and-forget manqués
+     * hors-ligne, et tout ce qui a bougé pendant que l'app ne recevait rien.
+     *
+     * Les bonus en font partie : ouvrir l'app depuis une notification push
+     * (identifiants provisionnés, offre désactivée) place l'event AVANT que le
+     * front puisse l'entendre. Le rejeu des events fiabilisés ne suffit pas —
+     * `bonus.activation_changed` n'en fait pas partie, et `withAck` ignore un
+     * `__eventId` déjà mémorisé dans la session.
+     */
+    const catchUp = () => {
       refreshNotifications(true);
       refreshOrders(true);
       refreshMerchant(false);
       refreshDriver(false);
-      // Les bonus AUSSI : ouvrir l'app depuis une notification push (identifiants
-      // provisionnés, offre désactivée) reconnecte le socket APRÈS coup. Sans ce
-      // refresh, la page affiche l'état d'avant la notification. Le rejeu des
-      // events fiabilisés ne suffit pas : `bonus.activation_changed` n'en fait
-      // pas partie, et `withAck` ignore un rejeu déjà vu dans la même session.
       refreshBonuses(true);
+    };
+
+    const handleConnect = () => {
+      socket.emit("join_user", userData?.uid);
+      catchUp();
     };
 
     socket.on("connect", handleConnect);
     if (socket.connected) handleConnect();
     else socket.connect();
+
+    /**
+     * Retour au premier plan. L'OS (iOS surtout) gèle le JS en arrière-plan et
+     * peut couper la websocket sans que socket.io s'en aperçoive : au réveil, la
+     * socket paraît vivante, aucun `connect` ne part, donc AUCUN catch-up — les
+     * identifiants reçus pendant la mise en veille n'apparaissent jamais.
+     *
+     * On force donc la reconnexion si le lien est mort (le `connect` qui suit
+     * fera le catch-up), sinon on rattrape directement.
+     */
+    // Garde anti-rafale : basculer rapidement entre deux apps émet plusieurs
+    // `active` d'affilée, chacun déclenchant 5 requêtes. On espace les
+    // rattrapages sans jamais bloquer celui qui suit une vraie mise en veille.
+    let lastCatchUp = 0;
+    const CATCH_UP_COOLDOWN_MS = 10_000;
+
+    const handleAppState = (state: AppStateStatus) => {
+      if (state !== "active") return;
+      const now = Date.now();
+      if (now - lastCatchUp < CATCH_UP_COOLDOWN_MS) return;
+      lastCatchUp = now;
+      if (socket.connected) catchUp();
+      else socket.connect();
+    };
+
+    const appStateSub = AppState.addEventListener("change", handleAppState);
 
     // ⚠️ Tous les handlers ci-dessous sont enrobés de `withAck` : dédoublonnage
     // via __eventId + ACK obligatoire (sinon le backend rejoue l'event en boucle).
@@ -385,6 +420,7 @@ export const useSocketEvents = () => {
     }));
 
     return () => {
+      appStateSub.remove();
       socket.off("connect", handleConnect);
       socket.off("newUserOrder");
       socket.off("userOrderUpdated");

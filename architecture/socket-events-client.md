@@ -12,6 +12,10 @@
 
 > ⚠️ `refreshBonuses` est indispensable au **deep-link depuis une notification push** : ouvrir l'app depuis la notif reconnecte le socket *après* l'event. Le rejeu ne couvre pas tout — `bonus.activation_changed` n'est pas fiabilisé, et `withAck` ignore un `__eventId` déjà vu dans la même session (app en arrière-plan puis rouverte). Sans ce refresh, la page bonus affiche l'état d'avant la notification.
 
+- **Catch-up sur retour au premier plan (`AppState`)** : le `connect` seul ne suffit pas. L'OS (iOS surtout) gèle le JS en arrière-plan et peut couper la websocket **sans que socket.io s'en aperçoive** — au réveil la socket paraît vivante, aucun `connect` ne part, donc aucun rattrapage. Le listener `AppState` rejoue donc `catchUp()` au passage en `active` (ou force `socket.connect()` si le lien est mort, le `connect` qui suit s'en chargeant).
+
+> C'est le cas concret des **identifiants reçus app en arrière-plan** : sans ce listener, taper la notification ramène l'app au premier plan mais la récompense n'apparaît pas. Une garde de 10 s (`CATCH_UP_COOLDOWN_MS`) évite la rafale de requêtes quand on bascule rapidement entre deux applications.
+
 ---
 
 ## Événements reçus → actions

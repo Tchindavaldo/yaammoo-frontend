@@ -84,7 +84,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 - Catch-up silencieux (notifications, orders, merchant) pour les events fire-and-forget — voir section Infrastructure. Les events fiabilisés sont rejoués par le backend.
 - Tous les handlers restent montés via `useSocketEvents` (effet dépendant de `[userData, socket, isMarchand]`) pour éviter les abonnements orphelins.
 
-> ⚠️ **Un `socket.on` = un `socket.off` dans le cleanup.** L'effet rejoue à chaque
+> **Un `socket.on` = un `socket.off` dans le cleanup.** L'effet rejoue à chaque
 > changement de `userData`, et `socket.on` **empile** les handlers au lieu de les
 > remplacer. Un event oublié dans le cleanup finit donc exécuté N fois : N ACK
 > renvoyés pour le même `__eventId`, et les copies obsolètes travaillent sur un

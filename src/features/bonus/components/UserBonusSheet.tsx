@@ -210,7 +210,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     (payload: any) => {
       applyClaimPayload(payload);
       setToast({
-        message: "🎬 Preuve envoyée ! Ton bonus est en cours de traitement.",
+        message: "Preuve envoyée ! Ton bonus est en cours de traitement.",
         type: "success",
       });
     },

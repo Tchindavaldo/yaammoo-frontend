@@ -186,7 +186,7 @@ Tab « Commande » extrait de l'ancien `MerchantOrderBottomSheet`. Affiche :
 - Le menu commandé avec son prix
 - La liste des extras (icônes, noms, prix)
 - La liste des boissons (icônes, noms, prix)
-- **Ligne livraison** (si `deliveryPrice > 0` ou `zone`) : icône 🛵, libellé
+- **Ligne livraison** (si `deliveryPrice > 0` ou `zone`) : icône , libellé
   "Livraison" + la **zone** en sous-texte, prix à droite (`deliveryPrice`).
 - Prix total — **inclut le prix de livraison** (`total + deliveryPrice`).
 

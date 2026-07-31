@@ -3,8 +3,8 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> 📏 **14 règles numérotées R1 → R14.** Toute nouvelle règle ajoutée à ce fichier
-> DOIT recevoir le numéro suivant (R15, R16, …) et le total ci-dessus doit être
+> **15 règles numérotées R1 → R15.** Toute nouvelle règle ajoutée à ce fichier
+> DOIT recevoir le numéro suivant (R16, R17, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
 ## R1 — Style de réponse (OBLIGATOIRE)
@@ -32,7 +32,7 @@ PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 - Proposer la suite du travail (« Tu veux que je… ? ») : s'arrêter après le résultat.
 - Les puces qui détaillent chaque changement une par une.
 
-> ⚠️ Après une modification, la réponse par défaut est **une seule phrase** disant
+> Après une modification, la réponse par défaut est **une seule phrase** disant
 > ce qui marche maintenant. Rien de plus. Si un vrai blocage existe, l'ajouter en
 > 1 phrase. Un travail long ne justifie JAMAIS une réponse longue.
 
@@ -50,20 +50,20 @@ contrat d'API ».
 
 ## R3 — À lire en DÉBUT de session (OBLIGATOIRE)
 
-> 🚨 **AU TOUT PREMIER MESSAGE de chaque conversation**, le hook
+> **AU TOUT PREMIER MESSAGE de chaque conversation**, le hook
 > `.claude/hooks/session-start-read.sh` (déclaré dans `.claude/settings.json`)
 > injecte automatiquement **ce fichier** et `architecture/README.md` en entier.
 > La lecture est garantie côté harness — rien à invoquer, aucun `Read` à faire.
 >
 > **Accusé obligatoire** : la toute première réponse de la session doit commencer
 > par la ligne fournie par le hook, seule sur sa ligne :
-> `✅ CLAUDE.md lu en entier (N l., 14 règles R1→R14) + architecture/README.md (M l.)`
+> `OK - CLAUDE.md lu en entier (N l., 15 règles R1→R15) + architecture/README.md (M l.)`
 > Absence de cette ligne = hook non déclenché : le signaler et le réparer.
 
 Lis **`architecture/README.md`** (à la racine) avant de travailler : il donne une vision
 360 du projet (structure des fichiers, features isolées, contextes, hooks).
 
-**⚠️ INTERDIT : lancer un agent Explore pour "découvrir" le projet.** `architecture/README.md`
+**INTERDIT : lancer un agent Explore pour "découvrir" le projet.** `architecture/README.md`
 et les fichiers `.md` par feature ont été rédigés précisément pour éviter cette perte de temps.
 Lis avec `Read` direct (1 seul appel outil) — c'est suffisant. Ne lance un agent Explore ou
 `grep`/`find` supplémentaire QUE si tu cherches quelque chose d'ultra-précis introuvable dans
@@ -97,7 +97,7 @@ L'architecture doit rester **propre, moderne, modulaire**. Règles non négociab
 
 ## R5 — Convention de branches Git (OBLIGATOIRE)
 
-> ⚠️ Cette section parle **exclusivement de branches Git** (`git checkout -b ...`).
+> Cette section parle **exclusivement de branches Git** (`git checkout -b ...`).
 > Elle n'a rien à voir avec l'organisation des dossiers/features dans le code.
 > Quand on dit "isoler un travail", on parle de **l'isoler sur sa propre branche Git**.
 
@@ -219,3 +219,21 @@ La clé API pour les paiements yaammoo doit être :
 - Configurée dans les variables d'environnement du backend yaammoo
 - **Jamais exposée au frontend** (tous les appels `/pay` passent par le backend yaammoo)
 - Protégée comme un secret sensible (.env gitignoré)
+
+## R15 — AUCUN EMOJI (OBLIGATOIRE)
+
+**Zéro emoji, nulle part.** Ni dans le code, ni dans les commentaires, ni dans la
+documentation, ni dans les messages de commit, ni dans les hooks.
+
+Sont concernés sans exception :
+- Commentaires et JSDoc : écrire `IMPORTANT :` ou `NOTE :`, jamais un pictogramme.
+- Fichiers `.md` (`architecture/`, `CLAUDE.md`) : titres et encadrés en texte seul.
+- Chaînes affichées à l'utilisateur (toasts, labels, messages d'erreur).
+- Logs (`console.log`) et messages de commit.
+
+Pour attirer l'attention, utiliser du **texte** : `IMPORTANT`, `ATTENTION`, `NOTE`,
+`OBLIGATOIRE`, ou le gras Markdown. Une icône dans l'UI passe par `Ionicons`,
+jamais par un caractère emoji.
+
+> Un emoji introduit dans un fichier touché = le retirer avant de clore, même
+> s'il était déjà là.

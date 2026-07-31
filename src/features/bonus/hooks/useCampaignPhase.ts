@@ -5,7 +5,7 @@
 // trouve dans le calendrier : avant le téléchargement, le jour J, en attente de
 // publication, ou en phase d'envoi de la preuve.
 //
-// ⚠️ `canDownload` / `canUpload` (backend) FONT AUTORITÉ sur les dates : les
+// IMPORTANT : `canDownload` / `canUpload` (backend) FONT AUTORITÉ sur les dates : les
 // dates ne servent qu'à formuler le message. On ne recalcule jamais un droit
 // depuis l'horloge du téléphone, qui peut être décalée.
 // ============================================================================

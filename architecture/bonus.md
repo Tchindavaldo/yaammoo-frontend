@@ -36,7 +36,7 @@ même verticale que « Bonus » dans le header.
 
 Les paddings sont volontairement **proches** (10 à 12) pour que les marges qui en
 découlent le soient aussi (+4 à +6) : les bordures forment ainsi une colonne
-régulière. ⚠️ Un padding nettement plus grand (ex. 18) produirait une marge
+régulière. Un padding nettement plus grand (ex. 18) produirait une marge
 négative et une carte qui déborde visiblement des autres — c'est ce qu'il faut
 éviter en touchant ces constantes.
 
@@ -67,18 +67,18 @@ src/features/bonus/
 ├── types/
 │   └── bonus.types.ts            # Bonus, BonusCriteria, BonusReward, BonusProgress, BonusClaimStatus
 ├── config/
-│   └── bonusRegistry.tsx         # ⭐ Descripteur (icône/couleur/label) par type + FALLBACK par défaut
+│   └── bonusRegistry.tsx         # Descripteur (icône/couleur/label) par type + FALLBACK par défaut
 ├── config/
 │   └── defaultBonuses.ts         # Bonus de démo (fallback si /bonus/all vide ou en erreur) — USE_DEFAULT_BONUSES
 ├── hooks/
 │   ├── useBonus.ts               # GET /bonus/all + normalizeBonus() + claim (POST /bonus-request) + fallback démo
-│   ├── useBonusEligibility.ts    # ⭐ Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
+│   ├── useBonusEligibility.ts    # Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
 │   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer (partage natif) + POST /bonus/:id/claim (preuve vidéo)
-│   ├── useCampaignPhase.ts       # ⭐ Phase de campagne status_view (dates → titre/desc/action)
+│   ├── useCampaignPhase.ts       # Phase de campagne status_view (dates → titre/desc/action)
 │   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
 └── components/
-    ├── UserBonusSheet.tsx        # ⭐ Coquille : BOTTOM SHEET (hauteur fixe 400) — carrousel + carte de pagination bas
+    ├── UserBonusSheet.tsx        # Coquille : BOTTOM SHEET (hauteur fixe 400) — carrousel + carte de pagination bas
     ├── BonusCarousel.tsx         # Carrousel centré (forwardRef goTo, onIndexChange, peek voisins) — remplit la hauteur
     ├── BonusPagerInfo.tsx        # Colonne droite pagination — panneau « héro » : n° géant en filigrane, icône+émetteur+reste, nom, statut, jauge de position
     ├── BonusGalleryCard.tsx      # Mini-carte de la galerie de pagination : fond + barre de progression interpolés sur scrollX (sans bordure)
@@ -86,7 +86,7 @@ src/features/bonus/
     ├── BonusClaimRow.tsx         # Ligne de réclamation du bonus courant (statut + boutons Réclamer / Profil / Compte)
     ├── BonusCredentialsSheet.tsx # Bottom sheet des identifiants livrés (profil, code, email, mot de passe — copiables)
     ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes)
-    ├── BonusCard.tsx             # ⭐ Carte bonus : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
+    ├── BonusCard.tsx             # Carte bonus : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
     ├── BonusGlassCard.tsx        # Fond « verre » des cartes (blur + blanc translucide) — CARD_IMAGE_BG / CARD_BG_COLOR
     ├── BonusPageBackground.tsx   # Fond de page + `prefetchBonusBackground()` (préchargé au boot, cf. app/_layout.tsx)
     ├── BonusProgressBar.tsx      # Barre de progression animée réutilisable
@@ -103,7 +103,7 @@ activités » (`UserOrdersModal`, `UserWalletModal`, en View absolue), la sheet
 utilise un **`<Modal>` natif** `transparent` + `animationType="slide"`, avec un
 backdrop tapable pour fermer.
 
-> ⚠️ La `<Modal>` **ne démonte pas** son contenu à la fermeture (elle le masque).
+> La `<Modal>` **ne démonte pas** son contenu à la fermeture (elle le masque).
 > D'où le compteur `openKey`, incrémenté à chaque ouverture, qui ré-arme les
 > listeners `scrollX` et force le remontage du carrousel — sans lui, les
 > abonnements posés au 1er montage ne suivent plus le carrousel recréé.
@@ -122,11 +122,11 @@ Bonus {
   name, description,
   criteria: { kind, period?, target?, fastFoodId? },
   fastFoodId?,           // null = bonus plateforme yaammoo
-  fastFoodName?,         // ⭐ émetteur — affiché en GROS TITRE de la carte ("yaammoo" par défaut)
+  fastFoodName?,         // émetteur — affiché en GROS TITRE de la carte ("yaammoo" par défaut)
   active?, createdAt?, claimDuration?,
   // Code délivré après approbation (fournis par le backend) :
   code?, claimedAt?, startsAt?, expiresAt?, expired?,
-  armed?,                // ⭐ bonus activé → s'applique au prochain checkout éligible
+  armed?,                // bonus activé → s'applique au prochain checkout éligible
   // Campagne `status_view` (cf. useCampaignPhase) — droits backend + calendrier :
   canDownload?, canUpload?,
   campaignSchedule?,     // { downloadDate, postDate, postWindowStart, postWindowEnd }
@@ -357,7 +357,7 @@ Le bonus porte `canDownload`, `canUpload` et `campaignSchedule`
 | `download` | cas nominal | « Télécharge ton flyer aujourd'hui » · **Télécharger** |
 | `none` | aucun calendrier | retombe sur `bonus.description` |
 
-> ⚠️ **`canDownload` / `canUpload` font autorité, jamais l'horloge du téléphone.**
+> **`canDownload` / `canUpload` font autorité, jamais l'horloge du téléphone.**
 > Les dates ne servent qu'à formuler le message. Le message de téléchargement
 > rappelle systématiquement le jour de publication (« À poster demain. »), et la
 > proximité est verbalisée (aujourd'hui / demain / mardi 5 août / le …).
@@ -378,7 +378,7 @@ Erreurs 400 (flyer jamais téléchargé, délai non écoulé, vidéo absente) et
 (réclamation déjà active) — les contrôles tournent **avant** l'upload, un claim
 refusé ne stocke jamais le fichier.
 
-### ⚠️ `GET /fastFood/all` doit porter le Bearer
+### `GET /fastFood/all` doit porter le Bearer
 
 C'est là que l'armement devient **visible** : le backend résout les bonus livraison
 armés du user et renseigne `deliveryOffer` sur chaque fastfood. La route est
@@ -491,7 +491,7 @@ bonusId, active }`. `getNotificationRoute` compare le `type` **en minuscules**
 Les deux endpoints exigent `Authorization: Bearer <idToken>`. Le helper
 `authHeaders()` (dans `useBonus.ts`) appelle `auth.currentUser?.getIdToken()`
 **à chaque requête** : le SDK sert le cache si le token est encore valide et le
-régénère sinon. ⚠️ Ne jamais mémoriser ce token dans une variable au login —
+régénère sinon. Ne jamais mémoriser ce token dans une variable au login —
 les appels partiraient en 401 au bout d'une heure.
 
 ## Deep-link

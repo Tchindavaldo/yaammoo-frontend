@@ -24,7 +24,7 @@ import { BACKGROUND } from "./BonusPageBackground";
 export const CARD_IMAGE_BG = false;
 
 /**
- * ⭐ Couleur de fond de relais des cartes quand `CARD_IMAGE_BG = false`
+ * Couleur de fond de relais des cartes quand `CARD_IMAGE_BG = false`
  * (plus d'image/verre). Constante globale : la modifier ici change TOUTES les
  * cartes (carte principale, mini-cartes, carte de pagination). #fff par
  * défaut — volontairement différent du gris #F2F2F7 du V1.

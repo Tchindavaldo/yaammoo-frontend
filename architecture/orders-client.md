@@ -160,7 +160,7 @@ yaammoo/src/features/orders/
 - `submitRating` appelle `POST /driver/:driverId/rating` (livreur délégué uniquement)
 
 **Affichage** :
-- Haut : 2 InfoCards à gauche — identité + **Note** (juste `★ moyenne`, sans le
+- Haut : 2 InfoCards à gauche — identité + **Note** (juste `moyenne`, sans le
   nombre de votes) — + zone d'état à droite (QR ou BikeAnimation `paused` si livré).
 - Bas : **cards stats individuelles** (titre 2 lignes + chiffre + label) — Cmd
   livré / en cours / en attente + **Nombre de vote** (`ratingCount`) — puis ligne
@@ -191,7 +191,7 @@ la commande si le backend n'en renvoie pas).
 `GET /rating/order/:orderId` (pré-remplissage `menuRating`).
 
 **Affichage** :
-- Haut : InfoCards **Plat** + **Note** (`★ moyenne`) à gauche + **image réelle du
+- Haut : InfoCards **Plat** + **Note** (`moyenne`) à gauche + **image réelle du
   plat** à droite (`expo-image`, `cachePolicy="memory-disk"`, `transition={0}` →
   pas de flash au remontage). Icône fast-food en dernier recours si aucune image.
 - Bas : 3 cards stats individuelles — **Total plat** (`totalOrders`, popularité) /
@@ -240,9 +240,9 @@ Bottom sheet détail d'une commande client. **4 tabs** : Livraison — Commandes
 - **Note de livraison** + **Message vocal** (waveform + play/pause)
 
 ### Tab Commandes
-- Même rendu que `MerchantOrderCommandesTab` : icônes 🍽️/➕/🥤, label type (MENU/EXTRA/BOISSON), prix en XAF, total "Total commande"
+- Même rendu que `MerchantOrderCommandesTab` : icônes //, label type (MENU/EXTRA/BOISSON), prix en XAF, total "Total commande"
 - Items scrollables dans une card arrondie (fond `#F9FAFB`, borderRadius 16)
-- **Ligne Livraison** 🛵 (zone + prix, ou « Inclus ») affichée sous les items,
+- **Ligne Livraison** (zone + prix, ou « Inclus ») affichée sous les items,
   avant le total — `zone`/`deliveryPrice` dérivés de `selectedOrder.delivery.zone`
   / `.prix`. Le `total` client **inclut déjà la livraison** ([useCheckout](checkout.md)),
   donc pas ajouté à nouveau (contrairement au marchand).

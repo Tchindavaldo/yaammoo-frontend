@@ -49,7 +49,7 @@ setUserData() → AuthContext + AsyncStorage
 (pas de router.replace) → le guard Stack.Protected révèle (tabs)
 ```
 
-> ⚠️ **Ne pas appeler `router.replace("/(tabs)")` après `setUserData()`.** La
+> **Ne pas appeler `router.replace("/(tabs)")` après `setUserData()`.** La
 > navigation est 100 % pilotée par les guards `Stack.Protected` de
 > `app/_layout.tsx` (voir section suivante). Un `router.replace` impératif
 > s'exécuterait avant que le guard soit prêt → groupe non monté → écran blanc.

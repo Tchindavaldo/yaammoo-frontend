@@ -16,6 +16,16 @@
 
 > C'est le cas concret des **identifiants reçus app en arrière-plan** : sans ce listener, taper la notification ramène l'app au premier plan mais la récompense n'apparaît pas. Une garde de 10 s (`CATCH_UP_COOLDOWN_MS`) évite la rafale de requêtes quand on bascule rapidement entre deux applications.
 
+Le handler traite trois cas :
+
+| Cas | Détection | Traitement |
+|---|---|---|
+| Lien mort, connu comme tel | `!socket.connected` | `connect()` — son handler fait le catch-up |
+| Lien vivant | `socket.connected` | re-`join_user` (rejeu des events non acquittés) + `catchUp()` |
+| Lien **zombie** | aucun paquet Engine.IO en 4 s (`PING_TIMEOUT_MS`) | `disconnect()` + `connect()` pour forcer un vrai `connect` |
+
+> ⚠️ Le cas zombie est **décisif pendant un paiement** : le flux USSD impose à l'utilisateur de quitter l'app, donc `payment.settled` tombe presque toujours en arrière-plan. Une socket vue à tort comme connectée n'entend pas l'event et n'en déclenche pas le rejeu — l'overlay tournerait alors que le paiement a abouti. La sonde écoute le ping/pong natif du moteur (`socket.io.engine`), sans dépendre d'un handler applicatif côté serveur.
+
 ---
 
 ## Événements reçus → actions

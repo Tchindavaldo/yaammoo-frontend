@@ -283,7 +283,11 @@ export const useBonusFlyer = (
     downloading,
     uploadProof,
     uploading,
-    error,
+    // `flyerError` et NON `error` : fusionné dans BonusContext, un `error`
+    // écraserait celui de `useBonus`. La sheet prendrait alors un refus de
+    // téléchargement (date non atteinte, 400/409) pour une panne de chargement
+    // et afficherait un état vide plein écran à la place des bonus.
+    flyerError: error,
     uploadFailure,
     clearUploadFailure,
     uploadSuccess,

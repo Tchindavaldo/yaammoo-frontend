@@ -95,13 +95,13 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
 
   // Depuis le CONTEXTE, pas d'instance locale : fermer la sheet en plein envoi
   // démontait le hook et perdait la progression.
-  const { downloadFlyer, downloading, uploadProof, uploading, error } =
+  const { downloadFlyer, downloading, uploadProof, uploading, flyerError } =
     useBonusContext();
   // Les refus backend (flyer non téléchargé, délai non écoulé, 409…) passent par
   // le même canal que les refus locaux : un toast porté par le parent.
   React.useEffect(() => {
-    if (error) onBlocked?.(error);
-  }, [error, onBlocked]);
+    if (flyerError) onBlocked?.(flyerError);
+  }, [flyerError, onBlocked]);
   const campaign = useCampaignPhase(bonus);
   // Envoi en cours : porte la phase (compression / upload) et sa progression.
   const upload = uploading[bonus.id];

@@ -11,7 +11,9 @@ import {
 } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import { useBonusEligibility } from "../hooks/useBonusEligibility";
+import { useBonusFlyer, type ClaimPayload } from "../hooks/useBonusFlyer";
 import { useBonusStatus } from "../hooks/useBonusStatus";
+import { useCampaignPhase } from "../hooks/useCampaignPhase";
 import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
 import { BonusCredentialsSheet } from "./BonusCredentialsSheet";
 import { BonusUsageRing } from "./BonusUsageRing";
@@ -28,6 +30,16 @@ interface BonusClaimRowProps {
   onActivate?: (bonus: Bonus) => void;
   /** Requête d'armement en vol : le bouton passe en spinner. */
   arming?: boolean;
+  /**
+   * Action tentée hors période de campagne (`status_view`) : remonte le motif
+   * du refus au parent, qui l'affiche en toast.
+   */
+  onBlocked?: (reason: string) => void;
+  /**
+   * Preuve envoyée avec succès (`POST /bonus/:id/claim`) : le parent applique le
+   * payload à l'état, sans attendre le socket `bonus.claimed` ni un refetch.
+   */
+  onProofSent?: (payload: ClaimPayload) => void;
 }
 
 const DARK = Theme.colors.dark;
@@ -64,6 +76,8 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   onClaim,
   onActivate,
   arming = false,
+  onBlocked,
+  onProofSent,
 }) => {
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
@@ -85,6 +99,16 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     color: statusColor,
   } = useBonusStatus(bonus, claimStatus === "pending");
 
+  const { downloadFlyer, downloading, uploadProof, uploading, error } =
+    useBonusFlyer();
+  // Les refus backend (flyer non téléchargé, délai non écoulé, 409…) passent par
+  // le même canal que les refus locaux : un toast porté par le parent.
+  React.useEffect(() => {
+    if (error) onBlocked?.(error);
+  }, [error, onBlocked]);
+  const campaign = useCampaignPhase(bonus);
+  const busy = !!downloading[bonus.id] || !!uploading[bonus.id];
+
   const u = usageInfo(bonus);
   const cred = bonus.rewardCredentials;
 
@@ -101,11 +125,23 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
       ? [{ value: bonus.code }]
       : [];
 
+  // Bonus « publier un statut » : ce n'est pas une réclamation qu'on propose au
+  // user mais le TÉLÉCHARGEMENT du flyer, qu'il postera ensuite en statut. Le
+  // reste des états (validé, utilisé, inactif…) suit le rendu commun.
+  const isStatusView = bonus.criteria?.kind === "status_view";
+  const isFlyerStep = isStatusView && isEligible;
+
   const claimIcon = (): keyof typeof Ionicons.glyphMap => {
     if (isInactive) return "eye-off-outline";
     if (isRedeemed) return "checkmark-done-outline";
     if (isApproved) return "checkmark-circle";
     if (isPending) return "hourglass-outline";
+    if (isFlyerStep)
+      return campaign.action === "upload"
+        ? "videocam-outline"
+        : campaign.phase === "before_download"
+          ? "time-outline"
+          : "download-outline";
     if (isEligible) return "gift";
     return "lock-closed-outline";
   };
@@ -115,6 +151,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     if (isRedeemed) return "Bonus déjà utilisé";
     if (isApproved) return "Bonus validé";
     if (isPending) return "Demande en cours";
+    if (isFlyerStep) return campaign.title || "Télécharger le flyer";
     if (isEligible) return "Réclamer ce bonus";
     return "Pas encore disponible";
   };
@@ -134,6 +171,15 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
       return bonus.fastFoodId
         ? "Ta demande a bien été envoyée et attend la validation du fastfood. Tu recevras une notification dès qu'elle est acceptée."
         : "Ta demande est en cours de traitement. Tu seras notifié dès qu'elle est validée et que ton bonus est disponible.";
+    // Campagne datée : le message suit la phase (avant téléchargement, jour J,
+    // publication, envoi de la preuve). À défaut de calendrier, la consigne du
+    // bonus fait foi — plus précise que n'importe quel texte générique.
+    if (isFlyerStep)
+      return (
+        campaign.desc ||
+        bonus.description ||
+        "Télécharge le flyer et publie-le en statut pour obtenir ce bonus."
+      );
     if (isEligible)
       return "Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.";
     if (p.measurable && p.target > 0) {
@@ -265,6 +311,33 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
       return rewardButtons();
     }
     if (isPending) return infoButton("En attente");
+    // Le bouton reste actif après un premier téléchargement : le user peut
+    // retélécharger le flyer autant de fois qu'il veut (downloadCount suit).
+    // Hors période, il reste cliquable mais explique le refus par un toast
+    // plutôt que d'être grisé sans motif.
+    if (isFlyerStep) {
+      const isUpload = campaign.action === "upload";
+      return (
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: d.color }]}
+          onPress={() => {
+            if (campaign.blockedReason) return onBlocked?.(campaign.blockedReason);
+            if (!isUpload) return downloadFlyer(bonus);
+            return uploadProof(bonus).then((p) => p && onProofSent?.(p));
+          }}
+          disabled={busy}
+          activeOpacity={0.85}
+        >
+          {busy ? (
+            <ActivityIndicator color={LIGHT} size="small" />
+          ) : (
+            <Text style={styles.btnText}>
+              {isUpload ? "Envoyer" : "Télécharger"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      );
+    }
     if (isEligible) {
       return (
         <TouchableOpacity

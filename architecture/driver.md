@@ -8,7 +8,7 @@ Un **driver** (livreur) est un utilisateur à qui un fastFood délègue des comm
 la vue "Terminées" du marchand (Express / créneaux + sous-tabs _En attente_ /
 _En cours_ / _Terminé_), avec ses propres composants.
 
-> ⚠️ L'ancien **onglet navbar « Livraisons »** a été retiré (navbar trop chargée) :
+> L'ancien **onglet navbar « Livraisons »** a été retiré (navbar trop chargée) :
 > `app/(tabs)/driver.tsx` existe toujours mais `href: null` **permanent** dans
 > `(tabs)/_layout.tsx` → aucun onglet affiché. Accès unique via Settings.
 
@@ -135,7 +135,7 @@ Le bouton « Noter » s'affiche selon **`profile.canRate`** (backend : livré �
 encore noté) ; `profile.hasRated` → « Déjà noté ». Scope `public` fournit
 `myStats`/`hasRated`/`canRate` ; scopes `merchant`/`self` fournissent `stats` globales.
 
-**⚠️ Notation aussi pour le marchand qui livre lui-même** : `showRateBtn` ne dépend plus de
+**Notation aussi pour le marchand qui livre lui-même** : `showRateBtn` ne dépend plus de
 `!!driverId` mais seulement de `profile?.canRate`. L'endpoint `GET /fastFood/:fastFoodId/delivery-stats`
 renvoie `canRate`/`hasRated` dans le scope `client`. Service de notation plat :
 `src/features/orders/services/ratingService.ts` (`rateMenu`, `getMenuStats`,

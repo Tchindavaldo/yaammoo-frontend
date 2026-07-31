@@ -5,7 +5,7 @@ la version du client. Le backend peut ainsi servir le bon format de réponse
 selon la version de l'app (rétrocompat), router du comportement par plateforme,
 ou diagnostiquer les bugs propres à une version.
 
-> ⚠️ Ce mécanisme est **invisible depuis les call sites** : un simple
+> Ce mécanisme est **invisible depuis les call sites** : un simple
 > `axios.get(...)` / `axios.post(...)` hérite des headers sans les mentionner.
 > Ne cherche donc pas le header dans le code d'un appel précis — il est posé
 > globalement ici.

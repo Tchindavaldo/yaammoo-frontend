@@ -324,7 +324,7 @@ Au clic sur **Buy**, deux overlays s'affichent simultanément par-dessus le shee
     local) pour que le retour à `input` sur erreur fonctionne toujours.
   - `ussd_sent` — affiche **uniquement** `ussdMessage` du backend (pas de spinner).
   - `success` — « Paiement réussi ! Création de la commande en cours... » (1 ligne, 5s).
-  - `success_created` — ✓ « Commande créée avec succès ! » (1 ligne, 5s) → fermeture.
+  - `success_created` — « Commande créée avec succès ! » (1 ligne, 5s) → fermeture.
   - (échec) — **aucun état `failed` affiché** dans l'overlay : on revient direct à
     `input`, l'erreur est montrée uniquement par le toast top.
 - **AnimatedBorderGlow** : bordure lumineuse multicolore active sur tout état ≠ `input`.
@@ -376,7 +376,7 @@ une autre commande de la même zone/créneau paie donc sa livraison normalement.
 Utilisé par `app/(tabs)/cart.tsx` (`cartTotal`), qui alimente `useCartPayment`
 → `amount` de `POST /transaction`.
 
-⚠️ `delivery.prix` est envoyé sur **chaque** commande (le livreur doit être payé) ;
+`delivery.prix` est envoyé sur **chaque** commande (le livreur doit être payé) ;
 seule son inclusion dans les totaux/`amount` varie.
 
 **Vérifié bout-en-bout** contre `POST /transaction` (vrais menus de

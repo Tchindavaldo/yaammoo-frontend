@@ -67,6 +67,12 @@ export const normalizeBonus = (raw: any): Bonus => ({
   totalClaimedCount: raw?.totalClaimedCount,
   requestStatus: raw?.requestStatus,
   bonusStats: raw?.bonusStats,
+  // Campagne `status_view` : les droits backend priment sur le calendrier.
+  // Laissés à `undefined` s'ils sont absents — `false` par défaut bloquerait
+  // les bonus sans campagne (cf. `computeCampaignPhase`).
+  canDownload: raw?.canDownload,
+  canUpload: raw?.canUpload,
+  campaignSchedule: raw?.campaignSchedule ?? null,
 });
 
 export const useBonus = () => {

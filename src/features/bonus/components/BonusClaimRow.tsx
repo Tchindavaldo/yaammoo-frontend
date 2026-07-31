@@ -133,11 +133,21 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   const isStatusView = bonus.criteria?.kind === "status_view";
   const isFlyerStep = isStatusView && isEligible;
 
+  /**
+   * Une récompense DÉJÀ délivrée reste accessible même si le fastfood désactive
+   * l'offre : le user y a droit, la désactivation ne vaut que pour les
+   * réclamations futures. L'état inactif reste signalé par la pile de statut en
+   * haut à droite, mais il ne masque plus les identifiants ni le code.
+   */
+  const hasReward = fields.length > 0;
+  const inactiveWithReward = isInactive && hasReward;
+
   const claimIcon = (): keyof typeof Ionicons.glyphMap => {
     if (upload)
       return upload.phase === "compressing"
         ? "cog-outline"
         : "cloud-upload-outline";
+    if (inactiveWithReward) return cred ? "key-outline" : "checkmark-circle";
     if (isInactive) return "eye-off-outline";
     if (isRedeemed) return "checkmark-done-outline";
     if (isApproved) return "checkmark-circle";
@@ -157,6 +167,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
       return upload.phase === "compressing"
         ? "Compression en cours"
         : "Envoi en cours";
+    if (inactiveWithReward) return "Ta récompense reste disponible";
     if (isInactive) return "Offre non activée";
     if (isRedeemed) return "Bonus déjà utilisé";
     if (isApproved) return "Bonus validé";
@@ -173,6 +184,8 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
       return upload.phase === "compressing"
         ? "Compression de ta vidéo en cours… Garde l'application ouverte."
         : "Envoi de ta vidéo en cours… Garde l'application ouverte.";
+    if (inactiveWithReward)
+      return "Le fastfood a retiré cette offre, mais ta récompense reste valable — tu peux toujours y accéder.";
     if (isInactive)
       return "Cette offre n'est pas encore activée par le fastfood. Elle deviendra réclamable dès qu'il la mettra en ligne — reviens bientôt pour en profiter.";
     if (isRedeemed)
@@ -266,6 +279,19 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     // bonus (« Désactiver », éclair plein) — l'état est ainsi lisible sans texte
     // d'aide, et le même bouton sert aux deux sens (POST / DELETE /arm).
     const armed = !!bonus.armed;
+    // Offre retirée : le code reste copiable mais l'armement n'a plus de sens
+    // (il ne s'appliquera à aucun checkout) — on ne montre pas un bouton mort.
+    if (inactiveWithReward) {
+      return (
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: d.color }]}
+          onPress={() => handleCopy(fields[0].value)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.btnText}>{copied ? "Copié !" : "Copier"}</Text>
+        </TouchableOpacity>
+      );
+    }
     return (
       <View style={styles.btnGroup}>
         <TouchableOpacity
@@ -310,6 +336,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   };
 
   const claimAction = (): React.ReactNode => {
+    if (inactiveWithReward) return rewardButtons();
     if (isInactive) return infoButton("Bientôt");
     // UTILISÉ : s'il reste un code / des identifiants à consulter, on affiche
     // les boutons de délivrance (Activer/Copier ou Profil/Compte) plutôt que le

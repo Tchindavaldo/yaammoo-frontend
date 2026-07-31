@@ -500,6 +500,15 @@ entorse assumée au principe « injection directe, pas de refetch ».
 
 `applyActivationPayload` (`useBonus.ts`) patche `bonus.active` — le rendu suit
 seul (`useBonusStatus` → « Offre non activée », `BonusClaimRow` → « Bientôt »).
+
+> ⚠️ **Exception : une récompense déjà délivrée survit à la désactivation.**
+> Si le bonus porte un code ou des `rewardCredentials`, `inactiveWithReward`
+> l'emporte dans `BonusClaimRow` : les boutons **Profil / Compte** (ou
+> **Copier**) restent affichés, avec « Ta récompense reste disponible ». Le user
+> y a droit — la désactivation ne vaut que pour les réclamations futures. Le
+> statut « Inactif » reste visible dans la pile en haut à droite. L'armement,
+> lui, disparaît : il ne s'appliquerait à aucun checkout.
+
 Deux effets de bord :
 
 | Cas | Traitement |

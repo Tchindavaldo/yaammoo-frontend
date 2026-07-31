@@ -8,7 +8,9 @@
 - **Handlers globaux** : `src/services/useSocketEvents.ts` — hook monté dans `_layout.tsx` qui abonne le client aux events et dispatch vers les contexts (OrderContext, NotificationContext, MerchantContext, MerchantWalletContext, WalletContext, FastFoodContext).
 - **Principe : injection directe du payload (pas de refetch).** Chaque event porte sa donnée complète (`data: order`, `menu`, `data: transaction`, `notification`, …). Le handler l'injecte dans le contexte via une méthode `upsert*FromSocket` / `remove*FromSocket` / `addFromSocket`. Aucun appel HTTP n'est déclenché par un event individuel.
 - **Room** : dès que `AuthContext.userData.uid` est dispo, le client `emit('join_user', uid)` → rejoint sa room `userId` (côté backend).
-- **Catch-up sur `connect` (seul refresh restant)** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)` en mode silencieux pour rattraper les events **fire-and-forget** manqués hors-ligne. Les events **fiabilisés** sont, eux, rejoués par le backend (replay + `__eventId` + ACK) — voir plus bas.
+- **Catch-up sur `connect` (seul refresh restant)** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)`, `refreshDriver(false)` et `refreshBonuses(true)` en mode silencieux pour rattraper les events **fire-and-forget** manqués hors-ligne. Les events **fiabilisés** sont, eux, rejoués par le backend (replay + `__eventId` + ACK) — voir plus bas.
+
+> ⚠️ `refreshBonuses` est indispensable au **deep-link depuis une notification push** : ouvrir l'app depuis la notif reconnecte le socket *après* l'event. Le rejeu ne couvre pas tout — `bonus.activation_changed` n'est pas fiabilisé, et `withAck` ignore un `__eventId` déjà vu dans la même session (app en arrière-plan puis rouverte). Sans ce refresh, la page bonus affiche l'état d'avant la notification.
 
 ---
 

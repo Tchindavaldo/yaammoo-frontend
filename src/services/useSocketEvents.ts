@@ -90,6 +90,12 @@ export const useSocketEvents = () => {
       refreshOrders(true);
       refreshMerchant(false);
       refreshDriver(false);
+      // Les bonus AUSSI : ouvrir l'app depuis une notification push (identifiants
+      // provisionnés, offre désactivée) reconnecte le socket APRÈS coup. Sans ce
+      // refresh, la page affiche l'état d'avant la notification. Le rejeu des
+      // events fiabilisés ne suffit pas : `bonus.activation_changed` n'en fait
+      // pas partie, et `withAck` ignore un rejeu déjà vu dans la même session.
+      refreshBonuses(true);
     };
 
     socket.on("connect", handleConnect);

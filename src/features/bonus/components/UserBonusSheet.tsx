@@ -89,10 +89,19 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   // garde son ancienne valeur : l'animation temps réel de la galerie ne suit
   // plus (elle croit être ailleurs). On force aussi le remontage du carrousel.
   const [openKey, setOpenKey] = useState(0);
+  // Miroirs hors-React du scroll, déclarés AVANT l'effet d'ouverture qui les
+  // réinitialise (`const` n'est pas hoisté). Ils évitent un rendu — et un appel
+  // natif — à chaque frame du listener `scrollX` ; voir leur usage plus bas.
+  const indexRef = useRef(0);
+  const lastGalleryX = useRef(0);
   useEffect(() => {
     if (visible) {
       scrollX.setValue(0);
       setIndex(0);
+      // Le miroir hors-React suit, sinon il resterait sur l'index de la session
+      // précédente et bloquerait le premier `setIndex` (valeurs jugées égales).
+      indexRef.current = 0;
+      lastGalleryX.current = 0;
       setOpenKey((k) => k + 1);
     }
   }, [visible, scrollX]);
@@ -141,7 +150,14 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
         if (next !== jumpTarget.current) return;
         jumpTarget.current = null;
       }
-      setIndex((prev) => (prev === next ? prev : next));
+      // ⚠️ Le garde-fou est ICI, pas dans le `setIndex` : au retour d'arrière-plan
+      // le thread JS est chargé (catch-up socket + refreshs), et un `setIndex`
+      // par frame y ajoutait un rendu complet de la ligne de réclamation à
+      // chaque tick — d'où l'animation qui décrochait et rattrapait après le
+      // slide. Sans changement d'index, on ne touche plus à l'état React.
+      if (indexRef.current === next) return;
+      indexRef.current = next;
+      setIndex(next);
     });
     return () => scrollX.removeListener(id);
     // `openKey` : les listeners sont ré-armés à CHAQUE ouverture. La Modal ne
@@ -156,10 +172,13 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     const id = scrollX.addListener(({ value }) => {
       // Position fractionnaire du carrousel (0 = 1er bonus, 1 = 2e…).
       const pos = value / CAROUSEL_INTERVAL;
-      galleryRef.current?.scrollTo({
-        x: Math.max(0, pos * GALLERY_STEP),
-        animated: false,
-      });
+      const x = Math.max(0, pos * GALLERY_STEP);
+      // Sous le demi-pixel le déplacement est invisible : on épargne un appel
+      // natif par frame, coûteux quand le thread JS est déjà chargé (retour
+      // d'arrière-plan). C'est ce qui faisait décrocher la galerie du doigt.
+      if (Math.abs(x - lastGalleryX.current) < 0.5) return;
+      lastGalleryX.current = x;
+      galleryRef.current?.scrollTo({ x, animated: false });
     });
     return () => scrollX.removeListener(id);
   }, [scrollX, openKey]);

@@ -130,6 +130,9 @@ export const useSocketEvents = () => {
     const CATCH_UP_COOLDOWN_MS = 10_000;
     /** Au-delà, on considère le lien mort même s'il se dit connecté. */
     const PING_TIMEOUT_MS = 4_000;
+    /** Délai laissé à l'UI pour reprendre ses animations avant le rattrapage. */
+    const CATCH_UP_DELAY_MS = 500;
+    let catchUpTimer: ReturnType<typeof setTimeout> | null = null;
 
     const handleAppState = (state: AppStateStatus) => {
       if (state !== "active") return;
@@ -154,7 +157,14 @@ export const useSocketEvents = () => {
       // qui déclenche le REJEU des events fiabilisés non acquittés — dont
       // `payment.settled`. `withAck` dédoublonne ceux déjà traités.
       socket.emit("join_user", userData?.uid);
-      catchUp();
+      // Différé : au réveil, l'UI reprend ses animations (slide du carrousel,
+      // transitions de sheet) sur le MÊME thread JS que ces 5 requêtes et les
+      // rendus qu'elles déclenchent. Lancées immédiatement, elles volaient les
+      // premières frames — l'animation décrochait puis rattrapait d'un coup.
+      // Un demi-tour d'horloge suffit à laisser l'interface reprendre la main ;
+      // le rattrapage n'a aucune urgence à la milliseconde près.
+      if (catchUpTimer) clearTimeout(catchUpTimer);
+      catchUpTimer = setTimeout(catchUp, CATCH_UP_DELAY_MS);
 
       // Détection du lien « zombie ». On n'interroge PAS le serveur (aucun
       // handler applicatif ne répondrait) : on sonde le ping/pong natif du
@@ -462,6 +472,7 @@ export const useSocketEvents = () => {
     }));
 
     return () => {
+      if (catchUpTimer) clearTimeout(catchUpTimer);
       appStateSub.remove();
       socket.off("connect", handleConnect);
       socket.off("newUserOrder");

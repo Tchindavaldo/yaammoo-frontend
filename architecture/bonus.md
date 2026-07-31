@@ -186,7 +186,11 @@ le driver natif ne supporte pas.
 ### Récompense livrée (`rewardCredentials`)
 
 Provisionnée manuellement puis poussée par socket `bonus.reward_credentials`
-(également présente sur `GET /bonus/all`). Structure :
+(également présente sur `GET /bonus/all`). L'event passe par **`reliableEmit`** :
+persisté côté backend, rejoué au `join_user` si le user était hors ligne au
+moment du provisionnement — ce qui est le cas courant, la récompense arrivant
+souvent longtemps après le claim. Le dédoublonnage (`__eventId`) et l'ACK sont
+assurés par `withAck`, déjà en place sur le handler. Structure :
 
 ```jsonc
 { "login": "...", "password": "...",

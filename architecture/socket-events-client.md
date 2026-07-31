@@ -67,7 +67,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 
 ### Events fiabilisés (replay) vs fire-and-forget
 
-- **Fiabilisés** (persistés + rejoués à la reconnexion, avec `__eventId` et `__replay: true`) : `wallet.credited`, `wallet.withdrawal`, `payment.settled`, `newFastFoodOrders`, `userOrderUpdated`, `fastFoodOrderUpdated`, `newFastFoodMenu`, `fastFoodMenuUpdated`, `fastFoodMenuDeleted`. Le dédoublonnage est géré par `withAck` (`src/services/socketAck.ts`).
+- **Fiabilisés** (persistés + rejoués à la reconnexion, avec `__eventId` et `__replay: true`) : `wallet.credited`, `wallet.withdrawal`, `payment.settled`, `newFastFoodOrders`, `userOrderUpdated`, `fastFoodOrderUpdated`, `newFastFoodMenu`, `fastFoodMenuUpdated`, `fastFoodMenuDeleted`, `bonus.reward_credentials`, `bonus.redeemed`. Le dédoublonnage est géré par `withAck` (`src/services/socketAck.ts`).
 - **Fire-and-forget** (non rejoués) : `globalMenu*`, `*PeriodKey*`, `*ClientId*`, `ordersRankUpdated`. C'est pour eux que le refresh global au `connect` sert de filet de sécurité.
 
 ---

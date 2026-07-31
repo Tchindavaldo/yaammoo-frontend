@@ -25,6 +25,15 @@ Le backend identifie le format en tête du dispatcher. Le même code frontend fo
 - `loading, error` — fetch state
 - `unreadCount: number` — dérivé via le helper `isNotifRead`
 
+### Badge de l'icône d'application
+
+Un `useEffect` du context appelle `Notifications.setBadgeCountAsync(unreadCount)`
+à chaque variation du compteur. Piloté **là** et non à la réception d'un push :
+le nombre de non-lus bouge aussi à la lecture, au refresh et au catch-up de
+retour au premier plan — un badge posé seulement à la réception resterait figé.
+L'appel échoue silencieusement sur les launchers Android incompatibles, ce n'est
+pas une erreur à remonter au user.
+
 ### Format `isRead`
 Le champ `isRead` peut être **`boolean | string | string[]`** selon l'historique des données :
 - `string[]` — **format actuel** (array des `userId` ayant lu — matche Firestore côté serveur, supporte les groupes de notifs partagées).

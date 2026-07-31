@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from "react";
 import axios from "axios";
+import * as Notifications from "expo-notifications";
 import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { storage } from "../../../utils/storage";
@@ -221,6 +222,16 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     () => notifications.filter((n) => !isRead(n)).length,
     [notifications, isRead]
   );
+
+  // Badge de l'icône d'application, aligné sur le compteur de non-lus. Piloté
+  // ici plutôt qu'au reçu d'un push : le compteur bouge aussi à la lecture, au
+  // refresh et au catch-up de retour au premier plan — un badge posé seulement
+  // à la réception resterait figé après coup.
+  // Android sans launcher compatible ignore l'appel : échec silencieux voulu,
+  // ce n'est pas une erreur à remonter au user.
+  useEffect(() => {
+    Notifications.setBadgeCountAsync(unreadCount).catch(() => {});
+  }, [unreadCount]);
 
   const value: NotificationContextType = {
     notifications,

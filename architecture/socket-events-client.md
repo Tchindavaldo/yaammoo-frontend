@@ -8,7 +8,23 @@
 - **Handlers globaux** : `src/services/useSocketEvents.ts` — hook monté dans `_layout.tsx` qui abonne le client aux events et dispatch vers les contexts (OrderContext, NotificationContext, MerchantContext, MerchantWalletContext, WalletContext, FastFoodContext).
 - **Principe : injection directe du payload (pas de refetch).** Chaque event porte sa donnée complète (`data: order`, `menu`, `data: transaction`, `notification`, …). Le handler l'injecte dans le contexte via une méthode `upsert*FromSocket` / `remove*FromSocket` / `addFromSocket`. Aucun appel HTTP n'est déclenché par un event individuel.
 - **Room** : dès que `AuthContext.userData.uid` est dispo, le client `emit('join_user', uid)` → rejoint sa room `userId` (côté backend).
-- **Catch-up sur `connect` (seul refresh restant)** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)` en mode silencieux pour rattraper les events **fire-and-forget** manqués hors-ligne. Les events **fiabilisés** sont, eux, rejoués par le backend (replay + `__eventId` + ACK) — voir plus bas.
+- **Catch-up sur `connect` (seul refresh restant)** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)`, `refreshDriver(false)` et `refreshBonuses(true)` en mode silencieux pour rattraper les events **fire-and-forget** manqués hors-ligne. Les events **fiabilisés** sont, eux, rejoués par le backend (replay + `__eventId` + ACK) — voir plus bas.
+
+> ⚠️ `refreshBonuses` est indispensable au **deep-link depuis une notification push** : ouvrir l'app depuis la notif reconnecte le socket *après* l'event. Le rejeu ne couvre pas tout — `bonus.activation_changed` n'est pas fiabilisé, et `withAck` ignore un `__eventId` déjà vu dans la même session (app en arrière-plan puis rouverte). Sans ce refresh, la page bonus affiche l'état d'avant la notification.
+
+- **Catch-up sur retour au premier plan (`AppState`)** : le `connect` seul ne suffit pas. L'OS (iOS surtout) gèle le JS en arrière-plan et peut couper la websocket **sans que socket.io s'en aperçoive** — au réveil la socket paraît vivante, aucun `connect` ne part, donc aucun rattrapage. Le listener `AppState` rejoue donc `catchUp()` au passage en `active` (ou force `socket.connect()` si le lien est mort, le `connect` qui suit s'en chargeant).
+
+> C'est le cas concret des **identifiants reçus app en arrière-plan** : sans ce listener, taper la notification ramène l'app au premier plan mais la récompense n'apparaît pas. Une garde de 10 s (`CATCH_UP_COOLDOWN_MS`) évite la rafale de requêtes quand on bascule rapidement entre deux applications.
+
+Le handler traite trois cas :
+
+| Cas | Détection | Traitement |
+|---|---|---|
+| Lien mort, connu comme tel | `!socket.connected` | `connect()` — son handler fait le catch-up |
+| Lien vivant | `socket.connected` | re-`join_user` (rejeu des events non acquittés) + `catchUp()` |
+| Lien **zombie** | aucun paquet Engine.IO en 4 s (`PING_TIMEOUT_MS`) | `disconnect()` + `connect()` pour forcer un vrai `connect` |
+
+> ⚠️ Le cas zombie est **décisif pendant un paiement** : le flux USSD impose à l'utilisateur de quitter l'app, donc `payment.settled` tombe presque toujours en arrière-plan. Une socket vue à tort comme connectée n'entend pas l'event et n'en déclenche pas le rejeu — l'overlay tournerait alors que le paiement a abouti. La sonde écoute le ping/pong natif du moteur (`socket.io.engine`), sans dépendre d'un handler applicatif côté serveur.
 
 ---
 
@@ -67,7 +83,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 
 ### Events fiabilisés (replay) vs fire-and-forget
 
-- **Fiabilisés** (persistés + rejoués à la reconnexion, avec `__eventId` et `__replay: true`) : `wallet.credited`, `wallet.withdrawal`, `payment.settled`, `newFastFoodOrders`, `userOrderUpdated`, `fastFoodOrderUpdated`, `newFastFoodMenu`, `fastFoodMenuUpdated`, `fastFoodMenuDeleted`. Le dédoublonnage est géré par `withAck` (`src/services/socketAck.ts`).
+- **Fiabilisés** (persistés + rejoués à la reconnexion, avec `__eventId` et `__replay: true`) : `wallet.credited`, `wallet.withdrawal`, `payment.settled`, `newFastFoodOrders`, `userOrderUpdated`, `fastFoodOrderUpdated`, `newFastFoodMenu`, `fastFoodMenuUpdated`, `fastFoodMenuDeleted`, `bonus.reward_credentials`, `bonus.redeemed`. Le dédoublonnage est géré par `withAck` (`src/services/socketAck.ts`).
 - **Fire-and-forget** (non rejoués) : `globalMenu*`, `*PeriodKey*`, `*ClientId*`, `ordersRankUpdated`. C'est pour eux que le refresh global au `connect` sert de filet de sécurité.
 
 ---

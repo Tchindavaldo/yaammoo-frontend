@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppState, type AppStateStatus } from "react-native";
 import { socketService } from "./socket";
 import { withAck } from "./socketAck";
 import { useAuth } from "../features/auth/context/AuthContext";
@@ -83,18 +84,110 @@ export const useSocketEvents = () => {
   useEffect(() => {
     if (!userData || !socket) return;
 
-    const handleConnect = () => {
-      socket.emit("join_user", userData?.uid);
-      // Catch-up des events fire-and-forget manqués hors-ligne (silencieux).
+    /**
+     * Rattrapage silencieux de l'état : events fire-and-forget manqués
+     * hors-ligne, et tout ce qui a bougé pendant que l'app ne recevait rien.
+     *
+     * Les bonus en font partie : ouvrir l'app depuis une notification push
+     * (identifiants provisionnés, offre désactivée) place l'event AVANT que le
+     * front puisse l'entendre. Le rejeu des events fiabilisés ne suffit pas —
+     * `bonus.activation_changed` n'en fait pas partie, et `withAck` ignore un
+     * `__eventId` déjà mémorisé dans la session.
+     */
+    const catchUp = () => {
       refreshNotifications(true);
       refreshOrders(true);
       refreshMerchant(false);
       refreshDriver(false);
+      refreshBonuses(true);
+    };
+
+    const handleConnect = () => {
+      socket.emit("join_user", userData?.uid);
+      catchUp();
     };
 
     socket.on("connect", handleConnect);
     if (socket.connected) handleConnect();
     else socket.connect();
+
+    /**
+     * Retour au premier plan. L'OS (iOS surtout) gèle le JS en arrière-plan et
+     * peut couper la websocket sans que socket.io s'en aperçoive : au réveil la
+     * socket paraît vivante, aucun `connect` ne part, donc AUCUN catch-up — les
+     * events reçus pendant la mise en veille n'apparaissent jamais.
+     *
+     * Trois cas, du plus simple au plus retors :
+     *  1. lien mort et connu comme tel → `connect()`, son handler fait le reste ;
+     *  2. lien vivant → re-`join_user` (rejeu des events non acquittés) + catch-up ;
+     *  3. lien « zombie » (vu connecté, en réalité coupé) → détecté par le ping
+     *     ci-dessous, qui force alors une vraie reconnexion.
+     */
+    // Garde anti-rafale : basculer rapidement entre deux apps émet plusieurs
+    // `active` d'affilée, chacun déclenchant 5 requêtes. On espace les
+    // rattrapages sans jamais bloquer celui qui suit une vraie mise en veille.
+    let lastCatchUp = 0;
+    const CATCH_UP_COOLDOWN_MS = 10_000;
+    /** Au-delà, on considère le lien mort même s'il se dit connecté. */
+    const PING_TIMEOUT_MS = 4_000;
+    /** Délai laissé à l'UI pour reprendre ses animations avant le rattrapage. */
+    const CATCH_UP_DELAY_MS = 500;
+    let catchUpTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleAppState = (state: AppStateStatus) => {
+      if (state !== "active") return;
+      const now = Date.now();
+      if (now - lastCatchUp < CATCH_UP_COOLDOWN_MS) return;
+      lastCatchUp = now;
+
+      if (!socket.connected) {
+        socket.connect();
+        return;
+      }
+
+      // Socket vue comme vivante — mais après une mise en veille l'OS a pu tuer
+      // le lien sans que socket.io le sache (« zombie ») : les events émis
+      // pendant ce temps ne sont NI reçus, NI rejoués, faute de reconnexion.
+      //
+      // Décisif pendant un paiement : l'utilisateur QUITTE l'app pour saisir son
+      // code USSD, donc `payment.settled` tombe presque toujours en arrière-plan.
+      // Sans ce rattrapage, l'overlay peut tourner alors que le paiement a abouti.
+      //
+      // On re-`join_user` systématiquement : idempotent côté serveur, et c'est ce
+      // qui déclenche le REJEU des events fiabilisés non acquittés — dont
+      // `payment.settled`. `withAck` dédoublonne ceux déjà traités.
+      socket.emit("join_user", userData?.uid);
+      // Différé : au réveil, l'UI reprend ses animations (slide du carrousel,
+      // transitions de sheet) sur le MÊME thread JS que ces 5 requêtes et les
+      // rendus qu'elles déclenchent. Lancées immédiatement, elles volaient les
+      // premières frames — l'animation décrochait puis rattrapait d'un coup.
+      // Un demi-tour d'horloge suffit à laisser l'interface reprendre la main ;
+      // le rattrapage n'a aucune urgence à la milliseconde près.
+      if (catchUpTimer) clearTimeout(catchUpTimer);
+      catchUpTimer = setTimeout(catchUp, CATCH_UP_DELAY_MS);
+
+      // Détection du lien « zombie ». On n'interroge PAS le serveur (aucun
+      // handler applicatif ne répondrait) : on sonde le ping/pong natif du
+      // moteur Engine.IO, seul signe de vie fiable. Silence prolongé → le lien
+      // est mort malgré `socket.connected`, on le recycle pour déclencher un
+      // vrai `connect` (et donc le rejeu backend).
+      const engine: any = (socket as any).io?.engine;
+      if (!engine) return;
+      let alive = false;
+      const onPacket = () => {
+        alive = true;
+      };
+      engine.once("packet", onPacket);
+      setTimeout(() => {
+        engine.off?.("packet", onPacket);
+        if (!alive && socket.connected) {
+          socket.disconnect();
+          socket.connect();
+        }
+      }, PING_TIMEOUT_MS);
+    };
+
+    const appStateSub = AppState.addEventListener("change", handleAppState);
 
     // ⚠️ Tous les handlers ci-dessous sont enrobés de `withAck` : dédoublonnage
     // via __eventId + ACK obligatoire (sinon le backend rejoue l'event en boucle).
@@ -379,6 +472,8 @@ export const useSocketEvents = () => {
     }));
 
     return () => {
+      if (catchUpTimer) clearTimeout(catchUpTimer);
+      appStateSub.remove();
       socket.off("connect", handleConnect);
       socket.off("newUserOrder");
       socket.off("userOrderUpdated");

@@ -46,6 +46,30 @@ négative et une carte qui déborde visiblement des autres — c'est ce qu'il fa
 | Ligne réclamation | `CLAIM_PAD` | 12 | +4 |
 | Pagination | `PAG_PAD` | 10 | +6 |
 
+### Performance du slide (⚠️ à préserver)
+
+Le carrousel pilote `scrollX` avec `useNativeDriver: false` — obligatoire, les
+interpolations de couleur ne sont pas supportées par le driver natif. Chaque
+frame traverse donc le pont JS, et tout travail ajouté dans un listener
+`scrollX` se paie ~60 fois par seconde.
+
+Quatre garde-fous, à ne pas défaire :
+
+| Mesure | Où | Pourquoi |
+|---|---|---|
+| Miroirs hors-React `indexRef` / `lastGalleryX` | `UserBonusSheet` | Ne déclencher `setIndex` / `scrollTo` qu'en cas de changement réel — sinon un rendu complet par frame |
+| `memo` sur `BonusCarousel` | `BonusCarousel` | Il ne dépend pas de l'index mais re-rendait toutes ses cartes plein écran à chaque `setIndex` — poste le plus lourd |
+| `memo` sur `BonusGalleryCard` et `BonusClaimRow` | idem | La galerie reconstruit N jeux d'interpolations ; la ligne recalcule éligibilité + statut + phase |
+| `onPress={goToBonus}` (et non `() => goToBonus(i)`) | galerie | Une fermeture par carte serait recréée à chaque rendu et annulerait le `memo` |
+
+> ⚠️ **Toutes les sources d'index passent par `indexRef`** — listener `scrollX`,
+> `handleIndexChange` (fin de geste) et `goToBonus` (tap). Deux sources qui se
+> désynchroniseraient figeraient la ligne de réclamation.
+
+> Le rattrapage socket du retour d'arrière-plan est différé de 500 ms
+> (`CATCH_UP_DELAY_MS`, `useSocketEvents.ts`) : lancé immédiatement, il volait
+> les premières frames et l'animation décrochait puis rattrapait d'un coup.
+
 ### Pull-to-refresh
 `UserBonusSheet` englobe le carrousel dans un `ScrollView` **vertical**
 (`refreshControl={pullControl}`) : le carrousel étant horizontal, il ne peut pas
@@ -73,7 +97,7 @@ src/features/bonus/
 ├── hooks/
 │   ├── useBonus.ts               # GET /bonus/all + normalizeBonus() + claim (POST /bonus-request) + fallback démo
 │   ├── useBonusEligibility.ts    # Moteur multi-critères (computeEligibility + hooks) + PAID_STATUSES
-│   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer (partage natif) + POST /bonus/:id/claim (preuve vidéo)
+│   ├── useBonusFlyer.ts          # GET /bonus/:id/flyer (partage natif) + POST /bonus/:id/claim (preuve vidéo : compression >7 Mo + progression)
 │   ├── useCampaignPhase.ts       # Phase de campagne status_view (dates → titre/desc/action)
 │   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
@@ -85,6 +109,7 @@ src/features/bonus/
     ├── gallery.constants.ts      # Dimensions de la galerie (largeur/gap/pas/radius)
     ├── BonusClaimRow.tsx         # Ligne de réclamation du bonus courant (statut + boutons Réclamer / Profil / Compte)
     ├── BonusCredentialsSheet.tsx # Bottom sheet des identifiants livrés (profil, code, email, mot de passe — copiables)
+    ├── BonusUploadToast.tsx      # Verdict d'envoi de preuve (succès/échec) affiché hors de la sheet — monté par BonusProvider
     ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes)
     ├── BonusCard.tsx             # Carte bonus : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
     ├── BonusGlassCard.tsx        # Fond « verre » des cartes (blur + blanc translucide) — CARD_IMAGE_BG / CARD_BG_COLOR
@@ -186,7 +211,11 @@ le driver natif ne supporte pas.
 ### Récompense livrée (`rewardCredentials`)
 
 Provisionnée manuellement puis poussée par socket `bonus.reward_credentials`
-(également présente sur `GET /bonus/all`). Structure :
+(également présente sur `GET /bonus/all`). L'event passe par **`reliableEmit`** :
+persisté côté backend, rejoué au `join_user` si le user était hors ligne au
+moment du provisionnement — ce qui est le cas courant, la récompense arrivant
+souvent longtemps après le claim. Le dédoublonnage (`__eventId`) et l'ACK sont
+assurés par `withAck`, déjà en place sur le handler. Structure :
 
 ```jsonc
 { "login": "...", "password": "...",
@@ -378,6 +407,64 @@ Erreurs 400 (flyer jamais téléchargé, délai non écoulé, vidéo absente) et
 (réclamation déjà active) — les contrôles tournent **avant** l'upload, un claim
 refusé ne stocke jamais le fichier.
 
+#### Compression + progression
+
+Au-delà de **7 Mo** (`COMPRESS_THRESHOLD_MB`) la vidéo est recompressée par
+`react-native-compressor` (`compressionMethod: "auto"`) avant l'envoi. En
+dessous elle part telle quelle : recompresser une petite vidéo coûte du CPU pour
+un gain nul. Si la taille est introuvable (`fileSize` absent de l'asset, puis
+`getVideoMetaData` en échec), **on ne compresse pas** plutôt que de compresser à
+l'aveugle.
+
+> ⚠️ Compression et upload sont **séquentiels** — le fichier doit exister en
+> entier avant que le multipart parte. L'utilisateur ne voit qu'une seule barre
+> continue : `COMPRESS_SHARE = 0.4` alloue les 40 premiers % à la compression,
+> les 60 suivants à l'envoi.
+
+`uploading` est un `Record<string, { phase, progress }>` (clé absente = aucun
+envoi en cours). La progression d'upload vient de `onUploadProgress` d'axios ;
+si `e.total` manque (variable selon la plateforme) la barre **conserve sa
+dernière valeur** au lieu de reculer. `BonusClaimRow` en tire le pourcentage du
+bouton, l'icône (`cog-outline` / `cloud-upload-outline`) et le message
+(« Compression… » / « Envoi… »), qui priment sur les textes de campagne.
+
+> `react-native-compressor` est un **module natif** : un nouveau build dev est
+> requis, un reload JS ne suffit pas.
+
+#### Survie à la fermeture de la sheet
+
+`useBonusFlyer` est monté par **`BonusProvider`**, pas par `BonusClaimRow` :
+fermer la bottom sheet démontait le hook en plein envoi — progression perdue,
+payload jamais appliqué, échec invisible. Porté par le contexte, l'envoi
+continue et l'état est retrouvé intact à la réouverture.
+
+Conséquences :
+
+- le hook reçoit `applyClaimPayload` en paramètre et applique le résultat
+  lui-même (la sheet a pu disparaître entre-temps) ;
+- `uploadSuccess` / `uploadFailure` alimentent **`BonusUploadToast`**, monté avec
+  le provider : le verdict s'affiche même si le user est sur une autre page ;
+- la prop `onProofSent` de `BonusClaimRow` a disparu — elle ferait double emploi.
+
+> ⚠️ **`flyerError`, surtout pas `error`.** `useBonus` expose déjà `error` ;
+> fusionnés dans le contexte (`{...bonus, ...flyer}`), celui du flyer écrasait
+> celui du fetch. `UserBonusSheet` prenait alors un simple refus de
+> téléchargement (date non atteinte, 400/409) pour une panne de chargement et
+> affichait `BonusEmptyState` **plein écran** à la place des bonus.
+>
+> Le refus est **acquitté** dès son affichage (`clearFlyerError`) : vivant dans
+> le contexte, un `flyerError` non consommé survit à la fermeture de la sheet et
+> rejoue son toast à chaque réouverture. Même principe pour `uploadSuccess` /
+> `uploadFailure`, acquittés par le `onHide` du `Toast`.
+
+> ⚠️ L'upload ne survit PAS à une mise en veille prolongée : iOS suspend le
+> processus et la requête meurt sans erreur exploitable. Au retour au premier
+> plan (`AppState`), un envoi encore marqué « en cours » est donc déclaré
+> interrompu et signalé par toast — l'utilisateur relance manuellement, rien
+> n'est mémorisé. Un vrai upload de fond exigerait `URLSession` (iOS) /
+> `WorkManager` (Android) : `expo-file-system` ne l'expose qu'à partir du **SDK
+> 57** (`UploadTask`, `sessionType: 'background'`), et iOS seulement.
+
 ### ⚠️ `GET /fastFood/all` doit porter le Bearer
 
 C'est là que l'armement devient **visible** : le backend résout les bonus livraison
@@ -472,6 +559,15 @@ entorse assumée au principe « injection directe, pas de refetch ».
 
 `applyActivationPayload` (`useBonus.ts`) patche `bonus.active` — le rendu suit
 seul (`useBonusStatus` → « Offre non activée », `BonusClaimRow` → « Bientôt »).
+
+> ⚠️ **Exception : une récompense déjà délivrée survit à la désactivation.**
+> Si le bonus porte un code ou des `rewardCredentials`, `inactiveWithReward`
+> l'emporte dans `BonusClaimRow` : les boutons **Profil / Compte** (ou
+> **Copier**) restent affichés, avec « Ta récompense reste disponible ». Le user
+> y a droit — la désactivation ne vaut que pour les réclamations futures. Le
+> statut « Inactif » reste visible dans la pile en haut à droite. L'armement,
+> lui, disparaît : il ne s'appliquerait à aucun checkout.
+
 Deux effets de bord :
 
 | Cas | Traitement |

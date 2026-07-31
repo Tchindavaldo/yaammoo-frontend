@@ -1,4 +1,10 @@
-import React, { forwardRef, useImperativeHandle, useRef } from "react";
+import React, {
+  forwardRef,
+  memo,
+  useCallback,
+  useImperativeHandle,
+  useRef,
+} from "react";
 import {
   StyleSheet,
   Animated,
@@ -49,7 +55,7 @@ const INTERVAL = CAROUSEL_INTERVAL;
  * Carrousel pleine largeur : chaque bonus occupe tout l'écran, les précédent/suivant
  * ne sont pas visibles. La pagination (flèches + points) est gérée par le parent.
  */
-export const BonusCarousel = forwardRef<BonusCarouselHandle, BonusCarouselProps>(
+const BonusCarouselBase = forwardRef<BonusCarouselHandle, BonusCarouselProps>(
   (
     {
       bonuses,
@@ -72,9 +78,12 @@ export const BonusCarousel = forwardRef<BonusCarouselHandle, BonusCarouselProps>
       },
     }));
 
-    const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      onIndexChange(Math.round(e.nativeEvent.contentOffset.x / INTERVAL));
-    };
+    const onMomentumEnd = useCallback(
+      (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        onIndexChange(Math.round(e.nativeEvent.contentOffset.x / INTERVAL));
+      },
+      [onIndexChange],
+    );
 
     return (
       <Animated.ScrollView
@@ -106,7 +115,18 @@ export const BonusCarousel = forwardRef<BonusCarouselHandle, BonusCarouselProps>
   },
 );
 
-BonusCarousel.displayName = "BonusCarousel";
+BonusCarouselBase.displayName = "BonusCarousel";
+
+/**
+ * Mémoïsé : le carrousel ne dépend PAS de l'index courant, mais il re-rendait
+ * — avec toutes ses cartes plein écran — à chaque `setIndex` du parent, donc à
+ * chaque changement de bonus pendant un slide. C'était le poste le plus lourd
+ * de la sheet.
+ *
+ * Aucun comparateur personnalisé : les props sont soit stables par référence
+ * (`bonuses`, `scrollX`, callbacks en `useCallback`), soit des primitives.
+ */
+export const BonusCarousel = memo(BonusCarouselBase);
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },

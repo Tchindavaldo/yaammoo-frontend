@@ -10,8 +10,8 @@ import {
   View,
 } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
+import { useBonusContext } from "../context/BonusContext";
 import { useBonusEligibility } from "../hooks/useBonusEligibility";
-import { useBonusFlyer, type ClaimPayload } from "../hooks/useBonusFlyer";
 import { useBonusStatus } from "../hooks/useBonusStatus";
 import { useCampaignPhase } from "../hooks/useCampaignPhase";
 import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
@@ -35,11 +35,6 @@ interface BonusClaimRowProps {
    * du refus au parent, qui l'affiche en toast.
    */
   onBlocked?: (reason: string) => void;
-  /**
-   * Preuve envoyée avec succès (`POST /bonus/:id/claim`) : le parent applique le
-   * payload à l'état, sans attendre le socket `bonus.claimed` ni un refetch.
-   */
-  onProofSent?: (payload: ClaimPayload) => void;
 }
 
 const DARK = Theme.colors.dark;
@@ -70,14 +65,13 @@ const usageInfo = (bonus: Bonus) => {
  * Vit hors du carrousel — dans la carte commune du bas, avec la pagination —
  * et suit donc le bonus sélectionné plutôt que de défiler avec les cartes.
  */
-export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
+const BonusClaimRowBase: React.FC<BonusClaimRowProps> = ({
   bonus,
   claimStatus = "idle",
   onClaim,
   onActivate,
   arming = false,
   onBlocked,
-  onProofSent,
 }) => {
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
@@ -99,15 +93,29 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     color: statusColor,
   } = useBonusStatus(bonus, claimStatus === "pending");
 
-  const { downloadFlyer, downloading, uploadProof, uploading, error } =
-    useBonusFlyer();
+  // Depuis le CONTEXTE, pas d'instance locale : fermer la sheet en plein envoi
+  // démontait le hook et perdait la progression.
+  const {
+    downloadFlyer,
+    downloading,
+    uploadProof,
+    uploading,
+    flyerError,
+    clearFlyerError,
+  } = useBonusContext();
   // Les refus backend (flyer non téléchargé, délai non écoulé, 409…) passent par
   // le même canal que les refus locaux : un toast porté par le parent.
+  // Acquitté aussitôt : le hook vit dans le contexte, un refus non consommé
+  // rejouerait le toast à chaque réouverture de la sheet.
   React.useEffect(() => {
-    if (error) onBlocked?.(error);
-  }, [error, onBlocked]);
+    if (!flyerError) return;
+    onBlocked?.(flyerError);
+    clearFlyerError();
+  }, [flyerError, onBlocked, clearFlyerError]);
   const campaign = useCampaignPhase(bonus);
-  const busy = !!downloading[bonus.id] || !!uploading[bonus.id];
+  // Envoi en cours : porte la phase (compression / upload) et sa progression.
+  const upload = uploading[bonus.id];
+  const busy = !!downloading[bonus.id] || !!upload;
 
   const u = usageInfo(bonus);
   const cred = bonus.rewardCredentials;
@@ -131,7 +139,21 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   const isStatusView = bonus.criteria?.kind === "status_view";
   const isFlyerStep = isStatusView && isEligible;
 
+  /**
+   * Une récompense DÉJÀ délivrée reste accessible même si le fastfood désactive
+   * l'offre : le user y a droit, la désactivation ne vaut que pour les
+   * réclamations futures. L'état inactif reste signalé par la pile de statut en
+   * haut à droite, mais il ne masque plus les identifiants ni le code.
+   */
+  const hasReward = fields.length > 0;
+  const inactiveWithReward = isInactive && hasReward;
+
   const claimIcon = (): keyof typeof Ionicons.glyphMap => {
+    if (upload)
+      return upload.phase === "compressing"
+        ? "cog-outline"
+        : "cloud-upload-outline";
+    if (inactiveWithReward) return cred ? "key-outline" : "checkmark-circle";
     if (isInactive) return "eye-off-outline";
     if (isRedeemed) return "checkmark-done-outline";
     if (isApproved) return "checkmark-circle";
@@ -147,6 +169,11 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   };
 
   const claimTitle = (): string => {
+    if (upload)
+      return upload.phase === "compressing"
+        ? "Compression en cours"
+        : "Envoi en cours";
+    if (inactiveWithReward) return "Ta récompense reste disponible";
     if (isInactive) return "Offre non activée";
     if (isRedeemed) return "Bonus déjà utilisé";
     if (isApproved) return "Bonus validé";
@@ -157,8 +184,16 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   };
 
   const claimDesc = (): string => {
+    // Envoi en cours : la phase prime sur le message de campagne — le user doit
+    // comprendre pourquoi ça dure (une compression peut prendre une minute).
+    if (upload)
+      return upload.phase === "compressing"
+        ? "Compression de ta vidéo en cours… Garde l'application ouverte."
+        : "Envoi de ta vidéo en cours… Garde l'application ouverte.";
+    if (inactiveWithReward)
+      return "Le fastfood a retiré cette offre, mais ta récompense reste valable — tu peux toujours y accéder.";
     if (isInactive)
-      return "Cette offre n'est pas encore activée par le fastfood. Elle deviendra réclamable dès qu'il la mettra en ligne — reviens bientôt pour en profiter.";
+      return "Cette offre n'est pas encore activée. reviens bientôt pour en profiter.";
     if (isRedeemed)
       return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
     // Approuvé mais rien à délivrer encore : la récompense est provisionnée
@@ -233,7 +268,11 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={[styles.btn, styles.btnCompact, { backgroundColor: d.color }]}
+            style={[
+              styles.btn,
+              styles.btnCompact,
+              { backgroundColor: d.color },
+            ]}
             onPress={() => {
               setSheetSection("account");
               setSheetOpen(true);
@@ -250,6 +289,19 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     // bonus (« Désactiver », éclair plein) — l'état est ainsi lisible sans texte
     // d'aide, et le même bouton sert aux deux sens (POST / DELETE /arm).
     const armed = !!bonus.armed;
+    // Offre retirée : le code reste copiable mais l'armement n'a plus de sens
+    // (il ne s'appliquera à aucun checkout) — on ne montre pas un bouton mort.
+    if (inactiveWithReward) {
+      return (
+        <TouchableOpacity
+          style={[styles.btn, { backgroundColor: d.color }]}
+          onPress={() => handleCopy(fields[0].value)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.btnText}>{copied ? "Copié !" : "Copier"}</Text>
+        </TouchableOpacity>
+      );
+    }
     return (
       <View style={styles.btnGroup}>
         <TouchableOpacity
@@ -294,6 +346,7 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
   };
 
   const claimAction = (): React.ReactNode => {
+    if (inactiveWithReward) return rewardButtons();
     if (isInactive) return infoButton("Bientôt");
     // UTILISÉ : s'il reste un code / des identifiants à consulter, on affiche
     // les boutons de délivrance (Activer/Copier ou Profil/Compte) plutôt que le
@@ -321,14 +374,23 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
         <TouchableOpacity
           style={[styles.btn, { backgroundColor: d.color }]}
           onPress={() => {
-            if (campaign.blockedReason) return onBlocked?.(campaign.blockedReason);
+            if (campaign.blockedReason)
+              return onBlocked?.(campaign.blockedReason);
             if (!isUpload) return downloadFlyer(bonus);
-            return uploadProof(bonus).then((p) => p && onProofSent?.(p));
+            // Le contexte applique lui-même le payload : la sheet a pu être
+            // fermée avant la réponse, son callback n'existerait plus.
+            return uploadProof(bonus);
           }}
           disabled={busy}
           activeOpacity={0.85}
         >
-          {busy ? (
+          {/* Envoi : pourcentage réel (compression puis upload). Téléchargement :
+              spinner seul, l'API fichier d'Expo n'expose pas de progression. */}
+          {upload ? (
+            <Text style={styles.btnText}>
+              {Math.round(upload.progress * 100)} %
+            </Text>
+          ) : busy ? (
             <ActivityIndicator color={LIGHT} size="small" />
           ) : (
             <Text style={styles.btnText}>
@@ -396,6 +458,26 @@ export const BonusClaimRow: React.FC<BonusClaimRowProps> = ({
     </View>
   );
 };
+
+/**
+ * Mémoïsée : la sheet re-rend à chaque changement d'index du carrousel, et
+ * cette ligne recalcule alors éligibilité, statut et phase de campagne. Sur des
+ * slides rapides successifs, ce travail retardait sa propre mise à jour.
+ *
+ * Les callbacks du parent sont déjà stables (`useCallback`), donc seul un vrai
+ * changement de bonus ou de statut la re-rend. Elle reste évidemment sensible
+ * au contexte bonus, qu'aucune comparaison de props ne peut court-circuiter.
+ */
+export const BonusClaimRow = React.memo(
+  BonusClaimRowBase,
+  (a, b) =>
+    a.bonus === b.bonus &&
+    a.claimStatus === b.claimStatus &&
+    a.arming === b.arming &&
+    a.onClaim === b.onClaim &&
+    a.onActivate === b.onActivate &&
+    a.onBlocked === b.onBlocked,
+);
 
 const styles = StyleSheet.create({
   // Hauteur fixe : la description varie de 1 à 3 lignes selon le statut, ce qui

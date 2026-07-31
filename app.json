@@ -76,7 +76,8 @@
           "organization": "rauval",
           "project": "react-native"
         }
-      ]
+      ],
+      "react-native-compressor"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -79,7 +79,6 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     claimBonus,
     arming,
     armBonus,
-    applyClaimPayload,
   } = useBonusContext();
 
   // Suivi du scroll horizontal du carousel (transition couleur des cartes).
@@ -90,10 +89,19 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   // garde son ancienne valeur : l'animation temps réel de la galerie ne suit
   // plus (elle croit être ailleurs). On force aussi le remontage du carrousel.
   const [openKey, setOpenKey] = useState(0);
+  // Miroirs hors-React du scroll, déclarés AVANT l'effet d'ouverture qui les
+  // réinitialise (`const` n'est pas hoisté). Ils évitent un rendu — et un appel
+  // natif — à chaque frame du listener `scrollX` ; voir leur usage plus bas.
+  const indexRef = useRef(0);
+  const lastGalleryX = useRef(0);
   useEffect(() => {
     if (visible) {
       scrollX.setValue(0);
       setIndex(0);
+      // Le miroir hors-React suit, sinon il resterait sur l'index de la session
+      // précédente et bloquerait le premier `setIndex` (valeurs jugées égales).
+      indexRef.current = 0;
+      lastGalleryX.current = 0;
       setOpenKey((k) => k + 1);
     }
   }, [visible, scrollX]);
@@ -142,7 +150,14 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
         if (next !== jumpTarget.current) return;
         jumpTarget.current = null;
       }
-      setIndex((prev) => (prev === next ? prev : next));
+      // ⚠️ Le garde-fou est ICI, pas dans le `setIndex` : au retour d'arrière-plan
+      // le thread JS est chargé (catch-up socket + refreshs), et un `setIndex`
+      // par frame y ajoutait un rendu complet de la ligne de réclamation à
+      // chaque tick — d'où l'animation qui décrochait et rattrapait après le
+      // slide. Sans changement d'index, on ne touche plus à l'état React.
+      if (indexRef.current === next) return;
+      indexRef.current = next;
+      setIndex(next);
     });
     return () => scrollX.removeListener(id);
     // `openKey` : les listeners sont ré-armés à CHAQUE ouverture. La Modal ne
@@ -157,19 +172,36 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     const id = scrollX.addListener(({ value }) => {
       // Position fractionnaire du carrousel (0 = 1er bonus, 1 = 2e…).
       const pos = value / CAROUSEL_INTERVAL;
-      galleryRef.current?.scrollTo({
-        x: Math.max(0, pos * GALLERY_STEP),
-        animated: false,
-      });
+      const x = Math.max(0, pos * GALLERY_STEP);
+      // Sous le demi-pixel le déplacement est invisible : on épargne un appel
+      // natif par frame, coûteux quand le thread JS est déjà chargé (retour
+      // d'arrière-plan). C'est ce qui faisait décrocher la galerie du doigt.
+      if (Math.abs(x - lastGalleryX.current) < 0.5) return;
+      lastGalleryX.current = x;
+      galleryRef.current?.scrollTo({ x, animated: false });
     });
     return () => scrollX.removeListener(id);
   }, [scrollX, openKey]);
 
   /** Navigation directe : pose le verrou puis délègue au carousel. */
+  /**
+   * Index remonté par le carrousel en fin de geste. Passe par le miroir pour
+   * rester cohérent avec le listener `scrollX` — deux sources d'index qui se
+   * désynchroniseraient figeraient la ligne de réclamation.
+   */
+  const handleIndexChange = useCallback((i: number) => {
+    if (indexRef.current === i) return;
+    indexRef.current = i;
+    setIndex(i);
+  }, []);
+
   const goToBonus = useCallback(
     (i: number) => {
       const target = Math.max(0, Math.min(bonuses.length - 1, i));
       jumpTarget.current = target;
+      // Le miroir suit, sinon le listener `scrollX` croirait l'index inchangé
+      // au retour sur cette carte et ne rafraîchirait pas la ligne.
+      indexRef.current = target;
       setIndex(target);
       carouselRef.current?.goTo(target);
     },
@@ -204,18 +236,6 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   const handleBlocked = useCallback((reason: string) => {
     setToast({ message: reason, type: "info" });
   }, []);
-
-  /** Preuve vidéo acceptée : le bonus passe en attente de livraison. */
-  const handleProofSent = useCallback(
-    (payload: any) => {
-      applyClaimPayload(payload);
-      setToast({
-        message: "Preuve envoyée ! Ton bonus est en cours de traitement.",
-        type: "success",
-      });
-    },
-    [applyClaimPayload],
-  );
 
   /** Bascule l'armement du bonus courant depuis le bouton Activer/Désactiver. */
   const handleActivate = useCallback(
@@ -302,7 +322,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 claims={claims}
                 onClaim={handleClaim}
                 scrollX={scrollX}
-                onIndexChange={setIndex}
+                onIndexChange={handleIndexChange}
                 CardComponent={BonusCard}
                 cardImage={null}
               />
@@ -323,7 +343,6 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 onActivate={handleActivate}
                 arming={!!arming[bonuses[index]?.id]}
                 onBlocked={handleBlocked}
-                onProofSent={handleProofSent}
               />
 
               {bonuses.length > 1 && <View style={styles.pagDivider} />}
@@ -346,7 +365,10 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                           scrollX={scrollX}
                           active={i === index}
                           activeTextColor={DARK_ICON}
-                          onPress={() => goToBonus(i)}
+                          // `goToBonus` reçoit la position : une fermeture
+                          // `() => goToBonus(i)` serait recréée par carte à
+                          // chaque rendu et casserait la mémoïsation.
+                          onPress={goToBonus}
                         />
                       ))}
                     </Animated.ScrollView>

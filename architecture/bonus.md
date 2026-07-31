@@ -354,13 +354,19 @@ Le bonus porte `canDownload`, `canUpload` et `campaignSchedule`
 (`downloadDate`, `postDate`, `postWindowStart/End`). `computeCampaignPhase()`
 (pur, `now` injectable) en dérive une phase, ses textes et son action :
 
-| Phase | Quand | Titre / action |
+| Phase | Quand | Action |
 |---|---|---|
-| `upload` | `canUpload: true` | « Envoie ta preuve » · bouton **Envoyer** |
-| `before_download` | `canDownload: false` | « Téléchargement demain / le 5 août » · bouton **Télécharger** actif |
-| `await_post` | jour de `postDate` ou après | « Poste ton statut aujourd'hui » (+ fenêtre horaire) |
-| `download` | cas nominal | « Télécharge ton flyer aujourd'hui » · **Télécharger** |
-| `none` | aucun calendrier | retombe sur `bonus.description` |
+| `upload` | `canUpload: true` | bouton **Envoyer** |
+| `before_download` | `canDownload: false` | bouton **Télécharger** actif → toast du motif |
+| `await_post` | jour de `postDate` ou après | **Télécharger** |
+| `download` | cas nominal | **Télécharger** |
+| `none` | aucun calendrier | **Télécharger** |
+
+> ⚠️ **La ligne n'affiche PAS les textes de campagne.** Titre et description
+> restent ceux du bonus (`bonus.description`) : les messages datés
+> (« disponible demain », « à poster mardi ») masquaient le contenu réel. Seuls
+> `action` et `blockedReason` sont consommés — le calendrier ne se manifeste
+> qu'en **toast**, au clic sur le bouton.
 
 > ⚠️ **`canDownload` / `canUpload` font autorité, jamais l'horloge du téléphone.**
 > Les dates ne servent qu'à formuler le message. Le message de téléchargement

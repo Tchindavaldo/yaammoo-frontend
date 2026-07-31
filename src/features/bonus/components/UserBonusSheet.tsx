@@ -187,7 +187,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
       setToast(
         res.success
           ? {
-              message: "🎉 Demande envoyée ! Tu recevras une notification.",
+              message: "Demande envoyée ! Tu recevras une notification.",
               type: "success",
             }
           : { message: res.message || "Échec de la demande", type: "error" },
@@ -226,7 +226,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
         res.success
           ? {
               message: next
-                ? "⚡ Bonus activé : il s'appliquera à ta prochaine commande."
+                ? "Bonus activé : il s'appliquera à ta prochaine commande."
                 : "Bonus désactivé.",
               type: "success",
             }

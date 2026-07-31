@@ -1,6 +1,6 @@
 # Feature — Payment Integration (MobileWallet)
 
-## INTÉGRATION COMPLÈTE — Paiement Mobile Money (Orange Money / MTN)
+## ✅ INTÉGRATION COMPLÈTE — Paiement Mobile Money (Orange Money / MTN)
 
 Les paiements Mobile Money sont maintenant intégrés via le backend ai_browser2.
 
@@ -29,7 +29,7 @@ Permettre aux utilisateurs de payer les commandes via Mobile Money (Cameroun : O
         │ Réseau :  [Orange Money] [MTN MoMo]        │
         └────────────────────────────────────────────┘
         ┌────────────────────────────────────────────┐  ← BAS (capsule, état INPUT)
-        │ [close ]   [saisir le numéro]   [btn →]   │
+        │ [close ✕]   [saisir le numéro]   [btn →]   │
         └────────────────────────────────────────────┘
 
 USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
@@ -61,7 +61,7 @@ USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
 
 [Frontend reçoit 'payment.settled' via socketService (singleton)]
         ├── successful → SUCCESS « Paiement réussi ! Création... » (5 s)
-        │             → SUCCESS_CREATED « Commande créée... » (5 s)
+        │             → SUCCESS_CREATED ✓ « Commande créée... » (5 s)
         │             → fermeture des 2 overlays + du checkout
         │
         └── failed / cancelled → toast haut + retour état INPUT
@@ -161,10 +161,10 @@ par **CheckoutPaymentOverlay** (capsule BAS).
 2. **waiting** : input/cancel/payer masqués (fondu), « Veuillez patienter... ».
 3. **ussd_sent** : `ussdMessage` du backend **uniquement** (pas de spinner, pas de montant).
 4. **success** : « Paiement réussi ! Création de la commande en cours... » (1 ligne, 5 s).
-5. **success_created** : « Commande créée avec succès ! » (1 ligne, 5 s) → fermeture auto.
+5. **success_created** : ✓ « Commande créée avec succès ! » (1 ligne, 5 s) → fermeture auto.
 - (échec) : **aucun état `failed` affiché** — retour direct à `input`, erreur via toast top.
 
-> La capsule **n'a plus l'étape `network_select`** (mappée vers `input` à l'init).
+> ⚠️ La capsule **n'a plus l'étape `network_select`** (mappée vers `input` à l'init).
 > **AnimatedBorderGlow** : bordure lumineuse animée active sur tout état ≠ `input`
 > (remplace les spinners pendant l'attente).
 
@@ -297,8 +297,8 @@ est mono-section).
 
 | Réseau | Code | État |
 |--------|------|------|
-| Orange Money | `#150#` | Intégré |
-| MTN | `*126#` | Intégré |
+| Orange Money | `#150#` | ✅ Intégré |
+| MTN | `*126#` | ✅ Intégré |
 
 ---
 

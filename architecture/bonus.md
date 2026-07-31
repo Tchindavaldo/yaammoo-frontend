@@ -36,7 +36,7 @@ même verticale que « Bonus » dans le header.
 
 Les paddings sont volontairement **proches** (10 à 12) pour que les marges qui en
 découlent le soient aussi (+4 à +6) : les bordures forment ainsi une colonne
-régulière. Un padding nettement plus grand (ex. 18) produirait une marge
+régulière. ⚠️ Un padding nettement plus grand (ex. 18) produirait une marge
 négative et une carte qui déborde visiblement des autres — c'est ce qu'il faut
 éviter en touchant ces constantes.
 
@@ -103,7 +103,7 @@ activités » (`UserOrdersModal`, `UserWalletModal`, en View absolue), la sheet
 utilise un **`<Modal>` natif** `transparent` + `animationType="slide"`, avec un
 backdrop tapable pour fermer.
 
-> La `<Modal>` **ne démonte pas** son contenu à la fermeture (elle le masque).
+> ⚠️ La `<Modal>` **ne démonte pas** son contenu à la fermeture (elle le masque).
 > D'où le compteur `openKey`, incrémenté à chaque ouverture, qui ré-arme les
 > listeners `scrollX` et force le remontage du carrousel — sans lui, les
 > abonnements posés au 1er montage ne suivent plus le carrousel recréé.
@@ -357,7 +357,7 @@ Le bonus porte `canDownload`, `canUpload` et `campaignSchedule`
 | `download` | cas nominal | « Télécharge ton flyer aujourd'hui » · **Télécharger** |
 | `none` | aucun calendrier | retombe sur `bonus.description` |
 
-> **`canDownload` / `canUpload` font autorité, jamais l'horloge du téléphone.**
+> ⚠️ **`canDownload` / `canUpload` font autorité, jamais l'horloge du téléphone.**
 > Les dates ne servent qu'à formuler le message. Le message de téléchargement
 > rappelle systématiquement le jour de publication (« À poster demain. »), et la
 > proximité est verbalisée (aujourd'hui / demain / mardi 5 août / le …).
@@ -378,7 +378,7 @@ Erreurs 400 (flyer jamais téléchargé, délai non écoulé, vidéo absente) et
 (réclamation déjà active) — les contrôles tournent **avant** l'upload, un claim
 refusé ne stocke jamais le fichier.
 
-### `GET /fastFood/all` doit porter le Bearer
+### ⚠️ `GET /fastFood/all` doit porter le Bearer
 
 C'est là que l'armement devient **visible** : le backend résout les bonus livraison
 armés du user et renseigne `deliveryOffer` sur chaque fastfood. La route est
@@ -491,7 +491,7 @@ bonusId, active }`. `getNotificationRoute` compare le `type` **en minuscules**
 Les deux endpoints exigent `Authorization: Bearer <idToken>`. Le helper
 `authHeaders()` (dans `useBonus.ts`) appelle `auth.currentUser?.getIdToken()`
 **à chaque requête** : le SDK sert le cache si le token est encore valide et le
-régénère sinon. Ne jamais mémoriser ce token dans une variable au login —
+régénère sinon. ⚠️ Ne jamais mémoriser ce token dans une variable au login —
 les appels partiraient en 401 au bout d'une heure.
 
 ## Deep-link

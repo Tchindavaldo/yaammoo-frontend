@@ -43,6 +43,11 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.rauval.yaammoo",
       "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyBO2b5OxgzRk1ayuQpma1MXU7sNM_zdN1s"
+        }
+      },
       "signingConfig": {
         "storeFile": "../debug.keystore",
         "storePassword": "android",

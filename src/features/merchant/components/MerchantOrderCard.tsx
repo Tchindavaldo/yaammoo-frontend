@@ -30,6 +30,12 @@ if (
 interface MerchantOrderCardProps {
   order: Commande;
   allOrders?: Commande[];
+  /**
+   * Commandes du groupe passées AU SEUL bottom sheet (nav multi-cmd), sans
+   * basculer la carte sur le design groupé — la carte reste celle de `order`,
+   * la commande la mieux classée du groupe.
+   */
+  sheetOrders?: Commande[];
   onUpdateStatus: (
     status:
       | "processing"
@@ -40,14 +46,24 @@ interface MerchantOrderCardProps {
   ) => Promise<void> | void;
   /** Délègue le groupe à un livreur (pose driverId sur les commandes). */
   onDelegate?: (driverId: string) => Promise<void> | void;
+  /**
+   * Valide UNE commande précise (bouton dans l'onglet Commande du sheet).
+   * Sans cette prop, on retombe sur `onUpdateStatus` (toute la ligne).
+   */
+  onValidateOne?: (
+    orderId: string,
+    status: "processing" | "finished",
+  ) => Promise<void | boolean> | void;
   isForceLaunched?: boolean;
 }
 
 export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   order,
   allOrders,
+  sheetOrders,
   onUpdateStatus,
   onDelegate,
+  onValidateOne,
   isForceLaunched = false,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -71,6 +87,24 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
       if (newStatus === "delivering") {
         setIsLaunchedLocal(true);
       }
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  /**
+   * Valide UNE commande du sheet. Le statut cible est déduit de la commande
+   * ciblée (et non de la carte) : dans un groupe, chaque commande peut avoir
+   * son propre statut.
+   */
+  const handleValidateOne = async (target: Commande) => {
+    const s = (target.status || "pending").toLowerCase();
+    const next =
+      s === "pending" || s === "pendingtobuy" ? "processing" : "finished";
+    setIsUpdating(true);
+    try {
+      if (onValidateOne) await onValidateOne(target.id, next);
+      else await onUpdateStatus(next);
     } finally {
       setIsUpdating(false);
     }
@@ -285,7 +319,14 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
         </View>
       )}
 
-      <MerchantOrderBottomSheet order={order} visible={modalVisible} onClose={() => setModalVisible(false)} />
+      <MerchantOrderBottomSheet
+        order={order}
+        allOrders={sheetOrders && sheetOrders.length > 1 ? sheetOrders : undefined}
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        canValidate={isPending || isActive}
+        onValidate={(target) => handleValidateOne(target)}
+      />
     </View>
   );
 };

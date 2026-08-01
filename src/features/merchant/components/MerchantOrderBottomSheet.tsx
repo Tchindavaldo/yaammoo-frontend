@@ -1,9 +1,12 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Animated, Dimensions, PanResponder, Pressable, Modal,
+  NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Commande } from '@/src/types';
+import { Toast } from '@/src/components/Toast';
 import { LivraisonTab } from './MerchantOrderLivraisonTab';
 import { CommandesTab } from './MerchantOrderCommandesTab';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
@@ -46,6 +49,10 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   allOrders?: Commande[];
+  /** Validation d'UNE commande (le bouton vit dans l'onglet Commande). */
+  onValidate?: (order: Commande) => Promise<void> | void;
+  /** Masque le bouton Valider quand la commande n'est plus validable. */
+  canValidate?: boolean;
 };
 
 // ─── Couleurs avatar ──────────────────────────────────────────────────────────
@@ -130,15 +137,94 @@ function buildUser(order: Commande): DeliveryUser {
 }
 
 // ─── Composant principal ──────────────────────────────────────────────────────
-export default function MerchantOrderBottomSheet({ order, visible, onClose, allOrders }: Props) {
+export default function MerchantOrderBottomSheet({
+  order, visible, onClose, allOrders, onValidate, canValidate = false,
+}: Props) {
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
+  const [validating, setValidating] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
   // Commande sélectionnée (globale : pilote Livraison ET Commande)
   const currentOrder = allOrders ? (allOrders[selectedOrderIdx] ?? order) : order;
   const user = currentOrder ? buildUser(currentOrder) : null;
+
+  // ─── Garde de consultation ──────────────────────────────────────────────────
+  // Une commande contenant des extras/boissons doit avoir son onglet Commande
+  // ouvert ET scrollé jusqu'en bas avant de pouvoir être validée.
+  const orderList = allOrders && allOrders.length > 0 ? allOrders : (order ? [order] : []);
+  const [checkedIdx, setCheckedIdx] = useState<Set<number>>(new Set());
+
+  const markChecked = useCallback((idx: number) => {
+    setCheckedIdx((prev) => {
+      if (prev.has(idx)) return prev;
+      const next = new Set(prev);
+      next.add(idx);
+      return next;
+    });
+  }, []);
+
+  // Contenu à vérifier de la commande AFFICHÉE (la garde est propre à chaque Cmd).
+  const hasExtra = (currentOrder?.extra || []).some(
+    (e: any) => e.status === true && e.name && e.name !== 'Aucun' && e.name !== 'Aucune',
+  );
+  const hasDrink = (currentOrder?.drink || []).some(
+    (d: any) => d.status === true && d.name && d.name !== 'Aucune' && d.name !== 'Aucun',
+  );
+  // Rien à vérifier → considérée consultée d'office.
+  const currentChecked = (!hasExtra && !hasDrink) || checkedIdx.has(selectedOrderIdx);
+
+  /** Message du toast pour la commande affichée. */
+  const buildBlockedMessage = () => {
+    const label = hasExtra && hasDrink ? 'extras et boissons'
+      : hasExtra ? 'extras'
+        : 'boissons';
+    const prefix = orderList.length > 1 ? `Cmd ${selectedOrderIdx + 1} : ` : '';
+    return `${prefix}${label} non vérifiés — faites défiler la liste`;
+  };
+
+  // ─── Chips « Cmd » du header : compteur de débordement « +N » ───────────────
+  // Largeur d'un chip + gap : sert à convertir des pixels masqués en nb de chips.
+  const CMD_CHIP_W = 58;
+  const [cmdViewportW, setCmdViewportW] = useState(0);
+  const [cmdContentW, setCmdContentW] = useState(0);
+  const [cmdScrollX, setCmdScrollX] = useState(0);
+
+  const handleCmdLayout = useCallback(
+    (e: { nativeEvent: { layout: { width: number } } }) => setCmdViewportW(e.nativeEvent.layout.width),
+    [],
+  );
+  const handleCmdContentSize = useCallback((w: number) => setCmdContentW(w), []);
+  const handleCmdScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => setCmdScrollX(e.nativeEvent.contentOffset.x),
+    [],
+  );
+
+  // Pixels encore masqués à droite → nombre de chips restants. Un chip n'est
+  // compté que s'il est masqué à plus de moitié : à peine rogné, il reste lisible
+  // et ne doit pas gonfler le compteur.
+  const hiddenPx = Math.max(0, cmdContentW - cmdViewportW - cmdScrollX);
+  const hiddenCount = Math.floor(hiddenPx / CMD_CHIP_W + 0.5);
+
+  const handleValidate = async () => {
+    if (validating) return;
+    if (!currentChecked) {
+      setToastMsg('');
+      // Re-déclenche l'animation même si le message est identique.
+      requestAnimationFrame(() => setToastMsg(buildBlockedMessage()));
+      return;
+    }
+    setValidating(true);
+    try {
+      await onValidate?.(currentOrder!);
+      // Multi-commandes : on reste ouvert pour traiter les suivantes.
+      if (!hasMultiple) handleDismiss();
+    } finally {
+      setValidating(false);
+    }
+  };
 
   // Tab « Livreur » (lecture seule côté marchand) : course lancée/terminée,
   // qu'un livreur soit délégué ou que le marchand livre lui-même.
@@ -154,6 +240,8 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
       overlayOpacity.setValue(0);
       setTab('livraison');
       setSelectedOrderIdx(0);
+      setCheckedIdx(new Set());
+      setToastMsg('');
       Animated.parallel([
         Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 25, stiffness: 180, mass: 0.8 }),
         Animated.timing(overlayOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
@@ -205,9 +293,48 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userAddr} numberOfLines={1}>
-                  {user.zone ? `Zone de livraison : ${user.zone}` : user.addr}
-                </Text>
+                {hasMultiple ? (
+                  /* Multi-commandes : chips Cmd 1/2/3… à la place de la zone. */
+                  <View style={styles.cmdRow}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.cmdScroll}
+                      style={{ flexShrink: 1 }}
+                      onScroll={handleCmdScroll}
+                      scrollEventThrottle={16}
+                      onLayout={handleCmdLayout}
+                      onContentSizeChange={handleCmdContentSize}
+                    >
+                      {allOrders!.map((_, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          style={[styles.cmdChip, selectedOrderIdx === idx && styles.cmdChipActive]}
+                          onPress={() => setSelectedOrderIdx(idx)}
+                        >
+                          <Text
+                            style={[
+                              styles.cmdChipText,
+                              selectedOrderIdx === idx && styles.cmdChipTextActive,
+                            ]}
+                          >
+                            Cmd {idx + 1}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    {/* Débordement : « +N » tant que la liste n'a pas été scrollée. */}
+                    {hiddenCount > 0 && (
+                      <View style={styles.cmdMore}>
+                        <Text style={styles.cmdMoreText}>+{hiddenCount}</Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={styles.userAddr} numberOfLines={1}>
+                    {user.zone ? `Zone de livraison : ${user.zone}` : user.addr}
+                  </Text>
+                )}
               </View>
             </View>
             <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
@@ -255,58 +382,31 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
             </ScrollView>
           ) : (
             <CommandesTab
+              // Remonte la tab à zéro et réarme la détection à chaque changement de Cmd.
+              key={selectedOrderIdx}
               orders={user.orders}
               total={total + user.deliveryPrice}
               zone={user.zone}
               deliveryPrice={user.deliveryPrice}
+              onFullyScrolled={() => markChecked(selectedOrderIdx)}
+              canValidate={canValidate}
+              checked={currentChecked}
+              validating={validating}
+              onValidate={handleValidate}
             />
           )}
 
-          {/* ── Nav multi-commandes EN BAS (globale : pilote les 2 tabs) ── */}
-          {hasMultiple && (
-            <View style={styles.navBarContainer}>
-              {allOrders!.length > 3 && (
-                <TouchableOpacity
-                  onPress={() => setSelectedOrderIdx(Math.max(0, selectedOrderIdx - 1))}
-                  style={styles.navArrow}
-                >
-                  <Text style={styles.navArrowText}>{'<'}</Text>
-                </TouchableOpacity>
-              )}
-              
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={[
-                  styles.navBar,
-                  { justifyContent: allOrders!.length > 3 ? 'flex-start' : 'center' }
-                ]}
-                style={{ flexGrow: 0 }}
-              >
-                {allOrders!.map((_, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[styles.navTab, selectedOrderIdx === idx && styles.navTabActive]}
-                    onPress={() => setSelectedOrderIdx(idx)}
-                  >
-                    <Text style={[styles.navTabText, selectedOrderIdx === idx && styles.navTabTextActive]}>
-                      Cmd {idx + 1}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {allOrders!.length > 3 && (
-                <TouchableOpacity
-                  onPress={() => setSelectedOrderIdx(Math.min(allOrders!.length - 1, selectedOrderIdx + 1))}
-                  style={styles.navArrow}
-                >
-                  <Text style={styles.navArrowText}>{'>'}</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
         </Animated.View>
+
+        {/* Toast de blocage (au-dessus du sheet) */}
+        {toastMsg ? (
+          <Toast
+            message={toastMsg}
+            type="error"
+            duration={3000}
+            onHide={() => setToastMsg('')}
+          />
+        ) : null}
       </View>
     </Modal>
   );
@@ -343,6 +443,22 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 9, color: '#fff', fontWeight: '800' },
   userName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   userAddr: { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  // Chips « Cmd » dans le header (multi-commandes)
+  cmdRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  cmdScroll: { flexDirection: 'row', gap: 6, paddingRight: 2 },
+  cmdChip: {
+    minWidth: 28, height: 24, paddingHorizontal: 8, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB',
+  },
+  cmdChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  cmdChipText: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
+  cmdChipTextActive: { color: '#FFFFFF' },
+  cmdMore: {
+    height: 24, paddingHorizontal: 7, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center', backgroundColor: '#E5E7EB',
+  },
+  cmdMoreText: { fontSize: 10, fontWeight: '800', color: '#4B5563' },
   closeBtn: {
     width: 28, height: 28, borderRadius: 14,
     backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center',
@@ -355,38 +471,4 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
   tabTextActive: { color: '#111827' },
   content: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
-  // Bottom nav (global)
-  navBarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  navArrow: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  navArrowText: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  navBar: {
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 8,
-  },
-  navTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  navTabActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  navTabText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
-  navTabTextActive: { color: '#FFFFFF' },
 });

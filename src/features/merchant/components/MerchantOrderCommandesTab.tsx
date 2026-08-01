@@ -1,5 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useCallback, useRef } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  NativeSyntheticEvent, NativeScrollEvent,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { OrderItem } from './MerchantOrderBottomSheet';
 
 const ITEM_ICONS: Record<string, string> = {
@@ -17,15 +21,84 @@ const ITEM_LABEL: Record<string, string> = {
 // Devise
 const CURRENCY = 'XAF';
 
+/** Marge de tolérance (px) pour considérer le bas de la liste atteint. */
+const SCROLL_END_SLOP = 24;
+
 type Props = {
   orders: OrderItem[];
   total: number;
   zone?: string;
   deliveryPrice?: number;
+  /** Remonté quand la liste a été vue en entier (bas atteint, ou rien à scroller). */
+  onFullyScrolled?: () => void;
+  /** Affiche le bouton Valider dans la ligne de total (propre à CETTE commande). */
+  canValidate?: boolean;
+  /** Cette commande a-t-elle été consultée (liste scrollée jusqu'en bas) ? */
+  checked?: boolean;
+  /** Validation de CETTE commande uniquement. */
+  onValidate?: () => void;
+  validating?: boolean;
 };
 
-export function CommandesTab({ orders, total, zone = '', deliveryPrice = 0 }: Props) {
+export function CommandesTab({
+  orders,
+  total,
+  zone = '',
+  deliveryPrice = 0,
+  onFullyScrolled,
+  canValidate = false,
+  checked = false,
+  onValidate,
+  validating = false,
+}: Props) {
   const hasDelivery = deliveryPrice > 0 || !!zone;
+
+  // Une seule remontée par montage : évite de spammer le parent à chaque frame.
+  const notified = useRef(false);
+  const notifyOnce = useCallback(() => {
+    if (notified.current) return;
+    notified.current = true;
+    onFullyScrolled?.();
+  }, [onFullyScrolled]);
+
+  // Hauteur visible de la zone scrollable + hauteur du contenu : si le contenu
+  // tient entièrement dans la fenêtre, il n'y a rien à scroller → déjà tout vu.
+  const viewportH = useRef(0);
+  const contentH = useRef(0);
+
+  const checkNoScrollNeeded = useCallback(() => {
+    if (viewportH.current > 0 && contentH.current > 0
+      && contentH.current <= viewportH.current + SCROLL_END_SLOP) {
+      notifyOnce();
+    }
+  }, [notifyOnce]);
+
+  const handleLayout = useCallback(
+    (e: { nativeEvent: { layout: { height: number } } }) => {
+      viewportH.current = e.nativeEvent.layout.height;
+      checkNoScrollNeeded();
+    },
+    [checkNoScrollNeeded],
+  );
+
+  const handleContentSizeChange = useCallback(
+    (_w: number, h: number) => {
+      contentH.current = h;
+      checkNoScrollNeeded();
+    },
+    [checkNoScrollNeeded],
+  );
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+      if (layoutMeasurement.height + contentOffset.y >= contentSize.height - SCROLL_END_SLOP) {
+        notifyOnce();
+      }
+    },
+    [notifyOnce],
+  );
+
   if (orders.length === 0) {
     return (
       <View style={styles.empty}>
@@ -42,6 +115,10 @@ export function CommandesTab({ orders, total, zone = '', deliveryPrice = 0 }: Pr
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ padding: 12 }}
+          onLayout={handleLayout}
+          onContentSizeChange={handleContentSizeChange}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
           {orders.map((o, i) => {
             const unitPrice = o.unitPrice || 0;
@@ -108,10 +185,27 @@ export function CommandesTab({ orders, total, zone = '', deliveryPrice = 0 }: Pr
           )}
         </ScrollView>
 
-        {/* Total */}
+        {/* Total : libellé + montant en dessous, bouton Valider à droite */}
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Total commande</Text>
-          <Text style={styles.totalVal}>{total} {CURRENCY}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.totalLabel}>Total commande</Text>
+            <Text style={styles.totalVal}>{total} {CURRENCY}</Text>
+          </View>
+
+          {canValidate && (
+            <TouchableOpacity
+              onPress={onValidate}
+              disabled={validating}
+              style={[styles.validateBtn, !checked && styles.validateBtnBlocked]}
+            >
+              <Ionicons
+                name={checked ? 'checkmark-circle' : 'lock-closed'}
+                size={15}
+                color="#fff"
+              />
+              <Text style={styles.validateBtnText}>Valider</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>
@@ -179,6 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
     padding: 14,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
@@ -192,7 +287,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
     color: '#ec4913',
+    marginTop: 2,
   },
+  // Bouton Valider propre à la commande affichée.
+  validateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: '#ec4913',
+  },
+  // Bloqué : gris, mais toujours pressable pour déclencher le toast explicatif.
+  validateBtnBlocked: { backgroundColor: '#D1D5DB' },
+  validateBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   empty: {
     flex: 1,
     alignItems: 'center',

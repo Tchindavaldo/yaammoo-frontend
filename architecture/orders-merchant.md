@@ -82,6 +82,22 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 - Onglets `pending` et `proccess` : `dateFilteredOrders` triés par `rank ASC` via `useMemo`
 - Commandes sans rank → en dernier (`Infinity`)
 
+**Groupement par créneau de livraison** (`groupBySlot`, onglets `pending` / `proccess`) :
+- Les commandes d'un **même client** en **livraison programmée sur le même créneau**
+  (`delivery.status === true`, `delivery.type !== 'express'`, même `delivery.time`)
+  sont fusionnées en **une seule ligne**.
+- La ligne affiche la commande **la mieux classée** du groupe (`rank` le plus petit) et
+  prend sa position au classement. Ex. rangs 1, 4, 5 à 11h → une ligne au rang 1.
+- **Express** et **sur place** ne sont jamais groupés : ils gardent leur place au classement.
+- `displayRows` (`{ head, group }[]`) remplace `dateFilteredOrders` au rendu ; les sections
+  de dates passées passent par le même `groupBySlot`.
+- La carte **ne change pas de design** : le groupe est passé via `sheetOrders` (et non
+  `allOrders`, qui bascule sur la variante groupée). Seul le bottom sheet reçoit la nav
+  multi-cmd, alimentée quand `sheetOrders.length > 1`.
+- **Deux portées de validation** : le bouton de la **carte** traite toute la ligne groupée
+  (`Promise.all` sur `onUpdateStatus`) ; celui du **sheet** (onglet Commande) ne valide que
+  la Cmd affichée, via `onValidateOne(orderId, status)`.
+
 **Layout "Terminées"** (onglet `finish`) :
 - Groupement par type de livraison : Express (groupe unique) + Scheduled (groupes par créneau horaire)
 - Chaque groupe : header collapsible + bouton **"Lancer tout"** → ouvre le `DelegateDriverSheet`
@@ -118,10 +134,12 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 | Prop | Type | Description |
 |---|---|---|
 | `order` | `Commande` | Commande principale à afficher |
-| `allOrders` | `Commande[]` | Toutes les commandes du groupe (optionnel, pour livraisons groupées) |
+| `allOrders` | `Commande[]` | Toutes les commandes du groupe (optionnel, pour livraisons groupées) — **bascule la carte sur le design groupé** |
+| `sheetOrders` | `Commande[]` | Commandes du groupe transmises **au seul bottom sheet** (nav multi-cmd) : la carte garde son design standard (voir `groupBySlot`) |
 | `isForceLaunched` | boolean | État lancé forcé (depuis "Lancer tout") |
 | `onUpdateStatus` | `(status) => Promise<void>` | Callback avancement statut |
 | `onDelegate` | `(driverId) => Promise<void\|boolean>\|void` | Délègue la commande à un livreur |
+| `onValidateOne` | `(orderId, status) => Promise<void\|boolean>\|void` | Valide **une seule** commande (bouton du sheet). Défaut : `onUpdateStatus` (toute la ligne) |
 
 **Bouton d'action** : avance le statut selon la transition backend (pas de statut cible envoyé explicitement — le backend détermine le suivant).
 
@@ -165,6 +183,42 @@ La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.
   `order.delivery.zone`. Fallback sur l'adresse si `zone` absent (anciennes commandes).
 - `buildUser()` expose `zone` et `deliveryPrice` (depuis `order.delivery.prix`).
 
+**Sélecteur multi-commandes dans le header** (native `.tsx`) :
+- En multi-commandes (`allOrders.length > 1`), la ligne « Zone de livraison » du header
+  est **remplacée** par une rangée de chips numérotés (1, 2, 3…) scrollable
+  horizontalement. En commande unique, la ligne zone/adresse est conservée.
+- Débordement : un badge **`+N`** à droite indique les chips hors écran. `N` est
+  recalculé au scroll (`contentWidth - viewportWidth - scrollX`) et **disparaît**
+  une fois la rangée entièrement parcourue.
+- L'ancienne barre de navigation basse (`Cmd 1 / Cmd 2` + flèches) est supprimée.
+- Le `PanResponder` du header ne réagit qu'aux gestes verticaux (`dy > 5`), donc le
+  scroll horizontal des chips n'est pas capturé.
+
+**Bouton Valider + garde de consultation** (native `.tsx` uniquement) :
+
+| Prop | Type | Description |
+|---|---|---|
+| `canValidate` | boolean? | Affiche le bouton « Valider » dans la ligne de total de l'onglet Commande |
+| `onValidate` | `(order: Commande) => Promise<void> \| void`? | Valide **la commande passée en argument** (celle affichée) |
+
+- Le bouton vit dans la **ligne de total** de l'onglet Commande (voir
+  `MerchantOrderCommandesTab`), pas dans le header : la croix ✕ y reste inchangée.
+- Il est **propre à la commande affichée** : il ne valide qu'elle et ne vérifie que
+  la consultation de ses propres extras/boissons.
+- **Garde** : si la commande affichée contient des extras ou boissons sélectionnés,
+  son onglet Commande doit avoir été **scrollé jusqu'en bas**. `CommandesTab` remonte
+  `onFullyScrolled` quand le bas est atteint — ou immédiatement si le contenu tient
+  dans la fenêtre sans scroll. Sans extra ni boisson, la commande est consultée d'office.
+- Tant que la commande affichée n'est pas consultée, le bouton est grisé (icône cadenas)
+  et un clic affiche un `Toast` d'erreur nommant le type manquant — préfixé de
+  `Cmd N : ` en multi-commandes.
+- **En multi-commandes le sheet reste ouvert** après validation (pour enchaîner les
+  Cmd suivantes) ; en commande unique il se ferme.
+- L'état de consultation (`checkedIdx`, par index de commande) est réinitialisé à
+  chaque ouverture du sheet.
+- Le bouton « Valider » de `MerchantOrderCard` est inchangé (aucune garde dessus) et
+  agit sur **toute la ligne groupée**, contrairement à celui du sheet.
+
 ---
 
 ## MerchantOrderLivraisonTab.tsx
@@ -188,7 +242,25 @@ Tab « Commande » extrait de l'ancien `MerchantOrderBottomSheet`. Affiche :
 - La liste des boissons (icônes, noms, prix)
 - **Ligne livraison** (si `deliveryPrice > 0` ou `zone`) : icône , libellé
   "Livraison" + la **zone** en sous-texte, prix à droite (`deliveryPrice`).
-- Prix total — **inclut le prix de livraison** (`total + deliveryPrice`).
+- **Ligne de total** (fixe, sous la liste scrollable) : libellé « Total commande » avec
+  le montant **en dessous** (inclut le prix de livraison : `total + deliveryPrice`), et
+  le **bouton Valider à droite**.
+
+**Props de validation / consultation** :
+
+| Prop | Type | Description |
+|---|---|---|
+| `onFullyScrolled` | `() => void`? | Remonté une seule fois quand la liste a été vue en entier |
+| `canValidate` | boolean? | Affiche le bouton Valider dans la ligne de total |
+| `checked` | boolean? | La commande a-t-elle été consultée (pilote grisé/cadenas) |
+| `onValidate` | `() => void`? | Clic sur Valider (le parent gère la garde et le toast) |
+| `validating` | boolean? | Désactive le bouton pendant l'appel |
+
+- La détection « tout vu » combine `onScroll` (bas atteint à `SCROLL_END_SLOP` = 24 px près),
+  `onLayout` et `onContentSizeChange` : si le contenu tient dans la fenêtre, rien à
+  scroller → remonté immédiatement. Un `useRef` garantit une seule remontée par montage.
+- Le sheet remonte la tab et réarme la détection à chaque changement de Cmd via
+  `key={selectedOrderIdx}`.
 
 ---
 

@@ -202,6 +202,44 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     });
   };
 
+  // ─── Groupement des commandes livrées à la même heure ───────────────────────
+  // Les commandes d'un même client, en livraison PROGRAMMÉE sur le même créneau,
+  // sont fusionnées en une seule ligne : on n'affiche que la mieux classée (rank
+  // le plus petit) et le bottom sheet reçoit toutes les commandes du groupe.
+  // Express et sur-place ne sont pas groupés : ils gardent leur place au classement.
+  const groupBySlot = (arr: Commande[]): { head: Commande; group: Commande[] }[] => {
+    const buckets = new Map<string, Commande[]>();
+    const singles: Commande[] = [];
+
+    arr.forEach((o) => {
+      const d = (o as any).delivery;
+      const slot = d?.time;
+      // Groupable seulement si livraison programmée (ni express, ni sur place).
+      if (d?.status !== true || d?.type === "express" || !slot) {
+        singles.push(o);
+        return;
+      }
+      const userKey = o.userId || o.userData?.email || o.id;
+      const key = `${userKey}__${slot}`;
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(o);
+      else buckets.set(key, [o]);
+    });
+
+    const rankOf = (o: Commande) => (o as any).rank ?? Infinity;
+    const entries: { head: Commande; group: Commande[] }[] = [];
+
+    buckets.forEach((group) => {
+      // Ordonne le groupe par rang : la tête est la commande la mieux classée.
+      const sorted = [...group].sort((a, b) => rankOf(a) - rankOf(b));
+      entries.push({ head: sorted[0], group: sorted });
+    });
+    singles.forEach((o) => entries.push({ head: o, group: [o] }));
+
+    // La ligne prend la position de sa commande la mieux classée.
+    return entries.sort((a, b) => rankOf(a.head) - rankOf(b.head));
+  };
+
   // Commandes filtrées :
   //  - Si un chip de date est sélectionné → uniquement cette date
   //  - Sinon → uniquement aujourd'hui (la liste principale)
@@ -217,6 +255,14 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     }
     return filtered;
   }, [filteredOrders, selectedDate, selectedStatus]);
+
+  // Lignes affichées : une entrée par ligne de liste, avec son groupe éventuel.
+  const displayRows = useMemo(() => {
+    if (selectedStatus !== "pending" && selectedStatus !== "proccess") {
+      return dateFilteredOrders.map((o) => ({ head: o, group: [o] }));
+    }
+    return groupBySlot(dateFilteredOrders);
+  }, [dateFilteredOrders, selectedStatus]);
 
   // Groupes par date passée (uniquement quand aucun chip n'est sélectionné et statut pending/proccess)
   const pastSections = useMemo(() => {
@@ -770,11 +816,21 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             ) : null
           ) : (
             <View style={{ gap: 6 }}>
-              {dateFilteredOrders.map((item) => (
+              {displayRows.map(({ head, group }) => (
                 <MerchantOrderCard
-                  key={item.id}
-                  order={item}
-                  onUpdateStatus={(status) => onUpdateStatus(item.id, status)}
+                  key={head.id}
+                  order={head}
+                  sheetOrders={group}
+                  onUpdateStatus={async (status) => {
+                    // Valider depuis la CARTE traite toute la ligne groupée.
+                    await Promise.all(
+                      group.map((o) => onUpdateStatus(o.id, status)),
+                    );
+                  }}
+                  // Valider depuis le SHEET ne traite que la commande affichée.
+                  onValidateOne={(orderId, status) =>
+                    onUpdateStatus(orderId, status)
+                  }
                 />
               ))}
             </View>
@@ -816,12 +872,18 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
                     {isExpanded && (
                       <View style={{ gap: 6, marginTop: 6 }}>
-                        {section.orders.map((item) => (
+                        {groupBySlot(section.orders).map(({ head, group }) => (
                           <MerchantOrderCard
-                            key={item.id}
-                            order={item}
-                            onUpdateStatus={(status) =>
-                              onUpdateStatus(item.id, status)
+                            key={head.id}
+                            order={head}
+                            sheetOrders={group}
+                            onUpdateStatus={async (status) => {
+                              await Promise.all(
+                                group.map((o) => onUpdateStatus(o.id, status)),
+                              );
+                            }}
+                            onValidateOne={(orderId, status) =>
+                              onUpdateStatus(orderId, status)
                             }
                           />
                         ))}

@@ -1,6 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -198,12 +198,18 @@ export function CommandesTab({
               disabled={validating}
               style={[styles.validateBtn, !checked && styles.validateBtnBlocked]}
             >
-              <Ionicons
-                name={checked ? 'checkmark-circle' : 'lock-closed'}
-                size={15}
-                color="#fff"
-              />
-              <Text style={styles.validateBtnText}>Valider</Text>
+              {validating ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Ionicons
+                  name={checked ? 'checkmark-circle' : 'lock-closed'}
+                  size={15}
+                  color="#fff"
+                />
+              )}
+              <Text style={styles.validateBtnText}>
+                {validating ? 'Validation…' : 'Valider'}
+              </Text>
             </TouchableOpacity>
           )}
         </View>

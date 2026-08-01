@@ -202,7 +202,9 @@ La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.
 | `onValidate` | `(order: Commande) => Promise<void> \| void`? | Valide **la commande passée en argument** (celle affichée) |
 
 - Le bouton vit dans la **ligne de total** de l'onglet Commande (voir
-  `MerchantOrderCommandesTab`), pas dans le header : la croix ✕ y reste inchangée.
+  `MerchantOrderCommandesTab`), pas dans le header.
+- Pendant l'appel (`validating`), le bouton affiche un `ActivityIndicator` et le
+  libellé « Validation… », et reste désactivé.
 - Il est **propre à la commande affichée** : il ne valide qu'elle et ne vérifie que
   la consultation de ses propres extras/boissons.
 - **Garde** : si la commande affichée contient des extras ou boissons sélectionnés,
@@ -212,10 +214,15 @@ La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.
 - Tant que la commande affichée n'est pas consultée, le bouton est grisé (icône cadenas)
   et un clic affiche un `Toast` d'erreur nommant le type manquant — préfixé de
   `Cmd N : ` en multi-commandes.
-- **En multi-commandes le sheet reste ouvert** après validation (pour enchaîner les
-  Cmd suivantes) ; en commande unique il se ferme.
-- L'état de consultation (`checkedIdx`, par index de commande) est réinitialisé à
-  chaque ouverture du sheet.
+- **Fermeture après validation** : `validatedIdx` suit les commandes déjà validées
+  pendant l'ouverture. S'il en reste au moins une non traitée, le sheet **reste ouvert**
+  et bascule automatiquement sur la première d'entre elles ; sinon il se ferme.
+  En commande unique, la validation ferme donc toujours le sheet.
+- **Pas de croix ✕** dans le header : la place revient aux chips Cmd. La fermeture se
+  fait par **swipe vers le bas** (`PanResponder`, `dy > 100`), **tap sur l'overlay**, ou
+  le bouton retour Android (`onRequestClose`).
+- Les états `checkedIdx` (consultation) et `validatedIdx` (validées), indexés par
+  position de commande, sont réinitialisés à chaque ouverture du sheet.
 - Le bouton « Valider » de `MerchantOrderCard` est inchangé (aucune garde dessus) et
   agit sur **toute la ligne groupée**, contrairement à celui du sheet.
 

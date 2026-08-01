@@ -156,6 +156,9 @@ export default function MerchantOrderBottomSheet({
   // ouvert ET scrollé jusqu'en bas avant de pouvoir être validée.
   const orderList = allOrders && allOrders.length > 0 ? allOrders : (order ? [order] : []);
   const [checkedIdx, setCheckedIdx] = useState<Set<number>>(new Set());
+  // Commandes déjà validées pendant cette ouverture : le sheet ne se ferme que
+  // lorsqu'il n'en reste plus aucune à traiter.
+  const [validatedIdx, setValidatedIdx] = useState<Set<number>>(new Set());
 
   const markChecked = useCallback((idx: number) => {
     setCheckedIdx((prev) => {
@@ -219,8 +222,21 @@ export default function MerchantOrderBottomSheet({
     setValidating(true);
     try {
       await onValidate?.(currentOrder!);
-      // Multi-commandes : on reste ouvert pour traiter les suivantes.
-      if (!hasMultiple) handleDismiss();
+
+      // Commandes restant à traiter une fois celle-ci validée.
+      const done = new Set(validatedIdx);
+      done.add(selectedOrderIdx);
+      setValidatedIdx(done);
+      const remaining = orderList
+        .map((_, i) => i)
+        .filter((i) => !done.has(i));
+
+      if (remaining.length === 0) {
+        handleDismiss();
+      } else {
+        // Il reste des commandes : on bascule sur la première non traitée.
+        setSelectedOrderIdx(remaining[0]);
+      }
     } finally {
       setValidating(false);
     }
@@ -241,6 +257,7 @@ export default function MerchantOrderBottomSheet({
       setTab('livraison');
       setSelectedOrderIdx(0);
       setCheckedIdx(new Set());
+      setValidatedIdx(new Set());
       setToastMsg('');
       Animated.parallel([
         Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 25, stiffness: 180, mass: 0.8 }),
@@ -282,7 +299,7 @@ export default function MerchantOrderBottomSheet({
         </Animated.View>
 
         <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
-          {/* Header : avatar + nom + fermer */}
+          {/* Header : avatar + nom + chips Cmd (fermeture : swipe ou tap overlay) */}
           <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>
               <View style={[styles.avatar, { backgroundColor: user.avColor }]}>
@@ -337,9 +354,6 @@ export default function MerchantOrderBottomSheet({
                 )}
               </View>
             </View>
-            <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Top tabs : Livraison | Commande | (Livreur) */}
@@ -459,11 +473,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', backgroundColor: '#E5E7EB',
   },
   cmdMoreText: { fontSize: 10, fontWeight: '800', color: '#4B5563' },
-  closeBtn: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center',
-  },
-  closeBtnText: { fontSize: 14, color: '#4B5563' },
   // Top tabs
   tabBar: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
   tab: { marginRight: 24, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },

@@ -196,7 +196,9 @@ export default function MerchantOrderBottomSheet({
     const label = hasExtra && hasDrink ? 'extras et boissons'
       : hasExtra ? 'extras'
         : 'boissons';
-    const prefix = orderList.length > 1 ? `Cmd ${selectedOrderIdx + 1} : ` : '';
+    // Même numéro que le chip du header : le vrai rang, pas la position.
+    const rank = (orderList[selectedOrderIdx] as any)?.rank ?? selectedOrderIdx + 1;
+    const prefix = orderList.length > 1 ? `Cmd ${rank} : ` : '';
     return `${prefix}${label} non vérifiés — faites défiler la liste`;
   };
 
@@ -365,7 +367,7 @@ export default function MerchantOrderBottomSheet({
                       onLayout={handleCmdLayout}
                       onContentSizeChange={handleCmdContentSize}
                     >
-                      {allOrders!.map((_, idx) => (
+                      {allOrders!.map((o, idx) => (
                         <TouchableOpacity
                           key={idx}
                           style={[styles.cmdChip, selectedOrderIdx === idx && styles.cmdChipActive]}
@@ -377,7 +379,9 @@ export default function MerchantOrderBottomSheet({
                               selectedOrderIdx === idx && styles.cmdChipTextActive,
                             ]}
                           >
-                            Cmd {idx + 1}
+                            {/* Vrai rang de la commande (aligné sur l'onglet
+                                Montant), pas la position dans la liste. */}
+                            Cmd {(o as any).rank ?? idx + 1}
                           </Text>
                         </TouchableOpacity>
                       ))}

@@ -60,13 +60,20 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const pendingReadIdsRef = useRef<Set<string>>(new Set());
 
+  // Une donnée FRAÎCHE (serveur ou socket) est déjà arrivée : l'hydratation
+  // storage, asynchrone, ne doit plus écraser le state — sinon la liste
+  // s'affiche puis disparaît (cache vide/périmé posé après la réponse serveur).
+  const hasFreshDataRef = useRef(false);
+
   // Hydrate depuis storage au montage (affichage instantané)
   useEffect(() => {
     (async () => {
-      const cached = await storage.get(CACHE_KEY);
-      if (Array.isArray(cached)) setNotifications(cached);
       const q = (await storage.get(QUEUE_KEY)) as ReadOp[] | null;
       if (Array.isArray(q)) pendingReadIdsRef.current = new Set(q.map(o => o.id));
+      const cached = await storage.get(CACHE_KEY);
+      if (!hasFreshDataRef.current && Array.isArray(cached) && cached.length > 0) {
+        setNotifications(cached);
+      }
     })();
   }, []);
 
@@ -103,7 +110,9 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, []);
 
   const fetchNotifications = useCallback(async (quiet = false) => {
-    if (!userData) return;
+    // Sans `uid`, la requête partirait en `userId=undefined` et renverrait une
+    // liste vide qui écraserait le cache : on attend que l'auth soit complète.
+    if (!userData?.uid) return;
     try {
       if (!quiet) setLoading(true);
       setError(null);
@@ -118,8 +127,11 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       const response = await axios.get(`${Config.apiUrl}${endpoint}`, {
         headers: { "ngrok-skip-browser-warning": "true" },
       });
-      if (response.data && response.data.data) {
+      // Une réponse mal formée (pas de tableau) ne doit JAMAIS vider la liste :
+      // on garde ce qui est affiché plutôt que de faire disparaître les notifs.
+      if (Array.isArray(response.data?.data)) {
         const server: Notification[] = response.data.data;
+        hasFreshDataRef.current = true;
         const uid = userData.uid;
         // Filet de sécurité : ré-appliquer les reads optimistes (user déjà présent dans isRead)
         const pendingIds = pendingReadIdsRef.current;
@@ -150,10 +162,14 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
   // Premier chargement après login (silencieux). Plus de refresh auto sur socket/push.
   const didInitialFetchRef = useRef(false);
   useEffect(() => {
-    if (userData && !didInitialFetchRef.current) {
+    // Conditionné à `uid` : `userData` peut arriver incomplet, et consommer le
+    // flag trop tôt empêcherait définitivement le premier chargement.
+    if (userData?.uid && !didInitialFetchRef.current) {
       didInitialFetchRef.current = true;
       fetchNotifications(true);
     }
+    // Déconnexion : on réarme pour que la prochaine connexion refetch.
+    if (!userData?.uid) didInitialFetchRef.current = false;
   }, [userData, fetchNotifications]);
 
   const markAsRead = useCallback(async (id: string, idGroup?: string) => {
@@ -198,6 +214,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
   const addFromSocket = useCallback((notif: Notification) => {
     if (!notif?.id) return;
+    hasFreshDataRef.current = true;
     setNotifications(prev => {
       const existing = prev.find(n => n.id === notif.id);
       if (existing) {

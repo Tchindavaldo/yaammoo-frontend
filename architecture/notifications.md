@@ -47,6 +47,21 @@ Le helper **`isNotifRead(notif, userId)`** exporté par le context unifie la lec
 - `addFromSocket(notif)` — injection directe d'une notif reçue via socket dans le state + cache, sans refetch. Utilisé par `useSocketEvents` sur l'event `newNotification`.
 - `isRead(notif)` — wrapper mémoïsé autour de `isNotifRead(notif, userData.uid)`.
 
+### Garde-fous anti « la liste s'affiche puis disparaît »
+
+- **Fetch conditionné à `userData.uid`** (et non à `userData` seul, qui peut arriver
+  incomplet). Sans `uid`, la requête partait en `userId=undefined` : le backend répond
+  `{success:true, data:[]}` — un tableau vide **bien formé** qui écrasait le state ET le
+  cache storage. Le flag `didInitialFetchRef` est aussi conditionné à `uid`, sinon il était
+  consommé trop tôt et le premier chargement n'avait jamais lieu ; il est **réarmé** à la
+  déconnexion.
+- **Hydratation storage non destructive** : `hasFreshDataRef` marque l'arrivée d'une donnée
+  fraîche (réponse serveur ou `addFromSocket`). L'hydratation depuis le cache étant
+  asynchrone, elle n'écrase plus le state si elle se résout après — et n'applique jamais un
+  cache vide.
+- **Réponse mal formée ignorée** : seul un `Array.isArray(response.data?.data)` déclenche le
+  remplacement de la liste.
+
 ### Clés storage
 - `notifications_cache` — snapshot de la liste (hydratation au mount).
 - `notif_read_queue` — `[{id, idGroup?, userId}]` des `markAsRead` en attente de sync réseau.

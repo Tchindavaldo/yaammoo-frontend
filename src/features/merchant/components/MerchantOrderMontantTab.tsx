@@ -59,13 +59,21 @@ export function buildDeliveryGroups(orders: Commande[]): Group[] {
     if (g) g.orders.push(o);
     else map.set(gid, { key: gid, orders: [o] });
   });
+  // Sans rang (commandes terminées) → Number.MAX_SAFE_INTEGER plutôt qu'Infinity :
+  // la soustraction de deux Infinity donne NaN et casserait le comparateur.
+  const rankOf = (o: Commande) =>
+    (o as any).rank ?? Number.MAX_SAFE_INTEGER;
   map.forEach((g) => {
-    g.orders.sort(
-      (a, b) => ((a as any).rank ?? Infinity) - ((b as any).rank ?? Infinity),
-    );
+    // Rang croissant DANS le bloc ; les commandes terminées (sans rang) en fin.
+    g.orders.sort((a, b) => rankOf(a) - rankOf(b));
     g.billed = g.orders.find((o) => (o as any).courseBilled === true);
   });
-  return [...map.values()];
+  // Les blocs eux-mêmes suivent le même ordre : chacun prend le rang de sa
+  // commande la mieux classée, et un bloc entièrement terminé (aucun rang)
+  // se retrouve en fin de liste.
+  return [...map.values()].sort(
+    (a, b) => rankOf(a.orders[0]) - rankOf(b.orders[0]),
+  );
 }
 
 /** Course facturée d'un bloc : 0 si sur place, offerte, ou non facturée. */

@@ -23,6 +23,8 @@ yaammoo/src/features/merchant/
 └── components/
     ├── OrderManagePanel.tsx            # Panel principal gestion commandes
     ├── MerchantOrderCard.tsx           # Carte commande côté marchand (avec bouton avancer statut)
+    ├── MerchantFilterSheet.tsx          # Bottom sheet filtres : dates aujourd'hui/à venir (haut),
+    │                                    #   périodes de livraison multi-cochables (milieu), dates passées (bas)
     ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile) — shell + état + nav globale
     ├── MerchantOrderLivraisonTab.tsx   # Tab Livraison + helpers (InfoCard, Waveform) extraits du sheet
     ├── MerchantOrderCommandesTab.tsx   # Tab Commande : menu/extras/boissons, icônes Ionicons, prix en XAF
@@ -66,7 +68,8 @@ yaammoo/src/features/merchant/
 | `onDelegate` | `(id, driverId) => Promise<boolean>` | Délègue une commande à un livreur (pose `driverId`, statut inchangé) |
 | `selectedDate` | `string \| null` | Date sélectionnée (contrôlée par le header de page) |
 | `onSelectDate` | `(iso: string \| null) => void` | Remonte le choix de date au header |
-| `onDatesChange` | `(opts: DateOption[]) => void` | Remonte la liste des dates disponibles au header (DatePill) |
+| `onDatesChange` | `(opts: DateOption[]) => void` | Remonte la liste des dates disponibles (plus consommé par `boutique.tsx`) |
+| `onStatusChange` | `({label, count}) => void` | Remonte l'onglet de statut actif + le nb de commandes affichées, pour la pilule du header |
 
 **Onglets statut** :
 | Key | Label | Statuts Firestore |
@@ -75,9 +78,11 @@ yaammoo/src/features/merchant/
 | `proccess` | En cours | `processing`, `active`, `in_progress` |
 | `finish` | Terminées | `completed`, `finished`, `done`, `delivering` |
 
-**Filtre par date** : les dates disponibles (basées sur `delivery.date` ou `createdAt`) sont
-calculées par le panel puis **remontées au header de page** via `onDatesChange` ; la sélection
-est affichée dans le `DatePill` du `TabHeader` (boutique.tsx) et redescend via `selectedDate`.
+**Filtre par date** : le choix de date passe désormais par le `MerchantFilterSheet`.
+Le `DatePill` du header de `boutique.tsx` a été **remplacé** par un `HeaderPill` en lecture
+seule affichant **« N cmd \<statut\> »** (statut actif + nb de commandes réellement
+affichées, filtres date/périodes compris), alimenté par `onStatusChange`. Le **sous-titre**
+du header continue d'indiquer le jour affiché.
 Le panel ne rend plus sa propre ligne de chips date. Pour éviter une boucle de rendu, l'effet
 qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(",")`.
 
@@ -107,8 +112,23 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
   étant une position relative recalculée à chaque validation, tout repère par numéro
   devient faux (voire pointe vers la commande d'un autre client) dès la première
   validation.
-- `displayRows` (`{ head, group }[]`) remplace `dateFilteredOrders` au rendu ; les sections
-  de dates passées passent par le même `groupBySlot`.
+- `displayRows` (`{ head, group }[]`) remplace `dateFilteredOrders` au rendu.
+
+> ⚠️ Les **sections accordéon « Commandes des jours précédents »** (anciennement rendues
+> sous la liste en `pending` / `proccess`) ont été **supprimées** : les dates passées sont
+> désormais accessibles via les chips « Cmd passées non traitées » du `MerchantFilterSheet`,
+> qui les charge dans la liste principale. `pastSections` et le style `sectionLabel` du
+> panel n'existent plus. À la place, un **rappel en fin de liste** (« Vous avez des
+> commandes passées non traitées », `hasPastUntreated`) s'affiche en `pending` / `proccess`
+> quand des dates passées subsistent — **y compris en consultant un jour passé** : la date
+> affichée est exclue du test, donc le rappel ne parle que des AUTRES jours non traités.
+> Un tap ouvre le `MerchantFilterSheet`.
+>
+> **Liste vide** : pas de double message. Le message « Aucune commande … » est alors
+> **centré verticalement** (hauteur = fenêtre − barres fixes, via `emptyStateHeight`) et
+> porte lui-même l'info : « …, mais vous avez des commandes passées non traitées », avec
+> l'icône `alert-circle-outline` en couleur primaire, le tout cliquable. Le rappel de fin
+> de liste n'est rendu que si la liste contient au moins une carte.
 - La carte **ne change pas de design** : le groupe est passé via `sheetOrders` (et non
   `allOrders`, qui bascule sur la variante groupée). Seul le bottom sheet reçoit la nav
   multi-cmd, alimentée quand `sheetOrders.length > 1`.
@@ -133,8 +153,41 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 **Layout "En Attente" / "En cours"** :
 - `FlatList` simple avec `MerchantOrderCard` pour chaque commande
 
+**Barre de filtres en BAS** (design partagé avec « Mes livraisons ») :
+- Le **badge** de chaque chip compte les commandes de la **date active** (et des périodes
+  cochées), pas le total tous jours confondus — sinon le badge du jour affiché incluait
+  des commandes passées.
+- Les chips de statut (En Attente / En cours / Terminées, avec badge compteur) ne sont
+  **plus** dans la barre fixe du haut : ils sont rendus par `StickyChipsRow`
+  (`features/driver/components`) dans une barre `position: absolute` posée juste au-dessus
+  de la navbar, **collée à elle** : `bottom = useTabBarHeight()` (58 + `insets.bottom`,
+  la vraie hauteur de la tab bar — pas de constante approximative). À droite, une icône
+  `options-outline` ouvre le `MerchantFilterSheet`.
+- Fond **flouté** (`BlurView` intensité 40 + voile blanc 55 %) : les cartes qui scrollent
+  derrière restent devinables.
+- La barre fixe du haut ne contient plus que les **stat-boxes**.
+- `listPadBottom` réserve `tabBarHeight + FILTER_BAR_HEIGHT + 24`.
+
+**MerchantFilterSheet.tsx** — bottom sheet de filtres, **hauteur FIXE** (`height: 58%`) :
+beaucoup de créneaux ne fait plus grandir le sheet, le contenu scrolle à l'intérieur.
+
+| Zone | Contenu |
+|---|---|
+| Haut (fixe) | **Aujourd'hui** et **Cmd à venir**, deux colonnes **côte à côte**, chacune label au-dessus / chips en dessous |
+| Milieu (scroll) | « Toutes les périodes », **Livraison express**, **Pas de livraison** en **lignes cochables** ; puis **Créneaux horaires** en **grille de tuiles** (design de l'onglet Extra du sheet home). **Multi-sélection** sur l'ensemble |
+| Bas (fixe) | **Cmd passées non traitées** (En Attente / En cours) ou **Cmd passées** (Terminées) — piloté par la prop `pastUntreated` |
+
+- Chaque période affiche son **nombre de commandes** (calculé sur la date active et le
+  statut courant) : pastille sur les lignes cochables, badge d'angle sur les tuiles
+  de créneau. « Toutes les périodes » porte le total (`allPeriodsCount`).
+- `selectedPeriods: string[]` dans le panel (vide = toutes). Clé de période d'une commande :
+  `surplace` (`delivery.status !== true`), `express` (`delivery.type === 'express'`),
+  sinon `delivery.time`. Le filtre s'applique dans `dateFilteredOrders`.
+- Les périodes proposées sont **dérivées de la date active** ; une période cochée qui
+  disparaît est retirée automatiquement.
+
 **Barre fixe + scroll-under + snap** :
-- La barre stats+chips est en `position: absolute` (`top: topOffset`, mesurée via
+- La barre stats est en `position: absolute` (`top: topOffset`, mesurée via
   `onLayout` → `barHeight`) ; la liste scrolle dessous (`paddingTop = topOffset + barHeight + 15`).
 - **Snap après-coup** : à `onMomentumScrollEnd`, si une carte est coupée au bord bas
   de la barre fixe, on `scrollTo` la carte la plus proche (haut ou bas). Repose sur
@@ -268,6 +321,10 @@ semblait se fermer puis se rouvrir.
   pendant l'ouverture. S'il en reste au moins une non traitée, le sheet **reste ouvert**
   et bascule automatiquement sur la première d'entre elles ; sinon il se ferme.
   En commande unique, la validation ferme donc toujours le sheet.
+- **Chips « Cmd » du header** : numérotés par le **vrai `rank`** de la commande
+  (`(o as any).rank ?? idx + 1`), et non par la position dans la liste — cohérent avec
+  l'onglet Montant. Le préfixe `Cmd N : ` du toast utilise le même numéro. Idem dans la
+  variante `.web.tsx`.
 - **Pas de croix ✕** dans le header : la place revient aux chips Cmd. La fermeture se
   fait par **swipe vers le bas** (`PanResponder`, `dy > 100`), **tap sur l'overlay**, ou
   le bouton retour Android (`onRequestClose`).
@@ -328,7 +385,11 @@ commande affichée.
   En livraison / Livrée / Annulée) — le groupe pouvant mélanger des stades différents.
 
 - **Regroupement par `deliveryGroupId`** : une commande sans groupe forme son propre bloc
-  (clé `solo_<id>`). Chaque bloc liste ses commandes triées par `rank`.
+  (clé `solo_<id>`). Chaque bloc liste ses commandes triées par `rank` **croissant**, et
+  les **blocs eux-mêmes** sont ordonnés par le rang de leur commande la mieux classée.
+  Une commande **terminée n'a plus de rang** : elle passe en fin de bloc, et un bloc
+  entièrement terminé en fin de liste (`rank ?? Number.MAX_SAFE_INTEGER` — pas `Infinity`,
+  dont la soustraction donnerait `NaN` et casserait le comparateur).
 - **Une ligne par commande** : `Cmd <rank>` (le vrai rang) + montant articles
   (`computeItemsTotal` = plat × quantité + extras + boissons sélectionnés).
 - **Ligne livraison du groupe** — masquée si `delivery.status !== true` (sur place) :

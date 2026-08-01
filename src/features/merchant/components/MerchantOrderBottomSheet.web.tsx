@@ -297,14 +297,15 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
                 ]}
                 style={{ flexGrow: 0 }}
               >
-                {allOrders!.map((_, idx) => (
+                {allOrders!.map((o, idx) => (
                   <TouchableOpacity
                     key={idx}
                     style={[styles.navTab, selectedOrderIdx === idx && styles.navTabActive]}
                     onPress={() => setSelectedOrderIdx(idx)}
                   >
                     <Text style={[styles.navTabText, selectedOrderIdx === idx && styles.navTabTextActive]}>
-                      Cmd {idx + 1}
+                      {/* Vrai rang, aligné sur l'onglet Montant. */}
+                      Cmd {(o as any).rank ?? idx + 1}
                     </Text>
                   </TouchableOpacity>
                 ))}

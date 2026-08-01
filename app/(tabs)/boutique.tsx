@@ -10,8 +10,8 @@ import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useMerchant } from '@/src/features/merchant/hooks/useMerchant';
 import { Theme } from '@/src/theme';
 import { TabHeader } from '@/src/components/molecules/TabHeader';
-import { DatePill } from '@/src/components/molecules/DatePill';
-import { OrderManagePanel, DateOption } from '@/src/features/merchant/components/OrderManagePanel';
+import { HeaderPill } from '@/src/components/molecules/HeaderPill';
+import { OrderManagePanel } from '@/src/features/merchant/components/OrderManagePanel';
 import { NoBoutiquePanel } from '@/src/features/merchant/components/NoBoutiquePanel';
 import { ActivityIndicator } from '@/src/components/CustomActivityIndicator';
 import { Toast } from '@/src/components/Toast';
@@ -25,9 +25,14 @@ export default function BoutiqueScreen() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [headerHeight, setHeaderHeight] = useState(70);
 
-  // État date remonté ici (le panel filtre, le header affiche les chips de dates).
+  // État date remonté ici : le panel filtre, et le sous-titre du header indique
+  // le jour affiché (le CHOIX de date passe par le bottom sheet de filtres).
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [dateOptions, setDateOptions] = useState<DateOption[]>([]);
+
+  // Onglet de statut actif + nb de commandes affichées, pour la pilule du header.
+  const [statusInfo, setStatusInfo] = useState<{ label: string; count: number }>(
+    { label: 'En Attente', count: 0 },
+  );
 
   const todayISO = new Date().toISOString().substring(0, 10);
 
@@ -100,7 +105,7 @@ export default function BoutiqueScreen() {
         onDelegate={delegateOrder}
         selectedDate={selectedDate}
         onSelectDate={setSelectedDate}
-        onDatesChange={setDateOptions}
+        onStatusChange={setStatusInfo}
         topOffset={headerHeight}
       />
     );
@@ -112,11 +117,8 @@ export default function BoutiqueScreen() {
         title="Boutique"
         subtitle={selectedDateLabel}
         right={
-          <DatePill
-            options={dateOptions}
-            selected={selectedDate}
-            todayISO={todayISO}
-            onSelect={setSelectedDate}
+          <HeaderPill
+            label={`${statusInfo.count} cmd ${statusInfo.label.toLowerCase()}`}
           />
         }
         onHeightChange={setHeaderHeight}

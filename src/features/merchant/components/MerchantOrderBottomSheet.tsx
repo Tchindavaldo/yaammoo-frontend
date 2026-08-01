@@ -21,6 +21,8 @@ export type OrderItem = {
   unitPrice?: number;
   hasQty?: boolean;
   type?: 'menu' | 'extra' | 'drink';
+  /** Visuel du plat (type `menu` uniquement) : affiché à la place de l'icône. */
+  image?: string;
 };
 
 export type DeliveryUser = {
@@ -81,6 +83,7 @@ function buildItems(order: Commande): OrderItem[] {
     unitPrice: menuPrice,
     hasQty: true,
     type: 'menu',
+    image: (order.menu as any)?.coverImage || (order.menu as any)?.image,
   });
 
   // Extras — uniquement ceux sélectionnés (status === true)
@@ -250,21 +253,24 @@ export default function MerchantOrderBottomSheet({
   const total = user ? user.orders.reduce((s, o) => s + (o.unitPrice || 0) * o.qty, 0) : 0;
   const hasMultiple = allOrders && allOrders.length > 1;
 
+  // On dépend de l'ID et non de l'objet `order` : au retour d'arrière-plan, un
+  // refresh des données fournit une nouvelle référence pour la MÊME commande, ce
+  // qui rejouait l'animation d'ouverture (le sheet semblait se fermer/rouvrir).
+  const orderId = order?.id;
   useEffect(() => {
-    if (visible && order) {
-      translateY.setValue(SHEET_HEIGHT);
-      overlayOpacity.setValue(0);
-      setTab('livraison');
-      setSelectedOrderIdx(0);
-      setCheckedIdx(new Set());
-      setValidatedIdx(new Set());
-      setToastMsg('');
-      Animated.parallel([
-        Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 25, stiffness: 180, mass: 0.8 }),
-        Animated.timing(overlayOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
-      ]).start();
-    }
-  }, [visible, order]);
+    if (!visible || !orderId) return;
+    translateY.setValue(SHEET_HEIGHT);
+    overlayOpacity.setValue(0);
+    setTab('livraison');
+    setSelectedOrderIdx(0);
+    setCheckedIdx(new Set());
+    setValidatedIdx(new Set());
+    setToastMsg('');
+    Animated.parallel([
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, damping: 25, stiffness: 180, mass: 0.8 }),
+      Animated.timing(overlayOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, [visible, orderId]);
 
   // Revenir à Livraison si la commande courante n'a plus de tab Livreur.
   useEffect(() => {

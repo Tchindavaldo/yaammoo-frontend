@@ -4,12 +4,14 @@ import {
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { OrderItem } from './MerchantOrderBottomSheet';
 
-const ITEM_ICONS: Record<string, string> = {
-  menu: '\uD83C\uDF7D\uFE0F',
-  extra: '\u2795',
-  drink: '\uD83E\uDD64',
+// Ic\u00F4nes align\u00E9es sur le bottom sheet du home (checkout/tabs/DetailTab).
+const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  menu: 'fast-food-outline',
+  extra: 'add-circle-outline',
+  drink: 'wine-outline',
 };
 
 const ITEM_LABEL: Record<string, string> = {
@@ -134,14 +136,25 @@ export function CommandesTab({
                   (i < orders.length - 1 || hasDelivery) && styles.rowBorder,
                 ]}
               >
-                {/* Icône + badge type */}
-                <View style={[
-                  styles.iconBox,
-                  o.type === 'extra' && { backgroundColor: '#FFF7ED' },
-                  o.type === 'drink' && { backgroundColor: '#EFF6FF' },
-                ]}>
-                  <Text style={{ fontSize: 13 }}>{icon}</Text>
-                </View>
+                {/* Plat : visuel du menu. Extra / boisson : icône. */}
+                {o.type === 'menu' && o.image ? (
+                  <Image
+                    source={{ uri: o.image }}
+                    style={styles.iconBox}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={150}
+                  />
+                ) : (
+                  <View style={[
+                    styles.iconBox,
+                    styles.iconBoxCentered,
+                    o.type === 'extra' && { backgroundColor: '#FFF7ED' },
+                    o.type === 'drink' && { backgroundColor: '#EFF6FF' },
+                  ]}>
+                    <Ionicons name={icon} size={16} color="#ec4913" />
+                  </View>
+                )}
 
                 {/* Nom + type label */}
                 <View style={{ flex: 1 }}>
@@ -167,8 +180,8 @@ export function CommandesTab({
           {/* Ligne livraison : zone + prix */}
           {hasDelivery && (
             <View style={styles.row}>
-              <View style={[styles.iconBox, { backgroundColor: '#FEF2F2' }]}>
-                <Text style={{ fontSize: 13 }}>🛵</Text>
+              <View style={[styles.iconBox, styles.iconBoxCentered, { backgroundColor: '#FEF2F2' }]}>
+                <Ionicons name="bicycle-outline" size={16} color="#ec4913" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.itemName} numberOfLines={1}>Livraison</Text>
@@ -221,6 +234,9 @@ export function CommandesTab({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
+    // Le sheet est à hauteur fixe (520) : on plafonne la carte pour qu'elle ne
+    // pousse jamais le footer hors de la zone visible.
+    maxHeight: 340,
     backgroundColor: '#F9FAFB',
     borderRadius: 16,
     borderWidth: 1,
@@ -243,6 +259,9 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 9,
     backgroundColor: '#F0FDF4',
+  },
+  // Centrage réservé aux icônes : l'image du plat, elle, remplit la case.
+  iconBoxCentered: {
     alignItems: 'center',
     justifyContent: 'center',
   },

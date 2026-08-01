@@ -23,7 +23,7 @@ yaammoo/src/features/merchant/
     ├── MerchantOrderCard.tsx           # Carte commande côté marchand (avec bouton avancer statut)
     ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile) — shell + état + nav globale
     ├── MerchantOrderLivraisonTab.tsx   # Tab Livraison + helpers (InfoCard, Waveform) extraits du sheet
-    ├── MerchantOrderCommandesTab.tsx   # Tab Commande : menu/extras/boissons avec icônes et prix en €
+    ├── MerchantOrderCommandesTab.tsx   # Tab Commande : menu/extras/boissons, icônes Ionicons, prix en XAF
     ├── MerchantOrderBottomSheet.web.tsx # Version web du bottom sheet (auto-contenu)
     ├── MenuManagePanel.tsx             # Panel gestion des menus (stats + chips filtres Dispo/Indispo + bouton Ajouter ; item calqué sur MerchantOrderCard ; vue ajout inline)
     ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
@@ -89,6 +89,12 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 - La ligne affiche la commande **la mieux classée** du groupe (`rank` le plus petit) et
   prend sa position au classement. Ex. rangs 1, 4, 5 à 11h → une ligne au rang 1.
 - **Express** et **sur place** ne sont jamais groupés : ils gardent leur place au classement.
+  En express le rang **est** la promesse (« je pars dès que prêt ») : grouper ferait
+  remonter une commande tardive au rang de la première, devant des clients ayant
+  commandé avant. En sur place, il n'y a aucune course à mutualiser (le client vient
+  chercher). Aucun indicateur de lien n'est affiché : le rang étant une position
+  relative recalculée à chaque validation, tout repère par numéro devient faux
+  (voire pointe vers la commande d'un autre client) dès la première validation.
 - `displayRows` (`{ head, group }[]`) remplace `dateFilteredOrders` au rendu ; les sections
   de dates passées passent par le même `groupBySlot`.
 - La carte **ne change pas de design** : le groupe est passé via `sheetOrders` (et non
@@ -183,6 +189,11 @@ La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.
   `order.delivery.zone`. Fallback sur l'adresse si `zone` absent (anciennes commandes).
 - `buildUser()` expose `zone` et `deliveryPrice` (depuis `order.delivery.prix`).
 
+**Animation d'ouverture** : l'effet dépend de `order?.id`, **pas** de l'objet `order`.
+Au retour d'arrière-plan, un refresh des données fournit une nouvelle référence pour
+la même commande ; en dépendant de l'objet, l'animation se rejouait et le sheet
+semblait se fermer puis se rouvrir.
+
 **Sélecteur multi-commandes dans le header** (native `.tsx`) :
 - En multi-commandes (`allOrders.length > 1`), la ligne « Zone de livraison » du header
   est **remplacée** par une rangée de chips numérotés (1, 2, 3…) scrollable
@@ -244,11 +255,30 @@ Tab « Livraison » extrait de l'ancien `MerchantOrderBottomSheet`. Contient :
 **Chemin** : `yaammoo/src/features/merchant/components/MerchantOrderCommandesTab.tsx`
 
 Tab « Commande » extrait de l'ancien `MerchantOrderBottomSheet`. Affiche :
-- Le menu commandé avec son prix
+- Le menu commandé avec son prix. **Le visuel du plat** (`menu.coverImage` /
+  `menu.image`, exposé par `buildItems()` via `OrderItem.image`) remplit la case
+  d'icône ; à défaut, on retombe sur `fast-food-outline`.
 - La liste des extras (icônes, noms, prix)
 - La liste des boissons (icônes, noms, prix)
-- **Ligne livraison** (si `deliveryPrice > 0` ou `zone`) : icône , libellé
-  "Livraison" + la **zone** en sous-texte, prix à droite (`deliveryPrice`).
+- **Ligne livraison** (si `deliveryPrice > 0` ou `zone`) : libellé "Livraison" + la
+  **zone** en sous-texte, prix à droite (`deliveryPrice`).
+
+**Icônes** — `Ionicons` alignées sur le bottom sheet du home
+(`checkout/components/tabs/DetailTab.tsx`), jamais d'emoji (R15) :
+
+| Type | Icône | Fond |
+|---|---|---|
+| `menu` | image du plat, sinon `fast-food-outline` | `#F0FDF4` |
+| `extra` | `add-circle-outline` | `#FFF7ED` |
+| `drink` | `wine-outline` | `#EFF6FF` |
+| livraison | `bicycle-outline` | `#FEF2F2` |
+
+> `iconBox` porte la taille et le fond ; `iconBoxCentered` n'est appliqué qu'aux
+> icônes — l'image du plat, elle, remplit la case (`contentFit="cover"`).
+
+**Hauteur** : la carte grise est plafonnée à `maxHeight: 340`. Le sheet étant à
+hauteur fixe (`SHEET_HEIGHT = 520`), sans ce plafond la liste pousse la ligne de
+total hors de la zone visible.
 - **Ligne de total** (fixe, sous la liste scrollable) : libellé « Total commande » avec
   le montant **en dessous** (inclut le prix de livraison : `total + deliveryPrice`), et
   le **bouton Valider à droite**.

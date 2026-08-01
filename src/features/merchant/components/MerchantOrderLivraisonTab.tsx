@@ -87,9 +87,12 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
     setIsOpeningMaps(true);
     const { latitude, longitude } = coords;
     const label = encodeURIComponent(user.name);
+    // iOS : `maps://?daddr=` (et non `maps://app?…`, qui ouvre Apple Maps sans
+    // lancer le calcul d'itinéraire). `dirflg=d` force le mode conduite.
+    // Android : `google.navigation:` démarre la navigation turn-by-turn.
     const url = Platform.select({
-      ios: `maps://app?daddr=${latitude},${longitude}&label=${label}`,
-      android: `google.navigation:q=${latitude},${longitude}`,
+      ios: `maps://?daddr=${latitude},${longitude}&dirflg=d&q=${label}`,
+      android: `google.navigation:q=${latitude},${longitude}&mode=d`,
       default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
     });
     Linking.canOpenURL(url!).then(supported => {

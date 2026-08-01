@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Animated, Dimensions, PanResponder, Pressable, Modal,
@@ -9,6 +9,8 @@ import { Commande } from '@/src/types';
 import { Toast } from '@/src/components/Toast';
 import { LivraisonTab } from './MerchantOrderLivraisonTab';
 import { CommandesTab } from './MerchantOrderCommandesTab';
+import { MontantTab } from './MerchantOrderMontantTab';
+import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
 
 const SHEET_HEIGHT = 520;
@@ -44,13 +46,20 @@ export type DeliveryUser = {
   orders: OrderItem[];
 };
 
-type Tab = 'livraison' | 'commandes' | 'livreur';
+type Tab = 'livraison' | 'commandes' | 'montant' | 'livreur';
 
 type Props = {
   order: Commande | null;
   visible: boolean;
   onClose: () => void;
   allOrders?: Commande[];
+  /**
+   * Toutes les commandes de la boutique. L'onglet Montant y recompose le groupe
+   * ABSOLU de la commande affichée (même clé de groupage), indépendamment du
+   * filtre de statut de la liste : le récap est donc identique en « En attente »,
+   * « En cours » ou « Terminées ».
+   */
+  groupPool?: Commande[];
   /** Validation d'UNE commande (le bouton vit dans l'onglet Commande). */
   onValidate?: (order: Commande) => Promise<void> | void;
   /** Masque le bouton Valider quand la commande n'est plus validable. */
@@ -141,7 +150,7 @@ function buildUser(order: Commande): DeliveryUser {
 
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function MerchantOrderBottomSheet({
-  order, visible, onClose, allOrders, onValidate, canValidate = false,
+  order, visible, onClose, allOrders, groupPool, onValidate, canValidate = false,
 }: Props) {
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
@@ -251,7 +260,33 @@ export default function MerchantOrderBottomSheet({
     currentOrder?.status === 'delivering' ||
     currentOrder?.status === 'delivered';
   const total = user ? user.orders.reduce((s, o) => s + (o.unitPrice || 0) * o.qty, 0) : 0;
+
+  // Livraison offerte (bonus/campagne couvert par le fastfood) ou mutualisée sur
+  // un groupe de livraison : dans les deux cas, pas de prix sur cette commande.
+  const offer = (currentOrder as any)?.deliveryOffer;
+  const deliveryOffered = offer?.active === true && offer?.coveredBy === 'fastfood';
+  // « Cmd groupée » n'a de sens qu'à partir de 2 commandes portant le MÊME
+  // deliveryGroupId : seule une commande avec ce groupe ne mutualise rien.
+  const currentGroupId = (currentOrder as any)?.deliveryGroupId;
+  const deliveryGrouped =
+    !!currentGroupId &&
+    orderList.filter((o) => (o as any).deliveryGroupId === currentGroupId).length > 1;
+  const billableDelivery =
+    deliveryOffered || deliveryGrouped ? 0 : (user?.deliveryPrice ?? 0);
   const hasMultiple = allOrders && allOrders.length > 1;
+
+  // Groupe ABSOLU de la commande affichée : toutes les commandes de la boutique
+  // partageant sa clé de groupage, tous statuts confondus. Le récap de l'onglet
+  // Montant ne dépend donc pas de l'onglet de statut d'où le sheet a été ouvert.
+  const montantOrders = useMemo(() => {
+    if (!currentOrder) return [];
+    const pool = groupPool && groupPool.length > 0 ? groupPool : orderList;
+    const key = orderGroupKey(currentOrder);
+    const group = pool.filter((o) => orderGroupKey(o) === key);
+    return group.length > 0 ? group : orderList;
+  }, [currentOrder, groupPool, orderList]);
+
+  const showMontantTab = montantOrders.length > 1;
 
   // On dépend de l'ID et non de l'objet `order` : au retour d'arrière-plan, un
   // refresh des données fournit une nouvelle référence pour la MÊME commande, ce
@@ -275,7 +310,8 @@ export default function MerchantOrderBottomSheet({
   // Revenir à Livraison si la commande courante n'a plus de tab Livreur.
   useEffect(() => {
     if (tab === 'livreur' && !showDriverTab) setTab('livraison');
-  }, [tab, showDriverTab]);
+    if (tab === 'montant' && !showMontantTab) setTab('livraison');
+  }, [tab, showDriverTab, showMontantTab]);
 
   const handleDismiss = () => {
     Animated.parallel([
@@ -365,7 +401,13 @@ export default function MerchantOrderBottomSheet({
           {/* Top tabs : Livraison | Commande | (Livreur) */}
           <View style={styles.tabBar}>
             {(
-              ['livraison', 'commandes', ...(showDriverTab ? ['livreur'] : [])] as Tab[]
+              [
+                'livraison',
+                'commandes',
+                // Le récap Montant n'a d'intérêt qu'à partir de 2 commandes groupées.
+                ...(showMontantTab ? ['montant'] : []),
+                ...(showDriverTab ? ['livreur'] : []),
+              ] as Tab[]
             ).map((t) => (
               <TouchableOpacity
                 key={t}
@@ -377,7 +419,9 @@ export default function MerchantOrderBottomSheet({
                     ? 'Livraison'
                     : t === 'commandes'
                       ? 'Commande'
-                      : 'Livreur'}
+                      : t === 'montant'
+                        ? 'Montant'
+                        : 'Livreur'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -392,6 +436,8 @@ export default function MerchantOrderBottomSheet({
             >
               <DriverInfoTab order={currentOrder!} allowRating={false} />
             </ScrollView>
+          ) : tab === 'montant' ? (
+            <MontantTab orders={montantOrders} />
           ) : tab === 'livraison' ? (
             <ScrollView
               style={styles.content}
@@ -405,9 +451,11 @@ export default function MerchantOrderBottomSheet({
               // Remonte la tab à zéro et réarme la détection à chaque changement de Cmd.
               key={selectedOrderIdx}
               orders={user.orders}
-              total={total + user.deliveryPrice}
+              total={total + billableDelivery}
               zone={user.zone}
               deliveryPrice={user.deliveryPrice}
+              deliveryOffered={deliveryOffered}
+              deliveryGrouped={deliveryGrouped}
               onFullyScrolled={() => markChecked(selectedOrderIdx)}
               canValidate={canValidate}
               checked={currentChecked}

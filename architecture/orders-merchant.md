@@ -15,6 +15,8 @@ yaammoo/src/features/merchant/
 ├── hooks/
 │   ├── useMerchant.ts                 # Hook d'accès au contexte marchand
 │   └── useWithdraw.ts                 # Hook logique retrait (states, POST, verdict socket)
+├── utils/
+│   └── orderGroupKey.ts               # Clé de groupage d'une commande (client + date + créneau/zone)
 ├── services/
 │   ├── merchantService.ts             # Appels API marchand
 │   └── withdrawService.ts             # Appel POST /wallet/withdraw
@@ -24,6 +26,7 @@ yaammoo/src/features/merchant/
     ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile) — shell + état + nav globale
     ├── MerchantOrderLivraisonTab.tsx   # Tab Livraison + helpers (InfoCard, Waveform) extraits du sheet
     ├── MerchantOrderCommandesTab.tsx   # Tab Commande : menu/extras/boissons, icônes Ionicons, prix en XAF
+    ├── MerchantOrderMontantTab.tsx     # Tab Montant : récap prix par groupe de livraison (deliveryGroupId)
     ├── MerchantOrderBottomSheet.web.tsx # Version web du bottom sheet (auto-contenu)
     ├── MenuManagePanel.tsx             # Panel gestion des menus (stats + chips filtres Dispo/Indispo + bouton Ajouter ; item calqué sur MerchantOrderCard ; vue ajout inline)
     ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
@@ -82,19 +85,28 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 - Onglets `pending` et `proccess` : `dateFilteredOrders` triés par `rank ASC` via `useMemo`
 - Commandes sans rank → en dernier (`Infinity`)
 
-**Groupement par créneau de livraison** (`groupBySlot`, onglets `pending` / `proccess`) :
-- Les commandes d'un **même client** en **livraison programmée sur le même créneau**
-  (`delivery.status === true`, `delivery.type !== 'express'`, même `delivery.time`)
-  sont fusionnées en **une seule ligne**.
-- La ligne affiche la commande **la mieux classée** du groupe (`rank` le plus petit) et
-  prend sa position au classement. Ex. rangs 1, 4, 5 à 11h → une ligne au rang 1.
-- **Express** et **sur place** ne sont jamais groupés : ils gardent leur place au classement.
-  En express le rang **est** la promesse (« je pars dès que prêt ») : grouper ferait
-  remonter une commande tardive au rang de la première, devant des clients ayant
-  commandé avant. En sur place, il n'y a aucune course à mutualiser (le client vient
-  chercher). Aucun indicateur de lien n'est affiché : le rang étant une position
-  relative recalculée à chaque validation, tout repère par numéro devient faux
-  (voire pointe vers la commande d'un autre client) dès la première validation.
+**Groupement des commandes d'un même client** (`groupBySlot`, onglets `pending` / `proccess`) :
+- Regroupement **par clé**, sans condition de rangs consécutifs. La clé est produite par
+  **`utils/orderGroupKey.ts`** — règle unique partagée avec l'onglet Montant du sheet :
+
+| Type de livraison | Clé de groupe |
+|---|---|
+| Programmée (`delivery.status === true`, `type !== 'express'`, `time` présent) | `userId` + **date** + `delivery.time` + `delivery.zone` (fallback `location`) |
+| Express (`delivery.status === true`, `type === 'express'`) | `userId` + **date** + `delivery.zone` (fallback `location`) |
+| Sur place (`delivery.status !== true`) | `userId` + **date** |
+
+> La **date** (`delivery.date`, sinon `createdAt`) fait partie de la clé : sans elle, les
+> commandes d'un même client sur des jours différents fusionneraient en un seul groupe.
+
+- Chaque groupe donne **une seule ligne**, qui affiche la commande **la mieux classée**
+  (`rank` le plus petit) et prend sa position au classement. Ex. rangs 1, 4, 5 à 11h →
+  une ligne au rang 1.
+- L'ancienne 2ᵉ passe de « fusion des contiguës » (express / sur place fusionnés seulement
+  sur des rangs strictement consécutifs) est **supprimée** : le groupement par clé la couvre.
+- Aucun indicateur de lien n'est affiché pour les commandes non fusionnées : le rang
+  étant une position relative recalculée à chaque validation, tout repère par numéro
+  devient faux (voire pointe vers la commande d'un autre client) dès la première
+  validation.
 - `displayRows` (`{ head, group }[]`) remplace `dateFilteredOrders` au rendu ; les sections
   de dates passées passent par le même `groupBySlot`.
 - La carte **ne change pas de design** : le groupe est passé via `sheetOrders` (et non
@@ -147,6 +159,31 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 | `onDelegate` | `(driverId) => Promise<void\|boolean>\|void` | Délègue la commande à un livreur |
 | `onValidateOne` | `(orderId, status) => Promise<void\|boolean>\|void` | Valide **une seule** commande (bouton du sheet). Défaut : `onUpdateStatus` (toute la ligne) |
 
+**Affichage en `N cmd`** (variante standard) — déclenché dans deux cas :
+1. **ligne groupée** (`sheetOrders.length > 1`) → N = nb de commandes du groupe ;
+2. **commande seule portant au moins un extra ou une boisson** → `1 cmd …`. La présence
+   d'un extra/boisson ne fait que **déclencher** ce libellé ; N reste le nombre de
+   commandes (1), pas le nombre d'articles. Les entrées placeholder `Aucun`/`Aucune`
+   ne déclenchent rien (règle de `computeItemsTotal`). Vaut pour **tous** les modes,
+   y compris sur place → `1 cmd · pas de livraison`.
+
+Sans extra ni boisson, une commande seule affiche `N plat(s) · <livraison>`
+(`quantity`, le nom du menu n'est plus affiché),
+où `<livraison>` vaut `livrée à <heure>`, `livraison express` ou `pas de livraison`
+(même information, sans le préfixe `N cmd`).
+
+- Le nom du plat est remplacé par un libellé dépendant du type de livraison :
+
+| Livraison | Libellé |
+|---|---|
+| Programmée (`delivery.time`) | `N cmd livrées à <heure>` |
+| Express | `N cmd livraison express` |
+| Sur place (`delivery.status !== true`) | `N cmd · pas de livraison` |
+
+- **Montant** — cas 1 (ligne groupée) : `computeGrandTotal(sheetOrders)`, la **même**
+  valeur que le « Total général » de l'onglet Montant du sheet. Cas 2 (commande seule) :
+  `order.total`, inchangé — seul le libellé change.
+
 **Bouton d'action** : avance le statut selon la transition backend (pas de statut cible envoyé explicitement — le backend détermine le suivant).
 
 **Bouton "Lancer"** : ouvre le `DelegateDriverSheet` (`setDelegateVisible(true)`) → **Moi-même**
@@ -178,9 +215,11 @@ individuelle) ou "Lancer tout" (groupe).
 
 **Chemin** : `yaammoo/src/features/merchant/components/MerchantOrderBottomSheet.tsx`
 
-Bottom sheet détail d'une commande marchand, refactoré en **shell + 2 tabs** :
+Bottom sheet détail d'une commande marchand, refactoré en **shell + tabs** :
 - `MerchantOrderLivraisonTab` : infos livraison (client, adresse, note vocale, montant)
 - `MerchantOrderCommandesTab` : détails de la commande (menu, extras, boissons avec icônes et prix)
+- `MerchantOrderMontantTab` : récapitulatif des prix, groupé par `deliveryGroupId`
+- `DriverInfoTab` : infos livreur (uniquement si `delivering` / `delivered`)
 
 La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.
 
@@ -261,7 +300,59 @@ Tab « Commande » extrait de l'ancien `MerchantOrderBottomSheet`. Affiche :
 - La liste des extras (icônes, noms, prix)
 - La liste des boissons (icônes, noms, prix)
 - **Ligne livraison** (si `deliveryPrice > 0` ou `zone`) : libellé "Livraison" + la
-  **zone** en sous-texte, prix à droite (`deliveryPrice`).
+  **zone** en sous-texte, prix à droite (`deliveryPrice`). Le prix est remplacé par :
+  - **« Offert »** si `deliveryOffer.active === true` et `deliveryOffer.coveredBy === 'fastfood'` ;
+  - **« Cmd groupée »** si **au moins 2 commandes du sheet** partagent le même
+    `deliveryGroupId` (course facturée une seule fois pour le groupe, sur la commande
+    `courseBilled === true`). Un `deliveryGroupId` isolé ne déclenche rien.
+  Dans les deux cas la livraison n'entre **pas** dans le total affiché : on ne somme que
+  plat + extras + boissons. Le libellé passe de « Total commande » à **« Total »** quand
+  la commande est groupée.
+
+---
+
+## MerchantOrderMontantTab.tsx
+
+**Chemin** : `yaammoo/src/features/merchant/components/MerchantOrderMontantTab.tsx`
+
+Onglet **Montant** du bottom sheet : récapitulatif des prix du **groupe absolu** de la
+commande affichée.
+
+- **Groupe absolu** : le sheet reçoit `groupPool` (toutes les commandes de la boutique,
+  transmis par `OrderManagePanel` → `MerchantOrderCard`) et retient celles qui partagent
+  la même `orderGroupKey` que la commande affichée — **tous statuts confondus**.
+  Le récap est donc **identique** que le sheet soit ouvert depuis « En attente »,
+  « En cours » ou « Terminées » : il n'obéit qu'à la règle de groupage.
+- **Visible uniquement** si ce groupe compte au moins 2 commandes.
+- Chaque ligne `Cmd N` porte un **chip d'état** (En attente / En cours / Prête /
+  En livraison / Livrée / Annulée) — le groupe pouvant mélanger des stades différents.
+
+- **Regroupement par `deliveryGroupId`** : une commande sans groupe forme son propre bloc
+  (clé `solo_<id>`). Chaque bloc liste ses commandes triées par `rank`.
+- **Une ligne par commande** : `Cmd <rank>` (le vrai rang) + montant articles
+  (`computeItemsTotal` = plat × quantité + extras + boissons sélectionnés).
+- **Ligne livraison du groupe** — masquée si `delivery.status !== true` (sur place) :
+  `Livraison <heure>` si `delivery.type` programmé,
+  `Livraison Express` si express, avec la **zone** en sous-texte. Le montant est celui de
+  la commande du groupe portant `courseBilled === true` ; **« Offert »** si son
+  `deliveryOffer` est actif et couvert par le fastfood ; **« Non facturée »** si aucune
+  commande du bloc ne porte `courseBilled`.
+- **Total du bloc** = somme des articles + course (0 si offerte).
+- **Gabarit identique à l'onglet Commande** : carte plafonnée à `maxHeight: 340`, blocs
+  groupes scrollables au-dessus d'une ligne de total fixe.
+- **Total général** (ligne fixe en bas) : **toujours affiché**, somme des totaux de tous
+  les blocs (`computeGrandTotal`). L'ancienne condition `groups.length > 1` le masquait
+  à tort : l'onglet n'apparaît qu'à partir de 2 commandes, mais celles-ci partagent
+  souvent un **seul `deliveryGroupId`** (livraison groupée) et ne forment donc qu'un
+  bloc — d'où les onglets Montant sans total général.
+
+**Helpers exportés** (règle de calcul unique, réutilisée par `MerchantOrderCard`) :
+| Helper | Rôle |
+|---|---|
+| `computeItemsTotal(order)` | Articles d'une commande : plat × qty + extras + boissons |
+| `buildDeliveryGroups(orders)` | Blocs par `deliveryGroupId` + désignation du `courseBilled` |
+| `computeGrandTotal(orders)` | Articles de toutes les commandes + course de chaque bloc (facturée une fois, 0 si offerte / sur place / non facturée) — utilisé par `MerchantOrderCard` |
+| `deliveryLabel(order)` | `Sur place` \| `Express` \| heure du créneau (interne à l'onglet Montant) |
 
 **Icônes** — `Ionicons` alignées sur le bottom sheet du home
 (`checkout/components/tabs/DetailTab.tsx`), jamais d'emoji (R15) :

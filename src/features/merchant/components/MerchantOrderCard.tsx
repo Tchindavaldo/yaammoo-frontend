@@ -14,6 +14,7 @@ import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
+import { computeGrandTotal } from "./MerchantOrderMontantTab";
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
 
 /** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
@@ -36,6 +37,12 @@ interface MerchantOrderCardProps {
    * la commande la mieux classée du groupe.
    */
   sheetOrders?: Commande[];
+  /**
+   * Toutes les commandes de la boutique : sert à l'onglet Montant du sheet, qui
+   * recompose le groupe ABSOLU (même client / date / créneau ou zone) sans le
+   * filtre de statut appliqué à la liste.
+   */
+  groupPool?: Commande[];
   onUpdateStatus: (
     status:
       | "processing"
@@ -61,6 +68,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   order,
   allOrders,
   sheetOrders,
+  groupPool,
   onUpdateStatus,
   onDelegate,
   onValidateOne,
@@ -130,7 +138,6 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const deliveryType = (order as any).delivery?.type;
     const isExpress = deliveryType === "express";
     const deliveryColor = isExpress ? "#ec4913" : "#2563eb";
-    const deliveryLabel = isExpress ? "Express" : order.delivery?.hour || "Créneau";
 
     const orderCount = allOrders.length;
     const addressStr = order.delivery?.location || "Adresse non spécifiée";
@@ -214,6 +221,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
         <MerchantOrderBottomSheet
           order={order}
           allOrders={allOrders}
+          groupPool={groupPool}
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
         />
@@ -234,19 +242,75 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   }
 
   // --- Design Variant: Standard (Pending/Progress) ---
-  const totalPrice = order.total || 0;
+  // Ligne groupée : plusieurs commandes du même client sur le même créneau/zone
+  // sont rendues par UNE carte (cf. groupBySlot). On n'affiche alors ni le nom du
+  // plat ni le total d'une seule commande, mais "N cmd" + le montant du groupe —
+  // le même que le "Total général" de l'onglet Montant du sheet.
+  const groupedOrders = sheetOrders && sheetOrders.length > 1 ? sheetOrders : null;
+  const totalPrice = groupedOrders
+    ? computeGrandTotal(groupedOrders)
+    : order.total || 0;
+
+  /**
+   * "N cmd livrées à 12h" / "N cmd livraison express" / "N cmd · pas de livraison".
+   * Rendu pour une ligne groupée, et aussi pour une commande seule dès qu'elle
+   * porte au moins un extra ou une boisson — quel que soit le mode de livraison,
+   * y compris sur place (le libellé bascule alors sur "pas de livraison").
+   * `n` = nombre de COMMANDES (pas d'articles) : la taille du groupe, ou 1 pour
+   * une commande seule.
+   */
+  const buildGroupLabel = (n: number) => {
+    const plural = n > 1 ? "s" : "";
+    const d = order.delivery as any;
+    if (d?.status !== true) return `${n} cmd · pas de livraison`;
+    if (d?.type === "express") return `${n} cmd livraison express`;
+    const time = d?.time || d?.hour;
+    return time
+      ? `${n} cmd livrée${plural} à ${time}`
+      : `${n} cmd livrée${plural}`;
+  };
+
+  /**
+   * Partie "livraison" seule, sans préfixe "N cmd" : "livrée à 13h06",
+   * "livraison express" ou "pas de livraison". Suffixe le nom du plat quand la
+   * commande est seule et sans extra ni boisson.
+   */
+  const deliverySuffix = (() => {
+    const d = order.delivery as any;
+    if (d?.status !== true) return "pas de livraison";
+    if (d?.type === "express") return "livraison express";
+    const time = d?.time || d?.hour;
+    return time ? `livrée à ${time}` : "livrée";
+  })();
   const userRank = (order as any).rank || 1;
-  const menuName = (order.menu as any)?.titre || (order.menu as any)?.name || "—";
   const menuImage = (order.menu as any)?.coverImage || (order.menu as any)?.image;
   const deliveryRaw = order.delivery;
   const deliveryType = deliveryRaw?.type;
   const deliveryColor = deliveryType === "express" ? "#ec4913" : deliveryType === "time" ? "#2563eb" : "black";
+  // Chips Extras/Boisson : fond neutre uniforme (celui du cas "pas de livraison").
+  const chipTint = {
+    backgroundColor: "#00000008",
+    borderWidth: 1,
+    borderColor: "#00000014",
+  };
 
   const extras = order.extra || [];
-  const extrasActiveCount = Array.isArray(extras) ? extras.filter((x: any) => x.status !== false).length : 0;
   const drinks = order.drink || [];
-  const drinksActiveCount = Array.isArray(drinks) ? drinks.filter((x: any) => x.status !== false).length : 0;
   const quantity = order.quantity || 1;
+
+  // Item réellement sélectionné : les entrées placeholder "Aucun"/"Aucune" ne
+  // comptent pas (même règle que `computeItemsTotal` de l'onglet Montant).
+  // Sert à la fois aux compteurs des chips et au déclenchement du libellé
+  // "N cmd …" sur une commande seule.
+  const isRealItem = (x: any) =>
+    x?.status === true && x?.name && x.name !== "Aucun" && x.name !== "Aucune";
+  const extrasCount = Array.isArray(extras)
+    ? extras.filter(isRealItem).length
+    : 0;
+  const drinksCount = Array.isArray(drinks)
+    ? drinks.filter(isRealItem).length
+    : 0;
+  const pickedCount = extrasCount + drinksCount;
 
   return (
     <View style={styles.wrapper}>
@@ -274,23 +338,38 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           <View style={styles.summaryTopRow}>
             <View style={styles.summaryTitleContainer}>
               <Text style={styles.summaryPrice}>{totalPrice} F</Text>
-              <Text style={styles.summaryName} numberOfLines={1}> {menuName} (X{quantity})</Text>
+              <Text style={styles.summaryName} numberOfLines={1}>
+                {groupedOrders
+                  ? ` ${buildGroupLabel(groupedOrders.length)}`
+                  : pickedCount > 0
+                    ? ` ${buildGroupLabel(1)}`
+                    : ` ${quantity} plat${quantity > 1 ? "s" : ""} · ${deliverySuffix}`}
+              </Text>
             </View>
             <View style={styles.rankContainer}>
-              <Ionicons name="trophy-outline" size={14} color="#ccc" />
+              <Ionicons name="trophy-outline" size={14} color="#9ca3af" />
               <Text style={styles.rankBadgeRow}>{userRank}</Text>
             </View>
           </View>
 
           <View style={styles.summaryBottomRow}>
             <View style={styles.summaryChipsRow}>
-              <View style={[styles.smallChip, styles.chipInactive, { paddingLeft: 0 }]}>
-                <Ionicons name="fast-food-outline" size={14} color="#ccc" />
-                <Text style={[styles.chipText, { color: "#ccc" }]}>Extras +{extrasActiveCount}</Text>
+              {/* Chips en noir sur fond neutre, quel que soit le mode de
+                  livraison : la couleur reste portée par la seule pastille de
+                  l'avatar. */}
+              <View
+                style={[styles.smallChip, chipTint, { paddingLeft: 0 }]}
+              >
+                <Ionicons name="fast-food-outline" size={14} color="black" />
+                <Text style={[styles.chipText, { color: "black" }]}>
+                  Extras +{extrasCount}
+                </Text>
               </View>
-              <View style={[styles.smallChip, styles.chipInactive]}>
-                <Ionicons name="beer-outline" size={14} color="#ccc" />
-                <Text style={[styles.chipText, { color: "#ccc" }]}>Boisson +{drinksActiveCount}</Text>
+              <View style={[styles.smallChip, chipTint]}>
+                <Ionicons name="beer-outline" size={14} color="black" />
+                <Text style={[styles.chipText, { color: "black" }]}>
+                  Boisson +{drinksCount}
+                </Text>
               </View>
             </View>
             
@@ -322,6 +401,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
       <MerchantOrderBottomSheet
         order={order}
         allOrders={sheetOrders && sheetOrders.length > 1 ? sheetOrders : undefined}
+        groupPool={groupPool}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         canValidate={isPending || isActive}
@@ -398,10 +478,12 @@ const styles = StyleSheet.create({
     marginRight: 5,
     marginBottom: 4,
   },
+  // Chip sans item : gris doux (#9ca3af côté texte) plutôt que le #ccc d'origine,
+  // qui donnait un rendu sec/désactivé.
   chipInactive: {
-    backgroundColor: "rgba(0,0,0,0.03)",
+    backgroundColor: "#f9fafb",
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.05)",
+    borderColor: "#f3f4f6",
   },
   chipText: {
     fontSize: 10,

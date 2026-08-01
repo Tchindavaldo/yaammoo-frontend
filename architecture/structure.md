@@ -65,10 +65,13 @@ src/features/
 │       ├── UserOrdersModal.tsx          # Modal plein écran « État des commandes » (Settings → Mes activités)
 │       └── ...
 │
-├── merchant/
-│   ├── panel/                           # Vue d'ensemble boutique
-│   ├── orders/                          # Gestion commandes marchand
-│   └── settings/                        # Edit boutique + hours
+├── merchant/                            # Détail complet : architecture/orders-merchant.md
+│   ├── context/                         # MerchantContext + MerchantWalletContext
+│   ├── hooks/                           # useMerchant · useWithdraw
+│   ├── services/                        # merchantService · withdrawService
+│   ├── utils/orderGroupKey.ts           # Clé de groupage d'une cmd (client + date + créneau/zone)
+│   └── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
+│                                        #   (Livraison / Commande / Montant), gestion menus, portefeuille
 │
 ├── driver/                             # Rôle driver (commandes déléguées)
 │   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket

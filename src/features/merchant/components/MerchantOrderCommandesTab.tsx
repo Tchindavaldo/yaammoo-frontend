@@ -37,6 +37,10 @@ type Props = {
   canValidate?: boolean;
   /** Cette commande a-t-elle été consultée (liste scrollée jusqu'en bas) ? */
   checked?: boolean;
+  /** Livraison offerte (deliveryOffer actif, couvert par le fastfood). */
+  deliveryOffered?: boolean;
+  /** La commande appartient à un groupe de livraison (deliveryGroupId posé). */
+  deliveryGrouped?: boolean;
   /** Validation de CETTE commande uniquement. */
   onValidate?: () => void;
   validating?: boolean;
@@ -47,13 +51,24 @@ export function CommandesTab({
   total,
   zone = '',
   deliveryPrice = 0,
+  deliveryOffered = false,
+  deliveryGrouped = false,
   onFullyScrolled,
   canValidate = false,
   checked = false,
   onValidate,
   validating = false,
 }: Props) {
-  const hasDelivery = deliveryPrice > 0 || !!zone;
+  const hasDelivery = deliveryPrice > 0 || !!zone || deliveryOffered || deliveryGrouped;
+  // Offert prime sur le groupé : le client ne paie rien dans les deux cas, mais
+  // « Offert » porte l'info commerciale (bonus / campagne).
+  const deliveryLabel = deliveryOffered
+    ? 'Offert'
+    : deliveryGrouped
+      ? 'Cmd groupée'
+      : deliveryPrice > 0
+        ? `${deliveryPrice} ${CURRENCY}`
+        : 'Inclus';
 
   // Une seule remontée par montage : évite de spammer le parent à chaque frame.
   const notified = useRef(false);
@@ -190,8 +205,13 @@ export function CommandesTab({
                 ) : null}
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.itemPrice}>
-                  {deliveryPrice > 0 ? `${deliveryPrice} ${CURRENCY}` : 'Inclus'}
+                <Text
+                  style={[
+                    styles.itemPrice,
+                    (deliveryOffered || deliveryGrouped) && styles.itemPriceMuted,
+                  ]}
+                >
+                  {deliveryLabel}
                 </Text>
               </View>
             </View>
@@ -201,7 +221,9 @@ export function CommandesTab({
         {/* Total : libellé + montant en dessous, bouton Valider à droite */}
         <View style={styles.totalRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.totalLabel}>Total commande</Text>
+            <Text style={styles.totalLabel}>
+              {deliveryGrouped ? 'Total' : 'Total commande'}
+            </Text>
             <Text style={styles.totalVal}>{total} {CURRENCY}</Text>
           </View>
 
@@ -288,6 +310,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#111827',
+  },
+  // Livraison offerte / groupée : pas un montant, ton adouci.
+  itemPriceMuted: {
+    color: '#16A34A',
+    fontSize: 12,
   },
   itemPriceSub: {
     fontSize: 10,

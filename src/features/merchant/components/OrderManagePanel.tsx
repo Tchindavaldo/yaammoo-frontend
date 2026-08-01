@@ -23,6 +23,7 @@ import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { GroupStatusCounts } from "@/src/features/driver/components/GroupStatusCounts";
+import { orderGroupKey } from "../utils/orderGroupKey";
 
 // Hauteur approximative de la tab bar (navbar du bas) à réserver sous la liste.
 const TAB_BAR_HEIGHT = 65;
@@ -63,6 +64,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   topOffset = 0,
 }) => {
   const insets = useSafeAreaInsets();
+  // Alias non masqué de la prop `orders` : plusieurs helpers locaux ont un
+  // paramètre nommé `orders`. Transmis aux cartes pour l'onglet Montant du sheet.
+  const allShopOrders = orders;
   // Hauteur mesurée de la barre fixe (stats + chips) pour décaler la liste.
   const [barHeight, setBarHeight] = useState(0);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>("pending");
@@ -202,25 +206,16 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     });
   };
 
-  // ─── Groupement des commandes livrées à la même heure ───────────────────────
-  // Les commandes d'un même client, en livraison PROGRAMMÉE sur le même créneau,
-  // sont fusionnées en une seule ligne : on n'affiche que la mieux classée (rank
-  // le plus petit) et le bottom sheet reçoit toutes les commandes du groupe.
-  // Express et sur-place ne sont pas groupés : ils gardent leur place au classement.
+  // ─── Groupement des commandes d'un même client ──────────────────────────────
+  // Une seule ligne par groupe : on n'affiche que la commande la mieux classée
+  // (rank le plus petit) et le bottom sheet reçoit tout le groupe. Le regroupement
+  // se fait par `orderGroupKey` (règle partagée avec l'onglet Montant du sheet),
+  // sans condition de rangs consécutifs.
   const groupBySlot = (arr: Commande[]): { head: Commande; group: Commande[] }[] => {
     const buckets = new Map<string, Commande[]>();
-    const singles: Commande[] = [];
 
     arr.forEach((o) => {
-      const d = (o as any).delivery;
-      const slot = d?.time;
-      // Groupable seulement si livraison programmée (ni express, ni sur place).
-      if (d?.status !== true || d?.type === "express" || !slot) {
-        singles.push(o);
-        return;
-      }
-      const userKey = o.userId || o.userData?.email || o.id;
-      const key = `${userKey}__${slot}`;
+      const key = orderGroupKey(o);
       const bucket = buckets.get(key);
       if (bucket) bucket.push(o);
       else buckets.set(key, [o]);
@@ -234,7 +229,6 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
       const sorted = [...group].sort((a, b) => rankOf(a) - rankOf(b));
       entries.push({ head: sorted[0], group: sorted });
     });
-    singles.forEach((o) => entries.push({ head: o, group: [o] }));
 
     // La ligne prend la position de sa commande la mieux classée.
     return entries.sort((a, b) => rankOf(a.head) - rankOf(b.head));
@@ -348,6 +342,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         key={orders[0].id}
         order={orders[0]}
         allOrders={orders}
+        groupPool={allShopOrders}
         isForceLaunched={isForced}
         onUpdateStatus={async (status) => {
           await Promise.all(orders.map((o) => onUpdateStatus(o.id, status)));
@@ -821,6 +816,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                   key={head.id}
                   order={head}
                   sheetOrders={group}
+                  groupPool={allShopOrders}
                   onUpdateStatus={async (status) => {
                     // Valider depuis la CARTE traite toute la ligne groupée.
                     await Promise.all(
@@ -877,6 +873,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                             key={head.id}
                             order={head}
                             sheetOrders={group}
+                            groupPool={allShopOrders}
                             onUpdateStatus={async (status) => {
                               await Promise.all(
                                 group.map((o) => onUpdateStatus(o.id, status)),

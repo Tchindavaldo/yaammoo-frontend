@@ -61,3 +61,20 @@
         - VIP delivery (option premium)
         - ou réservation d'une place au fastfood pour consommer sur place
     - à croiser avec la tâche "gestion livraison surplace" plus haut
+
+[ ] permettre au marchand de configurer le groupage des livraisons d'un même user
+    - option marchand : offrir la gratuité de la livraison si le user a déjà des cmd
+      NON encore livrées vers la même zone, même date/heure et même type de livraison
+    - le marchand choisit les états de cmd concernés (en attente, en cours, en préparation…)
+      → multi-sélection possible, plusieurs états à la fois
+    - objectif : regrouper ces cmd pour les traiter et les livrer en UNE seule course
+    - côté user, au passage de la cmd : lui afficher les états des cmd déjà passées
+      éligibles au groupage, et lui demander s'il veut qu'on groupe avec les autres
+      ou qu'on livre d'abord les autres
+    - à croiser avec la tâche `groupId` (commandes groupées d'un panier) plus haut
+      et avec la facturation d'UNE seule course — cf. backend architecture/pricing.md
+
+[ ] panier : récapitulatif des infos de livraison avant de passer la commande
+    - au moment de valider le panier, afficher pour CHAQUE cmd du panier son récap
+      de livraison (zone, adresse, date/heure, type de livraison, frais)
+    - permet au user de vérifier/corriger avant paiement

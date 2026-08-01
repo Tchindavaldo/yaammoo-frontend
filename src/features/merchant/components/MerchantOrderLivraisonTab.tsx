@@ -87,18 +87,24 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
     setIsOpeningMaps(true);
     const { latitude, longitude } = coords;
     const label = encodeURIComponent(user.name);
-    // iOS : `maps://?daddr=` (et non `maps://app?…`, qui ouvre Apple Maps sans
-    // lancer le calcul d'itinéraire). `dirflg=d` force le mode conduite.
-    // Android : `google.navigation:` démarre la navigation turn-by-turn.
+    // On redirige TOUJOURS vers Google Maps : Apple Maps ne fournit pas
+    // d'itinéraire au Cameroun ("Direction not available for this location").
+    // La carte affichée dans l'app reste Apple Maps (aucune clé iOS requise).
+    const webFallback = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
     const url = Platform.select({
-      ios: `maps://?daddr=${latitude},${longitude}&dirflg=d&q=${label}`,
+      // Schéma de l'app Google Maps iOS (nécessite LSApplicationQueriesSchemes).
+      ios: `comgooglemaps://?daddr=${latitude},${longitude}&directionsmode=driving&q=${label}`,
+      // Android : navigation turn-by-turn directe.
       android: `google.navigation:q=${latitude},${longitude}&mode=d`,
-      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+      default: webFallback,
     });
-    Linking.canOpenURL(url!).then(supported => {
-      const finalUrl = supported ? url! : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-      Linking.openURL(finalUrl).finally(() => { setTimeout(() => setIsOpeningMaps(false), 2000); });
-    });
+    // Si l'app Google Maps n'est pas installée, on bascule sur le site (qui
+    // propose lui-même d'ouvrir l'app).
+    Linking.canOpenURL(url!)
+      .then((supported) => (supported ? url! : webFallback))
+      .catch(() => webFallback)
+      .then((finalUrl) => Linking.openURL(finalUrl))
+      .finally(() => { setTimeout(() => setIsOpeningMaps(false), 2000); });
   };
 
   async function playSound() {

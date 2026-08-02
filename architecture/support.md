@@ -16,7 +16,7 @@ src/features/support/
 │   ├── SupportMessageBubble.tsx # Bulle message (user à droite / support à gauche)
 │   ├── SupportThreadRow.tsx     # Ligne de la liste des discussions
 │   └── SupportComposer.tsx      # Barre de saisie + bouton envoyer
-├── hooks/useKeyboardOffset.ts   # Décalage animé de la saisie, piloté par les events clavier
+├── hooks/useKeyboardOffset.ts   # Décalage de la saisie, posé depuis les events clavier (sans animation)
 ├── data/support.mock.ts         # SUPPORT_TOPICS + threads de démonstration
 └── types/support.types.ts       # SupportThread, SupportMessage, SupportTopic
 ```
@@ -39,11 +39,12 @@ bottom sheet à mi-hauteur.
    affichés dans le header, la conversation s'ouvre directement.
 
 ### Clavier
-Le décalage de la saisie passe par `useKeyboardOffset` (`Animated` piloté par
-`keyboardWillShow`/`keyboardDidShow`), **pas** par un `KeyboardAvoidingView` ni
-un `useState` : ceux-ci arrivaient une frame en retard, d'où l'input visible
-trop haut avant un saut brusque. Ne pas ajouter de `KeyboardAvoidingView`
-par-dessus — les deux se cumuleraient.
+Le décalage de la saisie passe par `useKeyboardOffset`, qui pose la valeur
+**sans animation** depuis `keyboardWillShow` (iOS) / `keyboardDidShow`
+(Android) : la saisie suit le mouvement du clavier système, sans transition
+propre qui traînerait derrière. iOS absorbe la hauteur du clavier ; Android est
+déjà en `adjustResize` (AndroidManifest), il ne reste qu'une marge.
+Ne pas ajouter de `KeyboardAvoidingView` par-dessus — les deux se cumuleraient.
 
 ## À brancher (backend)
 

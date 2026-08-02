@@ -1,6 +1,6 @@
 import { Theme } from "@/src/theme";
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useKeyboardOffset } from "../hooks/useKeyboardOffset";
 import type {
   SupportMessage,
@@ -109,9 +109,9 @@ export const SupportChatView: React.FC<Props> = ({
         )}
       </ScrollView>
 
-      <Animated.View style={{ paddingBottom }}>
+      <View style={{ paddingBottom }}>
         <SupportComposer value={draft} onChangeText={setDraft} onSend={send} />
-      </Animated.View>
+      </View>
     </View>
   );
 };

@@ -2,11 +2,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import {
-  getThreadName,
-  getTopicDescriptor,
-  SUPPORT_STATUS_LABEL,
-} from "../data/support.mock";
+import { getThreadName, getTopicDescriptor } from "../data/support.mock";
 import type { SupportThread } from "../types/support.types";
 
 /** Date courte : « 14:05 » aujourd'hui, « 28 juil. » au-delà. */
@@ -34,6 +30,12 @@ export const SupportThreadRow: React.FC<Props> = ({ thread, onPress }) => {
 
       <View style={styles.body}>
         <View style={styles.line}>
+          {/* Objet de la discussion, posé DEVANT le nom de l'interlocuteur. */}
+          <View style={[styles.topicChip, { backgroundColor: `${topic.color}1A` }]}>
+            <Text style={[styles.topicLabel, { color: topic.color }]}>
+              {topic.label}
+            </Text>
+          </View>
           <Text style={styles.title} numberOfLines={1}>
             {getThreadName(thread)}
           </Text>
@@ -51,9 +53,6 @@ export const SupportThreadRow: React.FC<Props> = ({ thread, onPress }) => {
           ) : null}
         </View>
 
-        <Text style={[styles.status, { color: topic.color }]}>
-          {thread.title} · {topic.label} · {SUPPORT_STATUS_LABEL[thread.status]}
-        </Text>
       </View>
     </Pressable>
   );
@@ -98,5 +97,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Theme.colors.white,
   },
-  status: { fontSize: 11.5, fontWeight: "600" },
+  topicChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: Theme.borderRadius.pill,
+  },
+  topicLabel: { fontSize: 11, fontWeight: "700" },
 });

@@ -30,9 +30,10 @@ bottom sheet à mi-hauteur.
 
 1. **Liste** — discussions passées. Le **titre** de chaque ligne est
    l'interlocuteur : le **nom du fastfood** (`thread.fastFood.nom`) ou
-   **« yaammoo »** quand `fastFood` vaut `null` (helper `getThreadName`). Le
-   résumé de la demande passe en 3e ligne avec l'objet et le statut. Bouton bas
-   fixe **« Nouveau chat »**.
+   **« yaammoo »** quand `fastFood` vaut `null` (helper `getThreadName`),
+   précédé d'un **chip d'objet** (Question, Problème…). Deux lignes seulement :
+   objet + nom + date, puis dernier message + badge non-lus — ni résumé ni
+   statut. Bouton bas fixe **« Nouveau chat »**.
 2. **Nouveau chat** — écran d'accueil **centré** (titre + description) avec les
    **chips d'objet** en bas (Question, Problème, Assistance, Suggestion,
    Discussion). **Aucune saisie** tant qu'aucun objet n'est choisi.

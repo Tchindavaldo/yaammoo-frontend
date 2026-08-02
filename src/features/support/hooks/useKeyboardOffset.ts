@@ -31,9 +31,11 @@ export const useKeyboardOffset = (restOffset: number) => {
       }).start();
 
     const show = Keyboard.addListener(showEvt, (e) => {
-      // Sur iOS la vue est déjà remontée par le clavier : il ne reste qu'une
-      // petite marge. Sur Android on absorbe la hauteur du clavier nous-mêmes.
-      const target = Platform.OS === "ios" ? 8 : (e.endCoordinates?.height ?? 0) + 8;
+      // Android est en `adjustResize` (AndroidManifest) : le système réduit
+      // déjà la fenêtre, il ne reste qu'une petite marge. iOS ne redimensionne
+      // rien — c'est à nous d'absorber la hauteur du clavier.
+      const target =
+        Platform.OS === "ios" ? (e.endCoordinates?.height ?? 0) + 8 : 8;
       animateTo(target, e.duration ?? 220);
     });
     const hide = Keyboard.addListener(hideEvt, (e) =>

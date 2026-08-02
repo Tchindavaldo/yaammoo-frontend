@@ -56,12 +56,21 @@ propre qui traînerait derrière. iOS absorbe la hauteur du clavier ; Android es
 déjà en `adjustResize` (AndroidManifest), il ne reste qu'une marge.
 Ne pas ajouter de `KeyboardAvoidingView` par-dessus — les deux se cumuleraient.
 
+> Le pendant **marchand** (Settings → Boutique → Messages) est une feature
+> **entièrement séparée** : voir [support-merchant.md](./support-merchant.md).
+> Aucun composant n'est partagé entre les deux.
+
 ## À brancher (backend)
 
-| Besoin | Attendu |
+Endpoints déjà implémentés côté backend (`BACKEND/architecture/support.md`) :
+
+| Besoin | Endpoint |
 |---|---|
-| Liste des fils | `GET` threads du user |
-| Messages d'un fil | `GET` messages par thread |
-| Création d'un fil | `POST` avec `topic` + 1er message |
-| Envoi de message | `POST` message dans un thread |
-| Temps réel | événement socket sur nouveau message support |
+| Liste des fils | `GET /support/threads?userId=` |
+| Messages d'un fil | `GET /support/threads/:id/messages` |
+| Création d'un fil | `POST /support/threads` (`topic`, `text`, `fastFoodId?`) |
+| Envoi de message | `POST /support/threads/:id/messages` |
+| Marquer lu | `PATCH /support/threads/:id/read` |
+| Temps réel | socket `support.message` sur la room `<userId>` |
+
+`fastFoodId` absent ou `null` = demande adressée à la plateforme yaammoo.

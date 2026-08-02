@@ -10,6 +10,7 @@ import { DriverMyApplicationsModal } from '@/src/features/driver/components/Driv
 import { DriverOrdersModal } from '@/src/features/driver/components/DriverOrdersModal';
 import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
 import { MenuManageModal } from '@/src/features/merchant/components/MenuManageModal';
+import { MerchantSupportModal } from '@/src/features/merchant/components/support/MerchantSupportModal';
 import { WalletManageModal } from '@/src/features/merchant/components/WalletManageModal';
 import { getDeviceId } from '@/src/features/notifications/services/deviceId';
 import { UserOrdersModal } from '@/src/features/orders/components/UserOrdersModal';
@@ -63,6 +64,8 @@ export default function SettingsScreen() {
   const [userBonusVisible, setUserBonusVisible] = useState(false);
   // Contactez-nous (Settings) : sheet chat support.
   const [supportChatVisible, setSupportChatVisible] = useState(false);
+  // Boutique -> Messages : discussions recues par la boutique.
+  const [merchantSupportVisible, setMerchantSupportVisible] = useState(false);
   // Section « Livraison » (user) + item « Livreurs » (boutique).
   const [driverApplyVisible, setDriverApplyVisible] = useState(false);
   const [driverOrdersVisible, setDriverOrdersVisible] = useState(false);
@@ -346,6 +349,11 @@ export default function SettingsScreen() {
                 title="Livreurs"
                 onPress={() => setDriverManageVisible(true)}
               />
+              <SettingItem
+                icon="chatbubbles-outline"
+                title="Messages"
+                onPress={() => setMerchantSupportVisible(true)}
+              />
               {!appleReviewMode && (
                 <SettingItem
                   icon="wallet-outline"
@@ -517,6 +525,12 @@ export default function SettingsScreen() {
       <UserWalletModal
         visible={userWalletVisible}
         onClose={() => setUserWalletVisible(false)}
+      />
+
+      {/* Boutique : discussions recues des clients */}
+      <MerchantSupportModal
+        visible={merchantSupportVisible}
+        onClose={() => setMerchantSupportVisible(false)}
       />
 
       {/* Contactez-nous : chat support */}

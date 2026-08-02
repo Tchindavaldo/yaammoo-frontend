@@ -1,15 +1,15 @@
+import { HeaderPill } from "@/src/components/molecules/HeaderPill";
+import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Animated,
   KeyboardAvoidingView,
-  Modal,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,169 +23,129 @@ interface Props {
   onClose: () => void;
 }
 
-/** Deux écrans dans une même sheet : liste des discussions, puis conversation. */
+/** Deux écrans dans le même modal : liste des discussions, puis conversation. */
 type Screen = { name: "list" } | { name: "chat"; thread: SupportThread | null };
 
 /**
- * « Contactez-nous » (Settings). Bottom sheet quasi plein écran : liste des
- * discussions passées + bouton bas « Nouveau chat » qui ouvre une conversation
- * vierge, dont l'objet se choisit en chips en haut.
+ * « Contactez-nous » (Settings). Écran PLEIN ÉCRAN calqué sur DriverApplyModal
+ * (View absolue + TabHeader qui floute le settings). Liste des discussions
+ * passées + bouton bas « Nouveau chat » qui ouvre une conversation vierge dont
+ * l'objet se choisit en chips en haut.
  */
 export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
   const insets = useSafeAreaInsets();
+  const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const threads = SUPPORT_THREADS_MOCK;
 
-  const anim = useRef(new Animated.Value(0)).current;
-  const [mounted, setMounted] = useState(visible);
+  // Hauteur navbar (≈58) + safe area bas, pour caler le bouton au-dessus.
+  const TAB_BAR_HEIGHT = 58;
+  const bottomInset = insets.bottom + TAB_BAR_HEIGHT;
+  // Espace réservé sous la liste = bouton (52) + marges + navbar.
+  const listBottomPad = bottomInset + 52 + 32;
 
+  // Chaque ouverture repart de la liste.
   useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      setScreen({ name: "list" });
-    }
-    const t = Animated.timing(anim, {
-      toValue: visible ? 1 : 0,
-      duration: visible ? 260 : 200,
-      useNativeDriver: true,
-    });
-    t.start(({ finished }) => {
-      if (finished && !visible) setMounted(false);
-    });
-    return () => t.stop();
-  }, [visible, anim]);
+    if (visible) setScreen({ name: "list" });
+  }, [visible]);
 
-  if (!mounted) return null;
-
-  const translateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [600, 0],
-  });
+  if (!visible) return null;
 
   const inChat = screen.name === "chat";
+  const thread = inChat ? screen.thread : null;
+  const unread = threads.reduce((n, t) => n + t.unreadCount, 0);
+
   const title = inChat
-    ? screen.thread
-      ? screen.thread.title
+    ? thread
+      ? thread.title
       : "Nouveau chat"
     : "Contactez-nous";
+  const subtitle = inChat
+    ? thread
+      ? "Discussion en cours"
+      : "Choisissez l'objet de votre demande"
+    : unread > 0
+      ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
+      : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
 
   return (
-    <Modal transparent visible animationType="none" onRequestClose={onClose}>
-      <Animated.View style={[styles.veil, { opacity: anim }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
+    <View style={styles.overlay}>
+      <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
-      <Animated.View
-        style={[
-          styles.sheet,
-          { paddingTop: insets.top + 6, transform: [{ translateY }] },
-        ]}
+      <TabHeader
+        title={title}
+        subtitle={subtitle}
+        right={
+          <HeaderPill
+            label="Retour"
+            icon="arrow-back-outline"
+            onPress={() => (inChat ? setScreen({ name: "list" }) : onClose())}
+          />
+        }
+        onHeightChange={setHeaderHeight}
+      />
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          {/* En-tête */}
-          <View style={styles.header}>
-            <Pressable
-              style={styles.headerBtn}
-              onPress={() => (inChat ? setScreen({ name: "list" }) : onClose())}
-            >
-              <Ionicons
-                name={inChat ? "chevron-back" : "close"}
-                size={22}
-                color={Theme.colors.dark}
-              />
-            </Pressable>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {title}
-            </Text>
-            <View style={styles.headerBtn} />
+        {inChat ? (
+          <View style={[styles.flex, { paddingTop: headerHeight + 6 }]}>
+            <SupportChatView thread={thread} bottomInset={bottomInset} />
           </View>
-
-          {inChat ? (
-            <SupportChatView thread={screen.thread} />
-          ) : (
-            <>
-              <ScrollView contentContainerStyle={styles.listPad}>
-                <Text style={styles.section}>Vos discussions</Text>
-                {threads.length === 0 ? (
-                  <View style={styles.empty}>
-                    <Ionicons
-                      name="chatbubbles-outline"
-                      size={30}
-                      color={Theme.colors.gray[500]}
-                    />
-                    <Text style={styles.emptyText}>
-                      Aucune discussion pour le moment.
-                    </Text>
-                  </View>
-                ) : (
-                  threads.map((t) => (
-                    <SupportThreadRow
-                      key={t.id}
-                      thread={t}
-                      onPress={(thread) => setScreen({ name: "chat", thread })}
-                    />
-                  ))
-                )}
-              </ScrollView>
-
-              <View style={styles.footer}>
-                <Pressable
-                  style={styles.newChat}
-                  onPress={() => setScreen({ name: "chat", thread: null })}
-                >
+        ) : (
+          <>
+            <ScrollView
+              style={[styles.flex, { marginTop: headerHeight + 6 }]}
+              contentContainerStyle={{ paddingBottom: listBottomPad }}
+            >
+              <Text style={styles.section}>Vos discussions</Text>
+              {threads.length === 0 ? (
+                <View style={styles.empty}>
                   <Ionicons
-                    name="add"
-                    size={20}
-                    color={Theme.colors.white}
+                    name="chatbubbles-outline"
+                    size={30}
+                    color={Theme.colors.gray[400]}
                   />
-                  <Text style={styles.newChatText}>Nouveau chat</Text>
-                </Pressable>
-              </View>
-            </>
-          )}
+                  <Text style={styles.emptyText}>
+                    Aucune discussion pour le moment.
+                  </Text>
+                </View>
+              ) : (
+                threads.map((t) => (
+                  <SupportThreadRow
+                    key={t.id}
+                    thread={t}
+                    onPress={(target) => setScreen({ name: "chat", thread: target })}
+                  />
+                ))
+              )}
+            </ScrollView>
 
-          <View style={{ height: insets.bottom || Theme.spacing.sm }} />
-        </KeyboardAvoidingView>
-      </Animated.View>
-    </Modal>
+            <TouchableOpacity
+              style={[styles.newChat, { bottom: bottomInset + 16 }]}
+              onPress={() => setScreen({ name: "chat", thread: null })}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+              <Text style={styles.newChatText}>Nouveau chat</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </KeyboardAvoidingView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  veil: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.35)" },
-  sheet: {
+  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 2000 },
+  contentBg: {
     position: "absolute",
     left: 0,
     right: 0,
-    top: 0,
     bottom: 0,
-    marginTop: 40,
-    backgroundColor: Theme.colors.white,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    overflow: "hidden",
+    backgroundColor: "#fff",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Theme.spacing.sm,
-    paddingBottom: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Theme.colors.gray[200],
-  },
-  headerBtn: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  headerTitle: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "700",
-    color: Theme.colors.dark,
-  },
-  listPad: { paddingBottom: Theme.spacing.md },
+  flex: { flex: 1 },
   section: {
     paddingHorizontal: Theme.spacing.md,
     paddingTop: Theme.spacing.md,
@@ -197,25 +157,18 @@ const styles = StyleSheet.create({
     color: Theme.colors.gray[600],
   },
   empty: { paddingTop: 60, alignItems: "center", gap: 10 },
-  emptyText: { fontSize: 13.5, color: Theme.colors.gray[600] },
-  footer: {
-    paddingHorizontal: Theme.spacing.md,
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Theme.colors.gray[200],
-  },
+  emptyText: { fontSize: 13.5, color: Theme.colors.gray[400] },
   newChat: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    height: 52,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    height: 48,
-    borderRadius: Theme.borderRadius.pill,
+    borderRadius: 14,
     backgroundColor: Theme.colors.primary,
   },
-  newChatText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Theme.colors.white,
-  },
+  newChatText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 });

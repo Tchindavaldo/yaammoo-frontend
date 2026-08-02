@@ -13,6 +13,8 @@ import { SupportTopicChips } from "./SupportTopicChips";
 interface Props {
   /** `null` = nouveau chat : les chips sont sélectionnables. */
   thread: SupportThread | null;
+  /** Hauteur navbar + safe area bas, pour caler la saisie au-dessus. */
+  bottomInset?: number;
 }
 
 /**
@@ -20,7 +22,10 @@ interface Props {
  * seulement sur un nouveau chat) ; au centre les messages, en bas la saisie.
  * Design seul : l'envoi ajoute le message localement, sans appel réseau.
  */
-export const SupportChatView: React.FC<Props> = ({ thread }) => {
+export const SupportChatView: React.FC<Props> = ({
+  thread,
+  bottomInset = 0,
+}) => {
   const [topic, setTopic] = useState<SupportTopic | null>(thread?.topic ?? null);
   const [messages, setMessages] = useState<SupportMessage[]>(
     thread?.messages ?? []
@@ -84,15 +89,17 @@ export const SupportChatView: React.FC<Props> = ({ thread }) => {
         )}
       </ScrollView>
 
-      <SupportComposer
-        value={draft}
-        onChangeText={setDraft}
-        onSend={send}
-        disabled={needsTopic}
-        placeholder={
-          needsTopic ? "Sélectionnez un objet ci-dessus" : "Écrire un message…"
-        }
-      />
+      <View style={{ paddingBottom: bottomInset }}>
+        <SupportComposer
+          value={draft}
+          onChangeText={setDraft}
+          onSend={send}
+          disabled={needsTopic}
+          placeholder={
+            needsTopic ? "Sélectionnez un objet ci-dessus" : "Écrire un message…"
+          }
+        />
+      </View>
     </View>
   );
 };

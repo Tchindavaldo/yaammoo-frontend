@@ -10,7 +10,7 @@ Chat entre le client et l'équipe yaammoo, ouvert depuis **Settings → « Conta
 ```
 src/features/support/
 ├── components/
-│   ├── SupportChatSheet.tsx     # Sheet conteneur : liste <-> conversation
+│   ├── SupportChatSheet.tsx     # Écran plein écran (View absolue + TabHeader) : liste <-> conversation
 │   ├── SupportChatView.tsx      # Conversation : chips + messages + saisie
 │   ├── SupportTopicChips.tsx    # Chips « objet de la discussion »
 │   ├── SupportMessageBubble.tsx # Bulle message (user à droite / support à gauche)
@@ -19,6 +19,11 @@ src/features/support/
 ├── data/support.mock.ts         # SUPPORT_TOPICS + threads de démonstration
 └── types/support.types.ts       # SupportThread, SupportMessage, SupportTopic
 ```
+
+## Rendu
+Écran **plein écran** calqué sur `DriverApplyModal` : `View` en overlay absolu,
+`TabHeader` (blur au-dessus du settings) avec `HeaderPill` « Retour » — pas de
+bottom sheet à mi-hauteur.
 
 ## Flux UI
 

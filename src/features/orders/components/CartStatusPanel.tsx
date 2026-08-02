@@ -1,11 +1,19 @@
+import { orderGroupKey } from "@/src/features/merchant/utils/orderGroupKey";
+import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
+import { MerchantFilterSheet } from "@/src/features/merchant/components/MerchantFilterSheet";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
-import { OrderTrackingHeader } from "@/src/features/orders/components/OrderTrackingHeader";
+import {
+  OrderTrackingHeader,
+  type TrackedFastFood,
+} from "@/src/features/orders/components/OrderTrackingHeader";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import React, {
   useCallback,
   useEffect,
@@ -27,78 +35,24 @@ import {
 // ---------------------------------------------------------------------------
 type FlatItem =
   | {
-      type: "group-header";
+      type: "order-card";
       key: string;
-      groupId: string;
-      name: string;
-      orderCount: number;
-      isExpanded: boolean;
+      order: Commande;
+      /** Commandes du même groupe (livraison mutualisée) — nav multi-cmd du sheet. */
+      group: Commande[];
+      isFinished: boolean;
     }
-  | { type: "order-card"; key: string; order: Commande; isFinished: boolean }
   | {
       type: "group-subtabs";
       key: string;
       groupId: string;
       counts: { attente: number; cours: number; termine: number };
     }
-  | { type: "past-section-label"; key: string }
-  | {
-      type: "past-date-header";
-      key: string;
-      iso: string;
-      label: string;
-      orderCount: number;
-      isOpen: boolean;
-    }
-  | {
-      type: "past-group-header";
-      key: string;
-      groupKey: string;
-      name: string;
-      orderCount: number;
-      isExpanded: boolean;
-    }
   | { type: "empty"; key: string };
 
 // ---------------------------------------------------------------------------
 // Sous-composants memoïsés pour la FlatList
 // ---------------------------------------------------------------------------
-const GroupHeader = React.memo(function GroupHeader({
-  name,
-  orderCount,
-  isExpanded,
-  onToggle,
-}: {
-  name: string;
-  orderCount: number;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={onToggle}
-      style={styles.groupHeader}
-    >
-      <View style={styles.groupHeaderLeft}>
-        <Ionicons
-          name={isExpanded ? "chevron-down" : "chevron-forward"}
-          size={12}
-          color="#888780"
-        />
-        <Text style={styles.groupTitle} numberOfLines={1}>
-          {name}
-        </Text>
-        <View style={styles.groupCountBadge}>
-          <Text style={styles.groupCountText}>
-            {orderCount} commande{orderCount > 1 ? "s" : ""}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-});
-
 /** Sous-tabs de livraison d'un groupe (onglet Terminées) : calqué marchand. */
 const GroupSubTabs = React.memo(function GroupSubTabs({
   counts,
@@ -144,40 +98,6 @@ const GroupSubTabs = React.memo(function GroupSubTabs({
   );
 });
 
-const PastDateHeader = React.memo(function PastDateHeader({
-  label,
-  orderCount,
-  isOpen,
-  onToggle,
-}: {
-  label: string;
-  orderCount: number;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.7}
-      onPress={onToggle}
-      style={styles.groupHeader}
-    >
-      <View style={styles.groupHeaderLeft}>
-        <Ionicons
-          name={isOpen ? "chevron-down" : "chevron-forward"}
-          size={12}
-          color="#888780"
-        />
-        <Text style={styles.groupTitle}>{label}</Text>
-        <View style={styles.groupCountBadge}>
-          <Text style={styles.groupCountText}>
-            {orderCount} commande{orderCount > 1 ? "s" : ""}
-          </Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-});
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -193,16 +113,49 @@ const getOrderDate = (o: any): Date | null => {
   return isNaN(d.getTime()) ? null : d;
 };
 
-const formatPastDateLabel = (iso: string) => {
+/**
+ * Groupage des commandes en lignes, même règle que la liste marchand
+ * (`orderGroupKey`) : un client, une date, un créneau/zone. La tête est la
+ * commande la mieux classée ; les lignes suivent l'ordre des rangs.
+ */
+const groupBySlot = (arr: Commande[]): { head: Commande; group: Commande[] }[] => {
+  const buckets = new Map<string, Commande[]>();
+  arr.forEach((o) => {
+    const key = orderGroupKey(o);
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(o);
+    else buckets.set(key, [o]);
+  });
+
+  const rankOf = (o: any) => o?.rank ?? Infinity;
+  const entries: { head: Commande; group: Commande[] }[] = [];
+  buckets.forEach((group) => {
+    const sorted = [...group].sort((a, b) => rankOf(a) - rankOf(b));
+    entries.push({ head: sorted[0], group: sorted });
+  });
+  return entries.sort((a, b) => rankOf(a.head) - rankOf(b.head));
+};
+
+/** Clé de période d'une commande : "express", "surplace" ou le créneau ("12h"). */
+const periodKeyOf = (o: any): string => {
+  const d = o?.delivery;
+  if (d?.status !== true) return "surplace";
+  if (d?.type === "express") return "express";
+  return d?.time || "À définir";
+};
+
+/** ISO (YYYY-MM-DD) de la date de livraison d'une commande. */
+const getOrderDateISO = (o: any): string => {
+  const d = getOrderDate(o);
+  return d ? d.toISOString().substring(0, 10) : "";
+};
+
+/** Libellé d'un chip de date : « 10 juin ». */
+const formatDateLabel = (iso: string) => {
   try {
-    const d = new Date(iso);
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (isSameDay(d, yesterday)) return "Hier";
-    return d.toLocaleDateString("fr-FR", {
-      weekday: "short",
+    return new Date(iso).toLocaleDateString("fr-FR", {
       day: "numeric",
-      month: "short",
+      month: "long",
     });
   } catch {
     return iso;
@@ -228,29 +181,29 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
 }) => {
   const { pending, active, finished, delivered, refresh } = useOrders();
   const { fastFoods } = useFastFoods();
+  const tabBarHeight = useTabBarHeight();
 
   const [refreshing, setRefreshing] = useState(false);
   const [activeStatus, setActiveStatus] = useState(initialStatus);
-  const [trackingHeaderHeight, setTrackingHeaderHeight] = useState(100);
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
-    {},
+  // Filtre fastfood piloté par la liste horizontale du header (null = tous).
+  const [selectedFastFoodId, setSelectedFastFoodId] = useState<string | null>(
+    null,
   );
+  const [trackingHeaderHeight, setTrackingHeaderHeight] = useState(100);
+  // Filtres du bottom sheet : date active (null = aujourd'hui) + périodes.
+  const [selectedDateISO, setSelectedDateISO] = useState<string | null>(null);
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
   // Sous-tab de livraison actif par groupe (onglet « Terminées » uniquement).
   const [groupSubTab, setGroupSubTab] = useState<
     Record<string, "attente" | "cours" | "termine">
   >({});
-  const [expandedPastSection, setExpandedPastSection] = useState<string | null>(
-    null,
-  );
   const [selectedOrderDetails, setSelectedOrderDetails] =
     useState<Commande | null>(null);
   const [selectedGroupOrders, setSelectedGroupOrders] = useState<Commande[]>(
     [],
   );
   const [detailVisible, setDetailVisible] = useState(false);
-
-  // Flag pour éviter le setExpandedGroups au montage si déjà initialisé
-  const hasInitializedExpand = useRef(false);
 
   // Liste courante selon l'onglet actif
   const statusList: Commande[] = useMemo(() => {
@@ -271,102 +224,85 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     }
   }, [activeStatus, pending, active, finished, delivered]);
 
-  // Filtre par date sélectionnée (on garde la date du jour par défaut)
-  const selectedDate = useRef(new Date()).current;
+  // Date active : `null` = aujourd'hui. Pilotée par le ClientFilterSheet.
+  const todayISO = new Date().toISOString().substring(0, 10);
+  const activeDateISO = selectedDateISO || todayISO;
+
+  /**
+   * Fastfoods de la liste horizontale — indépendants de l'onglet de statut
+   * (la liste ne doit pas disparaître quand on change de chip) et de la date.
+   * Les pastilles, elles, comptent les commandes de la DATE sélectionnée par
+   * statut : en attente / en cours / terminées.
+   */
+  const trackedFastFoods = useMemo(() => {
+    const all = [...pending, ...active, ...finished, ...delivered];
+    const map = new Map<string, TrackedFastFood>();
+    all.forEach((o: any) => {
+      const ffId = o.fastFoodId;
+      if (!ffId) return;
+      let entry: TrackedFastFood | undefined = map.get(ffId);
+      if (!entry) {
+        const ff: any = fastFoods.find((f) => f.id === ffId);
+        entry = {
+          id: ffId,
+          name: ff?.nom || ff?.name || "Boutique",
+          // `image` est déjà normalisé (photo du fastfood, sinon 1er plat).
+          image: ff?.image || ff?.logo || ff?.coverImage,
+          orderCount: 0,
+          counts: { pending: 0, active: 0, finished: 0 },
+        };
+        map.set(ffId, entry);
+      }
+      entry!.orderCount += 1;
+      // Pastilles : uniquement les commandes de la date sélectionnée.
+      if (getOrderDateISO(o) !== activeDateISO) return;
+      const st = (o.status || "").toLowerCase();
+      if (st === "pending") entry!.counts.pending += 1;
+      else if (["processing", "active", "in_progress"].includes(st))
+        entry!.counts.active += 1;
+      else if (["finished", "delivering", "delivered"].includes(st))
+        entry!.counts.finished += 1;
+    });
+    return Array.from(map.values());
+  }, [pending, active, finished, delivered, fastFoods, activeDateISO]);
+
+  // Sélection obligatoire : par défaut le premier fastfood de la liste. On
+  // re-sélectionne aussi si le fastfood courant disparaît (changement d'onglet).
+  useEffect(() => {
+    if (trackedFastFoods.length === 0) return;
+    if (
+      selectedFastFoodId &&
+      trackedFastFoods.some((f) => f.id === selectedFastFoodId)
+    )
+      return;
+    setSelectedFastFoodId(trackedFastFoods[0].id);
+  }, [trackedFastFoods, selectedFastFoodId]);
+
+  const selectedDate = useMemo(
+    () => new Date(`${activeDateISO}T12:00:00`),
+    [activeDateISO],
+  );
 
   const filteredOrders = useMemo(
     () =>
       statusList.filter((o: any) => {
+        if (selectedFastFoodId && o.fastFoodId !== selectedFastFoodId)
+          return false;
         const d = getOrderDate(o);
         if (!d) return isSameDay(new Date(), selectedDate);
-        return isSameDay(d, selectedDate);
+        if (!isSameDay(d, selectedDate)) return false;
+        // Multi-sélection : vide = toutes les périodes.
+        return (
+          selectedPeriods.length === 0 || selectedPeriods.includes(periodKeyOf(o))
+        );
       }),
-    [selectedDate, statusList],
+    [selectedDate, statusList, selectedFastFoodId, selectedPeriods],
   );
-
-  const isShowingTodayDefault = useMemo(
-    () =>
-      isSameDay(selectedDate, new Date()) &&
-      (activeStatus === "pending" || activeStatus === "active"),
-    [selectedDate, activeStatus],
-  );
-
-  // Groupes par boutique (aujourd'hui)
-  const groupByFastFood = useCallback(
-    (orders: Commande[]) => {
-      const groups: Record<
-        string,
-        { id: string; name: string; orders: Commande[] }
-      > = {};
-      orders.forEach((o) => {
-        const ffId = o.fastFoodId;
-        if (!ffId) return;
-        if (!groups[ffId]) {
-          const ff = fastFoods.find((f) => f.id === ffId);
-          groups[ffId] = {
-            id: ffId,
-            name: ff?.nom || (ff as any)?.name || "Boutique",
-            orders: [],
-          };
-        }
-        groups[ffId].orders.push(o);
-      });
-      return Object.values(groups);
-    },
-    [fastFoods],
-  );
-
-  const groupedOrders = useMemo(
-    () => groupByFastFood(filteredOrders),
-    [filteredOrders, groupByFastFood],
-  );
-
-  // Initialisation : ouvrir le premier groupe au premier rendu
-  useEffect(() => {
-    if (
-      !hasInitializedExpand.current &&
-      groupedOrders.length > 0 &&
-      Object.keys(expandedGroups).length === 0
-    ) {
-      hasInitializedExpand.current = true;
-      setExpandedGroups({ [groupedOrders[0].id]: true });
-    }
-  }, [groupedOrders, expandedGroups]);
-
-  // Sections des jours précédents
-  const pastSections = useMemo(() => {
-    if (!isShowingTodayDefault) return [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const byDate = new Map<string, Commande[]>();
-    statusList.forEach((o: any) => {
-      const d = getOrderDate(o);
-      if (!d) return;
-      if (d.getTime() >= today.getTime()) return;
-      const iso = d.toISOString().substring(0, 10);
-      if (!byDate.has(iso)) byDate.set(iso, []);
-      byDate.get(iso)!.push(o);
-    });
-    return Array.from(byDate.entries())
-      .sort(([a], [b]) => (a > b ? -1 : a < b ? 1 : 0))
-      .map(([iso, orders]) => ({ iso, orders }));
-  }, [isShowingTodayDefault, statusList]);
-
-  const toggleGroup = useCallback((id: string) => {
-    setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
-  }, []);
-
-  const togglePastSection = useCallback((iso: string) => {
-    setExpandedPastSection((prev) => (prev === iso ? null : iso));
-  }, []);
 
   // Aplatissement des données → FlatList
   const flatItems: FlatItem[] = useMemo(() => {
     const items: FlatItem[] = [];
-    const hasMain = groupedOrders.length > 0;
-    const hasPast = pastSections.length > 0;
-
-    if (!hasMain && !hasPast) {
+    if (filteredOrders.length === 0) {
       items.push({ type: "empty", key: "empty" });
       return items;
     }
@@ -374,107 +310,48 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     // L'onglet « Terminées » affiche des sous-tabs de livraison par groupe.
     const isDeliveryTab = activeStatus === "finished";
 
-    // Groupes du jour
-    for (const group of groupedOrders) {
+    // Commandes du jour à plat : le filtrage par fastfood se fait via la
+    // liste horizontale du header, plus d'accordéon par boutique.
+    if (isDeliveryTab) {
+      const attente = filteredOrders.filter((o) => o.status === "finished");
+      const cours = filteredOrders.filter((o) => o.status === "delivering");
+      const termine = filteredOrders.filter((o) => o.status === "delivered");
       items.push({
-        type: "group-header",
-        key: `gh:${group.id}`,
-        groupId: group.id,
-        name: group.name,
-        orderCount: group.orders.length,
-        isExpanded: !!expandedGroups[group.id],
+        type: "group-subtabs",
+        key: "gst:all",
+        groupId: "all",
+        counts: {
+          attente: attente.length,
+          cours: cours.length,
+          termine: termine.length,
+        },
       });
-      if (expandedGroups[group.id]) {
-        if (isDeliveryTab) {
-          // Répartition par statut de livraison (comme le marchand).
-          const attente = group.orders.filter((o) => o.status === "finished");
-          const cours = group.orders.filter((o) => o.status === "delivering");
-          const termine = group.orders.filter((o) => o.status === "delivered");
-          items.push({
-            type: "group-subtabs",
-            key: `gst:${group.id}`,
-            groupId: group.id,
-            counts: {
-              attente: attente.length,
-              cours: cours.length,
-              termine: termine.length,
-            },
-          });
-          const sub = groupSubTab[group.id] ?? "attente";
-          const visible =
-            sub === "cours" ? cours : sub === "termine" ? termine : attente;
-          for (const order of visible) {
-            items.push({
-              type: "order-card",
-              key: `oc:${order.id}`,
-              order,
-              isFinished: true,
-            });
-          }
-        } else {
-          for (const order of group.orders) {
-            items.push({
-              type: "order-card",
-              key: `oc:${order.id}`,
-              order,
-              isFinished: false,
-            });
-          }
-        }
-      }
-    }
-
-    // Sections des jours précédents
-    if (hasPast) {
-      items.push({ type: "past-section-label", key: "past-label" });
-      for (const section of pastSections) {
-        const isOpen = expandedPastSection === section.iso;
+      const sub = groupSubTab["all"] ?? "attente";
+      const visible =
+        sub === "cours" ? cours : sub === "termine" ? termine : attente;
+      for (const { head, group } of groupBySlot(visible)) {
         items.push({
-          type: "past-date-header",
-          key: `pdh:${section.iso}`,
-          iso: section.iso,
-          label: formatPastDateLabel(section.iso),
-          orderCount: section.orders.length,
-          isOpen,
+          type: "order-card",
+          key: `oc:${head.id}`,
+          order: head,
+          group,
+          isFinished: true,
         });
-        if (isOpen) {
-          const groups = groupByFastFood(section.orders);
-          for (const group of groups) {
-            const groupKey = `past_${section.iso}_${group.id}`;
-            const isGroupExpanded = !!expandedGroups[groupKey];
-            items.push({
-              type: "past-group-header",
-              key: `pgh:${groupKey}`,
-              groupKey,
-              name: group.name,
-              orderCount: group.orders.length,
-              isExpanded: isGroupExpanded,
-            });
-            if (isGroupExpanded) {
-              for (const order of group.orders) {
-                items.push({
-                  type: "order-card",
-                  key: `poc:${section.iso}:${order.id}`,
-                  order,
-                  isFinished: true,
-                });
-              }
-            }
-          }
-        }
+      }
+    } else {
+      for (const { head, group } of groupBySlot(filteredOrders)) {
+        items.push({
+          type: "order-card",
+          key: `oc:${head.id}`,
+          order: head,
+          group,
+          isFinished: false,
+        });
       }
     }
 
     return items;
-  }, [
-    groupedOrders,
-    pastSections,
-    expandedGroups,
-    expandedPastSection,
-    groupByFastFood,
-    activeStatus,
-    groupSubTab,
-  ]);
+  }, [filteredOrders, activeStatus, groupSubTab]);
 
   const onManualRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -486,15 +363,6 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   const renderItem = useCallback(
     ({ item }: { item: FlatItem }) => {
       switch (item.type) {
-        case "group-header":
-          return (
-            <GroupHeader
-              name={item.name}
-              orderCount={item.orderCount}
-              isExpanded={item.isExpanded}
-              onToggle={() => toggleGroup(item.groupId)}
-            />
-          );
         case "group-subtabs":
           return (
             <GroupSubTabs
@@ -509,44 +377,20 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           return (
             <ClientOrderCard
               order={item.order}
+              // Ligne groupée : le libellé « N cmd », le montant général et les
+              // compteurs des chips portent sur tout le groupe (règle marchand).
+              // Le design de la carte, lui, reste le design standard.
+              sheetOrders={item.group}
               showActions={false}
               hideRanking={item.isFinished}
               onPress={() => {
                 setSelectedOrderDetails(item.order);
-                setSelectedGroupOrders([]);
+                // Le groupe part au seul bottom sheet (nav multi-cmd) : la
+                // carte de la liste garde son design standard.
+                setSelectedGroupOrders(item.group);
                 setDetailVisible(true);
               }}
             />
-          );
-        case "past-section-label":
-          return (
-            <View
-              style={{ marginTop: 24, marginBottom: 10, paddingHorizontal: 16 }}
-            >
-              <Text style={styles.pastSectionLabel}>
-                Commandes des jours précédents
-              </Text>
-            </View>
-          );
-        case "past-date-header":
-          return (
-            <PastDateHeader
-              label={item.label}
-              orderCount={item.orderCount}
-              isOpen={item.isOpen}
-              onToggle={() => togglePastSection(item.iso)}
-            />
-          );
-        case "past-group-header":
-          return (
-            <View style={{ paddingLeft: 16 }}>
-              <GroupHeader
-                name={item.name}
-                orderCount={item.orderCount}
-                isExpanded={item.isExpanded}
-                onToggle={() => toggleGroup(item.groupKey)}
-              />
-            </View>
           );
         case "empty":
           return (
@@ -565,18 +409,112 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           return null;
       }
     },
-    [toggleGroup, togglePastSection, groupSubTab],
+    [groupSubTab, fastFoods],
   );
 
   const keyExtractor = useCallback((item: FlatItem) => item.key, []);
 
-  const statusOrderCount = filteredOrders.length;
-  const statusFastFoodCount = useMemo(
+  // ── Options du bottom sheet de filtres (calqué marchand) ──
+  /** Commandes du statut actif, filtrées sur le fastfood sélectionné. */
+  const scopedOrders = useMemo(
     () =>
-      new Set(filteredOrders.map((o: any) => o.fastFoodId).filter(Boolean))
-        .size,
-    [filteredOrders],
+      statusList.filter(
+        (o: any) => !selectedFastFoodId || o.fastFoodId === selectedFastFoodId,
+      ),
+    [statusList, selectedFastFoodId],
   );
+
+  const { futureDateOptions, pastDateOptions } = useMemo(() => {
+    const isos = [...new Set(scopedOrders.map(getOrderDateISO))].filter(Boolean);
+    const toOptions = (list: string[]) =>
+      list.map((iso) => ({ iso, label: formatDateLabel(iso) }));
+    return {
+      futureDateOptions: toOptions(isos.filter((d) => d > todayISO).sort()),
+      pastDateOptions: toOptions(
+        isos.filter((d) => d < todayISO).sort().reverse(),
+      ),
+    };
+  }, [scopedOrders, todayISO]);
+
+  /** Périodes de la date active, avec leur nombre de commandes. */
+  const availablePeriods = useMemo(() => {
+    const counts: Record<string, number> = {};
+    scopedOrders.forEach((o: any) => {
+      if (getOrderDateISO(o) !== activeDateISO) return;
+      const k = periodKeyOf(o);
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    const slots = Object.keys(counts)
+      .filter((k) => k !== "express" && k !== "surplace")
+      .sort();
+    return [
+      ...(counts.express
+        ? [
+            {
+              key: "express",
+              label: "Livraison express",
+              count: counts.express,
+            },
+          ]
+        : []),
+      ...(counts.surplace
+        ? [
+            {
+              key: "surplace",
+              label: "Pas de livraison",
+              count: counts.surplace,
+            },
+          ]
+        : []),
+      ...slots.map((k) => ({ key: k, label: k, count: counts[k] })),
+    ];
+  }, [scopedOrders, activeDateISO]);
+
+  const allPeriodsCount = useMemo(
+    () => availablePeriods.reduce((acc, p) => acc + p.count, 0),
+    [availablePeriods],
+  );
+
+  /**
+   * Badges des chips : comptés sur la date active (+ périodes cochées et
+   * fastfood sélectionné), pas sur le total tous jours confondus.
+   */
+  const chipCounts = useMemo(() => {
+    const matches = (list: Commande[]) =>
+      list.filter((o: any) => {
+        if (selectedFastFoodId && o.fastFoodId !== selectedFastFoodId)
+          return false;
+        if (getOrderDateISO(o) !== activeDateISO) return false;
+        return (
+          selectedPeriods.length === 0 ||
+          selectedPeriods.includes(periodKeyOf(o))
+        );
+      }).length;
+    return {
+      pending: matches(pending),
+      active: matches(active),
+      finished: matches([...finished, ...delivered]),
+    };
+  }, [
+    pending,
+    active,
+    finished,
+    delivered,
+    selectedFastFoodId,
+    activeDateISO,
+    selectedPeriods,
+  ]);
+
+  // Une période cochée qui disparaît (changement de date/statut) est retirée.
+  const periodsKey = availablePeriods.map((p) => p.key).join(",");
+  useEffect(() => {
+    setSelectedPeriods((prev) => {
+      const keys = periodsKey ? periodsKey.split(",") : [];
+      const next = prev.filter((p) => keys.includes(p));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [periodsKey]);
+
 
   return (
     <View style={{ flex: 1 }}>
@@ -592,17 +530,9 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         onLayout={(e) => setTrackingHeaderHeight(e.nativeEvent.layout.height)}
       >
         <OrderTrackingHeader
-          activeStatus={activeStatus}
-          onStatusChange={setActiveStatus}
-          counts={{
-            pending: pending.length,
-            processing: active.length,
-            // Onglet « Terminées » = toutes les livraisons (finished + delivered).
-            finished: finished.length + delivered.length,
-            delivered: delivered.length,
-          }}
-          orderCount={statusOrderCount}
-          fastFoodCount={statusFastFoodCount}
+          fastFoods={trackedFastFoods}
+          selectedFastFoodId={selectedFastFoodId}
+          onFastFoodPress={setSelectedFastFoodId}
         />
       </View>
 
@@ -613,7 +543,8 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         keyExtractor={keyExtractor}
         contentContainerStyle={{
           paddingTop: topOffset + trackingHeaderHeight,
-          paddingBottom: bottomOffset + 100,
+          // Réserve la navbar + la barre de filtres du bas.
+          paddingBottom: tabBarHeight + bottomOffset + 80,
         }}
         scrollIndicatorInsets={{ top: topOffset + trackingHeaderHeight }}
         refreshControl={
@@ -629,6 +560,60 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         maxToRenderPerBatch={20}
         windowSize={7}
         initialNumToRender={12}
+      />
+
+      {/* Barre de filtres en BAS (design partagé avec la page marchand). */}
+      <View style={[styles.bottomBar, { bottom: tabBarHeight }]}>
+        <BlurView
+          intensity={40}
+          tint="light"
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <View style={{ flex: 1 }}>
+          <StickyChipsRow
+            items={[
+              { key: "pending", label: "En Attente", count: chipCounts.pending },
+              { key: "active", label: "En cours", count: chipCounts.active },
+              {
+                key: "finished",
+                label: "Terminées",
+                count: chipCounts.finished,
+              },
+            ]}
+            activeKey={activeStatus}
+            // La date choisie est conservée d'un statut à l'autre.
+            onSelect={(k) => setActiveStatus(k as any)}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={styles.filterBtn}
+          onPress={() => setFilterOpen(true)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="options-outline" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      <MerchantFilterSheet
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        todayISO={todayISO}
+        futureDates={futureDateOptions}
+        pastDates={pastDateOptions}
+        selectedDate={selectedDateISO}
+        onSelectDate={setSelectedDateISO}
+        periods={availablePeriods}
+        allPeriodsCount={allPeriodsCount}
+        selectedPeriods={selectedPeriods}
+        onTogglePeriod={(k) =>
+          setSelectedPeriods((prev) =>
+            prev.includes(k) ? prev.filter((p) => p !== k) : [...prev, k],
+          )
+        }
+        onResetPeriods={() => setSelectedPeriods([])}
+        pastUntreated={activeStatus !== "finished"}
       />
 
       {/* Bottom sheet détail commande */}
@@ -657,6 +642,30 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
 // Styles
 // ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
+  // Barre de filtres du bas : chips de statut + bouton du bottom sheet.
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    // Voile clair par-dessus le blur : lisible sans masquer le scroll derrière.
+    backgroundColor: "rgba(255,255,255,0.55)",
+    overflow: "hidden",
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    gap: 10,
+  },
+  filterBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Theme.colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   centered: {
     flex: 1,
     alignItems: "center",
@@ -670,28 +679,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
-  groupHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    marginBottom: 4,
-  },
-  groupHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  groupTitle: { fontSize: 12, fontWeight: "700", color: "#333", flex: 1 },
-  groupCountBadge: {
-    backgroundColor: "#FFF",
-    borderWidth: 0.5,
-    borderColor: "#D3C1C7",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  groupCountText: { fontSize: 10, color: "#5F5E5A", fontWeight: "500" },
   // Sous-tabs de livraison (onglet Terminées) — calqué sur le marchand.
   subTabRow: {
     flexDirection: "row",
@@ -734,11 +721,4 @@ const styles = StyleSheet.create({
   subTabBadgeActive: { backgroundColor: Theme.colors.primary },
   subTabBadgeText: { fontSize: 9, fontWeight: "700", color: "#5F5E5A" },
   subTabBadgeTextActive: { color: "white" },
-  pastSectionLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#888780",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
 });

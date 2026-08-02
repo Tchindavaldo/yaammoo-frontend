@@ -414,7 +414,8 @@ commande affichée.
   `deliveryOffer` est actif et couvert par le fastfood ; **« Non facturée »** si aucune
   commande du bloc ne porte `courseBilled`.
 - **Total du bloc** = somme des articles + course (0 si offerte).
-- **Gabarit identique à l'onglet Commande** : carte plafonnée à `maxHeight: 340`, blocs
+- **Gabarit identique à l'onglet Commande** : carte plafonnée à `maxHeight` (prop
+  optionnelle, défaut `340` — le sheet client passe une valeur plus basse), blocs
   groupes scrollables au-dessus d'une ligne de total fixe.
 - **Total général** (ligne fixe en bas) : **toujours affiché**, somme des totaux de tous
   les blocs (`computeGrandTotal`). L'ancienne condition `groups.length > 1` le masquait

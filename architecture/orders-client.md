@@ -20,7 +20,7 @@ yaammoo/src/features/orders/
     ├── ClientOrderCard.tsx    # Carte commande compacte (liste pending/processing)
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
     ├── OrderHeader.tsx        # Header de la page orders
-    ├── OrderTrackingHeader.tsx # Stats (nb cmd / FF) + chips statut
+    ├── OrderTrackingHeader.tsx # Liste horizontale des fastfoods (avatar + nb cmd + nom) + chips statut
     ├── CartStatusPanel.tsx    # Panneau suivi virtualisé (FlatList, groupes, jours passés, détail)
     ├── UserOrdersModal.tsx    # Modal plein écran « État des commandes » (Settings → Mes activités)
     ├── DriverInfoTab.tsx      # Tab « Livreur » (infos + stats + notation livreur)
@@ -94,6 +94,13 @@ yaammoo/src/features/orders/
 
 **Optimisation** : wrappé dans `React.memo` — évite les re-renders inutiles.
 
+**Ligne groupée (`sheetOrders`)** — mêmes règles que `MerchantOrderCard`, design de la
+carte inchangé : le nom du plat est remplacé par `N cmd livrées à <heure>` /
+`N cmd livraison express` / `N cmd · pas de livraison` (et `N plat(s) · <livraison>` pour
+une commande seule sans extra ni boisson) ; le montant vaut `computeGrandTotal(groupe)` ;
+les chips Extras/Boisson totalisent le groupe (placeholders `Aucun`/`Aucune` exclus) et
+reprennent le fond neutre + texte noir du marchand.
+
 **Affichage conditionnel (coin bas droit)** :
 - `showActions = true` → bouton poubelle
 - `hideRanking = true` → badge quantité `x{qty}`
@@ -114,6 +121,20 @@ yaammoo/src/features/orders/
 **Chemin** : `yaammoo/src/features/orders/components/CartStatusPanel.tsx`
 
 **Rôle** : Panneau de suivi des commandes (onglets pending/active/finished/delivered).
+
+**Filtre fastfood** : la liste horizontale de `OrderTrackingHeader` pilote le filtrage
+(un fastfood est toujours sélectionné, le premier par défaut). Elle est **indépendante
+de l'onglet de statut** (elle ne disparaît pas quand on change de chip) ; chaque
+mini-card porte une **pastille** = total attente + en cours + terminées **pour la date
+sélectionnée**. Changer de chip de statut **conserve la date choisie**. Plus d'accordéon par
+boutique, et plus de section « commandes des jours précédents » : les commandes sont
+rendues à plat pour la date active (les autres dates passent par le bottom sheet).
+
+**Barre de filtres en BAS** (même design/implémentation que la page marchand) :
+`StickyChipsRow` (En Attente / En cours / Terminées, badges comptés sur la date active
+et les périodes cochées) sur fond `BlurView`, avec une icône `options-outline` qui ouvre
+le `MerchantFilterSheet` (réutilisé tel quel : dates aujourd'hui/à venir/passées +
+périodes multi-sélection).
 
 **Virtualisation** : utilise `FlatList` au lieu de `ScrollView` — seuls les items visibles sont rendus. La hiérarchie (groupes par boutique, sections jours précédents) est aplatie en un tableau d'items typés.
 
@@ -258,7 +279,14 @@ Visible si `status === delivered && menuId existe`.
 - Image réelle du plat + stats (Total plat / Mes Cmd / Nombre vote) + notation
   (étoiles + commentaire). Design copié sur `DriverInfoTab`. Voir section dédiée.
 
-**Navigation multi-commandes** (`allOrders`) : barre de pagination "Cmd 1, Cmd 2…" en bas, avec flèches si > 3 commandes.
+### Tab Montant (`MontantTab`)
+Visible dès que la ligne porte **2 commandes ou plus**. Réutilise tel quel
+`MerchantOrderMontantTab` (blocs par `deliveryGroupId`, total général).
+
+**Navigation multi-commandes** (`allOrders`) : chips **Cmd N** dans le **header**, à la
+place de la ligne d'adresse, numérotés par le vrai `rank` et suivis d'un badge `+N` de
+débordement — comme le sheet marchand. Plus de barre de pagination en bas, plus de croix :
+fermeture par swipe, tap sur l'overlay ou retour Android.
 
 ---
 

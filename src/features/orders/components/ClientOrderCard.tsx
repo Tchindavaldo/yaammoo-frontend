@@ -4,10 +4,13 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { Commande, FastFood } from "@/src/types";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
+import { computeGrandTotal } from "../../merchant/components/MerchantOrderMontantTab";
 
 interface ClientOrderCardProps {
   order: Commande;
   allOrders?: Commande[];
+  /** Commandes du groupe : pilotent le libellé "N cmd", le montant et les chips. */
+  sheetOrders?: Commande[];
   fastFood?: FastFood;
   onDelete?: (id: string) => void;
   onUpdateQuantity?: (id: string, qty: number) => void;
@@ -20,6 +23,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
   ({
     order,
     allOrders,
+    sheetOrders,
     fastFood,
     onDelete,
     onUpdateQuantity,
@@ -117,9 +121,43 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
       );
     }
 
-    const totalPrice = order.total || 0;
-    const menuName =
-      (order.menu as any)?.titre || (order.menu as any)?.name || "—";
+    // Ligne groupée : plusieurs commandes du même client sur le même
+    // créneau/zone. On affiche alors "N cmd" + le montant du groupe — le même
+    // que le "Total général" de l'onglet Montant du sheet (logique marchand).
+    const groupedOrders =
+      sheetOrders && sheetOrders.length > 1 ? sheetOrders : null;
+    const totalPrice = groupedOrders
+      ? computeGrandTotal(groupedOrders)
+      : order.total || 0;
+
+    /**
+     * "N cmd livrées à 12h" / "N cmd livraison express" / "N cmd · pas de
+     * livraison". Rendu pour une ligne groupée, et aussi pour une commande
+     * seule dès qu'elle porte au moins un extra ou une boisson.
+     */
+    const buildGroupLabel = (n: number) => {
+      const plural = n > 1 ? "s" : "";
+      const d = order.delivery as any;
+      if (d?.status !== true) return `${n} cmd · pas de livraison`;
+      if (d?.type === "express") return `${n} cmd livraison express`;
+      const time = d?.time || d?.hour;
+      return time
+        ? `${n} cmd livrée${plural} à ${time}`
+        : `${n} cmd livrée${plural}`;
+    };
+
+    /**
+     * Partie "livraison" seule, sans préfixe "N cmd" : suffixe le libellé quand
+     * la commande est seule et sans extra ni boisson.
+     */
+    const deliverySuffix = (() => {
+      const d = order.delivery as any;
+      if (d?.status !== true) return "pas de livraison";
+      if (d?.type === "express") return "livraison express";
+      const time = d?.time || d?.hour;
+      return time ? `livrée à ${time}` : "livrée";
+    })();
+
     const menuImage =
       (order.menu as any)?.coverImage || (order.menu as any)?.image;
     const status = (order.status || "pending").toLowerCase();
@@ -134,14 +172,27 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
           ? "#2563eb"
           : "#ccc";
 
-    const extras = order.extra || [];
-    const extrasActiveCount = Array.isArray(extras)
-      ? extras.filter((x: any) => x.status !== false).length
-      : 0;
-    const drinks = order.drink || [];
-    const drinksActiveCount = Array.isArray(drinks)
-      ? drinks.filter((x: any) => x.status !== false).length
-      : 0;
+    // Chips Extras/Boisson : fond neutre uniforme (design marchand).
+    const chipTint = {
+      backgroundColor: "#00000008",
+      borderWidth: 1,
+      borderColor: "#00000014",
+    };
+
+    // Item réellement sélectionné : les entrées placeholder "Aucun"/"Aucune" ne
+    // comptent pas (même règle que `computeItemsTotal` de l'onglet Montant).
+    const isRealItem = (x: any) =>
+      x?.status === true && x?.name && x.name !== "Aucun" && x.name !== "Aucune";
+    // Sur une ligne groupée, les compteurs totalisent TOUT le groupe.
+    const countedOrders = groupedOrders || [order];
+    const countIn = (key: "extra" | "drink") =>
+      countedOrders.reduce((sum, o: any) => {
+        const list = o?.[key];
+        return sum + (Array.isArray(list) ? list.filter(isRealItem).length : 0);
+      }, 0);
+    const extrasActiveCount = countIn("extra");
+    const drinksActiveCount = countIn("drink");
+    const pickedCount = extrasActiveCount + drinksActiveCount;
 
     const quantity = order.quantity || 1;
 
@@ -177,8 +228,11 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
               <View style={styles.summaryTitleContainer}>
                 <Text style={styles.summaryPrice}>{totalPrice} F</Text>
                 <Text style={styles.summaryName} numberOfLines={1}>
-                  {menuName}
-                  {hideRanking ? "" : ` (X${quantity})`}
+                  {groupedOrders
+                    ? ` ${buildGroupLabel(groupedOrders.length)}`
+                    : pickedCount > 0
+                      ? ` ${buildGroupLabel(1)}`
+                      : ` ${quantity} plat${quantity > 1 ? "s" : ""} · ${deliverySuffix}`}
                 </Text>
               </View>
               {isDelivering && (
@@ -190,21 +244,15 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
 
             <View style={styles.summaryBottomRow}>
               <View style={styles.summaryChipsRow}>
-                <View
-                  style={[
-                    styles.smallChip,
-                    styles.chipInactive,
-                    { paddingLeft: 0 },
-                  ]}
-                >
-                  <Ionicons name="fast-food-outline" size={14} color="#ccc" />
-                  <Text style={[styles.chipText, { color: "#ccc" }]}>
+                <View style={[styles.smallChip, chipTint, { paddingLeft: 0 }]}>
+                  <Ionicons name="fast-food-outline" size={14} color="black" />
+                  <Text style={[styles.chipText, { color: "black" }]}>
                     Extras +{extrasActiveCount}
                   </Text>
                 </View>
-                <View style={[styles.smallChip, styles.chipInactive]}>
-                  <Ionicons name="beer-outline" size={14} color="#ccc" />
-                  <Text style={[styles.chipText, { color: "#ccc" }]}>
+                <View style={[styles.smallChip, chipTint]}>
+                  <Ionicons name="beer-outline" size={14} color="black" />
+                  <Text style={[styles.chipText, { color: "black" }]}>
                     Boisson +{drinksActiveCount}
                   </Text>
                 </View>

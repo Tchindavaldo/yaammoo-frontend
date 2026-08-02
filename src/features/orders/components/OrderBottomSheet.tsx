@@ -1,6 +1,7 @@
 import { Commande, FastFood } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Audio } from "expo-av";
+import { Image } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -15,11 +16,15 @@ import {
   View,
 } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
+import { MontantTab } from "../../merchant/components/MerchantOrderMontantTab";
 import { DriverInfoTab } from "./DriverInfoTab";
 import { RateMenuTab } from "./RateMenuTab";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SHEET_HEIGHT = 480;
+
+/** Hauteur max des cartes d'items (Commandes / Montant) : sheet à hauteur fixe. */
+const ITEMS_CARD_MAX_H = 300;
 
 export type OrderItem = {
   name: string;
@@ -28,6 +33,8 @@ export type OrderItem = {
   unitPrice?: number;
   hasQty?: boolean;
   type?: string;
+  /** Visuel du plat (type "menu") : remplit la case d'icône. */
+  image?: string;
 };
 
 const COLORS = [
@@ -45,7 +52,7 @@ type Props = {
   allOrders?: Commande[];
 };
 
-type Tab = "livraison" | "commandes" | "livreur" | "noter";
+type Tab = "livraison" | "commandes" | "montant" | "livreur" | "noter";
 
 export const OrderBottomSheet: React.FC<Props> = ({
   order,
@@ -72,6 +79,39 @@ export const OrderBottomSheet: React.FC<Props> = ({
   // Tab « Noter » (plat) : commande livrée uniquement.
   const menuId = (selectedOrder?.menu as any)?.id || (selectedOrder as any)?.menuId;
   const showRateTab = selectedOrder?.status === "delivered" && !!menuId;
+  // Onglet Montant : récap du groupe, seulement si la ligne porte ≥ 2 commandes.
+  const showMontantTab = !!allOrders && allOrders.length > 1;
+
+  const hasMultiple = !!allOrders && allOrders.length > 1;
+
+  // ─── Chips « Cmd » du header : compteur de débordement « +N » ───────────────
+  // Largeur d'un chip + gap : sert à convertir des pixels masqués en nb de chips.
+  const CMD_CHIP_W = 58;
+  const [cmdViewportW, setCmdViewportW] = useState(0);
+  const [cmdContentW, setCmdContentW] = useState(0);
+  const [cmdScrollX, setCmdScrollX] = useState(0);
+  const handleCmdLayout = (e: any) =>
+    setCmdViewportW(e.nativeEvent.layout.width);
+  const handleCmdContentSize = (w: number) => setCmdContentW(w);
+  const handleCmdScroll = (e: any) =>
+    setCmdScrollX(e.nativeEvent.contentOffset.x);
+  // Un chip n'est compté que s'il est masqué à plus de moitié.
+  const hiddenPx = Math.max(0, cmdContentW - cmdViewportW - cmdScrollX);
+  const hiddenCount = Math.floor(hiddenPx / CMD_CHIP_W + 0.5);
+
+  // Livraison offerte (bonus/campagne couvert par le fastfood) ou mutualisée sur
+  // un groupe de livraison : dans les deux cas, pas de prix sur cette commande.
+  const offer = (selectedOrder as any)?.deliveryOffer;
+  const deliveryOffered =
+    offer?.active === true && offer?.coveredBy === "fastfood";
+  // « Cmd groupée » n'a de sens qu'à partir de 2 commandes portant le MÊME
+  // deliveryGroupId : seule une commande avec ce groupe ne mutualise rien.
+  const currentGroupId = (selectedOrder as any)?.deliveryGroupId;
+  const deliveryGrouped =
+    !!currentGroupId &&
+    (allOrders || []).filter(
+      (o: any) => o.deliveryGroupId === currentGroupId,
+    ).length > 1;
 
   // Construire les items dynamiquement (plus besoin de state ni de useEffect pour ça)
   const items: OrderItem[] = React.useMemo(() => {
@@ -95,6 +135,9 @@ export const OrderBottomSheet: React.FC<Props> = ({
       unitPrice: menuPrice,
       hasQty: true,
       type: "menu",
+      image:
+        (selectedOrder.menu as any)?.coverImage ||
+        (selectedOrder.menu as any)?.image,
     });
 
     extras.forEach((ex: any) => {
@@ -157,6 +200,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
   useEffect(() => {
     if (tab === "livreur" && !showDriverTab) setTab("livraison");
     if (tab === "noter" && !showRateTab) setTab("livraison");
+    if (tab === "montant" && !showMontantTab) setTab("livraison");
   }, [tab, showDriverTab, showRateTab]);
 
   const handleDismiss = () => {
@@ -229,14 +273,56 @@ export const OrderBottomSheet: React.FC<Props> = ({
                 <Text style={styles.userName}>
                   {boutique?.nom || "Boutique"}
                 </Text>
-                <Text style={styles.userAddr} numberOfLines={1}>
-                  {selectedOrder?.delivery?.location || "Sur place"}
-                </Text>
+                {hasMultiple ? (
+                  /* Multi-commandes : chips Cmd 1/2/3… à la place de l'adresse. */
+                  <View style={styles.cmdRow}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.cmdScroll}
+                      style={{ flexShrink: 1 }}
+                      onScroll={handleCmdScroll}
+                      scrollEventThrottle={16}
+                      onLayout={handleCmdLayout}
+                      onContentSizeChange={handleCmdContentSize}
+                    >
+                      {allOrders!.map((o, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          style={[
+                            styles.cmdChip,
+                            selectedOrderIdx === idx && styles.cmdChipActive,
+                          ]}
+                          onPress={() => setSelectedOrderIdx(idx)}
+                        >
+                          <Text
+                            style={[
+                              styles.cmdChipText,
+                              selectedOrderIdx === idx &&
+                                styles.cmdChipTextActive,
+                            ]}
+                          >
+                            {/* Vrai rang de la commande (aligné sur l'onglet
+                                Montant), pas la position dans la liste. */}
+                            Cmd {(o as any).rank ?? idx + 1}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    {/* Débordement : « +N » tant que la liste n'a pas été scrollée. */}
+                    {hiddenCount > 0 && (
+                      <View style={styles.cmdMore}>
+                        <Text style={styles.cmdMoreText}>+{hiddenCount}</Text>
+                      </View>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={styles.userAddr} numberOfLines={1}>
+                    {selectedOrder?.delivery?.location || "Sur place"}
+                  </Text>
+                )}
               </View>
             </View>
-            <TouchableOpacity onPress={handleDismiss} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
-            </TouchableOpacity>
           </View>
 
           <View style={styles.tabBar}>
@@ -266,6 +352,21 @@ export const OrderBottomSheet: React.FC<Props> = ({
                 Commandes
               </Text>
             </TouchableOpacity>
+            {showMontantTab && (
+              <TouchableOpacity
+                style={[styles.tab, tab === "montant" && styles.tabActive]}
+                onPress={() => setTab("montant")}
+              >
+                <Text
+                  style={[
+                    styles.tabText,
+                    tab === "montant" && styles.tabTextActive,
+                  ]}
+                >
+                  Montant
+                </Text>
+              </TouchableOpacity>
+            )}
             {showDriverTab && (
               <TouchableOpacity
                 style={[styles.tab, tab === "livreur" && styles.tabActive]}
@@ -327,6 +428,8 @@ export const OrderBottomSheet: React.FC<Props> = ({
             >
               <DriverInfoTab order={selectedOrder!} allowRating />
             </ScrollView>
+          ) : tab === "montant" && showMontantTab ? (
+            <MontantTab orders={allOrders!} maxHeight={ITEMS_CARD_MAX_H} />
           ) : tab === "livraison" ? (
             <ScrollView
               style={styles.content}
@@ -344,70 +447,11 @@ export const OrderBottomSheet: React.FC<Props> = ({
               total={selectedOrder?.total || 0}
               zone={(selectedOrder?.delivery as any)?.zone || ""}
               deliveryPrice={Number((selectedOrder?.delivery as any)?.prix) || 0}
+              deliveryOffered={deliveryOffered}
+              deliveryGrouped={deliveryGrouped}
             />
           )}
 
-          {/* ── Nav multi-commandes EN BAS (globale) ── */}
-          {allOrders && allOrders.length > 1 && (
-            <View style={styles.cmdNavTabsContainer}>
-              {allOrders.length > 3 && (
-                <TouchableOpacity
-                  onPress={() =>
-                    setSelectedOrderIdx(Math.max(0, selectedOrderIdx - 1))
-                  }
-                  style={styles.navArrow}
-                >
-                  <Ionicons name="chevron-back" size={20} color="#111827" />
-                </TouchableOpacity>
-              )}
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={[
-                  styles.cmdNavTabs,
-                  {
-                    justifyContent:
-                      allOrders.length > 3 ? "flex-start" : "center",
-                  },
-                ]}
-                style={{ flexGrow: 0 }}
-              >
-                {allOrders.map((_, idx) => (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[
-                      styles.cmdNavTab,
-                      selectedOrderIdx === idx && styles.cmdNavTabActive,
-                    ]}
-                    onPress={() => setSelectedOrderIdx(idx)}
-                  >
-                    <Text
-                      style={[
-                        styles.cmdNavTabText,
-                        selectedOrderIdx === idx && styles.cmdNavTabTextActive,
-                      ]}
-                    >
-                      Cmd {idx + 1}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {allOrders.length > 3 && (
-                <TouchableOpacity
-                  onPress={() =>
-                    setSelectedOrderIdx(
-                      Math.min(allOrders.length - 1, selectedOrderIdx + 1),
-                    )
-                  }
-                  style={styles.navArrow}
-                >
-                  <Ionicons name="chevron-forward" size={20} color="#111827" />
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
         </Animated.View>
       </View>
     </Modal>
@@ -674,10 +718,11 @@ function LivraisonTab({
   );
 }
 
-const ITEM_ICONS: Record<string, string> = {
-  menu: "\uD83C\uDF7D\uFE0F",
-  extra: "\u2795",
-  drink: "\uD83E\uDD64",
+// Icônes alignées sur le bottom sheet du home (checkout/tabs/DetailTab).
+const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  menu: "fast-food-outline",
+  extra: "add-circle-outline",
+  drink: "wine-outline",
 };
 
 const ITEM_LABEL: Record<string, string> = {
@@ -688,18 +733,35 @@ const ITEM_LABEL: Record<string, string> = {
 
 const CURRENCY = "XAF";
 
+
 function CommandesTab({
   items,
   total,
   zone = "",
   deliveryPrice = 0,
+  deliveryOffered = false,
+  deliveryGrouped = false,
 }: {
   items: OrderItem[];
   total: number;
   zone?: string;
   deliveryPrice?: number;
+  /** Livraison offerte (deliveryOffer actif, couvert par le fastfood). */
+  deliveryOffered?: boolean;
+  /** La commande partage son deliveryGroupId avec au moins une autre du sheet. */
+  deliveryGrouped?: boolean;
 }) {
-  const hasDelivery = deliveryPrice > 0 || !!zone;
+  const hasDelivery =
+    deliveryPrice > 0 || !!zone || deliveryOffered || deliveryGrouped;
+  // Offert prime sur le groupé : le client ne paie rien dans les deux cas, mais
+  // « Offert » porte l'info commerciale (bonus / campagne).
+  const deliveryLabel = deliveryOffered
+    ? "Offert"
+    : deliveryGrouped
+      ? "Cmd groupée"
+      : deliveryPrice > 0
+        ? `${deliveryPrice} ${CURRENCY}`
+        : "Inclus";
   if (items.length === 0) {
     return (
       <View
@@ -726,10 +788,12 @@ function CommandesTab({
         paddingBottom: 8,
       }}
     >
-      {/* Container arrondi : items scrollables + total fixe */}
+      {/* Container arrondi : items scrollables + total fixe. Hauteur plafonnée
+          (sheet à hauteur fixe) pour que la ligne de total reste visible. */}
       <View
         style={{
           flex: 1,
+          maxHeight: ITEMS_CARD_MAX_H,
           backgroundColor: "#F9FAFB",
           borderRadius: 16,
           borderWidth: 1,
@@ -762,24 +826,34 @@ function CommandesTab({
                   borderBottomColor: "#F3F4F6",
                 }}
               >
-                {/* Icône + badge type */}
-                <View
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 9,
-                    backgroundColor:
-                      o.type === "extra"
-                        ? "#FFF7ED"
-                        : o.type === "drink"
-                          ? "#EFF6FF"
-                          : "#F0FDF4",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 13 }}>{icon}</Text>
-                </View>
+                {/* Plat : visuel du menu. Extra / boisson : icône. */}
+                {o.type === "menu" && o.image ? (
+                  <Image
+                    source={{ uri: o.image }}
+                    style={{ width: 34, height: 34, borderRadius: 9 }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={150}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: 9,
+                      backgroundColor:
+                        o.type === "extra"
+                          ? "#FFF7ED"
+                          : o.type === "drink"
+                            ? "#EFF6FF"
+                            : "#F0FDF4",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name={icon} size={16} color="#ec4913" />
+                  </View>
+                )}
 
                 {/* Nom + type label */}
                 <View style={{ flex: 1 }}>
@@ -862,7 +936,7 @@ function CommandesTab({
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontSize: 13 }}>🛵</Text>
+                <Ionicons name="bicycle-outline" size={16} color="#ec4913" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
@@ -886,9 +960,16 @@ function CommandesTab({
               </View>
               <View style={{ alignItems: "flex-end" }}>
                 <Text
-                  style={{ fontSize: 13, fontWeight: "700", color: "#111827" }}
+                  style={[
+                    { fontSize: 13, fontWeight: "700", color: "#111827" },
+                    // Offert / groupé : vert, comme chez le marchand.
+                    (deliveryOffered || deliveryGrouped) && {
+                      color: "#16A34A",
+                      fontSize: 12,
+                    },
+                  ]}
                 >
-                  {deliveryPrice > 0 ? `${deliveryPrice} ${CURRENCY}` : "Inclus"}
+                  {deliveryLabel}
                 </Text>
               </View>
             </View>
@@ -907,7 +988,7 @@ function CommandesTab({
           }}
         >
           <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
-            Total commande
+            {deliveryGrouped ? "Total" : "Total commande"}
           </Text>
           <Text style={{ fontSize: 16, fontWeight: "900", color: "#ec4913" }}>
             {total} {CURRENCY}
@@ -1232,12 +1313,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#9CA3AF",
   },
-  cmdRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-  },
   cmdRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
@@ -1286,6 +1361,32 @@ const styles = StyleSheet.create({
     color: "#6B7280",
     marginTop: 2,
   },
+  // Chips « Cmd » dans le header (multi-commandes)
+  cmdRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
+  cmdScroll: { flexDirection: "row", gap: 6, paddingRight: 2 },
+  cmdChip: {
+    minWidth: 28,
+    height: 24,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  cmdChipActive: { backgroundColor: "#111827", borderColor: "#111827" },
+  cmdChipText: { fontSize: 11, fontWeight: "700", color: "#6B7280" },
+  cmdChipTextActive: { color: "#FFFFFF" },
+  cmdMore: {
+    height: 24,
+    paddingHorizontal: 7,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E5E7EB",
+  },
+  cmdMoreText: { fontSize: 10, fontWeight: "800", color: "#4B5563" },
   cmdNavTabsContainer: {
     flexDirection: "row",
     alignItems: "center",

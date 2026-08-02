@@ -126,9 +126,11 @@ type Group = {
 type Props = {
   /** Commandes affichées par le sheet (une seule, ou toutes celles du groupe). */
   orders: Commande[];
+  /** Plafond de la carte : dépend de la hauteur du sheet appelant (défaut 340). */
+  maxHeight?: number;
 };
 
-export function MontantTab({ orders }: Props) {
+export function MontantTab({ orders, maxHeight = 340 }: Props) {
   // Regroupe par deliveryGroupId. Une commande sans groupe forme son propre bloc.
   const groups = useMemo(() => buildDeliveryGroups(orders), [orders]);
 
@@ -154,7 +156,7 @@ export function MontantTab({ orders }: Props) {
     >
       {/* Même gabarit que l'onglet Commande : carte plafonnée, contenu scrollable
           au-dessus d'une ligne de total fixe. */}
-      <View style={styles.card}>
+      <View style={[styles.card, { maxHeight }]}>
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}

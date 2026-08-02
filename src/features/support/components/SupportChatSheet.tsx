@@ -87,7 +87,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         {inChat ? (
           <View style={[styles.flex, { paddingTop: headerHeight + 6 }]}>

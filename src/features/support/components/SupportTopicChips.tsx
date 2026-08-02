@@ -1,7 +1,7 @@
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SUPPORT_TOPICS } from "../data/support.mock";
 import type { SupportTopic } from "../types/support.types";
 
@@ -19,12 +19,7 @@ export const SupportTopicChips: React.FC<Props> = ({
   onChange,
   readOnly = false,
 }) => (
-  <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    contentContainerStyle={styles.row}
-    scrollEnabled={!readOnly}
-  >
+  <View style={styles.row}>
     {SUPPORT_TOPICS.filter((t) => !readOnly || t.id === value).map((t) => {
       const active = t.id === value;
       return (
@@ -51,28 +46,30 @@ export const SupportTopicChips: React.FC<Props> = ({
         </Pressable>
       );
     })}
-  </ScrollView>
+  </View>
 );
 
 const styles = StyleSheet.create({
   row: {
-    gap: Theme.spacing.sm,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
     paddingHorizontal: Theme.spacing.md,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: Theme.borderRadius.pill,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: Theme.colors.gray[300],
     backgroundColor: Theme.colors.white,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
     color: Theme.colors.gray[800],
   },

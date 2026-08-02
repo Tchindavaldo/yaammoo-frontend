@@ -1,6 +1,6 @@
 import { Theme } from "@/src/theme";
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Keyboard, ScrollView, StyleSheet, Text, View } from "react-native";
 import type {
   SupportMessage,
   SupportThread,
@@ -32,6 +32,21 @@ export const SupportChatView: React.FC<Props> = ({
   );
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<ScrollView>(null);
+  /**
+   * Clavier ouvert : le KeyboardAvoidingView remonte déjà la saisie, l'inset de
+   * navbar ferait un vide entre l'input et le clavier. Fermé : on garde l'inset
+   * plus une marge, sinon la saisie touche la barre d'onglets.
+   */
+  const [keyboardUp, setKeyboardUp] = useState(false);
+
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardUp(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardUp(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   useEffect(() => {
     setTopic(thread?.topic ?? null);
@@ -89,7 +104,7 @@ export const SupportChatView: React.FC<Props> = ({
         )}
       </ScrollView>
 
-      <View style={{ paddingBottom: bottomInset }}>
+      <View style={{ paddingBottom: keyboardUp ? 8 : bottomInset + 10 }}>
         <SupportComposer
           value={draft}
           onChangeText={setDraft}

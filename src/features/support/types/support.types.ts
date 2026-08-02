@@ -29,7 +29,12 @@ export type SupportThreadStatus = "open" | "pending" | "closed";
 export interface SupportThread {
   id: string;
   topic: SupportTopic;
-  /** Titre affiché dans la liste (1re ligne du 1er message si absent). */
+  /**
+   * Interlocuteur du fil : une boutique, ou `null` pour le support yaammoo.
+   * Son nom sert de titre (liste + header de la conversation).
+   */
+  fastFood: { id: string; nom: string } | null;
+  /** Résumé de la demande, affiché sous le nom de l'interlocuteur. */
   title: string;
   status: SupportThreadStatus;
   unreadCount: number;

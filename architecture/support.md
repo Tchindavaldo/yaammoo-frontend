@@ -28,13 +28,17 @@ bottom sheet à mi-hauteur.
 
 ## Flux UI
 
-1. **Liste** — discussions passées (icône du sujet, titre, dernier message, date,
-   badge non-lus, statut). Bouton bas fixe **« Nouveau chat »**.
+1. **Liste** — discussions passées. Le **titre** de chaque ligne est
+   l'interlocuteur : le **nom du fastfood** (`thread.fastFood.nom`) ou
+   **« yaammoo »** quand `fastFood` vaut `null` (helper `getThreadName`). Le
+   résumé de la demande passe en 3e ligne avec l'objet et le statut. Bouton bas
+   fixe **« Nouveau chat »**.
 2. **Nouveau chat** — écran d'accueil **centré** (titre + description) avec les
    **chips d'objet** en bas (Question, Problème, Assistance, Suggestion,
    Discussion). **Aucune saisie** tant qu'aucun objet n'est choisi.
 3. **Après sélection** — les chips disparaissent, l'objet est repris dans le
-   **sous-titre du header** (`Objet · statut`), et la saisie apparaît.
+   **sous-titre du header** (`Objet · statut`), et la saisie apparaît. Le
+   **titre du header** est l'interlocuteur (nom du fastfood ou « yaammoo »).
 4. **Discussion existante** — même rendu : l'objet et le statut du fil sont
    affichés dans le header, la conversation s'ouvre directement.
 

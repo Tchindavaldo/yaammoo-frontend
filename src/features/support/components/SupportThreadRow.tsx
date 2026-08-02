@@ -2,7 +2,11 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { getTopicDescriptor, SUPPORT_STATUS_LABEL } from "../data/support.mock";
+import {
+  getThreadName,
+  getTopicDescriptor,
+  SUPPORT_STATUS_LABEL,
+} from "../data/support.mock";
 import type { SupportThread } from "../types/support.types";
 
 /** Date courte : « 14:05 » aujourd'hui, « 28 juil. » au-delà. */
@@ -31,7 +35,7 @@ export const SupportThreadRow: React.FC<Props> = ({ thread, onPress }) => {
       <View style={styles.body}>
         <View style={styles.line}>
           <Text style={styles.title} numberOfLines={1}>
-            {thread.title}
+            {getThreadName(thread)}
           </Text>
           <Text style={styles.date}>{formatDate(thread.updatedAt)}</Text>
         </View>
@@ -48,7 +52,7 @@ export const SupportThreadRow: React.FC<Props> = ({ thread, onPress }) => {
         </View>
 
         <Text style={[styles.status, { color: topic.color }]}>
-          {topic.label} · {SUPPORT_STATUS_LABEL[thread.status]}
+          {thread.title} · {topic.label} · {SUPPORT_STATUS_LABEL[thread.status]}
         </Text>
       </View>
     </Pressable>

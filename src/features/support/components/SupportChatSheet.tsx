@@ -12,7 +12,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
+  getThreadName,
   getTopicDescriptor,
+  SUPPORT_DEFAULT_NAME,
   SUPPORT_STATUS_LABEL,
   SUPPORT_THREADS_MOCK,
 } from "../data/support.mock";
@@ -67,10 +69,11 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
   const thread = inChat ? screen.thread : null;
   const unread = threads.reduce((n, t) => n + t.unreadCount, 0);
 
+  // En conversation, le titre est l'interlocuteur (boutique ou yaammoo).
   const title = inChat
     ? thread
-      ? thread.title
-      : "Nouveau chat"
+      ? getThreadName(thread)
+      : SUPPORT_DEFAULT_NAME
     : "Contactez-nous";
   // En conversation, le sous-titre porte l'objet choisi + le statut du fil.
   const chatSubtitle = chatTopic

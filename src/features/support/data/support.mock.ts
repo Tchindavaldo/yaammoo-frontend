@@ -6,6 +6,13 @@ import type {
   SupportTopicDescriptor,
 } from "../types/support.types";
 
+/** Nom affiché quand le fil s'adresse au support yaammoo. */
+export const SUPPORT_DEFAULT_NAME = "yaammoo";
+
+/** Titre d'un fil : la boutique concernée, sinon yaammoo. */
+export const getThreadName = (thread: SupportThread): string =>
+  thread.fastFood?.nom ?? SUPPORT_DEFAULT_NAME;
+
 /** Libellé affiché pour le statut d'un fil. */
 export const SUPPORT_STATUS_LABEL: Record<SupportThreadStatus, string> = {
   open: "En cours",
@@ -60,6 +67,7 @@ export const SUPPORT_THREADS_MOCK: SupportThread[] = [
   {
     id: "t1",
     topic: "probleme",
+    fastFood: { id: "ff1", nom: "Chez Mama Nathalie" },
     title: "Commande non livrée",
     status: "open",
     unreadCount: 2,
@@ -95,6 +103,7 @@ export const SUPPORT_THREADS_MOCK: SupportThread[] = [
   {
     id: "t2",
     topic: "question",
+    fastFood: { id: "ff2", nom: "Le Grill du Coin" },
     title: "Frais de livraison express",
     status: "closed",
     unreadCount: 0,
@@ -124,6 +133,7 @@ export const SUPPORT_THREADS_MOCK: SupportThread[] = [
   {
     id: "t3",
     topic: "suggestion",
+    fastFood: null,
     title: "Ajouter les favoris",
     status: "pending",
     unreadCount: 0,

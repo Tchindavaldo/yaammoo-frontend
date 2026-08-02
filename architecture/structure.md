@@ -56,6 +56,13 @@ src/features/
 │       ├── NotificationItem.tsx         # Ligne liste compacte
 │       └── NotificationDetailSheet.tsx  # Modal détail
 │
+├── support/                             # Chat support CLIENT (Settings → Contactez-nous)
+│   ├── components/                      # Sheet plein écran, vue chat, chips d'objet, bulle, composer
+│   ├── hooks/                           # useSupportThreads, useSupportConversation, useKeyboardOffset
+│   ├── services/supportService.ts       # HTTP /support
+│   ├── data/support.constants.ts        # Topics, statuts, helpers de nom
+│   └── types/support.types.ts           # Détail : architecture/support.md
+│
 ├── orders/
 │   ├── context/OrderContext.tsx         # orders[] + buyOrders + fetchOrders + updateLocalOrder
 │   ├── utils/sanitizeOrder.ts           # Sanitization stricte d'une commande (envoi /order, /transaction)
@@ -68,10 +75,13 @@ src/features/
 ├── merchant/                            # Détail complet : architecture/orders-merchant.md
 │   ├── context/                         # MerchantContext + MerchantWalletContext
 │   ├── hooks/                           # useMerchant · useWithdraw
-│   ├── services/                        # merchantService · withdrawService
+│   ├── services/                        # merchantService · withdrawService · merchantSupportService
 │   ├── utils/orderGroupKey.ts           # Clé de groupage d'une cmd (client + date + créneau/zone)
-│   └── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
-│                                        #   (Livraison / Commande / Montant), gestion menus, portefeuille
+│   ├── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
+│   │                                    #   (Livraison / Commande / Montant), gestion menus, portefeuille
+│   └── components/support/              # Chat MARCHAND (Settings → Boutique → Messages) —
+│                                        #   feature séparée, aucun composant partagé avec support/
+│                                        #   Détail : architecture/support-merchant.md
 │
 ├── driver/                             # Rôle driver (commandes déléguées)
 │   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket

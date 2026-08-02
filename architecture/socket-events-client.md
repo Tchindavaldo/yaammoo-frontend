@@ -50,6 +50,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 | `globalMenuUpdated` | `{ menuId, menu }` | `FastFoodContext.upsertMenuFromSocket(menu)` (normalisé) |
 | `globalMenuDeleted` | `{ fastFood, menuId }` | `FastFoodContext.removeMenuFromSocket(ffId, menuId)` |
 | `newFastfood` | `{ fastFood }` | `FastFoodContext.upsertFastFoodFromSocket(fastFood)` (normalisé) |
+| `support.message` | `{ threadId, thread, message }` | `useSupportThreads` / `useMerchantSupportThreads` (liste) + `use*SupportConversation` (fil ouvert, dédup par `id`) |
 | `newTransaction` | `{ data: transaction }` | `WalletContext.upsertTransactionFromSocket(data)` (page transactions client) |
 | `bonus.stats_updated` | `{ data: { bonusStats } }` | `BonusContext.applyBonusStats(bonusStats)` — solde de TOUS les bonus (map par id) |
 | `bonus.claimed` | `{ data: {...} }` | `BonusContext.applyClaimPayload(data)` |

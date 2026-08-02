@@ -30,15 +30,17 @@ export const SupportThreadRow: React.FC<Props> = ({ thread, onPress }) => {
 
       <View style={styles.body}>
         <View style={styles.line}>
-          {/* Objet de la discussion, posé DEVANT le nom de l'interlocuteur. */}
+          <Text style={styles.title} numberOfLines={1}>
+            {getThreadName(thread)}
+          </Text>
+          {/* Objet de la discussion, posé APRÈS le nom de l'interlocuteur. */}
           <View style={[styles.topicChip, { backgroundColor: `${topic.color}1A` }]}>
             <Text style={[styles.topicLabel, { color: topic.color }]}>
               {topic.label}
             </Text>
           </View>
-          <Text style={styles.title} numberOfLines={1}>
-            {getThreadName(thread)}
-          </Text>
+          {/* Pousse la date en bout de ligne, nom et chip restant collés. */}
+          <View style={styles.spacer} />
           <Text style={styles.date}>{formatDate(thread.updatedAt)}</Text>
         </View>
 
@@ -76,7 +78,7 @@ const styles = StyleSheet.create({
   body: { flex: 1, gap: 2 },
   line: { flexDirection: "row", alignItems: "center", gap: 8 },
   title: {
-    flex: 1,
+    flexShrink: 1,
     fontSize: 14.5,
     fontWeight: "700",
     color: Theme.colors.dark,
@@ -97,6 +99,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: Theme.colors.white,
   },
+  spacer: { flex: 1 },
   topicChip: {
     paddingHorizontal: 7,
     paddingVertical: 2,

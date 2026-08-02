@@ -2,7 +2,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { getMerchantTopicDescriptor } from "../../data/merchantSupport.mock";
+import { getMerchantTopicDescriptor } from "../../data/merchantSupport.constants";
 import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 
 /** Date courte : « 14:05 » aujourd'hui, « 28 juil. » au-delà. */
@@ -50,9 +50,10 @@ export const MerchantSupportThreadRow: React.FC<Props> = ({
           <Text style={styles.preview} numberOfLines={1}>
             {thread.lastMessage}
           </Text>
-          {thread.unreadCount > 0 ? (
+          {/* Non-lus de la BOUTIQUE : `supportUnreadCount`, pas ceux du client. */}
+          {thread.supportUnreadCount > 0 ? (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{thread.unreadCount}</Text>
+              <Text style={styles.badgeText}>{thread.supportUnreadCount}</Text>
             </View>
           ) : null}
         </View>

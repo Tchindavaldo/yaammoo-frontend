@@ -5,11 +5,12 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   getMerchantTopicDescriptor,
   MERCHANT_SUPPORT_STATUS_LABEL,
-  MERCHANT_SUPPORT_THREADS_MOCK,
-} from "../../data/merchantSupport.mock";
+} from "../../data/merchantSupport.constants";
+import { useMerchantSupportThreads } from "../../hooks/useMerchantSupportThreads";
 import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportChatView } from "./MerchantSupportChatView";
 import { MerchantSupportThreadRow } from "./MerchantSupportThreadRow";
@@ -31,7 +32,11 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
-  const threads = MERCHANT_SUPPORT_THREADS_MOCK;
+  const { userData } = useAuth();
+  const { threads, loading, upsert } = useMerchantSupportThreads(
+    userData?.fastFoodId,
+    visible
+  );
 
   // Hauteur navbar (≈58) + safe area bas.
   const TAB_BAR_HEIGHT = 58;
@@ -46,7 +51,8 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
 
   const inChat = screen.name === "chat";
   const thread = inChat ? screen.thread : null;
-  const unread = threads.reduce((n, t) => n + t.unreadCount, 0);
+  // Côté boutique, le badge suit `supportUnreadCount` (pas les non-lus client).
+  const unread = threads.reduce((n, t) => n + t.supportUnreadCount, 0);
 
   // En conversation : titre = client, sous-titre = objet posé par lui + statut.
   const title = thread ? thread.client.nom : "Messages";
@@ -54,9 +60,11 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
     ? `${getMerchantTopicDescriptor(thread.topic).label} · ${
         MERCHANT_SUPPORT_STATUS_LABEL[thread.status]
       }`
-    : unread > 0
-      ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
-      : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
+    : loading
+      ? "Chargement…"
+      : unread > 0
+        ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
+        : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
 
   return (
     <View style={styles.overlay}>
@@ -80,7 +88,12 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
       <View style={styles.flex}>
         {thread ? (
           <View style={[styles.flex, { paddingTop: headerHeight + 6 }]}>
-            <MerchantSupportChatView thread={thread} bottomInset={bottomInset} />
+            <MerchantSupportChatView
+              thread={thread}
+              userId={userData?.uid}
+              bottomInset={bottomInset}
+              onThreadUpdated={upsert}
+            />
           </View>
         ) : (
           <ScrollView
@@ -96,7 +109,9 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
                   color={Theme.colors.gray[400]}
                 />
                 <Text style={styles.emptyText}>
-                  Aucun message de vos clients pour le moment.
+                  {loading
+                    ? "Chargement des discussions…"
+                    : "Aucun message de vos clients pour le moment."}
                 </Text>
               </View>
             ) : (

@@ -2,7 +2,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { SUPPORT_TOPICS } from "../data/support.mock";
+import { SUPPORT_TOPICS } from "../data/support.constants";
 import type { SupportTopic } from "../types/support.types";
 
 interface Props {

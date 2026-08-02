@@ -41,5 +41,4 @@ export interface SupportThread {
   /** ISO 8601 du dernier message. */
   updatedAt: string;
   lastMessage: string;
-  messages: SupportMessage[];
 }

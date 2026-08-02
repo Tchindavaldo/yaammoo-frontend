@@ -35,10 +35,11 @@ export interface MerchantSupportThread {
   /** Résumé de la demande. */
   title: string;
   status: MerchantSupportStatus;
-  /** Non-lus côté boutique (`support_unread_count` backend). */
+  /** Non-lus côté CLIENT — non affiché ici, gardé pour coller au payload. */
   unreadCount: number;
+  /** Non-lus côté boutique : c'est ce badge qu'on affiche. */
+  supportUnreadCount: number;
   /** ISO 8601 du dernier message. */
   updatedAt: string;
   lastMessage: string;
-  messages: MerchantSupportMessage[];
 }

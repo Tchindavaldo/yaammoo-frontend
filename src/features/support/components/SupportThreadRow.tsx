@@ -2,7 +2,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { getThreadName, getTopicDescriptor } from "../data/support.mock";
+import { getThreadName, getTopicDescriptor } from "../data/support.constants";
 import type { SupportThread } from "../types/support.types";
 
 /** Date courte : « 14:05 » aujourd'hui, « 28 juil. » au-delà. */

@@ -11,12 +11,13 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   getThreadName,
   getTopicDescriptor,
   SUPPORT_DEFAULT_NAME,
-  SUPPORT_THREADS_MOCK,
-} from "../data/support.mock";
+} from "../data/support.constants";
+import { useSupportThreads } from "../hooks/useSupportThreads";
 import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportChatView } from "./SupportChatView";
 import { SupportThreadRow } from "./SupportThreadRow";
@@ -41,7 +42,9 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   /** Objet de la conversation courante, remonté par la vue chat pour le header. */
   const [chatTopic, setChatTopic] = useState<SupportTopic | null>(null);
-  const threads = SUPPORT_THREADS_MOCK;
+  const { userData } = useAuth();
+  const userId = userData?.uid;
+  const { threads, loading, upsert } = useSupportThreads(userId, visible);
 
   // Hauteur navbar (≈58) + safe area bas, pour caler le bouton au-dessus.
   const TAB_BAR_HEIGHT = 58;
@@ -80,9 +83,11 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
     : "Choisissez l'objet de votre demande";
   const subtitle = inChat
     ? chatSubtitle
-    : unread > 0
-      ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
-      : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
+    : loading
+      ? "Chargement…"
+      : unread > 0
+        ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
+        : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
 
   return (
     <View style={styles.overlay}>
@@ -108,8 +113,10 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
           <View style={[styles.flex, { paddingTop: headerHeight + 6 }]}>
             <SupportChatView
               thread={thread}
+              userId={userId}
               bottomInset={bottomInset}
               onTopicChange={handleTopicChange}
+              onThreadUpdated={upsert}
             />
           </View>
         ) : (
@@ -127,7 +134,9 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
                     color={Theme.colors.gray[400]}
                   />
                   <Text style={styles.emptyText}>
-                    Aucune discussion pour le moment.
+                    {loading
+                      ? "Chargement de vos discussions…"
+                      : "Aucune discussion pour le moment."}
                   </Text>
                 </View>
               ) : (

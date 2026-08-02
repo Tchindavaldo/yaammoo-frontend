@@ -3,11 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Toast } from "@/src/components/Toast";
 import { useKeyboardOffset } from "../hooks/useKeyboardOffset";
-import type {
-  SupportMessage,
-  SupportThread,
-  SupportTopic,
-} from "../types/support.types";
+import { useSupportConversation } from "../hooks/useSupportConversation";
+import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportComposer } from "./SupportComposer";
 import { SupportMessageBubble } from "./SupportMessageBubble";
 import { SupportTopicChips } from "./SupportTopicChips";
@@ -15,10 +12,16 @@ import { SupportTopicChips } from "./SupportTopicChips";
 interface Props {
   /** `null` = nouveau chat : l'objet reste à choisir. */
   thread: SupportThread | null;
+  /** Client connecté ; sans lui aucun envoi n'est possible. */
+  userId?: string;
+  /** Boutique concernée par la demande ; `null` = plateforme yaammoo. */
+  fastFoodId?: string | null;
   /** Hauteur navbar + safe area bas, pour caler la saisie au-dessus. */
   bottomInset?: number;
   /** Remonte l'objet choisi au header (affiché sous le titre). */
   onTopicChange?: (topic: SupportTopic | null) => void;
+  /** Remonte le fil créé ou mis à jour à la liste. */
+  onThreadUpdated?: (thread: SupportThread) => void;
 }
 
 /**
@@ -31,21 +34,26 @@ interface Props {
  */
 export const SupportChatView: React.FC<Props> = ({
   thread,
+  userId,
+  fastFoodId = null,
   bottomInset = 0,
   onTopicChange,
+  onThreadUpdated,
 }) => {
   const [topic, setTopic] = useState<SupportTopic | null>(thread?.topic ?? null);
-  const [messages, setMessages] = useState<SupportMessage[]>(
-    thread?.messages ?? []
-  );
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<ScrollView>(null);
   const paddingBottom = useKeyboardOffset(bottomInset + 10);
   const [toast, setToast] = useState<string | null>(null);
 
+  const { messages, sending, error, send: sendMessage } = useSupportConversation({
+    userId,
+    thread,
+    onThreadUpdated,
+  });
+
   useEffect(() => {
     setTopic(thread?.topic ?? null);
-    setMessages(thread?.messages ?? []);
     setDraft("");
   }, [thread]);
 
@@ -53,20 +61,19 @@ export const SupportChatView: React.FC<Props> = ({
     onTopicChange?.(topic);
   }, [topic, onTopicChange]);
 
-  const send = () => {
+  // L'erreur d'envoi remonte du hook : on la montre en toast, une seule fois.
+  useEffect(() => {
+    if (error) setToast(error);
+  }, [error]);
+
+  const send = async () => {
     const text = draft.trim();
     if (!text) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `local-${Date.now()}`,
-        author: "user",
-        text,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    // Vidé d'emblée pour que la saisie reste fluide ; restauré si l'envoi échoue.
     setDraft("");
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    const ok = await sendMessage(text, topic, fastFoodId);
+    if (!ok) setDraft(text);
+    else requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   };
 
   return (
@@ -108,12 +115,16 @@ export const SupportChatView: React.FC<Props> = ({
           value={draft}
           onChangeText={setDraft}
           onSend={send}
-          disabled={!topic}
+          disabled={!topic || sending}
           placeholder={
             topic ? "Écrire un message…" : "Sélectionnez d'abord un objet"
           }
           onBlockedPress={() =>
-            setToast("Vous devez d'abord sélectionner un objet")
+            setToast(
+              topic
+                ? "Envoi en cours…"
+                : "Vous devez d'abord sélectionner un objet"
+            )
           }
         />
       </Animated.View>

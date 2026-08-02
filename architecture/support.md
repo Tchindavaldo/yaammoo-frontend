@@ -2,8 +2,8 @@
 
 ## Rôle
 Chat entre le client et l'équipe yaammoo, ouvert depuis **Settings → « Contactez-nous »**.
-État actuel : **design seulement**, alimenté par des données de démonstration
-(`data/support.mock.ts`). Aucun appel réseau — les endpoints backend restent à brancher.
+**Branché au backend** : fils, messages, envoi et temps réel passent par
+`/support` (voir `BACKEND/architecture/support.md`).
 
 ## Structure
 
@@ -16,8 +16,12 @@ src/features/support/
 │   ├── SupportMessageBubble.tsx # Bulle message (user à droite / support à gauche)
 │   ├── SupportThreadRow.tsx     # Ligne de la liste des discussions
 │   └── SupportComposer.tsx      # Barre de saisie + bouton envoyer
-├── hooks/useKeyboardOffset.ts   # Décalage de la saisie (ouverture animée courte, fermeture instantanée)
-├── data/support.mock.ts         # SUPPORT_TOPICS + threads de démonstration
+├── hooks/
+│   ├── useKeyboardOffset.ts     # Décalage de la saisie (ouverture animée courte, fermeture instantanée)
+│   ├── useSupportThreads.ts     # Liste des fils + socket `support.message`
+│   └── useSupportConversation.ts# Messages d'un fil, envoi, socket
+├── services/supportService.ts   # Appels HTTP `/support`
+├── data/support.constants.ts    # SUPPORT_TOPICS, statuts, helpers de nom
 └── types/support.types.ts       # SupportThread, SupportMessage, SupportTopic
 ```
 
@@ -60,9 +64,7 @@ Ne pas ajouter de `KeyboardAvoidingView` par-dessus — les deux se cumuleraient
 > **entièrement séparée** : voir [support-merchant.md](./support-merchant.md).
 > Aucun composant n'est partagé entre les deux.
 
-## À brancher (backend)
-
-Endpoints déjà implémentés côté backend (`BACKEND/architecture/support.md`) :
+## Endpoints utilisés
 
 | Besoin | Endpoint |
 |---|---|
@@ -74,3 +76,8 @@ Endpoints déjà implémentés côté backend (`BACKEND/architecture/support.md`
 | Temps réel | socket `support.message` sur la room `<userId>` |
 
 `fastFoodId` absent ou `null` = demande adressée à la plateforme yaammoo.
+
+Le premier message d'un nouveau chat **crée** le fil (`POST /support/threads`) ;
+les suivants passent par la route messages. Ouvrir un fil vaut lecture
+(`PATCH .../read`). Les messages reçus en socket sont dédupliqués par `id`,
+l'envoi HTTP renvoyant déjà le message créé.

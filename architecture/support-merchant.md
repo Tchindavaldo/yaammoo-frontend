@@ -1,8 +1,8 @@
 # Feature — Messages boutique (côté marchand)
 
 Discussions ouvertes par les clients **envers une boutique**, consultées depuis
-**Settings → Boutique → « Messages »**. État actuel : **design seulement**
-(`data/merchantSupport.mock.ts`), aucun appel réseau.
+**Settings → Boutique → « Messages »**. **Branché au backend** via `/support`
+(mêmes endpoints que le chat client, lus du point de vue de la boutique).
 
 > **Feature entièrement séparée** du chat client (`src/features/support/`) :
 > aucun composant, type ou hook partagé entre les deux. Une évolution d'un côté
@@ -18,8 +18,12 @@ src/features/merchant/
 │   ├── MerchantSupportBubble.tsx     # Bulle (boutique à droite, client à gauche)
 │   ├── MerchantSupportThreadRow.tsx  # Ligne de la liste
 │   └── MerchantSupportComposer.tsx   # Barre de réponse
-├── hooks/useMerchantKeyboardOffset.ts
-├── data/merchantSupport.mock.ts
+├── hooks/
+│   ├── useMerchantKeyboardOffset.ts
+│   ├── useMerchantSupportThreads.ts       # Fils de la boutique + socket
+│   └── useMerchantSupportConversation.ts  # Messages d'un fil, réponse, socket
+├── services/merchantSupportService.ts     # Appels HTTP `/support` cote boutique
+├── data/merchantSupport.constants.ts
 └── types/merchantSupport.types.ts
 ```
 
@@ -33,7 +37,7 @@ src/features/merchant/
 | Bulle en accent | Messages du client | Messages de la **boutique** (`author: 'support'`) |
 | Compteur non-lus | `unreadCount` | `supportUnreadCount` du backend |
 
-## À brancher (backend — déjà implémenté)
+## Endpoints utilisés
 
 | Besoin | Endpoint |
 |---|---|

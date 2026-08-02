@@ -1,56 +1,58 @@
 import { Theme } from "@/src/theme";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Toast } from "@/src/components/Toast";
 import { useMerchantKeyboardOffset } from "../../hooks/useMerchantKeyboardOffset";
-import type {
-  MerchantSupportMessage,
-  MerchantSupportThread,
-} from "../../types/merchantSupport.types";
+import { useMerchantSupportConversation } from "../../hooks/useMerchantSupportConversation";
+import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportBubble } from "./MerchantSupportBubble";
 import { MerchantSupportComposer } from "./MerchantSupportComposer";
 
 interface Props {
   thread: MerchantSupportThread;
+  /** Compte marchand connecté ; sans lui aucune réponse n'est possible. */
+  userId?: string;
   /** Hauteur navbar + safe area bas, pour caler la saisie au-dessus. */
   bottomInset?: number;
+  /** Remonte le fil mis à jour à la liste. */
+  onThreadUpdated?: (thread: MerchantSupportThread) => void;
 }
 
 /**
  * Conversation vue par la BOUTIQUE. Pas de chips d'objet : celui-ci est posé
  * par le client à la création du fil et n'est pas modifiable ici — il est
- * rappelé dans le header. Design seul : l'envoi reste local.
+ * rappelé dans le header.
  */
 export const MerchantSupportChatView: React.FC<Props> = ({
   thread,
+  userId,
   bottomInset = 0,
+  onThreadUpdated,
 }) => {
-  const [messages, setMessages] = useState<MerchantSupportMessage[]>(
-    thread.messages
-  );
   const [draft, setDraft] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const paddingBottom = useMerchantKeyboardOffset(bottomInset + 10);
 
+  const { messages, loading, sending, error, send: reply } =
+    useMerchantSupportConversation({ userId, thread, onThreadUpdated });
+
   useEffect(() => {
-    setMessages(thread.messages);
     setDraft("");
   }, [thread]);
 
-  const send = () => {
+  useEffect(() => {
+    if (error) setToast(error);
+  }, [error]);
+
+  const send = async () => {
     const text = draft.trim();
-    if (!text) return;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `local-${Date.now()}`,
-        // La boutique répond : côté backend c'est l'auteur `support`.
-        author: "support",
-        text,
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    if (!text || sending) return;
+    // Vidé d'emblée pour garder la saisie fluide ; restauré si l'envoi échoue.
     setDraft("");
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    const ok = await reply(text);
+    if (!ok) setDraft(text);
+    else requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   };
 
   return (
@@ -66,9 +68,13 @@ export const MerchantSupportChatView: React.FC<Props> = ({
       >
         {messages.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Aucun message</Text>
+            <Text style={styles.emptyTitle}>
+              {loading ? "Chargement…" : "Aucun message"}
+            </Text>
             <Text style={styles.emptyText}>
-              Répondez au client pour démarrer la discussion.
+              {loading
+                ? "Récupération de la discussion."
+                : "Répondez au client pour démarrer la discussion."}
             </Text>
           </View>
         ) : (
@@ -85,6 +91,10 @@ export const MerchantSupportChatView: React.FC<Props> = ({
           onSend={send}
         />
       </Animated.View>
+
+      {toast ? (
+        <Toast message={toast} type="error" onHide={() => setToast(null)} />
+      ) : null}
     </View>
   );
 };

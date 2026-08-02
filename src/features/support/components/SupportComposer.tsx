@@ -9,6 +9,8 @@ interface Props {
   onSend: () => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Tap sur la saisie alors qu'elle est bloquée (objet non choisi). */
+  onBlockedPress?: () => void;
 }
 
 /** Barre de saisie du chat (bas de l'écran). */
@@ -18,23 +20,31 @@ export const SupportComposer: React.FC<Props> = ({
   onSend,
   placeholder = "Écrire un message…",
   disabled = false,
+  onBlockedPress,
 }) => {
   const canSend = value.trim().length > 0 && !disabled;
   return (
     <View style={styles.wrap}>
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={Theme.colors.gray[500]}
-        multiline
-        editable={!disabled}
-      />
+      <View style={styles.inputWrap}>
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={Theme.colors.gray[500]}
+          multiline
+          editable={!disabled}
+        />
+        {/* Saisie bloquée : `editable={false}` avale le tap, on le récupère
+            avec cette zone pour prévenir l'utilisateur. */}
+        {disabled ? (
+          <Pressable style={styles.blocker} onPress={onBlockedPress} />
+        ) : null}
+      </View>
       <Pressable
         style={[styles.send, !canSend && styles.sendOff]}
-        onPress={onSend}
-        disabled={!canSend}
+        onPress={disabled ? onBlockedPress : onSend}
+        disabled={!canSend && !disabled}
       >
         <Ionicons name="arrow-up" size={18} color={Theme.colors.white} />
       </Pressable>
@@ -43,6 +53,8 @@ export const SupportComposer: React.FC<Props> = ({
 };
 
 const styles = StyleSheet.create({
+  inputWrap: { flex: 1 },
+  blocker: StyleSheet.absoluteFillObject,
   wrap: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -54,7 +66,6 @@ const styles = StyleSheet.create({
     backgroundColor: Theme.colors.white,
   },
   input: {
-    flex: 1,
     maxHeight: 110,
     minHeight: 40,
     paddingHorizontal: 14,

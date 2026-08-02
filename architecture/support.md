@@ -34,14 +34,16 @@ bottom sheet à mi-hauteur.
    précédé d'un **chip d'objet** (Question, Problème…). Deux lignes seulement :
    objet + nom + date, puis dernier message + badge non-lus — ni résumé ni
    statut. Bouton bas fixe **« Nouveau chat »**.
-2. **Nouveau chat** — écran d'accueil **centré** (titre + description) avec les
-   **chips d'objet** en bas (Question, Problème, Assistance, Suggestion,
-   Discussion). **Aucune saisie** tant qu'aucun objet n'est choisi.
-3. **Après sélection** — les chips disparaissent, l'objet est repris dans le
-   **sous-titre du header** (`Objet · statut`), et la saisie apparaît. Le
-   **titre du header** est l'interlocuteur (nom du fastfood ou « yaammoo »).
-4. **Discussion existante** — même rendu : l'objet et le statut du fil sont
-   affichés dans le header, la conversation s'ouvre directement.
+2. **Nouveau chat** — la saisie est affichée d'emblée mais **bloquée**, avec les
+   **chips d'objet** juste au-dessus (Question, Problème, Assistance,
+   Suggestion, Discussion). Un tap sur la saisie affiche le toast
+   « Vous devez d'abord sélectionner un objet ».
+3. **Après sélection** — les chips disparaissent, l'objet passe dans le
+   **sous-titre du header** (l'objet SEUL, sans statut) et la saisie s'active.
+   Le **titre du header** est l'interlocuteur (nom du fastfood ou « yaammoo »).
+4. **Discussion existante** — même rendu : le header porte le nom de
+   l'interlocuteur et, sous le titre, l'objet du fil ; la conversation s'ouvre
+   directement.
 
 ### Clavier
 Le décalage de la saisie passe par `useKeyboardOffset`, piloté par

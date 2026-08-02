@@ -1,6 +1,7 @@
 import { Theme } from "@/src/theme";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Toast } from "@/src/components/Toast";
 import { useKeyboardOffset } from "../hooks/useKeyboardOffset";
 import type {
   SupportMessage,
@@ -23,10 +24,10 @@ interface Props {
 /**
  * Vue conversation.
  *
- * Nouveau chat : d'abord un état vide CENTRÉ (titre + description) avec les
- * chips d'objet en bas — pas de saisie tant qu'aucun objet n'est choisi. Dès la
- * sélection, les chips disparaissent (l'objet passe dans le header) et la
- * saisie apparaît.
+ * Nouveau chat : la saisie est affichée d'emblée mais BLOQUÉE, avec les chips
+ * d'objet juste au-dessus. Un tap sur la saisie déclenche un toast invitant à
+ * choisir un objet. Dès la sélection, les chips disparaissent (l'objet passe
+ * dans le header) et la saisie s'active.
  */
 export const SupportChatView: React.FC<Props> = ({
   thread,
@@ -40,6 +41,7 @@ export const SupportChatView: React.FC<Props> = ({
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<ScrollView>(null);
   const paddingBottom = useKeyboardOffset(bottomInset + 10);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     setTopic(thread?.topic ?? null);
@@ -67,25 +69,6 @@ export const SupportChatView: React.FC<Props> = ({
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   };
 
-  // Nouveau chat sans objet : écran de choix, ni messages ni saisie.
-  if (!topic) {
-    return (
-      <View style={styles.flex}>
-        <View style={styles.intro}>
-          <Text style={styles.introTitle}>Comment pouvons-nous vous aider ?</Text>
-          <Text style={styles.introText}>
-            Choisissez l&apos;objet de votre discussion pour démarrer. Notre
-            équipe vous répond dans les meilleurs délais.
-          </Text>
-        </View>
-
-        <View style={{ paddingBottom: bottomInset + 16 }}>
-          <SupportTopicChips value={topic} onChange={setTopic} />
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.flex}>
       <ScrollView
@@ -99,9 +82,15 @@ export const SupportChatView: React.FC<Props> = ({
       >
         {messages.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Décrivez votre demande</Text>
+            <Text style={styles.emptyTitle}>
+              {topic
+                ? "Décrivez votre demande"
+                : "Comment pouvons-nous vous aider ?"}
+            </Text>
             <Text style={styles.emptyText}>
-              Notre équipe vous répond dans les meilleurs délais.
+              {topic
+                ? "Notre équipe vous répond dans les meilleurs délais."
+                : "Choisissez l'objet de votre discussion pour démarrer."}
             </Text>
           </View>
         ) : (
@@ -110,8 +99,25 @@ export const SupportChatView: React.FC<Props> = ({
       </ScrollView>
 
       <Animated.View style={{ paddingBottom }}>
-        <SupportComposer value={draft} onChangeText={setDraft} onSend={send} />
+        {/* Chips seulement tant que l'objet n'est pas choisi (ensuite : header). */}
+        {!topic ? <SupportTopicChips value={topic} onChange={setTopic} /> : null}
+        <SupportComposer
+          value={draft}
+          onChangeText={setDraft}
+          onSend={send}
+          disabled={!topic}
+          placeholder={
+            topic ? "Écrire un message…" : "Sélectionnez d'abord un objet"
+          }
+          onBlockedPress={() =>
+            setToast("Vous devez d'abord sélectionner un objet")
+          }
+        />
       </Animated.View>
+
+      {toast ? (
+        <Toast message={toast} type="info" onHide={() => setToast(null)} />
+      ) : null}
     </View>
   );
 };
@@ -119,25 +125,6 @@ export const SupportChatView: React.FC<Props> = ({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   list: { paddingTop: Theme.spacing.sm, paddingBottom: Theme.spacing.md },
-  intro: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: Theme.spacing.lg,
-    gap: 8,
-  },
-  introTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: Theme.colors.dark,
-    textAlign: "center",
-  },
-  introText: {
-    fontSize: 13.5,
-    lineHeight: 19,
-    color: Theme.colors.gray[600],
-    textAlign: "center",
-  },
   empty: {
     paddingTop: 48,
     paddingHorizontal: Theme.spacing.lg,

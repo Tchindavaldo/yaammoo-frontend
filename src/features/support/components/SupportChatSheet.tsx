@@ -15,7 +15,6 @@ import {
   getThreadName,
   getTopicDescriptor,
   SUPPORT_DEFAULT_NAME,
-  SUPPORT_STATUS_LABEL,
   SUPPORT_THREADS_MOCK,
 } from "../data/support.mock";
 import type { SupportThread, SupportTopic } from "../types/support.types";
@@ -75,11 +74,9 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
       ? getThreadName(thread)
       : SUPPORT_DEFAULT_NAME
     : "Contactez-nous";
-  // En conversation, le sous-titre porte l'objet choisi + le statut du fil.
+  // En conversation, le sous-titre porte le seul objet de la discussion.
   const chatSubtitle = chatTopic
-    ? `${getTopicDescriptor(chatTopic).label} · ${
-        thread ? SUPPORT_STATUS_LABEL[thread.status] : "Nouvelle demande"
-      }`
+    ? getTopicDescriptor(chatTopic).label
     : "Choisissez l'objet de votre demande";
   const subtitle = inChat
     ? chatSubtitle

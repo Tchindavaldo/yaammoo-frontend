@@ -9,23 +9,19 @@ interface Props {
   /** Sujet actif, `null` tant que l'utilisateur n'a rien choisi. */
   value: SupportTopic | null;
   onChange: (topic: SupportTopic) => void;
-  /** Lecture seule : chat déjà ouvert, le sujet n'est plus modifiable. */
-  readOnly?: boolean;
 }
 
-/** Rangée de chips « objet de la discussion », en haut d'un nouveau chat. */
-export const SupportTopicChips: React.FC<Props> = ({
-  value,
-  onChange,
-  readOnly = false,
-}) => (
+/**
+ * Chips « objet de la discussion » d'un nouveau chat. Une fois l'objet choisi,
+ * la rangée disparaît : l'objet est repris dans le header.
+ */
+export const SupportTopicChips: React.FC<Props> = ({ value, onChange }) => (
   <View style={styles.row}>
-    {SUPPORT_TOPICS.filter((t) => !readOnly || t.id === value).map((t) => {
+    {SUPPORT_TOPICS.map((t) => {
       const active = t.id === value;
       return (
         <Pressable
           key={t.id}
-          disabled={readOnly}
           onPress={() => onChange(t.id)}
           style={[
             styles.chip,

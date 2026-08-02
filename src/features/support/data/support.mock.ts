@@ -1,9 +1,17 @@
 import { Theme } from "@/src/theme";
 import type {
   SupportThread,
+  SupportThreadStatus,
   SupportTopic,
   SupportTopicDescriptor,
 } from "../types/support.types";
+
+/** Libellé affiché pour le statut d'un fil. */
+export const SUPPORT_STATUS_LABEL: Record<SupportThreadStatus, string> = {
+  open: "En cours",
+  pending: "En attente",
+  closed: "Résolu",
+};
 
 /** Sujets proposés en chips en haut d'un nouveau chat. */
 export const SUPPORT_TOPICS: SupportTopicDescriptor[] = [

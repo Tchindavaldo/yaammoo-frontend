@@ -16,6 +16,7 @@ src/features/support/
 │   ├── SupportMessageBubble.tsx # Bulle message (user à droite / support à gauche)
 │   ├── SupportThreadRow.tsx     # Ligne de la liste des discussions
 │   └── SupportComposer.tsx      # Barre de saisie + bouton envoyer
+├── hooks/useKeyboardOffset.ts   # Décalage animé de la saisie, piloté par les events clavier
 ├── data/support.mock.ts         # SUPPORT_TOPICS + threads de démonstration
 └── types/support.types.ts       # SupportThread, SupportMessage, SupportTopic
 ```
@@ -29,11 +30,20 @@ bottom sheet à mi-hauteur.
 
 1. **Liste** — discussions passées (icône du sujet, titre, dernier message, date,
    badge non-lus, statut). Bouton bas fixe **« Nouveau chat »**.
-2. **Nouveau chat** — conversation vierge ; en haut, les **chips d'objet**
-   (Question, Problème, Assistance, Suggestion, Discussion). Tant qu'aucun objet
-   n'est choisi, la saisie est désactivée.
-3. **Discussion existante** — les chips passent en lecture seule et n'affichent
-   que le sujet du fil.
+2. **Nouveau chat** — écran d'accueil **centré** (titre + description) avec les
+   **chips d'objet** en bas (Question, Problème, Assistance, Suggestion,
+   Discussion). **Aucune saisie** tant qu'aucun objet n'est choisi.
+3. **Après sélection** — les chips disparaissent, l'objet est repris dans le
+   **sous-titre du header** (`Objet · statut`), et la saisie apparaît.
+4. **Discussion existante** — même rendu : l'objet et le statut du fil sont
+   affichés dans le header, la conversation s'ouvre directement.
+
+### Clavier
+Le décalage de la saisie passe par `useKeyboardOffset` (`Animated` piloté par
+`keyboardWillShow`/`keyboardDidShow`), **pas** par un `KeyboardAvoidingView` ni
+un `useState` : ceux-ci arrivaient une frame en retard, d'où l'input visible
+trop haut avant un saut brusque. Ne pas ajouter de `KeyboardAvoidingView`
+par-dessus — les deux se cumuleraient.
 
 ## À brancher (backend)
 

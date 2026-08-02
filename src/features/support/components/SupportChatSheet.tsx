@@ -2,10 +2,8 @@ import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,8 +11,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { SUPPORT_THREADS_MOCK } from "../data/support.mock";
-import type { SupportThread } from "../types/support.types";
+import {
+  getTopicDescriptor,
+  SUPPORT_STATUS_LABEL,
+  SUPPORT_THREADS_MOCK,
+} from "../data/support.mock";
+import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportChatView } from "./SupportChatView";
 import { SupportThreadRow } from "./SupportThreadRow";
 
@@ -36,6 +38,8 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
   const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
+  /** Objet de la conversation courante, remonté par la vue chat pour le header. */
+  const [chatTopic, setChatTopic] = useState<SupportTopic | null>(null);
   const threads = SUPPORT_THREADS_MOCK;
 
   // Hauteur navbar (≈58) + safe area bas, pour caler le bouton au-dessus.
@@ -46,8 +50,16 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
 
   // Chaque ouverture repart de la liste.
   useEffect(() => {
-    if (visible) setScreen({ name: "list" });
+    if (visible) {
+      setScreen({ name: "list" });
+      setChatTopic(null);
+    }
   }, [visible]);
+
+  const handleTopicChange = useCallback(
+    (topic: SupportTopic | null) => setChatTopic(topic),
+    []
+  );
 
   if (!visible) return null;
 
@@ -60,10 +72,14 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
       ? thread.title
       : "Nouveau chat"
     : "Contactez-nous";
+  // En conversation, le sous-titre porte l'objet choisi + le statut du fil.
+  const chatSubtitle = chatTopic
+    ? `${getTopicDescriptor(chatTopic).label} · ${
+        thread ? SUPPORT_STATUS_LABEL[thread.status] : "Nouvelle demande"
+      }`
+    : "Choisissez l'objet de votre demande";
   const subtitle = inChat
-    ? thread
-      ? "Discussion en cours"
-      : "Choisissez l'objet de votre demande"
+    ? chatSubtitle
     : unread > 0
       ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
       : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
@@ -85,13 +101,16 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
         onHeightChange={setHeaderHeight}
       />
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      {/* Le décalage clavier est géré par useKeyboardOffset dans la vue chat :
+          pas de KeyboardAvoidingView ici, les deux se cumuleraient. */}
+      <View style={styles.flex}>
         {inChat ? (
           <View style={[styles.flex, { paddingTop: headerHeight + 6 }]}>
-            <SupportChatView thread={thread} bottomInset={bottomInset} />
+            <SupportChatView
+              thread={thread}
+              bottomInset={bottomInset}
+              onTopicChange={handleTopicChange}
+            />
           </View>
         ) : (
           <>
@@ -131,7 +150,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
             </TouchableOpacity>
           </>
         )}
-      </KeyboardAvoidingView>
+      </View>
     </View>
   );
 };

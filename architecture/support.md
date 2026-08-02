@@ -38,9 +38,11 @@ bottom sheet à mi-hauteur.
    **chips d'objet** juste au-dessus (Question, Problème, Assistance,
    Suggestion, Discussion). Un tap sur la saisie affiche le toast
    « Vous devez d'abord sélectionner un objet ».
-3. **Après sélection** — les chips disparaissent, l'objet passe dans le
-   **sous-titre du header** (l'objet SEUL, sans statut) et la saisie s'active.
-   Le **titre du header** est l'interlocuteur (nom du fastfood ou « yaammoo »).
+3. **Après sélection** — la saisie s'active et l'objet apparaît dans le
+   **sous-titre du header** (l'objet SEUL, sans statut). Les chips **restent
+   affichées** tant qu'aucun message n'est parti (l'objet reste corrigeable) et
+   disparaissent au **premier message envoyé**. Le **titre du header** est
+   l'interlocuteur (nom du fastfood ou « yaammoo »).
 4. **Discussion existante** — même rendu : le header porte le nom de
    l'interlocuteur et, sous le titre, l'objet du fil ; la conversation s'ouvre
    directement.

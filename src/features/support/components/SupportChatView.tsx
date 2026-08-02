@@ -26,8 +26,8 @@ interface Props {
  *
  * Nouveau chat : la saisie est affichée d'emblée mais BLOQUÉE, avec les chips
  * d'objet juste au-dessus. Un tap sur la saisie déclenche un toast invitant à
- * choisir un objet. Dès la sélection, les chips disparaissent (l'objet passe
- * dans le header) et la saisie s'active.
+ * choisir un objet. La sélection débloque la saisie ; les chips ne disparaissent
+ * qu'au PREMIER message envoyé (l'objet passe alors dans le header).
  */
 export const SupportChatView: React.FC<Props> = ({
   thread,
@@ -99,8 +99,11 @@ export const SupportChatView: React.FC<Props> = ({
       </ScrollView>
 
       <Animated.View style={{ paddingBottom }}>
-        {/* Chips seulement tant que l'objet n'est pas choisi (ensuite : header). */}
-        {!topic ? <SupportTopicChips value={topic} onChange={setTopic} /> : null}
+        {/* Les chips restent tant qu'aucun message n'est parti : l'objet peut
+            encore être corrigé. Au 1er envoi elles disparaissent (header). */}
+        {messages.length === 0 ? (
+          <SupportTopicChips value={topic} onChange={setTopic} />
+        ) : null}
         <SupportComposer
           value={draft}
           onChangeText={setDraft}

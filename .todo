@@ -78,3 +78,18 @@
     - au moment de valider le panier, afficher pour CHAQUE cmd du panier son récap
       de livraison (zone, adresse, date/heure, type de livraison, frais)
     - permet au user de vérifier/corriger avant paiement
+
+[ ] rendre la localisation facultative au passage de la commande
+    - aujourd'hui l'envoi de la localisation est obligatoire → la desactiver
+    - si le user n'envoie PAS sa localisation, la note vocale devient obligatoire
+      (elle sert alors à décrire le lieu de livraison au livreur)
+    - donc au moins l'un des deux est requis : localisation OU note vocale
+    - adapter `validateDelivery()` (checkout) + les deux points d'entrée
+      (CheckoutSheet et CartCheckoutSheet)
+
+[ ] tester les perfs des listes de commandes avec un gros volume
+    - pages concernées : liste cmd côté user ET côté fastfood (marchand)
+    - jeu de test : 100 puis 200 cmd sur UN SEUL statut, pour voir si ça rame
+    - vérifier le scroll, le filtrage par date/période et le groupage
+    - si ça rame : passer les ScrollView en FlatList virtualisée
+      (`OrderManagePanel` rend actuellement toutes les cartes d'un coup)

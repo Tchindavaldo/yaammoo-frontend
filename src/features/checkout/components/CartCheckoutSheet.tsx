@@ -37,6 +37,7 @@ import { CheckoutExpressOverlay } from "./CheckoutExpressOverlay";
 import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
 import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
 import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
+import { extractPeriodDate } from "../utils/periodDate";
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -448,6 +449,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 setDelivery({
                   ...delivery,
                   hour: period,
+                  date: extractPeriodDate(period) ?? delivery.date,
                   prix: prix !== undefined ? prix : delivery.prix,
                   bonusCode: bonusCode ?? null,
                 })

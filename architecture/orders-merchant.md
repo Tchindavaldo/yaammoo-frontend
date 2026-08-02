@@ -25,6 +25,8 @@ yaammoo/src/features/merchant/
     ├── MerchantOrderCard.tsx           # Carte commande côté marchand (avec bouton avancer statut)
     ├── MerchantFilterSheet.tsx          # Bottom sheet filtres : dates aujourd'hui/à venir (haut),
     │                                    #   périodes de livraison multi-cochables (milieu), dates passées (bas)
+    ├── OtherDatesNotice.tsx            # Rappel 2 cartes (passé rouge / futur bleu) : cmd non traitées
+    │                                    #   sur d'autres dates, compteurs globaux
     ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile) — shell + état + nav globale
     ├── MerchantOrderLivraisonTab.tsx   # Tab Livraison + helpers (InfoCard, Waveform) extraits du sheet
     ├── MerchantOrderCommandesTab.tsx   # Tab Commande : menu/extras/boissons, icônes Ionicons, prix en XAF
@@ -118,17 +120,30 @@ qui remonte les dates dépend d'une clé stable `datesKey = sortedDateISOs.join(
 > sous la liste en `pending` / `proccess`) ont été **supprimées** : les dates passées sont
 > désormais accessibles via les chips « Cmd passées non traitées » du `MerchantFilterSheet`,
 > qui les charge dans la liste principale. `pastSections` et le style `sectionLabel` du
-> panel n'existent plus. À la place, un **rappel en fin de liste** (« Vous avez des
-> commandes passées non traitées », `hasPastUntreated`) s'affiche en `pending` / `proccess`
-> quand des dates passées subsistent — **y compris en consultant un jour passé** : la date
-> affichée est exclue du test, donc le rappel ne parle que des AUTRES jours non traités.
-> Un tap ouvre le `MerchantFilterSheet`.
->
-> **Liste vide** : pas de double message. Le message « Aucune commande … » est alors
-> **centré verticalement** (hauteur = fenêtre − barres fixes, via `emptyStateHeight`) et
-> porte lui-même l'info : « …, mais vous avez des commandes passées non traitées », avec
-> l'icône `alert-circle-outline` en couleur primaire, le tout cliquable. Le rappel de fin
-> de liste n'est rendu que si la liste contient au moins une carte.
+> panel n'existent plus. À la place, le composant **`OtherDatesNotice`** signale ce qui
+> existe sur d'AUTRES dates que celle affichée. Un tap ouvre le `MerchantFilterSheet`.
+
+### `OtherDatesNotice` — rappel passé / futur
+
+Deux cartes **côte à côte, à hauteur égale** (`alignItems: stretch` + `flex: 1`), une par
+cas ; chacune ne s'affiche que si son compteur est > 0 :
+
+| Carte | Libellé | Couleur |
+|---|---|---|
+| Passé | `{N} Commandes passées non traitées` | rouge `#C0392B` (du retard) |
+| Futur | `{N} Commandes futur pas encore traité` | bleu `#2E6FD9` (planning) |
+
+- **Compteurs GLOBAUX** (`untreatedCounts`) : ils comptent les commandes non traitées
+  (`pending` + `proccess`) sur tous les jours passés / à venir, **indépendamment de
+  l'onglet de statut ET de la date filtrée**. Seule la date affichée est exclue — inutile
+  d'annoncer ce qu'on est en train de regarder.
+- Rendu sur les **trois onglets**, y compris `finish` (dont le rendu est un bloc séparé).
+- Prop `inset={false}` dans les états vides : leur parent porte déjà son padding
+  horizontal, sinon les marges s'additionnent.
+
+> **Liste vide** : le message « Aucune commande … » reste **centré verticalement**
+> (hauteur = fenêtre − barres fixes, via `emptyStateHeight`) et les cartes s'affichent
+> dessous. Sur une liste non vide, elles sont rendues en **fin de liste**.
 - La carte **ne change pas de design** : le groupe est passé via `sheetOrders` (et non
   `allOrders`, qui bascule sur la variante groupée). Seul le bottom sheet reçoit la nav
   multi-cmd, alimentée quand `sheetOrders.length > 1`.

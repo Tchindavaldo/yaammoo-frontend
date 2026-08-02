@@ -28,6 +28,7 @@ import { orderGroupKey } from "../utils/orderGroupKey";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
 import { MerchantFilterSheet } from "./MerchantFilterSheet";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
+import { OtherDatesNotice } from "./OtherDatesNotice";
 
 // Hauteur de la barre de filtres fixée au-dessus de la navbar.
 const FILTER_BAR_HEIGHT = 54;
@@ -203,6 +204,14 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
       .reverse();
   }, [availableDateISOs]);
 
+  // Dates de TOUTES les commandes, tous statuts confondus. `availableDateISOs`
+  // ne voit que le statut de l'onglet actif : s'en servir pour les rappels
+  // masquerait « des commandes à venir » sur En cours quand ces commandes sont
+  // encore en attente. Les rappels parlent du planning, pas de l'onglet.
+  const allDateISOs = useMemo(() => [...new Set(orders.map(getOrderDateISO))], [
+    orders,
+  ]);
+
   // Remonte au header la liste des dates disponibles (chips).
   // Dépend d'une clé string stable (et pas du tableau, recréé à chaque render)
   // pour éviter une boucle setState → render → nouveau tableau → effet.
@@ -343,12 +352,31 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     return groupBySlot(dateFilteredOrders);
   }, [dateFilteredOrders, selectedStatus]);
 
-  // Des commandes des jours précédents restent à traiter (En attente / En cours).
-  // On exclut la date affichée : en consultant un jour passé, le rappel ne doit
-  // parler que des AUTRES jours encore non traités.
-  const hasPastUntreated =
-    selectedStatus !== "finish" &&
-    pastDateISOs.some((iso) => iso !== selectedDate);
+  // Compteurs des rappels : commandes NON TRAITÉES (encore en attente ou en
+  // cours) sur les jours passés et sur les jours à venir.
+  //
+  // Volontairement GLOBAUX : indépendants de l'onglet de statut ET de la date
+  // filtrée — le marchand veut savoir combien de commandes l'attendent
+  // ailleurs, pas combien correspondent au filtre courant. Seule la date
+  // affichée est exclue (inutile d'annoncer ce qu'on est en train de regarder).
+  const untreatedCounts = useMemo(() => {
+    let past = 0;
+    let future = 0;
+    orders.forEach((o) => {
+      const untreated =
+        statusMap.pending.includes(o.status) ||
+        statusMap.proccess.includes(o.status);
+      if (!untreated) return;
+      const iso = getOrderDateISO(o);
+      if (iso === selectedDate) return;
+      if (iso < todayISO) past += 1;
+      else if (iso > todayISO) future += 1;
+    });
+    return { past, future };
+    // `statusMap` / `todayISO` sont recréés à chaque rendu (même convention que
+    // `counts`) : les lister annulerait la mémoïsation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, selectedDate]);
 
   const emptyLabel =
     selectedStatus === "pending"
@@ -383,14 +411,18 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     0,
   );
 
-  // Dates du sheet : à venir (hors aujourd'hui) et passées.
+  // Dates du sheet : à venir (hors aujourd'hui) et passées. Les dates futures
+  // viennent de TOUTES les commandes, en cohérence avec le rappel `hasFuture` :
+  // les scoper à l'onglet ouvrirait un sheet sans la date qu'on vient
+  // d'annoncer.
   const futureDateOptions = useMemo(
     () =>
-      availableDateISOs
+      allDateISOs
         .filter((d) => d > todayISO)
         .sort()
         .map((iso) => ({ iso, label: formatDateLabel(iso) })),
-    [availableDateISOs],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allDateISOs],
   );
   const pastDateOptions = useMemo(
     () => pastDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })),
@@ -738,6 +770,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           }
         >
           {dateFilteredOrders.length === 0 ? (
+            /* Rien de terminé sur la date affichée : on le dit, puis les cartes
+               annoncent ce qui existe sur les autres jours (passé / futur). */
             <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>
               <Ionicons
                 name="checkmark-done-outline"
@@ -745,6 +779,12 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                 color="#D3D1C7"
               />
               <Text style={styles.emptyText}>Aucune commande terminée</Text>
+              <OtherDatesNotice
+                pastCount={untreatedCounts.past}
+                futureCount={untreatedCounts.future}
+                inset={false}
+                onPress={() => setFilterOpen(true)}
+              />
             </View>
           ) : (
             deliveryData && (
@@ -929,34 +969,26 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           {/* Liste principale (aujourd'hui par défaut, ou date choisie dans le
               bottom sheet de filtres — y compris une date passée). */}
           {dateFilteredOrders.length === 0 ? (
-            /* Liste vide : un SEUL message, centré verticalement. S'il reste des
-               jours passés à traiter, il le dit lui-même et devient cliquable
-               (le rappel de fin de liste ne s'affiche alors pas en double). */
-            <TouchableOpacity
-              style={[styles.emptyState, { minHeight: emptyStateHeight }]}
-              onPress={hasPastUntreated ? () => setFilterOpen(true) : undefined}
-              activeOpacity={hasPastUntreated ? 0.8 : 1}
-            >
+            /* Liste vide : le message centré dit ce qui manque sur la date
+               affichée, les cartes disent ce qui existe sur les autres jours. */
+            <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>
               <Ionicons
                 name={
-                  hasPastUntreated
-                    ? "alert-circle-outline"
-                    : selectedStatus === "pending"
-                      ? "time-outline"
-                      : "restaurant-outline"
+                  selectedStatus === "pending"
+                    ? "time-outline"
+                    : "restaurant-outline"
                 }
                 size={50}
-                color={
-                  hasPastUntreated ? Theme.colors.primary : Theme.colors.gray[300]
-                }
+                color={Theme.colors.gray[300]}
               />
-              <Text style={styles.emptyText}>
-                {emptyLabel}
-                {hasPastUntreated
-                  ? ", mais vous avez des commandes passées non traitées"
-                  : ""}
-              </Text>
-            </TouchableOpacity>
+              <Text style={styles.emptyText}>{emptyLabel}</Text>
+              <OtherDatesNotice
+                pastCount={untreatedCounts.past}
+                futureCount={untreatedCounts.future}
+                inset={false}
+                onPress={() => setFilterOpen(true)}
+              />
+            </View>
           ) : (
             <View style={{ gap: 6 }}>
               {displayRows.map(({ head, group }) => (
@@ -980,29 +1012,16 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             </View>
           )}
 
-          {/* Rappel de fin de liste : des commandes des jours précédents n'ont
-              pas été traitées. Un tap ouvre le sheet pour choisir la date.
-              Liste vide → le message centré porte déjà l'info, pas de doublon. */}
-          {hasPastUntreated && dateFilteredOrders.length > 0 && (
-            <TouchableOpacity
-              style={styles.pastNotice}
+          {/* Rappel de fin de liste : des commandes existent sur d'AUTRES dates
+              (jours précédents non traités, jours à venir, ou les deux). Un tap
+              ouvre le sheet pour choisir la date. Liste vide → le message
+              centré porte déjà l'info, pas de doublon. */}
+          {dateFilteredOrders.length > 0 && (
+            <OtherDatesNotice
+              pastCount={untreatedCounts.past}
+              futureCount={untreatedCounts.future}
               onPress={() => setFilterOpen(true)}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name="alert-circle-outline"
-                size={18}
-                color={Theme.colors.primary}
-              />
-              <Text style={styles.pastNoticeText}>
-                Vous avez des commandes passées non traitées
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={Theme.colors.primary}
-              />
-            </TouchableOpacity>
+            />
           )}
         </ScrollView>
       )}

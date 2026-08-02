@@ -41,7 +41,8 @@ yaammoo/src/features/checkout/
 ├── services/
 │   └── verifyBonusCode.ts              # POST /bonus/verify — vérif d'un code bonus (lecture seule)
 └── utils/
-    └── cartDeliveryTotal.ts            # Total panier + mutualisation des frais de livraison
+    ├── cartDeliveryTotal.ts            # Total panier + mutualisation des frais de livraison
+    └── periodDate.ts                   # extractPeriodDate() — date ISO extraite de "YYYY-MM-DD|HH:mm|lieu"
 ```
 
 ---
@@ -183,6 +184,14 @@ delivery: {
 }
 ```
 - `prix` et `zone` sont **nouveaux** (optionnels côté backend → rétrocompat descendante).
+
+> ⚠️ **`delivery.date` — date de livraison choisie.** `CheckoutPeriodOverlay` remonte la
+> période au format `"YYYY-MM-DD|HH:mm|lieu"` : la date choisie n'existe QUE dans cette
+> chaîne. `CheckoutSheet` et `CartCheckoutSheet` l'extraient avec `extractPeriodDate()`
+> (`utils/periodDate.ts`) et la posent dans `delivery.date` au `setDelivery`.
+> Sans ça, `useCheckout` retombe sur son fallback `new Date()` et **toute commande
+> programmée pour un jour à venir part avec la date du jour** — elle apparaît alors dans
+> « aujourd'hui » côté marchand (cf. `architecture/orders-merchant.md`).
 - `expressPrix`/`expressLieu` ne sont PAS envoyés : le backend n'a besoin que de
   `type` + `prix` + `zone`. Ces champs restent internes à l'état frontend (affichage).
 

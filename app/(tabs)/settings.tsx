@@ -3,6 +3,7 @@ import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
 import { UserBonusSheet } from '@/src/features/bonus/components/UserBonusSheet';
+import { SupportChatSheet } from '@/src/features/support/components/SupportChatSheet';
 import { DriverApplyModal } from '@/src/features/driver/components/DriverApplyModal';
 import { DriverManageModal } from '@/src/features/driver/components/DriverManageModal';
 import { DriverMyApplicationsModal } from '@/src/features/driver/components/DriverMyApplicationsModal';
@@ -60,6 +61,8 @@ export default function SettingsScreen() {
   const [userWalletVisible, setUserWalletVisible] = useState(false);
   // Bonus (Settings → Bonus et parrainage) : bottom sheet.
   const [userBonusVisible, setUserBonusVisible] = useState(false);
+  // Contactez-nous (Settings) : sheet chat support.
+  const [supportChatVisible, setSupportChatVisible] = useState(false);
   // Section « Livraison » (user) + item « Livreurs » (boutique).
   const [driverApplyVisible, setDriverApplyVisible] = useState(false);
   const [driverOrdersVisible, setDriverOrdersVisible] = useState(false);
@@ -449,7 +452,7 @@ export default function SettingsScreen() {
           <SettingItem
             icon="call-outline"
             title="Contactez-nous"
-            onPress={() => handleComingSoon('Contactez-nous')}
+            onPress={() => setSupportChatVisible(true)}
           />
         </View>
 
@@ -514,6 +517,12 @@ export default function SettingsScreen() {
       <UserWalletModal
         visible={userWalletVisible}
         onClose={() => setUserWalletVisible(false)}
+      />
+
+      {/* Contactez-nous : chat support */}
+      <SupportChatSheet
+        visible={supportChatVisible}
+        onClose={() => setSupportChatVisible(false)}
       />
 
       {/* Bonus et parrainage (bottom sheet) */}

@@ -261,10 +261,13 @@ exposé en mémoire par **`FastFoodContext`** (`appleReviewMode`, lu via
 
 Quand `appleReviewMode === true` :
 
-- **Home (`CheckoutSheet` → `CheckoutFooter`)** : le bouton « buy » devient
-  « order ». Au clic, pas d'overlay de saisie : on appelle `handleReviewOrder()`
-  (dans `useCheckout`) → `handlePaymentConfirm(REVIEW_DEFAULT_PHONE)` avec réseau
-  par défaut. Loader dans le bouton (`reviewOrdering`) jusqu'au verdict socket.
+- **Home (`CheckoutSheet`)** : le bouton reste « buy » et ouvre la **page web**
+  (`PaymentWebViewModal`) comme hors review. Au clic sur « payer » dans la page,
+  `handleReviewOrder()` crée **réellement** la commande (valeurs review, réponse
+  synchrone du backend), puis `CheckoutSheet` déroule les étapes affichées par
+  la capsule — `waiting` → `ussd_sent` (« Vérification du paiement… ») → `success`
+  → `success_created` — espacées de 2,5 s, avant de fermer le sheet.
+  Le mode review ne fait donc plus que **masquer** les éléments listés ci-dessous.
 - **Édition panier (`CartCheckoutSheet` → `CartCheckoutFooter`)** : « Valider »
   fait pareil (même `handleReviewOrder` de `useCheckout`).
 - **Panier global (`cart.tsx`)** : la pilule « Tout payer » devient « Commander »

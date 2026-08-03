@@ -9,6 +9,14 @@ interface PaymentWebViewModalProps {
   onClose: () => void;
   /** Paramètres passés à la page (total, titre du menu, prix détaillés…). */
   params?: Record<string, string | number | undefined>;
+  /** Étape affichée par la capsule (input/waiting/ussd_sent/success/…). */
+  paymentState?: string;
+  /** Message USSD (ou libellé d'étape) affiché en état `ussd_sent`. */
+  ussdMessage?: string;
+  /** Clic sur « payer » dans la page. */
+  onPay?: (phone: string, network: "orange" | "mtn") => void;
+  /** La page a terminé sa séquence (commande créée) : on peut fermer. */
+  onDone?: () => void;
 }
 
 /**
@@ -19,6 +27,10 @@ export const PaymentWebViewModal: React.FC<PaymentWebViewModalProps> = ({
   visible,
   onClose,
   params,
+  paymentState,
+  ussdMessage,
+  onPay,
+  onDone,
 }) => {
   const uri = React.useMemo(() => {
     const query = Object.entries(params || {})
@@ -37,6 +49,16 @@ export const PaymentWebViewModal: React.FC<PaymentWebViewModalProps> = ({
   React.useEffect(() => {
     if (visible) setError(null);
   }, [visible]);
+
+  // Étape courante poussée dans la page (la capsule affiche l'état).
+  React.useEffect(() => {
+    if (!paymentState) return;
+    webRef.current?.injectJavaScript(
+      `window.__setState && window.__setState(${JSON.stringify(
+        paymentState,
+      )}, ${JSON.stringify(ussdMessage || "")}); true;`,
+    );
+  }, [paymentState, ussdMessage]);
 
   // La WebView ne bouge pas : on transmet juste la hauteur du clavier à la
   // page, qui fait remonter la SEULE capsule de saisie.
@@ -85,7 +107,23 @@ export const PaymentWebViewModal: React.FC<PaymentWebViewModalProps> = ({
           overScrollMode="never"
           nestedScrollEnabled={false}
           onMessage={(e) => {
-            if (e.nativeEvent.data === "close") onClose();
+            const data = e.nativeEvent.data;
+            if (data === "close") {
+              onClose();
+              return;
+            }
+            if (data === "done") {
+              onDone?.();
+              return;
+            }
+            try {
+              const msg = JSON.parse(data);
+              if (msg?.type === "pay") {
+                onPay?.(String(msg.phone || ""), msg.network || "orange");
+              }
+            } catch {
+              // messages non JSON (keyboard:open/close) : rien à faire
+            }
           }}
           onError={() => setError("Impossible de charger la page de paiement")}
           onHttpError={() =>

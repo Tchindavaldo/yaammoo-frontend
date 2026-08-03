@@ -1,0 +1,8 @@
+# Les scripts lus par bash (Xcode/EAS) doivent rester en LF, même sur Windows
+# où core.autocrlf=true convertit sinon en CRLF — un \r final fait echouer
+# la phase "[Expo] Configure project" (".xcode.env: command not found").
+*.sh text eol=lf
+.xcode.env text eol=lf
+.xcode.env.local text eol=lf
+ios/**/*.sh text eol=lf
+android/gradlew text eol=lf

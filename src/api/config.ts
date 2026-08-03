@@ -5,7 +5,7 @@
 const PROD_API_URL = "https://yaammoo-backend.fly.dev";
 
 // URL utilisée UNIQUEMENT en développement. Change-la avec ton IP locale au besoin.
-const DEV_API_URL = "http://192.168.1.122:5000";
+const DEV_API_URL = "http://192.168.1.160:5000";
 // Autres IP locales pratiques (décommente celle qui te sert en dev) :
 // const DEV_API_URL = "http://192.168.8.100:5000";
 // const DEV_API_URL = "https://yaammoo-backend.fly.dev";
@@ -15,6 +15,10 @@ const DEV_API_URL = "http://192.168.1.122:5000";
 export const Config = {
   // Sélection automatique : prod en release, locale en dev.
   apiUrl: __DEV__ ? DEV_API_URL : PROD_API_URL,
+
+  // Page web de paiement chargée dans une WebView au clic sur "Buy"
+  // (servie par le backend : GET /payment-page).
+  paymentPageUrl: `${__DEV__ ? DEV_API_URL : PROD_API_URL}/payment-page`,
 
   // ─── Sentry (crash reporting) ──────────────────────────────────────────────
   // Colle ici le DSN de ton projet Sentry (sentry.io → Settings → Client Keys).

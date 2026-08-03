@@ -37,6 +37,7 @@ import { CheckoutExpressOverlay } from "./CheckoutExpressOverlay";
 import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
 import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
 import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
+import { PaymentWebViewModal } from "@/src/features/payment/components/PaymentWebViewModal";
 import { extractPeriodDate } from "../utils/periodDate";
 
 interface CheckoutSheetProps {
@@ -61,6 +62,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const [isExpressPopupVisible, setIsExpressPopupVisible] = useState(false);
   const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
   const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
+  // Paiement web : WebView chargeant la page servie par le backend (/payment-page).
+  const [isPaymentWebVisible, setIsPaymentWebVisible] = useState(false);
   const [paymentKey, setPaymentKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [menuWithDeliveryHours, setMenuWithDeliveryHours] =
@@ -405,9 +408,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   handleReviewOrder();
                   return;
                 }
-                setPaymentState("network_select");
-                setIsPaymentPopupVisible(true);
-                setPaymentKey((prev) => prev + 1);
+                // Le paiement se fait désormais dans la page web (WebView).
+                setIsPaymentWebVisible(true);
               }}
             />
           </Animated.View>
@@ -525,6 +527,20 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
               onHide={() => setPaymentError(null)}
             />
           )}
+          <PaymentWebViewModal
+            visible={isPaymentWebVisible}
+            onClose={() => setIsPaymentWebVisible(false)}
+            params={{
+              title: menu?.titre,
+              image: (menu as any)?.images?.[0] || (menu as any)?.image,
+              menuPrice,
+              drinksPrice,
+              extrasPrice,
+              deliveryPrice: displayDeliveryPrice,
+              deliveryFree: isDeliveryFree ? "1" : "0",
+              total: displayTotal,
+            }}
+          />
         </View>
       </Modal>
     </>

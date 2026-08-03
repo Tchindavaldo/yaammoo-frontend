@@ -1,15 +1,8 @@
 import { Config } from "@/src/api/config";
 import React from "react";
-import {
-  Animated,
-  Keyboard,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Keyboard, Platform, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
-import { PaymentWebViewSkeleton, SHEET_HEIGHT } from "./PaymentWebViewSkeleton";
+import { PaymentWebViewSkeleton } from "./PaymentWebViewSkeleton";
 
 interface PaymentWebViewModalProps {
   visible: boolean;
@@ -39,57 +32,47 @@ export const PaymentWebViewModal: React.FC<PaymentWebViewModalProps> = ({
 
   const [error, setError] = React.useState<string | null>(null);
 
-  // Décalage vertical suivant le clavier : la page se cale juste au-dessus,
-  // comme la capsule native d'origine.
-  const bottom = React.useRef(new Animated.Value(0)).current;
+  const webRef = React.useRef<WebView>(null);
 
   React.useEffect(() => {
     if (visible) setError(null);
   }, [visible]);
 
+  // La WebView ne bouge pas : on transmet juste la hauteur du clavier à la
+  // page, qui fait remonter la SEULE capsule de saisie.
   React.useEffect(() => {
+    const setKb = (height: number) =>
+      webRef.current?.injectJavaScript(
+        `window.__setKeyboard && window.__setKeyboard(${height}); true;`,
+      );
     const show = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        Animated.spring(bottom, {
-          toValue: e.endCoordinates.height,
-          useNativeDriver: false,
-          tension: 40,
-          friction: 8,
-        }).start();
-      },
+      (e) => setKb(e.endCoordinates.height),
     );
     const hide = Keyboard.addListener(
       Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        Animated.spring(bottom, {
-          toValue: 0,
-          useNativeDriver: false,
-          tension: 40,
-          friction: 8,
-        }).start();
-      },
+      () => setKb(0),
     );
     return () => {
       show.remove();
       hide.remove();
     };
-  }, [bottom]);
+  }, []);
 
   // Rendu comme overlay absolu (PAS un Modal) : un second Modal au-dessus du
   // Modal du checkout ne s'affiche pas sur iOS.
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.backdrop, { bottom }]}>
+    <View style={styles.backdrop}>
         <WebView
+          ref={webRef}
           source={{ uri }}
           style={styles.webview}
           containerStyle={styles.webviewContainer}
           originWhitelist={["*"]}
-          // Fond transparent : on voit le sheet natif sous la page.
-          opaque={false}
-          backgroundColor="transparent"
+          // Fond transparent (via style/containerStyle) : on voit le sheet natif
+          // sous la page.
           // Masque la barre d'accessoires iOS (chevrons + Done) au-dessus du clavier.
           hideKeyboardAccessoryView
           javaScriptEnabled
@@ -117,18 +100,15 @@ export const PaymentWebViewModal: React.FC<PaymentWebViewModalProps> = ({
             <Text style={styles.errorText}>{error}</Text>
           </View>
         )}
-    </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  // Limité à la hauteur du bottom sheet de commande, ancré en bas.
+  // Plein écran : le contenu de la page reste calé sur la hauteur du sheet,
+  // mais la capsule peut remonter au-dessus quand le clavier s'ouvre.
   backdrop: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: SHEET_HEIGHT,
+    ...StyleSheet.absoluteFillObject,
     zIndex: 200,
   },
   webview: {

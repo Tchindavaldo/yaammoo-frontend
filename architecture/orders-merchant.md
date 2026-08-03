@@ -301,6 +301,24 @@ Bottom sheet détail d'une commande marchand, refactoré en **shell + tabs** :
 - `MerchantOrderLivraisonTab` : infos livraison (client, adresse, note vocale, montant)
 - `MerchantOrderCommandesTab` : détails de la commande (menu, extras, boissons avec icônes et prix)
 - `MerchantOrderMontantTab` : récapitulatif des prix, groupé par `deliveryGroupId`
+
+> ⚠️ **Pool de l'onglet Montant.** Le sheet recompose le groupe ABSOLU depuis
+> `groupPool` (toutes les commandes de la boutique) via `orderGroupKey` : il faut
+> en **exclure `pendingToBuy` / `cancelByUser` / `cancelByFastFood`**.
+> `pendingToBuy` = encore dans le panier du client, jamais commandée — elle
+> gonflait le récap (2 commandes en cours affichées comme 4). À respecter partout
+> où l'on réutilise `MontantTab` avec un pool absolu.
+>
+> Côté client (`OrderBottomSheet` + `CartStatusPanel`), `MontantTab` reçoit
+> directement le groupe déjà filtré par statut : pas de pool absolu, pas de piège.
+
+**Navigation zone → Cmd (header du sheet)** : quand la ligne porte plusieurs zones,
+le header affiche les **chips de ZONES** (à la place des « Cmd »), et une barre de
+chips **« Cmd N »** apparaît **sous les onglets**, limitée aux commandes de la zone
+sélectionnée. Les onglets individuels (Livraison / Commande / Livreur) suivent la Cmd
+choisie ; l'onglet **Montant est ancré sur la ZONE**, pas sur la Cmd — il montre donc
+toutes les commandes de cette zone (tous statuts) et jamais celles d'une autre zone.
+Une seule carte client suffit alors dans la liste des Terminées.
 - `DriverInfoTab` : infos livreur (uniquement si `delivering` / `delivered`)
 
 La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.

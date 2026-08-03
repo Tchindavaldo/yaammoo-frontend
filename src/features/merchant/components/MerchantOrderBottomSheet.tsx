@@ -14,6 +14,9 @@ import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
 
 const SHEET_HEIGHT = 520;
+// Hauteur de la barre de chips « Cmd » (chip 24 + paddings 8/8 + trait) : le
+// sheet grandit d'autant quand elle est affichée, pour ne rien rogner en bas.
+const CMD_BAR_HEIGHT = 41;
 
 // ─── Types publics (réexportés pour les sous-composants) ──────────────────────
 export type OrderItem = {
@@ -172,6 +175,49 @@ export default function MerchantOrderBottomSheet({
   // lorsqu'il n'en reste plus aucune à traiter.
   const [validatedIdx, setValidatedIdx] = useState<Set<number>>(new Set());
 
+  // ─── Zones du groupe ────────────────────────────────────────────────────────
+  // Le header liste les ZONES, la barre sous les onglets les « Cmd » de la zone
+  // sélectionnée. L'onglet Montant est donc toujours celui d'UNE zone, quelle
+  // que soit la Cmd choisie — jamais un mélange de zones.
+  const zoneOf = useCallback((o: Commande | null | undefined): string => {
+    const d = (o as any)?.delivery;
+    if (!d || d.status !== true) return 'Sur place';
+    return d.zone || d.location || 'Zone inconnue';
+  }, []);
+
+  const zones = useMemo(() => {
+    const seen: string[] = [];
+    orderList.forEach((o) => {
+      const z = zoneOf(o);
+      if (!seen.includes(z)) seen.push(z);
+    });
+    return seen;
+  }, [orderList, zoneOf]);
+
+  const [selectedZone, setSelectedZone] = useState<string>(() => zoneOf(order));
+
+  // Réouverture du sheet sur une autre ligne : on repart de la zone affichée.
+  useEffect(() => {
+    if (visible) setSelectedZone(zoneOf(order));
+  }, [visible, order, zoneOf]);
+
+  // Commandes de la zone sélectionnée, avec leur index dans `orderList`.
+  const zoneEntries = useMemo(
+    () =>
+      orderList
+        .map((o, idx) => ({ o, idx }))
+        .filter(({ o }) => zoneOf(o) === selectedZone),
+    [orderList, selectedZone, zoneOf],
+  );
+
+  // Changer de zone repositionne la sélection sur sa première commande.
+  useEffect(() => {
+    if (zoneEntries.length === 0) return;
+    if (!zoneEntries.some(({ idx }) => idx === selectedOrderIdx)) {
+      setSelectedOrderIdx(zoneEntries[0].idx);
+    }
+  }, [zoneEntries, selectedOrderIdx]);
+
   const markChecked = useCallback((idx: number) => {
     setCheckedIdx((prev) => {
       if (prev.has(idx)) return prev;
@@ -282,11 +328,19 @@ export default function MerchantOrderBottomSheet({
   // Montant ne dépend donc pas de l'onglet de statut d'où le sheet a été ouvert.
   const montantOrders = useMemo(() => {
     if (!currentOrder) return [];
-    const pool = groupPool && groupPool.length > 0 ? groupPool : orderList;
-    const key = orderGroupKey(currentOrder);
+    // `pendingToBuy` = encore dans le panier du client, jamais commandée :
+    // elle ne doit pas gonfler le récap du marchand. Idem pour les annulées.
+    const IGNORED = ['pendingToBuy', 'cancelByUser', 'cancelByFastFood'];
+    const raw = groupPool && groupPool.length > 0 ? groupPool : orderList;
+    const pool = raw.filter((o) => !IGNORED.includes(o.status));
+    // Ancré sur la ZONE sélectionnée (et non sur la Cmd affichée) : le récap ne
+    // change pas quand on passe d'une Cmd à l'autre, et n'inclut jamais une
+    // autre zone.
+    const anchor = zoneEntries[0]?.o || currentOrder;
+    const key = orderGroupKey(anchor);
     const group = pool.filter((o) => orderGroupKey(o) === key);
-    return group.length > 0 ? group : orderList;
-  }, [currentOrder, groupPool, orderList]);
+    return group.length > 0 ? group : zoneEntries.map(({ o }) => o);
+  }, [currentOrder, zoneEntries, groupPool, orderList]);
 
   const showMontantTab = montantOrders.length > 1;
 
@@ -342,7 +396,13 @@ export default function MerchantOrderBottomSheet({
           <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss} />
         </Animated.View>
 
-        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+        <Animated.View
+          style={[
+            styles.sheet,
+            zones.length > 1 && { height: SHEET_HEIGHT + CMD_BAR_HEIGHT },
+            { transform: [{ translateY }] },
+          ]}
+        >
           {/* Header : avatar + nom + chips Cmd (fermeture : swipe ou tap overlay) */}
           <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>
@@ -354,8 +414,8 @@ export default function MerchantOrderBottomSheet({
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{user.name}</Text>
-                {hasMultiple ? (
-                  /* Multi-commandes : chips Cmd 1/2/3… à la place de la zone. */
+                {hasMultiple && zones.length > 1 ? (
+                  /* Multi-zones : chips de ZONES (les Cmd sont sous les onglets). */
                   <View style={styles.cmdRow}>
                     <ScrollView
                       horizontal
@@ -367,7 +427,46 @@ export default function MerchantOrderBottomSheet({
                       onLayout={handleCmdLayout}
                       onContentSizeChange={handleCmdContentSize}
                     >
-                      {allOrders!.map((o, idx) => (
+                      {zones.map((z) => (
+                        <TouchableOpacity
+                          key={z}
+                          style={[styles.cmdChip, selectedZone === z && styles.cmdChipActive]}
+                          onPress={() => setSelectedZone(z)}
+                        >
+                          <Text
+                            style={[
+                              styles.cmdChipText,
+                              selectedZone === z && styles.cmdChipTextActive,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {z}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    {/* Débordement : « +N » tant que la liste n'a pas été scrollée. */}
+                    {hiddenCount > 0 && (
+                      <View style={styles.cmdMore}>
+                        <Text style={styles.cmdMoreText}>+{hiddenCount}</Text>
+                      </View>
+                    )}
+                  </View>
+                ) : hasMultiple ? (
+                  /* Zone unique (livraison ou sur place) : chips Cmd 1/2/3…
+                     dans le header, comme avant. */
+                  <View style={styles.cmdRow}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.cmdScroll}
+                      style={{ flexShrink: 1 }}
+                      onScroll={handleCmdScroll}
+                      scrollEventThrottle={16}
+                      onLayout={handleCmdLayout}
+                      onContentSizeChange={handleCmdContentSize}
+                    >
+                      {orderList.map((o, idx) => (
                         <TouchableOpacity
                           key={idx}
                           style={[styles.cmdChip, selectedOrderIdx === idx && styles.cmdChipActive]}
@@ -379,14 +478,11 @@ export default function MerchantOrderBottomSheet({
                               selectedOrderIdx === idx && styles.cmdChipTextActive,
                             ]}
                           >
-                            {/* Vrai rang de la commande (aligné sur l'onglet
-                                Montant), pas la position dans la liste. */}
                             Cmd {(o as any).rank ?? idx + 1}
                           </Text>
                         </TouchableOpacity>
                       ))}
                     </ScrollView>
-                    {/* Débordement : « +N » tant que la liste n'a pas été scrollée. */}
                     {hiddenCount > 0 && (
                       <View style={styles.cmdMore}>
                         <Text style={styles.cmdMoreText}>+{hiddenCount}</Text>
@@ -431,6 +527,36 @@ export default function MerchantOrderBottomSheet({
             ))}
           </View>
 
+          {/* Multi-zones seulement : le header porte les zones, cette barre les
+              « Cmd » de la zone choisie (affichée même s'il n'y en a qu'une).
+              Zone unique → les chips Cmd restent dans le header, comme avant. */}
+          {zones.length > 1 && zoneEntries.length > 0 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.zoneCmdBar}
+              contentContainerStyle={styles.zoneCmdScroll}
+            >
+              {zoneEntries.map(({ o, idx }) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={[styles.cmdChip, selectedOrderIdx === idx && styles.cmdChipActive]}
+                  onPress={() => setSelectedOrderIdx(idx)}
+                >
+                  <Text
+                    style={[
+                      styles.cmdChipText,
+                      selectedOrderIdx === idx && styles.cmdChipTextActive,
+                    ]}
+                  >
+                    {/* Vrai rang de la commande, aligné sur l'onglet Montant. */}
+                    Cmd {(o as any).rank ?? idx + 1}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
+
           {/* Contenu (change avec le tab, réactif à selectedOrderIdx) */}
           {tab === 'livreur' && showDriverTab ? (
             <ScrollView
@@ -444,7 +570,12 @@ export default function MerchantOrderBottomSheet({
             <MontantTab orders={montantOrders} />
           ) : tab === 'livraison' ? (
             <ScrollView
-              style={styles.content}
+              style={[
+                styles.content,
+                // Onglet Livraison : cartes déjà espacées, on colle un peu plus
+                // la barre de chips.
+                zones.length > 1 && { paddingTop: 8 },
+              ]}
               contentContainerStyle={{ paddingBottom: 16 }}
               showsVerticalScrollIndicator={false}
             >
@@ -524,6 +655,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB',
   },
   cmdChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
+  // Barre des « Cmd » de la zone, juste sous les onglets.
+  // Le contenu de l'onglet a déjà son propre padding haut : on remonte la barre
+  // dessus (marge négative) pour resserrer l'écart, sans toucher aux chips.
+  zoneCmdBar: {
+    flexGrow: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    marginBottom: -10,
+  },
+  zoneCmdScroll: {
+    flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8,
+  },
   cmdChipText: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
   cmdChipTextActive: { color: '#FFFFFF' },
   cmdMore: {

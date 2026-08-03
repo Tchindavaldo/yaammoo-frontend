@@ -87,7 +87,7 @@ expressEditIdx: number | null
 
 | Fichier | Rôle |
 |---|---|
-| `src/features/merchant/components/EditBoutiquePanel.tsx` | Édition boutique (modale) |
+| `src/features/merchant/components/EditBoutiquePanel.tsx` | Édition boutique (orchestrateur ; logique et rendu découpés dans `edit-boutique/`) |
 | `src/features/merchant/components/CreateBoutiquePanel.tsx` | Création boutique (pleine page) |
 | `src/features/merchant/components/NoBoutiquePanel.tsx` | Écran d'accueil "pas de boutique" (inchangé) |
 

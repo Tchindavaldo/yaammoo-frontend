@@ -42,7 +42,21 @@ yaammoo/src/features/merchant/
     │   ├── MenuRecapDesign2.tsx        # "Blocs" — hero card + blocs bordés par section
     │   ├── MenuRecapDesign3.tsx        # "Édito" — mise en page éditoriale
     │   └── MenuRecapDesign4.tsx        # "Synthèse" — recap bref (bandeau + 4 stat-tuiles + résumés condensés +N)
-    ├── EditBoutiquePanel.tsx           # Overlay plein écran édition boutique (Settings → "Gérer ma boutique")
+    ├── EditBoutiquePanel.tsx           # Overlay plein écran édition boutique (Settings → "Gérer ma boutique") — orchestrateur
+    ├── edit-boutique/                  # Découpage d'EditBoutiquePanel (voir section dédiée)
+    │   ├── useEditBoutique.ts          # État + logique (chargement, zones, upload image, sauvegarde)
+    │   ├── useToast.ts                 # Toast succès/erreur animé
+    │   ├── useEntryAnimation.ts        # Séquence d'entrée du panneau
+    │   ├── parseBoutique.ts            # Normalisation deliveryHours (nouveau/ancien format) + hourToDate
+    │   ├── groupZones.ts               # Regroupement des zones par lieu (périodique + express)
+    │   ├── BoutiqueInfoPage.tsx        # Page 1 : infos générales
+    │   ├── DeliveryPage.tsx            # Page 2 : zones de livraison + retrait boutique
+    │   ├── DeliveryZoneList.tsx        # Liste des zones : bandeau zone + tableau Heure/Périod./Express
+    │   ├── GhostZoneTable.tsx          # Card fantôme (pointillés) comblant l'espace libre sous la liste
+    │   ├── ZoneFormSheet.tsx           # Bottom sheet ajout/édition d'une adresse
+    │   ├── BoutiquePickers.tsx         # Pickers heure/villes + toast
+    │   ├── constants.ts                # CAMEROON_CITIES
+    │   └── styles.ts                   # Styles partagés + TAB_BAR_HEIGHT
     ├── MenuManageModal.tsx             # Overlay plein écran gestion menus (Settings → "Gestion menu")
     ├── WalletManageModal.tsx           # Overlay plein écran portefeuille (Settings → "Portefeuille")
     ├── PorteFeuillePanel.tsx           # Panel portefeuille (barre fixe Solde+Retrait, historique jours)
@@ -580,6 +594,14 @@ Les heures de livraison configurées ici sont ensuite accessibles dans `menu.del
 un `ActivityIndicator` centré (« Chargement de la boutique… ») **au lieu** des inputs —
 évite l'affichage de champs vides qui se remplissent ensuite. Les inputs n'apparaissent
 qu'une fois les données arrivées.
+
+**Découpage** (dossier `edit-boutique/`) : le panneau ne fait plus que l'orchestration
+(header, pagination 1/2, montage des sous-composants). Tout l'état et la logique vivent
+dans `useEditBoutique` ; le rendu est réparti entre `BoutiqueInfoPage` (page 1),
+`DeliveryPage` + `DeliveryZoneList` (page 2), `ZoneFormSheet` (bottom sheet d'adresse)
+et `BoutiquePickers` (pickers heure/villes, toast). `parseBoutique.ts` normalise les
+`deliveryHours` renvoyés par l'API (nouveau format objet ou ancien `string[]`) et
+`groupZones.ts` regroupe les zones par lieu pour l'affichage.
 
 ---
 

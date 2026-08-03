@@ -16,6 +16,10 @@ export const Config = {
   // Sélection automatique : prod en release, locale en dev.
   apiUrl: __DEV__ ? DEV_API_URL : PROD_API_URL,
 
+  // Page web de paiement chargée dans une WebView au clic sur "Buy"
+  // (servie par le backend : GET /payment-page).
+  paymentPageUrl: `${__DEV__ ? DEV_API_URL : PROD_API_URL}/payment-page`,
+
   // ─── Sentry (crash reporting) ──────────────────────────────────────────────
   // Colle ici le DSN de ton projet Sentry (sentry.io → Settings → Client Keys).
   // Tant que c'est vide, Sentry est désactivé et l'app fonctionne normalement.

@@ -92,7 +92,8 @@ src/features/
 ├── payment/
 │   ├── constants/reviewPayment.ts        # Valeurs paiement par défaut en mode review Apple
 │   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout) + handleReviewOrder
-│   └── components/CartPaymentOverlay.tsx # Capsule paiement panier (réseau intégré)
+│   ├── components/CartPaymentOverlay.tsx # Capsule paiement panier (réseau intégré)
+│   └── components/PaymentWebViewModal.tsx # WebView plein écran → backend GET /payment-page
 
 ├── wallet/
 │   └── components/

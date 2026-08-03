@@ -170,6 +170,27 @@ par **CheckoutPaymentOverlay** (capsule BAS).
 
 ---
 
+## Paiement web (WebView) — home
+
+Au clic sur **Buy** dans `CheckoutSheet` (hors mode review), l'app n'ouvre plus les
+deux overlays natifs mais **`PaymentWebViewModal`**
+(`src/features/payment/components/PaymentWebViewModal.tsx`) : une WebView plein écran
+qui charge `Config.paymentPageUrl` = `${apiUrl}/payment-page`.
+
+- **Page servie par le backend** : `public/payment/index.html` (route
+  `src/routes/paymentPageRoutes.js`). Elle reproduit à l'identique le panel HAUT
+  (récap + choix réseau) et la capsule BAS (saisie n° + états `input` → `waiting` →
+  `ussd_sent` → `success` → `success_created` + bordure lumineuse animée).
+- **Données** passées en query string : `title`, `image`, `menuPrice`, `drinksPrice`,
+  `extrasPrice`, `deliveryPrice`, `deliveryFree`, `total`.
+- **Fermeture** : la croix de la page fait `window.ReactNativeWebView.postMessage('close')`
+  → `onMessage` ferme le modal.
+- `?debug=1` affiche le sélecteur d'états (preview uniquement).
+- Les overlays natifs (`CheckoutPaymentOverlay` / `CheckoutPaymentTopOverlay`) restent
+  en place dans le code, simplement plus déclenchés par Buy.
+
+---
+
 ## Paiement global du panier (page cart)
 
 Le paiement de **toutes les commandes du panier** (page `app/(tabs)/cart.tsx`) a sa

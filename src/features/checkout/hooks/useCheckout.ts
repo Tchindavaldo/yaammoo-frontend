@@ -1,12 +1,12 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Menu, Commande, Embalage, Boisson, Livraison } from "../../../types";
 import { useAuth } from "../../auth/context/AuthContext";
 import axios from "axios";
 import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
-import { REVIEW_DEFAULT_NETWORK, REVIEW_DEFAULT_PHONE } from "../../payment/constants/reviewPayment";
+import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 
-export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
+export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData, user } = useAuth();
   const registerPaymentHandler = useCallback(
     (handler: (data: any) => void) => socketService.registerPaymentHandler(handler),
@@ -36,6 +36,13 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   const [paymentState, setPaymentState] = useState<'network_select' | 'input' | 'waiting' | 'ussd_sent' | 'success' | 'success_created' | 'failed'>('network_select');
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [ussdMessage, setUssdMessage] = useState<string | null>(null);
+  // Timers des étapes simulées en review — annulés au démontage / reset.
+  const reviewTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const clearReviewTimers = useCallback(() => {
+    reviewTimers.current.forEach(clearTimeout);
+    reviewTimers.current = [];
+  }, []);
+  useEffect(() => clearReviewTimers, [clearReviewTimers]);
 
   // Utiliser les extras/drinks du menu si disponibles
   const availablePackaging = useMemo(
@@ -80,6 +87,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
   }, [menu]);
 
   const resetCheckout = useCallback(() => {
+    clearReviewTimers();
     setQuantity(1);
     setSelectedPriceIndex(1);
     setSelectedPackaging([]);
@@ -90,7 +98,7 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     setPaymentState('network_select');
     setLastOrderId(null);
     setIsInitialized(!initialOrder);
-  }, [initialOrder]);
+  }, [initialOrder, clearReviewTimers]);
 
   useEffect(() => {
     const currentId = initialOrder?.id;
@@ -420,6 +428,20 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
 
       console.log('Transaction response:', response.data);
 
+      // Version en review Apple : le backend l'annonce dans SA réponse
+      // (`appleReviewMode: true`). Il a déjà créé la commande de façon
+      // synchrone — aucun paiement réel, aucun verdict socket à attendre. On
+      // déroule donc les étapes nous-mêmes pour montrer le parcours complet.
+      if (response.data.appleReviewMode === true) {
+        setUssdMessage('Vérification du paiement...');
+        setPaymentState('ussd_sent');
+        reviewTimers.current.push(
+          setTimeout(() => setPaymentState('success'), REVIEW_STEP_MS),
+          setTimeout(() => setPaymentState('success_created'), REVIEW_STEP_MS * 2),
+        );
+        return;
+      }
+
       // Cas A — USSD envoyé : afficher le message du backend, écouter le socket
       if (response.data.status === 'ussd_sent' || response.data.success === true) {
         setUssdMessage(response.data.message);
@@ -449,60 +471,6 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
       setPaymentState('input');
     }
   }, [userData, paymentNetwork, prices.displayTotal, createOrder]);
-
-  // Mode review Apple : commande directe sans saisie USSD ET sans attente socket.
-  // En review, le backend crée la commande de façon SYNCHRONE et répond
-  // directement { success: true } (pas de status 'ussd_sent', pas de
-  // payment.settled ensuite). On traite donc cette réponse comme un verdict
-  // terminal : success → success_created (le parent ferme alors le sheet).
-  const handleReviewOrder = useCallback(async () => {
-    if (!userData) {
-      setPaymentError('Utilisateur non connecté');
-      return;
-    }
-    setPaymentError(null);
-    setPaymentNetwork(REVIEW_DEFAULT_NETWORK);
-    setPaymentPhone(REVIEW_DEFAULT_PHONE);
-    setPaymentState('waiting');
-
-    const order = createOrder('pending');
-
-    try {
-      const response = await axios.post(`${Config.apiUrl}/transaction`, {
-        payBy: 'mobilemoney',
-        amount: prices.displayTotal,
-        phone: REVIEW_DEFAULT_PHONE,
-        network: REVIEW_DEFAULT_NETWORK === 'orange' ? 'Orangemoney' : 'MTN',
-        email: userData?.infos?.email || user?.email || 'user@yaammoo.com',
-        userId: userData.uid,
-        items: order ? [order] : [],
-      });
-
-      console.log('[ReviewOrder] response:', JSON.stringify(response.data));
-
-      if (response.data?.success === true) {
-        // Verdict terminal synchrone (review) : pas de socket, pas d'écran de
-        // succès → on passe direct en success_created, le parent ferme aussitôt.
-        setPaymentState('success_created');
-      } else {
-        const raw = response.data?.message;
-        const message = Array.isArray(raw)
-          ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || 'Erreur commande'
-          : raw || 'Erreur commande';
-        setPaymentError(message);
-        setPaymentState('input');
-      }
-    } catch (error: any) {
-      const data = error.response?.data;
-      const raw = data?.message;
-      let message = Array.isArray(raw)
-        ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
-        : raw;
-      message = message || data?.error || error.message || 'Erreur commande';
-      setPaymentError(message);
-      setPaymentState('input');
-    }
-  }, [userData, prices.displayTotal, createOrder]);
 
   const handlePaymentVerdict = useCallback((data: any) => {
     if (data.status === 'successful') {
@@ -549,7 +517,6 @@ export const useCheckout = (menu: Menu | null, initialOrder?: any | null, onChan
     ussdMessage,
     setUssdMessage,
     handlePaymentConfirm,
-    handleReviewOrder,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,

@@ -137,7 +137,6 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     ussdCode,
     ussdMessage,
     handlePaymentConfirm,
-    handleReviewOrder,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,
@@ -160,14 +159,11 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   } | null>(null);
   const showError = (message: string) =>
     setSheetToast({ message, type: "error" });
-  const { appleReviewMode, fastFoods } = useFastFoods();
-  // Mode review : commande directe via « Valider » (loader dans le bouton).
-  const [reviewOrdering, setReviewOrdering] = useState(false);
+  const { fastFoods } = useFastFoods();
 
-  // Enregistrer le handler de verdict paiement quand l'overlay est visible OU
-  // pendant une commande review (sans overlay).
+  // Enregistrer le handler de verdict paiement quand l'overlay est visible.
   useEffect(() => {
-    if (isPaymentPopupVisible || reviewOrdering) {
+    if (isPaymentPopupVisible) {
       registerPaymentHandler(handlePaymentVerdict);
       return () => {
         unregisterPaymentHandler();
@@ -175,7 +171,6 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     }
   }, [
     isPaymentPopupVisible,
-    reviewOrdering,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,
@@ -184,25 +179,13 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   // Fermer l'overlay automatiquement après 5s en état success_created
   useEffect(() => {
     if (paymentState === "success_created") {
-      // En review : fermeture quasi-immédiate (~500ms). Sinon flux normal (5s).
-      const timer = setTimeout(
-        () => {
-          setIsPaymentPopupVisible(false);
-          setReviewOrdering(false);
-          onClose();
-        },
-        appleReviewMode ? 300 : 5000,
-      );
+      const timer = setTimeout(() => {
+        setIsPaymentPopupVisible(false);
+        onClose();
+      }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [paymentState, onClose, appleReviewMode]);
-
-  // Mode review : si la transaction échoue (retour 'input'), couper le loader.
-  useEffect(() => {
-    if (reviewOrdering && paymentState === "input") {
-      setReviewOrdering(false);
-    }
-  }, [reviewOrdering, paymentState]);
+  }, [paymentState, onClose]);
 
   // En cas d'erreur paiement : NE PAS fermer les overlays. On reste sur l'état
   // `input` (le toast d'erreur s'affiche, l'utilisateur peut ressaisir).
@@ -376,7 +359,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
               total={displayTotal}
               quantity={quantity}
               setQuantity={setQuantity}
-              isLoading={isSubmitting || reviewOrdering}
+              isLoading={isSubmitting}
               isCartMode={isCartMode}
               onAddToCart={async () => {
                 const deliveryErr = validateDelivery();
@@ -407,12 +390,6 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 const deliveryErr = validateDelivery();
                 if (deliveryErr) {
                   showError(deliveryErr);
-                  return;
-                }
-                if (appleReviewMode) {
-                  // Commande directe : pas d'overlay, loader dans le bouton Valider.
-                  setReviewOrdering(true);
-                  handleReviewOrder();
                   return;
                 }
                 setPaymentState("network_select");

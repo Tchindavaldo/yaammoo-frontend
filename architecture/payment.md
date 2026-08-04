@@ -238,27 +238,43 @@ exposé en mémoire par **`FastFoodContext`** (`appleReviewMode`, lu via
 `useFastFoods()`), rafraîchi à chaque fetch — pas de persistance AsyncStorage
 (Apple ne peut pas inspecter une var en mémoire).
 
-Quand `appleReviewMode === true` :
+### Skip automatique du paiement — décidé par la réponse de `POST /transaction`
 
-- **Home (`CheckoutSheet`)** : le bouton reste « buy » et ouvre les **overlays natifs**
-  comme hors review. Au clic sur « payer » dans la capsule, `handleReviewOrder()`
-  crée **réellement** la commande (valeurs review, réponse synchrone du backend)
-  au lieu d'appeler `handlePaymentConfirm`.
-- **Édition panier (`CartCheckoutSheet` → `CartCheckoutFooter`)** : « Valider »
-  fait pareil (même `handleReviewOrder` de `useCheckout`).
-- **Panier global (`cart.tsx`)** : la pilule « Tout payer » devient « Commander »
-  (avec loader) ; clic → `handleReviewOrder(items)` de `useCartPayment` (pas
-  d'overlay `CartPaymentOverlay`).
-- **Settings (`settings.tsx`)** : les items « Paiement » (section Compte) et
-  « Portefeuille » (section Boutique) sont masqués.
+**L'UI est strictement identique pour tous.** Le front ne sait pas à l'avance
+s'il est en review : l'utilisateur ouvre le sheet, choisit son réseau, saisit un
+numéro et appuie « payer » exactement comme en production.
 
-En review, le backend crée la commande de façon **synchrone** et répond
-directement `{ success: true }` (pas de `status: 'ussd_sent'`, pas de
-`payment.settled` socket). `handleReviewOrder` traite donc cette réponse comme un
-verdict terminal : passe direct en `success_created` (sans écran de succès) → le
-parent ferme le sheet aussitôt (~300ms). Valeurs par défaut :
-`src/features/payment/constants/reviewPayment.ts` (`REVIEW_DEFAULT_PHONE`,
-`REVIEW_DEFAULT_NETWORK`).
+C'est **la réponse du backend** qui tranche. L'app envoie déjà sa version à
+chaque requête (`x-app-version`, cf. [http-versioning.md](./http-versioning.md)) ;
+si cette version est celle soumise à la review, le backend ne contacte pas
+MobileWallet — il crée la commande de façon synchrone et ajoute à sa réponse :
+
+```json
+{ "success": true, "appleReviewMode": true }
+```
+
+Les hooks (`useCheckout.handlePaymentConfirm`, `useCartPayment.handlePaymentConfirm`)
+détectent ce champ et **déroulent eux-mêmes** les étapes, sans attendre de verdict
+socket qui ne viendra jamais :
+
+```
+ussd_sent ("Vérification du paiement...")  →  success  →  success_created
+        └── REVIEW_STEP_MS (2500 ms) entre chaque étape ──┘
+```
+
+Les timers sont stockés dans un `ref` et annulés au démontage / `resetCheckout()`
+(sinon un `setPaymentState` sur composant démonté fuit si l'utilisateur ferme le
+sheet en cours de séquence). Constante : `REVIEW_STEP_MS` dans
+`src/features/payment/constants/reviewPayment.ts`.
+
+**Conséquence** : le parc installé continue de payer réellement pendant toute la
+review — aucun flag global à activer puis à couper, aucun risque d'oubli.
+
+### `appleReviewMode` du `GET /fastFood/all`
+
+Toujours exposé par `FastFoodContext`, mais il ne sert **plus** au flux de
+paiement : uniquement à masquer les items « Paiement » (section Compte) et
+« Portefeuille » (section Boutique) dans `settings.tsx`.
 
 ### Refonte panier / Settings (indépendant du mode review)
 

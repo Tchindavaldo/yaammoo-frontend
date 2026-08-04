@@ -11,10 +11,6 @@ interface CheckoutFooterProps {
   onAddToCart: () => void;
   onBuy: () => void;
   isLoading?: boolean;
-  /** Mode review Apple : le bouton « buy » devient « order » (commande directe). */
-  reviewMode?: boolean;
-  /** Loader dans le bouton order pendant l'envoi de la commande (review). */
-  isOrdering?: boolean;
 }
 
 export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({ 
@@ -24,8 +20,6 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
   onAddToCart,
   onBuy,
   isLoading,
-  reviewMode,
-  isOrdering,
 }) => {
   return (
     <View style={[styles.bottomActionBar, styles.actionBarLight]}>
@@ -61,19 +55,9 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.buyBtn, isOrdering && { opacity: 0.7 }]}
-        onPress={onBuy}
-        disabled={isOrdering}
-      >
-        {isOrdering ? (
-          <Loader size={18} color="white" />
-        ) : (
-          <>
-            <Ionicons name={reviewMode ? "checkmark-circle-outline" : "cart-outline"} size={16} color="white" />
-            <Text style={styles.btnText}>{reviewMode ? "order" : "buy"}</Text>
-          </>
-        )}
+      <TouchableOpacity style={styles.buyBtn} onPress={onBuy}>
+        <Ionicons name="cart-outline" size={16} color="white" />
+        <Text style={styles.btnText}>buy</Text>
       </TouchableOpacity>
     </View>
   );

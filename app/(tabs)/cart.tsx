@@ -32,7 +32,6 @@ import { CartCheckoutSheet } from "@/src/features/checkout/components/CartChecko
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartPaymentOverlay } from "@/src/features/payment/components/CartPaymentOverlay";
-import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -52,7 +51,6 @@ export default function OrdersScreen() {
   } = useOrders();
   const { userData } = useAuth();
   const { isSignedIn } = useAuthGate();
-  const { appleReviewMode } = useFastFoods();
 
   // Total panier (réactif) — calculé tôt pour alimenter le hook de paiement.
   // Les frais de livraison sont mutualisés : une seule livraison facturée par
@@ -75,7 +73,6 @@ export default function OrdersScreen() {
     ussdMessage,
     resetPayment,
     handlePaymentConfirm,
-    handleReviewOrder,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,
@@ -166,14 +163,13 @@ export default function OrdersScreen() {
   // Après succès complet (success_created) : rafraîchir + revenir au repos.
   useEffect(() => {
     if (paymentState === "success_created") {
-      // En review : repos quasi-immédiat (~300ms). Sinon flux normal (5s).
       const timer = setTimeout(() => {
         resetPayment();
         refresh();
-      }, appleReviewMode ? 300 : 5000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [paymentState, resetPayment, refresh, appleReviewMode]);
+  }, [paymentState, resetPayment, refresh]);
 
   // Toast d'erreur paiement.
   useEffect(() => {
@@ -279,27 +275,13 @@ export default function OrdersScreen() {
   // Sous-titre du header : total du panier.
   const headerSubtitle = `${cartTotal.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`;
 
-  // Pilule de droite : payer / commander (review).
+  // Pilule de droite : ouvre l'overlay de paiement du panier.
   const headerRight =
     pendingToBuy.length > 0 && !orderToDelete ? (
       <HeaderPill
-        label={appleReviewMode ? "Commander" : "Tout payer"}
-        icon={appleReviewMode ? "checkmark-circle-outline" : "card-outline"}
-        loading={appleReviewMode && paymentState !== "total"}
-        onPress={() => {
-          if (appleReviewMode) {
-            // Mode review : commande directe du panier, sans overlay de saisie.
-            const validationErr = validateAllDeliveries();
-            if (validationErr) {
-              setToast({ message: validationErr, type: "error" });
-              return;
-            }
-            const items = pendingToBuy.map((o) => sanitizeOrder(o, userData?.uid));
-            handleReviewOrder(items);
-            return;
-          }
-          setPaymentState("network_select");
-        }}
+        label="Tout payer"
+        icon="card-outline"
+        onPress={() => setPaymentState("network_select")}
       />
     ) : null;
 
@@ -387,8 +369,8 @@ export default function OrdersScreen() {
       )}
 
       {/* Capsule de PAIEMENT global du panier — ouverte par la pilule "Tout payer"
-          du header (masquée à l'état "total" au repos et en mode review). */}
-      {pendingToBuy.length > 0 && !orderToDelete && paymentState !== "total" && !appleReviewMode && (
+          du header (masquée à l'état "total" au repos). */}
+      {pendingToBuy.length > 0 && !orderToDelete && paymentState !== "total" && (
         <CartPaymentOverlay
           phone={paymentPhone}
           onPhoneChange={setPaymentPhone}

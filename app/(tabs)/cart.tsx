@@ -369,8 +369,13 @@ export default function OrdersScreen() {
       )}
 
       {/* Capsule de PAIEMENT global du panier — ouverte par la pilule "Tout commander"
-          du header (masquée à l'état "total" au repos). */}
-      {pendingToBuy.length > 0 && !orderToDelete && paymentState !== "total" && (
+          du header (masquée à l'état "total" au repos).
+
+          ⚠️ NE PAS conditionner à `pendingToBuy.length` : dès que le paiement
+          aboutit, les commandes quittent le panier (socket) et la capsule serait
+          démontée avant d'avoir affiché succès. `paymentState !== "total"` suffit
+          — c'est exactement « un paiement est en cours ». */}
+      {!orderToDelete && paymentState !== "total" && (
         <CartPaymentOverlay
           phone={paymentPhone}
           onPhoneChange={setPaymentPhone}

@@ -313,14 +313,16 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       email: userData?.infos?.email || user?.email || "inconnu@email.com",
       phoneNumber: Number(userData?.infos?.numero) || 0,
     };
-    console.log("📦 [useCheckout] userData sources →", {
-      "infos.prenom": userData?.infos?.prenom,
-      "infos.nom": userData?.infos?.nom,
-      "infos.email": userData?.infos?.email,
-      "firebase.displayName": user?.displayName,
-      "firebase.email": user?.email,
-    });
-    console.log("📦 [useCheckout] clientData envoyé →", clientData);
+    // Trace des sources de clientData — décommenter pour diagnostiquer un nom
+    // ou un email manquant sur une commande.
+    // console.log("📦 [useCheckout] userData sources →", {
+    //   "infos.prenom": userData?.infos?.prenom,
+    //   "infos.nom": userData?.infos?.nom,
+    //   "infos.email": userData?.infos?.email,
+    //   "firebase.displayName": user?.displayName,
+    //   "firebase.email": user?.email,
+    // });
+    // console.log("📦 [useCheckout] clientData envoyé →", clientData);
 
     const returnedOrder: any = {
       userId: userData?.uid || "unknown_user",

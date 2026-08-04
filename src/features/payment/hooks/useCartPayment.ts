@@ -77,6 +77,8 @@ export const useCartPayment = (amount: number) => {
           items,
         });
 
+        console.log('[CartPayment] /transaction response:', JSON.stringify(response.data));
+
         // Version en review Apple : le backend l'annonce dans SA réponse
         // (`appleReviewMode: true`). Il a déjà créé la commande de façon
         // synchrone — aucun paiement réel, aucun verdict socket à attendre. On

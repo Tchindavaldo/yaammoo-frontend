@@ -13,6 +13,16 @@ import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
 import { useBonusContext } from "../features/bonus/context/BonusContext";
 
 /**
+ * Trace des events socket reçus. Coupée par défaut : ces logs sont très verbeux
+ * (un par event, payload complet) et noient les logs qu'on cherche réellement.
+ * Passer à `true` le temps d'un debug socket.
+ */
+const LOG_SOCKET_EVENTS = false;
+const logEvent = (...args: any[]) => {
+  if (LOG_SOCKET_EVENTS) console.log(...args);
+};
+
+/**
  * Handlers globaux des events socket. Principe : chaque event PORTE sa donnée
  * (voir BACKEND/architecture/socket-events.md), le front l'injecte directement
  * dans le bon contexte — PAS de refetch HTTP.
@@ -195,73 +205,73 @@ export const useSocketEvents = () => {
     // ── Commandes client ──────────────────────────────────────────────
     // newUserOrder { data: order } → upsert local
     socket.on("newUserOrder", withAck((data: any) => {
-      console.log("📥 newUserOrder:", data);
+      logEvent("📥 newUserOrder:", data);
       if (data?.data) upsertClientOrder(data.data);
     }));
     // userOrderUpdated { data: order } → upsert local
     socket.on("userOrderUpdated", withAck((data: any) => {
-      console.log("🔄 userOrderUpdated:", data);
+      logEvent("🔄 userOrderUpdated:", data);
       if (data?.data) upsertClientOrder(data.data);
     }));
     // userOrdersUpdated { orders: order[] } → upsert lot
     socket.on("userOrdersUpdated", withAck((data: any) => {
-      console.log("📦 userOrdersUpdated:", data);
+      logEvent("📦 userOrdersUpdated:", data);
       if (Array.isArray(data?.orders)) upsertClientOrders(data.orders);
     }));
 
     // ── Commandes marchand ────────────────────────────────────────────
     // newFastFoodOrder { data: order }
     socket.on("newFastFoodOrder", withAck((data: any) => {
-      console.log("🍔 newFastFoodOrder:", data);
+      logEvent("🍔 newFastFoodOrder:", data);
       if (data?.data) upsertMerchantOrder(data.data);
     }));
     // newFastFoodOrders { data: order[] }
     socket.on("newFastFoodOrders", withAck((data: any) => {
-      console.log("🍔 newFastFoodOrders:", data);
+      logEvent("🍔 newFastFoodOrders:", data);
       if (Array.isArray(data?.data)) upsertMerchantOrders(data.data);
     }));
     // fastFoodOrderUpdated { data: order }
     socket.on("fastFoodOrderUpdated", withAck((data: any) => {
-      console.log("🍔 fastFoodOrderUpdated:", data);
+      logEvent("🍔 fastFoodOrderUpdated:", data);
       if (data?.data) upsertMerchantOrder(data.data);
     }));
     // fastFoodOrdersUpdated { orders: order[] }
     socket.on("fastFoodOrdersUpdated", withAck((data: any) => {
-      console.log("🍔 fastFoodOrdersUpdated:", data);
+      logEvent("🍔 fastFoodOrdersUpdated:", data);
       if (Array.isArray(data?.orders)) upsertMerchantOrders(data.orders);
     }));
     // ordersRankUpdated { orders: order[] }
     socket.on("ordersRankUpdated", withAck((data: any) => {
-      console.log("🔢 ordersRankUpdated:", data);
+      logEvent("🔢 ordersRankUpdated:", data);
       if (Array.isArray(data?.orders)) upsertMerchantOrders(data.orders);
     }));
 
     // ── Commandes livreur (déléguées) ─────────────────────────────────
     // driverOrderAssigned { data: order } → une commande vient d'être déléguée
     socket.on("driverOrderAssigned", withAck((data: any) => {
-      console.log("🛵 driverOrderAssigned:", data);
+      logEvent("🛵 driverOrderAssigned:", data);
       if (data?.data) upsertDriverOrder(data.data);
     }));
     // driverOrdersAssigned { data: order[] } → lot délégué
     socket.on("driverOrdersAssigned", withAck((data: any) => {
-      console.log("🛵 driverOrdersAssigned:", data);
+      logEvent("🛵 driverOrdersAssigned:", data);
       if (Array.isArray(data?.data)) upsertDriverOrders(data.data);
     }));
     // driverOrderUpdated { data: order } → statut d'une commande déléguée
     socket.on("driverOrderUpdated", withAck((data: any) => {
-      console.log("🛵 driverOrderUpdated:", data);
+      logEvent("🛵 driverOrderUpdated:", data);
       if (data?.data) upsertDriverOrder(data.data);
     }));
 
     // ── Demandes de livraison (temps réel) ────────────────────────────
     // driverApplicationCreated { data: application } → nouvelle demande (marchand)
     socket.on("driverApplicationCreated", withAck((data: any) => {
-      console.log("📨 driverApplicationCreated:", data);
+      logEvent("📨 driverApplicationCreated:", data);
       if (data?.data) notifyApplicationEvent({ type: "created", application: data.data });
     }));
     // driverApplicationDecided { data: application } → accepté/refusé (candidat)
     socket.on("driverApplicationDecided", withAck((data: any) => {
-      console.log("📨 driverApplicationDecided:", data);
+      logEvent("📨 driverApplicationDecided:", data);
       if (data?.data) notifyApplicationEvent({ type: "decided", application: data.data });
       // Accepté → patch LOCAL du rôle (onglet en direct) depuis le payload.
       // Le backend joint role: { isDriver, driverId }.
@@ -271,7 +281,7 @@ export const useSocketEvents = () => {
     }));
     // driverRemoved { data: { fastFoodId }, role: { isDriver, driverId } }
     socket.on("driverRemoved", withAck((data: any) => {
-      console.log("📨 driverRemoved:", data);
+      logEvent("📨 driverRemoved:", data);
       if (data?.data?.fastFoodId) notifyApplicationEvent({ type: "removed", fastFoodId: data.data.fastFoodId });
       // Patch LOCAL du rôle : si c'était sa dernière boutique, isDriver=false
       // (onglet masqué en direct). Le backend joint role: { isDriver, driverId }.
@@ -282,49 +292,49 @@ export const useSocketEvents = () => {
     // merchantDriverApplicationDecided { data: application } → une demande a été
     // acceptée/refusée depuis un autre appareil du même marchand.
     socket.on("merchantDriverApplicationDecided", withAck((data: any) => {
-      console.log("🏪 merchantDriverApplicationDecided:", data);
+      logEvent("🏪 merchantDriverApplicationDecided:", data);
       if (data?.data) notifyApplicationEvent({ type: "merchant_decided", application: data.data });
     }));
     // merchantDriverRemoved { data: { driverId } } → un livreur retiré ailleurs.
     socket.on("merchantDriverRemoved", withAck((data: any) => {
-      console.log("🏪 merchantDriverRemoved:", data);
+      logEvent("🏪 merchantDriverRemoved:", data);
       if (data?.data?.driverId) notifyApplicationEvent({ type: "merchant_driver_removed", driverId: data.data.driverId });
     }));
 
     // ── Menus marchand ────────────────────────────────────────────────
     // newMenu { data: menu } / newFastFoodMenu { menu } → upsert
     socket.on("newMenu", withAck((data: any) => {
-      console.log("🥘 newMenu:", data);
+      logEvent("🥘 newMenu:", data);
       if (data?.data) upsertMerchantMenu(data.data);
     }));
     socket.on("newFastFoodMenu", withAck((data: any) => {
-      console.log("🥘 newFastFoodMenu:", data);
+      logEvent("🥘 newFastFoodMenu:", data);
       if (data?.menu) upsertMerchantMenu(data.menu);
     }));
     // fastFoodMenuUpdated { menuId, menu } → upsert
     socket.on("fastFoodMenuUpdated", withAck((data: any) => {
-      console.log("🥘 fastFoodMenuUpdated:", data);
+      logEvent("🥘 fastFoodMenuUpdated:", data);
       if (data?.menu) upsertMerchantMenu(data.menu);
     }));
     // fastFoodMenuDeleted { fastFood, menuId } → remove
     socket.on("fastFoodMenuDeleted", withAck((data: any) => {
-      console.log("🗑️ fastFoodMenuDeleted:", data);
+      logEvent("🗑️ fastFoodMenuDeleted:", data);
       if (data?.menuId) removeMerchantMenu(data.menuId);
     }));
 
     // ── Menus globaux (liste restaurants) ─────────────────────────────
     // newGlobalMenu { menu } / globalMenuUpdated { menuId, menu } → upsert
     socket.on("newGlobalMenu", withAck((data: any) => {
-      console.log("🌎 newGlobalMenu:", data);
+      logEvent("🌎 newGlobalMenu:", data);
       if (data?.menu) upsertGlobalMenu(data.menu);
     }));
     socket.on("globalMenuUpdated", withAck((data: any) => {
-      console.log("🌎 globalMenuUpdated:", data);
+      logEvent("🌎 globalMenuUpdated:", data);
       if (data?.menu) upsertGlobalMenu(data.menu);
     }));
     // globalMenuDeleted { fastFood, menuId } → remove
     socket.on("globalMenuDeleted", withAck((data: any) => {
-      console.log("🌎 globalMenuDeleted:", data);
+      logEvent("🌎 globalMenuDeleted:", data);
       const ffId = data?.fastFood?.id ?? data?.fastFood;
       if (ffId && data?.menuId) removeGlobalMenu(ffId, data.menuId);
     }));
@@ -332,14 +342,14 @@ export const useSocketEvents = () => {
     // ── Fastfood ──────────────────────────────────────────────────────
     // newFastfood { fastFood } → upsert dans la liste
     socket.on("newFastfood", withAck((data: any) => {
-      console.log("🏬 newFastfood:", data);
+      logEvent("🏬 newFastfood:", data);
       if (data?.fastFood) upsertGlobalFastFood(data.fastFood);
     }));
 
     // fastfoodUpdated { fastFood } → mêmes données que newFastfood. upsert
     // (l'édition d'une boutique met à jour son image/horaires sur la home).
     socket.on("fastfoodUpdated", withAck((data: any) => {
-      console.log("🏬 fastfoodUpdated:", data);
+      logEvent("🏬 fastfoodUpdated:", data);
       const ff = data?.fastFood ?? data;
       if (ff?.id) upsertGlobalFastFood(ff);
     }));
@@ -347,25 +357,25 @@ export const useSocketEvents = () => {
     // ── Transactions / Wallet ─────────────────────────────────────────
     // newTransaction { data: transaction } → page transactions client (WalletContext).
     socket.on("newTransaction", withAck((data: any) => {
-      console.log("💰 newTransaction:", data);
+      logEvent("💰 newTransaction:", data);
       if (data?.data) upsertClientTransaction(data.data);
     }));
     // bonus.stats_updated : solde recalculé de TOUS les bonus (map par id).
     // Seul event faisant autorité sur le solde — émis au claim, à chaque
     // nouvelle commande et à tout changement de statut (annulation).
     socket.on("bonus.stats_updated", withAck((data: any) => {
-      console.log("📊 bonus.stats_updated:", data);
+      logEvent("📊 bonus.stats_updated:", data);
       applyBonusStats(data?.data?.bonusStats);
     }));
     // bonus.claimed : écho du claim (code, statut). Ne porte pas le solde.
     socket.on("bonus.claimed", withAck((data: any) => {
-      console.log("🎁 bonus.claimed:", data);
+      logEvent("🎁 bonus.claimed:", data);
       if (data?.data) applyBonusPayload(data.data);
     }));
     // bonus.reward_credentials : récompense provisionnée (identifiants Netflix…),
     // souvent longtemps après le claim → d'où l'état bonus en contexte global.
     socket.on("bonus.reward_credentials", withAck((data: any) => {
-      console.log("🎁 bonus.reward_credentials:", data);
+      logEvent("🎁 bonus.reward_credentials:", data);
       if (data?.data) applyBonusPayload(data.data);
     }));
     // bonus.armed / bonus.disarmed : le user a activé/désactivé un bonus (ici
@@ -381,17 +391,17 @@ export const useSocketEvents = () => {
       applyDeliveryOffer(p.deliveryOffer ?? null);
     };
     socket.on("bonus.armed", withAck((data: any) => {
-      console.log("⚡ bonus.armed:", data);
+      logEvent("⚡ bonus.armed:", data);
       handleArmEvent(data);
     }));
     socket.on("bonus.disarmed", withAck((data: any) => {
-      console.log("⚡ bonus.disarmed:", data);
+      logEvent("⚡ bonus.disarmed:", data);
       handleArmEvent(data);
     }));
     // bonus.redeemed : une utilisation du code vient d'être consommée →
     // compteurs recalculés (usageCount / remainingUses / redeemed).
     socket.on("bonus.redeemed", withAck((data: any) => {
-      console.log("🎟️ bonus.redeemed:", data);
+      logEvent("🎟️ bonus.redeemed:", data);
       const p = data?.data;
       if (!p) return;
       applyRedeemedPayload(p);
@@ -407,14 +417,14 @@ export const useSocketEvents = () => {
     // bonus.created : un bonus vient d'être créé (broadcast global, SANS payload)
     // → seule option, refetch silencieux de la liste.
     socket.on("bonus.created", withAck(() => {
-      console.log("🆕 bonus.created");
+      logEvent("🆕 bonus.created");
       refreshBonuses(true);
     }));
     // bonus.activation_changed : le bonus a été activé/désactivé côté émetteur.
     // Broadcast GLOBAL (pas de room) → reçu même pour un bonus absent de la
     // liste locale, cas traité dans applyActivationPayload (refetch silencieux).
     socket.on("bonus.activation_changed", withAck((data: any) => {
-      console.log("🔔 bonus.activation_changed:", data);
+      logEvent("🔔 bonus.activation_changed:", data);
       const p = data?.data;
       if (!p) return;
       applyActivationPayload(p);
@@ -424,7 +434,7 @@ export const useSocketEvents = () => {
     }));
     // wallet.credited : gain marchand (payin) → patch local du solde.
     socket.on("wallet.credited", withAck((data: any) => {
-      console.log("🟢 wallet.credited:", data);
+      logEvent("🟢 wallet.credited:", data);
       applyWalletEvent({
         type: "credit",
         amount: Number(data?.amount) || 0,
@@ -433,7 +443,7 @@ export const useSocketEvents = () => {
     }));
     // wallet.withdrawal : retrait (3 états, même withdrawalId) → patch solde + overlay.
     socket.on("wallet.withdrawal", withAck((data: any) => {
-      console.log("🔴 wallet.withdrawal:", data);
+      logEvent("🔴 wallet.withdrawal:", data);
       handleWithdrawalEvent({
         withdrawalId: data?.withdrawalId,
         status: data?.status,
@@ -453,22 +463,22 @@ export const useSocketEvents = () => {
     }));
     // isRead { notificationId } → sync silencieux multi-device.
     socket.on("isRead", withAck((data: any) => {
-      console.log("📧 isRead:", data);
+      logEvent("📧 isRead:", data);
       refreshNotifications(true);
     }));
 
     // ── Suivi de livraison (fire-and-forget) ──────────────────────────
     socket.on("newPeriodKeyDelivering", withAck((data: any) => {
-      console.log("🚀 newPeriodKeyDelivering:", data?.periodKey);
+      logEvent("🚀 newPeriodKeyDelivering:", data?.periodKey);
     }));
     socket.on("removePeriodKeyDelivering", withAck((data: any) => {
-      console.log("✅ removePeriodKeyDelivering:", data?.periodKey);
+      logEvent("✅ removePeriodKeyDelivering:", data?.periodKey);
     }));
     socket.on("newClientIdDelivering", withAck((data: any) => {
-      console.log("🛵 newClientIdDelivering:", data?.clientId);
+      logEvent("🛵 newClientIdDelivering:", data?.clientId);
     }));
     socket.on("removeClientIdDelivering", withAck((data: any) => {
-      console.log("🅿️ removeClientIdDelivering:", data?.clientId);
+      logEvent("🅿️ removeClientIdDelivering:", data?.clientId);
     }));
 
     return () => {

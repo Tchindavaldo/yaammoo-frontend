@@ -20,8 +20,10 @@ ou diagnostiquer les bugs propres à une version.
 ### `src/api/version.ts`
 
 - `APP_VERSION` — version publique, lue depuis `app.json` → `expo.version` via
-  `expo-constants` (fallback en dur `FALLBACK_VERSION`, à garder aligné sur
-  `app.json`). Se met à jour automatiquement à chaque bump de version.
+  `expo-constants`. **`app.json` est le seul endroit à bumper** : aucune valeur
+  en dur à maintenir en parallèle. Vide (avec `console.warn`) dans le cas
+  anormal où `expo-constants` ne renvoie rien — le backend traite alors le
+  client comme une version inconnue.
 - `APP_BUILD` — build number iOS / versionCode Android (optionnel).
 - `APP_PLATFORM` — `"ios" | "android" | "web"` (`Platform.OS`).
 

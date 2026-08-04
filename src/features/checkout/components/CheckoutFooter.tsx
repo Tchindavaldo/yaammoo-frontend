@@ -57,7 +57,7 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
 
       <TouchableOpacity style={styles.buyBtn} onPress={onBuy}>
         <Ionicons name="cart-outline" size={16} color="white" />
-        <Text style={styles.btnText}>buy</Text>
+        <Text style={styles.btnText}>order</Text>
       </TouchableOpacity>
     </View>
   );

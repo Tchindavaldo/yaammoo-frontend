@@ -279,7 +279,7 @@ export default function OrdersScreen() {
   const headerRight =
     pendingToBuy.length > 0 && !orderToDelete ? (
       <HeaderPill
-        label="Tout payer"
+        label="Tout commander"
         icon="card-outline"
         onPress={() => setPaymentState("network_select")}
       />
@@ -368,7 +368,7 @@ export default function OrdersScreen() {
         </Animated.View>
       )}
 
-      {/* Capsule de PAIEMENT global du panier — ouverte par la pilule "Tout payer"
+      {/* Capsule de PAIEMENT global du panier — ouverte par la pilule "Tout commander"
           du header (masquée à l'état "total" au repos). */}
       {pendingToBuy.length > 0 && !orderToDelete && paymentState !== "total" && (
         <CartPaymentOverlay

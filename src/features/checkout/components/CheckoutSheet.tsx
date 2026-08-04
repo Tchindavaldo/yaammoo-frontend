@@ -37,7 +37,6 @@ import { CheckoutExpressOverlay } from "./CheckoutExpressOverlay";
 import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
 import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
 import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
-import { PaymentWebViewModal } from "@/src/features/payment/components/PaymentWebViewModal";
 import { extractPeriodDate } from "../utils/periodDate";
 
 interface CheckoutSheetProps {
@@ -62,8 +61,6 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const [isExpressPopupVisible, setIsExpressPopupVisible] = useState(false);
   const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
   const [isPaymentPopupVisible, setIsPaymentPopupVisible] = useState(false);
-  // Paiement web : WebView chargeant la page servie par le backend (/payment-page).
-  const [isPaymentWebVisible, setIsPaymentWebVisible] = useState(false);
   const [paymentKey, setPaymentKey] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [menuWithDeliveryHours, setMenuWithDeliveryHours] =
@@ -158,15 +155,19 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     type: "success" | "error";
   } | null>(null);
   const { appleReviewMode } = useFastFoods();
+  // Mode review : commande directe via le bouton « order » (loader dans le btn).
+  const [reviewOrdering, setReviewOrdering] = useState(false);
 
-  // Verdict socket pendant que la page web est ouverte.
+  // En review, écouter le verdict socket pendant l'envoi de la commande (sans
+  // ouvrir l'overlay de paiement). Sur success_created, l'effet de fermeture
+  // ci-dessous ferme le sheet.
   useEffect(() => {
-    if (isPaymentWebVisible) {
+    if (reviewOrdering) {
       registerPaymentHandler(handlePaymentVerdict);
       return () => unregisterPaymentHandler();
     }
   }, [
-    isPaymentWebVisible,
+    reviewOrdering,
     handlePaymentVerdict,
     registerPaymentHandler,
     unregisterPaymentHandler,
@@ -190,15 +191,29 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     unregisterPaymentHandler,
   ]);
 
-  // Overlay natif (non utilisé par Buy) : fermeture 5s après success_created.
+  // Fermer l'overlay automatiquement après 5s en état success_created
   useEffect(() => {
-    if (!isPaymentPopupVisible || paymentState !== "success_created") return;
-    const timer = setTimeout(() => {
-      setIsPaymentPopupVisible(false);
-      onClose();
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [isPaymentPopupVisible, paymentState, onClose]);
+    if (paymentState === "success_created") {
+      // En review : fermeture quasi-immédiate (~500ms). Sinon flux normal (5s).
+      const timer = setTimeout(
+        () => {
+          setIsPaymentPopupVisible(false);
+          setReviewOrdering(false);
+          onClose();
+        },
+        appleReviewMode ? 300 : 5000,
+      );
+      return () => clearTimeout(timer);
+    }
+  }, [paymentState, onClose, appleReviewMode]);
+
+  // Mode review : si la transaction échoue (retour à 'input'), couper le loader
+  // du bouton order (le toast d'erreur s'affiche déjà via paymentError).
+  useEffect(() => {
+    if (reviewOrdering && paymentState === "input") {
+      setReviewOrdering(false);
+    }
+  }, [reviewOrdering, paymentState]);
 
   // En cas d'erreur paiement : NE PAS fermer les overlays. On reste sur l'état
   // `input` (le toast d'erreur s'affiche, l'utilisateur peut ressaisir).
@@ -371,6 +386,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   setIsSubmitting(false);
                 }
               }}
+              reviewMode={appleReviewMode}
+              isOrdering={reviewOrdering}
               onBuy={() => {
                 const stockErr = validateStock();
                 if (stockErr) {
@@ -382,8 +399,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   showError(deliveryErr);
                   return;
                 }
-                // Paiement (review ou non) : toujours la page web en WebView.
-                setIsPaymentWebVisible(true);
+                setPaymentState("network_select");
+                setIsPaymentPopupVisible(true);
+                setPaymentKey((prev) => prev + 1);
               }}
             />
           </Animated.View>
@@ -501,37 +519,6 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
               onHide={() => setPaymentError(null)}
             />
           )}
-          <PaymentWebViewModal
-            visible={isPaymentWebVisible}
-            onClose={() => setIsPaymentWebVisible(false)}
-            paymentState={paymentState}
-            ussdMessage={ussdMessage || undefined}
-            onDone={() => {
-              setIsPaymentWebVisible(false);
-              onClose();
-            }}
-            onPay={(phone, network) => {
-              if (appleReviewMode) {
-                // Commande réellement créée côté backend (valeurs review).
-                handleReviewOrder();
-                return;
-              }
-              setPaymentNetwork(network);
-              handlePaymentConfirm(phone);
-            }}
-            params={{
-              title: menu?.titre,
-              image: (menu as any)?.images?.[0] || (menu as any)?.image,
-              menuPrice,
-              drinksPrice,
-              extrasPrice,
-              deliveryPrice: displayDeliveryPrice,
-              deliveryFree: isDeliveryFree ? "1" : "0",
-              total: displayTotal,
-              // La page déroule elle-même les étapes de validation en review.
-              review: appleReviewMode ? "1" : "0",
-            }}
-          />
         </View>
       </Modal>
     </>

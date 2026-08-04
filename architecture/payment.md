@@ -170,27 +170,6 @@ par **CheckoutPaymentOverlay** (capsule BAS).
 
 ---
 
-## Paiement web (WebView) — home
-
-Au clic sur **Buy** dans `CheckoutSheet` (hors mode review), l'app n'ouvre plus les
-deux overlays natifs mais **`PaymentWebViewModal`**
-(`src/features/payment/components/PaymentWebViewModal.tsx`) : une WebView plein écran
-qui charge `Config.paymentPageUrl` = `${apiUrl}/payment-page`.
-
-- **Page servie par le backend** : `public/payment/index.html` (route
-  `src/routes/paymentPageRoutes.js`). Elle reproduit à l'identique le panel HAUT
-  (récap + choix réseau) et la capsule BAS (saisie n° + états `input` → `waiting` →
-  `ussd_sent` → `success` → `success_created` + bordure lumineuse animée).
-- **Données** passées en query string : `title`, `image`, `menuPrice`, `drinksPrice`,
-  `extrasPrice`, `deliveryPrice`, `deliveryFree`, `total`.
-- **Fermeture** : la croix de la page fait `window.ReactNativeWebView.postMessage('close')`
-  → `onMessage` ferme le modal.
-- `?debug=1` affiche le sélecteur d'états (preview uniquement).
-- Les overlays natifs (`CheckoutPaymentOverlay` / `CheckoutPaymentTopOverlay`) restent
-  en place dans le code, simplement plus déclenchés par Buy.
-
----
-
 ## Paiement global du panier (page cart)
 
 Le paiement de **toutes les commandes du panier** (page `app/(tabs)/cart.tsx`) a sa
@@ -261,13 +240,10 @@ exposé en mémoire par **`FastFoodContext`** (`appleReviewMode`, lu via
 
 Quand `appleReviewMode === true` :
 
-- **Home (`CheckoutSheet`)** : le bouton reste « buy » et ouvre la **page web**
-  (`PaymentWebViewModal`) comme hors review. Au clic sur « payer » dans la page,
-  `handleReviewOrder()` crée **réellement** la commande (valeurs review, réponse
-  synchrone du backend), puis `CheckoutSheet` déroule les étapes affichées par
-  la capsule — `waiting` → `ussd_sent` (« Vérification du paiement… ») → `success`
-  → `success_created` — espacées de 2,5 s, avant de fermer le sheet.
-  Le mode review ne fait donc plus que **masquer** les éléments listés ci-dessous.
+- **Home (`CheckoutSheet`)** : le bouton reste « buy » et ouvre les **overlays natifs**
+  comme hors review. Au clic sur « payer » dans la capsule, `handleReviewOrder()`
+  crée **réellement** la commande (valeurs review, réponse synchrone du backend)
+  au lieu d'appeler `handlePaymentConfirm`.
 - **Édition panier (`CartCheckoutSheet` → `CartCheckoutFooter`)** : « Valider »
   fait pareil (même `handleReviewOrder` de `useCheckout`).
 - **Panier global (`cart.tsx`)** : la pilule « Tout payer » devient « Commander »

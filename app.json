@@ -2,7 +2,7 @@
   "expo": {
     "name": "yaammoo",
     "slug": "yaammoo",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "yaammoo",
@@ -21,12 +21,8 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification"
-        ],
-        "LSApplicationQueriesSchemes": [
-          "comgooglemaps"
-        ],
+        "UIBackgroundModes": ["remote-notification"],
+        "LSApplicationQueriesSchemes": ["comgooglemaps"],
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.",
         "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus."

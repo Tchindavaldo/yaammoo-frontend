@@ -306,6 +306,12 @@ Visible si `status === delivered && menuId existe`.
 Visible dès que la ligne porte **2 commandes ou plus**. Réutilise tel quel
 `MerchantOrderMontantTab` (blocs par `deliveryGroupId`, total général).
 
+**Animations d'ouverture/fermeture** : la translation se fait sur `SCREEN_HEIGHT`,
+pas sur `SHEET_HEIGHT` — le contenu peut déborder la hauteur fixe du sheet et
+serait resté visible en bas jusqu'au démontage. Fermeture en `Animated.timing`
+borné (220 ms) plutôt qu'un `spring`, qui traîne en fin de course. Même logique
+que `MerchantOrderBottomSheet` (voir [orders-merchant.md](orders-merchant.md)).
+
 **Navigation multi-commandes** (`allOrders`) : chips **Cmd N** dans le **header**, à la
 place de la ligne d'adresse, numérotés par le vrai `rank` et suivis d'un badge `+N` de
 débordement — comme le sheet marchand. Plus de barre de pagination en bas, plus de croix :

@@ -333,6 +333,23 @@ Au retour d'arrière-plan, un refresh des données fournit une nouvelle référe
 la même commande ; en dépendant de l'objet, l'animation se rejouait et le sheet
 semblait se fermer puis se rouvrir.
 
+**Distance d'animation — `OFFSCREEN_Y`, jamais `SHEET_HEIGHT`** : ouverture comme
+fermeture translatent d'un **écran entier** (`Dimensions.get('window').height`).
+Avec plusieurs zones, le sheet mesure `SHEET_HEIGHT + CMD_BAR_HEIGHT` (barre de
+chips « Cmd ») : une translation de `SHEET_HEIGHT` seul laissait cette barre
+visible en bas, figée, jusqu'au démontage du Modal. La fermeture utilise un
+`Animated.timing` borné (220 ms, `Easing.in(cubic)`) et non un `spring`, qui
+traîne en fin de course et retarde d'autant l'appel à `onClose()`.
+
+> Même correctif appliqué au sheet client `OrderBottomSheet` (`SCREEN_HEIGHT`).
+
+**Changement de zone sans scintillement** : le tap sur un chip de zone appelle
+`selectZone()`, qui pose **dans le même rendu** `selectedZone` ET l'index de la
+première commande de cette zone. En ne mettant à jour que `selectedZone`, un effet
+recalait `selectedOrderIdx` au rendu suivant : la barre « Cmd » s'affichait une
+frame avec l'ancienne sélection. L'effet est conservé en filet de sécurité (commande
+validée ou retirée de la zone).
+
 **Sélecteur multi-commandes dans le header** (native `.tsx`) :
 - En multi-commandes (`allOrders.length > 1`), la ligne « Zone de livraison » du header
   est **remplacée** par une rangée de chips numérotés (1, 2, 3…) scrollable

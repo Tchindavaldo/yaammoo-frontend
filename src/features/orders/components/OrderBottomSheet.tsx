@@ -64,13 +64,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
 }) => {
   const [tab, setTab] = useState<Tab>("livraison");
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
-  const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  // Hauteur RÉELLE du sheet, mesurée au layout. `SHEET_HEIGHT` n'est qu'une
-  // hauteur de base : selon le contenu (onglet Montant, plusieurs commandes,
-  // plusieurs zones), le sheet est plus haut. Translater de SHEET_HEIGHT seul
-  // laissait alors la portion excédentaire à l'écran jusqu'au démontage — le
-  // sheet semblait se figer en bas avant de disparaître d'un coup.
-  const sheetHeight = useRef(SHEET_HEIGHT);
+  const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   // Déterminer la commande à afficher (de façon synchrone)
   const selectedOrder = allOrders
@@ -180,9 +174,9 @@ export const OrderBottomSheet: React.FC<Props> = ({
 
   useEffect(() => {
     if (isVisible && order) {
-      // Animation Open — départ sous l'écran, sur la hauteur mesurée au
-      // précédent affichage (`SHEET_HEIGHT` en secours au tout premier rendu).
-      translateY.setValue(sheetHeight.current);
+      // Animation Open — départ hors écran, pour la même raison qu'à la
+      // fermeture : le contenu peut dépasser la hauteur du sheet.
+      translateY.setValue(SCREEN_HEIGHT);
       overlayOpacity.setValue(0);
       setTab("livraison");
       setSelectedOrderIdx(0);
@@ -212,15 +206,18 @@ export const OrderBottomSheet: React.FC<Props> = ({
   }, [tab, showDriverTab, showRateTab]);
 
   const handleDismiss = () => {
-    // `timing` et NON `spring` : un ressort met longtemps à converger vers
-    // SHEET_HEIGHT, si bien que le sheet paraît immobile en bas pendant que
-    // l'animation tourne encore — `onClose()` (donc le démontage du Modal)
-    // n'arrivait qu'après ce blanc. Une durée bornée supprime le décalage.
+    // `timing` et NON `spring` : un ressort traîne en fin de course, le sheet
+    // paraît immobile alors que l'animation tourne encore et que `onClose()`
+    // (donc le démontage) n'est pas appelé. Une durée bornée supprime ce temps
+    // mort.
     Animated.parallel([
       Animated.timing(translateY, {
-        // Hauteur mesurée, pas la constante : sinon un sheet plus haut que
-        // `SHEET_HEIGHT` ne descend pas assez et reste visible en bas.
-        toValue: sheetHeight.current,
+        // SCREEN_HEIGHT et non SHEET_HEIGHT : le contenu peut DÉBORDER au-dessus
+        // du sheet (hauteur fixe, plusieurs zones / onglet Montant). Descendre
+        // de SHEET_HEIGHT seul laissait cette portion excédentaire à l'écran,
+        // figée, jusqu'au démontage. Translater d'un écran sort tout, quelle que
+        // soit la hauteur réelle du contenu.
+        toValue: SCREEN_HEIGHT,
         duration: 220,
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
@@ -272,12 +269,6 @@ export const OrderBottomSheet: React.FC<Props> = ({
 
         <Animated.View
           style={[styles.sheet, { transform: [{ translateY }] }]}
-          // Lecture SEULE de la hauteur rendue : ne change ni le style ni la
-          // logique de variation de hauteur, sert uniquement à fermer sur la
-          // bonne distance.
-          onLayout={(e) => {
-            sheetHeight.current = e.nativeEvent.layout.height;
-          }}
         >
           <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>

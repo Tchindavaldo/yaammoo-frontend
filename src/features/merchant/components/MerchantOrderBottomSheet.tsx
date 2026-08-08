@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Animated, Dimensions, PanResponder, Pressable, Modal,
+  Animated, Dimensions, Easing, PanResponder, Pressable, Modal,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,12 @@ const SHEET_HEIGHT = 520;
 // Hauteur de la barre de chips « Cmd » (chip 24 + paddings 8/8 + trait) : le
 // sheet grandit d'autant quand elle est affichée, pour ne rien rogner en bas.
 const CMD_BAR_HEIGHT = 41;
+// Distance de sortie des animations d'ouverture/fermeture. On translate d'un
+// ÉCRAN ENTIER et non de `SHEET_HEIGHT` : avec plusieurs zones le sheet mesure
+// `SHEET_HEIGHT + CMD_BAR_HEIGHT` (barre de chips « Cmd »), si bien qu'une
+// translation de `SHEET_HEIGHT` laissait cette barre visible en bas, figée,
+// jusqu'au démontage du Modal.
+const OFFSCREEN_Y = Dimensions.get('window').height;
 
 // ─── Types publics (réexportés pour les sous-composants) ──────────────────────
 export type OrderItem = {
@@ -159,7 +165,7 @@ export default function MerchantOrderBottomSheet({
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const [validating, setValidating] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
-  const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const translateY = useRef(new Animated.Value(OFFSCREEN_Y)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
   // Commande sélectionnée (globale : pilote Livraison ET Commande)
@@ -210,7 +216,23 @@ export default function MerchantOrderBottomSheet({
     [orderList, selectedZone, zoneOf],
   );
 
-  // Changer de zone repositionne la sélection sur sa première commande.
+  /**
+   * Changement de zone : on pose la zone ET sa première commande dans le MÊME
+   * rendu. Ne mettre à jour que `selectedZone` laissait l'effet ci-dessous
+   * recaler `selectedOrderIdx` au rendu suivant — la barre de chips « Cmd »
+   * s'affichait une frame avec l'ancienne sélection, d'où un scintillement.
+   */
+  const selectZone = useCallback(
+    (zone: string) => {
+      setSelectedZone(zone);
+      const first = orderList.findIndex((o) => zoneOf(o) === zone);
+      if (first !== -1) setSelectedOrderIdx(first);
+    },
+    [orderList, zoneOf],
+  );
+
+  // Filet de sécurité : si la sélection courante n'appartient plus à la zone
+  // (commande validée/retirée), on retombe sur la première de la zone.
   useEffect(() => {
     if (zoneEntries.length === 0) return;
     if (!zoneEntries.some(({ idx }) => idx === selectedOrderIdx)) {
@@ -350,7 +372,7 @@ export default function MerchantOrderBottomSheet({
   const orderId = order?.id;
   useEffect(() => {
     if (!visible || !orderId) return;
-    translateY.setValue(SHEET_HEIGHT);
+    translateY.setValue(OFFSCREEN_Y);
     overlayOpacity.setValue(0);
     setTab('livraison');
     setSelectedOrderIdx(0);
@@ -371,8 +393,8 @@ export default function MerchantOrderBottomSheet({
 
   const handleDismiss = () => {
     Animated.parallel([
-      Animated.spring(translateY, { toValue: SHEET_HEIGHT, useNativeDriver: true, damping: 30, stiffness: 250 }),
-      Animated.timing(overlayOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: OFFSCREEN_Y, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
     ]).start(() => onClose());
   };
 
@@ -431,7 +453,7 @@ export default function MerchantOrderBottomSheet({
                         <TouchableOpacity
                           key={z}
                           style={[styles.cmdChip, selectedZone === z && styles.cmdChipActive]}
-                          onPress={() => setSelectedZone(z)}
+                          onPress={() => selectZone(z)}
                         >
                           <Text
                             style={[

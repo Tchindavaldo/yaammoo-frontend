@@ -13,6 +13,9 @@ export class Embalage {
   constructor(
     public type: string,
     public prix: number,
+    // Prix brut (hors marge) fourni par le backend sur l'extra du menu,
+    // renvoyé tel quel dans le payload order.
+    public rawPrice?: number,
   ) { }
 }
 
@@ -20,6 +23,8 @@ export class Boisson {
   constructor(
     public type: string,
     public prix: number,
+    // Prix brut (hors marge) fourni par le backend sur la boisson du menu.
+    public rawPrice?: number,
   ) { }
 }
 
@@ -71,9 +76,14 @@ export class Menu {
     public image: string,
     public disponibilite: string,
     public images?: string[],
-    public extra?: Array<{ name: string; status: boolean; prix?: number }>,
-    public drink?: Array<{ name: string; status: boolean; prix?: number; quantite?: number }>,
+    public extra?: Array<{ name: string; status: boolean; prix?: number; rawPrice?: number }>,
+    public drink?: Array<{ name: string; status: boolean; prix?: number; quantite?: number; rawPrice?: number }>,
     public stock?: number,
+    // Prix bruts (hors marge) alignés sur prix1/prix2/prix3, aplatis depuis
+    // `prices[].rawPrice` du backend.
+    public rawPrice1?: number,
+    public rawPrice2?: number,
+    public rawPrice3?: number,
   ) { }
 }
 

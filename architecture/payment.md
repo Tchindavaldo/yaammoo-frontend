@@ -77,8 +77,12 @@ USER choisit réseau (haut) + saisit numéro (bas) + appuie Payer →
 - **UI** : 2 overlays — `CheckoutPaymentTopOverlay.tsx` (récap + réseau) +
   `CheckoutPaymentOverlay.tsx` (capsule, états saisie/paiement) + `AnimatedBorderGlow.tsx`
 - **State** : intégré dans `useCheckout` (home) / `useCartPayment` (panier) — pas de PaymentContext
-- **Payload** : `items` = commande(s) sanitizée(s) via `src/features/orders/utils/sanitizeOrder.ts`
-  (même format que l'envoi historique `buyOrders → /order/tabs`) ; le backend en déduit le `fastFoodId`
+- **Payload** : `items` = commande(s) au format `buyOrders → /order/tabs` ; le backend en déduit le `fastFoodId`.
+  Depuis le **panier**, elles passent par `src/features/orders/utils/sanitizeOrder.ts` ; depuis le
+  **checkout**, `useCheckout` envoie directement le retour de `createOrder()`. Les deux chemins
+  construisent les champs un par un (liste fermée) : un champ servi par `GET /fastfood/all` n'est
+  **jamais** transmis automatiquement — il doit être ajouté aux deux (cf. `rawPrice`,
+  [checkout.md](./checkout.md))
 - **Timeout HTTP** : `axios.defaults.timeout = 60000` (60 s) défini dans `src/api/config.ts`
   (défaut axios = 0 = infini) — couvre les paiements MobileWallet lents
 

@@ -406,8 +406,14 @@ export default function OrdersScreen() {
             onError={(msg) => setToast({ message: msg, type: 'error' })}
             isKeyboardVisible={isKeyboardVisible}
             /* Ancrée sur le bas du SHEET (son parent). C'est elle SEULE qui
-               remonte avec le clavier, la card du haut ne bouge pas. */
-            bottom={Animated.add(keyboardHeight, 10)}
+               remonte avec le clavier, la card du haut ne bouge pas.
+
+               La capsule est ancrée sur la hauteur du clavier + le même
+               collage que le home (`paddingBottom: 2`). Le `translateY: -100`
+               du home n'a PAS d'équivalent ici : là-bas la capsule est ancrée
+               au bas de l'ÉCRAN et ces 100px la remontent vers le clavier —
+               ici elle est déjà posée dessus. */
+            bottom={Animated.add(keyboardHeight, 2)}
           />
       </CartPaymentTopCard>
 

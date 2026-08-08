@@ -15,6 +15,8 @@ src/features/support/
 │   ├── SupportTopicChips.tsx    # Chips « objet de la discussion »
 │   ├── SupportMessageBubble.tsx # Bulle message (user à droite / support à gauche)
 │   ├── SupportThreadRow.tsx     # Ligne de la liste des discussions
+│   ├── SupportThreadsSkeleton.tsx # Squelette de la liste pendant le chargement
+│   ├── SupportMessagesSkeleton.tsx # Squelette des bulles pendant le GET messages
 │   └── SupportComposer.tsx      # Barre de saisie + bouton envoyer
 ├── hooks/
 │   ├── useKeyboardOffset.ts     # Décalage de la saisie (ouverture animée courte, fermeture instantanée)
@@ -38,6 +40,16 @@ bottom sheet à mi-hauteur.
    précédé d'un **chip d'objet** (Question, Problème…). Deux lignes seulement :
    objet + nom + date, puis dernier message + badge non-lus — ni résumé ni
    statut. Bouton bas fixe **« Nouveau chat »**.
+   Pendant le chargement HTTP, la liste affiche `SupportThreadsSkeleton` :
+   un **spinner centré** (`ActivityIndicator size="large"`) sur toute la zone.
+   Il est rendu **hors `ScrollView`** — un `flex: 1` ne s'étire pas dans un
+   `contentContainer` et le spinner ne serait pas centré ; le titre de section
+   est masqué pour la même raison.
+   Il s'affiche **dès que `loading` est vrai**, y compris quand des fils sont
+   déjà en mémoire d'une ouverture précédente : sinon la liste montrerait des
+   données périmées sans aucun signe que ça recharge. `loading` démarre à
+   `true` dans `useSupportThreads`, sinon l'état vide clignoterait avant le
+   spinner. Le header affiche « Chargement… » en parallèle.
 2. **Nouveau chat** — la saisie est affichée d'emblée mais **bloquée**, avec les
    **chips d'objet** juste au-dessus (Question, Problème, Assistance,
    Suggestion, Discussion). Un tap sur la saisie affiche le toast
@@ -49,7 +61,14 @@ bottom sheet à mi-hauteur.
    l'interlocuteur (nom du fastfood ou « yaammoo »).
 4. **Discussion existante** — même rendu : le header porte le nom de
    l'interlocuteur et, sous le titre, l'objet du fil ; la conversation s'ouvre
-   directement.
+   directement. Tant que le `GET .../messages` tourne, la vue affiche
+   **uniquement** `SupportMessagesSkeleton` : ni texte d'accueil, ni chips, ni
+   saisie, qui clignoteraient avant les messages. Il **réutilise
+   `SupportThreadsSkeleton`** (même spinner centré) — un motif unique pour
+   toute la feature.
+   Le sous-titre du header prend l'objet **du fil** (`chatTopic ?? thread.topic`)
+   — `chatTopic` n'est remonté qu'après le rendu de la vue chat, l'invite
+   « Choisissez l'objet… » apparaîtrait sinon une fraction de seconde.
 
 ### Clavier
 Le décalage de la saisie passe par `useKeyboardOffset`, piloté par

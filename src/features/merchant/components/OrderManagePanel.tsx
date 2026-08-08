@@ -427,11 +427,20 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // (toutes dates futures / aujourd'hui / toutes dates passées), pas le nombre
   // de dates. Volontairement INDÉPENDANTS de l'onglet de statut ET des périodes
   // cochées : chaque card affiche toujours le total de SA période.
+  // En revanche on ne compte que les VRAIES commandes : `orders` est le pool
+  // brut de la boutique et contient aussi `pendingToBuy` (encore au panier du
+  // client) et les annulées, qui gonflaient le compteur.
   const dateScopeCounts = useMemo(() => {
+    const countable = new Set([
+      ...statusMap.pending,
+      ...statusMap.proccess,
+      ...statusMap.finish,
+    ]);
     let past = 0;
     let today = 0;
     let future = 0;
     orders.forEach((o) => {
+      if (!countable.has(o.status)) return;
       const iso = getOrderDateISO(o);
       if (iso < todayISO) past += 1;
       else if (iso > todayISO) future += 1;

@@ -7,6 +7,7 @@ import { useMerchantSupportConversation } from "../../hooks/useMerchantSupportCo
 import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportBubble } from "./MerchantSupportBubble";
 import { MerchantSupportComposer } from "./MerchantSupportComposer";
+import { MerchantSupportMessagesSkeleton } from "./MerchantSupportMessagesSkeleton";
 
 interface Props {
   thread: MerchantSupportThread;
@@ -55,6 +56,17 @@ export const MerchantSupportChatView: React.FC<Props> = ({
     else requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   };
 
+  // Ouverture d'un fil : tant que le GET tourne, on ne montre QUE le squelette
+  // — ni texte d'accueil, ni barre de réponse, qui apparaîtraient une fraction
+  // de seconde avant d'être remplacés par les messages.
+  if (loading) {
+    return (
+      <View style={styles.flex}>
+        <MerchantSupportMessagesSkeleton />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.flex}>
       <ScrollView
@@ -68,13 +80,11 @@ export const MerchantSupportChatView: React.FC<Props> = ({
       >
         {messages.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>
-              {loading ? "Chargement…" : "Aucun message"}
-            </Text>
+            {/* Le cas « en chargement » est pris par le squelette au-dessus :
+                ici le fil est bel et bien vide. */}
+            <Text style={styles.emptyTitle}>Aucun message</Text>
             <Text style={styles.emptyText}>
-              {loading
-                ? "Récupération de la discussion."
-                : "Répondez au client pour démarrer la discussion."}
+              Répondez au client pour démarrer la discussion.
             </Text>
           </View>
         ) : (

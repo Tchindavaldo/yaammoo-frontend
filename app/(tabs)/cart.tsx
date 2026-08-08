@@ -32,6 +32,7 @@ import { CartCheckoutSheet } from "@/src/features/checkout/components/CartChecko
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartPaymentOverlay } from "@/src/features/payment/components/CartPaymentOverlay";
+import { CartPaymentTopCard } from "@/src/features/payment/components/CartPaymentTopCard";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -281,7 +282,7 @@ export default function OrdersScreen() {
       <HeaderPill
         label="Tout commander"
         icon="card-outline"
-        onPress={() => setPaymentState("network_select")}
+        onPress={() => setPaymentState("input")}
       />
     ) : null;
 
@@ -368,30 +369,47 @@ export default function OrdersScreen() {
         </Animated.View>
       )}
 
-      {/* Capsule de PAIEMENT global du panier — ouverte par la pilule "Tout commander"
-          du header (masquée à l'état "total" au repos).
+      {/* Sheet de PAIEMENT global du panier — ouvert par la pilule "Tout commander"
+          du header (masqué à l'état "total" au repos). Un seul bloc blanc,
+          posé au-dessus de la nav bar comme le sheet de commande individuelle :
+          la card de récap en haut, la capsule DEDANS en bas.
 
           ⚠️ NE PAS conditionner à `pendingToBuy.length` : dès que le paiement
-          aboutit, les commandes quittent le panier (socket) et la capsule serait
-          démontée avant d'avoir affiché succès. `paymentState !== "total"` suffit
+          aboutit, les commandes quittent le panier (socket) et le sheet serait
+          démonté avant d'avoir affiché succès. `paymentState !== "total"` suffit
           — c'est exactement « un paiement est en cours ». */}
-      {!orderToDelete && paymentState !== "total" && (
-        <CartPaymentOverlay
-          phone={paymentPhone}
-          onPhoneChange={setPaymentPhone}
-          onConfirm={confirmCartPayment}
-          totalAmount={cartTotal}
-          paymentState={paymentState}
-          setPaymentState={setPaymentState}
-          network={paymentNetwork}
-          onNetworkChange={setPaymentNetwork}
-          ussdMessage={ussdMessage}
-          onClose={resetPayment}
-          onError={(msg) => setToast({ message: msg, type: 'error' })}
-          isKeyboardVisible={isKeyboardVisible}
-          bottom={Animated.add(keyboardHeight, isKeyboardVisible ? 5 : tabBarHeight + 10)}
-        />
-      )}
+      {/* Monté en permanence, piloté par `visible` : le démonter directement
+          couperait l'animation de sortie, le sheet disparaîtrait d'un coup au
+          lieu de redescendre. */}
+      <CartPaymentTopCard
+        visible={!orderToDelete && paymentState !== "total"}
+        /* Le sheet est dans un Modal : il descend jusqu'au bas de l'écran et
+           recouvre la nav bar. Il ne bouge PAS à l'ouverture du clavier —
+           seule la capsule remonte (comme au home). */
+        bottom={0}
+        keyboardHeight={keyboardHeight}
+        isKeyboardVisible={isKeyboardVisible}
+        network={paymentNetwork}
+        onNetworkChange={setPaymentNetwork}
+      >
+          <CartPaymentOverlay
+            phone={paymentPhone}
+            onPhoneChange={setPaymentPhone}
+            onConfirm={confirmCartPayment}
+            totalAmount={cartTotal}
+            paymentState={paymentState}
+            setPaymentState={setPaymentState}
+            network={paymentNetwork}
+            onNetworkChange={setPaymentNetwork}
+            ussdMessage={ussdMessage}
+            onClose={resetPayment}
+            onError={(msg) => setToast({ message: msg, type: 'error' })}
+            isKeyboardVisible={isKeyboardVisible}
+            /* Ancrée sur le bas du SHEET (son parent). C'est elle SEULE qui
+               remonte avec le clavier, la card du haut ne bouge pas. */
+            bottom={Animated.add(keyboardHeight, 10)}
+          />
+      </CartPaymentTopCard>
 
       {toast && (
         <Toast

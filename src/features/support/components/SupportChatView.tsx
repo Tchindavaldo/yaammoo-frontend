@@ -7,6 +7,7 @@ import { useSupportConversation } from "../hooks/useSupportConversation";
 import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportComposer } from "./SupportComposer";
 import { SupportMessageBubble } from "./SupportMessageBubble";
+import { SupportMessagesSkeleton } from "./SupportMessagesSkeleton";
 import { SupportTopicChips } from "./SupportTopicChips";
 
 interface Props {
@@ -46,7 +47,13 @@ export const SupportChatView: React.FC<Props> = ({
   const paddingBottom = useKeyboardOffset(bottomInset + 10);
   const [toast, setToast] = useState<string | null>(null);
 
-  const { messages, sending, error, send: sendMessage } = useSupportConversation({
+  const {
+    messages,
+    loading,
+    sending,
+    error,
+    send: sendMessage,
+  } = useSupportConversation({
     userId,
     thread,
     onThreadUpdated,
@@ -75,6 +82,17 @@ export const SupportChatView: React.FC<Props> = ({
     if (!ok) setDraft(text);
     else requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   };
+
+  // Ouverture d'un fil existant : tant que le GET tourne, on ne montre QUE le
+  // squelette — ni texte d'accueil, ni chips, ni saisie, qui apparaîtraient
+  // une fraction de seconde avant d'être remplacés par les messages.
+  if (loading) {
+    return (
+      <View style={styles.flex}>
+        <SupportMessagesSkeleton />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.flex}>

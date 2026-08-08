@@ -17,6 +17,8 @@ src/features/merchant/
 │   ├── MerchantSupportChatView.tsx   # Conversation + saisie
 │   ├── MerchantSupportBubble.tsx     # Bulle (boutique à droite, client à gauche)
 │   ├── MerchantSupportThreadRow.tsx  # Ligne de la liste
+│   ├── MerchantSupportThreadsSkeleton.tsx # Squelette de la liste au chargement
+│   ├── MerchantSupportMessagesSkeleton.tsx # Squelette des bulles au GET messages
 │   └── MerchantSupportComposer.tsx   # Barre de réponse
 ├── hooks/
 │   ├── useMerchantKeyboardOffset.ts
@@ -36,6 +38,26 @@ src/features/merchant/
 | Titre de la liste | Nom du fastfood ou « yaammoo » | **Nom du client** |
 | Bulle en accent | Messages du client | Messages de la **boutique** (`author: 'support'`) |
 | Compteur non-lus | `unreadCount` | `supportUnreadCount` du backend |
+
+## Chargement
+
+La liste affiche `MerchantSupportThreadsSkeleton` **dès que `loading` est vrai**,
+y compris quand des fils sont déjà en mémoire d'une ouverture précédente : sinon
+elle montrerait des données périmées sans signe de rechargement. C'est un
+**spinner centré** (`ActivityIndicator size="large"`) sur toute la zone, rendu
+**hors `ScrollView`** — un `flex: 1` ne s'étire pas dans un `contentContainer`
+et le spinner ne serait pas centré ; le titre de section est masqué de même.
+`loading` démarre à `true` dans `useMerchantSupportThreads`, sinon l'état vide
+clignoterait avant le spinner. Composant **propre à la feature marchande**,
+aucun partage avec celui du client.
+
+À l'ouverture d'un fil, tant que le `GET .../messages` tourne, la conversation
+affiche **uniquement** `MerchantSupportMessagesSkeleton` : ni texte d'accueil,
+ni barre de réponse. Il **réutilise `MerchantSupportThreadsSkeleton`** (même
+spinner centré) — un motif unique pour toute la feature.
+
+Dans les deux cas le header affiche « Chargement… » en sous-titre pendant la
+requête.
 
 ## Endpoints utilisés
 

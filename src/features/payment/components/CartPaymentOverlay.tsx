@@ -33,9 +33,9 @@ interface CartPaymentOverlayProps {
 
 /**
  * Capsule de paiement GLOBAL du panier — propre au panier (ne réutilise pas
- * l'overlay du home). Flux : total → network_select → input → waiting →
- * ussd_sent → success → success_created / failed. Choix réseau intégré dans
- * la capsule (pas d'overlay séparé). Bordure lumineuse pendant l'attente.
+ * l'overlay du home). Flux : total → input → waiting → ussd_sent → success →
+ * success_created / failed. Le choix du réseau est porté par la card du haut
+ * (CartPaymentTopCard), comme au home. Bordure lumineuse pendant l'attente.
  */
 export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
   phone,
@@ -111,43 +111,16 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
             </View>
             <TouchableOpacity
               style={styles.payerBtn}
-              onPress={() => setPaymentState("network_select")}
+              onPress={() => setPaymentState("input")}
             >
               <Ionicons name="arrow-forward-outline" size={16} color="white" />
             </TouchableOpacity>
           </>
         )}
 
-        {/* NETWORK_SELECT : cancel + "Choix réseau" + chips Orange/MTN */}
-        {paymentState === "network_select" && (
-          <>
-            <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
-              <Ionicons name="close" size={16} color="white" />
-            </TouchableOpacity>
-            <View style={styles.networkBlock}>
-              <Text style={styles.networkLabel}>Choix réseau</Text>
-              <View style={styles.chips}>
-                {(["orange", "mtn"] as const).map((net) => {
-                  const active = network === net;
-                  return (
-                    <TouchableOpacity
-                      key={net}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => {
-                        onNetworkChange(net);
-                        setPaymentState("input");
-                      }}
-                    >
-                      <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                        {net === "orange" ? "Orange" : "MTN"}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </>
-        )}
+        {/* Plus d'étape NETWORK_SELECT dans la capsule : le choix du réseau est
+            porté par la card du haut (comme au home), la capsule ouvre direct
+            sur la saisie du numéro. */}
 
         {/* INPUT : saisie du numéro */}
         {paymentState === "input" && (
@@ -171,7 +144,6 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={onPhoneChange}
-                autoFocus
               />
             </View>
             <TouchableOpacity

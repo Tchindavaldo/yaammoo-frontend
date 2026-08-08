@@ -15,7 +15,10 @@ import {
 } from "react-native";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
-import { computeGrandTotal } from "./MerchantOrderMontantTab";
+import {
+  computeGrandTotal,
+  computeItemsTotal,
+} from "./MerchantOrderMontantTab";
 
 /** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
 export const MERCHANT_CARD_HEIGHT = 94.33;
@@ -127,6 +130,44 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const isDelivering = status === "delivering";
   const isDelivered = status === "delivered";
 
+  // Trace l'origine du prix affiché : recalcul front (groupe) vs `total` backend.
+  // Déclenché au tap sur la carte uniquement, pas à chaque rendu. Déclaré avant
+  // le branchement de variante pour rester atteignable par les deux rendus.
+  const logPriceOrigin = () => {
+    const group = allOrders ?? sheetOrders ?? null;
+    if (group && group.length > 1) {
+      console.log("[CardPrice] groupe", {
+        affiche: computeGrandTotal(group),
+        source: "computeGrandTotal(...) — recalcul front",
+        detail: group.map((o: any) => ({
+          id: o.id,
+          rank: o.rank,
+          articles: computeItemsTotal(o),
+          qty: o.quantity || 1,
+          priceIdx: o.selectedPriceIndex || 1,
+          extras: (o.extra || []).filter((e: any) => e.status === true).length,
+          drinks: (o.drink || []).filter((d: any) => d.status === true).length,
+          deliveryGroupId: o.deliveryGroupId,
+          courseBilled: o.courseBilled,
+          course: o.delivery?.prix,
+        })),
+      });
+    } else {
+      console.log("[CardPrice] seule", {
+        id: (order as any).id,
+        affiche: order.total || 0,
+        source: "order.total (brut backend)",
+        articlesRecalcules: computeItemsTotal(order),
+        qty: order.quantity || 1,
+        priceIdx: (order as any).selectedPriceIndex || 1,
+        course: order.delivery?.prix,
+        prixMenu: order.menu?.prices,
+        extra: order.extra,
+        drink: order.drink,
+      });
+    }
+  };
+
   // --- Design Variant: Grouped Finished ---
   if (allOrders) {
     const u = (order as any).userData;
@@ -161,7 +202,10 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
       <View style={styles.wrapper}>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => setModalVisible(true)}
+          onPress={() => {
+            logPriceOrigin();
+            setModalVisible(true);
+          }}
           style={styles.summaryRow}
         >
           {/* Avatar avec initiales + badge nombre de commandes */}
@@ -351,7 +395,10 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     <View style={styles.wrapper}>
       <TouchableOpacity
         activeOpacity={0.85}
-        onPress={() => setModalVisible(true)}
+        onPress={() => {
+          logPriceOrigin();
+          setModalVisible(true);
+        }}
         style={styles.summaryRow}
       >
         <View style={styles.avatarContainer}>

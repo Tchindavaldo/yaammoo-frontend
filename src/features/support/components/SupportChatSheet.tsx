@@ -21,6 +21,7 @@ import { useSupportThreads } from "../hooks/useSupportThreads";
 import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportChatView } from "./SupportChatView";
 import { SupportThreadRow } from "./SupportThreadRow";
+import { SupportThreadsSkeleton } from "./SupportThreadsSkeleton";
 
 interface Props {
   visible: boolean;
@@ -77,9 +78,12 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
       ? getThreadName(thread)
       : SUPPORT_DEFAULT_NAME
     : "Contactez-nous";
-  // En conversation, le sous-titre porte le seul objet de la discussion.
-  const chatSubtitle = chatTopic
-    ? getTopicDescriptor(chatTopic).label
+  // En conversation, le sous-titre porte le seul objet de la discussion. Sur un
+  // fil existant on prend l'objet du fil : `chatTopic` n'est remonté qu'après le
+  // rendu de la vue chat, et l'invite « Choisissez… » clignoterait entre-temps.
+  const topicForHeader = chatTopic ?? thread?.topic ?? null;
+  const chatSubtitle = topicForHeader
+    ? getTopicDescriptor(topicForHeader).label
     : "Choisissez l'objet de votre demande";
   const subtitle = inChat
     ? chatSubtitle
@@ -121,34 +125,49 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
           </View>
         ) : (
           <>
-            <ScrollView
-              style={[styles.flex, { marginTop: headerHeight + 6 }]}
-              contentContainerStyle={{ paddingBottom: listBottomPad }}
-            >
-              <Text style={styles.section}>Vos discussions</Text>
-              {threads.length === 0 ? (
-                <View style={styles.empty}>
-                  <Ionicons
-                    name="chatbubbles-outline"
-                    size={30}
-                    color={Theme.colors.gray[400]}
-                  />
-                  <Text style={styles.emptyText}>
-                    {loading
-                      ? "Chargement de vos discussions…"
-                      : "Aucune discussion pour le moment."}
-                  </Text>
-                </View>
-              ) : (
-                threads.map((t) => (
-                  <SupportThreadRow
-                    key={t.id}
-                    thread={t}
-                    onPress={(target) => setScreen({ name: "chat", thread: target })}
-                  />
-                ))
-              )}
-            </ScrollView>
+            {/* Tant que la requête tourne, c'est le spinner qu'on voit — même
+                si des fils sont déjà en mémoire d'une ouverture précédente :
+                sinon on affiche des données périmées sans aucun signe que ça
+                recharge. Rendu HORS ScrollView — son `flex: 1` ne s'étirerait
+                pas dans un contentContainer. Pas de titre de section ici : il
+                décalerait le spinner du centre. */}
+            {loading ? (
+              <View
+                style={[
+                  styles.flex,
+                  { marginTop: headerHeight + 6, marginBottom: listBottomPad },
+                ]}
+              >
+                <SupportThreadsSkeleton />
+              </View>
+            ) : (
+              <ScrollView
+                style={[styles.flex, { marginTop: headerHeight + 6 }]}
+                contentContainerStyle={{ paddingBottom: listBottomPad }}
+              >
+                <Text style={styles.section}>Vos discussions</Text>
+                {threads.length === 0 ? (
+                  <View style={styles.empty}>
+                    <Ionicons
+                      name="chatbubbles-outline"
+                      size={30}
+                      color={Theme.colors.gray[400]}
+                    />
+                    <Text style={styles.emptyText}>
+                      Aucune discussion pour le moment.
+                    </Text>
+                  </View>
+                ) : (
+                  threads.map((t) => (
+                    <SupportThreadRow
+                      key={t.id}
+                      thread={t}
+                      onPress={(target) => setScreen({ name: "chat", thread: target })}
+                    />
+                  ))
+                )}
+              </ScrollView>
+            )}
 
             <TouchableOpacity
               style={[styles.newChat, { bottom: bottomInset + 16 }]}

@@ -11,11 +11,18 @@ import type { SupportThread } from "../types/support.types";
  */
 export const useSupportThreads = (userId?: string, enabled = true) => {
   const [threads, setThreads] = useState<SupportThread[]>([]);
-  const [loading, setLoading] = useState(false);
+  // `true` d'entrée : le premier rendu précède le `refresh` de l'effet, et un
+  // `false` initial ferait clignoter l'état vide avant le squelette.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    // Sans `userId`, rien à charger : on retombe sur l'état vide plutôt que de
+    // laisser le squelette tourner indéfiniment.
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

@@ -14,6 +14,7 @@ import { useMerchantSupportThreads } from "../../hooks/useMerchantSupportThreads
 import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportChatView } from "./MerchantSupportChatView";
 import { MerchantSupportThreadRow } from "./MerchantSupportThreadRow";
+import { MerchantSupportThreadsSkeleton } from "./MerchantSupportThreadsSkeleton";
 
 interface Props {
   visible: boolean;
@@ -96,34 +97,52 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
             />
           </View>
         ) : (
-          <ScrollView
-            style={[styles.flex, { marginTop: headerHeight + 6 }]}
-            contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
-          >
-            <Text style={styles.section}>Discussions reçues</Text>
-            {threads.length === 0 ? (
-              <View style={styles.empty}>
-                <Ionicons
-                  name="chatbubbles-outline"
-                  size={30}
-                  color={Theme.colors.gray[400]}
-                />
-                <Text style={styles.emptyText}>
-                  {loading
-                    ? "Chargement des discussions…"
-                    : "Aucun message de vos clients pour le moment."}
-                </Text>
-              </View>
-            ) : (
-              threads.map((t) => (
-                <MerchantSupportThreadRow
-                  key={t.id}
-                  thread={t}
-                  onPress={(target) => setScreen({ name: "chat", thread: target })}
-                />
-              ))
-            )}
-          </ScrollView>
+          /* Tant que la requête tourne, c'est le spinner qu'on voit — même si
+             des fils sont déjà en mémoire d'une ouverture précédente : sinon on
+             affiche des données périmées sans aucun signe que ça recharge.
+             Rendu HORS ScrollView — son `flex: 1` ne s'étirerait pas dans un
+             contentContainer. Pas de titre de section ici : il décalerait le
+             spinner du centre. */
+          loading ? (
+            <View
+              style={[
+                styles.flex,
+                {
+                  marginTop: headerHeight + 6,
+                  marginBottom: bottomInset + 24,
+                },
+              ]}
+            >
+              <MerchantSupportThreadsSkeleton />
+            </View>
+          ) : (
+            <ScrollView
+              style={[styles.flex, { marginTop: headerHeight + 6 }]}
+              contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
+            >
+              <Text style={styles.section}>Discussions reçues</Text>
+              {threads.length === 0 ? (
+                <View style={styles.empty}>
+                  <Ionicons
+                    name="chatbubbles-outline"
+                    size={30}
+                    color={Theme.colors.gray[400]}
+                  />
+                  <Text style={styles.emptyText}>
+                    Aucun message de vos clients pour le moment.
+                  </Text>
+                </View>
+              ) : (
+                threads.map((t) => (
+                  <MerchantSupportThreadRow
+                    key={t.id}
+                    thread={t}
+                    onPress={(target) => setScreen({ name: "chat", thread: target })}
+                  />
+                ))
+              )}
+            </ScrollView>
+          )
         )}
       </View>
     </View>

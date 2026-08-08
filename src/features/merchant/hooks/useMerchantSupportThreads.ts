@@ -14,11 +14,18 @@ export const useMerchantSupportThreads = (
   enabled = true
 ) => {
   const [threads, setThreads] = useState<MerchantSupportThread[]>([]);
-  const [loading, setLoading] = useState(false);
+  // `true` d'entrée : le premier rendu précède le `refresh` de l'effet, et un
+  // `false` initial ferait clignoter l'état vide avant le squelette.
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!fastFoodId) return;
+    // Sans `fastFoodId`, rien à charger : on retombe sur l'état vide plutôt que
+    // de laisser le squelette tourner indéfiniment.
+    if (!fastFoodId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

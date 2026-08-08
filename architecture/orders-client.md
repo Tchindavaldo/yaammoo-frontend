@@ -130,11 +130,34 @@ sélectionnée**. Changer de chip de statut **conserve la date choisie**. Plus d
 boutique, et plus de section « commandes des jours précédents » : les commandes sont
 rendues à plat pour la date active (les autres dates passent par le bottom sheet).
 
-**Barre de filtres en BAS** (même design/implémentation que la page marchand) :
-`StickyChipsRow` (En Attente / En cours / Terminées, badges comptés sur la date active
-et les périodes cochées) sur fond `BlurView`, avec une icône `options-outline` qui ouvre
-le `MerchantFilterSheet` (réutilisé tel quel : dates aujourd'hui/à venir/passées +
-périodes multi-sélection).
+**Barre de filtres en BAS** (même design que la page marchand) :
+`StickyChipsRow` (En Attente / En cours / Terminées) sur fond `BlurView`, avec une
+icône `options-outline` qui ouvre le `ClientFilterSheet`.
+
+**ClientFilterSheet** — bottom sheet de filtres du client, **copie autonome** du
+sheet marchand. Rien n'est partagé avec `src/features/merchant/` ni avec
+`src/features/driver/` : les deux écrans doivent pouvoir diverger sans se casser.
+
+| Fichier | Rôle |
+|---|---|
+| `ClientFilterSheet.tsx` | Composant + logique du sheet |
+| `ClientFilterSheet.parts.tsx` | Sous-composants (`PeriodTile`, `DateScopeCard`, `Row`) et constantes |
+| `ClientFilterSheet.styles.ts` | Styles |
+| `ClientDateChipsRow.tsx` | Ligne de chips de dates (copie locale de `StickyChipsRow`) |
+
+Mise en page, identique au marchand :
+- **Statuts en haut** : chips En Attente / En cours / Terminées, rendus DANS le
+  sheet. Leurs badges comptent la date active **toutes périodes confondues** —
+  indépendants des cards cochées.
+- **Modes de livraison** : cards `Livraison express`, `Récupérer sur place`,
+  `Créneaux horaires`, **toujours affichées et dans cet ordre**, `0` compris. La
+  card « Créneaux horaires » coche/décoche tous les créneaux en une seule mise à
+  jour d'état (`onTogglePeriods`) ; l'ouverture de l'ancien sous-sheet est
+  conservée en commentaire.
+- **Cards de dates en bas** : `cmd reçu Aujourd'hui` / `Cmd futur non traitées` /
+  `Cmd passées non traitées`. Leur badge est un **nombre de commandes** (pas de
+  dates) et reste **figé quel que soit le chip de statut** ou les périodes
+  cochées ; le libellé de la card « passées » est figé lui aussi.
 
 **Virtualisation** : utilise `FlatList` au lieu de `ScrollView` — seuls les items visibles sont rendus. La hiérarchie (groupes par boutique, sections jours précédents) est aplatie en un tableau d'items typés.
 
@@ -282,6 +305,12 @@ Visible si `status === delivered && menuId existe`.
 ### Tab Montant (`MontantTab`)
 Visible dès que la ligne porte **2 commandes ou plus**. Réutilise tel quel
 `MerchantOrderMontantTab` (blocs par `deliveryGroupId`, total général).
+
+**Animations d'ouverture/fermeture** : la translation se fait sur `SCREEN_HEIGHT`,
+pas sur `SHEET_HEIGHT` — le contenu peut déborder la hauteur fixe du sheet et
+serait resté visible en bas jusqu'au démontage. Fermeture en `Animated.timing`
+borné (220 ms) plutôt qu'un `spring`, qui traîne en fin de course. Même logique
+que `MerchantOrderBottomSheet` (voir [orders-merchant.md](orders-merchant.md)).
 
 **Navigation multi-commandes** (`allOrders`) : chips **Cmd N** dans le **header**, à la
 place de la ligne d'adresse, numérotés par le vrai `rank` et suivis d'un badge `+N` de

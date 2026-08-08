@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  Easing,
   Modal,
   PanResponder,
   Pressable,
@@ -63,7 +64,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
 }) => {
   const [tab, setTab] = useState<Tab>("livraison");
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
-  const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   // Déterminer la commande à afficher (de façon synchrone)
   const selectedOrder = allOrders
@@ -173,8 +174,9 @@ export const OrderBottomSheet: React.FC<Props> = ({
 
   useEffect(() => {
     if (isVisible && order) {
-      // Animation Open
-      translateY.setValue(SHEET_HEIGHT);
+      // Animation Open — départ hors écran, pour la même raison qu'à la
+      // fermeture : le contenu peut dépasser la hauteur du sheet.
+      translateY.setValue(SCREEN_HEIGHT);
       overlayOpacity.setValue(0);
       setTab("livraison");
       setSelectedOrderIdx(0);
@@ -204,20 +206,29 @@ export const OrderBottomSheet: React.FC<Props> = ({
   }, [tab, showDriverTab, showRateTab]);
 
   const handleDismiss = () => {
+    // `timing` et NON `spring` : un ressort traîne en fin de course, le sheet
+    // paraît immobile alors que l'animation tourne encore et que `onClose()`
+    // (donc le démontage) n'est pas appelé. Une durée bornée supprime ce temps
+    // mort.
     Animated.parallel([
-      Animated.spring(translateY, {
-        toValue: SHEET_HEIGHT,
+      Animated.timing(translateY, {
+        // SCREEN_HEIGHT et non SHEET_HEIGHT : le contenu peut DÉBORDER au-dessus
+        // du sheet (hauteur fixe, plusieurs zones / onglet Montant). Descendre
+        // de SHEET_HEIGHT seul laissait cette portion excédentaire à l'écran,
+        // figée, jusqu'au démontage. Translater d'un écran sort tout, quelle que
+        // soit la hauteur réelle du contenu.
+        toValue: SCREEN_HEIGHT,
+        duration: 220,
+        easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
-        damping: 30,
-        stiffness: 250,
       }),
       Animated.timing(overlayOpacity, {
         toValue: 0,
-        duration: 250,
+        duration: 200,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      onClose();
+    ]).start(({ finished }) => {
+      if (finished) onClose();
     });
   };
 
@@ -256,7 +267,9 @@ export const OrderBottomSheet: React.FC<Props> = ({
           <Pressable style={StyleSheet.absoluteFill} onPress={handleDismiss} />
         </Animated.View>
 
-        <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+        <Animated.View
+          style={[styles.sheet, { transform: [{ translateY }] }]}
+        >
           <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>
               <View style={[styles.avatar, { backgroundColor: theme.bg }]}>

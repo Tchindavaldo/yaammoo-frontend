@@ -1,5 +1,4 @@
-import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
-import { Theme } from "@/src/theme";
+import { ClientDateChipsRow } from "./ClientDateChipsRow";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -13,12 +12,25 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { DateOption } from "./OrderManagePanel";
+import { styles } from "./ClientFilterSheet.styles";
+import {
+  DATE_CHIP_SLOTS,
+  DateScopeCard,
+  PERIOD_ICONS,
+  PeriodTile,
+  Row,
+} from "./ClientFilterSheet.parts";
+
+/** Date sélectionnable dans le sheet (propre au client, non partagé). */
+export interface DateOption {
+  iso: string;
+  label: string;
+}
 
 /** Filtre période : "express", "surplace", ou un créneau horaire précis (ex. "12h"). */
 export type PeriodKey = string;
 
-interface MerchantFilterSheetProps {
+interface ClientFilterSheetProps {
   visible: boolean;
   onClose: () => void;
   /** Dates du jour et à venir (aujourd'hui en tête). */
@@ -53,21 +65,21 @@ interface MerchantFilterSheetProps {
    * commandes passées.
    */
   pastUntreated: boolean;
-  /**
-   * Chips de statut (En Attente / En cours / Terminées) rendus dans le sheet.
-   * Optionnels : `CartStatusPanel` (côté client) réutilise ce sheet sans eux.
-   */
+  /** Chips de statut rendus en haut du sheet, comme côté marchand. */
   statusTabs?: { key: string; label: string; count: number }[];
   selectedStatus?: string;
   onSelectStatus?: (key: string) => void;
 }
 
 /**
- * Bottom sheet de filtres des commandes marchand, calqué sur `DriverFilterSheet` :
- * dates du jour / à venir en haut (fixe), périodes de livraison au milieu
- * (liste cochable, multi-sélection), dates passées en bas (fixe).
+ * Bottom sheet de filtres des commandes CLIENT.
+ *
+ * Copie autonome du sheet marchand : mise en page identique (statuts en haut,
+ * modes de livraison + créneaux au milieu, cards de dates en bas), mais AUCUN
+ * composant ni style partagé avec `MerchantFilterSheet` — les deux écrans
+ * doivent pouvoir diverger sans se casser mutuellement.
  */
-export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
+export const ClientFilterSheet: React.FC<ClientFilterSheetProps> = ({
   visible,
   onClose,
   todayISO,
@@ -188,7 +200,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
           },
         ]}
       >
-        {/* ── Statuts (tout en haut) : rendus ici et non via StickyChipsRow,
+        {/* ── Statuts (tout en haut) : rendus ici et non via ClientDateChipsRow,
             pour un `space-between` et un badge toujours visible, `0` compris. ── */}
         <View style={styles.statusRow}>
           {(statusTabs ?? []).map((t) => {
@@ -325,14 +337,14 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
                 ))}
               </View>
             ) : (
-              // Liste réelle : `StickyChipsRow` (auto-scroll au clic + chip
+              // Liste réelle : `ClientDateChipsRow` (auto-scroll au clic + chip
               // actif épinglé au bord quand il sort de l'écran). Quand le lot
               // est court, on complète à sa droite par des chips « Aucune »
               // inertes, jusqu'à couvrir la largeur.
               <View style={styles.dateChipsRow}>
                 {scopeDates.length > 0 && (
                   <View style={{ flexShrink: 1 }}>
-                    <StickyChipsRow
+                    <ClientDateChipsRow
                       items={scopeDates.map((d) => ({
                         key: d.iso,
                         label: d.label,
@@ -401,426 +413,3 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
     </Modal>
   );
 };
-
-/** Nb de chips occupant la ligne de dates (complétée par des « Aucune »). */
-const DATE_CHIP_SLOTS = 4;
-
-const PERIOD_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  express: "flash-outline",
-  surplace: "restaurant-outline",
-};
-
-/** Tuile de créneau horaire, calquée sur l'item Extra du bottom sheet home. */
-const PeriodTile = ({
-  label,
-  count,
-  active,
-  onPress,
-}: {
-  label: string;
-  count: number;
-  active: boolean;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity style={styles.tile} onPress={onPress} activeOpacity={0.7}>
-    <View style={[styles.tileIcon, active && styles.tileIconActive]}>
-      <Text style={[styles.tileHour, active && styles.tileLabelActive]}>
-        {label}
-      </Text>
-      {/* Badge = nb de commandes du créneau (coché : fond plein). */}
-      <View style={[styles.tileBadge, !active && styles.tileBadgeIdle]}>
-        <Text
-          style={[styles.tileBadgeText, !active && styles.tileBadgeTextIdle]}
-        >
-          {count}
-        </Text>
-      </View>
-    </View>
-  </TouchableOpacity>
-);
-
-/** Card de choix du lot de dates listé en dessous (à venir / passées). */
-const DateScopeCard = ({
-  icon,
-  label,
-  count,
-  active,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  count: number;
-  active: boolean;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={[styles.scopeCard, active && styles.scopeCardActive]}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <View style={styles.scopeTop}>
-      <Ionicons name={icon} size={18} color={active ? "#1A1916" : "#888780"} />
-      <View style={[styles.countBadge, active && styles.countBadgeActive]}>
-        <Text style={[styles.countText, active && styles.countTextActive]}>
-          {count}
-        </Text>
-      </View>
-    </View>
-    <Text
-      style={[styles.scopeLabel, active && styles.scopeLabelActive]}
-      numberOfLines={2}
-    >
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
-
-/** Ligne cochable d'un mode de livraison (+ « Toutes les périodes »). */
-const Row = ({
-  icon,
-  label,
-  count,
-  active,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  count: number;
-  active: boolean;
-  onPress: () => void;
-}) => (
-  <TouchableOpacity
-    style={[styles.row, active && styles.rowActive]}
-    onPress={onPress}
-    activeOpacity={0.7}
-  >
-    <Ionicons
-      name={icon}
-      size={18}
-      color={active ? Theme.colors.primary : "#888780"}
-    />
-    <Text
-      style={[styles.rowLabel, active && styles.rowLabelActive]}
-      numberOfLines={1}
-    >
-      {label}
-    </Text>
-    <View style={[styles.countBadge, active && styles.countBadgeRowActive]}>
-      <Text style={[styles.countText, active && styles.countTextActive]}>
-        {count}
-      </Text>
-    </View>
-    <Ionicons
-      name={active ? "checkbox" : "square-outline"}
-      size={18}
-      color={active ? Theme.colors.primary : "#C9C7C0"}
-    />
-  </TouchableOpacity>
-);
-
-const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.35)",
-  },
-  sheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    // Hauteur AUTO : les créneaux vivent désormais dans leur propre sous-sheet,
-    // le contenu restant est court et ne doit pas laisser d'espace vide.
-    maxHeight: "80%",
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  // Ligne des 2 cards de lot de dates (même gabarit que l'ancienne ligne de cards).
-  dateRow: {
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    alignItems: "stretch",
-    gap: 6,
-  },
-  // Chips de statut du sheet : répartis sur toute la largeur.
-  statusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  statusChip: {
-    flex: 1,
-    flexBasis: 0,
-    minWidth: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: Theme.colors.primary + "10",
-  },
-  statusChipActive: { backgroundColor: Theme.colors.primary },
-  statusChipText: {
-    flexShrink: 1,
-    fontSize: 12,
-    fontWeight: "700",
-    color: Theme.colors.primary,
-  },
-  statusChipTextActive: { color: "#fff" },
-  // Pastille d'angle (même principe que `tileBadge` de la grille horaire) :
-  // hors du flux, le texte du chip garde toute la largeur.
-  // Pastille dans le flux du chip, juste après le libellé.
-  statusBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#E5E3DC",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-  },
-  // Chip actif : fond primaire — le badge doit contraster DESSUS, donc blanc.
-  statusBadgeActive: {
-    backgroundColor: "#fff",
-    borderColor: "#fff",
-  },
-  statusBadgeText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#888780",
-  },
-  statusBadgeTextActive: { color: Theme.colors.primary },
-  // Sous-sheet des créneaux horaires.
-  slotSheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    maxHeight: "60%",
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  slotHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  slotTitle: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#1A1916",
-  },
-  // Emplacement de la ligne de dates : hauteur FIXE pour que le sheet ne change
-  // pas de taille selon le lot sélectionné (« Aujourd'hui » n'en liste aucune).
-  dateChipsSlot: {
-    height: 34,
-    justifyContent: "center",
-  },
-  dateChipsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  // Peu de dates : les chips s'étirent pour couvrir toute la largeur.
-  dateChipsRowFill: {
-    flexGrow: 1,
-  },
-  dateChip: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: Theme.colors.primary + "10",
-  },
-  // Chip inerte (récap du jour / remplissage) : juste là pour couvrir la largeur.
-  dateChipEmpty: {
-    backgroundColor: Theme.colors.primary + "10",
-  },
-  dateChipEmptyText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Theme.colors.primary,
-  },
-  // Cards de choix du lot de dates (ligne du bas).
-  scopeCard: {
-    flex: 1,
-    flexBasis: 0,
-    minWidth: 0,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#EFEDE6",
-    backgroundColor: "#FAF9F6",
-    paddingVertical: 9,
-    paddingHorizontal: 8,
-    gap: 6,
-    marginBottom: 8,
-  },
-  // Card active : pas de bordure marquée, c'est le FOND qui porte l'état.
-  scopeCardActive: {
-    borderColor: "transparent",
-    backgroundColor: Theme.colors.primary + "1A",
-  },
-  scopeTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  scopeLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#1A1916",
-    // 2 lignes réservées (minHeight, pas height : une hauteur fixe rognait la
-    // descente des lettres) : les 3 cards gardent la même hauteur.
-    lineHeight: 15,
-    minHeight: 30,
-  },
-  // Liste des modes : une ligne cochable par mode.
-  modeList: {
-    marginTop: 14,
-  },
-  // Ligne des 3 cards de mode (express / sur place / créneaux).
-  modeCardRow: {
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    alignItems: "stretch",
-    gap: 6,
-    marginTop: 6,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 4,
-  },
-  // Ligne cochée : aucun fond, seuls l'icône et le texte passent en noir.
-  rowActive: {},
-  rowLabel: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1A1916",
-  },
-  // Ligne cochée : libellé en primaire (seul repère, la ligne n'a pas de fond).
-  rowLabelActive: {
-    color: Theme.colors.primary,
-  },
-  // Card de dates active : reste en noir.
-  scopeLabelActive: {
-    color: "#1A1916",
-  },
-  pastBar: {
-    marginTop: 4,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: "#f0f0f0",
-  },
-  // Grille de tuiles (design Extra du sheet home).
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    paddingTop: 8,
-    paddingRight: 6,
-  },
-  tile: {
-    alignItems: "center",
-  },
-  tileIcon: {
-    width: 62,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: "#F7F6F2",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  tileIconActive: {
-    borderColor: "#1A1916",
-  },
-  tileBadge: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    backgroundColor: "#1A1916",
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 4,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  // Non coché : badge discret sur fond blanc.
-  tileBadgeIdle: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#E5E3DC",
-  },
-  tileBadgeText: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: "#fff",
-  },
-  tileBadgeTextIdle: {
-    color: "#888780",
-  },
-  // Badge de compteur des lignes cochables.
-  countBadge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#EFEDE6",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
-  },
-  countBadgeActive: {
-    backgroundColor: Theme.colors.primary,
-  },
-  // Badge d'une ligne cochée : primaire, comme son icône et son libellé.
-  countBadgeRowActive: {
-    backgroundColor: Theme.colors.primary,
-  },
-  countText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#888780",
-  },
-  countTextActive: {
-    color: "#fff",
-  },
-  tileHour: {
-    fontSize: 14,
-    fontWeight: "800",
-    textAlign: "center",
-    color: "#1A1916",
-  },
-  tileLabelActive: {
-    color: "#1A1916",
-  },
-  empty: {
-    fontSize: 13,
-    color: "#A8A7A2",
-    fontStyle: "italic",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-});

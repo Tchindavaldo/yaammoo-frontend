@@ -202,9 +202,9 @@ beaucoup de créneaux ne fait plus grandir le sheet, le contenu scrolle à l'int
 
 | Zone | Contenu |
 |---|---|
-| Haut (fixe) | **Aujourd'hui** et **Cmd à venir**, deux colonnes **côte à côte**, chacune label au-dessus / chips en dessous |
-| Milieu (scroll) | « Toutes les périodes », **Livraison express**, **Pas de livraison** en **lignes cochables** ; puis **Créneaux horaires** en **grille de tuiles** (design de l'onglet Extra du sheet home). **Multi-sélection** sur l'ensemble |
-| Bas (fixe) | **Cmd passées non traitées** (En Attente / En cours) ou **Cmd passées** (Terminées) — piloté par la prop `pastUntreated` |
+| Haut (fixe) | Ligne unique : les **3 chips de statut** + un chip affichant la **date active au format « JJ mois »** (tap = retour à aujourd'hui) |
+| Milieu (scroll) | **Chips de statut** (En Attente / En cours / Terminées) en `space-between`, badge **toujours affiché** (`0` compris) — props optionnelles `statusTabs` / `selectedStatus` / `onSelectStatus` (absentes côté client dans `CartStatusPanel`) ; sous eux « Toutes les périodes » en **ligne cochable**, puis **Livraison express**, **Pas de livraison** et **Créneaux horaires** en **3 cards de largeur égale sur une ligne**, **toujours rendues** (compteur `0` si aucune commande). La card **Créneaux horaires** ouvre un **sous-sheet** (grille de tuiles multi-cochables) : il n'y a plus de section créneaux dans le sheet principal. **Multi-sélection** sur l'ensemble |
+| Bas (fixe) | Une ligne de **3 cards** — **Aujourd'hui** (sélectionne le jour même, aucune liste dessous) / **Cmd à venir** / **Cmd passées non traitées** (ou **Cmd passées** sur Terminées, piloté par `pastUntreated`), chacune avec le nb de dates — qui choisit le lot (`dateScope`) ; **en dessous**, la liste des dates de ce lot en chips, dans un emplacement de **hauteur fixe** (le sheet ne change jamais de taille) : sur **Aujourd'hui** elle affiche à la place un **récap du jour** en 4 chips inertes — `N cmd total`, `N cmd express`, `N cmd créneaux`, `N cmd sur place` — rendus quel que soit l'onglet de statut, `0` compris ; sur les autres lots, la ligne est complétée par des chips **« Aucune »** inertes jusqu'à couvrir la largeur (`DATE_CHIP_SLOTS`), et scrolle horizontalement au-delà. L'état actif des cards suit `dateScope`, pas la date affichée. À l'ouverture, la card sélectionnée est celle qui contient la date active |
 
 - Chaque période affiche son **nombre de commandes** (calculé sur la date active et le
   statut courant) : pastille sur les lignes cochables, badge d'angle sur les tuiles
@@ -332,6 +332,23 @@ La navigation entre tabs est gérée par `selectedTab` dans le sheet parent.
 Au retour d'arrière-plan, un refresh des données fournit une nouvelle référence pour
 la même commande ; en dépendant de l'objet, l'animation se rejouait et le sheet
 semblait se fermer puis se rouvrir.
+
+**Distance d'animation — `OFFSCREEN_Y`, jamais `SHEET_HEIGHT`** : ouverture comme
+fermeture translatent d'un **écran entier** (`Dimensions.get('window').height`).
+Avec plusieurs zones, le sheet mesure `SHEET_HEIGHT + CMD_BAR_HEIGHT` (barre de
+chips « Cmd ») : une translation de `SHEET_HEIGHT` seul laissait cette barre
+visible en bas, figée, jusqu'au démontage du Modal. La fermeture utilise un
+`Animated.timing` borné (220 ms, `Easing.in(cubic)`) et non un `spring`, qui
+traîne en fin de course et retarde d'autant l'appel à `onClose()`.
+
+> Même correctif appliqué au sheet client `OrderBottomSheet` (`SCREEN_HEIGHT`).
+
+**Changement de zone sans scintillement** : le tap sur un chip de zone appelle
+`selectZone()`, qui pose **dans le même rendu** `selectedZone` ET l'index de la
+première commande de cette zone. En ne mettant à jour que `selectedZone`, un effet
+recalait `selectedOrderIdx` au rendu suivant : la barre « Cmd » s'affichait une
+frame avec l'ancienne sélection. L'effet est conservé en filet de sécurité (commande
+validée ou retirée de la zone).
 
 **Sélecteur multi-commandes dans le header** (native `.tsx`) :
 - En multi-commandes (`allOrders.length > 1`), la ligne « Zone de livraison » du header

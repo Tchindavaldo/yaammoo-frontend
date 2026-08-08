@@ -1,6 +1,6 @@
 import { orderGroupKey } from "@/src/features/merchant/utils/orderGroupKey";
 import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
-import { MerchantFilterSheet } from "@/src/features/merchant/components/MerchantFilterSheet";
+import { ClientFilterSheet } from "./ClientFilterSheet";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
 import {
@@ -447,25 +447,20 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     const slots = Object.keys(counts)
       .filter((k) => k !== "express" && k !== "surplace")
       .sort();
+    // Les deux modes de livraison sont TOUJOURS listés (0 si aucune commande)
+    // et dans le MÊME ORDRE que côté marchand : express, sur place, créneaux.
+    // Sinon les cards apparaissent/disparaissent au changement de date.
     return [
-      ...(counts.express
-        ? [
-            {
-              key: "express",
-              label: "Livraison express",
-              count: counts.express,
-            },
-          ]
-        : []),
-      ...(counts.surplace
-        ? [
-            {
-              key: "surplace",
-              label: "Pas de livraison",
-              count: counts.surplace,
-            },
-          ]
-        : []),
+      {
+        key: "express",
+        label: "Livraison express",
+        count: counts.express || 0,
+      },
+      {
+        key: "surplace",
+        label: "Récupérer\nsur place",
+        count: counts.surplace || 0,
+      },
       ...slots.map((k) => ({ key: k, label: k, count: counts[k] })),
     ];
   }, [scopedOrders, activeDateISO]);
@@ -474,6 +469,33 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     () => availablePeriods.reduce((acc, p) => acc + p.count, 0),
     [availablePeriods],
   );
+
+  // Badges des cards de dates du filter sheet : NOMBRE DE COMMANDES du lot
+  // (dates futures / aujourd'hui / dates passées), pas le nombre de dates.
+  // Volontairement INDÉPENDANTS de l'onglet de statut ET des périodes cochées :
+  // chaque card affiche toujours le total de SA période.
+  const dateScopeCounts = useMemo(() => {
+    const all = [...pending, ...active, ...finished, ...delivered];
+    let past = 0;
+    let today = 0;
+    let future = 0;
+    all.forEach((o: any) => {
+      if (selectedFastFoodId && o.fastFoodId !== selectedFastFoodId) return;
+      const iso = getOrderDateISO(o);
+      if (!iso) return;
+      if (iso < todayISO) past += 1;
+      else if (iso > todayISO) future += 1;
+      else today += 1;
+    });
+    return { past, today, future };
+  }, [
+    pending,
+    active,
+    finished,
+    delivered,
+    selectedFastFoodId,
+    todayISO,
+  ]);
 
   /**
    * Badges des chips : comptés sur la date active (+ périodes cochées et
@@ -484,11 +506,9 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
       list.filter((o: any) => {
         if (selectedFastFoodId && o.fastFoodId !== selectedFastFoodId)
           return false;
-        if (getOrderDateISO(o) !== activeDateISO) return false;
-        return (
-          selectedPeriods.length === 0 ||
-          selectedPeriods.includes(periodKeyOf(o))
-        );
+        // TOUTES périodes confondues : indépendant de `selectedPeriods`, comme
+        // les chips de statut du sheet marchand.
+        return getOrderDateISO(o) === activeDateISO;
       }).length;
     return {
       pending: matches(pending),
@@ -502,7 +522,6 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     delivered,
     selectedFastFoodId,
     activeDateISO,
-    selectedPeriods,
   ]);
 
   // Une période cochée qui disparaît (changement de date/statut) est retirée.
@@ -596,7 +615,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         </TouchableOpacity>
       </View>
 
-      <MerchantFilterSheet
+      <ClientFilterSheet
         visible={filterOpen}
         onClose={() => setFilterOpen(false)}
         todayISO={todayISO}
@@ -606,14 +625,31 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         onSelectDate={setSelectedDateISO}
         periods={availablePeriods}
         allPeriodsCount={allPeriodsCount}
+        todayOrdersCount={dateScopeCounts.today}
+        futureOrdersCount={dateScopeCounts.future}
+        pastOrdersCount={dateScopeCounts.past}
         selectedPeriods={selectedPeriods}
         onTogglePeriod={(k) =>
           setSelectedPeriods((prev) =>
             prev.includes(k) ? prev.filter((p) => p !== k) : [...prev, k],
           )
         }
+        onTogglePeriods={(keys, select) =>
+          setSelectedPeriods((prev) => {
+            const rest = prev.filter((p) => !keys.includes(p));
+            return select ? [...rest, ...keys] : rest;
+          })
+        }
         onResetPeriods={() => setSelectedPeriods([])}
         pastUntreated={activeStatus !== "finished"}
+        // Statuts rendus DANS le sheet, comme côté marchand.
+        statusTabs={[
+          { key: "pending", label: "En Attente", count: chipCounts.pending },
+          { key: "active", label: "En cours", count: chipCounts.active },
+          { key: "finished", label: "Terminées", count: chipCounts.finished },
+        ]}
+        selectedStatus={activeStatus}
+        onSelectStatus={(k) => setActiveStatus(k as any)}
       />
 
       {/* Bottom sheet détail commande */}

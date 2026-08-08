@@ -1,21 +1,21 @@
+import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
+  ActivityIndicator,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   UIManager,
   View,
-  ActivityIndicator,
 } from "react-native";
-import { Image } from "expo-image";
-import { BlurView } from "expo-blur";
-import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
+import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import { computeGrandTotal } from "./MerchantOrderMontantTab";
-import type { DriverInfo } from "@/src/features/driver/services/driverService";
 
 /** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
 export const MERCHANT_CARD_HEIGHT = 94.33;
@@ -120,8 +120,10 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
 
   const status = (order.status || "pending").toLowerCase();
   const isPending = status === "pending" || status === "pendingtobuy";
-  const isActive = status === "active" || status === "processing" || status === "in_progress";
-  const isFinished = status === "completed" || status === "finished" || status === "done";
+  const isActive =
+    status === "active" || status === "processing" || status === "in_progress";
+  const isFinished =
+    status === "completed" || status === "finished" || status === "done";
   const isDelivering = status === "delivering";
   const isDelivered = status === "delivered";
 
@@ -130,9 +132,15 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const u = (order as any).userData;
     const customerFirstName = u?.firstName || "Client";
     const customerLastName = u?.lastName || "";
-    const nameToUse = u ? `${customerFirstName} ${customerLastName}`.trim() : "Client Inconnu";
-    const initials = (u ? `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}` : "??").toUpperCase();
-    
+    const nameToUse = u
+      ? `${customerFirstName} ${customerLastName}`.trim()
+      : "Client Inconnu";
+    const initials = (
+      u
+        ? `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}`
+        : "??"
+    ).toUpperCase();
+
     const deliveryRawStatus = (order as any).delivery?.status;
     const hasDelivery = deliveryRawStatus === true;
     const deliveryType = (order as any).delivery?.type;
@@ -159,7 +167,12 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           {/* Avatar avec initiales + badge nombre de commandes */}
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarInitials}>{initials}</Text>
-            <View style={[styles.orderCountBadge, { backgroundColor: deliveryColor }]}>
+            <View
+              style={[
+                styles.orderCountBadge,
+                { backgroundColor: deliveryColor },
+              ]}
+            >
               <Text style={styles.orderCountText}>{orderCount}</Text>
             </View>
           </View>
@@ -168,18 +181,33 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           <View style={styles.summaryInfo}>
             <View style={styles.summaryTopRow}>
               <View style={styles.summaryTitleContainer}>
-                <Text style={styles.summaryName} numberOfLines={1}>{nameToUse}</Text>
+                <Text style={styles.summaryName} numberOfLines={1}>
+                  {nameToUse}
+                </Text>
               </View>
             </View>
 
             <View style={styles.summaryBottomRow}>
               <View style={styles.summaryChipsRow}>
-                <View style={[styles.smallChip, styles.chipInactive, { paddingLeft: 0 }]}>
+                <View
+                  style={[
+                    styles.smallChip,
+                    styles.chipInactive,
+                    { paddingLeft: 0 },
+                  ]}
+                >
                   <Ionicons name="location-outline" size={14} color="#9ca3af" />
-                  <Text style={[styles.chipText, { color: "#9ca3af" }]} numberOfLines={1}>{addressStr.length > 25 ? addressStr.slice(0, 25) + '…' : addressStr}</Text>
+                  <Text
+                    style={[styles.chipText, { color: "#9ca3af" }]}
+                    numberOfLines={1}
+                  >
+                    {addressStr.length > 25
+                      ? addressStr.slice(0, 25) + "…"
+                      : addressStr}
+                  </Text>
                 </View>
               </View>
-              
+
               {!hasDelivery ? null : isDelivered ? (
                 // Livrée : badge non cliquable (aucune action possible).
                 <View style={styles.deliveredBadge}>
@@ -246,7 +274,8 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   // sont rendues par UNE carte (cf. groupBySlot). On n'affiche alors ni le nom du
   // plat ni le total d'une seule commande, mais "N cmd" + le montant du groupe —
   // le même que le "Total général" de l'onglet Montant du sheet.
-  const groupedOrders = sheetOrders && sheetOrders.length > 1 ? sheetOrders : null;
+  const groupedOrders =
+    sheetOrders && sheetOrders.length > 1 ? sheetOrders : null;
   const totalPrice = groupedOrders
     ? computeGrandTotal(groupedOrders)
     : order.total || 0;
@@ -283,10 +312,16 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     return time ? `livrée à ${time}` : "livrée";
   })();
   const userRank = (order as any).rank || 1;
-  const menuImage = (order.menu as any)?.coverImage || (order.menu as any)?.image;
+  const menuImage =
+    (order.menu as any)?.coverImage || (order.menu as any)?.image;
   const deliveryRaw = order.delivery;
   const deliveryType = deliveryRaw?.type;
-  const deliveryColor = deliveryType === "express" ? "#ec4913" : deliveryType === "time" ? "#2563eb" : "black";
+  const deliveryColor =
+    deliveryType === "express"
+      ? "#ec4913"
+      : deliveryType === "time"
+        ? "#2563eb"
+        : "black";
   // Chips Extras/Boisson : fond neutre uniforme (celui du cas "pas de livraison").
   const chipTint = {
     backgroundColor: "#00000008",
@@ -314,7 +349,11 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
 
   return (
     <View style={styles.wrapper}>
-      <TouchableOpacity activeOpacity={0.85} onPress={() => setModalVisible(true)} style={styles.summaryRow}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={() => setModalVisible(true)}
+        style={styles.summaryRow}
+      >
         <View style={styles.avatarContainer}>
           {menuImage ? (
             <Image
@@ -357,9 +396,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
               {/* Chips en noir sur fond neutre, quel que soit le mode de
                   livraison : la couleur reste portée par la seule pastille de
                   l'avatar. */}
-              <View
-                style={[styles.smallChip, chipTint, { paddingLeft: 0 }]}
-              >
+              <View style={[styles.smallChip, chipTint, { paddingLeft: 0 }]}>
                 <Ionicons name="fast-food-outline" size={14} color="black" />
                 <Text style={[styles.chipText, { color: "black" }]}>
                   Extras +{extrasCount}
@@ -372,18 +409,16 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 </Text>
               </View>
             </View>
-            
+
             {(isPending || isActive) && (
               <TouchableOpacity
                 style={styles.summaryValidateBtn}
                 disabled={isUpdating}
-                onPress={() => handleUpdateStatus(isPending ? "processing" : "finished")}
+                onPress={() =>
+                  handleUpdateStatus(isPending ? "processing" : "finished")
+                }
               >
-                <Ionicons
-                  name="checkmark-circle"
-                  size={16}
-                  color="white"
-                />
+                <Ionicons name="checkmark-circle" size={16} color="white" />
                 <Text style={styles.summaryValidateBtnText}>Valider</Text>
               </TouchableOpacity>
             )}
@@ -393,14 +428,20 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
 
       {isUpdating && (
         <View style={styles.absoluteLoader}>
-          <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+          <BlurView
+            intensity={30}
+            tint="light"
+            style={StyleSheet.absoluteFill}
+          />
           <ActivityIndicator size="large" color="#ec4913" />
         </View>
       )}
 
       <MerchantOrderBottomSheet
         order={order}
-        allOrders={sheetOrders && sheetOrders.length > 1 ? sheetOrders : undefined}
+        allOrders={
+          sheetOrders && sheetOrders.length > 1 ? sheetOrders : undefined
+        }
         groupPool={groupPool}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -604,4 +645,3 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 });
-

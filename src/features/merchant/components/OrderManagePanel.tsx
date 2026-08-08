@@ -208,9 +208,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // ne voit que le statut de l'onglet actif : s'en servir pour les rappels
   // masquerait « des commandes à venir » sur En cours quand ces commandes sont
   // encore en attente. Les rappels parlent du planning, pas de l'onglet.
-  const allDateISOs = useMemo(() => [...new Set(orders.map(getOrderDateISO))], [
-    orders,
-  ]);
+  const allDateISOs = useMemo(
+    () => [...new Set(orders.map(getOrderDateISO))],
+    [orders],
+  );
 
   // Remonte au header la liste des dates disponibles (chips).
   // Dépend d'une clé string stable (et pas du tableau, recréé à chaque render)
@@ -305,25 +306,19 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     const slots = Object.keys(counts)
       .filter((k) => k !== "express" && k !== "surplace")
       .sort();
+    // Les deux modes de livraison sont TOUJOURS listés (0 si aucune commande) :
+    // sinon les lignes apparaissent/disparaissent au changement de date.
     return [
-      ...(counts.express
-        ? [
-            {
-              key: "express",
-              label: "Livraison express",
-              count: counts.express,
-            },
-          ]
-        : []),
-      ...(counts.surplace
-        ? [
-            {
-              key: "surplace",
-              label: "Pas de livraison",
-              count: counts.surplace,
-            },
-          ]
-        : []),
+      {
+        key: "express",
+        label: "Livraison express",
+        count: counts.express || 0,
+      },
+      {
+        key: "surplace",
+        label: "Récupérer\nsur place",
+        count: counts.surplace || 0,
+      },
       ...slots.map((s) => ({ key: s, label: s, count: counts[s] })),
     ];
   }, [filteredOrders, selectedDate]);
@@ -385,18 +380,17 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         ? "Aucune commande en cours"
         : "Aucune commande terminée";
 
-  // Badges des chips de statut : ils comptent les commandes de la DATE ACTIVE
-  // (et des périodes cochées) — pas le total tous jours confondus, qui ferait
-  // afficher des commandes passées dans le badge du jour affiché.
+  // Badges des chips de statut : ils comptent les commandes de la DATE ACTIVE,
+  // TOUTES périodes confondues (express + sur place + créneaux) — pas le total
+  // tous jours confondus, qui ferait afficher des commandes passées dans le
+  // badge du jour affiché. Volontairement INDÉPENDANTS de `selectedPeriods` :
+  // le marchand veut la somme du jour même quand une seule card est cochée.
   const counts = useMemo(() => {
     const isoFilter = selectedDate || todayISO;
-    const scoped = orders.filter((o) => {
-      if (getOrderDateISO(o) !== isoFilter) return false;
-      if (selectedPeriods.length === 0) return true;
-      return selectedPeriods.includes(periodKeyOf(o));
-    });
+    const scoped = orders.filter((o) => getOrderDateISO(o) === isoFilter);
     return {
-      pending: scoped.filter((o) => statusMap.pending.includes(o.status)).length,
+      pending: scoped.filter((o) => statusMap.pending.includes(o.status))
+        .length,
       proccess: scoped.filter((o) => statusMap.proccess.includes(o.status))
         .length,
       finish: scoped.filter((o) => statusMap.finish.includes(o.status)).length,
@@ -404,7 +398,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     // `statusMap` / `todayISO` sont recréés à chaque rendu : les lister ici
     // annulerait la mémoïsation (même convention que `dateFilteredOrders`).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orders, selectedDate, selectedPeriods]);
+  }, [orders, selectedDate]);
 
   const totalAmount = dateFilteredOrders.reduce(
     (acc, o) => acc + (o.total || 0),
@@ -428,6 +422,24 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     () => pastDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })),
     [pastDateISOs],
   );
+
+  // Badges des cards de dates du filter sheet : NOMBRE DE COMMANDES du lot
+  // (toutes dates futures / aujourd'hui / toutes dates passées), pas le nombre
+  // de dates. Volontairement INDÉPENDANTS de l'onglet de statut ET des périodes
+  // cochées : chaque card affiche toujours le total de SA période.
+  const dateScopeCounts = useMemo(() => {
+    let past = 0;
+    let today = 0;
+    let future = 0;
+    orders.forEach((o) => {
+      const iso = getOrderDateISO(o);
+      if (iso < todayISO) past += 1;
+      else if (iso > todayISO) future += 1;
+      else today += 1;
+    });
+    return { past, today, future };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders]);
 
   const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
     { key: "pending", label: "En Attente", icon: "time-outline" },
@@ -733,10 +745,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             count: counts[t.key],
           }))}
           activeKey={selectedStatus}
-          onSelect={(k) => {
-            setSelectedStatus(k as OrderStatus);
-            onSelectDate(null);
-          }}
+          // La date choisie dans le MerchantFilterSheet est conservée au
+          // changement d'onglet de statut (pas de retour forcé à aujourd'hui).
+          onSelect={(k) => setSelectedStatus(k as OrderStatus)}
         />
       </View>
 
@@ -1042,14 +1053,30 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         onSelectDate={onSelectDate}
         periods={availablePeriods}
         allPeriodsCount={allPeriodsCount}
+        todayOrdersCount={dateScopeCounts.today}
+        futureOrdersCount={dateScopeCounts.future}
+        pastOrdersCount={dateScopeCounts.past}
         selectedPeriods={selectedPeriods}
         onTogglePeriod={(k) =>
           setSelectedPeriods((prev) =>
             prev.includes(k) ? prev.filter((p) => p !== k) : [...prev, k],
           )
         }
+        onTogglePeriods={(keys, select) =>
+          setSelectedPeriods((prev) => {
+            const rest = prev.filter((p) => !keys.includes(p));
+            return select ? [...rest, ...keys] : rest;
+          })
+        }
         onResetPeriods={() => setSelectedPeriods([])}
         pastUntreated={selectedStatus !== "finish"}
+        statusTabs={statusTabs.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: counts[t.key],
+        }))}
+        selectedStatus={selectedStatus}
+        onSelectStatus={(k) => setSelectedStatus(k as OrderStatus)}
       />
 
       {/* Sélecteur "qui livre" pour "Lancer tout" (groupe entier). */}

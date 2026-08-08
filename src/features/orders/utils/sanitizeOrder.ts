@@ -27,6 +27,7 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
           name: e.name || "Extra",
           status: !!e.status,
           ...(e.prix !== undefined && { prix: e.prix }),
+          ...(e.rawPrice != null && { rawPrice: e.rawPrice }),
         }))
       : [],
     drink: Array.isArray(o.drink)
@@ -34,6 +35,7 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
           name: d.name || "Boisson",
           status: !!d.status,
           ...(d.prix !== undefined && { prix: d.prix }),
+          ...(d.rawPrice != null && { rawPrice: d.rawPrice }),
           quantite: d.quantite || 1,
         }))
       : [],
@@ -73,14 +75,16 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
       images: Array.isArray(o.menu.images)
         ? o.menu.images
         : [o.menu.coverImage || o.menu.image],
+      // `rawPrice` conservé quand il existe. `menu.extra`/`menu.drink` ne sont
+      // plus envoyés (optionnels côté backend) : seuls ceux de la racine, qui
+      // portent la sélection du client, comptent.
       prices: Array.isArray(o.menu.prices)
         ? o.menu.prices.map((p: any) => ({
             price: Number(p.price) || 0,
             description: p.description || "",
+            ...(p.rawPrice != null && { rawPrice: Number(p.rawPrice) || 0 }),
           }))
         : [],
-      extra: [],
-      drink: [],
       status: o.menu.status || "available",
     };
   }

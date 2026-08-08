@@ -58,6 +58,10 @@ export const normalizeMenu = (m: any) => {
     optionPrix1: m.optionPrix1 || (m.prices && m.prices[0] ? m.prices[0].description : ''),
     optionPrix2: m.optionPrix2 || (m.prices && m.prices[1] ? m.prices[1].description : ''),
     optionPrix3: m.optionPrix3 || (m.prices && m.prices[2] ? m.prices[2].description : ''),
+    // Prix bruts (hors marge) aplatis depuis `prices[]`, comme prix1/2/3.
+    rawPrice1: m.prices?.[0]?.rawPrice,
+    rawPrice2: m.prices?.[1]?.rawPrice,
+    rawPrice3: m.prices?.[2]?.rawPrice,
     image: menuImage || '',
     images: m.images && m.images.length > 0 ? m.images : (menuImage ? [menuImage] : []),
     disponibilite: m.disponibilite || m.status || 'available',

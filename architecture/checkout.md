@@ -405,3 +405,30 @@ Recopie une liste **fermée** de champs avant l'envoi dans `items` de
 ne puisse ni vérifier le montant ni mutualiser :
 - `delivery.prix` et `delivery.zone`
 - `bonusCode` (racine) — justifie un total sans frais de port
+- `rawPrice` sur `menu.prices[]`, `extra[]` et `drink[]` (voir ci-dessous)
+
+⚠️ **Liste fermée = aucun champ n'est transmis automatiquement.** Un nouveau
+champ servi par `GET /fastfood/all` est silencieusement supprimé s'il n'est pas
+ajouté explicitement ici **et** dans `useCheckout.createOrder()`.
+
+---
+
+## `rawPrice` — prix brut hors marge
+
+Le backend sert un **prix brut** sur chaque prix de menu, extra et boisson
+(`GET /fastfood/all`). Le front le nomme `rawPrice` de bout en bout.
+
+**Chaîne complète** (3 points à toucher pour tout champ de ce genre) :
+1. `normalizeMenu()` (`src/features/restaurants/context/FastFoodContext.tsx`) —
+   aplatit `prices[].rawPrice` en `rawPrice1/2/3` (comme `prix1/2/3`). Les
+   `extra[]`/`drink[]` passent tels quels via le spread `...m`.
+2. `useCheckout.createOrder()` — reporte `rawPrice` dans `menu.prices[]` (depuis
+   `rawPrice1/2/3`) et dans les `extra[]`/`drink[]` de la racine (portés par les
+   classes `Embalage`/`Boisson`, qui ont un 3e champ `rawPrice`).
+3. `sanitizeOrder()` — conserve `rawPrice` sur `menu.prices[]`, `extra[]`, `drink[]`.
+
+Le champ est **omis** (pas mis à `0`/`null`) quand le backend ne le fournit pas.
+
+**`menu.extra` / `menu.drink` ne sont plus envoyés** : le backend les a rendus
+optionnels et détient déjà le menu. Seuls les `extra[]`/`drink[]` de la **racine**
+partent — ce sont eux qui portent la sélection du client (`status: true/false`).

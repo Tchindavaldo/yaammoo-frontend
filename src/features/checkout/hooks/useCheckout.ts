@@ -50,7 +50,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       if (menu && (menu as any).extra && Array.isArray((menu as any).extra)) {
         return (menu as any).extra
           .filter((e: any) => e.name && e.name !== 'Aucun')
-          .map((e: any) => new Embalage(e.name, e.prix || 0));
+          .map((e: any) => new Embalage(e.name, e.prix || 0, e.rawPrice));
       }
       return [new Embalage("Sac plastique", 100), new Embalage("Gamelle", 150)];
     },
@@ -62,7 +62,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       if (menu && (menu as any).drink && Array.isArray((menu as any).drink)) {
         return (menu as any).drink
           .filter((d: any) => d.name && d.name !== 'Aucune')
-          .map((d: any) => new Boisson(d.name, d.prix || 0));
+          .map((d: any) => new Boisson(d.name, d.prix || 0, d.rawPrice));
       }
       return [
         new Boisson("Coca Cola", 600),
@@ -233,12 +233,14 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       name: pkg.type,
       status: selectedExtraNames.has(pkg.type),
       prix: pkg.prix,
+      ...(pkg.rawPrice != null && { rawPrice: pkg.rawPrice }),
     }));
 
     const drinkData = availableDrinks.map((drink) => ({
       name: drink.type,
       status: selectedDrinkNames.has(drink.type),
       prix: drink.prix,
+      ...(drink.rawPrice != null && { rawPrice: drink.rawPrice }),
       quantite: drinkQuantities[drink.type] || 1,
     }));
     if (drinkData.length === 0)
@@ -260,13 +262,22 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       coverImage: menu.image,
       coverImageHasBackground: true,
       images: menu.images || [menu.image],
-      prices: [
-        { price: menu.prix1, description: menu.optionPrix1 || "Standard" },
-        menu.prix2 > 0 ? { price: menu.prix2, description: menu.optionPrix2 || "Medium" } : null,
-        menu.prix3 > 0 ? { price: menu.prix3, description: menu.optionPrix3 || "Large" } : null,
-      ].filter((p): p is { price: number; description: string } => p !== null),
-      extra: [],
-      drink: [],
+      // `rawPrice` (prix brut hors marge) accompagne chaque taille quand le
+      // backend l'a fourni sur le menu. `menu.extra`/`menu.drink` ne sont plus
+      // envoyés : le backend les a rendus optionnels et détient déjà le menu.
+      prices: (
+        [
+          [menu.prix1, menu.optionPrix1 || "Standard", (menu as any).rawPrice1],
+          [menu.prix2, menu.optionPrix2 || "Medium", (menu as any).rawPrice2],
+          [menu.prix3, menu.optionPrix3 || "Large", (menu as any).rawPrice3],
+        ] as Array<[number, string, number | undefined]>
+      )
+        .filter(([price], i) => i === 0 || price > 0)
+        .map(([price, description, rawPrice]) => ({
+          price,
+          description,
+          ...(rawPrice != null && { rawPrice }),
+        })),
       status: menu.disponibilite === "active" || menu.disponibilite === "Disponible" ? "available" : "unavailable",
     };
 

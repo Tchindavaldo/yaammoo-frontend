@@ -153,18 +153,19 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
         })),
       });
     } else {
-      console.log("[CardPrice] seule", {
-        id: (order as any).id,
+      console.log("[CardPrice] seule — synthese", {
         affiche: order.total || 0,
         source: "order.total (brut backend)",
         articlesRecalcules: computeItemsTotal(order),
-        qty: order.quantity || 1,
-        priceIdx: (order as any).selectedPriceIndex || 1,
         course: order.delivery?.prix,
-        prixMenu: order.menu?.prices,
-        extra: order.extra,
-        drink: order.drink,
       });
+      // Dump COMPLET de la commande telle que reçue du backend.
+      // `JSON.stringify` est indispensable : sans lui Metro tronque les objets
+      // imbriqués (`delivery`, `menu`) au-delà de quelques niveaux.
+      console.log(
+        "[CardPrice] seule — commande brute",
+        JSON.stringify(order, null, 2),
+      );
     }
   };
 

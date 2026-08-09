@@ -1,3 +1,4 @@
+import "@/src/services/webTitleFix";
 import {
   DefaultTheme,
   ThemeProvider,

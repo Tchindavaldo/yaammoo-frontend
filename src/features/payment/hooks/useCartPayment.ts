@@ -54,8 +54,10 @@ export const useCartPayment = (amount: number) => {
 
   // Envoie la transaction de paiement global du panier.
   // `items` = toutes les commandes pendingToBuy (le backend déduit le fastFoodId).
+  // `amountOverride` : paiement d'un sous-ensemble du panier (une zone), auquel
+  // cas le montant n'est pas le total du panier mais celui du groupe payé.
   const handlePaymentConfirm = useCallback(
-    async (phone: string, items: any[] = []) => {
+    async (phone: string, items: any[] = [], amountOverride?: number) => {
       if (!userData || !phone) {
         setPaymentError("Numéro de paiement requis");
         return;
@@ -69,7 +71,7 @@ export const useCartPayment = (amount: number) => {
       try {
         const response = await axios.post(`${Config.apiUrl}/transaction`, {
           payBy: "mobilemoney",
-          amount,
+          amount: amountOverride ?? amount,
           phone: phone.replace(/\s/g, ""),
           network: paymentNetwork === "orange" ? "Orangemoney" : "MTN",
           email: userData?.infos?.email || "user@yaammoo.com",

@@ -181,9 +181,14 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
 
 - **Hook** : `src/features/payment/hooks/useCartPayment.ts` — états
   `total → network_select → input → waiting → ussd_sent → success → success_created`.
-  `handlePaymentConfirm(phone, items)` (POST /transaction avec `items`),
-  `handlePaymentVerdict` (socket). En cas d'échec : retour direct au `total`
-  (pas d'état `failed` affiché), erreur via toast top.
+  `handlePaymentConfirm(phone, items, amountOverride?)` (POST /transaction avec
+  `items`), `handlePaymentVerdict` (socket). En cas d'échec : retour direct au
+  `total` (pas d'état `failed` affiché), erreur via toast top.
+- **Paiement d'une seule zone** : le bouton « Tout payer » du pied de tableau
+  (`CartZoneTable`) ne paie que les commandes de son groupe. `cart.tsx` garde
+  `payingGroupKey` (null = panier entier) et en dérive `ordersToPay` /
+  `amountToPay` ; `amountToPay` est passé en **`amountOverride`** — sans lui, le
+  montant envoyé resterait le total du panier (`amount` fixé à la création du hook).
 - **UI — deux blocs** (comme le home, mais dans un **seul sheet blanc**) :
   - `components/CartPaymentTopCard.tsx` — sheet du haut (`SHEET_HEIGHT`), qui
     rend la capsule DEDANS via `children` (ancrée sur son bas, remontée de

@@ -19,6 +19,8 @@ interface OrderContextType {
   /** Insère ou met à jour un lot de commandes depuis un payload socket (userOrdersUpdated). */
   upsertOrdersFromSocket: (orders: any[]) => void;
   buyOrders: (ordersToBuy: Commande[]) => Promise<{ success: boolean; message?: string }>;
+  /** Enregistre une commande du panier sans l'acheter (PUT /order). */
+  saveOrder: (order: any) => Promise<{ success: boolean; message?: string }>;
   pendingToBuy: Commande[];
   pending: Commande[];
   active: Commande[];
@@ -108,6 +110,34 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       console.error("Update quantity error:", err);
       fetchOrders(); // Rollback
       return false;
+    }
+  };
+
+  /**
+   * Enregistre les modifications d'une commande du panier SANS l'acheter :
+   * `PUT /order` (mise à jour simple), contrairement à `buyOrders` qui passe par
+   * `/order/tabs` et déclenche la transition `pendingToBuy → pending`.
+   * Le `status` n'est jamais envoyé — la commande reste dans le panier.
+   */
+  const saveOrder = async (
+    order: any,
+  ): Promise<{ success: boolean; message?: string }> => {
+    if (!userData) return { success: false, message: "Utilisateur non connecté" };
+    if (!order?.id) return { success: false, message: "Commande introuvable" };
+    try {
+      const { status, ...payload } = sanitizeOrder(order, userData.uid) as any;
+      await axios.put(`${Config.apiUrl}/order`, { ...payload, id: order.id });
+      await fetchOrders();
+      return { success: true };
+    } catch (err: any) {
+      console.error("Save order error:", err);
+      const backendMessage = err.response?.data?.message;
+      return {
+        success: false,
+        message: Array.isArray(backendMessage)
+          ? backendMessage.join("; ")
+          : backendMessage || "Erreur réseau",
+      };
     }
   };
 
@@ -222,6 +252,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     upsertOrderFromSocket,
     upsertOrdersFromSocket,
     buyOrders,
+    saveOrder,
     pendingToBuy: getFilteredByStatus(["pendingtobuy"]),
     pending: getFilteredByStatus(["pending"]),
     active: getFilteredByStatus(["processing", "active", "in_progress", "accept"]),

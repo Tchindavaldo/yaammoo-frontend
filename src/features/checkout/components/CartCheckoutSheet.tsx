@@ -45,6 +45,12 @@ interface CheckoutSheetProps {
   menu: Menu | null;
   initialOrder?: any | null;
   onConfirm: (order: any) => void;
+  /**
+   * Enregistre les modifications locales sans quitter le sheet ni changer le
+   * statut (la commande reste dans le panier). Sans cette prop, le bouton
+   * Enregistrer n'est pas affiché.
+   */
+  onSave?: (order: any) => Promise<{ success: boolean; message?: string }>;
   onChange?: (order: any) => void;
   isCartMode?: boolean;
 }
@@ -57,6 +63,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   menu,
   initialOrder,
   onConfirm,
+  onSave,
   isCartMode,
   onChange,
 }) => {
@@ -159,6 +166,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   } | null>(null);
   const showError = (message: string) =>
     setSheetToast({ message, type: "error" });
+  // Enregistrement des modifs locales : loader propre, distinct du paiement.
+  const [isSaving, setIsSaving] = useState(false);
   const { fastFoods } = useFastFoods();
 
   // Enregistrer le handler de verdict paiement quand l'overlay est visible.
@@ -360,27 +369,35 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
               quantity={quantity}
               setQuantity={setQuantity}
               isLoading={isSubmitting}
+              isSaving={isSaving}
               isCartMode={isCartMode}
-              onAddToCart={async () => {
+              /* Enregistrer : persiste la commande modifiée en `pendingToBuy`
+                 (elle reste dans le panier). Le sheet NE se ferme PAS — on
+                 confirme par un toast pour que l'user puisse continuer à
+                 éditer. */
+              onAddToCart={onSave && (async () => {
                 const deliveryErr = validateDelivery();
                 if (deliveryErr) {
                   showError(deliveryErr);
                   return;
                 }
                 try {
-                  setIsSubmitting(true);
-                  const result = await (onConfirm(
+                  setIsSaving(true);
+                  const result: any = await onSave(
                     createOrder("pendingToBuy"),
-                  ) as any);
+                  );
                   if (result === true || result?.success) {
-                    onClose();
+                    setSheetToast({
+                      message: "Modifications enregistrées",
+                      type: "success",
+                    });
                   } else if (result?.message) {
                     showError(result.message);
                   }
                 } finally {
-                  setIsSubmitting(false);
+                  setIsSaving(false);
                 }
-              }}
+              })}
               onBuy={() => {
                 const stockErr = validateStock();
                 if (stockErr) {

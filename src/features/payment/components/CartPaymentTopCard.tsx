@@ -3,7 +3,6 @@ import { BlurView } from "expo-blur";
 import React from "react";
 import {
   Animated,
-  Image,
   Modal,
   StyleSheet,
   Text,
@@ -15,9 +14,14 @@ const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 // Même bloc que le home (CheckoutPaymentTopOverlay) : hauteur du sheet, place
 // réservée en bas pour la capsule, et gap entre les deux.
-const SHEET_HEIGHT = 384;
+const SHEET_HEIGHT = 380;
 const BOTTOM_CAPSULE_SPACE = 70; // hauteur capsule
 const GAP = 12; // espace entre la card et la capsule
+/** Marge sous la capsule : la décolle du bas du sheet (nav bar / clavier). */
+const CAPSULE_BOTTOM_OFFSET = 18;
+/** Montant affiché : « 00.00 F » quand il est nul (livraison offerte). */
+const formatAmount = (amount: number) =>
+  amount === 0 ? "00.00 F" : `${amount} F`;
 
 interface CartPaymentTopCardProps {
   visible: boolean;
@@ -44,93 +48,248 @@ interface CartPaymentTopCardProps {
 /* Rien n'est branché sur le panier réel : ces valeurs servent à valider */
 /* la maquette avant de câbler les vraies commandes.                    */
 /* ------------------------------------------------------------------ */
-const DEMO_MENU = {
-  titre: "Poulet DG",
-  image: "https://images.unsplash.com/photo-1604909052743-94e838986d24?w=200",
-};
-const DEMO_MENU_PRICE = 6500;
-const DEMO_DRINKS_PRICE = 1500;
-const DEMO_EXTRAS_PRICE = 3000;
-const DEMO_DELIVERY_PRICE = 1000;
 const DEMO_TOTAL = 12000;
 
+// Contenu repris du bottom filter marchand (MerchantFilterSheet) : chips de
+// statut, cards de mode de livraison, cards de lot de dates + ligne de récap.
+// Maquette STATIQUE — aucune logique de filtrage n'est branchée ici.
+// Cards de la dernière ligne : total des frais de livraison et total des
+// commandes, chacune avec son nombre et son montant.
+const DEMO_DELIVERY_CARDS: {
+  key: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  count: number;
+  amount: number;
+}[] = [
+  {
+    key: "livraison",
+    icon: "bicycle-outline",
+    label: "Livraison total",
+    count: 5,
+    amount: 3500,
+  },
+  {
+    key: "commandes",
+    icon: "receipt-outline",
+    label: "Commandes total",
+    count: 6,
+    amount: 8500,
+  },
+];
+// Cards de mode : chacune liste son détail (zones express, lieux sur place,
+// créneaux horaires) avec le montant par ligne, puis son total et son nombre.
+const DEMO_MODE_CARDS: {
+  key: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  /** Titre de la card = nature de la liste (Zones / Boutiques / Créneaux). */
+  listTitle: string;
+  /** Nom d'un élément au singulier, pour le « +N … en plus ». */
+  itemName: string;
+  items: { label: string; amount: number }[];
+  count: number;
+  amount: number;
+}[] = [
+  {
+    key: "express",
+    icon: "flash-outline",
+    listTitle: "Zones",
+    itemName: "zone",
+    items: [
+      { label: "Bonanjo", amount: 1000 },
+      { label: "Akwa", amount: 1000 },
+    ],
+    count: 2,
+    amount: 2000,
+  },
+  {
+    key: "surplace",
+    icon: "restaurant-outline",
+    listTitle: "Boutiques",
+    itemName: "boutique",
+    items: [{ label: "Yaammoo Deido", amount: 0 }],
+    count: 1,
+    amount: 0,
+  },
+  {
+    key: "slots",
+    icon: "time-outline",
+    listTitle: "Créneaux",
+    itemName: "créneau",
+    items: [
+      { label: "08:00", amount: 500 },
+      { label: "12:00", amount: 500 },
+      { label: "18:00", amount: 500 },
+    ],
+    count: 3,
+    amount: 1500,
+  },
+];
 /* ------------------------------------------------------------------ */
-/* Sous-composants DUPLIQUÉS depuis le top overlay du home (markup      */
-/* propre au panier — on n'importe rien du checkout).                   */
+/* Sous-composants du contenu (markup dupliqué depuis MerchantFilterSheet, */
+/* rien n'est importé du marchand).                                        */
 /* ------------------------------------------------------------------ */
 
-// Header menu : photo + titre + description.
-const MenuHeader: React.FC = () => (
-  <View style={styles.menuHeader}>
-    <Image source={{ uri: DEMO_MENU.image }} style={styles.menuImage} />
-    <View style={styles.menuHeaderInfo}>
-      <Text style={styles.menuTitle} numberOfLines={1}>
-        {DEMO_MENU.titre}
-      </Text>
-      <Text style={styles.menuDesc} numberOfLines={2}>
-        Produit de qualité supérieure préparé avec soin par nos chefs Yaammoo.
-      </Text>
-    </View>
-  </View>
-);
-
-// Récap prix (menu / boisson / extras / livraison) — SANS le total.
-const PriceRecap: React.FC = () => {
-  const rows: {
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-    value: number;
-  }[] = [
-    { icon: "fast-food-outline", label: "Menu", value: DEMO_MENU_PRICE },
-    { icon: "wine-outline", label: "Boisson", value: DEMO_DRINKS_PRICE },
-    { icon: "add-circle-outline", label: "Extras", value: DEMO_EXTRAS_PRICE },
-    { icon: "bicycle-outline", label: "Livraison", value: DEMO_DELIVERY_PRICE },
-  ];
-  return (
-    <View style={styles.recapRow}>
-      {rows.map((r) => (
-        <View key={r.label} style={styles.recapItem}>
-          <Ionicons name={r.icon} size={16} color="#ec4913" />
-          <Text style={styles.recapLabel}>{r.label}</Text>
-          <Text style={styles.recapValue}>{r.value} F</Text>
-        </View>
-      ))}
-    </View>
-  );
-};
-
-// Zone d'action : choix du réseau.
-const ActionArea: React.FC<{
+/** Contenu repris du bottom filter marchand (réseau / modes / dates). */
+const FilterContent: React.FC<{
   network: "orange" | "mtn";
   onNetworkChange?: (network: "orange" | "mtn") => void;
-}> = ({ network, onNetworkChange }) => (
-  <View style={styles.actionArea}>
-    <Text style={styles.actionTitle}>
-      Sélectionnez le réseau utilisé pour le paiement
-    </Text>
-    <View style={styles.networkRow}>
-      {(["orange", "mtn"] as const).map((net) => {
-        const active = network === net;
-        return (
-          <TouchableOpacity
-            key={net}
-            style={[styles.networkChip, active && styles.networkChipActive]}
-            onPress={() => onNetworkChange?.(net)}
-          >
-            <Text
-              style={[
-                styles.networkChipText,
-                active && styles.networkChipTextActive,
-              ]}
+}> = ({ network, onNetworkChange }) => {
+  const [modes, setModes] = React.useState<string[]>([]);
+  const [dateScope, setDateScope] = React.useState("today");
+
+  return (
+    <>
+      {/* Ligne du haut : libellé + les 2 chips de réseau de paiement. */}
+      <View style={styles.statusRow}>
+        <View style={[styles.statusChip, styles.networkLabelChip]}>
+          <Text style={styles.networkLabelText} numberOfLines={2}>
+            Sélectionner le réseau de paiement
+          </Text>
+        </View>
+
+        {(["orange", "mtn"] as const).map((net) => {
+          const active = network === net;
+          return (
+            <TouchableOpacity
+              key={net}
+              style={[styles.statusChip, active && styles.statusChipActive]}
+              onPress={() => onNetworkChange?.(net)}
+              activeOpacity={0.8}
             >
-              {net === "orange" ? "Orange Money" : "MTN MoMo"}
+              <Text
+                style={[
+                  styles.statusChipText,
+                  active && styles.statusChipTextActive,
+                ]}
+                numberOfLines={1}
+              >
+                {net === "orange" ? "Orange Money" : "MTN MoMo"}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Cards de mode de livraison : titre + liste détaillée (zone/créneau ·
+          montant), puis nombre total et montant total. */}
+      <View style={styles.modeCardRow}>
+        {DEMO_MODE_CARDS.map((m) => {
+          const active = modes.includes(m.key);
+          return (
+            <TouchableOpacity
+              key={m.key}
+              style={[styles.scopeCard, active && styles.scopeCardActive]}
+              onPress={() =>
+                setModes((prev) =>
+                  prev.includes(m.key)
+                    ? prev.filter((k) => k !== m.key)
+                    : [...prev, m.key],
+                )
+              }
+              activeOpacity={0.7}
+            >
+              {/* Titre + nombre total d'éléments (« Zones x2 »). */}
+              <Text style={styles.scopeLabel} numberOfLines={1}>
+                {m.listTitle} x{m.count}
+              </Text>
+
+              {/* Montant total de la card. */}
+              <Text style={styles.deliveryAmount} numberOfLines={1}>
+                {formatAmount(m.amount)}
+              </Text>
+
+              {/* La card garde TOUJOURS 2 lignes sous le montant. Au-delà de
+                  2 éléments, la 1re ligne seule est détaillée et la 2e devient
+                  le « +N … en plus » ; sinon les lignes manquantes sont
+                  comblées par des tirets. */}
+              {(() => {
+                const first = m.items[0];
+                // Le reste n'est jamais détaillé : la 2e ligne porte toujours
+                // le « +N », y compris « +0 » quand il n'y a qu'un élément.
+                const rest = Math.max(0, m.items.length - 1);
+                return (
+                  <>
+                    <View style={styles.listRow}>
+                      <Text style={styles.listItemLabel} numberOfLines={1}>
+                        {first ? first.label : "—"}
+                      </Text>
+                      <Text style={styles.listItemAmount} numberOfLines={1}>
+                        {first ? formatAmount(first.amount) : "—"}
+                      </Text>
+                    </View>
+                    <Text style={styles.listMore} numberOfLines={1}>
+                      +{rest} {m.itemName}
+                    </Text>
+                  </>
+                );
+              })()}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Cards de lot de dates — la 3e porte le TOTAL À PAYER (même gabarit
+          de card, seul son contenu change). */}
+      <View style={styles.pastBar}>
+        <View style={styles.dateRow}>
+          {DEMO_DELIVERY_CARDS.map((d) => {
+            const active = dateScope === d.key;
+            return (
+              <TouchableOpacity
+                key={d.key}
+                style={[styles.scopeCard, active && styles.scopeCardActive]}
+                onPress={() => setDateScope(d.key)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.scopeTop}>
+                  <Ionicons
+                    name={d.icon}
+                    size={18}
+                    color={active ? "#1A1916" : "#888780"}
+                  />
+                  <View
+                    style={[
+                      styles.countBadge,
+                      active && styles.countBadgeActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.countText,
+                        active && styles.countTextActive,
+                      ]}
+                    >
+                      {d.count}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.deliveryAmount} numberOfLines={1}>
+                  {formatAmount(d.amount)}
+                </Text>
+                <Text style={styles.scopeLabel} numberOfLines={2}>
+                  {d.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+
+          <View style={[styles.scopeCard, styles.totalCard]}>
+            <View style={styles.scopeTop}>
+              <Ionicons name="wallet-outline" size={18} color="#ec4913" />
+            </View>
+            <Text style={styles.totalCardValue} numberOfLines={1}>
+              {formatAmount(DEMO_TOTAL)}
             </Text>
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  </View>
-);
+            <Text style={styles.totalCardLabel} numberOfLines={2}>
+              Total à payer
+            </Text>
+          </View>
+        </View>
+      </View>
+    </>
+  );
+};
 
 /* ------------------------------------------------------------------ */
 
@@ -183,7 +342,12 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
   if (!mounted) return null;
 
   return (
-    <Modal visible={mounted} transparent animationType="none" statusBarTranslucent>
+    <Modal
+      visible={mounted}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+    >
       {/* Voile sombre sur toute la page (comme au home) : il assombrit le panier
           derrière le sheet et apparaît/disparaît en fondu avec lui. */}
       <Animated.View
@@ -213,17 +377,10 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
           ]}
         >
           <View style={styles.content}>
-            <MenuHeader />
-
-            <PriceRecap />
-
-            {/* Total affiché à part, plus grand */}
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Total à payer</Text>
-              <Text style={styles.totalValue}>{DEMO_TOTAL} FCFA</Text>
-            </View>
-
-            <ActionArea network={network} onNetworkChange={onNetworkChange} />
+            <FilterContent
+              network={network}
+              onNetworkChange={onNetworkChange}
+            />
           </View>
         </Animated.View>
 
@@ -310,7 +467,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: CAPSULE_BOTTOM_OFFSET,
     height: BOTTOM_CAPSULE_SPACE + GAP,
   },
   panel: {
@@ -318,7 +475,7 @@ const styles = StyleSheet.create({
     // Le blanc descend jusqu'au bas du sheet : la capsule se pose DESSUS. Avec
     // une marge, la bande laissée sous le panel laissait voir la page
     // assombrie au travers — ce qu'on prenait pour un flou parasite.
-    paddingBottom: BOTTOM_CAPSULE_SPACE + GAP,
+    paddingBottom: BOTTOM_CAPSULE_SPACE + GAP + CAPSULE_BOTTOM_OFFSET,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     overflow: "hidden",
@@ -333,104 +490,164 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
   },
-  // --- Header menu ---
-  menuHeader: {
+  // --- Chips de réseau (gabarit repris du bottom filter marchand) ---
+  statusRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  // 1er chip de la ligne : simple libellé, non cliquable.
+  networkLabelChip: {
+    backgroundColor: "transparent",
+  },
+  statusChip: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
+    borderRadius: 16,
+    backgroundColor: "#ec491310",
   },
-  menuImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.05)",
-  },
-  menuHeaderInfo: {
-    flex: 1,
-  },
-  menuTitle: {
-    color: "#1f2937",
-    fontSize: 16,
+  statusChipActive: { backgroundColor: "#ec4913" },
+  statusChipText: {
+    flexShrink: 1,
+    fontSize: 12,
     fontWeight: "700",
-  },
-  menuDesc: {
-    color: "rgba(31,41,55,0.55)",
-    fontSize: 12,
-    marginTop: 2,
-  },
-  // --- Récap prix ---
-  recapRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
-  },
-  recapItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 3,
-  },
-  recapLabel: {
-    color: "rgba(31,41,55,0.6)",
-    fontSize: 11,
-  },
-  recapValue: {
-    color: "#1f2937",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  // --- Total ---
-  totalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 16,
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(0,0,0,0.1)",
-  },
-  totalLabel: {
-    color: "rgba(31,41,55,0.8)",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  totalValue: {
     color: "#ec4913",
-    fontSize: 24,
+  },
+  statusChipTextActive: { color: "#fff" },
+  networkLabelText: {
+    flexShrink: 1,
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(31,41,55,0.7)",
+  },
+  // --- Cards de mode / de lot de dates ---
+  modeCardRow: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    alignItems: "stretch",
+    gap: 6,
+    marginTop: 12,
+  },
+  dateRow: {
+    flexDirection: "row",
+    flexWrap: "nowrap",
+    alignItems: "stretch",
+    gap: 6,
+  },
+  scopeCard: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#EFEDE6",
+    backgroundColor: "#FAF9F6",
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    gap: 6,
+    marginBottom: 8,
+  },
+  scopeCardActive: {
+    borderColor: "transparent",
+    backgroundColor: "#ec49131A",
+  },
+  scopeTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  scopeLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#1A1916",
+    lineHeight: 15,
+  },
+  countBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#EFEDE6",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  countBadgeActive: {
+    backgroundColor: "#ec4913",
+  },
+  countText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#888780",
+  },
+  countTextActive: {
+    color: "#fff",
+  },
+  // --- Bloc des cards de dates ---
+  pastBar: {
+    marginTop: 4,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  // --- Liste détaillée d'une card de mode (zones / créneaux) ---
+  listRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 4,
+    // Annule le `gap: 6` de la card entre deux lignes de liste.
+    marginBottom: -4,
+  },
+  listItemLabel: {
+    flexShrink: 1,
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#1A1916",
+  },
+  // Indicateur des lignes non affichées.
+  listMore: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#ec4913",
+    marginBottom: -4,
+  },
+  listItemAmount: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#888780",
+  },
+  // Montant total des commandes de la card (même place que le total).
+  deliveryAmount: {
+    color: "#ec4913",
+    fontSize: 15,
+    fontWeight: "800",
+    // Le `gap: 6` de la card écarte déjà le montant de la liste : on remonte
+    // celle-ci pour la coller dessous.
+  },
+  // --- Card « Total à payer » (même gabarit que les cards de dates) ---
+  // Même largeur qu'une card de mode de la ligne du dessus : la ligne compte
+  // 3 colonnes, le bloc réseau en occupe 2 (`flex: 2`), le total la dernière.
+  totalCard: {
+    flex: 1,
+    borderColor: "transparent",
+    backgroundColor: "#ec49131A",
+  },
+  totalCardValue: {
+    color: "#ec4913",
+    fontSize: 15,
     fontWeight: "800",
   },
-  // --- Zone d'action ---
-  actionArea: {
-    marginTop: "auto",
-  },
-  actionTitle: {
-    color: "rgba(31,41,55,0.85)",
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 10,
-  },
-  networkRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  networkChip: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: "rgba(0,0,0,0.05)",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  networkChipActive: {
-    backgroundColor: "rgba(236, 73, 19, 0.12)",
-    borderColor: "#ec4913",
-  },
-  networkChipText: {
-    color: "rgba(31,41,55,0.7)",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  networkChipTextActive: {
-    color: "#ec4913",
+  totalCardLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#1A1916",
+    lineHeight: 15,
   },
 });

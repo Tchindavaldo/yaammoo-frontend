@@ -184,9 +184,17 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
   `handlePaymentConfirm(phone, items)` (POST /transaction avec `items`),
   `handlePaymentVerdict` (socket). En cas d'échec : retour direct au `total`
   (pas d'état `failed` affiché), erreur via toast top.
-- **UI** : `src/features/payment/components/CartPaymentOverlay.tsx` — capsule unique
-  (au-dessus de la tab bar) qui enchaîne toutes les étapes. Le **choix du réseau est
-  intégré dans la capsule** (état `network_select`), pas d'overlay du haut comme le home.
+- **UI — deux blocs** (comme le home, mais dans un **seul sheet blanc**) :
+  - `components/CartPaymentTopCard.tsx` — sheet du haut (`SHEET_HEIGHT`), qui
+    rend la capsule DEDANS via `children` (ancrée sur son bas, remontée de
+    `CAPSULE_BOTTOM_OFFSET`). Contenu **encore statique** (constantes `DEMO_*`) :
+    ligne « Sélectionner le réseau de paiement » + chips Orange Money / MTN MoMo,
+    3 cards de mode (Zones / Boutiques / Créneaux — titre `x N`, montant, 1 ligne
+    détaillée puis `+N <élément>`), puis 3 cards (Livraison total / Commandes
+    total / Total à payer). Le markup des cards est **dupliqué** depuis
+    `MerchantFilterSheet` — rien n'est importé du marchand.
+  - `components/CartPaymentOverlay.tsx` — capsule qui enchaîne les étapes de
+    paiement. Le choix du réseau est porté par la card du haut (`onNetworkChange`).
 - **cart.tsx** : branche le hook + l'overlay + verdict socket + fermeture sur
   `success_created` (5s → refresh + repos). Capsule de **suppression** d'article séparée.
 - Réutilise `AnimatedBorderGlow` (bordure animée pendant l'attente).

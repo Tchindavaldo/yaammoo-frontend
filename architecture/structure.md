@@ -92,7 +92,9 @@ src/features/
 ├── payment/
 │   ├── constants/reviewPayment.ts        # REVIEW_STEP_MS — durée d'une étape simulée en review
 │   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout)
-│   └── components/CartPaymentOverlay.tsx # Capsule paiement panier (réseau intégré)
+│   └── components/
+│       ├── CartPaymentOverlay.tsx        # Capsule paiement panier (étapes)
+│       └── CartPaymentTopCard.tsx        # Sheet du haut : réseau + récap (contenu DEMO)
 
 ├── wallet/
 │   └── components/

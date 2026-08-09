@@ -5,7 +5,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Alert,
   Platform,
   RefreshControl,
   LayoutAnimation,
@@ -18,7 +17,8 @@ import { Commande, Menu } from "@/src/types";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
-import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
+import { CartZoneTable } from "@/src/features/orders/components/CartZoneTable";
+import { groupCartOrdersByZone } from "@/src/features/orders/utils/groupCartOrders";
 import { Theme } from "@/src/theme";
 import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
@@ -46,9 +46,9 @@ export default function OrdersScreen() {
     pendingToBuy,
     refresh,
     deleteOrder,
-    updateQuantity,
     updateLocalOrder,
     buyOrders,
+    saveOrder,
   } = useOrders();
   const { userData } = useAuth();
   const { isSignedIn } = useAuthGate();
@@ -60,6 +60,25 @@ export default function OrdersScreen() {
     () => computeCartTotal(pendingToBuy),
     [pendingToBuy],
   );
+
+  // Commandes regroupées par zone + créneau : une card de tableau par groupe.
+  const zoneGroups = useMemo(
+    () => groupCartOrdersByZone(pendingToBuy),
+    [pendingToBuy],
+  );
+
+  // Groupe (zone) en cours de paiement via "Tout payer" du pied de tableau.
+  // null = paiement global du panier (pilule "Tout commander" du header).
+  const [payingGroupKey, setPayingGroupKey] = useState<string | null>(null);
+  const payingGroup = useMemo(
+    () => zoneGroups.find((g) => g.key === payingGroupKey) || null,
+    [zoneGroups, payingGroupKey],
+  );
+  // Commandes et montant réellement payés : le groupe choisi, sinon tout le panier.
+  const ordersToPay = payingGroup
+    ? payingGroup.entries.map((e) => e.order)
+    : pendingToBuy;
+  const amountToPay = payingGroup ? payingGroup.total : cartTotal;
 
   // Paiement global du panier (logique propre, isolée de useCheckout).
   const {
@@ -161,16 +180,22 @@ export default function OrdersScreen() {
     return () => unregisterPaymentHandler();
   }, [paymentActive, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
 
+  // Fin de paiement (succès ou fermeture) : on repart en mode panier global.
+  const endPayment = React.useCallback(() => {
+    setPayingGroupKey(null);
+    resetPayment();
+  }, [resetPayment]);
+
   // Après succès complet (success_created) : rafraîchir + revenir au repos.
   useEffect(() => {
     if (paymentState === "success_created") {
       const timer = setTimeout(() => {
-        resetPayment();
+        endPayment();
         refresh();
       }, 5000);
       return () => clearTimeout(timer);
     }
-  }, [paymentState, resetPayment, refresh]);
+  }, [paymentState, endPayment, refresh]);
 
   // Toast d'erreur paiement.
   useEffect(() => {
@@ -210,14 +235,8 @@ export default function OrdersScreen() {
     setOrderToDelete(null);
   };
 
-  const handleUpdateQty = async (id: string, qty: number) => {
-    const success = await updateQuantity(id, qty);
-    if (!success)
-      Alert.alert("Erreur", "Impossible de mettre à jour la quantité");
-  };
-
   const validateAllDeliveries = (): string | null => {
-    for (const order of pendingToBuy) {
+    for (const order of ordersToPay) {
       const d = order.delivery as any;
       if (!d || !d.status || d.type === 'aucune') continue;
       const menuName = (order.menu as any)?.name || (order.menu as any)?.titre || 'Commande';
@@ -237,10 +256,11 @@ export default function OrdersScreen() {
       setPaymentState('input');
       return;
     }
-    // items = commandes du panier, sanitizées EXACTEMENT comme l'envoi historique
+    // items = commandes payées (le panier entier, ou la seule zone choisie via
+    // "Tout payer"), sanitizées EXACTEMENT comme l'envoi historique
     // (buyOrders → /order/tabs), via la fonction partagée sanitizeOrder.
-    const items = pendingToBuy.map((o) => sanitizeOrder(o, userData?.uid));
-    await handlePaymentConfirm(phone, items);
+    const items = ordersToPay.map((o) => sanitizeOrder(o, userData?.uid));
+    await handlePaymentConfirm(phone, items, amountToPay);
   };
 
   const onManualRefresh = async () => {
@@ -282,7 +302,10 @@ export default function OrdersScreen() {
       <HeaderPill
         label="Tout commander"
         icon="card-outline"
-        onPress={() => setPaymentState("input")}
+        onPress={() => {
+          setPayingGroupKey(null);
+          setPaymentState("input");
+        }}
       />
     ) : null;
 
@@ -299,12 +322,12 @@ export default function OrdersScreen() {
           BlurView du TabHeader floute la liste qui scrolle dessous. */}
       <View style={{ flex: 1 }}>
         <FlatList
-          data={pendingToBuy}
+          data={zoneGroups}
           renderItem={({ item }) => (
-            <ClientOrderCard
-              order={item}
-              onPress={() => {
-                setOrderToEdit(item);
+            <CartZoneTable
+              groups={[item]}
+              onSelect={(entry) => {
+                setOrderToEdit(entry.order);
                 setEditModalVisible(true);
               }}
               onDelete={(id) => {
@@ -312,13 +335,13 @@ export default function OrdersScreen() {
                 setOrderToEdit(null);
                 setOrderToDelete(id);
               }}
-              onUpdateQuantity={handleUpdateQty}
-              showActions={true}
+              onPayGroup={(group) => {
+                setPayingGroupKey(group.key);
+                setPaymentState("input");
+              }}
             />
           )}
-          keyExtractor={(item, index) =>
-            (item as any).id?.toString() || (item as any).idCmd?.toString() || index.toString()
-          }
+          keyExtractor={(item) => item.key}
           contentContainerStyle={[
             styles.listContent,
             { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 100 },
@@ -396,13 +419,13 @@ export default function OrdersScreen() {
             phone={paymentPhone}
             onPhoneChange={setPaymentPhone}
             onConfirm={confirmCartPayment}
-            totalAmount={cartTotal}
+            totalAmount={amountToPay}
             paymentState={paymentState}
             setPaymentState={setPaymentState}
             network={paymentNetwork}
             onNetworkChange={setPaymentNetwork}
             ussdMessage={ussdMessage}
-            onClose={resetPayment}
+            onClose={endPayment}
             onError={(msg) => setToast({ message: msg, type: 'error' })}
             isKeyboardVisible={isKeyboardVisible}
             /* Ancrée sur le bas du SHEET (son parent). C'est elle SEULE qui
@@ -436,6 +459,11 @@ export default function OrdersScreen() {
           initialOrder={orderToEdit}
           isCartMode={true}
           onChange={updateLocalOrder}
+          /* Enregistrer : persiste les modifs locales, la commande RESTE dans le
+             panier et le sheet reste ouvert (le toast est affiché par le sheet). */
+          onSave={(updatedOrder: any) =>
+            saveOrder({ ...updatedOrder, id: orderToEdit.id })
+          }
           onConfirm={async (updatedOrder) => {
             const result = await buyOrders([{ ...updatedOrder, status: 'pendingToBuy' }]);
             if (result.success) {
@@ -469,6 +497,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: 1,
+    paddingHorizontal: 12,
+    gap: 12,
   },
   emptyText: {
     marginTop: 10,

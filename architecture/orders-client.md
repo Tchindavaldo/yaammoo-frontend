@@ -16,7 +16,10 @@ yaammoo/src/features/orders/
 ├── services/
 │   ├── ratingService.ts       # API notation (menu + livreur) : rate, stats, avis
 │   └── ratingStatsCache.ts    # Cache mémoire des stats notation (anti-refetch/loader)
+├── utils/
+│   └── groupCartOrders.ts     # Regroupe le panier par zone + créneau (clé deliveryGroupKey)
 └── components/
+    ├── CartZoneTable.tsx     # Tableau du panier par zone (gabarit DeliveryZoneList)
     ├── ClientOrderCard.tsx    # Carte commande compacte (liste pending/processing)
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
     ├── OrderHeader.tsx        # Header de la page orders
@@ -66,6 +69,7 @@ yaammoo/src/features/orders/
 | `updateQuantity(id, qty)` | `PUT /order` `{id, quantity}` | Met à jour la quantité |
 | `updateLocalOrder(order)` | — | Met à jour localement sans appel réseau |
 | `buyOrders(orders)` | `PUT /order/tabs/:uid` | Passe au statut `pending` (achat panier) |
+| `saveOrder(order)` | `PUT /order` | Enregistre une commande du panier **sans l'acheter** — `status` retiré du payload, la commande reste `pendingToBuy` |
 
 **Tri par rank** :
 - `getFilteredByStatus()` trie automatiquement par `rank ASC` pour les statuts `pending`, `processing`, `active`, `in_progress`, `accept`
@@ -77,6 +81,46 @@ yaammoo/src/features/orders/
 - `menu` : copie légère sans les extras/drinks du menu source
 
 ---
+
+## CartZoneTable.tsx (panier)
+
+**Chemin** : `yaammoo/src/features/orders/components/CartZoneTable.tsx`
+
+Affichage du panier (`app/(tabs)/cart.tsx`) : **remplace les `ClientOrderCard`**.
+Même gabarit que le tableau des zones de la page 2 boutique
+(`merchant/components/edit-boutique/DeliveryZoneList.tsx`) — une card par groupe :
+
+- **Bandeau** : `ZONE · EXPRESS · heure` à gauche (icône orange : `flash` express,
+  `storefront` retrait, `location` créneau), **total du groupe** à droite.
+  Pas d'heure en express ni en retrait.
+- **Lignes** : une `ClientOrderCard` par commande, **design inchangé** (avatar,
+  prix, chips Extras/Boisson, poubelle). Tap → ouvre `CartCheckoutSheet`.
+  Le séparateur bas de la dernière card est neutralisé (`marginBottom: -1`) pour
+  ne pas doubler le bord arrondi de la card de zone.
+- **Pied de tableau** (après un trait) : à gauche `N cmd` + montant hors
+  livraison, puis `Livraison` + frais facturés (« Offerte » si nuls) ; à droite
+  le bouton **Tout payer** (`onPayGroup`). `articles + livraison === total`.
+
+**Regroupement** — `utils/groupCartOrders.ts` (`groupCartOrdersByZone`) : clé
+**`type | zone | heure`**. Toutes les commandes livrées de la même façon au même
+endroit sont dans UN seul tableau, **quelles que soient la boutique et la date**.
+
+> ⚠️ Cette clé d'affichage est plus large que `deliveryGroupKey`
+> ([`checkout/utils/cartDeliveryTotal`](checkout.md)), qui inclut en plus
+> `fastFoodId` + date car il décrit une **course facturable**. Le total d'un
+> groupe mutualise donc sur `deliveryGroupKey` **à l'intérieur** du groupe :
+> **Σ des totaux de groupes = `computeCartTotal`** (le montant envoyé au backend).
+> Deux boutiques dans la même zone = un seul tableau, mais deux courses facturées.
+
+**Paiement par zone** — « Tout payer » ne paie que les commandes du groupe :
+`cart.tsx` garde `payingGroupKey` (null = panier entier, pilule « Tout commander »)
+et en dérive `ordersToPay` / `amountToPay`, qui alimentent la validation, le
+`totalAmount` de l'overlay et `handlePaymentConfirm(phone, items, amountOverride)`
+([useCartPayment](payment.md)). `endPayment()` remet le mode global à la fermeture
+comme au succès.
+
+> La quantité ne s'édite plus depuis la liste (`updateQuantity` n'y est plus câblé) :
+> elle passe par le sheet de commande.
 
 ## ClientOrderCard.tsx
 

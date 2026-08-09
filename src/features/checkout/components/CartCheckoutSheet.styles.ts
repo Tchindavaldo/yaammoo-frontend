@@ -214,21 +214,20 @@ export const styles = StyleSheet.create({
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        // gap: 2,
+        gap: 4,
         borderTopWidth: 1,
     },
     actionBarLight: { backgroundColor: 'white', borderColor: '#f1f5f9' },
     priceSectionLeft: {
-        flex: 0.4,
+        flex: 1,
         alignItems: 'flex-start',
         justifyContent: 'center',
     },
     currencyText: {
-        fontSize: 22,
+        fontSize: 12,
         fontWeight: 'bold',
         textAlign: 'left',
-        // lineHeight: 19,
+        lineHeight: 14,
     },
     counterContainer: {
         flexDirection: 'row',
@@ -275,8 +274,26 @@ export const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
     },
+    // Bouton "save" : exactement le gabarit du "add To Cart" du home (meme
+    // flex, meme hauteur, meme rayon, meme ombre) — c'est le bouton secondaire
+    // de la nav, place a gauche du Valider.
+    saveBtn: {
+        flex: 1.5,
+        height: 48,
+        backgroundColor: '#ec4913',
+        borderRadius: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+        shadowColor: '#ec4913',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    },
     buyBtn: {
-        // flex: 0.2,
+        flex: 1.2,
         height: 48,
         backgroundColor: '#ec4913',
         borderRadius: 16,

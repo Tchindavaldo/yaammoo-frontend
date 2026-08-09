@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { ClientOrderCard } from "./ClientOrderCard";
 import type { CartOrderEntry, CartZoneGroup } from "../utils/groupCartOrders";
+import { ClientOrderCard } from "./ClientOrderCard";
 
 interface CartZoneTableProps {
   groups: CartZoneGroup[];
@@ -51,17 +51,7 @@ export const CartZoneTable: React.FC<CartZoneTableProps> = ({
             paddingHorizontal: 12,
           }}
         >
-          <Ionicons
-            name={
-              g.type === "express"
-                ? "flash"
-                : g.type === "aucune"
-                  ? "storefront"
-                  : "location"
-            }
-            size={14}
-            color="#ec4913"
-          />
+          <Ionicons name="location" size={14} color="#0f172a" />
           <Text
             style={{
               flex: 1,
@@ -96,6 +86,7 @@ export const CartZoneTable: React.FC<CartZoneTableProps> = ({
               onPress={() => onSelect(e)}
               onDelete={onDelete}
               showActions={!!onDelete}
+              darkPrice
             />
           </View>
         ))}
@@ -113,15 +104,40 @@ export const CartZoneTable: React.FC<CartZoneTableProps> = ({
             gap: 10,
           }}
         >
-          {/* Deux colonnes cote a cote : le libelle en haut, son prix dessous. */}
-          <View style={{ flex: 1, flexDirection: "row", gap: 18 }}>
-            <View style={{ gap: 2 }}>
-              <Text style={footLabel}>{g.entries.length} cmd</Text>
+          {/* Deux colonnes cote a cote : le libelle en haut, son prix dessous.
+              Separees par un filet vertical discret. */}
+          <View
+            style={{
+              flex: 1,
+              flexDirection: "row",
+              alignItems: "center",
+              paddingLeft: 10,
+            }}
+          >
+            <View style={{ gap: 3 }}>
+              <Text style={footLabel}>{g.entries.length} CMD</Text>
               <Text style={footValue}>{fmt(g.articles)}</Text>
             </View>
-            <View style={{ gap: 2 }}>
-              <Text style={footLabel}>Livraison</Text>
-              <Text style={footValue}>
+
+            <View
+              style={{
+                width: 1,
+                height: 26,
+                backgroundColor: "#e2e8f0",
+                marginHorizontal: 14,
+              }}
+            />
+
+            <View style={{ gap: 3 }}>
+              <Text style={footLabel}>LIVRAISON</Text>
+              <Text
+                style={[
+                  footValue,
+                  g.livraison > 0
+                    ? { color: "#ec4913" }
+                    : { color: "#16a34a", fontSize: 11 },
+                ]}
+              >
                 {g.livraison > 0 ? fmt(g.livraison) : "Offerte"}
               </Text>
             </View>
@@ -135,15 +151,17 @@ export const CartZoneTable: React.FC<CartZoneTableProps> = ({
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 5,
-                backgroundColor: "#ec4913",
+                backgroundColor: "#111827",
                 paddingHorizontal: 14,
                 height: 38,
                 borderRadius: 19,
               }}
             >
               <Ionicons name="card-outline" size={15} color="white" />
-              <Text style={{ color: "white", fontSize: 12, fontWeight: "bold" }}>
-                Tout payer
+              <Text
+                style={{ color: "white", fontSize: 12, fontWeight: "bold" }}
+              >
+                commander
               </Text>
             </TouchableOpacity>
           )}
@@ -153,14 +171,16 @@ export const CartZoneTable: React.FC<CartZoneTableProps> = ({
   </View>
 );
 
+// Libelle discret (petites capitales espacees), valeur mise en avant dessous.
 const footLabel = {
-  fontSize: 11,
-  fontWeight: "600" as const,
-  color: "#64748b",
+  fontSize: 10,
+  fontWeight: "700" as const,
+  color: "#94a3b8",
+  letterSpacing: 0.6,
 };
 
 const footValue = {
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: "bold" as const,
   color: "#0f172a",
 };

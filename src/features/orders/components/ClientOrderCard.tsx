@@ -16,6 +16,9 @@ interface ClientOrderCardProps {
   onUpdateQuantity?: (id: string, qty: number) => void;
   showActions?: boolean;
   hideRanking?: boolean;
+  /** Prix en noir au lieu de l'orange (panier : l'orange y est reserve aux
+   *  totaux de zone et au bouton de paiement). */
+  darkPrice?: boolean;
   onPress?: () => void;
 }
 
@@ -29,8 +32,10 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
     onUpdateQuantity,
     showActions = false,
     hideRanking = false,
+    darkPrice = false,
     onPress,
   }) => {
+    const priceStyle = [styles.summaryPrice, darkPrice && { color: "#111827" }];
     if (allOrders && allOrders.length > 0) {
       const orderCount = allOrders.length;
       const ffName = fastFood?.nom || fastFood?.name || "Boutique";
@@ -78,7 +83,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
             <View style={styles.summaryInfo}>
               <View style={styles.summaryTopRow}>
                 <View style={styles.summaryTitleContainer}>
-                  <Text style={styles.summaryPrice}>{totalPriceGroup} F</Text>
+                  <Text style={priceStyle}>{totalPriceGroup} F</Text>
                   <Text style={styles.summaryName} numberOfLines={1}>
                     {ffName}
                   </Text>
@@ -226,7 +231,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
           <View style={styles.summaryInfo}>
             <View style={styles.summaryTopRow}>
               <View style={styles.summaryTitleContainer}>
-                <Text style={styles.summaryPrice}>{totalPrice} F</Text>
+                <Text style={priceStyle}>{totalPrice} F</Text>
                 <Text style={styles.summaryName} numberOfLines={1}>
                   {groupedOrders
                     ? ` ${buildGroupLabel(groupedOrders.length)}`

@@ -295,10 +295,22 @@ rebénéficier, le user resaisit un code → nouvelle vérification.
 **Flux** :
 1. User clique une commande du panier → modal visible avec `initialOrder` pré-rempli
 2. `key={orderToEdit.id}` sur le composant → fresh state à chaque commande différente
-3. Clique "Save" → `PUT /order` avec les modifications
-4. Clique "Buy individuel" → `validateStock()` → `validateDelivery()` → `PUT /order/tabs/:userId` avec `[order]` (tableau d'un seul élément)
+3. Clique "save" → `onSave` → `PUT /order` (voir ci-dessous)
+4. Clique "Valider" → `validateStock()` → `validateDelivery()` → paiement
 
 **Différence avec CheckoutSheet** : pas de "Add to Cart" (commande déjà dans le panier). Le statut passe de `pendingToBuy` → `pending` via la transition backend.
+
+**Bouton "save" (`onSave`)** — enregistre les modifications locales **sans acheter** :
+- Appelle `saveOrder` du `OrderContext` (`PUT /order`, `status` retiré du payload) —
+  surtout **pas** `buyOrders`, qui passe par `/order/tabs` et déclencherait la
+  transition `pendingToBuy → pending` (cf. [orders-client.md](orders-client.md)).
+- Le sheet **reste ouvert** (toast « Modifications enregistrées ») pour permettre
+  de continuer à éditer ; seul "Valider" ferme.
+- Sans la prop `onSave`, le bouton n'est pas rendu.
+
+**Footer (`CartCheckoutFooter`)** : mêmes styles que le footer du home
+(`bottomActionBar` gap 4, prix `flex: 1` sur 2 lignes, `buyBtn` `flex: 1.2`) ; le
+bouton `save` reprend le gabarit du "add To Cart" (`flex: 1.5`, radius 24).
 
 ---
 

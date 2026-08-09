@@ -90,16 +90,18 @@ Affichage du panier (`app/(tabs)/cart.tsx`) : **remplace les `ClientOrderCard`**
 Même gabarit que le tableau des zones de la page 2 boutique
 (`merchant/components/edit-boutique/DeliveryZoneList.tsx`) — une card par groupe :
 
-- **Bandeau** : `ZONE · EXPRESS · heure` à gauche (icône orange : `flash` express,
-  `storefront` retrait, `location` créneau), **total du groupe** à droite.
-  Pas d'heure en express ni en retrait.
+- **Bandeau** : `ZONE · EXPRESS · heure` à gauche (icône `location` noire, la même
+  quel que soit le type), **total du groupe** en orange à droite. Pas d'heure en
+  express ni en retrait.
 - **Lignes** : une `ClientOrderCard` par commande, **design inchangé** (avatar,
-  prix, chips Extras/Boisson, poubelle). Tap → ouvre `CartCheckoutSheet`.
+  prix, chips Extras/Boisson, poubelle), avec `darkPrice` (prix en noir).
+  Tap → ouvre `CartCheckoutSheet`.
   Le séparateur bas de la dernière card est neutralisé (`marginBottom: -1`) pour
   ne pas doubler le bord arrondi de la card de zone.
-- **Pied de tableau** (après un trait) : à gauche `N cmd` + montant hors
-  livraison, puis `Livraison` + frais facturés (« Offerte » si nuls) ; à droite
-  le bouton **Tout payer** (`onPayGroup`). `articles + livraison === total`.
+- **Pied de tableau** (après un trait) : deux colonnes à gauche, libellé discret
+  au-dessus de son montant — `N CMD` + total hors livraison, filet vertical,
+  `LIVRAISON` + frais facturés (orange, ou « Offerte » en vert si nuls) ; à droite
+  le bouton **Tout payer** (fond noir, `onPayGroup`). `articles + livraison === total`.
 
 **Regroupement** — `utils/groupCartOrders.ts` (`groupCartOrdersByZone`) : clé
 **`type | zone | heure`**. Toutes les commandes livrées de la même façon au même
@@ -134,6 +136,7 @@ comme au succès.
 | `onUpdateQuantity` | `(id, qty) => void` | Callback mise à jour quantité |
 | `showActions` | boolean | Affiche les boutons d'action (défaut: false) |
 | `hideRanking` | boolean | Cache le badge rank/quantité à droite (défaut: false) |
+| `darkPrice` | boolean | Prix en noir au lieu de l'orange (défaut: false) — utilisé **uniquement** par `CartZoneTable` (panier) ; la page état des commandes garde l'orange |
 | `onPress` | `() => void` | Pression sur la carte |
 
 **Optimisation** : wrappé dans `React.memo` — évite les re-renders inutiles.

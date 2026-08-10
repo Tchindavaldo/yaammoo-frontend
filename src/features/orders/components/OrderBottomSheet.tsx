@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { MontantTab } from "../../merchant/components/MerchantOrderMontantTab";
 import { DriverInfoTab } from "./DriverInfoTab";
@@ -62,6 +63,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
   boutique,
   allOrders,
 }) => {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>("livraison");
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const translateY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -268,7 +270,12 @@ export const OrderBottomSheet: React.FC<Props> = ({
         </Animated.View>
 
         <Animated.View
-          style={[styles.sheet, { transform: [{ translateY }] }]}
+          style={[
+            styles.sheet,
+            // La barre de navigation système recouvrait le bas du sheet.
+            { height: SHEET_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
+            { transform: [{ translateY }] },
+          ]}
         >
           <View {...panResponder.panHandlers} style={styles.header}>
             <View style={styles.userRow}>

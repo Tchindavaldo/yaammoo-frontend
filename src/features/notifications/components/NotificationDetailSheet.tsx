@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
 
@@ -22,6 +23,7 @@ const formatDate = (iso?: string) => {
 };
 
 export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification, onClose, onAction }) => {
+  const insets = useSafeAreaInsets();
   if (!notification) return null;
   const title = notification.title || notification.titre || 'Notification';
   const message = notification.body || notification.message || '';
@@ -30,7 +32,10 @@ export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable
+          style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}
+          onPress={() => {}}
+        >
           <View style={styles.handle} />
           <View style={styles.topRow}>
             <View style={styles.topLeft}>

@@ -14,6 +14,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [structure.md](./structure.md) | Arborescence `app/`, `src/features/`, `src/components/`, `src/api/` |
 | [http-versioning.md](./http-versioning.md) | Versioning d'app dans les requêtes HTTP (`x-app-version`, `setupHttp.ts`, headers globaux) |
 | [tab-header.md](./tab-header.md) | En-têtes d'onglets uniformes (TabHeader, HeaderPill, DatePill, SectionSwitcher) |
+| [blur-safe-area.md](./blur-safe-area.md) | Flou unifié iOS/Android (AppBlurView) + safe-area des bottom sheets |
 | [auth.md](./auth.md) | Authentification client (Email/Password, Google/Apple Sign-In, AuthContext, **accès invité / AuthGate**) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |

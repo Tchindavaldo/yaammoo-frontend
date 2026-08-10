@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Loader } from "../../../components/Loader";
 import { styles } from "./CartCheckoutSheet.styles";
 
@@ -27,8 +28,16 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
   isSaving,
 }) => {
   const busy = isLoading || isSaving;
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={[styles.bottomActionBar, styles.actionBarLight]}>
+    <View
+      style={[
+        styles.bottomActionBar,
+        styles.actionBarLight,
+        { paddingBottom: 16 + insets.bottom },
+      ]}
+    >
       <View style={styles.priceSectionLeft}>
         <Text style={[styles.currencyText, styles.textDark]}>
           XAF {"\n"}

@@ -1,5 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   Animated,
@@ -195,24 +195,22 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
         },
       ]}
     >
-      <AnimatedBlurView
-        intensity={keyboardHeight.interpolate({
-          inputRange: [0, 100],
-          outputRange: [0, 90],
-          extrapolate: "clamp",
-        })}
+      {isKeyboardVisible && (
+      <BlurView
+        intensity={90}
         tint="dark"
+        // Seul flou qui fonctionne dans le sheet : il floute la carte récap,
+        // qui est dans la même fenêtre que lui.
+        experimentalBlurMethod="dimezisBlurView"
+        pointerEvents="none"
         style={[
           styles.blurOverlay,
-          {
-            height: keyboardHeight.interpolate({
-              inputRange: [0, 100],
-              outputRange: [0, SHEET_HEIGHT],
-              extrapolate: "clamp",
-            }),
-          },
+          // Pas d'animation ici : le voile apparaît et disparaît avec le
+          // clavier, sans fondu, seule la capsule est animée.
+          { height: SHEET_HEIGHT + insets.bottom },
         ]}
       />
+      )}
 
       <Animated.View
         style={[
@@ -230,19 +228,39 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
           },
         ]}
       >
-        <View
+        <Animated.View
           style={[
             styles.payFooterCapsule,
-            // Remonte la capsule au-dessus de la barre de navigation système.
-            { marginBottom: insets.bottom },
+            // Android : sans flou utilisable, c'est le fond qui porte le
+            // contraste. Il se densifie/s'allège en continu avec le clavier
+            // plutôt que de sauter d'une valeur à l'autre.
+            Platform.OS === "android" && {
+              backgroundColor: keyboardHeight.interpolate({
+                inputRange: [0, 100],
+                outputRange: ["rgba(0, 0, 0, 0.8)", "rgba(0, 0, 0, 0.6)"],
+                extrapolate: "clamp",
+              }),
+            },
+            // Remonte la capsule au-dessus de la barre de navigation système,
+            // et l'écarte du clavier quand elle est en position haute.
+            {
+              marginBottom:
+                insets.bottom +
+                (Platform.OS === "android" && isKeyboardVisible ? 16 : 0),
+            },
           ]}
         >
-          <BlurView
-            experimentalBlurMethod="dimezisBlurView"
-            intensity={80}
-            tint="dark"
-            style={StyleSheet.absoluteFill}
-          />
+          {/* Android : clavier ouvert, la capsule est devant la carte récap et
+              le flou n'apporte rien (il ne traverse pas la fenêtre de la Modal),
+              le fond noir seul suffit. */}
+          {!(Platform.OS === "android" && isKeyboardVisible) && (
+            <BlurView
+              experimentalBlurMethod="dimezisBlurView"
+              intensity={80}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
+          )}
 
           <AnimatedBorderGlow
             active={localPaymentState !== "input"}
@@ -344,7 +362,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
             </View>
           )}
           </Animated.View>
-        </View>
+        </Animated.View>
       </Animated.View>
     </Animated.View>
   );
@@ -362,6 +380,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  // Borné à la hauteur du sheet et ancré en bas : couvre la carte récap
+  // au-dessus de la capsule, pas le reste de la page.
   blurOverlay: {
     position: "absolute",
     bottom: 0,
@@ -394,6 +414,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
   },
+  // Android : pas de flou possible dans une Modal, on densifie le fond.
   inputWrapper: {
     flex: 1,
     flexDirection: "row",

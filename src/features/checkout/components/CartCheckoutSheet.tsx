@@ -8,6 +8,7 @@ import {
   Text,
   Animated,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../../components/Toast";
 import { Ionicons } from "@expo/vector-icons";
 import { Menu } from "@/src/types";
@@ -81,6 +82,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
   // Animation d'ouverture/fermeture : voile noir en fade, sheet en slide-up net
   // (contenu jamais estompé) — identique au CheckoutSheet du home.
+  const insets = useSafeAreaInsets();
   const SHEET_HEIGHT = 384;
   const sheetTranslate = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -272,6 +274,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             style={[
               styles.sheetContainer,
               styles.sheetLight,
+              // Hauteur augmentée de l'inset bas : sur Android la barre de
+              // navigation système recouvrait le footer du sheet.
+              { height: SHEET_HEIGHT + insets.bottom },
               { transform: [{ translateY: sheetTranslate }] },
             ]}
           >

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
@@ -12,6 +13,7 @@ interface AddMenuSheetProps {
 }
 
 export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, onSave, loading }) => {
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState({
     titre: '',
     prix1: '',
@@ -45,7 +47,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.overlay}
       >
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.header}>
             <Text style={styles.title}>Nouveau Menu</Text>
             <TouchableOpacity onPress={onClose}>

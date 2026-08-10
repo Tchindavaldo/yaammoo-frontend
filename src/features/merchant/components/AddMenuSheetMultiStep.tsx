@@ -22,6 +22,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MenuRecap } from "./recap-designs/MenuRecap";
 
 type Step = "nameImage" | "details" | "recap";
@@ -83,6 +84,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   existingMenu,
   embedded = false,
 }) => {
+  const insets = useSafeAreaInsets();
   // En mode intégré, le footer doit dégager la tab bar du bas (toujours visible).
   const EMBEDDED_TAB_BAR = 65;
   const [step, setStep] = useState<Step>("nameImage");
@@ -1076,6 +1078,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         <Animated.View
           style={[
             styles.sheetWrap,
+            // La barre de navigation système recouvrait le bas de la sheet.
+            { height: MODAL_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
             {
               transform: [
                 {

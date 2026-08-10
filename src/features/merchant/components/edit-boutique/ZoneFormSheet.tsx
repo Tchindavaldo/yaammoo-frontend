@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
@@ -61,6 +62,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
   onSave,
   fallbackHour,
 }) => {
+  const insets = useSafeAreaInsets();
   const hr = activeHour || newHour;
 
   return (
@@ -87,7 +89,8 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               padding: 20,
-              paddingBottom: 28,
+              // Dégage la barre de navigation système.
+              paddingBottom: 28 + insets.bottom,
             }}
           >
             <View
@@ -240,7 +243,8 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                   backgroundColor: "#1e293b",
                   borderTopLeftRadius: 24,
                   borderTopRightRadius: 24,
-                  paddingBottom: 24,
+                  // Dégage la barre de navigation système.
+                  paddingBottom: 24 + insets.bottom,
                 }}
               >
                 <TouchableOpacity

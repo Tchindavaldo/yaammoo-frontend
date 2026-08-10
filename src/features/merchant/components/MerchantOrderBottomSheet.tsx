@@ -4,6 +4,7 @@ import {
   Animated, Dimensions, Easing, PanResponder, Pressable, Modal,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Commande } from '@/src/types';
 import { Toast } from '@/src/components/Toast';
@@ -161,6 +162,7 @@ function buildUser(order: Commande): DeliveryUser {
 export default function MerchantOrderBottomSheet({
   order, visible, onClose, allOrders, groupPool, onValidate, canValidate = false,
 }: Props) {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const [validating, setValidating] = useState(false);
@@ -422,6 +424,9 @@ export default function MerchantOrderBottomSheet({
           style={[
             styles.sheet,
             zones.length > 1 && { height: SHEET_HEIGHT + CMD_BAR_HEIGHT },
+            // Hauteur augmentée de l'inset bas : la barre de navigation
+            // système recouvrait le bas du sheet.
+            { height: (zones.length > 1 ? SHEET_HEIGHT + CMD_BAR_HEIGHT : SHEET_HEIGHT) + insets.bottom, paddingBottom: insets.bottom },
             { transform: [{ translateY }] },
           ]}
         >

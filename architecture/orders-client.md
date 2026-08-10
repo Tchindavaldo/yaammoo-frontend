@@ -19,6 +19,7 @@ yaammoo/src/features/orders/
 ├── utils/
 │   └── groupCartOrders.ts     # Regroupe le panier par zone + créneau (clé deliveryGroupKey)
 └── components/
+    ├── CartFastFoodFilter.tsx # Filtre fastfood collant du panier (duplication autonome d'OrderTrackingHeader)
     ├── CartZoneTable.tsx     # Tableau du panier par zone (gabarit DeliveryZoneList)
     ├── ClientOrderCard.tsx    # Carte commande compacte (liste pending/processing)
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
@@ -123,6 +124,35 @@ comme au succès.
 
 > La quantité ne s'édite plus depuis la liste (`updateQuantity` n'y est plus câblé) :
 > elle passe par le sheet de commande.
+
+## CartFastFoodFilter.tsx (panier)
+
+**Chemin** : `yaammoo/src/features/orders/components/CartFastFoodFilter.tsx`
+
+Filtre par boutique en haut du panier, **duplication autonome** du filtre de la
+page « État des commandes » (`OrderTrackingHeader`) : les deux évoluent
+séparément, aucune modification de l'un n'impacte l'autre.
+
+- **Position collante** : rendu en `position: absolute` sous le `TabHeader`
+  (`top: HEADER_HEIGHT`, `zIndex: 999`) — il ne scrolle pas avec la liste.
+  `cart.tsx` mesure sa hauteur via `onLayout` (`filterHeight`) et en dérive
+  `LIST_TOP = HEADER_HEIGHT + filterHeight`, appliqué au `paddingTop` de la
+  `FlatList`, à `scrollIndicatorInsets` et à `progressViewOffset`.
+- **Rendu conditionnel** : masqué à 0 ou 1 boutique dans le panier
+  (`filterHeight` remis à 0, aucune hauteur réservée).
+
+**Props** — `fastFoods: CartFastFood[]`, `selectedFastFoodId`, `onFastFoodPress`.
+
+| Champ de `CartFastFood` | Source |
+|---|---|
+| `id` / `name` / `image` | `useFastFoods()` croisé avec `order.fastFoodId` |
+| `orderCount` | nombre de commandes `pendingToBuy` de la boutique |
+| `total` | `computeCartTotal()` des commandes de la boutique (livraison mutualisée) |
+
+**Effet sur la liste** — la boutique sélectionnée filtre `pendingToBuy` en
+`visibleCartOrders`, qui alimente `groupCartOrdersByZone` : seuls les tableaux de
+zone de cette boutique sont affichés. Sélection par défaut = première boutique ;
+si la boutique courante disparaît du panier, on re-sélectionne la première.
 
 ## ClientOrderCard.tsx
 

@@ -18,6 +18,11 @@ import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { CartZoneTable } from "@/src/features/orders/components/CartZoneTable";
+import {
+  CartFastFoodFilter,
+  type CartFastFood,
+} from "@/src/features/orders/components/CartFastFoodFilter";
+import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { groupCartOrdersByZone } from "@/src/features/orders/utils/groupCartOrders";
 import { Theme } from "@/src/theme";
 import { BlurView } from "expo-blur";
@@ -61,10 +66,69 @@ export default function OrdersScreen() {
     [pendingToBuy],
   );
 
+  // Filtre fastfood du haut de page (duplication du filtre « État des commandes »).
+  const { fastFoods } = useFastFoods();
+  const [selectedFastFoodId, setSelectedFastFoodId] = useState<string | null>(
+    null,
+  );
+
+  // Fastfoods présents dans le panier + nombre de commandes et montant total
+  // (livraison mutualisée incluse) par fastfood.
+  const cartFastFoods = useMemo<CartFastFood[]>(() => {
+    const map = new Map<string, CartFastFood>();
+    const ordersByFf = new Map<string, any[]>();
+    pendingToBuy.forEach((o: any) => {
+      const ffId = o.fastFoodId;
+      if (!ffId) return;
+      let entry = map.get(ffId);
+      if (!entry) {
+        const ff: any = fastFoods.find((f: any) => f.id === ffId);
+        entry = {
+          id: ffId,
+          name: ff?.nom || ff?.name || "Boutique",
+          image: ff?.image || ff?.logo || ff?.coverImage,
+          orderCount: 0,
+          total: 0,
+        };
+        map.set(ffId, entry);
+      }
+      entry.orderCount += 1;
+      ordersByFf.set(ffId, [...(ordersByFf.get(ffId) || []), o]);
+    });
+    // Total par fastfood : même calcul que le total panier (livraison mutualisée).
+    map.forEach((entry, ffId) => {
+      entry.total = computeCartTotal(ordersByFf.get(ffId) || []);
+    });
+    return Array.from(map.values());
+  }, [pendingToBuy, fastFoods]);
+
+  // Sélection par défaut : le premier fastfood ; on re-sélectionne si celui en
+  // cours disparaît du panier.
+  useEffect(() => {
+    // 0 ou 1 fastfood : le filtre n'est pas rendu, il ne réserve aucune hauteur.
+    if (cartFastFoods.length <= 1) setFilterHeight(0);
+    if (cartFastFoods.length === 0) {
+      if (selectedFastFoodId !== null) setSelectedFastFoodId(null);
+      return;
+    }
+    if (!cartFastFoods.some((f) => f.id === selectedFastFoodId)) {
+      setSelectedFastFoodId(cartFastFoods[0].id);
+    }
+  }, [cartFastFoods, selectedFastFoodId]);
+
+  // Commandes du fastfood sélectionné (le filtre pilote la liste des tableaux).
+  const visibleCartOrders = useMemo(
+    () =>
+      selectedFastFoodId
+        ? pendingToBuy.filter((o: any) => o.fastFoodId === selectedFastFoodId)
+        : pendingToBuy,
+    [pendingToBuy, selectedFastFoodId],
+  );
+
   // Commandes regroupées par zone + créneau : une card de tableau par groupe.
   const zoneGroups = useMemo(
-    () => groupCartOrdersByZone(pendingToBuy),
-    [pendingToBuy],
+    () => groupCartOrdersByZone(visibleCartOrders),
+    [visibleCartOrders],
   );
 
   // Groupe (zone) en cours de paiement via "Tout payer" du pied de tableau.
@@ -210,6 +274,9 @@ export default function OrdersScreen() {
   // Hauteur réelle du TabHeader, mesurée via onHeightChange.
   const [headerHeight, setHeaderHeight] = useState(60 + insets.top);
   const HEADER_HEIGHT = headerHeight;
+  // Hauteur mesurée du filtre fastfood absolu (0 si panier vide).
+  const [filterHeight, setFilterHeight] = useState(0);
+  const LIST_TOP = HEADER_HEIGHT + filterHeight;
 
   // For testing: force loader to persist
   const [forceLoading] = useState(false);
@@ -321,6 +388,25 @@ export default function OrdersScreen() {
       {/* Pas de paddingTop ici : le contenu s'étend SOUS le header pour que le
           BlurView du TabHeader floute la liste qui scrolle dessous. */}
       <View style={{ flex: 1 }}>
+        {/* Filtre fastfood collé sous le header (position absolue), comme sur
+            la page « État des commandes » : il ne scrolle pas avec la liste. */}
+        <View
+          style={{
+            position: "absolute",
+            top: HEADER_HEIGHT,
+            left: 0,
+            right: 0,
+            zIndex: 999,
+          }}
+          onLayout={(e) => setFilterHeight(e.nativeEvent.layout.height)}
+        >
+          <CartFastFoodFilter
+            fastFoods={cartFastFoods}
+            selectedFastFoodId={selectedFastFoodId}
+            onFastFoodPress={setSelectedFastFoodId}
+          />
+        </View>
+
         <FlatList
           data={zoneGroups}
           renderItem={({ item }) => (
@@ -344,14 +430,14 @@ export default function OrdersScreen() {
           keyExtractor={(item) => item.key}
           contentContainerStyle={[
             styles.listContent,
-            { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 100 },
+            { paddingTop: LIST_TOP, paddingBottom: tabBarHeight + 100 },
           ]}
-          scrollIndicatorInsets={{ top: HEADER_HEIGHT }}
+          scrollIndicatorInsets={{ top: LIST_TOP }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onManualRefresh}
-              progressViewOffset={HEADER_HEIGHT}
+              progressViewOffset={LIST_TOP}
               tintColor={Theme.colors.primary}
               colors={[Theme.colors.primary]}
             />

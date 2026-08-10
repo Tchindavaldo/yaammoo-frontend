@@ -74,7 +74,7 @@ export const CartZoneTable: React.FC<CartZoneTableProps> = ({
         {/* Corps : une ClientOrderCard par commande, design INCHANGÉ.
             Le separateur bas de la derniere card est masque : il doublerait le
             bord arrondi de la card de zone. */}
-        {g.entries.map((e, i) => (
+        {/* {g.entries.map((e, i) => (
           <View
             key={e.order?.id?.toString() || `${g.key}-${i}`}
             style={
@@ -89,7 +89,7 @@ export const CartZoneTable: React.FC<CartZoneTableProps> = ({
               darkPrice
             />
           </View>
-        ))}
+        ))} */}
 
         {/* Pied de tableau : recap du groupe + paiement de la zone. */}
         <View

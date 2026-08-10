@@ -8,7 +8,10 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  StyleSheet,
 } from "react-native";
+import { useSheetAnimation } from "./useSheetAnimation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -64,27 +67,32 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const hr = activeHour || newHour;
+  const { mounted, backdropOpacity, translateY } = useSheetAnimation(visible);
+
+  if (!mounted) return null;
 
   return (
-    <Modal transparent={true} visible={visible} animationType="slide">
+    <Modal transparent={true} visible={mounted} animationType="none">
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "flex-end",
-            backgroundColor: "rgba(15,23,42,0.4)",
-          }}
-        >
+        <View style={{ flex: 1, justifyContent: "flex-end" }}>
+          <Animated.View
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              backgroundColor: "rgba(15,23,42,0.4)",
+              opacity: backdropOpacity,
+            }}
+          />
           <TouchableOpacity
             style={{ flex: 1 }}
             activeOpacity={1}
             onPress={onClose}
           />
-          <View
+          <Animated.View
             style={{
+              transform: [{ translateY }],
               backgroundColor: "#fff",
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
@@ -223,7 +231,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                 </View>
               </View>
             </ScrollView>
-          </View>
+          </Animated.View>
 
           {/* Time picker intégré au bottom sheet (évite l'empilement de 2 Modals) */}
           {showTimePicker && (

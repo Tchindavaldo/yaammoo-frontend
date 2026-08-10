@@ -78,7 +78,6 @@ export const useEditBoutique = ({
   const [orderLeadTime, setOrderLeadTime] = useState("");
   const [advanceDays, setAdvanceDays] = useState("");
   const [pickupAllowed, setPickupAllowed] = useState(false);
-  const [page, setPage] = useState(1);
   const [tempDeliveryTime, setTempDeliveryTime] = useState(new Date());
 
   // Picker states
@@ -316,8 +315,6 @@ export const useEditBoutique = ({
     loadingData,
     headerHeight,
     setHeaderHeight,
-    page,
-    setPage,
     // infos boutique
     name,
     setName,

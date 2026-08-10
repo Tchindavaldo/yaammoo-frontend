@@ -15,8 +15,8 @@ import { useEditBoutique } from "./edit-boutique/useEditBoutique";
 import { groupZonesByLieu } from "./edit-boutique/groupZones";
 import { hourToDate } from "./edit-boutique/parseBoutique";
 import { BoutiqueInfoPage } from "./edit-boutique/BoutiqueInfoPage";
-import { DeliveryPage } from "./edit-boutique/DeliveryPage";
 import { ZoneFormSheet } from "./edit-boutique/ZoneFormSheet";
+import { ZoneListSheet } from "./edit-boutique/ZoneListSheet";
 import {
   TimePickerOverlay,
   CityPickerModal,
@@ -40,6 +40,8 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const s = useEditBoutique({ visible, onClose, onSuccess });
+  // Sheet de consultation des zones, ouvrable depuis la page 1.
+  const [showZoneList, setShowZoneList] = React.useState(false);
 
   if (!visible) return null;
 
@@ -72,6 +74,16 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
       s.expressZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ?? -1;
     s.setPeriodicEditIdx(entry.periodicPrix !== undefined ? pIdx : null);
     s.setExpressEditIdx(entry.expressPrix !== undefined ? eIdx : null);
+  };
+
+  // Depuis la liste : on ferme d'abord ce sheet, puis on ouvre le formulaire.
+  // Deux Modals ouverts en meme temps s'annulent (le second ne s'affiche pas).
+  const openZoneFromList = (
+    lieu: string,
+    entry: { hour: string; periodicPrix?: string; expressPrix?: string },
+  ) => {
+    setShowZoneList(false);
+    setTimeout(() => openZone(lieu, entry), 260);
   };
 
   // Ouvre le bottom sheet vierge (bouton "Ajouter une adresse").
@@ -128,7 +140,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
               <ActivityIndicator size="large" color={Theme.colors.primary} />
               <Text style={styles.loaderText}>Chargement de la boutique…</Text>
             </View>
-          ) : s.page === 1 ? (
+          ) : (
             <BoutiqueInfoPage
               image={s.image}
               pickImage={s.pickImage}
@@ -147,33 +159,33 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
               setWhatsappNumber={s.setWhatsappNumber}
               selectedCities={s.selectedCities}
               onCityPress={() => s.setShowCityPicker(true)}
+              onAddZone={openNewZone}
+              onViewZones={() => setShowZoneList(true)}
               orderLeadTime={s.orderLeadTime}
               setOrderLeadTime={s.setOrderLeadTime}
               advanceDays={s.advanceDays}
               setAdvanceDays={s.setAdvanceDays}
-              onNext={() => s.setPage(2)}
-            />
-          ) : (
-            <DeliveryPage
-              hasHours={s.deliveryHours.length > 0}
-              groups={groups}
-              selectedHour={s.viewAllHours ? null : s.activeHour}
-              selectedLieu={
-                s.viewAllHours
-                  ? null
-                  : s.periodicDraft.lieu || s.expressDraft.lieu || null
-              }
-              onSelectZone={openZone}
-              onAddAddress={openNewZone}
               pickupAllowed={s.pickupAllowed}
               setPickupAllowed={s.setPickupAllowed}
               loading={s.loading}
-              onBack={() => s.setPage(1)}
               onSubmit={s.handleUpdate}
             />
           )}
         </View>
       </KeyboardAvoidingView>
+
+      <ZoneListSheet
+        visible={showZoneList}
+        onClose={() => setShowZoneList(false)}
+        groups={groups}
+        selectedHour={s.viewAllHours ? null : s.activeHour}
+        selectedLieu={
+          s.viewAllHours
+            ? null
+            : s.periodicDraft.lieu || s.expressDraft.lieu || null
+        }
+        onSelect={openZoneFromList}
+      />
 
       <ZoneFormSheet
         visible={s.showEditForm}

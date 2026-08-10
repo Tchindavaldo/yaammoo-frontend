@@ -6,12 +6,19 @@ Documentation du formulaire de création et d'édition de la boutique marchande,
 
 ## Pages & Navigation (Pagination)
 
-Les deux panneaux (`CreateBoutiquePanel`, `EditBoutiquePanel`) sont découpés en **2 pages** :
+`CreateBoutiquePanel` reste en **2 pages**. `EditBoutiquePanel` est desormais en
+**page unique** : toutes les infos generales, le bloc "Zone de livraison"
+(icones add / view ouvrant les bottom sheets) et la checkbox pickup, avec le
+bouton "Mettre a jour" fixe en bas. Il n'y a plus de page 2 en edition
+(`DeliveryPage.tsx` supprime) : les zones se gerent via `ZoneListSheet` et
+`ZoneFormSheet`.
+
+Pagination de `CreateBoutiquePanel` (inchangée) :
 
 | Page | Contenu | Bouton bas |
 |---|---|---|
 | **1** | Avatar + Nom, Ouverture/Fermeture, OM/MOMO/WhatsApp, Villes, Délai, Jours | "Suivant" (fixe) |
-| **2** | Créneaux horaires + zones périodiques/express + pickup | "Retour" + "Créer"/"Mettre à jour" |
+| **2** | Créneaux horaires + zones périodiques/express + pickup | "Retour" + "Créer" |
 
 ---
 
@@ -88,6 +95,8 @@ expressEditIdx: number | null
 | Fichier | Rôle |
 |---|---|
 | `src/features/merchant/components/EditBoutiquePanel.tsx` | Édition boutique (orchestrateur ; logique et rendu découpés dans `edit-boutique/`) |
+| `src/features/merchant/components/edit-boutique/ZoneListSheet.tsx` | Bottom sheet listant les zones (réutilise `DeliveryZoneList`), ouvert par l'icône view ; clic sur une ligne → `ZoneFormSheet` |
+| `src/features/merchant/components/edit-boutique/useSheetAnimation.ts` | Animation partagée des bottom sheets (fond noir en fondu + glissement) |
 | `src/features/merchant/components/CreateBoutiquePanel.tsx` | Création boutique (pleine page) |
 | `src/features/merchant/components/NoBoutiquePanel.tsx` | Écran d'accueil "pas de boutique" (inchangé) |
 
@@ -99,12 +108,21 @@ Constante `CAMEROON_CITIES` (30 villes) utilisée dans les deux panneaux pour le
 
 ## Flux utilisateur
 
+**Création** (2 pages) :
+
 1. Remplir page 1 (infos générales) → clic "Suivant"
 2. Page 2 : ajouter des heures via le time picker
 3. Pour chaque heure : cocher périodique et/ou express
 4. Saisir les lieux/prix dans chaque bloc activé
 5. Option : cocher "Le client peut passer à la boutique"
-6. Clic "Créer ma boutique" / "Mettre à jour"
+6. Clic "Créer ma boutique"
+
+**Édition** (page unique) :
+
+1. Remplir les infos générales
+2. Bloc "Zone de livraison" : icône `+` → `ZoneFormSheet` (heure, périodique/express, prix, lieu) ; icône œil → `ZoneListSheet` (liste des zones, clic sur une ligne = édition)
+3. Option : cocher "Le client peut passer à la boutique"
+4. Clic "Mettre à jour"
 
 ---
 

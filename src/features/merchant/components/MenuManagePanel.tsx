@@ -2,7 +2,7 @@ import { Config } from "@/src/api/config";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";

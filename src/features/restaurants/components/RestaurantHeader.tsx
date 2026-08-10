@@ -1,5 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import {
+  AppBlurView as BlurView,
+  isNativeBlurAvailable,
+} from "@/src/components/AppBlurView";
 import { Image } from "expo-image";
 import React from "react";
 import {
@@ -53,7 +56,11 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     <BlurView
       intensity={80}
       tint="light"
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={[
+        styles.container,
+        !isNativeBlurAvailable && styles.containerOpaque,
+        { paddingTop: insets.top },
+      ]}
     >
       {/* Barre d'outils : localisation à gauche, actions (panier / commandes / notif / profil) à droite */}
       <View style={styles.toolbar1}>
@@ -162,6 +169,10 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
     backgroundColor: "rgba(255,255,255,0.15)",
+  },
+  // Sans flou natif (Android < 12), fond opaque pour masquer le contenu dessous.
+  containerOpaque: {
+    backgroundColor: "#ffffff",
   },
   toolbar1: {
     flexDirection: "row",

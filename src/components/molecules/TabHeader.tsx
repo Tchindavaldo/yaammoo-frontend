@@ -1,5 +1,8 @@
 import { Theme } from "@/src/theme";
-import { BlurView } from "expo-blur";
+import {
+  AppBlurView as BlurView,
+  isNativeBlurAvailable,
+} from "@/src/components/AppBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -35,10 +38,18 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
 
   return (
     <View
-      style={[styles.header, { paddingTop: insets.top }]}
+      style={[
+        styles.header,
+        !isNativeBlurAvailable && styles.headerOpaque,
+        { paddingTop: insets.top },
+      ]}
       onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
     >
-      <BlurView tint="light" intensity={120} style={StyleSheet.absoluteFill} />
+      <BlurView
+        tint="light"
+        intensity={120}
+        style={StyleSheet.absoluteFill}
+      />
       {/* Dégradé doux orange par-dessus le blur (le texte reste foncé/lisible). */}
       <LinearGradient
         colors={[Theme.colors.primary + "0A", Theme.colors.primary + "33"]}
@@ -76,6 +87,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.4,
     borderBottomColor: Theme.colors.primary,
     overflow: "hidden",
+  },
+  // Sans flou natif (Android < 12), le fond doit être opaque : sinon le contenu
+  // qui scrolle passe en transparence sous le header.
+  headerOpaque: {
+    backgroundColor: "#ffffff",
   },
   backBtn: {
     marginRight: 8,

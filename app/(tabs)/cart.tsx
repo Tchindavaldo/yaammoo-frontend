@@ -25,7 +25,7 @@ import {
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { groupCartOrdersByZone } from "@/src/features/orders/utils/groupCartOrders";
 import { Theme } from "@/src/theme";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";

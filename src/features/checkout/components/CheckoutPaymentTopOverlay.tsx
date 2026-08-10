@@ -1,6 +1,9 @@
 import { Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import {
+  AppBlurView as BlurView,
+  isNativeBlurAvailable,
+} from "@/src/components/AppBlurView";
 import React from "react";
 import {
   Animated,
@@ -10,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -18,7 +22,7 @@ const SHEET_HEIGHT = 384;
 // Hauteur réservée en bas pour la capsule de paiement (CheckoutPaymentOverlay)
 // + gap pour ne pas coller les deux overlays.
 const BOTTOM_CAPSULE_SPACE = 70; // hauteur capsule
-const GAP = 12; // espace entre les deux overlays
+const GAP = 4; // espace entre les deux overlays
 
 type PaymentState =
   | "network_select"
@@ -171,6 +175,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
 }) => {
   const anim = React.useRef(new Animated.Value(0)).current; // 0 = caché, 1 = visible
   // Reste monté tant que l'animation de sortie n'est pas terminée.
+  const insets = useSafeAreaInsets();
   const [mounted, setMounted] = React.useState(visible);
 
   React.useEffect(() => {
@@ -196,10 +201,20 @@ export const CheckoutPaymentTopOverlay: React.FC<
   if (!mounted || !menu) return null;
 
   return (
-    <View style={styles.wrapper} pointerEvents="box-none">
+    <View
+      style={[
+        styles.wrapper,
+        {
+          height: SHEET_HEIGHT + insets.bottom,
+          paddingBottom: BOTTOM_CAPSULE_SPACE + GAP + insets.bottom,
+        },
+      ]}
+      pointerEvents="box-none"
+    >
       <Animated.View
         style={[
           styles.panel,
+          !isNativeBlurAvailable && styles.panelOpaque,
           {
             opacity: anim,
             transform: [
@@ -277,6 +292,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
+  },
+  // Sans flou natif (Android < 12), le panneau doit être opaque : sinon le
+  // contenu du sheet situé derrière reste lisible au travers.
+  panelOpaque: {
+    backgroundColor: "#ffffff",
   },
   content: {
     flex: 1,

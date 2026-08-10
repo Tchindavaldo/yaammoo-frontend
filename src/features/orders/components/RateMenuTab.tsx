@@ -6,7 +6,7 @@ import { ratingStatsCache } from "@/src/features/orders/services/ratingStatsCach
 import { socketService } from "@/src/services/socket";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,

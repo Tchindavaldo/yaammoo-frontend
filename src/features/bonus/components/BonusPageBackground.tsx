@@ -1,4 +1,4 @@
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 // `expo-image` (et non `Image` de react-native) : il garde l'asset en cache
 // mémoire, donc au 2e affichage de la page le fond est peint dès la 1re frame.
 import { Image } from "expo-image";

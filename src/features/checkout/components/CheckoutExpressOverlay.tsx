@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 import { verifyBonusCode } from "../services/verifyBonusCode";

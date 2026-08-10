@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
 import * as Location from 'expo-location';
 

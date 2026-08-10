@@ -1,7 +1,7 @@
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Image } from "expo-image";
 import React, { useState } from "react";
 import {

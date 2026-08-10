@@ -21,7 +21,10 @@ import { auth } from '@/src/services/firebase';
 import { Theme } from '@/src/theme';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import { BlurView } from 'expo-blur';
+import {
+  AppBlurView as BlurView,
+  isNativeBlurAvailable,
+} from '@/src/components/AppBlurView';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import React, { useEffect, useState } from 'react';
@@ -260,7 +263,12 @@ export default function SettingsScreen() {
   return (
     <View style={styles.container}>
       {/* Header Profil Fixe et Flouté */}
-      <BlurView intensity={80} tint="light" style={[styles.profileCard, { paddingTop: insets.top + 20 }]}>
+      <BlurView
+        intensity={80}
+        tint="light"
+        style={[styles.profileCard, { paddingTop: insets.top + 20 }]}
+        fallbackStyle={styles.profileCardOpaque}
+      >
         <View style={styles.avatarContainer}>
           <Text style={styles.avatarText}>{initiales}</Text>
           <View style={styles.onlineDot} />
@@ -703,6 +711,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  // Sans flou natif (Android < 12), fond opaque : le contenu qui scrolle
+  // dessous ne doit pas transparaître.
+  profileCardOpaque: {
+    backgroundColor: '#ffffff',
   },
   profileCard: {
     position: 'absolute',

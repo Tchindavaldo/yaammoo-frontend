@@ -1,4 +1,4 @@
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, View, type ViewProps } from "react-native";

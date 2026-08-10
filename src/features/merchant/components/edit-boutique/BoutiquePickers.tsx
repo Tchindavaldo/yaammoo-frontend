@@ -9,7 +9,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { CAMEROON_CITIES } from "./constants";

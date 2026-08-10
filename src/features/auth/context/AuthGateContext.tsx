@@ -16,7 +16,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 

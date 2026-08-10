@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { BlurView } from 'expo-blur';
+import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
@@ -250,13 +250,22 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           <Text style={styles.v4TitleNew} numberOfLines={2}>{menu.titre}</Text>
 
           {/* Prix badge audacieux */}
-          <BlurView intensity={0}  style={styles.v4PriceBadgeNew}>
+          <BlurView
+            experimentalBlurMethod="dimezisBlurView"
+            intensity={0}
+            style={styles.v4PriceBadgeNew}
+          >
             <Text style={styles.v4PriceNew}>{price}</Text>
           </BlurView>
         </View>
 
         {/* Barre de stock + livraison en bas */}
-        <BlurView intensity={60} tint="light" style={styles.v4StockBar}>
+        <BlurView
+          experimentalBlurMethod="dimezisBlurView"
+          intensity={60}
+          tint="light"
+          style={styles.v4StockBar}
+        >
           <View style={styles.v4StockMainRow}>
             {/* Côté gauche: Stock + Progression */}
             <View style={styles.v4StockLeftSection}>

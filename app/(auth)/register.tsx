@@ -13,7 +13,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/src/features/auth/context/AuthContext";

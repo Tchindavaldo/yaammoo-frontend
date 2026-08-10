@@ -5,7 +5,7 @@ import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import React, {
   useCallback,
   useEffect,

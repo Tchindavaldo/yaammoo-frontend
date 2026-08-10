@@ -2,7 +2,7 @@ import { Config } from "@/src/api/config";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {

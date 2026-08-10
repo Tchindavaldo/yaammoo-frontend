@@ -10,6 +10,7 @@ import {
   Animated,
   Dimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../../components/Toast";
 import { Ionicons } from "@expo/vector-icons";
 import { Menu } from "@/src/types";
@@ -67,6 +68,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
   // Animation d'ouverture/fermeture : seul le VOILE noir fait un fade, le sheet
   // (et son contenu) fait un slide-up net — jamais d'opacité sur le contenu.
+  const insets = useSafeAreaInsets();
   const SHEET_HEIGHT = 384;
   const sheetTranslate = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
@@ -235,6 +237,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             style={[
               styles.sheetContainer,
               styles.sheetLight,
+              // Hauteur augmentée de l'inset bas : sur Android la barre de
+              // navigation système recouvrait le footer du sheet.
+              { height: SHEET_HEIGHT + insets.bottom },
               { transform: [{ translateY: sheetTranslate }] },
             ]}
           >

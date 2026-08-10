@@ -23,7 +23,7 @@ import {
   isLocalUri,
 } from "@/src/features/merchant/services/uploadImage";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { TabHeader } from "@/src/components/molecules/TabHeader";

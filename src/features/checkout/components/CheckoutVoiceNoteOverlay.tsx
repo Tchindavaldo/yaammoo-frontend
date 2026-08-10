@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Audio } from 'expo-av';
 
 const SHEET_HEIGHT = 384;

@@ -14,7 +14,7 @@ import {
   Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
 import Svg, {
   Path,

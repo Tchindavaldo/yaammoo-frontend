@@ -72,7 +72,7 @@ yaammoo/
 │   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs) + version.ts + setupHttp.ts (headers globaux x-app-version)
 │   ├── theme/                # Theme.colors, typography
 │   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
-│   ├── components/           # Composants partagés (Toast…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
+│   ├── components/           # Composants partagés (Toast, AppBlurView…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
 │   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)
 │
 ├── assets/                   # Images, fonts

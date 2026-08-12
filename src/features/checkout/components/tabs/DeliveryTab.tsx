@@ -14,6 +14,12 @@ interface DeliveryTabProps {
   onOpenVoiceNote?: () => void;
   availableHours?: any[];
   deliveryOffer?: DeliveryOffer | null;
+  /**
+   * Remplit la hauteur disponible au lieu des 230 px du sheet de commande, et
+   * supprime la marge basse qui y réserve la place de la barre d'action absolue.
+   * Utilisé par le sheet de livraison groupée, qui porte sa propre hauteur.
+   */
+  fillHeight?: boolean;
 }
 
 export const DeliveryTab: React.FC<DeliveryTabProps> = ({
@@ -26,6 +32,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   onOpenVoiceNote,
   availableHours,
   deliveryOffer,
+  fillHeight = false,
 }) => {
   const isLocationFilled = !!delivery.address;
   const isPeriodFilled = !!delivery.hour;
@@ -79,7 +86,10 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
     let date = "";
     if (rawDate) {
       const d = new Date(rawDate);
-      date = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+      date = d.toLocaleDateString("fr-FR", {
+        weekday: "short",
+        day: "numeric",
+      });
     }
     return { date, heure };
   };
@@ -90,11 +100,13 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
       style={[
         styles.deliveryContainer,
         localStyles.deliveryContainer,
-        { height: 230 },
+        fillHeight ? { flex: 1 } : { height: 230 },
       ]}
     >
-      {/* Zone haute (cartes infos) */}
-      <View style={localStyles.topZone}>
+      {/* Zone haute (cartes infos). En `fillHeight`, elle prend la hauteur de
+          son contenu au lieu de `flex: 1` : centree dans une zone plus haute
+          que 230, elle se decollait du haut et collait la zone basse. */}
+      <View style={[localStyles.topZone, fillHeight && localStyles.zoneAuto]}>
         {/* Layout Express : 3 cartes sur une ligne */}
         {deliveryType === "express" && (
           <View style={localStyles.expressRow}>
@@ -179,7 +191,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                       { color: getTextColor(isVoiceNoteFilled) },
                     ]}
                   >
-                    Note vocale
+                    vocale
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -284,12 +296,22 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
       </View>
 
       {/* Zone basse (sélection du type) — prix dynamique depuis la période */}
-      <View style={localStyles.bottomZone}>
+      <View
+        style={[localStyles.bottomZone, fillHeight && localStyles.zoneAuto]}
+      >
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionHeaderText}>Select Type</Text>
         </View>
 
-        <View style={[styles.deliveryTypeGrid, localStyles.deliveryTypeGrid]}>
+        <View
+          style={[
+            styles.deliveryTypeGrid,
+            localStyles.deliveryTypeGrid,
+            // `deliveryTypeGrid` reserve 80 px sous la grille pour la barre
+            // d'action absolue du sheet de commande : inutile ailleurs.
+            fillHeight && { marginBottom: 0 },
+          ]}
+        >
           <TouchableOpacity
             style={[
               styles.deliveryTypeBtn,
@@ -323,7 +345,10 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
               >
                 Livré dès que terminée
                 {deliveryFree && expressPrice ? (
-                  <Text style={localStyles.strikePrice}> · {expressPrice}F</Text>
+                  <Text style={localStyles.strikePrice}>
+                    {" "}
+                    · {expressPrice}F
+                  </Text>
                 ) : (
                   ""
                 )}
@@ -435,13 +460,20 @@ const localStyles = StyleSheet.create({
   },
   topZone: {
     flex: 1,
-    justifyContent: "flex-start",
+    justifyContent: "center",
     overflow: "hidden",
   },
   bottomZone: {
     flex: 1,
     justifyContent: "center",
   },
+  /**
+   * Mode `fillHeight` : la zone prend la hauteur de son CONTENU. Avec `flex: 1`
+   * et un centrage vertical, sur une hauteur superieure aux 230 px d'origine la
+   * zone haute se decollait du haut pendant que la zone basse venait la coller.
+   * L'espace restant est reparti par le `space-between` du conteneur.
+   */
+  zoneAuto: { flex: 0, justifyContent: "flex-start" },
   expressRow: {
     flexDirection: "row",
     gap: 10,

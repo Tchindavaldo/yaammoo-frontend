@@ -95,7 +95,10 @@ expressEditIdx: number | null
 | Fichier | Rôle |
 |---|---|
 | `src/features/merchant/components/EditBoutiquePanel.tsx` | Édition boutique (orchestrateur ; logique et rendu découpés dans `edit-boutique/`) |
-| `src/features/merchant/components/edit-boutique/ZoneListSheet.tsx` | Bottom sheet listant les zones (réutilise `DeliveryZoneList`), ouvert par l'icône view ; clic sur une ligne → `ZoneFormSheet` |
+| `src/features/merchant/components/edit-boutique/ZoneListSheet.tsx` | Bottom sheet de consultation des zones, ouvert par l'icône view. Sélecteur de zone en haut, grille des tarifs en dessous ; clic sur un créneau → `ZoneFormSheet` |
+| `src/features/merchant/components/edit-boutique/ZoneBanner.tsx` | Bandeau nommant une zone. Utilisé jusqu'à 3 zones (côte à côte, la zone affichée en sombre) ; au-delà, `ZoneListSheet` repasse aux chips défilantes |
+| `src/features/merchant/components/edit-boutique/ZoneSlotGrid.tsx` | Grille des tarifs : toujours 4 cartes en haut et 4 en bas. Page 1 = express + créneaux ; places libres comblées par des cartes `--:-- / 000 F / Non défini` ; s'il reste des créneaux, la dernière carte devient `+N` et pagine en fondu |
+| `src/features/merchant/components/edit-boutique/ZoneListSheet.styles.ts` | Styles du sheet et de ses deux composants (palette crème/orange express/bleu ardoise programmé) |
 | `src/features/merchant/components/edit-boutique/useSheetAnimation.ts` | Animation partagée des bottom sheets (fond noir en fondu + glissement) |
 | `src/features/merchant/components/CreateBoutiquePanel.tsx` | Création boutique (pleine page) |
 | `src/features/merchant/components/NoBoutiquePanel.tsx` | Écran d'accueil "pas de boutique" (inchangé) |
@@ -120,7 +123,7 @@ Constante `CAMEROON_CITIES` (30 villes) utilisée dans les deux panneaux pour le
 **Édition** (page unique) :
 
 1. Remplir les infos générales
-2. Bloc "Zone de livraison" : icône `+` → `ZoneFormSheet` (heure, périodique/express, prix, lieu) ; icône œil → `ZoneListSheet` (liste des zones, clic sur une ligne = édition)
+2. Bloc "Zone de livraison" : icône `+` → `ZoneFormSheet` (heure, périodique/express, prix, lieu) ; icône œil → `ZoneListSheet` (chips par lieu + tarifs express/programmé + créneaux, clic sur un créneau = édition)
 3. Option : cocher "Le client peut passer à la boutique"
 4. Clic "Mettre à jour"
 

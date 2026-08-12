@@ -6,7 +6,7 @@ export class UsersInfos {
     public numero: number,
     public email: string,
     public password: string,
-  ) { }
+  ) {}
 }
 
 export class Embalage {
@@ -16,7 +16,7 @@ export class Embalage {
     // Prix brut (hors marge) fourni par le backend sur l'extra du menu,
     // renvoyé tel quel dans le payload order.
     public rawPrice?: number,
-  ) { }
+  ) {}
 }
 
 export class Boisson {
@@ -25,7 +25,7 @@ export class Boisson {
     public prix: number,
     // Prix brut (hors marge) fourni par le backend sur la boisson du menu.
     public rawPrice?: number,
-  ) { }
+  ) {}
 }
 
 /**
@@ -61,7 +61,7 @@ export class Livraison {
     // Code bonus livraison (saisi par le user ou issu de l'offre détectée) —
     // envoyé tel quel à la racine du payload order sous `bonusCode`.
     public bonusCode: string | null = null,
-  ) { }
+  ) {}
 }
 
 export class Menu {
@@ -76,15 +76,26 @@ export class Menu {
     public image: string,
     public disponibilite: string,
     public images?: string[],
-    public extra?: Array<{ name: string; status: boolean; prix?: number; rawPrice?: number }>,
-    public drink?: Array<{ name: string; status: boolean; prix?: number; quantite?: number; rawPrice?: number }>,
+    public extra?: {
+      name: string;
+      status: boolean;
+      prix?: number;
+      rawPrice?: number;
+    }[],
+    public drink?: {
+      name: string;
+      status: boolean;
+      prix?: number;
+      quantite?: number;
+      rawPrice?: number;
+    }[],
     public stock?: number,
     // Prix bruts (hors marge) alignés sur prix1/prix2/prix3, aplatis depuis
     // `prices[].rawPrice` du backend.
     public rawPrice1?: number,
     public rawPrice2?: number,
     public rawPrice3?: number,
-  ) { }
+  ) {}
 }
 
 export class Commande {
@@ -105,7 +116,7 @@ export class Commande {
     public rank?: number,
     // Driver assigned to deliver this order (per-order delegation).
     public driverId?: string,
-  ) { }
+  ) {}
 }
 
 export class Users {
@@ -122,7 +133,7 @@ export class Users {
     // assigned per-order via `Commande.driverId`.
     public isDriver?: boolean,
     public driverId?: string,
-  ) { }
+  ) {}
 }
 
 export class FastFood {
@@ -133,9 +144,10 @@ export class FastFood {
     public orders: Commande[],
     public stats: any,
     public nom: string,
+    public name: string,
     public image: string,
     public designIndex?: number,
-  ) { }
+  ) {}
 }
 
 export class Transaction {
@@ -147,5 +159,5 @@ export class Transaction {
     public payBy: string,
     public createdAt: string,
     public type: "credit" | "debit",
-  ) { }
+  ) {}
 }

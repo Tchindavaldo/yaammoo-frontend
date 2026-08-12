@@ -92,9 +92,18 @@ src/features/
 ├── payment/
 │   ├── constants/reviewPayment.ts        # REVIEW_STEP_MS — durée d'une étape simulée en review
 │   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout)
+│   ├── hooks/useGroupedDeliveryData.ts  # GET /fastfood/:id (créneaux, offre) + cache anti-flash
 │   └── components/
-│       ├── CartPaymentOverlay.tsx        # Capsule paiement panier (étapes)
-│       └── CartPaymentTopCard.tsx        # Sheet du haut : réseau + récap (contenu DEMO)
+│       ├── CartPaymentSheet.tsx          # Bottom sheet paiement panier (panier à une seule course)
+│       ├── CartPaymentBody.tsx           # Corps du paiement (modes + récap + réseau) — partagé
+│       ├── CartPaymentSheet.styles.ts    # Palette + styles + SHEET_HEIGHT commun aux sheets
+│       ├── CartPaymentOverlay.tsx        # Capsule paiement (saisie + étapes) — utilisée par les sheets
+│       ├── CartGroupedDeliverySheet.tsx  # Parcours groupé : groupage + livraison + paiement (3 calques)
+│       ├── CartGroupedDeliverySheet.styles.ts # Styles des 3 calques
+│       ├── CartGroupingStep.tsx          # Calque 1 : choix du groupage (écran 02 du design)
+│       ├── CartGroupedDeliveryOverlays.tsx # Les 5 overlays de DeliveryTab, pilotés par un état unique
+│       ├── CartPaymentVariants.tsx       # Variantes de comparaison (plus branchées)
+│       └── CartPaymentTopCard.tsx        # Ancienne card du haut (plus branchée)
 
 ├── wallet/
 │   └── components/

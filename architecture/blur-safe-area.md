@@ -113,6 +113,13 @@ Non concernés : les panneaux plein écran des settings (`MenuManageModal`,
 qui ne sont pas des `<Modal>` mais des vues absolues dont le contenu gère son bas,
 et les pickers de `BoutiquePickers`, centrés à l'écran.
 
+| Paiement du panier | `payment/components/CartPaymentSheet.tsx` |
+
+`CartPaymentSheet` est rendu dans sa **propre `Modal`** : il n'hérite d'aucun
+inset parent et l'applique donc lui-même, sur le `paddingBottom` du sheet
+(`18 + insets.bottom`). Sa hauteur n'est pas fixe (`maxHeight: 88%`, contenu
+scrollable), l'entrée/sortie se fait en `translateY`.
+
 **Les couches internes d'un sheet n'ajoutent pas l'inset** (`DriverInfoTab`,
-`RateMenuTab`, `CartPaymentTopCard`) : elles héritent de celui du sheet parent,
-l'ajouter à nouveau doublerait la marge.
+`RateMenuTab`) : elles héritent de celui du sheet parent, l'ajouter à nouveau
+doublerait la marge.

@@ -184,25 +184,92 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
   `handlePaymentConfirm(phone, items, amountOverride?)` (POST /transaction avec
   `items`), `handlePaymentVerdict` (socket). En cas d'échec : retour direct au
   `total` (pas d'état `failed` affiché), erreur via toast top.
-- **Paiement d'une seule zone** : le bouton « Tout payer » du pied de tableau
-  (`CartZoneTable`) ne paie que les commandes de son groupe. `cart.tsx` garde
-  `payingGroupKey` (null = panier entier) et en dérive `ordersToPay` /
-  `amountToPay` ; `amountToPay` est passé en **`amountOverride`** — sans lui, le
-  montant envoyé resterait le total du panier (`amount` fixé à la création du hook).
-- **UI — deux blocs** (comme le home, mais dans un **seul sheet blanc**) :
-  - `components/CartPaymentTopCard.tsx` — sheet du haut (`SHEET_HEIGHT`), qui
-    rend la capsule DEDANS via `children` (ancrée sur son bas, remontée de
-    `CAPSULE_BOTTOM_OFFSET`). Contenu **encore statique** (constantes `DEMO_*`) :
-    ligne « Sélectionner le réseau de paiement » + chips Orange Money / MTN MoMo,
-    3 cards de mode (Zones / Boutiques / Créneaux — titre `x N`, montant, 1 ligne
-    détaillée puis `+N <élément>`), puis 3 cards (Livraison total / Commandes
-    total / Total à payer). Le markup des cards est **dupliqué** depuis
-    `MerchantFilterSheet` — rien n'est importé du marchand.
-  - `components/CartPaymentOverlay.tsx` — capsule qui enchaîne les étapes de
-    paiement. Le choix du réseau est porté par la card du haut (`onNetworkChange`).
-- **cart.tsx** : branche le hook + l'overlay + verdict socket + fermeture sur
+- **Paiement d'une seule zone** : le bouton « commander » du récap du bas
+  (`CartZoneFooterBar`) ne paie que les commandes du groupe affiché quand une
+  seule zone est visible. `cart.tsx` garde `payingGroupKey` (null = panier
+  entier) et en dérive `ordersToPay` / `amountToPay` ; `amountToPay` est passé en
+  **`amountOverride`** — sans lui, le montant envoyé resterait le total du panier
+  (`amount` fixé à la création du hook).
+- **UI — un bottom sheet + la capsule** : `components/CartPaymentSheet.tsx`.
+  Il reprend la **structure** du design « Panier - Paiement » mais **pas sa
+  palette** : couleurs de l'app (blanc, gris slate `#e2e8f0` / `#f8fafc`, orange
+  `#ec4913`), rayons 12/18 et typo des autres écrans du panier. Rendu dans sa
+  **propre `Modal`**, ancré en bas, `maxHeight: 88%`, scrim tapable pour fermer
+  (désactivé pendant le paiement). Le corps du sheet porte :
+  - les **cards de mode de livraison** (Express / À l'heure / Sur place) en haut
+    de la zone — **lecture seule** : chaque commande fixe déjà son mode, la card
+    active est celle réellement payée (nombre de commandes + frais de course),
+    les autres restent grisées ;
+  - la **zone** de livraison rappelée juste dessous ;
+  - le **récapitulatif** : total commande, ligne livraison (« Offerte » à 0),
+    total à payer ;
+  - le **moyen de paiement** : cards Orange Money / MTN MoMo (badges OM / MoMo).
+
+  La **saisie du numéro et les étapes du paiement** ne sont PAS dans le corps du
+  sheet : elles sont portées par la **capsule `CartPaymentOverlay`** — la même
+  que l'autre sheet de paiement — rendue **hors** du sheet et ancrée sur le bas
+  de l'écran (`keyboardHeight + CAPSULE_BOTTOM_OFFSET + insets.bottom`), de sorte
+  qu'elle remonte seule avec le clavier sans être rognée. Le sheet lui réserve sa
+  place via son `paddingBottom`.
+  `cart.tsx` passe `groups={payingGroup ? [payingGroup] : displayedZoneGroups}`
+  et fournit `keyboardHeight` / `isKeyboardVisible` / `setPaymentState`.
+- **Ouverture** : le bouton « commander » du récap du bas ET la pilule « Tout
+  commander » du header passent par `startOrder(groups)` dans `cart.tsx`. Le
+  sheet reste monté et est piloté par `visible` (sinon l'animation de sortie
+  serait coupée).
+- **Parcours GROUPÉ — un seul sheet, trois calques**
+  (`components/CartGroupedDeliverySheet.tsx`). `startOrder` l'ouvre à la place du
+  sheet de paiement quand le lot contient **plusieurs courses** (une seule course
+  → `CartPaymentSheet` directement). Il porte les trois étapes :
+  1. **groupage** (`CartGroupingStep.tsx`, écran 02 du design) — « Tout livrer
+     ensemble » ou « livraisons séparées » (→ retour au panier, chaque tableau de
+     zone gardant son propre bouton « commander ») ;
+  2. **livraison commune** — la section delivery du sheet de commande réutilisée
+     **telle quelle** : `DeliveryTab` (prop `fillHeight`) + ses cinq overlays,
+     regroupés dans `CartGroupedDeliveryOverlays.tsx` et pilotés par un unique
+     état `overlay`. Au-dessus, une simple accroche dans le style de l'étape 1
+     (`styles.question`) — pas de récap : les montants sont portés par le bouton
+     de validation puis par l'étape de paiement ;
+  3. **paiement** — `CartPaymentBody.tsx`, le corps partagé avec
+     `CartPaymentSheet`, plus la capsule `CartPaymentOverlay` ancrée hors du
+     sheet. En groupé (`grouped` + `groupedLivraison`), le récapitulatif porte
+     **une seule ligne** de livraison au lieu d'une par groupe — tout part dans
+     la même course — libellée « Récupérer sur place » à 0 F si rien n'est livré.
+     Le total affiché ET envoyé est `articles + la course unique`
+     (`amountToPayEffective` dans `cart.tsx`) : `amountToPay` compterait une
+     course par zone et ferait payer plus que ce que le sheet annonce.
+
+  Les **trois calques sont montés d'emblée** et superposés (`bodyLayer` en
+  `absoluteFill`) : le passage d'une étape à l'autre n'est qu'un **fondu croisé**
+  (`fade`, `fadePay`) sur du contenu déjà peint. Enchaîner des `Modal` coûtait une
+  animation de fermeture complète, faisait clignoter l'étape suivante, et
+  présenter le second pendant la sortie du premier échouait silencieusement.
+  **Aucun en-tête** : ni titre, ni sous-titre, ni croix — chaque calque porte
+  lui-même son propos, la fermeture passe par le voile (ou le bouton d'action).
+  Hauteur fixe `SHEET_HEIGHT - 44` (l'en-tête retiré), à comparer au
+  `SHEET_HEIGHT = 515` que garde le sheet de paiement autonome
+  (`CartPaymentSheet.styles.ts`) ; sans hauteur fixe le sheet sautait d'une étape
+  à l'autre.
+  Styles dans `CartGroupedDeliverySheet.styles.ts` ; données boutique
+  (`deliveryHours` / `orderLeadTime` / `advanceDays` / `deliveryOffer`) via le
+  hook `hooks/useGroupedDeliveryData.ts`, qui **cache** la réponse de
+  `GET /fastfood/:id` par boutique — sans ce cache l'étape repartait de `null` et
+  les cards « Zone » apparaissaient d'un coup.
+- **Application de la livraison commune** : `cart.tsx` garde
+  `groupedDeliveryValue` (converti du format checkout `address`/`expressLieu`/
+  `hour` vers le format panier `location`/`zone`/`time` par `toOrderDelivery`).
+  `confirmCartPayment` l'injecte dans **chaque** commande avant `sanitizeOrder`,
+  et **saute `validateAllDeliveries()`** — cette validation porterait sur les
+  anciennes livraisons, remplacées. `onValidate` arme aussi `paymentState`
+  (`"input"`) **sans fermer le sheet** : le paiement est son 3e calque.
+  `endPayment` remet à `null` `groupedDeliveryValue` ET `groupedDelivery`.
+- **cart.tsx** : branche le hook + le sheet + verdict socket + fermeture sur
   `success_created` (5s → refresh + repos). Capsule de **suppression** d'article séparée.
-- Réutilise `AnimatedBorderGlow` (bordure animée pendant l'attente).
+- **Composants remplacés** : `CartPaymentTopCard` et `CartPaymentVariants` (card
+  du haut + variantes de comparaison) ne sont plus branchés au panier —
+  `CartPaymentOverlay`, lui, reste utilisé comme capsule du nouveau sheet. Le
+  sheet de commande **individuelle**
+  (`CartCheckoutSheet`) est inchangé.
 - `CartCheckoutSheet` (édition d'un article) utilise la même animation d'ouverture
   que le home (voile fade + sheet slide-up net).
 

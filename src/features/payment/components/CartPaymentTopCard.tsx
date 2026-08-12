@@ -1,5 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { CartZoneFooterBar } from "@/src/features/orders/components/CartZoneFooterBar";
+import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import React from "react";
 import {
   Animated,
@@ -9,20 +10,32 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  PaymentVariantCard,
+  PaymentVariantColonnes,
+  PaymentVariantTicket,
+  type CartPaymentVariant,
+} from "./CartPaymentVariants";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 // Même bloc que le home (CheckoutPaymentTopOverlay) : hauteur du sheet, place
 // réservée en bas pour la capsule, et gap entre les deux.
-const SHEET_HEIGHT = 380;
+// Le sheet porte le recap, le selecteur de reseau et la capsule : il lui faut
+// la hauteur du recap EN PLUS, sinon le choix du reseau se retrouve pousse vers
+// le bas, sous la capsule.
+const SHEET_HEIGHT = 260;
+/**
+ * Hauteur du sheet selon la variante affichee : les propositions « ticket » et
+ * « card » portent plus de lignes que le design actuel.
+ */
+const heightFor = (variant: CartPaymentVariant) =>
+  variant === "ticket" || variant === "card" ? 300 : SHEET_HEIGHT;
 const BOTTOM_CAPSULE_SPACE = 70; // hauteur capsule
 const GAP = 12; // espace entre la card et la capsule
 /** Marge sous la capsule : la décolle du bas du sheet (nav bar / clavier). */
 const CAPSULE_BOTTOM_OFFSET = 18;
-/** Montant affiché : « 00.00 F » quand il est nul (livraison offerte). */
-const formatAmount = (amount: number) =>
-  amount === 0 ? "00.00 F" : `${amount} F`;
-
 interface CartPaymentTopCardProps {
   visible: boolean;
   /** Position du bas du sheet : au-dessus de la nav bar (ou du clavier). */
@@ -39,252 +52,102 @@ interface CartPaymentTopCardProps {
   isKeyboardVisible?: boolean;
   network?: "orange" | "mtn";
   onNetworkChange?: (network: "orange" | "mtn") => void;
+  /**
+   * Groupes de zone payés : alimentent le récap rendu au-dessus du choix du
+   * réseau (même composant que le récap fixe du bas du panier).
+   */
+  groups?: CartZoneGroup[];
+  /**
+   * Design de la partie haute. `"actuel"` (défaut) = design en place ; les
+   * autres valeurs rendent une proposition de `CartPaymentVariants`, pour
+   * comparaison à l'écran. La capsule du bas est identique dans tous les cas.
+   */
+  variant?: CartPaymentVariant;
+  /** Saisie du numéro : utilisée par les variantes, qui portent leur propre champ. */
+  phone?: string;
+  onPhoneChange?: (phone: string) => void;
+  onConfirm?: () => void;
+  onError?: (message: string) => void;
   /** Capsule de paiement, rendue DANS le sheet (ancrée sur son bas). */
   children?: React.ReactNode;
 }
 
-/* ------------------------------------------------------------------ */
-/* DONNÉES DE DÉMO — rendu uniquement.                                 */
-/* Rien n'est branché sur le panier réel : ces valeurs servent à valider */
-/* la maquette avant de câbler les vraies commandes.                    */
-/* ------------------------------------------------------------------ */
-const DEMO_TOTAL = 12000;
-
-// Contenu repris du bottom filter marchand (MerchantFilterSheet) : chips de
-// statut, cards de mode de livraison, cards de lot de dates + ligne de récap.
-// Maquette STATIQUE — aucune logique de filtrage n'est branchée ici.
-// Cards de la dernière ligne : total des frais de livraison et total des
-// commandes, chacune avec son nombre et son montant.
-const DEMO_DELIVERY_CARDS: {
-  key: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  count: number;
-  amount: number;
-}[] = [
-  {
-    key: "livraison",
-    icon: "bicycle-outline",
-    label: "Livraison total",
-    count: 5,
-    amount: 3500,
-  },
-  {
-    key: "commandes",
-    icon: "receipt-outline",
-    label: "Commandes total",
-    count: 6,
-    amount: 8500,
-  },
-];
-// Cards de mode : chacune liste son détail (zones express, lieux sur place,
-// créneaux horaires) avec le montant par ligne, puis son total et son nombre.
-const DEMO_MODE_CARDS: {
-  key: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  /** Titre de la card = nature de la liste (Zones / Boutiques / Créneaux). */
-  listTitle: string;
-  /** Nom d'un élément au singulier, pour le « +N … en plus ». */
-  itemName: string;
-  items: { label: string; amount: number }[];
-  count: number;
-  amount: number;
-}[] = [
-  {
-    key: "express",
-    icon: "flash-outline",
-    listTitle: "Zones",
-    itemName: "zone",
-    items: [
-      { label: "Bonanjo", amount: 1000 },
-      { label: "Akwa", amount: 1000 },
-    ],
-    count: 2,
-    amount: 2000,
-  },
-  {
-    key: "surplace",
-    icon: "restaurant-outline",
-    listTitle: "Boutiques",
-    itemName: "boutique",
-    items: [{ label: "Yaammoo Deido", amount: 0 }],
-    count: 1,
-    amount: 0,
-  },
-  {
-    key: "slots",
-    icon: "time-outline",
-    listTitle: "Créneaux",
-    itemName: "créneau",
-    items: [
-      { label: "08:00", amount: 500 },
-      { label: "12:00", amount: 500 },
-      { label: "18:00", amount: 500 },
-    ],
-    count: 3,
-    amount: 1500,
-  },
-];
-/* ------------------------------------------------------------------ */
-/* Sous-composants du contenu (markup dupliqué depuis MerchantFilterSheet, */
-/* rien n'est importé du marchand).                                        */
-/* ------------------------------------------------------------------ */
-
-/** Contenu repris du bottom filter marchand (réseau / modes / dates). */
 const FilterContent: React.FC<{
   network: "orange" | "mtn";
   onNetworkChange?: (network: "orange" | "mtn") => void;
-}> = ({ network, onNetworkChange }) => {
-  const [modes, setModes] = React.useState<string[]>([]);
-  const [dateScope, setDateScope] = React.useState("today");
+  groups?: CartZoneGroup[];
+  variant?: CartPaymentVariant;
+  phone?: string;
+  onPhoneChange?: (phone: string) => void;
+  onConfirm?: () => void;
+  onError?: (message: string) => void;
+}> = ({
+  network,
+  onNetworkChange,
+  groups,
+  variant = "actuel",
+  phone = "",
+  onPhoneChange,
+  onConfirm,
+  onError,
+}) => {
+  // Variantes de comparaison : autonomes (champ numero inclus), rendues telles
+  // quelles. Le design ACTUEL reste le cas par defaut et n'est pas touche.
+  if (variant !== "actuel" && groups && groups.length > 0) {
+    const props = {
+      groups,
+      network,
+      onNetworkChange,
+      phone,
+      onPhoneChange: onPhoneChange ?? (() => {}),
+      onConfirm: onConfirm ?? (() => {}),
+      onError,
+    };
+    if (variant === "ticket") return <PaymentVariantTicket {...props} />;
+    if (variant === "card") return <PaymentVariantCard {...props} />;
+    return <PaymentVariantColonnes {...props} />;
+  }
 
   return (
     <>
-      {/* Ligne du haut : libellé + les 2 chips de réseau de paiement. */}
-      <View style={styles.statusRow}>
-        <View style={[styles.statusChip, styles.networkLabelChip]}>
-          <Text style={styles.networkLabelText} numberOfLines={2}>
-            Sélectionner le réseau de paiement
-          </Text>
+      {/* Recap du panier, au-dessus du choix du reseau : meme composant que le
+          recap fixe du bas de la page panier, sans bouton de paiement (la
+          capsule du sheet porte deja l'action). */}
+      {groups && groups.length > 0 && (
+        <View style={styles.recapWrapper}>
+          <CartZoneFooterBar groups={groups} inlineHeader />
         </View>
+      )}
 
-        {(["orange", "mtn"] as const).map((net) => {
-          const active = network === net;
-          return (
-            <TouchableOpacity
-              key={net}
-              style={[styles.statusChip, active && styles.statusChipActive]}
-              onPress={() => onNetworkChange?.(net)}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={[
-                  styles.statusChipText,
-                  active && styles.statusChipTextActive,
-                ]}
-                numberOfLines={1}
-              >
-                {net === "orange" ? "Orange Money" : "MTN MoMo"}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Cards de mode de livraison : titre + liste détaillée (zone/créneau ·
-          montant), puis nombre total et montant total. */}
-      <View style={styles.modeCardRow}>
-        {DEMO_MODE_CARDS.map((m) => {
-          const active = modes.includes(m.key);
-          return (
-            <TouchableOpacity
-              key={m.key}
-              style={[styles.scopeCard, active && styles.scopeCardActive]}
-              onPress={() =>
-                setModes((prev) =>
-                  prev.includes(m.key)
-                    ? prev.filter((k) => k !== m.key)
-                    : [...prev, m.key],
-                )
-              }
-              activeOpacity={0.7}
-            >
-              {/* Titre + nombre total d'éléments (« Zones x2 »). */}
-              <Text style={styles.scopeLabel} numberOfLines={1}>
-                {m.listTitle} x{m.count}
-              </Text>
-
-              {/* Montant total de la card. */}
-              <Text style={styles.deliveryAmount} numberOfLines={1}>
-                {formatAmount(m.amount)}
-              </Text>
-
-              {/* La card garde TOUJOURS 2 lignes sous le montant. Au-delà de
-                  2 éléments, la 1re ligne seule est détaillée et la 2e devient
-                  le « +N … en plus » ; sinon les lignes manquantes sont
-                  comblées par des tirets. */}
-              {(() => {
-                const first = m.items[0];
-                // Le reste n'est jamais détaillé : la 2e ligne porte toujours
-                // le « +N », y compris « +0 » quand il n'y a qu'un élément.
-                const rest = Math.max(0, m.items.length - 1);
-                return (
-                  <>
-                    <View style={styles.listRow}>
-                      <Text style={styles.listItemLabel} numberOfLines={1}>
-                        {first ? first.label : "—"}
-                      </Text>
-                      <Text style={styles.listItemAmount} numberOfLines={1}>
-                        {first ? formatAmount(first.amount) : "—"}
-                      </Text>
-                    </View>
-                    <Text style={styles.listMore} numberOfLines={1}>
-                      +{rest} {m.itemName}
-                    </Text>
-                  </>
-                );
-              })()}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Cards de lot de dates — la 3e porte le TOTAL À PAYER (même gabarit
-          de card, seul son contenu change). */}
-      <View style={styles.pastBar}>
-        <View style={styles.dateRow}>
-          {DEMO_DELIVERY_CARDS.map((d) => {
-            const active = dateScope === d.key;
+      {/* Choix du reseau sur DEUX lignes : titre au-dessus, chips en dessous.
+          Design repris du sheet de commande individuelle
+          (`CheckoutPaymentTopOverlay`), markup DUPLIQUE — rien n'est importe du
+          checkout. */}
+      <View style={styles.actionArea}>
+        <Text style={styles.actionTitle}>
+          Sélectionnez le réseau utilisé pour le paiement
+        </Text>
+        <View style={styles.networkRow}>
+          {(["orange", "mtn"] as const).map((net) => {
+            const active = network === net;
             return (
               <TouchableOpacity
-                key={d.key}
-                style={[styles.scopeCard, active && styles.scopeCardActive]}
-                onPress={() => setDateScope(d.key)}
-                activeOpacity={0.7}
+                key={net}
+                style={[styles.networkChip, active && styles.networkChipActive]}
+                onPress={() => onNetworkChange?.(net)}
+                activeOpacity={0.8}
               >
-                <View style={styles.scopeTop}>
-                  <Ionicons
-                    name={d.icon}
-                    size={18}
-                    color={active ? "#1A1916" : "#888780"}
-                  />
-                  <View
-                    style={[
-                      styles.countBadge,
-                      active && styles.countBadgeActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.countText,
-                        active && styles.countTextActive,
-                      ]}
-                    >
-                      {d.count}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.deliveryAmount} numberOfLines={1}>
-                  {formatAmount(d.amount)}
-                </Text>
-                <Text style={styles.scopeLabel} numberOfLines={2}>
-                  {d.label}
+                <Text
+                  style={[
+                    styles.networkChipText,
+                    active && styles.networkChipTextActive,
+                  ]}
+                >
+                  {net === "orange" ? "Orange Money" : "MTN MoMo"}
                 </Text>
               </TouchableOpacity>
             );
           })}
-
-          <View style={[styles.scopeCard, styles.totalCard]}>
-            <View style={styles.scopeTop}>
-              <Ionicons name="wallet-outline" size={18} color="#ec4913" />
-            </View>
-            <Text style={styles.totalCardValue} numberOfLines={1}>
-              {formatAmount(DEMO_TOTAL)}
-            </Text>
-            <Text style={styles.totalCardLabel} numberOfLines={2}>
-              Total à payer
-            </Text>
-          </View>
         </View>
       </View>
     </>
@@ -303,8 +166,9 @@ const FilterContent: React.FC<{
  * et s'ancre sur le bas du bloc. Les deux ne peuvent donc plus se chevaucher
  * ni passer derrière la nav bar, et montent ensemble avec le clavier.
  *
- * Composant **propre au panier** : rien n'est importé du checkout. Contenu
- * encore **statique** (constantes `DEMO_*`), le câblage viendra ensuite.
+ * Composant **propre au panier** : rien n'est importé du checkout. Le sheet ne
+ * porte plus que le **récap** (`CartZoneFooterBar`), le **choix du réseau** et
+ * la **capsule** — les cards de maquette statique ont été retirées.
  */
 export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
   visible,
@@ -313,8 +177,18 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
   isKeyboardVisible = false,
   network = "orange",
   onNetworkChange,
+  groups,
+  variant = "actuel",
+  phone,
+  onPhoneChange,
+  onConfirm,
+  onError,
   children,
 }) => {
+  const insets = useSafeAreaInsets();
+  const sheetHeight = heightFor(variant);
+  // Une variante est autonome : elle porte son champ numero, pas de capsule.
+  const isVariant = variant !== "actuel";
   const anim = React.useRef(new Animated.Value(0)).current; // 0 = caché, 1 = visible
   // Reste monté tant que l'animation de sortie n'est pas terminée.
   const [mounted, setMounted] = React.useState(visible);
@@ -358,18 +232,36 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
       {/* `bottom` est animé en JS (le driver natif ne gère pas cette propriété) :
           il doit rester sur un nœud SÉPARÉ de celui qui porte opacity/transform,
           animés eux en natif — les mélanger fait planter l'animated module. */}
-      <Animated.View style={[styles.wrapper, { bottom: bottom as any }]}>
+      <Animated.View
+        style={[
+          styles.wrapper,
+          // Safe-area : le sheet est dans sa PROPRE Modal, il n'herite d'aucun
+          // inset parent (cf. architecture/blur-safe-area.md § 2, forme
+          // « sheet a hauteur fixe »). Sans ca il passe sous la nav bar Android.
+          { bottom: bottom as any, height: sheetHeight + insets.bottom },
+        ]}
+      >
         {/* Entrée/sortie en TRANSLATION (le sheet glisse depuis le bas), pas en
             fondu : même mouvement que le sheet du home. */}
         <Animated.View
           style={[
             styles.panel,
             {
+              // Le contenu remonte de l'inset : sinon la capsule, ancree sur le
+              // bas du panel, retomberait dans la nav bar. Les variantes n'ont
+              // PAS de capsule (elles portent leur propre champ) : le panel va
+              // alors jusqu'en bas, avec la seule marge de securite.
+              paddingBottom: isVariant
+                ? CAPSULE_BOTTOM_OFFSET + insets.bottom
+                : BOTTOM_CAPSULE_SPACE +
+                  GAP +
+                  CAPSULE_BOTTOM_OFFSET +
+                  insets.bottom,
               transform: [
                 {
                   translateY: anim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [SHEET_HEIGHT, 0],
+                    outputRange: [sheetHeight + insets.bottom, 0],
                   }),
                 },
               ],
@@ -380,6 +272,12 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
             <FilterContent
               network={network}
               onNetworkChange={onNetworkChange}
+              groups={groups}
+              variant={variant}
+              phone={phone}
+              onPhoneChange={onPhoneChange}
+              onConfirm={onConfirm}
+              onError={onError}
             />
           </View>
         </Animated.View>
@@ -401,7 +299,7 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
               {
                 height: (keyboardHeight as any).interpolate({
                   inputRange: [0, 100],
-                  outputRange: [0, SHEET_HEIGHT],
+                  outputRange: [0, sheetHeight],
                   extrapolate: "clamp",
                 }),
               },
@@ -417,11 +315,14 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
           style={[
             styles.capsuleSlot,
             {
+              // Remontee de l'inset : le wrapper descend desormais SOUS la nav
+              // bar, la capsule doit rester au-dessus.
+              bottom: CAPSULE_BOTTOM_OFFSET + insets.bottom,
               transform: [
                 {
                   translateY: anim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [SHEET_HEIGHT, 0],
+                    outputRange: [sheetHeight + insets.bottom, 0],
                   }),
                 },
               ],
@@ -429,7 +330,7 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
           ]}
           pointerEvents="box-none"
         >
-          {children}
+          {!isVariant && children}
         </Animated.View>
       </Animated.View>
     </Modal>
@@ -490,42 +391,46 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
   },
-  // --- Chips de réseau (gabarit repris du bottom filter marchand) ---
-  statusRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: 8,
+  // Recap pose au-dessus du choix du reseau : le composant porte sa propre
+  // bordure haute, on la neutralise ici et on le recadre a la largeur du sheet.
+  recapWrapper: {
+    marginHorizontal: -16,
+    marginBottom: 12,
   },
-  // 1er chip de la ligne : simple libellé, non cliquable.
-  networkLabelChip: {
-    backgroundColor: "transparent",
+  // --- Choix du reseau (design duplique de CheckoutPaymentTopOverlay) ---
+  actionArea: {
+    marginTop: "auto",
   },
-  statusChip: {
+  actionTitle: {
+    color: "rgba(31,41,55,0.85)",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 10,
+  },
+  networkChip: {
     flex: 1,
-    flexBasis: 0,
-    minWidth: 0,
-    flexDirection: "row",
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.05)",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 7,
-    borderRadius: 16,
-    backgroundColor: "#ec491310",
+    borderWidth: 1,
+    borderColor: "transparent",
   },
-  statusChipActive: { backgroundColor: "#ec4913" },
-  statusChipText: {
-    flexShrink: 1,
-    fontSize: 12,
-    fontWeight: "700",
+  networkChipActive: {
+    backgroundColor: "rgba(236, 73, 19, 0.12)",
+    borderColor: "#ec4913",
+  },
+  networkChipText: {
+    color: "rgba(31,41,55,0.7)",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  networkChipTextActive: {
     color: "#ec4913",
   },
-  statusChipTextActive: { color: "#fff" },
-  networkLabelText: {
-    flexShrink: 1,
-    fontSize: 11,
-    fontWeight: "700",
-    color: "rgba(31,41,55,0.7)",
+  networkRow: {
+    flexDirection: "row",
+    gap: 10,
   },
   // --- Cards de mode / de lot de dates ---
   modeCardRow: {

@@ -20,7 +20,10 @@ yaammoo/src/features/orders/
 │   └── groupCartOrders.ts     # Regroupe le panier par zone + créneau (clé deliveryGroupKey)
 └── components/
     ├── CartFastFoodFilter.tsx # Filtre fastfood collant du panier (duplication autonome d'OrderTrackingHeader)
-    ├── CartZoneTable.tsx     # Tableau du panier par zone (gabarit DeliveryZoneList)
+    ├── CartOrderCard.tsx      # Carte commande du PANIER (duplication autonome de ClientOrderCard)
+    ├── CartFilterChipsRow.tsx # 3 chips de filtre du panier (zone / periode / heure)
+    ├── CartFilterOptionsSheet.tsx # Bottom sheet de choix d'une valeur de filtre
+    ├── CartZoneFooterBar.tsx  # Recap fixe du panier (total + bouton commander)
     ├── ClientOrderCard.tsx    # Carte commande compacte (liste pending/processing)
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
     ├── OrderHeader.tsx        # Header de la page orders
@@ -83,47 +86,51 @@ yaammoo/src/features/orders/
 
 ---
 
-## CartZoneTable.tsx (panier)
+## Filtres du panier — CartFilterChipsRow + CartFilterOptionsSheet
 
-**Chemin** : `yaammoo/src/features/orders/components/CartZoneTable.tsx`
+**Chemins** : `orders/components/CartFilterChipsRow.tsx`,
+`orders/components/CartFilterOptionsSheet.tsx`.
 
-Affichage du panier (`app/(tabs)/cart.tsx`) : **remplace les `ClientOrderCard`**.
-Même gabarit que le tableau des zones de la page 2 boutique
-(`merchant/components/edit-boutique/DeliveryZoneList.tsx`) — une card par groupe :
+Le panier n'affiche plus de **tableaux par zone** : `cart.tsx` rend une **liste
+plate de `CartOrderCard`** (`filteredCartOrders`), sans card ni bandeau.
 
-- **Bandeau** : `ZONE · EXPRESS · heure` à gauche (icône `location` noire, la même
-  quel que soit le type), **total du groupe** en orange à droite. Pas d'heure en
-  express ni en retrait.
-- **Lignes** : une `ClientOrderCard` par commande, **design inchangé** (avatar,
-  prix, chips Extras/Boisson, poubelle), avec `darkPrice` (prix en noir).
-  Tap → ouvre `CartCheckoutSheet`.
-  Le séparateur bas de la dernière card est neutralisé (`marginBottom: -1`) pour
-  ne pas doubler le bord arrondi de la card de zone.
-- **Pied de tableau** (après un trait) : deux colonnes à gauche, libellé discret
-  au-dessus de son montant — `N CMD` + total hors livraison, filet vertical,
-  `LIVRAISON` + frais facturés (orange, ou « Offerte » en vert si nuls) ; à droite
-  le bouton **Tout payer** (fond noir, `onPayGroup`). `articles + livraison === total`.
+> ⚠️ `CartOrderCard` est une **duplication autonome** de `ClientOrderCard` : la
+> page « État des commandes » garde sa carte **INTACTE**, le panier fait évoluer
+> la sienne librement. Écarts actuels du panier : prix masqué (le récap du bas
+> porte les montants) et pas de pastille de livraison sur l'avatar.
+`CartZoneTable`, `CartZoneChipsRow` et `CartFilterSheet` (+ ses `.parts` /
+`.styles` / `CartDateChipsRow`) ont été supprimés, ainsi que la barre de chips
+du bas.
 
-**Regroupement** — `utils/groupCartOrders.ts` (`groupCartOrdersByZone`) : clé
-**`type | zone | heure`**. Toutes les commandes livrées de la même façon au même
-endroit sont dans UN seul tableau, **quelles que soient la boutique et la date**.
+**3 chips en tête de liste** — `Zone` / `Période` / `Heure`. Un tap ouvre le
+`CartFilterOptionsSheet` de cet axe (sélection UNIQUE, « Toutes » pour effacer) ;
+le chip actif porte la valeur choisie et une croix. Les trois axes se composent
+**en ET** ; un axe `null` n'impose rien.
 
-> ⚠️ Cette clé d'affichage est plus large que `deliveryGroupKey`
-> ([`checkout/utils/cartDeliveryTotal`](checkout.md)), qui inclut en plus
-> `fastFoodId` + date car il décrit une **course facturable**. Le total d'un
-> groupe mutualise donc sur `deliveryGroupKey` **à l'intérieur** du groupe :
-> **Σ des totaux de groupes = `computeCartTotal`** (le montant envoyé au backend).
-> Deux boutiques dans la même zone = un seul tableau, mais deux courses facturées.
+| Axe | Valeur dérivée de la commande |
+|---|---|
+| `zone` | `delivery.zone` / `.location`, sinon « Retrait en boutique » |
+| `periode` | « Express » / « Créneau » / « Sur place » |
+| `heure` | `delivery.time` / `.hour` (livraison programmée uniquement) |
 
-**Paiement par zone** — « Tout payer » ne paie que les commandes du groupe :
-`cart.tsx` garde `payingGroupKey` (null = panier entier, pilule « Tout commander »)
-et en dérive `ordersToPay` / `amountToPay`, qui alimentent la validation, le
-`totalAmount` de l'overlay et `handlePaymentConfirm(phone, items, amountOverride)`
-([useCartPayment](payment.md)). `endPayment()` remet le mode global à la fermeture
-comme au succès.
+Les options de chaque sheet sont comptées sur `visibleCartOrders` (**avant**
+filtrage), pour que choisir une valeur n'efface pas les autres choix possibles.
 
-> La quantité ne s'édite plus depuis la liste (`updateQuantity` n'y est plus câblé) :
-> elle passe par le sheet de commande.
+## CartZoneFooterBar.tsx (panier)
+
+**Chemin** : `orders/components/CartZoneFooterBar.tsx`
+
+Récap **fixe au-dessus de la navbar** (`bottom: tabBarHeight`), fond `BlurView`
++ voile clair. `cart.tsx` mesure sa hauteur (`filterBarHeight`) et l'ajoute au
+`paddingBottom` de la liste.
+
+- **En-tête** à gauche : `ZONE · TYPE · HEURE` du groupe affiché, ou `N ZONES`
+  quand plusieurs groupes sont visibles.
+- **Ligne** : `TOTAL` (à gauche), `N CMD` + total hors livraison, `LIVRAISON`
+  (orange, ou « Offerte » en vert), puis le bouton **commander** à droite.
+
+Il agrège `displayedZoneGroups` (`groupCartOrdersByZone(filteredCartOrders)`) ;
+`onPay` paie la zone unique affichée, ou le panier entier si plusieurs.
 
 ## CartFastFoodFilter.tsx (panier)
 
@@ -166,7 +173,7 @@ si la boutique courante disparaît du panier, on re-sélectionne la première.
 | `onUpdateQuantity` | `(id, qty) => void` | Callback mise à jour quantité |
 | `showActions` | boolean | Affiche les boutons d'action (défaut: false) |
 | `hideRanking` | boolean | Cache le badge rank/quantité à droite (défaut: false) |
-| `darkPrice` | boolean | Prix en noir au lieu de l'orange (défaut: false) — utilisé **uniquement** par `CartZoneTable` (panier) ; la page état des commandes garde l'orange |
+| `darkPrice` | boolean | Prix en noir au lieu de l'orange (défaut: false) — utilisé **uniquement** par `CartOrderCard` (panier) ; la page état des commandes garde l'orange |
 | `onPress` | `() => void` | Pression sur la carte |
 
 **Optimisation** : wrappé dans `React.memo` — évite les re-renders inutiles.

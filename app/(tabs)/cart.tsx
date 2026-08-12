@@ -13,11 +13,17 @@ import {
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Commande, Menu } from "@/src/types";
+import { Menu } from "@/src/types";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
-import { CartZoneTable } from "@/src/features/orders/components/CartZoneTable";
+import { CartOrderCard } from "@/src/features/orders/components/CartOrderCard";
+import { CartZoneFooterBar } from "@/src/features/orders/components/CartZoneFooterBar";
+import {
+  CartFilterChipsRow,
+  type CartFilterKind,
+} from "@/src/features/orders/components/CartFilterChipsRow";
+import { CartFilterOptionsSheet } from "@/src/features/orders/components/CartFilterOptionsSheet";
 import {
   CartFastFoodFilter,
   type CartFastFood,
@@ -36,11 +42,14 @@ import { Toast } from "@/src/components/Toast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
-import { CartPaymentOverlay } from "@/src/features/payment/components/CartPaymentOverlay";
-import { CartPaymentTopCard } from "@/src/features/payment/components/CartPaymentTopCard";
+import { CartPaymentSheet } from "@/src/features/payment/components/CartPaymentSheet";
+import { CartGroupedDeliverySheet } from "@/src/features/payment/components/CartGroupedDeliverySheet";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -105,8 +114,9 @@ export default function OrdersScreen() {
   // Sélection par défaut : le premier fastfood ; on re-sélectionne si celui en
   // cours disparaît du panier.
   useEffect(() => {
-    // 0 ou 1 fastfood : le filtre n'est pas rendu, il ne réserve aucune hauteur.
-    if (cartFastFoods.length <= 1) setFilterHeight(0);
+    // La hauteur du bloc collant vient uniquement de son `onLayout` : il porte
+    // desormais AUSSI les chips de filtre, il ne retombe donc pas a 0 quand le
+    // filtre boutique n'est pas rendu (0 ou 1 boutique).
     if (cartFastFoods.length === 0) {
       if (selectedFastFoodId !== null) setSelectedFastFoodId(null);
       return;
@@ -162,17 +172,44 @@ export default function OrdersScreen() {
     unregisterPaymentHandler,
   } = useCartPayment(cartTotal);
 
+  // Sheet de livraison groupée : prend TOUT le parcours quand le « commander »
+  // porte sur plusieurs courses. Il porte ses TROIS étapes en interne (groupage,
+  // livraison commune, paiement). `null` = fermé.
+  const [groupedDelivery, setGroupedDelivery] = useState<ReturnType<
+    typeof groupCartOrdersByZone
+  > | null>(null);
+  /**
+   * Montant RÉELLEMENT envoyé au backend. En livraison groupée, une seule course
+   * est facturée (la plus chère) : `amountToPay` compterait une course par zone
+   * et ferait payer plus que ce que le sheet affiche.
+   */
+  const amountToPayEffective = React.useMemo(() => {
+    if (!groupedDelivery) return amountToPay;
+    const articles = groupedDelivery.reduce((s, g) => s + g.articles, 0);
+    const course = groupedDelivery.reduce(
+      (s, g) => Math.max(s, g.livraison),
+      0,
+    );
+    return articles + course;
+  }, [groupedDelivery, amountToPay]);
+
+  // Livraison commune validée : écrase celle de chaque commande payée.
+  const [groupedDeliveryValue, setGroupedDeliveryValue] = useState<any>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<any | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
   const itemToDelete = useMemo(() => {
     if (!orderToDelete) return null;
-    return orders.find(o => o.id === orderToDelete);
+    return orders.find((o) => o.id === orderToDelete);
   }, [orderToDelete, orders]);
 
   const synthesizedEditMenu = useMemo(() => {
@@ -190,24 +227,26 @@ export default function OrdersScreen() {
       optionPrix3: p[2]?.description || "Large",
       image: orderToEdit.menu.image || orderToEdit.menu.coverImage || "",
       disponibilite: "active",
-      images: orderToEdit.menu.images || [orderToEdit.menu.image || orderToEdit.menu.coverImage || ""],
+      images: orderToEdit.menu.images || [
+        orderToEdit.menu.image || orderToEdit.menu.coverImage || "",
+      ],
       extra: orderToEdit.extra || [],
       drink: orderToEdit.drink || [],
     } as Menu;
   }, [orderToEdit]);
 
-  // UI states
+  // Hauteur du clavier : la capsule de paiement du sheet remonte avec lui.
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (userData?.infos?.numero) {
       setPaymentPhone(userData.infos.numero.toString());
     }
-  }, [userData]);
+  }, [userData, setPaymentPhone]);
 
   useEffect(() => {
     const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (e) => {
         setIsKeyboardVisible(true);
         Animated.spring(keyboardHeight, {
@@ -216,10 +255,10 @@ export default function OrdersScreen() {
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
     const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
         setIsKeyboardVisible(false);
         Animated.spring(keyboardHeight, {
@@ -228,13 +267,13 @@ export default function OrdersScreen() {
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
     return () => {
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [keyboardHeight]);
 
   // Verdict paiement via socket : actif tant qu'un paiement est en cours.
   const paymentActive = paymentState !== "total";
@@ -242,13 +281,41 @@ export default function OrdersScreen() {
     if (!paymentActive) return;
     registerPaymentHandler(handlePaymentVerdict);
     return () => unregisterPaymentHandler();
-  }, [paymentActive, handlePaymentVerdict, registerPaymentHandler, unregisterPaymentHandler]);
+  }, [
+    paymentActive,
+    handlePaymentVerdict,
+    registerPaymentHandler,
+    unregisterPaymentHandler,
+  ]);
 
   // Fin de paiement (succès ou fermeture) : on repart en mode panier global.
   const endPayment = React.useCallback(() => {
     setPayingGroupKey(null);
+    setGroupedDeliveryValue(null);
+    // Le parcours groupé porte le paiement dans son propre sheet : la fin du
+    // paiement le referme aussi, sinon il resterait ouvert sur le succès.
+    setGroupedDelivery(null);
     resetPayment();
   }, [resetPayment]);
+
+  /**
+   * Point d'entrée unique de « commander » (récap du bas ET pilule du header).
+   *
+   * Plusieurs courses concernées → on ouvre le sheet de livraison groupée, qui
+   * demande d'abord s'il faut une livraison unique ou des livraisons séparées.
+   * Une seule course → rien à arbitrer, on ouvre directement le paiement.
+   */
+  const startOrder = React.useCallback(
+    (groups: ReturnType<typeof groupCartOrdersByZone>) => {
+      if (groups.length > 1) {
+        setGroupedDelivery(groups);
+        return;
+      }
+      setPayingGroupKey(groups.length === 1 ? groups[0].key : null);
+      setPaymentState("input");
+    },
+    [setPaymentState],
+  );
 
   // Après succès complet (success_created) : rafraîchir + revenir au repos.
   useEffect(() => {
@@ -264,7 +331,7 @@ export default function OrdersScreen() {
   // Toast d'erreur paiement.
   useEffect(() => {
     if (paymentError) {
-      setToast({ message: paymentError, type: 'error' });
+      setToast({ message: paymentError, type: "error" });
       setPaymentError(null);
     }
   }, [paymentError, setPaymentError]);
@@ -277,6 +344,121 @@ export default function OrdersScreen() {
   // Hauteur mesurée du filtre fastfood absolu (0 si panier vide).
   const [filterHeight, setFilterHeight] = useState(0);
   const LIST_TOP = HEADER_HEIGHT + filterHeight;
+
+  // ── Filtres du panier : 3 axes indépendants (zone / période / heure),
+  // chacun choisi dans son propre bottom sheet via les chips de tête de liste. ──
+  const [openFilterKind, setOpenFilterKind] = useState<CartFilterKind | null>(
+    null,
+  );
+  const [zoneFilter, setZoneFilter] = useState<string | null>(null);
+  const [periodeFilter, setPeriodeFilter] = useState<string | null>(null);
+  const [heureFilter, setHeureFilter] = useState<string | null>(null);
+  // Hauteur mesurée du recap fixe du bas : la liste doit la réserver.
+  const [filterBarHeight, setFilterBarHeight] = useState(0);
+
+  /** Libellé de période d'une commande : "Express" / "Créneau" / "Sur place". */
+  const periodeOf = (o: any) =>
+    o?.delivery?.status !== true
+      ? "Sur place"
+      : o?.delivery?.type === "express"
+        ? "Express"
+        : "Créneau";
+
+  /** Zone de livraison, "Retrait en boutique" à défaut. */
+  const zoneOf = (o: any) =>
+    o?.delivery?.status === true
+      ? o?.delivery?.zone || o?.delivery?.location || "Zone inconnue"
+      : "Retrait en boutique";
+
+  /** Créneau horaire, `null` hors livraison programmée. */
+  const heureOf = (o: any): string | null =>
+    o?.delivery?.type === "time"
+      ? o?.delivery?.time || o?.delivery?.hour || null
+      : null;
+
+  /** Compte les valeurs distinctes d'un axe sur un lot de commandes. */
+  const countBy = (orders: any[], pick: (o: any) => string | null) => {
+    const map = new Map<string, number>();
+    orders.forEach((o) => {
+      const k = pick(o);
+      if (k) map.set(k, (map.get(k) ?? 0) + 1);
+    });
+    return Array.from(map.entries()).map(([key, count]) => ({
+      key,
+      label: key,
+      count,
+    }));
+  };
+
+  /**
+   * Commandes réellement affichées : les 3 axes se composent en ET. Un axe non
+   * renseigné (`null`) n'impose aucune restriction.
+   */
+  const filteredCartOrders = useMemo(
+    () =>
+      visibleCartOrders.filter((o: any) => {
+        if (zoneFilter && zoneOf(o) !== zoneFilter) return false;
+        if (periodeFilter && periodeOf(o) !== periodeFilter) return false;
+        if (heureFilter && heureOf(o) !== heureFilter) return false;
+        return true;
+      }),
+    [visibleCartOrders, zoneFilter, periodeFilter, heureFilter],
+  );
+
+  // Options de chaque sheet, comptées sur le panier visible (avant filtrage,
+  // pour que choisir une valeur n'efface pas les autres choix possibles).
+  const zoneOptions = useMemo(
+    () => countBy(visibleCartOrders, zoneOf),
+    [visibleCartOrders],
+  );
+  const periodeOptions = useMemo(
+    () => countBy(visibleCartOrders, periodeOf),
+    [visibleCartOrders],
+  );
+  const heureOptions = useMemo(
+    () => countBy(visibleCartOrders, heureOf),
+    [visibleCartOrders],
+  );
+
+  const filterChips = useMemo(
+    () => [
+      { kind: "zone" as CartFilterKind, value: zoneFilter },
+      { kind: "periode" as CartFilterKind, value: periodeFilter },
+      { kind: "heure" as CartFilterKind, value: heureFilter },
+    ],
+    [zoneFilter, periodeFilter, heureFilter],
+  );
+
+  const setFilterValue = (kind: CartFilterKind, value: string | null) => {
+    if (kind === "zone") setZoneFilter(value);
+    else if (kind === "periode") setPeriodeFilter(value);
+    else setHeureFilter(value);
+  };
+
+  const optionsFor = (kind: CartFilterKind | null) =>
+    kind === "zone"
+      ? zoneOptions
+      : kind === "periode"
+        ? periodeOptions
+        : kind === "heure"
+          ? heureOptions
+          : [];
+
+  const valueFor = (kind: CartFilterKind | null) =>
+    kind === "zone"
+      ? zoneFilter
+      : kind === "periode"
+        ? periodeFilter
+        : kind === "heure"
+          ? heureFilter
+          : null;
+
+  // Groupes de zone des commandes filtrées : ne servent plus qu'au recap du bas
+  // et au paiement (la liste, elle, est désormais plate).
+  const displayedZoneGroups = useMemo(
+    () => groupCartOrdersByZone(filteredCartOrders),
+    [filteredCartOrders],
+  );
 
   // For testing: force loader to persist
   const [forceLoading] = useState(false);
@@ -305,29 +487,67 @@ export default function OrdersScreen() {
   const validateAllDeliveries = (): string | null => {
     for (const order of ordersToPay) {
       const d = order.delivery as any;
-      if (!d || !d.status || d.type === 'aucune') continue;
-      const menuName = (order.menu as any)?.name || (order.menu as any)?.titre || 'Commande';
+      if (!d || !d.status || d.type === "aucune") continue;
+      const menuName =
+        (order.menu as any)?.name || (order.menu as any)?.titre || "Commande";
       if (!d.location) return `"${menuName}" : adresse de livraison requise`;
-      if (!d.phone && !(order.userData?.phoneNumber)) return `"${menuName}" : numéro de contact requis`;
-      if (d.type === 'time' && !d.time) return `"${menuName}" : période de livraison requise`;
+      if (!d.phone && !order.userData?.phoneNumber)
+        return `"${menuName}" : numéro de contact requis`;
+      if (d.type === "time" && !d.time)
+        return `"${menuName}" : période de livraison requise`;
     }
     return null;
   };
 
+  /**
+   * Convertit la `Livraison` composée dans le sheet de livraison groupée vers
+   * le format `delivery` d'une commande du panier (celui que lit
+   * `sanitizeOrder` : `location` / `zone` / `time`, pas `address` /
+   * `expressLieu` / `hour`).
+   */
+  const toOrderDelivery = (d: any) => {
+    if (!d || d.type === "aucune") return { status: false, type: "aucune" };
+    const express = d.type === "express";
+    return {
+      status: true,
+      // Le panier nomme "time" ce que le checkout appelle "standard".
+      type: express ? "express" : "time",
+      location: d.address || "",
+      zone: express ? d.expressLieu || "" : d.address || "",
+      phone: d.phone || "",
+      prix: Number(express ? d.expressPrix : d.prix) || 0,
+      ...(d.date && { date: d.date }),
+      ...(!express && d.hour && { time: d.hour }),
+      ...(d.voiceNoteUri && { voiceNoteUri: d.voiceNoteUri }),
+      ...(d.note && { note: d.note }),
+      ...(d.bonusCode && { bonusCode: d.bonusCode }),
+    };
+  };
+
   // Valide les livraisons puis délègue le paiement au hook useCartPayment.
   const confirmCartPayment = async (phone: string) => {
-    const validationErr = validateAllDeliveries();
-    if (validationErr) {
-      setToast({ message: validationErr, type: 'error' });
-      // Revenir à l'input pour corriger (sinon coincé en waiting).
-      setPaymentState('input');
-      return;
+    // Livraison groupée : elle a été composée et validée dans son propre sheet,
+    // elle remplace celle de chaque commande — la validation par commande ne
+    // s'applique donc plus (elle porterait sur les anciennes livraisons).
+    if (!groupedDeliveryValue) {
+      const validationErr = validateAllDeliveries();
+      if (validationErr) {
+        setToast({ message: validationErr, type: "error" });
+        // Revenir à l'input pour corriger (sinon coincé en waiting).
+        setPaymentState("input");
+        return;
+      }
     }
     // items = commandes payées (le panier entier, ou la seule zone choisie via
     // "Tout payer"), sanitizées EXACTEMENT comme l'envoi historique
     // (buyOrders → /order/tabs), via la fonction partagée sanitizeOrder.
-    const items = ordersToPay.map((o) => sanitizeOrder(o, userData?.uid));
-    await handlePaymentConfirm(phone, items, amountToPay);
+    const items = ordersToPay.map((o) =>
+      sanitizeOrder(
+        groupedDeliveryValue ? { ...o, delivery: groupedDeliveryValue } : o,
+        userData?.uid,
+      ),
+    );
+    await handlePaymentConfirm(phone, items, amountToPayEffective);
   };
 
   const onManualRefresh = async () => {
@@ -369,10 +589,7 @@ export default function OrdersScreen() {
       <HeaderPill
         label="Tout commander"
         icon="card-outline"
-        onPress={() => {
-          setPayingGroupKey(null);
-          setPaymentState("input");
-        }}
+        onPress={() => startOrder(displayedZoneGroups)}
       />
     ) : null;
 
@@ -397,6 +614,9 @@ export default function OrdersScreen() {
             left: 0,
             right: 0,
             zIndex: 999,
+            // Opaque : les cartes defilent DESSOUS, elles ne doivent pas
+            // transparaitre derriere les chips de filtre.
+            backgroundColor: "#fff",
           }}
           onLayout={(e) => setFilterHeight(e.nativeEvent.layout.height)}
         >
@@ -405,32 +625,47 @@ export default function OrdersScreen() {
             selectedFastFoodId={selectedFastFoodId}
             onFastFoodPress={setSelectedFastFoodId}
           />
+
+          {/* Chips de filtre FIXES : dans le meme bloc absolu que le filtre
+              boutique, donc mesures dans `filterHeight` et jamais scrolles. */}
+          {pendingToBuy.length > 0 && (
+            <CartFilterChipsRow
+              chips={filterChips}
+              onOpen={setOpenFilterKind}
+              onClear={(kind) => setFilterValue(kind, null)}
+            />
+          )}
         </View>
 
         <FlatList
-          data={zoneGroups}
-          renderItem={({ item }) => (
-            <CartZoneTable
-              groups={[item]}
-              onSelect={(entry) => {
-                setOrderToEdit(entry.order);
+          data={filteredCartOrders}
+          renderItem={({ item, index }) => (
+            <CartOrderCard
+              order={item as any}
+              // Rang LOCAL : simple numero d'ordre dans la liste affichee.
+              localRank={index + 1}
+              showActions
+              onPress={() => {
+                setOrderToEdit(item);
                 setEditModalVisible(true);
               }}
               onDelete={(id) => {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                LayoutAnimation.configureNext(
+                  LayoutAnimation.Presets.easeInEaseOut,
+                );
                 setOrderToEdit(null);
                 setOrderToDelete(id);
               }}
-              onPayGroup={(group) => {
-                setPayingGroupKey(group.key);
-                setPaymentState("input");
-              }}
             />
           )}
-          keyExtractor={(item) => item.key}
+          keyExtractor={(item: any) => String(item.id)}
           contentContainerStyle={[
             styles.listContent,
-            { paddingTop: LIST_TOP, paddingBottom: tabBarHeight + 100 },
+            {
+              paddingTop: LIST_TOP,
+              // Reserve la navbar, la barre de chips ET le recap pose dessus.
+              paddingBottom: tabBarHeight + filterBarHeight + 100,
+            },
           ]}
           scrollIndicatorInsets={{ top: LIST_TOP }}
           refreshControl={
@@ -444,28 +679,83 @@ export default function OrdersScreen() {
           }
           ListEmptyComponent={
             <View style={[styles.centered, { paddingTop: 100 }]}>
-              <Ionicons name="cart-outline" size={60} color={Theme.colors.gray[200]} />
-              <Text style={styles.emptyText}>Votre panier est vide</Text>
+              <Ionicons
+                name={zoneGroups.length > 0 ? "funnel-outline" : "cart-outline"}
+                size={60}
+                color={Theme.colors.gray[200]}
+              />
+              <Text style={styles.emptyText}>
+                {zoneGroups.length > 0
+                  ? "Aucune commande pour ce filtre"
+                  : "Votre panier est vide"}
+              </Text>
             </View>
           }
         />
       </View>
 
+      {/* Recap du panier, FIXE au-dessus de la navbar : la barre de chips du
+          bas a ete remplacee par les 3 chips de filtre en tete de liste. */}
+      {pendingToBuy.length > 0 && (
+        <View
+          style={[styles.zoneFooterBar, { bottom: tabBarHeight }]}
+          onLayout={(e) => setFilterBarHeight(e.nativeEvent.layout.height)}
+        >
+          <CartZoneFooterBar
+            groups={displayedZoneGroups}
+            /* Plusieurs zones = on demande d'abord le groupage des livraisons ;
+               une seule = paiement direct de cette zone. */
+            onPay={startOrder}
+          />
+        </View>
+      )}
+
+      {/* Bottom sheet de l'axe de filtre ouvert (zone / periode / heure). */}
+      <CartFilterOptionsSheet
+        visible={openFilterKind !== null}
+        kind={openFilterKind}
+        options={optionsFor(openFilterKind)}
+        selected={valueFor(openFilterKind)}
+        onSelect={(key) => {
+          if (openFilterKind) setFilterValue(openFilterKind, key);
+        }}
+        onClose={() => setOpenFilterKind(null)}
+      />
+
       {/* Capsule de confirmation de SUPPRESSION (mode séparé du paiement) */}
       {pendingToBuy.length > 0 && orderToDelete && (
-        <Animated.View style={[styles.payFooterCapsule, { bottom: tabBarHeight + 10 }]}>
-          <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <Animated.View
+          style={[styles.payFooterCapsule, { bottom: tabBarHeight + 10 }]}
+        >
+          <BlurView
+            intensity={80}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
           <TouchableOpacity style={styles.closeCircle} onPress={cancelDelete}>
             <Ionicons name="close" size={16} color="white" />
           </TouchableOpacity>
           <View style={styles.deleteMsgWrapper}>
             <Text style={styles.deleteMenuTitle} numberOfLines={1}>
-              {((itemToDelete as any)?.menu?.titre || (itemToDelete as any)?.menu?.name || "Article")} - {((itemToDelete as any)?.total || (itemToDelete as any)?.prixTotal || 0)} FCFA
+              {(itemToDelete as any)?.menu?.titre ||
+                (itemToDelete as any)?.menu?.name ||
+                "Article"}{" "}
+              -{" "}
+              {(itemToDelete as any)?.total ||
+                (itemToDelete as any)?.prixTotal ||
+                0}{" "}
+              FCFA
             </Text>
-            <Text style={styles.deleteMsg}>Voulez-vous vraiment supprimer ?</Text>
+            <Text style={styles.deleteMsg}>
+              Voulez-vous vraiment supprimer ?
+            </Text>
           </View>
           <TouchableOpacity
-            style={[styles.payerBtnHome, { backgroundColor: '#ef4444' }, isSubmitting && { opacity: 0.7 }]}
+            style={[
+              styles.payerBtnHome,
+              { backgroundColor: "#ef4444" },
+              isSubmitting && { opacity: 0.7 },
+            ]}
             onPress={handleConfirmDelete}
             disabled={isSubmitting}
           >
@@ -478,53 +768,78 @@ export default function OrdersScreen() {
         </Animated.View>
       )}
 
-      {/* Sheet de PAIEMENT global du panier — ouvert par la pilule "Tout commander"
-          du header (masqué à l'état "total" au repos). Un seul bloc blanc,
-          posé au-dessus de la nav bar comme le sheet de commande individuelle :
-          la card de récap en haut, la capsule DEDANS en bas.
+      {/* Sheet de LIVRAISON GROUPÉE — s'intercale AVANT le paiement quand
+          « commander » porte sur plusieurs courses. Il porte SES DEUX ÉTAPES
+          en interne (choix du groupage — écran 02 du design — puis composition
+          de la livraison commune) : un seul `Modal`, donc pas d'attente entre
+          les deux. La livraison validée est appliquée à toutes les commandes du
+          lot au moment de construire les `items` du paiement. */}
+      <CartGroupedDeliverySheet
+        visible={!orderToDelete && groupedDelivery !== null}
+        groups={groupedDelivery || []}
+        onSplit={() => setGroupedDelivery(null)}
+        fastFoodId={
+          (groupedDelivery?.[0]?.entries[0]?.order as any)?.fastFoodId ||
+          selectedFastFoodId ||
+          undefined
+        }
+        /* Le paiement est le TROISIÈME calque de ce même sheet : on arme juste
+           l'état, sans fermer ni ouvrir de Modal (deux Modals qui se croisent
+           et la seconde ne s'affiche pas). */
+        onValidate={(d) => {
+          setGroupedDeliveryValue(toOrderDelivery(d));
+          // Lot entier : pas de zone unique à cibler, on paie tout l'affiché.
+          setPayingGroupKey(null);
+          setPaymentState("input");
+        }}
+        onClose={endPayment}
+        onError={(msg) => setToast({ message: msg, type: "error" })}
+        /* Pas de `totalAmount` : le sheet le déduit du lot (articles + la
+           course unique), comme `amountToPayEffective` côté envoi. */
+        phone={paymentPhone}
+        onPhoneChange={setPaymentPhone}
+        network={paymentNetwork}
+        onNetworkChange={setPaymentNetwork}
+        paymentState={paymentState}
+        setPaymentState={setPaymentState}
+        ussdMessage={ussdMessage}
+        onConfirm={confirmCartPayment}
+        keyboardHeight={keyboardHeight}
+        isKeyboardVisible={isKeyboardVisible}
+      />
+
+      {/* Sheet de PAIEMENT global du panier — ouvert par le bouton « commander »
+          du recap du bas ET par la pilule « Tout commander » du header.
 
           ⚠️ NE PAS conditionner à `pendingToBuy.length` : dès que le paiement
           aboutit, les commandes quittent le panier (socket) et le sheet serait
           démonté avant d'avoir affiché succès. `paymentState !== "total"` suffit
-          — c'est exactement « un paiement est en cours ». */}
-      {/* Monté en permanence, piloté par `visible` : le démonter directement
-          couperait l'animation de sortie, le sheet disparaîtrait d'un coup au
-          lieu de redescendre. */}
-      <CartPaymentTopCard
-        visible={!orderToDelete && paymentState !== "total"}
-        /* Le sheet est dans un Modal : il descend jusqu'au bas de l'écran et
-           recouvre la nav bar. Il ne bouge PAS à l'ouverture du clavier —
-           seule la capsule remonte (comme au home). */
-        bottom={0}
-        keyboardHeight={keyboardHeight}
-        isKeyboardVisible={isKeyboardVisible}
+          — c'est exactement « un paiement est en cours ».
+          Monté en permanence, piloté par `visible` : le démonter directement
+          couperait l'animation de sortie. */}
+      <CartPaymentSheet
+        /* Panier à une seule course : le parcours groupé porte SON PROPRE
+           calque de paiement, ce sheet ne doit pas doubler le sien. */
+        visible={
+          !orderToDelete && paymentState !== "total" && groupedDelivery === null
+        }
+        /* Recap du sheet : la zone payee si le paiement porte sur un seul
+           groupe, sinon tout ce qui est affiche. */
+        groups={payingGroup ? [payingGroup] : displayedZoneGroups}
+        totalAmount={amountToPay}
+        phone={paymentPhone}
+        onPhoneChange={setPaymentPhone}
         network={paymentNetwork}
         onNetworkChange={setPaymentNetwork}
-      >
-          <CartPaymentOverlay
-            phone={paymentPhone}
-            onPhoneChange={setPaymentPhone}
-            onConfirm={confirmCartPayment}
-            totalAmount={amountToPay}
-            paymentState={paymentState}
-            setPaymentState={setPaymentState}
-            network={paymentNetwork}
-            onNetworkChange={setPaymentNetwork}
-            ussdMessage={ussdMessage}
-            onClose={endPayment}
-            onError={(msg) => setToast({ message: msg, type: 'error' })}
-            isKeyboardVisible={isKeyboardVisible}
-            /* Ancrée sur le bas du SHEET (son parent). C'est elle SEULE qui
-               remonte avec le clavier, la card du haut ne bouge pas.
-
-               La capsule est ancrée sur la hauteur du clavier + le même
-               collage que le home (`paddingBottom: 2`). Le `translateY: -100`
-               du home n'a PAS d'équivalent ici : là-bas la capsule est ancrée
-               au bas de l'ÉCRAN et ces 100px la remontent vers le clavier —
-               ici elle est déjà posée dessus. */
-            bottom={Animated.add(keyboardHeight, 2)}
-          />
-      </CartPaymentTopCard>
+        paymentState={paymentState}
+        setPaymentState={setPaymentState}
+        ussdMessage={ussdMessage}
+        onConfirm={confirmCartPayment}
+        onClose={endPayment}
+        onError={(msg) => setToast({ message: msg, type: "error" })}
+        keyboardHeight={keyboardHeight}
+        isKeyboardVisible={isKeyboardVisible}
+      />
 
       {toast && (
         <Toast
@@ -551,9 +866,14 @@ export default function OrdersScreen() {
             saveOrder({ ...updatedOrder, id: orderToEdit.id })
           }
           onConfirm={async (updatedOrder) => {
-            const result = await buyOrders([{ ...updatedOrder, status: 'pendingToBuy' }]);
+            const result = await buyOrders([
+              { ...updatedOrder, status: "pendingToBuy" },
+            ]);
             if (result.success) {
-              setToast({ message: "Commande validée avec succès", type: "success" });
+              setToast({
+                message: "Commande validée avec succès",
+                type: "success",
+              });
               setEditModalVisible(false);
               setOrderToEdit(null);
             }
@@ -566,9 +886,17 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Recap du panier, pose juste au-dessus de la navbar.
+  zoneFooterBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    // Fond transparent : le blur est porte par CartZoneFooterBar lui-meme.
+    overflow: "hidden",
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   centered: {
     flex: 1,
@@ -582,9 +910,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   listContent: {
+    // Pas de padding horizontal ni de gap : les CartOrderCard portent leur
+    // propre marge interne et se touchent, comme dans le suivi des commandes.
     paddingVertical: 1,
-    paddingHorizontal: 12,
-    gap: 12,
   },
   emptyText: {
     marginTop: 10,
@@ -602,23 +930,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
     elevation: 8,
-    alignSelf: 'center',
+    alignSelf: "center",
     zIndex: 1000,
-    left: '2%',
+    left: "2%",
   },
   closeCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
   },
   payerBtnHome: {
     flexDirection: "row",
@@ -626,23 +954,23 @@ const styles = StyleSheet.create({
     backgroundColor: "#ec4913",
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
+    justifyContent: "center",
     minWidth: 40,
   },
   deleteMsgWrapper: {
     flex: 1,
     paddingLeft: 12,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   deleteMenuTitle: {
-    color: 'rgba(255,255,255,0.6)',
+    color: "rgba(255,255,255,0.6)",
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 2,
   },
   deleteMsg: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

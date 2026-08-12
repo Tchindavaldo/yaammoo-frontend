@@ -130,7 +130,9 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
             </View>
 
             <ScrollView
-              style={{ maxHeight: 400 }}
+              // Hauteur fixe, identique a celle du sheet de consultation
+              // (ZoneListSheet) pour que les deux ouvrent a la meme taille.
+              style={{ height: 250 }}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled"
             >

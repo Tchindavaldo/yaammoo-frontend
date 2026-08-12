@@ -32,11 +32,8 @@ export const styles = StyleSheet.create({
   // `paddingHorizontal: 16`, on compense celui du sheet pour ne pas doubler la
   // gouttiere (les cards etaient rentrees de 32 px de chaque cote).
   deliveryHost: {
-    flex: 1,
-    // Plancher = la hauteur pour laquelle `DeliveryTab` est calibre (ses deux
-    // zones `flex: 1`). En dessous, elles se compriment et les cards du haut
-    // chevauchent « SELECT TYPE ».
-    minHeight: 230,
+    // `GroupedDeliveryTab` porte ses propres hauteurs de zones : l'hote se cale
+    // dessus, sans flex ni plancher.
     marginHorizontal: -16,
   },
   spacer: { flex: 1, minHeight: 8 },

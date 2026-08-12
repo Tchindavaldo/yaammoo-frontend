@@ -1,4 +1,3 @@
-import { DeliveryTab } from "@/src/features/checkout/components/tabs/DeliveryTab";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import { Livraison } from "@/src/types";
 import React from "react";
@@ -25,6 +24,7 @@ import {
 import { CartGroupingStep } from "./CartGroupingStep";
 import { CartPaymentBody } from "./CartPaymentBody";
 import { CartPaymentOverlay } from "./CartPaymentOverlay";
+import { GroupedDeliveryTab } from "./GroupedDeliveryTab";
 import { styles as sheetStyles } from "./CartPaymentSheet.styles";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
@@ -323,15 +323,17 @@ export const CartGroupedDeliverySheet: React.FC<
               </Text>
             </View>
 
-            {/* Section delivery du sheet de commande. `DeliveryTab` est
-                  calibré pour CE sheet-là : conteneur `height: 230` découpé en
-                  deux zones `flex: 1`, et `marginBottom: 80` sous la grille de
-                  types (la place de sa barre d'action absolue). Ici le sheet a
-                  sa propre hauteur et son bouton en flux — sans neutraliser ces
-                  contraintes, les cartes du haut se compriment et chevauchent
-                  « SELECT TYPE ». */}
+            {/* Copie dediee de la section delivery : `GroupedDeliveryTab`
+                  porte ses PROPRES hauteurs de zones, calibrees pour ce sheet.
+                  `DeliveryTab` (sheet de commande individuel) reste intact. */}
+            {/* Espace flexible AU-DESSUS du bloc livraison : il absorbe la
+                place restante du calque, donc agrandir la zone basse de
+                `GroupedDeliveryTab` fait remonter les cards au lieu de pousser
+                le bouton (le sheet garde sa hauteur fixe). */}
+            <View style={styles.spacer} />
+
             <View style={styles.deliveryHost}>
-              <DeliveryTab
+              <GroupedDeliveryTab
                 delivery={delivery}
                 setDelivery={setDelivery}
                 onOpenLocation={() => setOverlay("location")}
@@ -341,7 +343,6 @@ export const CartGroupedDeliverySheet: React.FC<
                 onOpenVoiceNote={() => setOverlay("voiceNote")}
                 availableHours={rawHours}
                 deliveryOffer={deliveryOffer}
-                fillHeight
               />
             </View>
 

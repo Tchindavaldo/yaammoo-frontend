@@ -1,36 +1,53 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
-import { Loader } from '../../../components/Loader';
-import * as Location from 'expo-location';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { Loader } from "@/src/components/Loader";
+import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import React from "react";
+import {
+  Animated,
+  Keyboard,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
-// Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
-// (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
-// inset, sinon il s'arrete au-dessus du bord bas du sheet.
-const SHEET_HEIGHT = 384;
+// Hauteur PROPRE au sheet de livraison groupee : l'overlay le recouvre
+// exactement, alors que la version checkout tient dans 384.
+// Hauteur du sheet de livraison groupee : sa hauteur propre (471) plus le
+// padding bas qu'il applique (16 + insets.bottom, ajoute au runtime). Sans ce
+// rappel l'overlay s'arretait au-dessus du bord bas du sheet.
+const SHEET_BASE_HEIGHT = 471;
 
-interface CheckoutLocationOverlayProps {
+interface GroupedLocationOverlayProps {
   onClose: () => void;
   address: string;
   note: string;
   onSave?: (address: string, note: string) => void;
 }
 
-export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = ({ onClose, address, note, onSave }) => {
+export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
+  onClose,
+  address,
+  note,
+  onSave,
+}) => {
   const [localAddress, setLocalAddress] = React.useState(address);
   const [localNote, setLocalNote] = React.useState(note);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isLocating, setIsLocating] = React.useState(false);
-  const [validationError, setValidationError] = React.useState<string | null>(null);
+  const [validationError, setValidationError] = React.useState<string | null>(
+    null,
+  );
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
     const showSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (event) => {
         setIsKeyboardVisible(true);
         Animated.spring(keyboardHeight, {
@@ -39,10 +56,10 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
     const hideSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
         setIsKeyboardVisible(false);
         Animated.spring(keyboardHeight, {
@@ -51,7 +68,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
 
     return () => {
@@ -64,9 +81,6 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
   // (coordonnées de la commande), on la réutilise telle quelle. Relancer le GPS
   // ici écrasait le lieu choisi par la position courante du user. Le bouton
   // « position actuelle » reste disponible pour un rafraîchissement volontaire.
-
-  const insets = useSafeAreaInsets();
-  const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup.
   const fade = React.useRef(new Animated.Value(0)).current;
@@ -101,8 +115,8 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     try {
       setIsLocating(true);
       let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        alert('Permission to access location was denied');
+      if (status !== "granted") {
+        alert("Permission to access location was denied");
         setIsLocating(false);
         return;
       }
@@ -113,13 +127,15 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
       setLocalAddress(coords);
     } catch (error) {
-      alert('Error fetching location or timeout. Using last known if available.');
+      alert(
+        "Error fetching location or timeout. Using last known if available.",
+      );
       // Try a less accurate but faster fix as fallback
       try {
         const last = await Location.getLastKnownPositionAsync({});
         if (last) {
-           const coords = `${last.coords.latitude.toFixed(6)}, ${last.coords.longitude.toFixed(6)}`;
-           setLocalAddress(coords);
+          const coords = `${last.coords.latitude.toFixed(6)}, ${last.coords.longitude.toFixed(6)}`;
+          setLocalAddress(coords);
         }
       } catch (e) {}
     } finally {
@@ -158,19 +174,24 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
           {
             height: keyboardHeight.interpolate({
               inputRange: [0, 700],
-              outputRange: [sheetHeight, sheetHeight + 1000]
-            })
-          }
+              outputRange: [SHEET_BASE_HEIGHT, SHEET_BASE_HEIGHT + 1000],
+            }),
+          },
         ]}
       />
       <Animated.View
         style={[
           styles.container,
-          { height: sheetHeight },
-          { transform: [{ translateY: keyboardHeight.interpolate({
-            inputRange: [0, 100],
-            outputRange: [0, -95]
-          }) }] }
+          {
+            transform: [
+              {
+                translateY: keyboardHeight.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [0, -95],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <View style={styles.card}>
@@ -178,8 +199,15 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
             <View style={styles.headerLeft}>
               <Ionicons name="location-outline" size={20} color="#94a3b8" />
               <Text style={styles.headerTitle}>Delivery Address</Text>
-              <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
-                <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
+              <TouchableOpacity
+                onPress={() => Keyboard.dismiss()}
+                style={styles.keyboardSmallBtn}
+              >
+                <Ionicons
+                  name="chevron-down-outline"
+                  size={18}
+                  color="#94a3b8"
+                />
               </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
@@ -189,51 +217,67 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
 
           <View style={styles.inputContainer}>
             <View style={styles.addressBox}>
-              <Text style={styles.addressText}>{localAddress || '(Send Live GPS Location)'}</Text>
-                <TextInput 
-                  style={styles.textInput}
-                  placeholder="Note (ex: Porte bleue, 2ème étage...)"
-                  placeholderTextColor="#94a3b8"
-                  multiline
-                  textAlignVertical="top"
-                  value={localNote}
-                  onChangeText={setLocalNote}
-                  returnKeyType="done"
-                  blurOnSubmit={true}
-                  onSubmitEditing={Keyboard.dismiss}
-                />
-                
-                {isLocating && (
-                  <BlurView intensity={30} tint="light" style={styles.locatingOverlay}>
-                    <Loader size={40} color="#ec4913" />
-                    <Text style={styles.locatingText}>Récupération de votre position actuelle...</Text>
-                  </BlurView>
-                )}
+              <Text style={styles.addressText}>
+                {localAddress || "(Send Live GPS Location)"}
+              </Text>
+              <TextInput
+                style={styles.textInput}
+                placeholder="Note (ex: Porte bleue, 2ème étage...)"
+                placeholderTextColor="#94a3b8"
+                multiline
+                textAlignVertical="top"
+                value={localNote}
+                onChangeText={setLocalNote}
+                returnKeyType="done"
+                blurOnSubmit={true}
+                onSubmitEditing={Keyboard.dismiss}
+              />
+
+              {isLocating && (
+                <BlurView
+                  intensity={30}
+                  tint="light"
+                  style={styles.locatingOverlay}
+                >
+                  <Loader size={40} color="#ec4913" />
+                  <Text style={styles.locatingText}>
+                    Récupération de votre position actuelle...
+                  </Text>
+                </BlurView>
+              )}
             </View>
 
             {validationError && (
-              <Text style={{ color: '#ef4444', fontSize: 12, marginBottom: 6, paddingHorizontal: 4 }}>
+              <Text
+                style={{
+                  color: "#ef4444",
+                  fontSize: 12,
+                  marginBottom: 6,
+                  paddingHorizontal: 4,
+                }}
+              >
                 {validationError}
               </Text>
             )}
 
-            <TouchableOpacity
-              style={styles.gpsBtn}
-              onPress={handleGetLocation}
-            >
+            <TouchableOpacity style={styles.gpsBtn} onPress={handleGetLocation}>
               <Ionicons name="locate-outline" size={18} color="#334155" />
               <Text style={styles.gpsBtnText}>Send Live GPS</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.checkBtn} 
+            <TouchableOpacity
+              style={styles.checkBtn}
               onPress={handleSave}
               disabled={isSaving}
             >
               {isSaving ? (
                 <Loader size={34} color="white" />
               ) : (
-                <Ionicons name={isKeyboardVisible ? "chevron-down" : "checkmark"} size={22} color="white" />
+                <Ionicons
+                  name={isKeyboardVisible ? "chevron-down" : "checkmark"}
+                  size={22}
+                  color="white"
+                />
               )}
             </TouchableOpacity>
           </View>
@@ -249,47 +293,48 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   blurOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
   },
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    // hauteur portee au runtime (safe area comprise), voir `sheetHeight`
+    height: SHEET_BASE_HEIGHT,
     paddingHorizontal: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   card: {
-    backgroundColor: 'white',
+    height: 400,
+    backgroundColor: "white",
     borderRadius: 24,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#f1f5f9",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   headerTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontWeight: "bold",
+    color: "#0f172a",
   },
   keyboardSmallBtn: {
     marginLeft: 8,
@@ -297,79 +342,82 @@ const styles = StyleSheet.create({
   },
   headerBadge: {
     fontSize: 10,
-    fontWeight: 'bold',
-    color: '#cbd5e1',
+    fontWeight: "bold",
+    color: "#cbd5e1",
     letterSpacing: 1,
   },
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f8fafc",
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#f1f5f9",
   },
   inputContainer: {
-    position: 'relative',
-    height: 240,
+    position: "relative",
+    // `addressBox` est en `height: "100%"` et les boutons GPS / check sont
+    // absolus (`bottom: 16`) : sans hauteur ici le bloc s'effondre et les
+    // boutons remontent. `flex: 1` lui donne la place restante de la card.
+    flex: 1,
   },
   addressBox: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f8fafc',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#f8fafc",
     borderRadius: 20,
     padding: 20,
   },
   addressText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#1e293b',
+    fontWeight: "bold",
+    color: "#1e293b",
     marginBottom: 8,
   },
   textInput: {
     flex: 1,
     fontSize: 15,
-    color: '#334155',
+    color: "#334155",
     padding: 0,
   },
   gpsBtn: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 16,
     left: 16,
     height: 40,
     paddingHorizontal: 16,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#f1f5f9",
   },
   gpsBtnText: {
     fontSize: 12,
-    fontWeight: 'bold',
-    color: '#334155',
+    fontWeight: "bold",
+    color: "#334155",
   },
   checkBtn: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 16,
     right: 16,
     width: 40,
     height: 40,
-    backgroundColor: '#ec4913',
+    backgroundColor: "#ec4913",
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ec4913',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#ec4913",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -378,17 +426,17 @@ const styles = StyleSheet.create({
   locatingOverlay: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 12,
     zIndex: 10,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   locatingText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#ec4913',
-    textAlign: 'center',
+    fontWeight: "600",
+    color: "#ec4913",
+    textAlign: "center",
     paddingHorizontal: 20,
   },
 });

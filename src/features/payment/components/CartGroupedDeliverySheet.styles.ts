@@ -32,8 +32,8 @@ export const styles = StyleSheet.create({
   // `paddingHorizontal: 16`, on compense celui du sheet pour ne pas doubler la
   // gouttiere (les cards etaient rentrees de 32 px de chaque cote).
   deliveryHost: {
-    // `GroupedDeliveryTab` porte ses propres hauteurs de zones : l'hote se cale
-    // dessus, sans flex ni plancher.
+    // L'hote se cale sur le bloc, qui mesure ses deux zones. L'espace libre du
+    // calque est absorbe par le `spacer` place au-dessus.
     marginHorizontal: -16,
   },
   spacer: { flex: 1, minHeight: 8 },
@@ -50,6 +50,26 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   primaryBtnOff: { opacity: 0.4 },
+  // Ligne d'action du calque 2 : retour compact + bouton principal etire.
+  // La marge haute passe ici, `actionRowPrimary` la retire du bouton.
+  actionRow: {
+    marginTop: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  actionRowPrimary: { flex: 1, marginTop: 0 },
+  // Pastille ronde parfaite, calee sur la hauteur du bouton principal
+  // (15 de padding vertical + ~20 de ligne). Pas de bordure : la couleur
+  // suffit a la detacher du fond blanc du sheet.
+  backBtn: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#f1f5f9",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   primaryBtnLabel: { fontSize: 15, fontWeight: "bold", color: "#fff" },
   // --- Étape 1 : choix du groupage ---
   question: {

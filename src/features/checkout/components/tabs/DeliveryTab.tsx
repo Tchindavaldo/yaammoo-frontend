@@ -44,6 +44,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
 
   const getBtnStyle = (filled: boolean) => [
     styles.infoBtnLarge,
+    { backgroundColor: "#f1f5f9", borderColor: "#cbd5e1", borderWidth: 1 },
     filled && {
       borderColor: "#ec4913",
       borderWidth: 2,
@@ -79,7 +80,10 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
     let date = "";
     if (rawDate) {
       const d = new Date(rawDate);
-      date = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" });
+      date = d.toLocaleDateString("fr-FR", {
+        weekday: "short",
+        day: "numeric",
+      });
     }
     return { date, heure };
   };
@@ -179,7 +183,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                       { color: getTextColor(isVoiceNoteFilled) },
                     ]}
                   >
-                    Note vocale
+                    vocale
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -266,7 +270,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     { color: getTextColor(isVoiceNoteFilled) },
                   ]}
                 >
-                  Note
+                  Vocale
                 </Text>
               </View>
             </TouchableOpacity>
@@ -307,13 +311,6 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Express
-                {deliveryFree ? (
-                  <Text style={{ color: "#ec4913" }}> · Offert</Text>
-                ) : expressPrice ? (
-                  ` (${expressPrice}F)`
-                ) : (
-                  ""
-                )}
               </Text>
               <Text
                 style={[
@@ -321,13 +318,21 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   delivery.type === "express" && { color: "#ec4913" },
                 ]}
               >
-                Livré dès que terminée
-                {deliveryFree && expressPrice ? (
-                  <Text style={localStyles.strikePrice}> · {expressPrice}F</Text>
-                ) : (
-                  ""
-                )}
+                {deliveryFree && expressPrice
+                  ? "Dès que terminée"
+                  : `Livré dès que terminée${expressPrice ? ` · ${expressPrice}F` : ""}`}
               </Text>
+              {deliveryFree && expressPrice ? (
+                <Text
+                  style={[
+                    styles.deliveryTypeSubText,
+                    delivery.type === "express" && { color: "#ec4913" },
+                  ]}
+                >
+                  <Text style={localStyles.freeLabel}>Offert</Text>
+                  <Text style={localStyles.strikePrice}> · {expressPrice}F</Text>
+                </Text>
+              ) : null}
             </View>
           </TouchableOpacity>
 
@@ -348,46 +353,55 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Heure
-                {deliveryFree ? (
-                  <Text style={{ color: "#ec4913" }}> · Offert</Text>
-                ) : (
-                  ""
-                )}
               </Text>
-              {selectedDate ? (
-                <Text
-                  style={[
-                    styles.deliveryTypeSubText,
-                    delivery.type === "standard" && { color: "#ec4913" },
-                  ]}
-                >
-                  {selectedDate}
-                </Text>
-              ) : null}
-              <Text
-                style={[
-                  styles.deliveryTypeSubText,
-                  delivery.type === "standard" && { color: "#ec4913" },
-                ]}
-              >
-                {selectedHour ? (
-                  deliveryFree ? (
-                    <>
-                      {selectedHour}
-                      {periodPrice ? (
-                        <Text style={localStyles.strikePrice}>
-                          {" "}
-                          · {periodPrice}F
-                        </Text>
-                      ) : null}
-                    </>
-                  ) : (
-                    `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
-                  )
-                ) : (
-                  "Choisir un créneau"
-                )}
-              </Text>
+              {deliveryFree && selectedHour && periodPrice ? (
+                <>
+                  <Text
+                    style={[
+                      styles.deliveryTypeSubText,
+                      delivery.type === "standard" && { color: "#ec4913" },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {[selectedDate, selectedHour].filter(Boolean).join(" ")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.deliveryTypeSubText,
+                      delivery.type === "standard" && { color: "#ec4913" },
+                    ]}
+                  >
+                    <Text style={localStyles.freeLabel}>Offert</Text>
+                    <Text style={localStyles.strikePrice}>
+                      {" "}
+                      · {periodPrice}F
+                    </Text>
+                  </Text>
+                </>
+              ) : (
+                <>
+                  {selectedDate ? (
+                    <Text
+                      style={[
+                        styles.deliveryTypeSubText,
+                        delivery.type === "standard" && { color: "#ec4913" },
+                      ]}
+                    >
+                      {selectedDate}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.deliveryTypeSubText,
+                      delivery.type === "standard" && { color: "#ec4913" },
+                    ]}
+                  >
+                    {selectedHour
+                      ? `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
+                      : "Choisir un créneau"}
+                  </Text>
+                </>
+              )}
             </View>
           </TouchableOpacity>
 
@@ -433,6 +447,10 @@ const localStyles = StyleSheet.create({
     textDecorationLine: "line-through",
     color: "#94a3b8",
   },
+  freeLabel: {
+    color: "#16a34a",
+    fontWeight: "600",
+  },
   topZone: {
     flex: 1,
     justifyContent: "flex-start",
@@ -460,8 +478,11 @@ const localStyles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     backgroundColor: "#f1f5f9",
-    borderRadius: 12,
-    padding: 14,
+    borderColor: "#cbd5e1",
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    minHeight: 80,
   },
   aucuneText: {
     flex: 1,

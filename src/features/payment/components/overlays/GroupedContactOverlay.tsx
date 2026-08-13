@@ -1,23 +1,37 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
-import { Loader } from '../../../components/Loader';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { Loader } from "@/src/components/Loader";
+import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import {
+  Animated,
+  Keyboard,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
-// Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
-// (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
-// inset, sinon il s'arrete au-dessus du bord bas du sheet.
-const SHEET_HEIGHT = 384;
+// Hauteur PROPRE au sheet de livraison groupee : l'overlay le recouvre
+// exactement, alors que la version checkout tient dans 384.
+// Hauteur du sheet de livraison groupee : sa hauteur propre (471) plus le
+// padding bas qu'il applique (16 + insets.bottom, ajoute au runtime). Sans ce
+// rappel l'overlay s'arretait au-dessus du bord bas du sheet.
+const SHEET_BASE_HEIGHT = 471;
 
-interface CheckoutContactOverlayProps {
+interface GroupedContactOverlayProps {
   onClose: () => void;
   phone: string;
   onSelectPhone?: (phone: string) => void;
 }
 
-export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone, onSelectPhone }) => {
+export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
+  onClose,
+  phone,
+  onSelectPhone,
+}) => {
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
@@ -25,7 +39,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
 
   React.useEffect(() => {
     const showSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
       (event) => {
         setIsKeyboardVisible(true);
         Animated.spring(keyboardHeight, {
@@ -34,10 +48,10 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
     const hideSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
       () => {
         setIsKeyboardVisible(false);
         Animated.spring(keyboardHeight, {
@@ -46,7 +60,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           tension: 40,
           friction: 8,
         }).start();
-      }
+      },
     );
 
     return () => {
@@ -54,9 +68,6 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
       hideSubscription.remove();
     };
   }, []);
-
-  const insets = useSafeAreaInsets();
-  const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup.
   const fade = React.useRef(new Animated.Value(0)).current;
@@ -94,7 +105,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
     }
     setIsSaving(true);
     if (onSelectPhone) onSelectPhone(localPhone);
-    
+
     // Wait for the animation to progress/finish before closing the overlay
     setTimeout(() => {
       handleClose();
@@ -111,19 +122,24 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           {
             height: keyboardHeight.interpolate({
               inputRange: [0, 700],
-              outputRange: [sheetHeight, sheetHeight + 1000]
-            })
-          }
-        ]} 
+              outputRange: [SHEET_BASE_HEIGHT, SHEET_BASE_HEIGHT + 1000],
+            }),
+          },
+        ]}
       />
       <Animated.View
         style={[
           styles.container,
-          { height: sheetHeight },
-          { transform: [{ translateY: keyboardHeight.interpolate({
-            inputRange: [0, 100],
-            outputRange: [0, -95]
-          }) }] }
+          {
+            transform: [
+              {
+                translateY: keyboardHeight.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [0, -95],
+                }),
+              },
+            ],
+          },
         ]}
       >
         <View style={styles.card}>
@@ -131,8 +147,15 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
             <View style={styles.headerLeft}>
               <Ionicons name="call-outline" size={20} color="#94a3b8" />
               <Text style={styles.headerTitle}>Contact Number</Text>
-              <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
-                <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
+              <TouchableOpacity
+                onPress={() => Keyboard.dismiss()}
+                style={styles.keyboardSmallBtn}
+              >
+                <Ionicons
+                  name="chevron-down-outline"
+                  size={18}
+                  color="#94a3b8"
+                />
               </TouchableOpacity>
             </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
@@ -143,7 +166,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           <View style={styles.inputContainer}>
             <View style={styles.row}>
               <View style={styles.inputWrapper}>
-                <TextInput 
+                <TextInput
                   style={styles.textInput}
                   placeholder="+1 (555) 000-0000"
                   placeholderTextColor="#cbd5e1"
@@ -152,22 +175,27 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
                   onChangeText={setLocalPhone}
                 />
               </View>
-              
-              <TouchableOpacity 
-                style={styles.checkBtn} 
+
+              <TouchableOpacity
+                style={styles.checkBtn}
                 onPress={handleSave}
                 disabled={isSaving}
               >
                 {isSaving ? (
                   <Loader size={34} color="white" />
                 ) : (
-                  <Ionicons name={isKeyboardVisible ? "chevron-down" : "checkmark"} size={28} color="white" />
+                  <Ionicons
+                    name={isKeyboardVisible ? "chevron-down" : "checkmark"}
+                    size={28}
+                    color="white"
+                  />
                 )}
               </TouchableOpacity>
             </View>
 
             <Text style={styles.helperText}>
-              Our courier will use this number to contact you upon arrival if there are any issues with your delivery.
+              Our courier will use this number to contact you upon arrival if
+              there are any issues with your delivery.
             </Text>
           </View>
         </View>
@@ -182,47 +210,49 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   blurOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
   },
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    // hauteur portee au runtime (safe area comprise), voir `sheetHeight`
+    height: SHEET_BASE_HEIGHT,
     paddingHorizontal: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   card: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 24,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#f1f5f9",
+    // backgroundColor: "red",
+    height: 400,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   headerTitle: {
     fontSize: 14,
-    fontWeight: 'bold',
-    color: '#0f172a',
+    fontWeight: "bold",
+    color: "#0f172a",
   },
   keyboardSmallBtn: {
     marginLeft: 8,
@@ -231,43 +261,43 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f8fafc",
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: "#f1f5f9",
   },
   inputContainer: {
-    height: 240,
+    height: 260,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   inputWrapper: {
     flex: 1,
     height: 60,
-    backgroundColor: '#f8fafc',
+    backgroundColor: "#f8fafc",
     borderRadius: 16,
     paddingHorizontal: 20,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   textInput: {
     fontSize: 18,
-    fontWeight: '500',
-    color: '#1e293b',
+    fontWeight: "500",
+    color: "#1e293b",
     padding: 0,
   },
   checkBtn: {
     width: 60,
     height: 60,
-    backgroundColor: '#ec4913',
+    backgroundColor: "#ec4913",
     borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#ec4913',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#ec4913",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -276,7 +306,7 @@ const styles = StyleSheet.create({
   helperText: {
     marginTop: 16,
     fontSize: 12,
-    color: '#94a3b8',
+    color: "#94a3b8",
     lineHeight: 18,
   },
 });

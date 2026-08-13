@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **15 règles numérotées R1 → R15.** Toute nouvelle règle ajoutée à ce fichier
+> **16 règles numérotées R1 → R16.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R16, R17, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -57,7 +57,7 @@ contrat d'API ».
 >
 > **Accusé obligatoire** : la toute première réponse de la session doit commencer
 > par la ligne fournie par le hook, seule sur sa ligne :
-> `✅ CLAUDE.md lu en entier (N l., 15 règles R1→R15) + architecture/README.md (M l.)`
+> `✅ CLAUDE.md lu en entier (N l., 16 règles R1→R16) + architecture/README.md (M l.)`
 > Absence de cette ligne = hook non déclenché : le signaler et le réparer.
 
 Lis **`architecture/README.md`** (à la racine) avant de travailler : il donne une vision
@@ -237,3 +237,24 @@ les logs, les tableaux de doc et les encadrés — on les garde.
 > S'applique à l'identique au **backend** (`BACKEND/CLAUDE.md`, R19).
 > Un emoji décoratif croisé dans un fichier qu'on touche = le retirer avant de
 > clore, même s'il était déjà là. Les emojis de statut, on n'y touche pas.
+
+## R16 — Jamais de composant partagé entre écrans (OBLIGATOIRE)
+
+**Ne JAMAIS modifier un composant utilisé par un autre écran pour les besoins
+de l'écran courant. On DUPLIQUE, toujours.**
+
+Quand un écran a besoin d'un composant qui existe déjà ailleurs (overlay, tab,
+card, ligne de validation…), on en fait une **copie dédiée** dans le dossier de
+la feature courante, puis on l'adapte librement. On n'ajoute pas de prop
+`variant`/`height`/`mode` à l'original pour couvrir les deux cas.
+
+- Pourquoi : une prop ajoutée « juste pour ce cas » fait porter à l'original le
+  risque de casser l'écran d'origine à chaque évolution. Deux écrans qui se
+  ressemblent aujourd'hui divergent demain.
+- Nommage : préfixer la copie par le domaine (`GroupedExpressOverlay` copié de
+  `CheckoutExpressOverlay`), et le dire en commentaire d'en-tête.
+- La duplication vaut pour les **composants** (rendu/UI). Les **services purs**
+  et utilitaires sans état (`verifyBonusCode`, `groupCartOrders`,
+  `extractPeriodDate`…) restent partagés : ils n'ont pas de rendu à faire
+  diverger.
+- Un fichier dupliqué reste soumis à R4 : s'il dépasse 500 lignes, le découper.

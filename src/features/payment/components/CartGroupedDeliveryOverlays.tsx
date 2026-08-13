@@ -1,9 +1,9 @@
-import { CheckoutContactOverlay } from "@/src/features/checkout/components/CheckoutContactOverlay";
-import { CheckoutExpressOverlay } from "@/src/features/checkout/components/CheckoutExpressOverlay";
-import { CheckoutLocationOverlay } from "@/src/features/checkout/components/CheckoutLocationOverlay";
-import { CheckoutPeriodOverlay } from "@/src/features/checkout/components/CheckoutPeriodOverlay";
-import { CheckoutVoiceNoteOverlay } from "@/src/features/checkout/components/CheckoutVoiceNoteOverlay";
 import { extractPeriodDate } from "@/src/features/checkout/utils/periodDate";
+import { GroupedContactOverlay } from "./overlays/GroupedContactOverlay";
+import { GroupedExpressOverlay } from "./overlays/GroupedExpressOverlay";
+import { GroupedLocationOverlay } from "./overlays/GroupedLocationOverlay";
+import { GroupedPeriodOverlay } from "./overlays/GroupedPeriodOverlay";
+import { GroupedVoiceNoteOverlay } from "./overlays/GroupedVoiceNoteOverlay";
 import { Livraison } from "@/src/types";
 import React from "react";
 
@@ -47,7 +47,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
 }) => (
   <>
     {open === "location" && (
-      <CheckoutLocationOverlay
+      <GroupedLocationOverlay
         onClose={onCloseOverlay}
         address={delivery.address || ""}
         note={delivery.note || ""}
@@ -58,7 +58,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
     )}
 
     {open === "contact" && (
-      <CheckoutContactOverlay
+      <GroupedContactOverlay
         onClose={onCloseOverlay}
         phone={delivery.phone || ""}
         onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
@@ -66,7 +66,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
     )}
 
     {open === "period" && (
-      <CheckoutPeriodOverlay
+      <GroupedPeriodOverlay
         onClose={onCloseOverlay}
         selectedPeriod={delivery.hour || ""}
         onSelectPeriod={(period, prix, bonusCode) =>
@@ -88,7 +88,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
     )}
 
     {open === "express" && (
-      <CheckoutExpressOverlay
+      <GroupedExpressOverlay
         onClose={onCloseOverlay}
         selectedLieu={delivery.expressLieu || ""}
         onSelectExpress={(lieu, prix, bonusCode) =>
@@ -107,7 +107,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
     )}
 
     {open === "voiceNote" && (
-      <CheckoutVoiceNoteOverlay
+      <GroupedVoiceNoteOverlay
         onClose={onCloseOverlay}
         onSave={(uri) => setDelivery({ ...delivery, voiceNoteUri: uri })}
       />

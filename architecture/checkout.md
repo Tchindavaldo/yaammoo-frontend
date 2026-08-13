@@ -144,15 +144,27 @@ Hauteur fixe = les zones ne bougent pas au changement de type de livraison.
   choisie (si des `expressZones` existent) ou que la période n'est pas choisie.
 
 **Affichage « Offert » sur la grille Select Type (gratuité)** : `DeliveryTab` reçoit
-`deliveryOffer` (passé par `CheckoutSheet`/`CartCheckoutSheet`). Quand `deliveryOffer.active`
-(`deliveryFree`), les cartes **Express** et **Heure** :
-- affichent **« · Offert »** (orange) dans le titre à la place du prix — par défaut,
-  même sans zone/créneau choisi.
-- dès qu'une zone/un créneau est sélectionné, affichent en plus le **prix réel barré**
-  à la suite du sous-texte (Express : « Livré dès que terminée · ~~500F~~ » ; Heure :
-  « {heure} · ~~{prix}F~~ »). Style `localStyles.strikePrice` (gris, `line-through`).
+`deliveryOffer` (passé par `CheckoutSheet`/`CartCheckoutSheet`). Les **titres** ne
+portent jamais de montant (« Express », « Heure », « Aucun ») : tout ce qui est prix
+vit dans le sous-texte, au style `deliveryTypeSubText`.
 
-Hors gratuité, comportement inchangé (`Express (500F)`, `{heure} · {prix}F`).
+La mise en page à deux lignes ne s'applique QUE si l'offre est active **et** qu'une
+zone / un créneau avec prix est sélectionné :
+
+| Cas | Express | Heure |
+|---|---|---|
+| Offre active + sélection | « Dès que terminée » puis « **Offert** · ~~500F~~ » | « {date} {heure} » sur une ligne, puis « **Offert** · ~~{prix}F~~ » |
+| Sinon | « Livré dès que terminée · 500F » | « {date} » / « {heure} · {prix}F » (2 lignes) |
+
+« Offert » est en vert semi-gras (`localStyles.freeLabel`), le prix réel barré en
+gris (`localStyles.strikePrice`).
+
+**Fond des cartes du `topZone`** : gris `#f1f5f9` avec bordure `#cbd5e1`, remplacés
+par le fond orange clair quand la carte est remplie. Le bandeau « retrait boutique »
+(type Aucune) reprend la même hauteur (80) et le même arrondi que ces cartes.
+
+> `GroupedDeliveryTab` (sheet de livraison groupée) applique **exactement** les
+> mêmes règles — c'est une copie dédiée, cf. R16.
 
 **Formats `deliveryHours`** : le backend sert ce champ en ancien (`string[]`) ou
 nouveau format (`{ hour, periodic, periodicZones, express, expressZones }`) selon

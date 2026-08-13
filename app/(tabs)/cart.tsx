@@ -30,6 +30,7 @@ import {
 } from "@/src/features/orders/components/CartFastFoodFilter";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { groupCartOrdersByZone } from "@/src/features/orders/utils/groupCartOrders";
+import { prefetchFastFoodDelivery } from "@/src/features/payment/hooks/useGroupedDeliveryData";
 import { Theme } from "@/src/theme";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
@@ -110,6 +111,14 @@ export default function OrdersScreen() {
     });
     return Array.from(map.values());
   }, [pendingToBuy, fastFoods]);
+
+  // Creneaux et zones express des boutiques du panier chargees d'avance : a
+  // l'ouverture d'un sheet de livraison, la card « Zone » est deja la. Sans ce
+  // prechauffage le sheet rend une premiere fois sans elle, puis la fait
+  // apparaitre a l'arrivee de la reponse.
+  useEffect(() => {
+    cartFastFoods.forEach((f) => prefetchFastFoodDelivery(f.id));
+  }, [cartFastFoods]);
 
   // Sélection par défaut : le premier fastfood ; on re-sélectionne si celui en
   // cours disparaît du panier.

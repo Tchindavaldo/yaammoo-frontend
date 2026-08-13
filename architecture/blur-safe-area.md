@@ -123,3 +123,29 @@ scrollable), l'entrée/sortie se fait en `translateY`.
 **Les couches internes d'un sheet n'ajoutent pas l'inset** (`DriverInfoTab`,
 `RateMenuTab`) : elles héritent de celui du sheet parent, l'ajouter à nouveau
 doublerait la marge.
+
+### Cas particulier : overlays ancrés en `bottom: 0`
+
+Les overlays de la section livraison ne sont PAS imbriqués dans le sheet : ce
+sont des calques absolus ancrés en `bottom: 0`, qui doivent recouvrir le sheet
+exactement. Ils n'héritent donc d'aucun inset et **l'ajoutent eux-mêmes** :
+
+```tsx
+const insets = useSafeAreaInsets();
+const sheetHeight = SHEET_HEIGHT + insets.bottom;  // meme calcul que le sheet
+```
+
+Sans cela l'overlay s'arrête au-dessus du bord bas du sheet, laissant une bande
+visible de la hauteur exacte de la barre de navigation.
+
+| Overlays | Hauteur nue | Sheet couvert |
+|---|---|---|
+| `checkout/components/Checkout{Location,Contact,Period,Express,VoiceNote}Overlay.tsx` | 384 | Commande (home / panier) |
+| `payment/components/overlays/Grouped*Overlay.tsx` | 471 | Livraison groupée |
+
+Ces overlays portent aussi leur propre fondu d'entrée/sortie (180 ms / 150 ms) :
+le parent les monte et démonte d'un coup (`{open === "express" && …}`), la
+fermeture est donc retardée par un `closeWithFade` local le temps de l'animation.
+Quand un overlay anime déjà le clavier (`Location`, `Contact`), les deux
+animations tournent côte à côte — drivers différents (layout / natif), elles ne
+peuvent pas être groupées dans un `Animated.parallel`.

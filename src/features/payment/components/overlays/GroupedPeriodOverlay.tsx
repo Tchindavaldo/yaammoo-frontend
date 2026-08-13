@@ -1,23 +1,21 @@
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { verifyBonusCode } from "@/src/features/checkout/services/verifyBonusCode";
+import { DeliveryOffer } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   Animated,
-  View,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
-import { DeliveryOffer } from "@/src/types";
-import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
-import { verifyBonusCode } from "../services/verifyBonusCode";
+import { GroupedValidateRow } from "./GroupedValidateRow";
 
-// Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
-// (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
-// inset, sinon il s'arrete au-dessus du bord bas du sheet.
-const SHEET_HEIGHT = 384;
+// Hauteur PROPRE au sheet de livraison groupee : l'overlay le recouvre
+// exactement, alors que la version checkout tient dans 384.
+const SHEET_BASE_HEIGHT = 471;
 
 interface PeriodItem {
   hour: string;
@@ -25,7 +23,7 @@ interface PeriodItem {
   prix: string;
 }
 
-interface CheckoutPeriodOverlayProps {
+interface GroupedPeriodOverlayProps {
   onClose: () => void;
   selectedPeriod: string;
   onSelectPeriod: (
@@ -43,7 +41,7 @@ interface CheckoutPeriodOverlayProps {
   onError?: (message: string) => void;
 }
 
-export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
+export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
   onClose,
   selectedPeriod,
   onSelectPeriod,
@@ -54,9 +52,6 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
-  const insets = useSafeAreaInsets();
-  const sheetHeight = SHEET_HEIGHT + insets.bottom;
-
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup,
   // c'est donc ici qu'on l'amene et qu'on retarde la fermeture le temps de
   // l'animation.
@@ -91,12 +86,17 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     const d = new Date();
     d.setDate(d.getDate() + i);
     dateOptions.push({
-      label: d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }),
+      label: d.toLocaleDateString("fr-FR", {
+        weekday: "short",
+        day: "numeric",
+      }),
       value: d.toISOString().split("T")[0],
     });
   }
 
-  const [selectedDate, setSelectedDate] = useState<string>(dateOptions[0]?.value || "");
+  const [selectedDate, setSelectedDate] = useState<string>(
+    dateOptions[0]?.value || "",
+  );
 
   // Construire les périodes
   const buildPeriods = (): PeriodItem[] => {
@@ -146,8 +146,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   };
 
   // Pour aujourd'hui, on filtre les heures passées. Pour les autres jours, toutes sont valides.
-  const isToday =
-    selectedDate === new Date().toISOString().split("T")[0];
+  const isToday = selectedDate === new Date().toISOString().split("T")[0];
   const validPeriods = isToday
     ? periods.filter((p) => isHourValid(p.hour))
     : periods;
@@ -159,7 +158,9 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   const stripDate = (value: string): string => {
     if (!value) return "";
     const parts = value.split("|");
-    return /^\d{4}-\d{2}-\d{2}$/.test(parts[0]) ? parts.slice(1).join("|") : value;
+    return /^\d{4}-\d{2}-\d{2}$/.test(parts[0])
+      ? parts.slice(1).join("|")
+      : value;
   };
 
   const [selectedValue, setSelectedValue] = useState<string>(
@@ -174,7 +175,9 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     return v === selectedValue;
   });
   const selectedLabel = selectedPeriodItem
-    ? [selectedPeriodItem.hour, selectedPeriodItem.lieu].filter(Boolean).join(" · ")
+    ? [selectedPeriodItem.hour, selectedPeriodItem.lieu]
+        .filter(Boolean)
+        .join(" · ")
     : "";
 
   // Code validé par le serveur (`POST /bonus/verify`). Seule cette réponse fait
@@ -249,9 +252,9 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
       <BlurView
         intensity={40}
         tint="light"
-        style={[styles.blurOverlay, { height: sheetHeight }]}
+        style={[styles.blurOverlay, { height: SHEET_BASE_HEIGHT }]}
       />
-      <View style={[styles.container, { height: sheetHeight }]}>
+      <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -270,18 +273,15 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 10 }}
-            contentContainerStyle={{ gap: 8 }}
+            style={styles.dateStrip}
+            contentContainerStyle={styles.dateStripInner}
           >
             {dateOptions.map((opt) => {
               const isSel = selectedDate === opt.value;
               return (
                 <TouchableOpacity
                   key={opt.value}
-                  style={[
-                    styles.dateChip,
-                    isSel && styles.dateChipActive,
-                  ]}
+                  style={[styles.dateChip, isSel && styles.dateChipActive]}
                   onPress={() => setSelectedDate(opt.value)}
                   activeOpacity={0.7}
                 >
@@ -300,15 +300,13 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
 
           {/* Liste des périodes */}
           <ScrollView
-            style={styles.scrollContent}
+            style={styles.slotList}
             contentContainerStyle={styles.scrollInner}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
             {validPeriods.map((item, idx) => {
-              const value = item.lieu
-                ? `${item.hour}|${item.lieu}`
-                : item.hour;
+              const value = item.lieu ? `${item.hour}|${item.lieu}` : item.hour;
               const isSelected = selectedValue === value;
               return (
                 <TouchableOpacity
@@ -332,7 +330,8 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
                       )}
                     </View>
                     <Text style={styles.periodDate}>
-                      {dateOptions.find((d) => d.value === selectedDate)?.label || ""}
+                      {dateOptions.find((d) => d.value === selectedDate)
+                        ?.label || ""}
                     </Text>
                     <Text
                       style={[
@@ -368,7 +367,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
             })}
           </ScrollView>
 
-          <DeliveryValidateRow
+          <GroupedValidateRow
             hasSelection={!!selectedValue}
             selectedLabel={selectedLabel}
             selectedPrice={selectedPeriodItem?.prix}
@@ -403,11 +402,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    // hauteur portee au runtime (safe area comprise), voir `sheetHeight`
+    height: SHEET_BASE_HEIGHT,
     paddingHorizontal: 16,
     justifyContent: "center",
   },
   card: {
+    height: 400,
     backgroundColor: "white",
     borderRadius: 24,
     padding: 16,
@@ -445,6 +445,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f1f5f9",
   },
+  // Liste des creneaux : prend la place restante de la card, sous la bande de
+  // chips et au-dessus de la ligne de validation.
+  slotList: {
+    flex: 1,
+  },
+  // Bande de chips horizontale : sans hauteur propre elle s'etire dans la card
+  // (400 de haut) et ecrase les chips. `flexGrow: 0` la fige sur son contenu.
+  dateStrip: {
+    flexGrow: 0,
+    marginBottom: 10,
+  },
+  dateStripInner: {
+    gap: 8,
+    alignItems: "center",
+  },
   dateChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -465,9 +480,7 @@ const styles = StyleSheet.create({
   dateChipTextActive: {
     color: "white",
   },
-  scrollContent: {
-    height: 190,
-  },
+
   scrollInner: {
     paddingBottom: 4,
     gap: 2,

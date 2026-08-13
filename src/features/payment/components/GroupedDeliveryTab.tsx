@@ -16,11 +16,6 @@ interface GroupedDeliveryTabProps {
   deliveryOffer?: DeliveryOffer | null;
 }
 
-/** Hauteur FIXE de la zone haute (cartes infos) dans le sheet groupe. */
-const TOP_ZONE_HEIGHT = 96;
-/** Hauteur FIXE de la zone basse (« Select Type » + grille des types). */
-const BOTTOM_ZONE_HEIGHT = 150;
-
 /**
  * Section livraison du sheet de commande GROUPEE — copie dediee de
  * `DeliveryTab` (checkout), pilotee independamment de celui-ci.
@@ -58,6 +53,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
 
   const getBtnStyle = (filled: boolean) => [
     styles.infoBtnLarge,
+    { backgroundColor: "#f1f5f9", borderColor: "#cbd5e1", borderWidth: 1 },
     filled && {
       borderColor: "#ec4913",
       borderWidth: 2,
@@ -190,7 +186,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                       { color: getTextColor(isVoiceNoteFilled) },
                     ]}
                   >
-                    Note vocale
+                    Note
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -200,7 +196,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
 
         {/* Layout Standard : 4 cartes */}
         {deliveryType === "standard" && (
-          <View style={styles.infoGrid4}>
+          <View style={[styles.infoGrid4, localStyles.infoGrid4]}>
             <TouchableOpacity
               style={getBtnStyle(isLocationFilled)}
               onPress={onOpenLocation}
@@ -296,7 +292,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
 
       {/* Zone basse (sélection du type) — prix dynamique depuis la période */}
       <View style={localStyles.bottomZone}>
-        <View style={styles.sectionHeader}>
+        <View style={[styles.sectionHeader, localStyles.sectionHeader]}>
           <Text style={styles.sectionHeaderText}>Select Type</Text>
         </View>
 
@@ -318,13 +314,6 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Express
-                {deliveryFree ? (
-                  <Text style={{ color: "#ec4913" }}> · Offert</Text>
-                ) : expressPrice ? (
-                  ` (${expressPrice}F)`
-                ) : (
-                  ""
-                )}
               </Text>
               <Text
                 style={[
@@ -332,16 +321,24 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                   delivery.type === "express" && { color: "#ec4913" },
                 ]}
               >
-                Livré dès que terminée
-                {deliveryFree && expressPrice ? (
+                {deliveryFree && expressPrice
+                  ? "Dès que terminée"
+                  : `Livré dès que terminée${expressPrice ? ` · ${expressPrice}F` : ""}`}
+              </Text>
+              {deliveryFree && expressPrice ? (
+                <Text
+                  style={[
+                    styles.deliveryTypeSubText,
+                    delivery.type === "express" && { color: "#ec4913" },
+                  ]}
+                >
+                  <Text style={localStyles.freeLabel}>Offert</Text>
                   <Text style={localStyles.strikePrice}>
                     {" "}
                     · {expressPrice}F
                   </Text>
-                ) : (
-                  ""
-                )}
-              </Text>
+                </Text>
+              ) : null}
             </View>
           </TouchableOpacity>
 
@@ -362,46 +359,55 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
                 Heure
-                {deliveryFree ? (
-                  <Text style={{ color: "#ec4913" }}> · Offert</Text>
-                ) : (
-                  ""
-                )}
               </Text>
-              {selectedDate ? (
-                <Text
-                  style={[
-                    styles.deliveryTypeSubText,
-                    delivery.type === "standard" && { color: "#ec4913" },
-                  ]}
-                >
-                  {selectedDate}
-                </Text>
-              ) : null}
-              <Text
-                style={[
-                  styles.deliveryTypeSubText,
-                  delivery.type === "standard" && { color: "#ec4913" },
-                ]}
-              >
-                {selectedHour ? (
-                  deliveryFree ? (
-                    <>
-                      {selectedHour}
-                      {periodPrice ? (
-                        <Text style={localStyles.strikePrice}>
-                          {" "}
-                          · {periodPrice}F
-                        </Text>
-                      ) : null}
-                    </>
-                  ) : (
-                    `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
-                  )
-                ) : (
-                  "Choisir un créneau"
-                )}
-              </Text>
+              {deliveryFree && selectedHour && periodPrice ? (
+                <>
+                  <Text
+                    style={[
+                      styles.deliveryTypeSubText,
+                      delivery.type === "standard" && { color: "#ec4913" },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {[selectedDate, selectedHour].filter(Boolean).join(" ")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.deliveryTypeSubText,
+                      delivery.type === "standard" && { color: "#ec4913" },
+                    ]}
+                  >
+                    <Text style={localStyles.freeLabel}>Offert</Text>
+                    <Text style={localStyles.strikePrice}>
+                      {" "}
+                      · {periodPrice}F
+                    </Text>
+                  </Text>
+                </>
+              ) : (
+                <>
+                  {selectedDate ? (
+                    <Text
+                      style={[
+                        styles.deliveryTypeSubText,
+                        delivery.type === "standard" && { color: "#ec4913" },
+                      ]}
+                    >
+                      {selectedDate}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.deliveryTypeSubText,
+                      delivery.type === "standard" && { color: "#ec4913" },
+                    ]}
+                  >
+                    {selectedHour
+                      ? `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
+                      : "Choisir un créneau"}
+                  </Text>
+                </>
+              )}
             </View>
           </TouchableOpacity>
 
@@ -441,30 +447,43 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
 
 const localStyles = StyleSheet.create({
   deliveryContainer: {
-    // Neutralise le `flex: 1` herite de `CheckoutSheet.styles` : le conteneur
-    // se cale sur les deux hauteurs fixes ci-dessous. Avec `flex: 1` dans un
-    // hote a hauteur auto il se mesure a 0 et son contenu deborde.
+    height: 250,
+    // Neutralise le `flex: 1` herite : le bloc mesure ses deux zones, il ne
+    // s'etire pas jusqu'au bouton.
     flex: 0,
-    justifyContent: "flex-start",
+    justifyContent: "space-between",
+
+    // DEBUG visuel : conteneur des deux zones (top + bottom). A retirer.
+    // backgroundColor: "rgba(0, 0, 255, 0.12)",
   },
   strikePrice: {
     textDecorationLine: "line-through",
     color: "#94a3b8",
   },
-  // Hauteur FIXE au lieu du `flex: 1` de l'original : les cards gardent leur
-  // taille quelle que soit la place laissee par le sheet groupe.
+  freeLabel: {
+    color: "#16a34a",
+    fontWeight: "600",
+  },
+  // Les deux zones se calent sur leur contenu : l'espace libre du calque va
+  // au-dessus du bloc (le sheet le pousse en bas), pas entre les deux zones.
   topZone: {
-    height: TOP_ZONE_HEIGHT,
+    height: 85,
     justifyContent: "flex-start",
     overflow: "hidden",
+    // backgroundColor: "rgba(102, 255, 0, 0.12)",
   },
-  // Hauteur FIXE elle aussi. Contenu cale EN BAS : la hauteur ajoutee ici
-  // devient de l'air au-dessus de « Select Type », la grille reste posee au bas
-  // de la zone, juste au-dessus du bouton du sheet.
+  // Respiration au-dessus de « Select Type », mesuree ici et nulle part ailleurs.
   bottomZone: {
-    height: BOTTOM_ZONE_HEIGHT,
+    paddingBottom: 10,
     justifyContent: "flex-end",
+    // backgroundColor: "rgba(255, 0, 0, 0.12)",
   },
+  // Titre « Select Type » resserre sur sa grille : l'original reserve 16 px
+  // sous le filet, trop dans ce sheet ou la place est comptee.
+  sectionHeader: { paddingBottom: 4, marginBottom: 12 },
+  // Cards du haut sans marge basse : l'ecart avec « Select Type » est porte
+  // par `bottomZone`, une seule fois.
+  infoGrid4: { marginBottom: 0 },
   expressRow: {
     flexDirection: "row",
     gap: 10,
@@ -483,8 +502,11 @@ const localStyles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     backgroundColor: "#f1f5f9",
-    borderRadius: 12,
-    padding: 14,
+    borderColor: "#cbd5e1",
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    minHeight: 80,
   },
   aucuneText: {
     flex: 1,

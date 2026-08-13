@@ -1,5 +1,6 @@
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import { Livraison } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   Animated,
@@ -11,8 +12,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useGroupedDeliveryData } from "../hooks/useGroupedDeliveryData";
 import type { CartPaymentState } from "../hooks/useCartPayment";
+import { useGroupedDeliveryData } from "../hooks/useGroupedDeliveryData";
 import {
   CartGroupedDeliveryOverlays,
   type GroupedDeliveryOverlay,
@@ -24,8 +25,8 @@ import {
 import { CartGroupingStep } from "./CartGroupingStep";
 import { CartPaymentBody } from "./CartPaymentBody";
 import { CartPaymentOverlay } from "./CartPaymentOverlay";
-import { GroupedDeliveryTab } from "./GroupedDeliveryTab";
 import { styles as sheetStyles } from "./CartPaymentSheet.styles";
+import { GroupedDeliveryTab } from "./GroupedDeliveryTab";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -133,6 +134,16 @@ export const CartGroupedDeliverySheet: React.FC<
     }).start();
   }, [fade]);
 
+  /** Retour a l'etape 1 : le fondu de `goToDelivery` rejoue vers 0. */
+  const backToGrouping = React.useCallback(() => {
+    setStep("grouping");
+    Animated.timing(fade, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [fade]);
+
   const insets = useSafeAreaInsets();
   const anim = React.useRef(new Animated.Value(0)).current;
   // Reste monté le temps de l'animation de sortie.
@@ -190,8 +201,13 @@ export const CartGroupedDeliverySheet: React.FC<
 
   // Donnees de livraison de la boutique de reference (creneaux, offre), mises
   // en cache pour ne pas repartir de `null` a chaque ouverture.
-  const { rawHours, orderLeadTime, advanceDays, deliveryOffer } =
-    useGroupedDeliveryData(fastFoodId);
+  const {
+    rawHours,
+    orderLeadTime,
+    advanceDays,
+    deliveryOffer,
+    fastFoodName,
+  } = useGroupedDeliveryData(fastFoodId);
 
   // Étape 1 : commandes du lot, et frais de course groupés (une seule course
   // facturée, la plus chère) face aux frais séparés (une par groupe).
@@ -271,6 +287,8 @@ export const CartGroupedDeliverySheet: React.FC<
           >
             <CartGroupingStep
               cmd={cmd}
+              fastFoodName={fastFoodName}
+              deliveryCount={groups.length}
               fraisSepares={fraisSepares}
               fraisGroupes={fraisGroupes}
               onGroup={goToDelivery}
@@ -303,9 +321,10 @@ export const CartGroupedDeliverySheet: React.FC<
                 de validation et par l'etape de paiement. Le sous-texte remplit
                 la place laissee libre et rappelle ce que le groupage implique. */}
             <Text style={styles.question}>
-              Où et quand livrer vos {cmd} commandes ?
+              informations de livraison. Où et quand livrer vos {cmd} commandes
+              ?
             </Text>
-            <View style={styles.questionNote}>
+            {/* <View style={styles.questionNote}>
               <Text style={styles.questionNoteText}>
                 Une seule adresse et un seul horaire pour vos{" "}
                 <Text style={styles.questionNoteStrong}>{cmd} commandes</Text>
@@ -321,17 +340,11 @@ export const CartGroupedDeliverySheet: React.FC<
                   "."
                 )}
               </Text>
-            </View>
+            </View> */}
 
             {/* Copie dediee de la section delivery : `GroupedDeliveryTab`
                   porte ses PROPRES hauteurs de zones, calibrees pour ce sheet.
                   `DeliveryTab` (sheet de commande individuel) reste intact. */}
-            {/* Espace flexible AU-DESSUS du bloc livraison : il absorbe la
-                place restante du calque, donc agrandir la zone basse de
-                `GroupedDeliveryTab` fait remonter les cards au lieu de pousser
-                le bouton (le sheet garde sa hauteur fixe). */}
-            <View style={styles.spacer} />
-
             <View style={styles.deliveryHost}>
               <GroupedDeliveryTab
                 delivery={delivery}
@@ -346,16 +359,32 @@ export const CartGroupedDeliverySheet: React.FC<
               />
             </View>
 
-            <TouchableOpacity
-              style={[styles.primaryBtn, !isComplete && styles.primaryBtnOff]}
-              onPress={goToPayment}
-              disabled={!isComplete}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.primaryBtnLabel}>
-                Valider et payer · {fmt(articlesTotal + fraisGroupes)} F
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.spacer} />
+            {/* Retour a l'etape de groupage a gauche du bouton d'action : le
+                meme fondu que `goToDelivery`, joue a l'envers. */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={backToGrouping}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="arrow-back" size={20} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.primaryBtn,
+                  styles.actionRowPrimary,
+                  !isComplete && styles.primaryBtnOff,
+                ]}
+                onPress={goToPayment}
+                disabled={!isComplete}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.primaryBtnLabel}>
+                  Valider et payer · {fmt(articlesTotal + fraisGroupes)} F
+                </Text>
+              </TouchableOpacity>
+            </View>
           </Animated.View>
 
           {/* Calque 3 — paiement. Même corps que le sheet de paiement autonome

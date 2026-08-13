@@ -17,6 +17,10 @@ import { styles } from "./CartCheckoutSheet.styles";
 import axios from "axios";
 import { Config } from "@/src/api/config";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import {
+  getCachedFastFood,
+  prefetchFastFoodDelivery,
+} from "@/src/features/payment/hooks/useGroupedDeliveryData";
 
 // Shared Components
 import { TabChip } from "./shared/TabChip";
@@ -217,34 +221,27 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     const ctxFastFood = fastFoods.find((f) => f.id === ffId) as any;
     const deliveryOffer = ctxFastFood?.deliveryOffer ?? null;
 
-    const fetchDeliveryHours = async () => {
-      try {
-        const response = await axios.get(
-          `${Config.apiUrl}/fastfood/${ffId}`,
-          {
-            headers: { "ngrok-skip-browser-warning": "true" },
-          },
-        );
-        if (
-          response.data?.data?.deliveryHours ||
-          response.data?.data?.orderLeadTime
-        ) {
-          setMenuWithDeliveryHours({
-            ...menu,
-            deliveryHours: response.data.data.deliveryHours,
-            orderLeadTime: response.data.data.orderLeadTime,
-            advanceDays: response.data.data.advanceDays,
-            deliveryOffer,
-          } as any);
-        } else {
-          setMenuWithDeliveryHours({ ...menu, deliveryOffer } as any);
-        }
-      } catch {
-        setMenuWithDeliveryHours({ ...menu, deliveryOffer } as any);
-      }
-    };
+    // Fusionne les donnees boutique dans le menu. Le cache partage evite le
+    // second rendu ou la card « Zone » apparait apres coup.
+    const merge = (data: any) =>
+      setMenuWithDeliveryHours(
+        data?.deliveryHours || data?.orderLeadTime
+          ? ({
+              ...menu,
+              deliveryHours: data.deliveryHours,
+              orderLeadTime: data.orderLeadTime,
+              advanceDays: data.advanceDays,
+              deliveryOffer,
+            } as any)
+          : ({ ...menu, deliveryOffer } as any),
+      );
 
-    fetchDeliveryHours();
+    const cached = getCachedFastFood(ffId);
+    if (cached !== undefined) {
+      merge(cached);
+      return;
+    }
+    prefetchFastFoodDelivery(ffId).then(merge);
   }, [menu, fastFoods]);
 
   if (!menu) return null;

@@ -101,7 +101,11 @@ src/features/
 │       ├── CartGroupedDeliverySheet.tsx  # Parcours groupé : groupage + livraison + paiement (3 calques)
 │       ├── CartGroupedDeliverySheet.styles.ts # Styles des 3 calques
 │       ├── CartGroupingStep.tsx          # Calque 1 : choix du groupage (écran 02 du design)
-│       ├── CartGroupedDeliveryOverlays.tsx # Les 5 overlays de DeliveryTab, pilotés par un état unique
+│       ├── GroupedDeliveryTab.tsx        # Calque 2 : section livraison dédiée (copie de DeliveryTab)
+│       ├── CartGroupedDeliveryOverlays.tsx # Les 5 overlays du calque 2, pilotés par un état unique
+│       ├── overlays/                     # Copies dédiées des overlays checkout (R16), hauteur 471
+│       │   ├── Grouped{Location,Contact,Period,Express,VoiceNote}Overlay.tsx
+│       │   └── GroupedValidateRow.tsx    # Ligne de validation + code bonus (copie de DeliveryValidateRow)
 │       ├── CartPaymentVariants.tsx       # Variantes de comparaison (plus branchées)
 │       └── CartPaymentTopCard.tsx        # Ancienne card du haut (plus branchée)
 

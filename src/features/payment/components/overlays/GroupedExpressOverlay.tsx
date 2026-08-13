@@ -1,30 +1,28 @@
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { verifyBonusCode } from "@/src/features/checkout/services/verifyBonusCode";
+import { DeliveryOffer } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   Animated,
-  View,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
-import { DeliveryOffer } from "@/src/types";
-import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
-import { verifyBonusCode } from "../services/verifyBonusCode";
+import { GroupedValidateRow } from "./GroupedValidateRow";
 
-// Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
-// (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
-// inset, sinon il s'arrete au-dessus du bord bas du sheet.
-const SHEET_HEIGHT = 384;
+// Hauteur PROPRE au sheet de livraison groupee : l'overlay le recouvre
+// exactement, alors que la version checkout tient dans 384.
+const SHEET_HEIGHT = 471;
 
 interface ExpressZone {
   lieu: string;
   prix: string;
 }
 
-interface CheckoutExpressOverlayProps {
+interface GroupedExpressOverlayProps {
   onClose: () => void;
   selectedLieu: string;
   onSelectExpress: (
@@ -49,7 +47,7 @@ interface CheckoutExpressOverlayProps {
  * dédupliquées par lieu. Si aucune zone express n'existe (ancien format
  * backend / app), la liste est vide — le parent masque la card dans ce cas.
  */
-export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
+export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
   onClose,
   selectedLieu,
   onSelectExpress,
@@ -58,12 +56,10 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
-  const insets = useSafeAreaInsets();
-  const sheetHeight = SHEET_HEIGHT + insets.bottom;
-
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup,
   // c'est donc ici qu'on l'amene et qu'on retarde la fermeture le temps de
-  // l'animation.
+  // l'animation. `closeWithFade` remplace `onClose` sur tous les chemins de
+  // sortie (croix, validation).
   const fade = React.useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
     Animated.timing(fade, {
@@ -109,7 +105,9 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
 
   const zones = buildZones();
 
-  const [selectedValue, setSelectedValue] = useState<string>(selectedLieu || "");
+  const [selectedValue, setSelectedValue] = useState<string>(
+    selectedLieu || "",
+  );
   const [bonusCode, setBonusCode] = useState("");
   const [codeInputOpen, setCodeInputOpen] = useState(false);
 
@@ -188,9 +186,9 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
       <BlurView
         intensity={40}
         tint="light"
-        style={[styles.blurOverlay, { height: sheetHeight }]}
+        style={[styles.blurOverlay, { height: SHEET_HEIGHT }]}
       />
-      <View style={[styles.container, { height: sheetHeight }]}>
+      <View style={styles.container}>
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -271,7 +269,7 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
             )}
           </ScrollView>
 
-          <DeliveryValidateRow
+          <GroupedValidateRow
             hasSelection={!!selectedValue}
             selectedLabel={selectedZone?.lieu}
             selectedPrice={selectedZone?.prix}
@@ -306,11 +304,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    // hauteur portee au runtime (safe area comprise), voir `sheetHeight`
+    height: SHEET_HEIGHT,
     paddingHorizontal: 16,
     justifyContent: "center",
   },
   card: {
+    height: 400,
     backgroundColor: "white",
     borderRadius: 24,
     padding: 16,
@@ -349,7 +348,8 @@ const styles = StyleSheet.create({
     borderColor: "#f1f5f9",
   },
   scrollContent: {
-    height: 240,
+    // Le sheet groupe est plus haut que celui du checkout : la liste des zones
+    // occupe la place gagnee au lieu de rester sur les 240 d'origine.
   },
   scrollInner: {
     paddingBottom: 4,

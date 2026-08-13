@@ -223,13 +223,18 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
   → `CartPaymentSheet` directement). Il porte les trois étapes :
   1. **groupage** (`CartGroupingStep.tsx`, écran 02 du design) — « Tout livrer
      ensemble » ou « livraisons séparées » (→ retour au panier, chaque tableau de
-     zone gardant son propre bouton « commander ») ;
-  2. **livraison commune** — la section delivery du sheet de commande réutilisée
-     **telle quelle** : `DeliveryTab` (prop `fillHeight`) + ses cinq overlays,
-     regroupés dans `CartGroupedDeliveryOverlays.tsx` et pilotés par un unique
-     état `overlay`. Au-dessus, une simple accroche dans le style de l'étape 1
+     zone gardant son propre bouton « commander »). Une card rappelle la boutique
+     du lot et son nombre de livraisons distinctes (`fastFoodName` vient de
+     `useGroupedDeliveryData`, le compte est `groups.length`) ;
+  2. **livraison commune** — `GroupedDeliveryTab.tsx` + les cinq overlays de
+     `components/overlays/`, **copies dédiées** de leurs équivalents checkout
+     (R16 : on duplique, on ne partage pas), regroupés dans
+     `CartGroupedDeliveryOverlays.tsx` et pilotés par un unique état `overlay`.
+     Au-dessus, une simple accroche dans le style de l'étape 1
      (`styles.question`) — pas de récap : les montants sont portés par le bouton
-     de validation puis par l'étape de paiement ;
+     de validation puis par l'étape de paiement. En bas, une ligne d'action :
+     bouton rond de retour vers l'étape 1 (`backToGrouping`, le fondu rejoué à
+     l'envers) à gauche de « Valider et payer » ;
   3. **paiement** — `CartPaymentBody.tsx`, le corps partagé avec
      `CartPaymentSheet`, plus la capsule `CartPaymentOverlay` ancrée hors du
      sheet. En groupé (`grouped` + `groupedLivraison`), le récapitulatif porte
@@ -255,6 +260,10 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
   hook `hooks/useGroupedDeliveryData.ts`, qui **cache** la réponse de
   `GET /fastfood/:id` par boutique — sans ce cache l'étape repartait de `null` et
   les cards « Zone » apparaissaient d'un coup.
+  Ce cache est **partagé** : `prefetchFastFoodDelivery()` / `getCachedFastFood()`
+  sont exportés par le même hook. `cart.tsx` préchauffe les boutiques du panier
+  dès qu'il les connaît, et `CartCheckoutSheet` s'en sert au lieu de refetcher —
+  la card « Zone » est donc présente au **premier** rendu des deux parcours.
 - **Application de la livraison commune** : `cart.tsx` garde
   `groupedDeliveryValue` (converti du format checkout `address`/`expressLieu`/
   `hour` vers le format panier `location`/`zone`/`time` par `toOrderDelivery`).

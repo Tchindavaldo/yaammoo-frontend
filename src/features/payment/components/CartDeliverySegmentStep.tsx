@@ -151,9 +151,23 @@ export const CartDeliverySegmentStep: React.FC<
       filled: !!delivery.address,
       onPress: onOpenLocation,
     });
+  } else {
+    // "Sur place" : pas d'adresse à livrer, la card sert juste de rappel.
+    tiles.push({
+      key: "location",
+      icon: "location-outline",
+      label: "Lieu",
+      recapLabel: "Lieu",
+      value: "Récupérer sur place",
+      filled: true,
+      onPress: onOpenLocation,
+    });
   }
 
-  if (type === "express" && hasExpressZones) {
+  // Zone express : toujours affichee en mode express, meme sans
+  // `hasExpressZones` — la boutique n'a simplement rien a proposer pour
+  // l'instant, la card reste cliquable sans action tant que ce n'est pas le cas.
+  if (type === "express") {
     tiles.push({
       key: "express",
       icon: "flash",
@@ -161,7 +175,7 @@ export const CartDeliverySegmentStep: React.FC<
       recapLabel: "Zone express",
       value: delivery.expressLieu || "À remplir",
       filled: !!delivery.expressLieu,
-      onPress: onOpenExpress,
+      onPress: hasExpressZones ? onOpenExpress : () => {},
     });
   }
 
@@ -174,6 +188,19 @@ export const CartDeliverySegmentStep: React.FC<
       value: heure || "À remplir",
       filled: !!delivery.hour,
       onPress: onOpenPeriod,
+    });
+  }
+
+  if (type === "aucune") {
+    // Heure de retrait en boutique : card posee, n'ouvre rien pour l'instant.
+    tiles.push({
+      key: "pickupHour",
+      icon: "time-outline",
+      label: "Heure",
+      recapLabel: "Heure de retrait",
+      value: "À remplir",
+      filled: false,
+      onPress: () => {},
     });
   }
 
@@ -342,7 +369,12 @@ export const CartDeliverySegmentStep: React.FC<
                 key: t.key,
                 icon: t.icon,
                 title: t.label,
-                sub: t.filled ? "Rempli" : "À remplir",
+                sub:
+                  t.key === "location" && type === "aucune"
+                    ? t.value
+                    : t.filled
+                      ? "Rempli"
+                      : "À remplir",
                 active: t.filled,
                 onPress: t.onPress,
               }),
@@ -449,8 +481,16 @@ export const CartDeliverySegmentStep: React.FC<
             </View>
             {(
               [
-                { key: "orange", icon: "phone-portrait-outline", name: "Orange Money" },
-                { key: "mtn", icon: "phone-portrait-outline", name: "MTN MoMo" },
+                {
+                  key: "orange",
+                  icon: "phone-portrait-outline",
+                  name: "Orange Money",
+                },
+                {
+                  key: "mtn",
+                  icon: "phone-portrait-outline",
+                  name: "MTN MoMo",
+                },
               ] as const
             ).map((p) =>
               renderChoice({

@@ -43,7 +43,6 @@ import { Toast } from "@/src/components/Toast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
-import { CartPaymentSheet } from "@/src/features/payment/components/CartPaymentSheet";
 import { CartGroupedDeliverySheet } from "@/src/features/payment/components/CartGroupedDeliverySheet";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 
@@ -358,14 +357,9 @@ export default function OrdersScreen() {
    */
   const startOrder = React.useCallback(
     (groups: ReturnType<typeof groupCartOrdersByZone>) => {
-      if (groups.length > 1) {
-        setGroupedDelivery(groups);
-        return;
-      }
-      setPayingGroupKey(groups.length === 1 ? groups[0].key : null);
-      setPaymentState("input");
+      setGroupedDelivery(groups);
     },
-    [setPaymentState],
+    [],
   );
 
   // Après succès complet (success_created) : rafraîchir + revenir au repos.
@@ -883,39 +877,6 @@ export default function OrdersScreen() {
         setPaymentState={setPaymentState}
         ussdMessage={ussdMessage}
         onConfirm={confirmCartPayment}
-        keyboardHeight={keyboardHeight}
-        isKeyboardVisible={isKeyboardVisible}
-      />
-
-      {/* Sheet de PAIEMENT global du panier — ouvert par le bouton « commander »
-          du recap du bas ET par la pilule « Tout commander » du header.
-
-          ⚠️ NE PAS conditionner à `pendingToBuy.length` : dès que le paiement
-          aboutit, les commandes quittent le panier (socket) et le sheet serait
-          démonté avant d'avoir affiché succès. `paymentState !== "total"` suffit
-          — c'est exactement « un paiement est en cours ».
-          Monté en permanence, piloté par `visible` : le démonter directement
-          couperait l'animation de sortie. */}
-      <CartPaymentSheet
-        /* Panier à une seule course : le parcours groupé porte SON PROPRE
-           calque de paiement, ce sheet ne doit pas doubler le sien. */
-        visible={
-          !orderToDelete && paymentState !== "total" && groupedDelivery === null
-        }
-        /* Recap du sheet : la zone payee si le paiement porte sur un seul
-           groupe, sinon tout ce qui est affiche. */
-        groups={payingGroup ? [payingGroup] : displayedZoneGroups}
-        totalAmount={amountToPay}
-        phone={paymentPhone}
-        onPhoneChange={setPaymentPhone}
-        network={paymentNetwork}
-        onNetworkChange={setPaymentNetwork}
-        paymentState={paymentState}
-        setPaymentState={setPaymentState}
-        ussdMessage={ussdMessage}
-        onConfirm={confirmCartPayment}
-        onClose={endPayment}
-        onError={(msg) => setToast({ message: msg, type: "error" })}
         keyboardHeight={keyboardHeight}
         isKeyboardVisible={isKeyboardVisible}
       />

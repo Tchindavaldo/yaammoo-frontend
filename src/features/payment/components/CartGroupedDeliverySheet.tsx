@@ -213,16 +213,25 @@ export const CartGroupedDeliverySheet: React.FC<
   }, [phone, guardedConfirm, showError]);
 
   /**
+   * Une seule commande : rien a arbitrer entre livraison groupee ou separee,
+   * la page de groupage (1) n'a pas de sens. Le parcours demarre directement
+   * sur le type de livraison (2) et le retour s'arrete la.
+   */
+  const singleOrder = groups.length <= 1;
+
+  /**
    * PAGE courante du parcours de livraison. Le sheet ayant une hauteur reduite,
    * la livraison ne tient plus d'un bloc : 1 = groupage, 2 = type de livraison,
    * 3 = informations, 4 = montants, 5 = recapitulatif et paiement.
    */
-  const [step, setStep] = React.useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = React.useState<1 | 2 | 3 | 4>(
+    singleOrder ? 2 : 1,
+  );
 
-  // Fermeture : la prochaine ouverture repart de la premiere page.
+  // Fermeture : la prochaine ouverture repart de la premiere page pertinente.
   React.useEffect(() => {
-    if (!visible) setStep(1);
-  }, [visible]);
+    if (!visible) setStep(singleOrder ? 2 : 1);
+  }, [visible, singleOrder]);
 
 
   /**
@@ -560,7 +569,7 @@ export const CartGroupedDeliverySheet: React.FC<
               place a la capsule de paiement : seul le retour subsiste, sans
               quoi on ne pourrait plus revenir corriger les montants. */}
           <View style={styles.actionRow}>
-            {step > 1 && !isBusy && (
+            {step > (singleOrder ? 2 : 1) && !isBusy && (
               <TouchableOpacity
                 style={styles.backBtn}
                 onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4)}

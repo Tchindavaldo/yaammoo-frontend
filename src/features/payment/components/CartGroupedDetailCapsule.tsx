@@ -4,12 +4,15 @@ import React from "react";
 import {
   Animated,
   Easing,
+  Keyboard,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import type { CartPaymentState } from "../hooks/useCartPayment";
@@ -46,6 +49,9 @@ interface CartGroupedDetailCapsuleProps {
   paymentState: CartPaymentState;
   ussdMessage?: string | null;
   onError?: (error: string) => void;
+  /** Reseau de paiement, choisi par les deux cards de la capsule. */
+  network: "orange" | "mtn";
+  onNetworkChange: (n: "orange" | "mtn") => void;
   /** Hauteur du clavier : la capsule et son voile remontent avec lui. */
   keyboardHeight: Animated.Value | Animated.AnimatedInterpolation<number>;
   /** Clavier a l'ecran : la capsule s'y ancre ; ferme, elle se centre. */
@@ -70,6 +76,15 @@ export const CartGroupedDetailCapsule: React.FC<
 }) => {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const insets = useSafeAreaInsets();
+
+  /**
+   * ANDROID : `keyboardDidShow` mesure le clavier depuis le bas de la FENETRE,
+   * barre de navigation comprise, alors que le `Modal` du sheet couvre l'ecran
+   * entier (`statusBarTranslucent`). La capsule se retrouvait donc a cheval sur
+   * le haut du clavier — on la remonte de la hauteur de cette barre.
+   */
+  const navBarGap = Platform.OS === "android" ? insets.bottom : 0;
 
   /** Fondu du contenu a chaque changement d'etape. */
   const contentOpacity = React.useRef(new Animated.Value(1)).current;
@@ -179,7 +194,10 @@ export const CartGroupedDetailCapsule: React.FC<
     CAPSULE_BOTTOM_OFFSET +
       CAPSULE_KEYBOARD_GAP +
       CAPSULE_HEIGHT +
-      VEIL_TOP_GAP,
+      VEIL_TOP_GAP +
+      // Meme decalage que la capsule : le voile doit couvrir sa nouvelle
+      // position, sinon elle depasse par le haut.
+      navBarGap,
   );
   /**
    * PLANCHER a la hauteur du sheet groupe : sous cette valeur, le voile se cale
@@ -215,7 +233,9 @@ export const CartGroupedDetailCapsule: React.FC<
    * (`enterAnim`, `anim`, suivi du clavier) n'est touchee.
    */
   const CENTERED_BOTTOM = (GROUPED_SHEET_HEIGHT - CAPSULE_HEIGHT) / 2;
-  const ANCHORED = CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP;
+  // `navBarGap` remonte la capsule de la barre de navigation Android, que la
+  // hauteur de clavier mesuree n'inclut pas.
+  const ANCHORED = CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP + navBarGap;
   const capsuleBottom = Animated.add(
     // Ancrage d'origine, attenue par `centerAnim`.
     Animated.multiply(
@@ -230,10 +250,15 @@ export const CartGroupedDetailCapsule: React.FC<
   /** Saisie active : hors de ces etats, la ligne d'input est masquee sur place. */
   const isInput = shownState === "input" || shownState === "total";
 
+  /** Champ vide : le bouton ne paie pas, il FERME la capsule. */
+  const isEmpty = !phone.trim();
+
   const handlePay = async () => {
     const p = phone.trim();
     if (!p) {
-      onError?.("Veuillez remplir le numéro de paiement");
+      // Fermeture par le clavier : le garde du sheet hote demonte alors la
+      // capsule via son fondu de sortie d'ORIGINE, rien n'est rejoue ici.
+      Keyboard.dismiss();
       return;
     }
     try {
@@ -363,8 +388,10 @@ export const CartGroupedDetailCapsule: React.FC<
                 {isProcessing ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
+                  /* Champ vide : le bouton ne peut rien envoyer, il devient le
+                     bouton de FERMETURE de la capsule. */
                   <Ionicons
-                    name="arrow-forward-outline"
+                    name={isEmpty ? "chevron-down" : "arrow-forward-outline"}
                     size={16}
                     color="white"
                   />

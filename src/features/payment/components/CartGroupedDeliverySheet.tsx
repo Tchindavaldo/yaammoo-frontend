@@ -664,6 +664,7 @@ export const CartGroupedDeliverySheet: React.FC<
         ussdMessage={ussdMessage}
         onError={onError}
         keyboardHeight={keyboardHeight}
+        isKeyboardVisible={isKeyboardVisible}
         translateY={translateY}
       />
 

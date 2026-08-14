@@ -48,6 +48,8 @@ interface CartGroupedDetailCapsuleProps {
   onError?: (error: string) => void;
   /** Hauteur du clavier : la capsule et son voile remontent avec lui. */
   keyboardHeight: Animated.Value | Animated.AnimatedInterpolation<number>;
+  /** Clavier a l'ecran : la capsule s'y ancre ; ferme, elle se centre. */
+  isKeyboardVisible: boolean;
   /** Translation du sheet hote, pour que la capsule le suive a l'ouverture. */
   translateY?: Animated.AnimatedInterpolation<number>;
 }
@@ -63,6 +65,7 @@ export const CartGroupedDetailCapsule: React.FC<
   ussdMessage,
   onError,
   keyboardHeight,
+  isKeyboardVisible,
   translateY,
 }) => {
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -100,6 +103,21 @@ export const CartGroupedDetailCapsule: React.FC<
    * la sortie, la derniere valeur reste.
    */
   const veilKb = React.useRef(new Animated.Value(0)).current;
+
+  /**
+   * 0 = capsule ancree au clavier (son comportement d'origine), 1 = centree
+   * dans le voile. Pilote par l'etat REEL du clavier, pas par sa hauteur
+   * animee : deduire le centrage de `veilKb` le declenchait a l'ouverture, la
+   * valeur repartant de 0 avant que le clavier ne soit monte.
+   */
+  const centerAnim = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    Animated.timing(centerAnim, {
+      toValue: isKeyboardVisible ? 0 : 1,
+      duration: 220,
+      useNativeDriver: false,
+    }).start();
+  }, [isKeyboardVisible, centerAnim]);
   React.useEffect(() => {
     if (!visible) return;
     veilKb.setValue(0);
@@ -112,6 +130,9 @@ export const CartGroupedDetailCapsule: React.FC<
   React.useEffect(() => {
     if (visible) {
       setMounted(true);
+      // Ouverture : on part ANCRE au clavier (`autoFocus` va l'ouvrir), sans
+      // quoi la capsule apparaissait centree puis redescendait.
+      centerAnim.setValue(0);
       enterAnim.setValue(0);
       Animated.timing(enterAnim, {
         toValue: 1,
@@ -136,7 +157,7 @@ export const CartGroupedDetailCapsule: React.FC<
     }).start(({ finished }) => {
       if (finished) setMounted(false);
     });
-  }, [visible, anim, enterAnim]);
+  }, [visible, anim, enterAnim, centerAnim]);
 
   // Sortie ETAGEE : la capsule s'efface en premier, le voile la suit.
   const capsuleOpacity = anim.interpolate({
@@ -155,7 +176,10 @@ export const CartGroupedDetailCapsule: React.FC<
    */
   const veilRaw = Animated.add(
     veilKb,
-    CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP + CAPSULE_HEIGHT + VEIL_TOP_GAP,
+    CAPSULE_BOTTOM_OFFSET +
+      CAPSULE_KEYBOARD_GAP +
+      CAPSULE_HEIGHT +
+      VEIL_TOP_GAP,
   );
   /**
    * PLANCHER a la hauteur du sheet groupe : sous cette valeur, le voile se cale
@@ -176,10 +200,30 @@ export const CartGroupedDetailCapsule: React.FC<
    */
   const veilHeight = Animated.multiply(veilFloored, enterAnim);
 
-  /** `bottom` d'ORIGINE de la capsule : posee juste au-dessus du clavier. */
+  /**
+   * `bottom` de la capsule.
+   *
+   * - Clavier OUVERT : ancrage d'ORIGINE — `veilKb + offset + gap`, la capsule
+   *   colle au clavier et le suit a la pente 1 sur toute sa montee.
+   * - Clavier FERME (`veilKb` a 0) : elle se CENTRE dans le voile, qui est
+   *   alors sur son plancher. C'est le cas de la transaction, seul moment ou la
+   *   capsule reste affichee clavier ferme — sinon elle restait plaquee tout en
+   *   bas d'une grande zone floutee.
+   *
+   * La bascule s'etale sur les 60 premiers pixels de clavier : elle suit donc
+   * son ouverture au lieu de sauter. Aucune des animations existantes
+   * (`enterAnim`, `anim`, suivi du clavier) n'est touchee.
+   */
+  const CENTERED_BOTTOM = (SHEET_HEIGHT - CAPSULE_HEIGHT) / 2;
+  const ANCHORED = CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP;
   const capsuleBottom = Animated.add(
-    veilKb,
-    CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP,
+    // Ancrage d'origine, attenue par `centerAnim`.
+    Animated.multiply(
+      Animated.add(veilKb, ANCHORED),
+      centerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+    ),
+    // Centre du voile, qui prend le relais quand `centerAnim` monte a 1.
+    Animated.multiply(centerAnim, CENTERED_BOTTOM),
   );
 
   const shownState = visible ? paymentState : lastState.current;
@@ -207,10 +251,7 @@ export const CartGroupedDetailCapsule: React.FC<
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={[
-        styles.slot,
-        translateY ? { transform: [{ translateY }] } : null,
-      ]}
+      style={[styles.slot, translateY ? { transform: [{ translateY }] } : null]}
     >
       {/* Voile FLOUTE de la zone basse : du bas de l'ecran jusqu'au bord
           superieur de la capsule. Rendu AVANT elle, il passe donc dessous. */}
@@ -290,60 +331,62 @@ export const CartGroupedDetailCapsule: React.FC<
                 masquee (opacite 0, hors des taps) et les messages se posent
                 par-dessus. */}
             <View
-              style={[
-                styles.inputRow,
-                !isInput && styles.inputRowHidden,
-              ]}
+              style={[styles.inputRow, !isInput && styles.inputRowHidden]}
               pointerEvents={isInput ? "auto" : "none"}
             >
-                <View style={styles.inputWrapper}>
+              <View style={styles.inputWrapper}>
+                <Ionicons
+                  name="call-outline"
+                  size={16}
+                  color="white"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="saisir le numéro de paiement"
+                  placeholderTextColor="rgba(255,255,255,0.5)"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={onPhoneChange}
+                  autoFocus
+                  /* Curseur explicite : la teinte systeme se voyait a peine
+                       sur le fond sombre de la capsule. */
+                  selectionColor="#ec4913"
+                  cursorColor="#ec4913"
+                />
+              </View>
+              <TouchableOpacity
+                style={[styles.payerBtn, isProcessing && { opacity: 0.7 }]}
+                onPress={handlePay}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
                   <Ionicons
-                    name="call-outline"
+                    name="arrow-forward-outline"
                     size={16}
                     color="white"
-                    style={styles.inputIcon}
                   />
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="saisir le numéro de paiement"
-                    placeholderTextColor="rgba(255,255,255,0.5)"
-                    keyboardType="phone-pad"
-                    value={phone}
-                    onChangeText={onPhoneChange}
-                    autoFocus
-                    /* Curseur explicite : la teinte systeme se voyait a peine
-                       sur le fond sombre de la capsule. */
-                    selectionColor="#ec4913"
-                    cursorColor="#ec4913"
-                  />
-                </View>
-                <TouchableOpacity
-                  style={[styles.payerBtn, isProcessing && { opacity: 0.7 }]}
-                  onPress={handlePay}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <ActivityIndicator size="small" color="white" />
-                  ) : (
-                    <Ionicons
-                      name="arrow-forward-outline"
-                      size={16}
-                      color="white"
-                    />
-                  )}
-                </TouchableOpacity>
+                )}
+              </TouchableOpacity>
             </View>
 
             {shownState === "waiting" && (
               <View pointerEvents="none" style={styles.overlayText}>
-                <Text style={styles.centerText}>Veuillez patienter...</Text>
+                <Text style={[styles.centerText, styles.overlayTextLabel]}>
+                  Veuillez patienter...
+                </Text>
               </View>
             )}
 
             {/* USSD_SENT : message backend uniquement. */}
             {shownState === "ussd_sent" && (
               <View pointerEvents="none" style={styles.overlayText}>
-                <Text style={styles.centerText} numberOfLines={2}>
+                <Text
+                  style={[styles.centerText, styles.overlayTextLabel]}
+                  numberOfLines={2}
+                >
                   {ussdMessage}
                 </Text>
               </View>
@@ -351,14 +394,17 @@ export const CartGroupedDetailCapsule: React.FC<
 
             {shownState === "success" && (
               <View pointerEvents="none" style={styles.overlayText}>
-                <Text style={styles.centerText}>
+                <Text style={[styles.centerText, styles.overlayTextLabel]}>
                   Paiement réussi ! Création de la commande en cours...
                 </Text>
               </View>
             )}
 
             {shownState === "success_created" && (
-              <View style={[styles.iconTextRow, styles.overlayText]}>
+              <View
+                pointerEvents="none"
+                style={[styles.overlayText, styles.overlayIconRow]}
+              >
                 <Ionicons name="checkmark-circle" size={20} color="#10b981" />
                 <Text style={[styles.iconTextLabel, { color: "#10b981" }]}>
                   Commande créée avec succès !
@@ -434,7 +480,17 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
+    // Gouttiere : le texte ne colle pas aux bords arrondis de la pilule.
+    paddingHorizontal: 20,
   },
+  /**
+   * Texte du message, CENTRE verticalement : `centerText` porte `flex: 1`, qui
+   * l'etirait sur toute la hauteur de la capsule et le collait en haut. Ici il
+   * fait sa hauteur propre, le conteneur s'occupe du centrage.
+   */
+  overlayTextLabel: { flex: 0, width: "100%" },
+  /** Succes : icone + libelle sur une ligne, centres ensemble dans la pilule. */
+  overlayIconRow: { flexDirection: "row", gap: 8 },
   inputWrapper: {
     flex: 1,
     flexDirection: "row",

@@ -6,22 +6,24 @@ import * as Location from "expo-location";
 import React from "react";
 import {
   Animated,
+  Dimensions,
   Keyboard,
   Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
+import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
-// Hauteur PROPRE au sheet de livraison groupee : l'overlay le recouvre
-// exactement, alors que la version checkout tient dans 384.
-// Hauteur du sheet de livraison groupee : sa hauteur propre (471) plus le
-// padding bas qu'il applique (16 + insets.bottom, ajoute au runtime). Sans ce
-// rappel l'overlay s'arretait au-dessus du bord bas du sheet.
-const SHEET_BASE_HEIGHT = 471;
+/** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+
+// L'overlay depasse le sheet groupe pour laisser respirer l'adresse et la note.
+// Sa card occupe toute cette surface (aucune gouttiere sur le conteneur).
+const SHEET_BASE_HEIGHT = GROUPED_SHEET_HEIGHT + 90;
 
 interface GroupedLocationOverlayProps {
   onClose: () => void;
@@ -50,7 +52,9 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
    * Enregistrement EN PLACE de la note vocale. Un appui demarre, le suivant
    * arrete et remonte l'URI ; un appui long sur une note existante l'efface.
    */
-  const [recording, setRecording] = React.useState<Audio.Recording | null>(null);
+  const [recording, setRecording] = React.useState<Audio.Recording | null>(
+    null,
+  );
 
   const toggleRecording = async () => {
     if (recording) {
@@ -213,15 +217,21 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
 
   return (
     <Animated.View style={[styles.keyboardWrapper, { opacity: fade }]}>
+      {/* Au repos le flou se limite au sheet ; il grandit AVEC le clavier (meme
+          interpolation continue que les overlays du checkout) jusqu'a couvrir
+          tout l'ecran. */}
       <AnimatedBlurView
         intensity={40}
         tint="light"
         style={[
           styles.blurOverlay,
           {
+            // Des les premiers pixels de course du clavier, le flou monte
+            // jusqu'en haut de l'ecran (il ne s'arrete plus a mi-hauteur).
             height: keyboardHeight.interpolate({
-              inputRange: [0, 700],
-              outputRange: [SHEET_BASE_HEIGHT, SHEET_BASE_HEIGHT + 1000],
+              inputRange: [0, 200],
+              outputRange: [SHEET_BASE_HEIGHT, SCREEN_HEIGHT],
+              extrapolate: "clamp",
             }),
           },
         ]}
@@ -232,6 +242,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
           {
             transform: [
               {
+                // Clavier ouvert : la card remonte pour ne pas coller au clavier.
                 translateY: keyboardHeight.interpolate({
                   inputRange: [0, 100],
                   outputRange: [0, -95],
@@ -330,7 +341,9 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
                 accessibilityLabel="Enregistrer une note vocale"
               >
                 <Ionicons
-                  name={recording ? "stop" : hasVoiceNote ? "mic" : "mic-outline"}
+                  name={
+                    recording ? "stop" : hasVoiceNote ? "mic" : "mic-outline"
+                  }
                   size={20}
                   color={recording || hasVoiceNote ? "#fff" : "#ec4913"}
                 />
@@ -365,6 +378,8 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   blurOverlay: {
+    // Ancre en bas : sa hauteur est animee (sheet au repos, plein ecran clavier
+    // ouvert), il grandit donc vers le haut.
     position: "absolute",
     bottom: 0,
     left: 0,
@@ -376,13 +391,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: SHEET_BASE_HEIGHT,
-    paddingHorizontal: 16,
+    // Aucune gouttiere : la card occupe TOUTE la surface de l'overlay.
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     justifyContent: "center",
   },
   card: {
-    height: 400,
+    // La card remplit le conteneur, qui porte la hauteur de l'overlay.
+    flex: 1,
     backgroundColor: "white",
-    borderRadius: 24,
+    // Card collee aux bords du sheet : seuls les coins hauts sont arrondis.
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },

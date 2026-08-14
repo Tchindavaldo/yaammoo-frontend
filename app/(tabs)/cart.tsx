@@ -157,10 +157,6 @@ export default function OrdersScreen() {
     () => zoneGroups.find((g) => g.key === payingGroupKey) || null,
     [zoneGroups, payingGroupKey],
   );
-  // Commandes et montant réellement payés : le groupe choisi, sinon tout le panier.
-  const ordersToPay = payingGroup
-    ? payingGroup.entries.map((e) => e.order)
-    : pendingToBuy;
   const amountToPay = payingGroup ? payingGroup.total : cartTotal;
 
   // Paiement global du panier (logique propre, isolée de useCheckout).
@@ -192,18 +188,64 @@ export default function OrdersScreen() {
    * est facturée (la plus chère) : `amountToPay` compterait une course par zone
    * et ferait payer plus que ce que le sheet affiche.
    */
-  const amountToPayEffective = React.useMemo(() => {
-    if (!groupedDelivery) return amountToPay;
-    const articles = groupedDelivery.reduce((s, g) => s + g.articles, 0);
-    const course = groupedDelivery.reduce(
-      (s, g) => Math.max(s, g.livraison),
-      0,
-    );
-    return articles + course;
-  }, [groupedDelivery, amountToPay]);
+  /**
+   * Commandes REELLEMENT payees.
+   *
+   * En livraison groupee, elles viennent du LOT affiche par le sheet — celui-ci
+   * ne porte que la boutique selectionnee. Retomber sur `pendingToBuy` envoyait
+   * tout le panier, toutes boutiques confondues, alors que `amount` n'est
+   * calcule que sur le lot : le backend refusait la transaction pour montant
+   * incoherent.
+   */
+  const ordersToPay = React.useMemo(() => {
+    if (groupedDelivery)
+      return groupedDelivery.flatMap((g) => g.entries.map((e) => e.order));
+    if (payingGroup) return payingGroup.entries.map((e) => e.order);
+    return pendingToBuy;
+  }, [groupedDelivery, payingGroup, pendingToBuy]);
 
   // Livraison commune validée : écrase celle de chaque commande payée.
   const [groupedDeliveryValue, setGroupedDeliveryValue] = useState<any>(null);
+  /** Meme valeur, lisible SYNCHRONEMENT par `confirmCartPayment`. */
+  const groupedDeliveryRef = React.useRef<any>(null);
+
+  /**
+   * Total d'une commande UNE FOIS la livraison commune appliquee. Son `total`
+   * d'origine porte l'ancien prix de livraison ; le backend, lui, recalcule
+   * `articles + delivery.prix`. Sans ce reajustement il compare un total
+   * portant l'ancienne course a un attendu portant la nouvelle, et refuse.
+   */
+  const regroupedTotal = React.useCallback(
+    (o: any) => {
+      const ancien = Number(o?.delivery?.prix) || 0;
+      const nouveau = Number(groupedDeliveryValue?.prix) || 0;
+      return (Number(o?.total) || 0) - ancien + nouveau;
+    },
+    [groupedDeliveryValue],
+  );
+
+  /**
+   * Montant REELLEMENT envoye. Meme formule que le backend : somme des totaux
+   * recalcules, moins (N-1) x la course — toutes les commandes du lot partagent
+   * la meme livraison, elles forment donc un seul groupe facturable.
+   */
+  const amountToPayEffective = React.useMemo(() => {
+    if (!groupedDelivery) return amountToPay;
+    if (!groupedDeliveryValue) {
+      const articles = groupedDelivery.reduce((s, g) => s + g.articles, 0);
+      const course = groupedDelivery.reduce(
+        (s, g) => Math.max(s, g.livraison),
+        0,
+      );
+      return articles + course;
+    }
+    const orders = groupedDelivery.flatMap((g) =>
+      g.entries.map((e) => e.order as any),
+    );
+    const somme = orders.reduce((s, o) => s + regroupedTotal(o), 0);
+    const course = Number(groupedDeliveryValue?.prix) || 0;
+    return somme - Math.max(orders.length - 1, 0) * course;
+  }, [groupedDelivery, groupedDeliveryValue, regroupedTotal, amountToPay]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -538,7 +580,11 @@ export default function OrdersScreen() {
     // Livraison groupée : elle a été composée et validée dans son propre sheet,
     // elle remplace celle de chaque commande — la validation par commande ne
     // s'applique donc plus (elle porterait sur les anciennes livraisons).
-    if (!groupedDeliveryValue) {
+    // Lue dans la REF, pas dans le state : `onValidate` la pose et `onConfirm`
+    // suit immediatement, le state n'est pas encore a jour ici.
+    const commune = groupedDeliveryRef.current;
+
+    if (!commune) {
       const validationErr = validateAllDeliveries();
       if (validationErr) {
         setToast({ message: validationErr, type: "error" });
@@ -550,13 +596,31 @@ export default function OrdersScreen() {
     // items = commandes payées (le panier entier, ou la seule zone choisie via
     // "Tout payer"), sanitizées EXACTEMENT comme l'envoi historique
     // (buyOrders → /order/tabs), via la fonction partagée sanitizeOrder.
+    const cours = Number(commune?.prix) || 0;
     const items = ordersToPay.map((o) =>
       sanitizeOrder(
-        groupedDeliveryValue ? { ...o, delivery: groupedDeliveryValue } : o,
+        commune
+          ? {
+              ...o,
+              delivery: commune,
+              // Le `total` d'origine porte l'ancienne course ; le backend
+              // recalcule `articles + delivery.prix`. On realigne les deux.
+              total:
+                (Number((o as any)?.total) || 0) -
+                (Number((o as any)?.delivery?.prix) || 0) +
+                cours,
+            }
+          : o,
         userData?.uid,
       ),
     );
-    await handlePaymentConfirm(phone, items, amountToPayEffective);
+    // Meme formule que le backend : Σ totaux − (N-1) x la course, toutes les
+    // commandes du lot partageant desormais la meme livraison.
+    const amount = commune
+      ? items.reduce((s, it: any) => s + (Number(it?.total) || 0), 0) -
+        Math.max(items.length - 1, 0) * cours
+      : amountToPayEffective;
+    await handlePaymentConfirm(phone, items, amount);
   };
 
   const onManualRefresh = async () => {
@@ -796,7 +860,13 @@ export default function OrdersScreen() {
            l'état, sans fermer ni ouvrir de Modal (deux Modals qui se croisent
            et la seconde ne s'affiche pas). */
         onValidate={(d) => {
-          setGroupedDeliveryValue(toOrderDelivery(d));
+          const value = toOrderDelivery(d);
+          // Ref posee AVANT le state : le sheet appelle `onValidate` puis
+          // `onConfirm` dans le MEME tour, `groupedDeliveryValue` y vaudrait
+          // encore `null` et les commandes partiraient avec leurs livraisons
+          // d'origine (aucun groupage cote backend).
+          groupedDeliveryRef.current = value;
+          setGroupedDeliveryValue(value);
           // Lot entier : pas de zone unique à cibler, on paie tout l'affiché.
           setPayingGroupKey(null);
           setPaymentState("input");

@@ -9,13 +9,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 
-// Hauteur PROPRE au sheet de livraison groupee : l'overlay le recouvre
-// exactement, alors que la version checkout tient dans 384.
-// Hauteur du sheet de livraison groupee : sa hauteur propre (471) plus le
-// padding bas qu'il applique (16 + insets.bottom, ajoute au runtime). Sans ce
-// rappel l'overlay s'arretait au-dessus du bord bas du sheet.
-const SHEET_BASE_HEIGHT = 471;
+// L'overlay recouvre EXACTEMENT le sheet groupe. La card, elle, est retrecie par
+// le `paddingVertical` du conteneur (respiration en haut et en bas).
+const SHEET_BASE_HEIGHT = GROUPED_SHEET_HEIGHT;
 
 interface GroupedVoiceNoteOverlayProps {
   onClose: () => void;
@@ -354,10 +352,14 @@ const styles = StyleSheet.create({
     right: 0,
     height: SHEET_BASE_HEIGHT,
     paddingHorizontal: 16,
+    // Respiration en haut et en bas : la card ne colle ni au bord superieur du
+    // sheet ni a son bord inferieur.
+    paddingVertical: 16,
     justifyContent: "center",
   },
   card: {
-    height: 400,
+    // La card remplit le conteneur, qui porte la hauteur de l'overlay.
+    flex: 1,
     backgroundColor: "white",
     borderRadius: 24,
     padding: 20,
@@ -394,6 +396,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   contentContainer: {
+    // Occupe la place restante de la card.
+    flex: 1,
     justifyContent: "center",
   },
   idleState: {

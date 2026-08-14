@@ -1,4 +1,5 @@
 import { AppBlurView } from "@/src/components/AppBlurView";
+import { Toast } from "@/src/components/Toast";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import { Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
@@ -121,6 +122,18 @@ export const CartGroupedDeliverySheet: React.FC<
   isKeyboardVisible,
 }) => {
   const insets = useSafeAreaInsets();
+
+  /**
+   * Toast rendu DANS le Modal du sheet. Celui du panier vit sous le voile noir
+   * et devient illisible des que le sheet est ouvert : les erreurs declenchees
+   * ici s'affichent donc au premier plan, au-dessus du voile.
+   */
+  const [localToast, setLocalToast] = React.useState<string | null>(null);
+  const showError = React.useCallback(
+    (message: string) => setLocalToast(message),
+    [],
+  );
+
   const anim = React.useRef(new Animated.Value(0)).current;
   // Reste monté le temps de l'animation de sortie.
   const [mounted, setMounted] = React.useState(visible);
@@ -161,12 +174,12 @@ export const CartGroupedDeliverySheet: React.FC<
                 ? "Choisissez un créneau horaire"
                 : null;
       if (manque) {
-        onError?.(manque);
+        showError(manque);
         return;
       }
       await handleConfirm(payPhone);
     },
-    [delivery, handleConfirm, onError],
+    [delivery, handleConfirm, showError],
   );
 
   // Overlay ouvert par `DeliveryTab` (un seul a la fois).
@@ -187,7 +200,7 @@ export const CartGroupedDeliverySheet: React.FC<
   const handlePay = React.useCallback(async () => {
     const p = phone.trim();
     if (!p) {
-      onError?.("Veuillez remplir le numéro de paiement");
+      showError("Veuillez remplir le numéro de paiement");
       return;
     }
     try {
@@ -197,7 +210,7 @@ export const CartGroupedDeliverySheet: React.FC<
     } finally {
       setIsProcessing(false);
     }
-  }, [phone, guardedConfirm, onError]);
+  }, [phone, guardedConfirm, showError]);
 
   /**
    * PAGE courante du parcours de livraison. Le sheet ayant une hauteur reduite,
@@ -210,6 +223,7 @@ export const CartGroupedDeliverySheet: React.FC<
   React.useEffect(() => {
     if (!visible) setStep(1);
   }, [visible]);
+
 
   /**
    * Capsule DEDIEE de l'etape 4 (« Le detail de votre commande ») : sa propre
@@ -430,10 +444,49 @@ export const CartGroupedDeliverySheet: React.FC<
       )
     : false;
 
+  /**
+   * Passage a la page suivante. Depuis la page « Informations » (3), on refuse
+   * d'avancer tant que les champs requis par le type de livraison choisi sont
+   * vides : sans ce garde-fou le user arrivait au paiement avec une livraison
+   * incomplete, et le seul message venait de `guardedConfirm`, bien trop tard.
+   */
+  const goNext = React.useCallback(() => {
+    if (step === 3 && delivery.type !== "aucune") {
+      const manque = !delivery.address
+        ? "Indiquez le lieu de livraison"
+        : !delivery.phone
+          ? "Indiquez un numéro de contact"
+          : delivery.type === "standard" && !delivery.hour
+            ? "Choisissez un créneau horaire"
+            : delivery.type === "express" &&
+                hasExpressZones &&
+                !delivery.expressLieu
+              ? "Choisissez une zone express"
+              : null;
+      if (manque) {
+        showError(manque);
+        return;
+      }
+    }
+    setStep((s) => (s + 1) as 1 | 2 | 3 | 4);
+  }, [step, delivery, hasExpressZones, showError]);
+
   // Commandes du lot, et frais de la course groupee : une seule course est
   // facturee, la plus chere.
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);
-  const fraisGroupes = groups.reduce((s, g) => Math.max(s, g.livraison), 0);
+  /**
+   * Course facturee. Des qu'une zone / un creneau est choisi dans le sheet, ce
+   * choix s'applique a TOUTES les commandes du lot : les montants affiches
+   * suivent donc `delivery` en temps reel, et non les livraisons d'origine des
+   * commandes (qui ne seront plus celles envoyees au paiement).
+   */
+  const prixChoisi =
+    delivery.type === "aucune"
+      ? 0
+      : Number(
+          delivery.type === "express" ? delivery.expressPrix : delivery.prix,
+        ) || 0;
+  const fraisGroupes = prixChoisi;
   /** Total des articles du lot, hors livraison (source de verite du backend). */
   const articlesTotal = groups.reduce((s, g) => s + g.articles, 0);
 
@@ -519,7 +572,7 @@ export const CartGroupedDeliverySheet: React.FC<
             {step < 4 ? (
               <TouchableOpacity
                 style={[styles.primaryBtn, styles.actionRowPrimary]}
-                onPress={() => setStep((s) => (s + 1) as 1 | 2 | 3 | 4)}
+                onPress={goNext}
                 activeOpacity={0.9}
               >
                 <Text style={styles.primaryBtnLabel}>Continuer</Text>
@@ -647,7 +700,7 @@ export const CartGroupedDeliverySheet: React.FC<
               onNetworkChange={onNetworkChange}
               ussdMessage={ussdMessage}
               onClose={onClose}
-              onError={onError}
+              onError={showError}
               /* TOUJOURS `true` : l'apparence « clavier ouvert » est l'etat par
                defaut de la capsule dans ce parcours. En repassant a `false` a
                la fermeture du clavier, elle faisait surgir la croix de
@@ -681,7 +734,7 @@ export const CartGroupedDeliverySheet: React.FC<
         onConfirm={guardedConfirm}
         paymentState={paymentState === "total" ? "input" : paymentState}
         ussdMessage={ussdMessage}
-        onError={onError}
+        onError={showError}
         network={network}
         onNetworkChange={onNetworkChange}
         keyboardHeight={keyboardHeight}
@@ -699,8 +752,18 @@ export const CartGroupedDeliverySheet: React.FC<
         advanceDays={advanceDays}
         deliveryOffer={deliveryOffer}
         fastFoodId={fastFoodId}
-        onError={onError}
+        onError={showError}
       />
+
+      {/* Rendu EN DERNIER, dans le Modal : le toast passe ainsi au-dessus du
+          voile noir et des overlays, au lieu d'etre etouffe par eux. */}
+      {localToast && (
+        <Toast
+          message={localToast}
+          type="error"
+          onHide={() => setLocalToast(null)}
+        />
+      )}
     </Modal>
   );
 };

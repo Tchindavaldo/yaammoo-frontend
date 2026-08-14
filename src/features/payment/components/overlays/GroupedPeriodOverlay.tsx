@@ -5,17 +5,26 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   Animated,
+  Dimensions,
+  Keyboard,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { GroupedValidateRow } from "./GroupedValidateRow";
 
-// Hauteur PROPRE au sheet de livraison groupee : l'overlay le recouvre
-// exactement, alors que la version checkout tient dans 384.
-const SHEET_BASE_HEIGHT = 471;
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+/** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
+const SCREEN_HEIGHT = Dimensions.get("window").height;
+
+// Pas de clavier ici : l'overlay peut depasser le sheet pour laisser la liste
+// des creneaux respirer. La card remplit toute cette hauteur, moins le
+// `paddingVertical` du conteneur (marge haute et basse).
+const SHEET_BASE_HEIGHT = GROUPED_SHEET_HEIGHT + 90;
 
 interface PeriodItem {
   hour: string;
@@ -63,6 +72,39 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
       useNativeDriver: true,
     }).start();
   }, [fade]);
+
+  // Saisie du code bonus : l'overlay suit le clavier (meme reglage que Contact).
+  const keyboardHeight = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (event) => {
+        Animated.spring(keyboardHeight, {
+          toValue: event.endCoordinates.height,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      },
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        Animated.spring(keyboardHeight, {
+          toValue: 0,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      },
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+    // keyboardHeight est une Animated.Value stable (useRef).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const closeWithFade = React.useCallback(
     (after?: () => void) => {
@@ -212,9 +254,10 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
     if (verifying) return;
     const typed = bonusCode.trim();
 
-    // Un code ne s'applique qu'à une livraison précise : sans période choisie,
-    // il n'y a rien à offrir → on refuse et l'overlay reste ouvert.
-    if (typed && !selectedValue) {
+    // Aucun creneau choisi : valider n'a rien a enregistrer. L'overlay se
+    // fermait quand meme et la card apparaissait remplie alors que la livraison
+    // n'avait ni heure ni prix — « Continuer » passait ensuite sans rien voir.
+    if (!selectedValue) {
       onError?.("Sélectionnez d'abord une période de livraison.");
       return;
     }
@@ -249,12 +292,38 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
 
   return (
     <Animated.View style={[styles.keyboardWrapper, { opacity: fade }]}>
-      <BlurView
+      {/* Saisie du code bonus : le flou monte jusqu'en haut de l'ecran des que
+          le clavier s'ouvre, comme sur les overlays Lieu et Contact. */}
+      <AnimatedBlurView
         intensity={40}
         tint="light"
-        style={[styles.blurOverlay, { height: SHEET_BASE_HEIGHT }]}
+        style={[
+          styles.blurOverlay,
+          {
+            height: keyboardHeight.interpolate({
+              inputRange: [0, 200],
+              outputRange: [SHEET_BASE_HEIGHT, SCREEN_HEIGHT],
+              extrapolate: "clamp",
+            }),
+          },
+        ]}
       />
-      <View style={styles.container}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            transform: [
+              {
+                // Clavier ouvert : la card remonte pour ne pas coller au clavier.
+                translateY: keyboardHeight.interpolate({
+                  inputRange: [0, 100],
+                  outputRange: [0, -98],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -381,7 +450,7 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
             verifying={verifying}
           />
         </View>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -403,13 +472,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: SHEET_BASE_HEIGHT,
-    paddingHorizontal: 16,
+    // Aucune gouttiere : la card occupe TOUTE la surface de l'overlay.
+    paddingHorizontal: 0,
+    paddingVertical: 0,
     justifyContent: "center",
   },
   card: {
-    height: 400,
+    // La card remplit le conteneur, qui porte la hauteur de l'overlay.
+    flex: 1,
     backgroundColor: "white",
-    borderRadius: 24,
+    // Card collee aux bords du sheet : seuls les coins hauts sont arrondis.
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -451,7 +525,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   // Bande de chips horizontale : sans hauteur propre elle s'etire dans la card
-  // (400 de haut) et ecrase les chips. `flexGrow: 0` la fige sur son contenu.
+  // et ecrase les chips. `flexGrow: 0` la fige sur son contenu.
   dateStrip: {
     flexGrow: 0,
     marginBottom: 10,

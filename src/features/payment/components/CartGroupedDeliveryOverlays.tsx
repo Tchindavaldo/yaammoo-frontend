@@ -23,6 +23,10 @@ interface CartGroupedDeliveryOverlaysProps {
   deliveryOffer: any;
   fastFoodId?: string;
   onError?: (message: string) => void;
+  /**
+   * Bascule vers l'overlay de note vocale, declenchee depuis le bouton micro de
+   * l'overlay du lieu — la tuile dediee a disparu de l'etape « Informations ».
+   */
 }
 
 /**
@@ -54,6 +58,11 @@ export const CartGroupedDeliveryOverlays: React.FC<
         onSave={(addr, note) =>
           setDelivery({ ...delivery, address: addr, note })
         }
+        /* Note vocale enregistree SUR PLACE, dans cette meme card. */
+        onVoiceNoteChange={(uri) =>
+          setDelivery({ ...delivery, voiceNoteUri: uri || "" })
+        }
+        hasVoiceNote={!!delivery.voiceNoteUri}
       />
     )}
 

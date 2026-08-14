@@ -276,6 +276,25 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
   },
   choiceText: { alignItems: "flex-start" },
+  /**
+   * Card des montants (page 4) : deux colonnes — « N cmd » et « Course » —
+   * separees par un filet, comme le recap du bas de la page panier
+   * (`CartZoneFooterBar`).
+   */
+  /**
+   * MEME largeur que les deux cards d'operateur (un tiers) : les deux colonnes
+   * se resserrent au lieu d'elargir la card.
+   */
+  amountCard: { flex: 1 },
+  amountCols: { flexDirection: "row", alignItems: "center" },
+  amountSep: {
+    width: 1,
+    height: 22,
+    backgroundColor: C.border,
+    // Filet serre : la card garde la largeur d'un tiers, l'ecart doit donc
+    // rester minimal pour que les deux colonnes tiennent.
+    marginHorizontal: 5,
+  },
   choiceTitle: {
     fontSize: 12,
     fontWeight: "bold",

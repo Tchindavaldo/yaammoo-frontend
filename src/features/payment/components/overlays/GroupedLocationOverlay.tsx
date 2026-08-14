@@ -1,6 +1,7 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Loader } from "@/src/components/Loader";
 import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
 import * as Location from "expo-location";
 import React from "react";
 import {
@@ -27,6 +28,14 @@ interface GroupedLocationOverlayProps {
   address: string;
   note: string;
   onSave?: (address: string, note: string) => void;
+  /**
+   * Note vocale enregistree SUR PLACE, depuis le bouton micro pose a gauche de
+   * la validation. Plus d'overlay dedie : la card du lieu porte toute la
+   * manipulation, l'adresse saisie n'est donc jamais perdue.
+   */
+  onVoiceNoteChange?: (uri: string | null) => void;
+  /** Une note est deja enregistree : le bouton micro le signale. */
+  hasVoiceNote?: boolean;
 }
 
 export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
@@ -34,7 +43,43 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
   address,
   note,
   onSave,
+  onVoiceNoteChange,
+  hasVoiceNote,
 }) => {
+  /**
+   * Enregistrement EN PLACE de la note vocale. Un appui demarre, le suivant
+   * arrete et remonte l'URI ; un appui long sur une note existante l'efface.
+   */
+  const [recording, setRecording] = React.useState<Audio.Recording | null>(null);
+
+  const toggleRecording = async () => {
+    if (recording) {
+      try {
+        await recording.stopAndUnloadAsync();
+        onVoiceNoteChange?.(recording.getURI());
+      } catch (err) {
+        console.error("Failed to stop recording", err);
+      } finally {
+        setRecording(null);
+      }
+      return;
+    }
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== "granted") return;
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      const { recording: rec } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY,
+      );
+      setRecording(rec);
+    } catch (err) {
+      console.error("Failed to start recording", err);
+    }
+  };
+
   const [localAddress, setLocalAddress] = React.useState(address);
   const [localNote, setLocalNote] = React.useState(note);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -267,6 +312,31 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
               <Text style={styles.gpsBtnText}>Send Live GPS</Text>
             </TouchableOpacity>
 
+            {/* NOTE VOCALE, a gauche du bouton de validation : elle n'a plus
+                sa propre tuile a l'etape « Informations ». Bordure orange une
+                fois enregistree, comme les autres champs remplis. */}
+            {onVoiceNoteChange && (
+              <TouchableOpacity
+                style={[
+                  styles.voiceBtn,
+                  (recording || hasVoiceNote) && styles.voiceBtnFilled,
+                  recording && styles.voiceBtnRecording,
+                ]}
+                onPress={toggleRecording}
+                /* Appui long : on efface la note deja enregistree. */
+                onLongPress={() => {
+                  if (!recording && hasVoiceNote) onVoiceNoteChange(null);
+                }}
+                accessibilityLabel="Enregistrer une note vocale"
+              >
+                <Ionicons
+                  name={recording ? "stop" : hasVoiceNote ? "mic" : "mic-outline"}
+                  size={20}
+                  color={recording || hasVoiceNote ? "#fff" : "#ec4913"}
+                />
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               style={styles.checkBtn}
               onPress={handleSave}
@@ -409,6 +479,27 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#334155",
   },
+  /**
+   * Note vocale : meme gabarit que le bouton de validation, cale juste a sa
+   * gauche (40 de large + 10 d'ecart). Contour orange au repos, plein une fois
+   * la note enregistree.
+   */
+  voiceBtn: {
+    position: "absolute",
+    bottom: 16,
+    right: 16 + 40 + 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#ec4913",
+    backgroundColor: "rgba(236, 73, 19, 0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  voiceBtnFilled: { backgroundColor: "#ec4913" },
+  /** Enregistrement en cours : rouge, comme un bouton d'arret. */
+  voiceBtnRecording: { backgroundColor: "#ef4444", borderColor: "#ef4444" },
   checkBtn: {
     position: "absolute",
     bottom: 16,

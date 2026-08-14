@@ -217,44 +217,84 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
   commander » du header passent par `startOrder(groups)` dans `cart.tsx`. Le
   sheet reste monté et est piloté par `visible` (sinon l'animation de sortie
   serait coupée).
-- **Parcours GROUPÉ — un seul sheet, trois calques**
+- **Parcours GROUPÉ — un seul sheet, QUATRE pages**
   (`components/CartGroupedDeliverySheet.tsx`). `startOrder` l'ouvre à la place du
   sheet de paiement quand le lot contient **plusieurs courses** (une seule course
-  → `CartPaymentSheet` directement). Il porte les trois étapes :
-  1. **groupage** (`CartGroupingStep.tsx`, écran 02 du design) — « Tout livrer
-     ensemble » ou « livraisons séparées » (→ retour au panier, chaque tableau de
-     zone gardant son propre bouton « commander »). Une card rappelle la boutique
-     du lot et son nombre de livraisons distinctes (`fastFoodName` vient de
-     `useGroupedDeliveryData`, le compte est `groups.length`) ;
-  2. **livraison commune** — `GroupedDeliveryTab.tsx` + les cinq overlays de
-     `components/overlays/`, **copies dédiées** de leurs équivalents checkout
-     (R16 : on duplique, on ne partage pas), regroupés dans
-     `CartGroupedDeliveryOverlays.tsx` et pilotés par un unique état `overlay`.
-     Au-dessus, une simple accroche dans le style de l'étape 1
-     (`styles.question`) — pas de récap : les montants sont portés par le bouton
-     de validation puis par l'étape de paiement. En bas, une ligne d'action :
-     bouton rond de retour vers l'étape 1 (`backToGrouping`, le fondu rejoué à
-     l'envers) à gauche de « Valider et payer » ;
-  3. **paiement** — `CartPaymentBody.tsx`, le corps partagé avec
-     `CartPaymentSheet`, plus la capsule `CartPaymentOverlay` ancrée hors du
-     sheet. En groupé (`grouped` + `groupedLivraison`), le récapitulatif porte
-     **une seule ligne** de livraison au lieu d'une par groupe — tout part dans
-     la même course — libellée « Récupérer sur place » à 0 F si rien n'est livré.
-     Le total affiché ET envoyé est `articles + la course unique`
-     (`amountToPayEffective` dans `cart.tsx`) : `amountToPay` compterait une
-     course par zone et ferait payer plus que ce que le sheet annonce.
+  → `CartPaymentSheet` directement). Les pages sont rendues par
+  `CartGroupedPaymentBody.tsx` → `CartDeliverySegmentStep.tsx` (prop `section`),
+  toutes **bâties sur le même modèle** : titre + stepper, description de deux
+  lignes, une rangée de trois cards.
+  1. **groupage** (`section: "group"`) — « Tout livrer ensemble » ou « livraisons
+     séparées » (→ retour au panier, chaque tableau de zone gardant son propre
+     bouton « commander »). Le compte de livraisons distinctes est
+     `groups.length`, `fastFoodName` vient de `useGroupedDeliveryData` ;
+  2. **type de livraison** (`section: "type"`) — Express / À l'heure / Sur place ;
+  3. **informations** (`section: "infos"`) — lieu, zone express ou créneau,
+     contact. **Plus de tuile « Note vocale »** : l'enregistrement se fait
+     directement dans l'overlay du lieu (voir ci-dessous) ;
+  4. **détail et paiement** (`section: "montants"`) — trois cards : la première
+     porte **deux colonnes séparées par un filet** (« Cmd » + montant des
+     articles, « Course » + frais ou « Offerte »), comme le récap du bas de la
+     page panier (`CartZoneFooterBar`) ; les deux suivantes sont les opérateurs
+     **Orange Money** / **MTN Money**, chacune rappelant le total à payer, avec
+     un **radio** (cercle vide → coche pleine) au lieu d'une icône fixe.
+
+     Le footer y remplace « Continuer » par la **capsule-leurre**
+     (`styles.payCapsule`) : elle affiche le numéro déjà saisi et son bouton
+     `next` ouvre la vraie capsule flottante. Le total affiché ET envoyé est
+     `articles + la course unique` (`amountToPayEffective` dans `cart.tsx`) :
+     `amountToPay` compterait une course par zone et ferait payer plus que ce que
+     le sheet annonce.
+
+  Les cinq overlays de `components/overlays/` sont des **copies dédiées** de
+  leurs équivalents checkout (R16 : on duplique, on ne partage pas), regroupés
+  dans `CartGroupedDeliveryOverlays.tsx` et pilotés par un unique état `overlay`.
+
+  > **PAGE 5 conservée mais plus atteinte** : le bloc `section: "recap"` de
+  > `CartDeliverySegmentStep` (choix du réseau seul) reste dans le fichier — la
+  > page 4 a repris son rôle. Idem pour `CartGroupedDetailCapsule.tsx`, gardé
+  > pour d'éventuelles évolutions.
+
+- **Capsule de paiement du parcours groupé** — `CartGroupedDetailCapsule.tsx`,
+  **copie autonome** de `CartPaymentOverlay` (R16), ouverte par le bouton `next`
+  de la capsule-leurre. Elle porte, en propre :
+  - un **voile flouté avec plancher** à `GROUPED_SHEET_HEIGHT` : il suit le
+    clavier, mais ne redescend jamais sous la hauteur du sheet — sans quoi il
+    retombait au bas de l'écran pendant la transaction. Même rayon (18) que le
+    sheet ;
+  - la **capsule centrée** verticalement dans ce voile quand le clavier est
+    fermé (donc pendant la transaction), ancrée juste au-dessus de lui sinon.
+    Le basculement est animé (`centerAnim`, piloté par `isKeyboardVisible`) ;
+  - un bouton `chevron-down` (ferme) quand le champ est vide, `next` (paie)
+    sinon ;
+  - **Android** : la capsule est remontée de `insets.bottom`
+    (`keyboardDidShow` mesure le clavier depuis le bas de la fenêtre, alors que
+    le `Modal` couvre l'écran entier) ;
+  - le **clavier reste ouvert pendant la requête** — la ligne de saisie n'est
+    jamais démontée, seulement masquée en opacité, et les messages
+    (`waiting` / `ussd_sent` / succès) se posent par-dessus. La capsule ne se
+    ferme qu'à la **fin** de la transaction, succès **comme erreur**
+    (`detailWasBusy` dans le sheet).
+
+- **Note vocale enregistrée SUR PLACE** — `GroupedLocationOverlay.tsx` porte un
+  bouton micro à gauche de son bouton de validation : un appui démarre
+  l'enregistrement (bouton rouge « stop »), le suivant l'arrête et remonte l'URI
+  via `onVoiceNoteChange`, un appui long efface la note. L'overlay du lieu ne se
+  ferme à aucun moment, l'adresse saisie n'est donc jamais perdue.
+  `GroupedVoiceNoteOverlay.tsx` n'est plus branché sur ce parcours.
 
   Les **trois calques sont montés d'emblée** et superposés (`bodyLayer` en
   `absoluteFill`) : le passage d'une étape à l'autre n'est qu'un **fondu croisé**
   (`fade`, `fadePay`) sur du contenu déjà peint. Enchaîner des `Modal` coûtait une
   animation de fermeture complète, faisait clignoter l'étape suivante, et
   présenter le second pendant la sortie du premier échouait silencieusement.
-  **Aucun en-tête** : ni titre, ni sous-titre, ni croix — chaque calque porte
-  lui-même son propos, la fermeture passe par le voile (ou le bouton d'action).
-  Hauteur fixe `SHEET_HEIGHT - 44` (l'en-tête retiré), à comparer au
-  `SHEET_HEIGHT = 515` que garde le sheet de paiement autonome
-  (`CartPaymentSheet.styles.ts`) ; sans hauteur fixe le sheet sautait d'une étape
-  à l'autre.
+  **Aucun en-tête** : ni titre, ni sous-titre, ni croix — chaque page porte
+  elle-même son propos, la fermeture passe par le voile (ou le bouton d'action).
+  Hauteur fixe **`GROUPED_SHEET_HEIGHT`** (`CartGroupedDeliverySheet.styles.ts`)
+  = `SHEET_HEIGHT` + **40 px sur Android**, la barre de navigation y mangeant la
+  safe area ; sans hauteur fixe le sheet sautait d'une page à l'autre. Le
+  `paddingBottom` du footer suit la même logique :
+  `6 + insets.bottom * (Android ? 1.1 : 0.5)`.
   Styles dans `CartGroupedDeliverySheet.styles.ts` ; données boutique
   (`deliveryHours` / `orderLeadTime` / `advanceDays` / `deliveryOffer`) via le
   hook `hooks/useGroupedDeliveryData.ts`, qui **cache** la réponse de

@@ -187,15 +187,8 @@ export const CartDeliverySegmentStep: React.FC<
     onPress: onOpenContact,
   });
 
-  tiles.push({
-    key: "note",
-    icon: "mic-outline",
-    label: "Note vocale",
-    recapLabel: "Note vocale",
-    value: delivery.voiceNoteUri ? "Enregistrée" : "Facultatif",
-    filled: !!delivery.voiceNoteUri,
-    onPress: onOpenVoiceNote,
-  });
+  // Plus de tuile « Note vocale » : l'enregistrement se fait desormais depuis
+  // l'overlay du lieu, a gauche de son bouton de validation.
 
   /**
    * Ligne de titre : intitule a gauche, STEPPER a droite — des points, un par
@@ -341,7 +334,7 @@ export const CartDeliverySegmentStep: React.FC<
           {renderHead("Informations de livraison")}
           <Text style={styles.stepSub}>
             Complétez les informations de la course. Touchez une carte pour la
-            remplir, la note vocale reste facultative.
+            remplir, chacune ouvre son formulaire.
           </Text>
           <View style={styles.choiceCards}>
             {tiles.map((t) =>
@@ -358,63 +351,77 @@ export const CartDeliverySegmentStep: React.FC<
         </>
       )}
 
-      {/* PAGE 4 — montants. MEME structure que les pages precedentes : titre,
-          description, trois cards. Elles n'ouvrent rien — chacune porte un
-          libelle et son montant, la derniere (total) etant mise en avant. */}
+      {/* PAGE 4 — montants ET choix du reseau. La premiere card resume la
+          commande (articles + course), les deux suivantes portent les operateurs
+          et rappellent chacune le total a payer. */}
       {show("montants") && (
         <>
-          {renderHead("Le détail de votre commande")}
+          {renderHead("Détail et moyen de paiement")}
           <Text style={styles.stepSub}>
-            Voici ce que vous réglez : le montant des articles, la course, et le
-            total à payer.
+            Vérifiez le détail de votre commande — les articles et la course —
+            puis choisissez l&apos;opérateur qui réglera le montant total.
           </Text>
           <View style={styles.choiceCards}>
-            {[
-              {
-                key: "articles",
-                icon: "receipt-outline" as const,
-                title: `${cmd} commande${cmd > 1 ? "s" : ""}`,
-                sub: `${fmt(articlesTotal)} F`,
-              },
-              {
-                key: "livraison",
-                icon: "bicycle-outline" as const,
-                title: type === "aucune" ? "Sur place" : "Livraison",
-                sub: livraison > 0 ? `${fmt(livraison)} F` : "Offerte",
-              },
-              {
-                key: "total",
-                icon: "wallet-outline" as const,
-                title: "Total à payer",
-                sub: `${fmt(articlesTotal + livraison)} F`,
-              },
-            ].map((m) => (
-              <View
-                key={m.key}
-                style={[
-                  styles.choiceCard,
-                  // Le total est le chiffre qui compte : il se detache comme une
-                  // card selectionnee, sans etre cliquable pour autant.
-                  m.key === "total" && styles.cardActive,
-                ]}
-              >
-                <View style={styles.choiceDot}>
-                  <Ionicons name={m.icon} size={16} color={C.accent} />
-                </View>
-                <View style={styles.choiceText}>
-                  <Text style={styles.choiceTitle} numberOfLines={1}>
-                    {m.title}
-                  </Text>
-                  <Text style={styles.choiceSub} numberOfLines={2}>
-                    {m.sub}
-                  </Text>
+            <View style={[styles.choiceCard, styles.amountCard]}>
+              <View style={styles.choiceDot}>
+                <Ionicons name="receipt-outline" size={16} color={C.accent} />
+              </View>
+              {/* Deux colonnes separees par un filet, comme le recap du bas de
+                  la page panier (`CartZoneFooterBar`) : intitule au-dessus,
+                  montant dessous. */}
+              <View style={styles.choiceText}>
+                <View style={styles.amountCols}>
+                  <View>
+                    <Text style={styles.choiceTitle} numberOfLines={1}>
+                      {cmd} Cmd
+                    </Text>
+                    <Text style={styles.choiceSub} numberOfLines={1}>
+                      {fmt(articlesTotal)} F
+                    </Text>
+                  </View>
+                  <View style={styles.amountSep} />
+                  <View>
+                    <Text style={styles.choiceTitle} numberOfLines={1}>
+                      Course
+                    </Text>
+                    <Text style={styles.choiceSub} numberOfLines={1}>
+                      {type === "aucune"
+                        ? "Sur place"
+                        : livraison > 0
+                          ? `${fmt(livraison)} F`
+                          : "Offerte"}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            ))}
+            </View>
+            {(
+              [
+                { key: "orange", name: "Orange Money" },
+                { key: "mtn", name: "Mobile Money" },
+              ] as const
+            ).map((p) =>
+              renderChoice({
+                key: p.key,
+                // Radio : cercle vide au repos, coche pleine une fois choisi —
+                // l'icone telephone ne disait pas lequel etait selectionne.
+                icon:
+                  network === p.key ? "checkmark-circle" : "ellipse-outline",
+                title: p.name,
+                sub: `${fmt(articlesTotal + livraison)} F`,
+                active: network === p.key,
+                onPress: () => {
+                  if (!isBusy) onNetworkChange?.(p.key);
+                },
+              }),
+            )}
           </View>
         </>
       )}
 
+      {/* PAGE 5 — CONSERVEE mais PLUS ATTEINTE : le parcours s'arrete a la
+          page 4, qui a repris son choix de reseau. On la garde telle quelle
+          pour d'eventuelles evolutions. */}
       {/* PAGE 5 — paiement. COPIE de la page 4 : meme titre, meme description,
           meme rangee de trois cards. La premiere rappelle le montant a regler,
           les deux suivantes deviennent le choix du reseau — la capsule de

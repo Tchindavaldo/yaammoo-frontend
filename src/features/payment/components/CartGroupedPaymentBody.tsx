@@ -33,7 +33,7 @@ interface CartGroupedPaymentBodyProps {
    * 1 = groupage, 2 = type de livraison, 3 = informations, 4 = montants,
    * 5 = recap + paiement.
    */
-  step: 1 | 2 | 3 | 4 | 5;
+  step: 1 | 2 | 3 | 4;
 }
 
 /**
@@ -94,7 +94,7 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
       onOpenExpress={onOpenExpress}
       onOpenVoiceNote={onOpenVoiceNote}
       step={step}
-      stepCount={5}
+      stepCount={4}
       network={network}
       onNetworkChange={onNetworkChange}
       isBusy={isBusy}
@@ -105,9 +105,7 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
             ? "type"
             : step === 3
               ? "infos"
-              : step === 4
-                ? "montants"
-                : "recap"
+              : "montants"
       }
     />
 

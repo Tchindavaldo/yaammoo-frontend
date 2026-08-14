@@ -149,3 +149,22 @@ fermeture est donc retardée par un `closeWithFade` local le temps de l'animatio
 Quand un overlay anime déjà le clavier (`Location`, `Contact`), les deux
 animations tournent côte à côte — drivers différents (layout / natif), elles ne
 peuvent pas être groupées dans un `Animated.parallel`.
+
+---
+
+## 3. Safe-area de la tab bar
+
+La barre d'onglets ne réserve **qu'une fraction** de `insets.bottom` :
+`TAB_BAR_INSET_RATIO` — **0,9 sur Android**, **0,5 sur iOS** — exporté par
+[`src/hooks/useTabBarHeight.ts`](../src/hooks/useTabBarHeight.ts). La prendre en
+entier laissait un grand vide sous les icônes sur iPhone ; Android en garde
+presque tout, ses touches de navigation étant physiquement plus hautes.
+
+Ce ratio est utilisé aux **deux** endroits, qui doivent rester alignés :
+
+| Consommateur | Usage |
+|---|---|
+| [`app/(tabs)/_layout.tsx`](<../app/(tabs)/_layout.tsx>) | `height` et `paddingBottom` de la `tabBarStyle` |
+| `useTabBarHeight()` | hauteur lue par tous les écrans pour leur `paddingBottom` de liste et leurs barres flottantes (`cart.tsx`, `CartStatusPanel`, `OrderManagePanel`, `notifications.tsx`, `index.tsx`) |
+
+Modifier l'un sans l'autre décale le contenu par rapport à la barre.

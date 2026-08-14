@@ -204,7 +204,7 @@ export const CartGroupedDeliverySheet: React.FC<
    * la livraison ne tient plus d'un bloc : 1 = groupage, 2 = type de livraison,
    * 3 = informations, 4 = montants, 5 = recapitulatif et paiement.
    */
-  const [step, setStep] = React.useState<1 | 2 | 3 | 4 | 5>(1);
+  const [step, setStep] = React.useState<1 | 2 | 3 | 4>(1);
 
   // Fermeture : la prochaine ouverture repart de la premiere page.
   React.useEffect(() => {
@@ -235,6 +235,23 @@ export const CartGroupedDeliverySheet: React.FC<
    * `autoFocus` demande le clavier au montage, sans lui l'effet la refermerait
    * dans l'intervalle ou il n'est pas encore visible.
    */
+  /**
+   * Transaction TERMINEE : la capsule se ferme. En echec, le hook repasse a
+   * « total » et la capsule se rouvrait aussitot en saisie au lieu de se
+   * retirer — le drapeau retient qu'une transaction etait partie.
+   */
+  const detailWasBusy = React.useRef(false);
+  React.useEffect(() => {
+    if (isBusy) {
+      detailWasBusy.current = true;
+      return;
+    }
+    if (detailWasBusy.current) {
+      detailWasBusy.current = false;
+      setDetailCapsule(false);
+    }
+  }, [isBusy]);
+
   const detailKbWasVisible = React.useRef(false);
   React.useEffect(() => {
     if (!detailCapsule) {
@@ -273,8 +290,14 @@ export const CartGroupedDeliverySheet: React.FC<
    * fermeture du clavier les faisait disparaitre d'un coup, en pleine descente
    * du clavier : le calque reste monte le temps du fondu, puis se retire.
    */
+  /**
+   * Capsule de l'ancienne page 5, CONSERVEE mais plus atteinte : le parcours
+   * s'arrete a la page 4, dont la capsule dediee porte desormais la saisie.
+   * Sans ce `false`, les deux s'affichaient l'une sur l'autre.
+   */
   const showPayOverlay =
-    step === 5 &&
+    false &&
+    step === 4 &&
     (paymentState === "input" ||
       paymentState === "waiting" ||
       paymentState === "ussd_sent" ||
@@ -487,39 +510,31 @@ export const CartGroupedDeliverySheet: React.FC<
             {step > 1 && !isBusy && (
               <TouchableOpacity
                 style={styles.backBtn}
-                onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4 | 5)}
+                onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4)}
                 activeOpacity={0.85}
               >
                 <Ionicons name="arrow-back" size={20} color={C.ink} />
               </TouchableOpacity>
             )}
-            {step < 5 ? (
+            {step < 4 ? (
               <TouchableOpacity
                 style={[styles.primaryBtn, styles.actionRowPrimary]}
-                onPress={() =>
-                  // Etape 4 : « Continuer » ouvre la capsule dediee (le rendu
-                  // demande). Les autres pages avancent normalement.
-                  step === 4
-                    ? setDetailCapsule(true)
-                    : setStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5)
-                }
+                onPress={() => setStep((s) => (s + 1) as 1 | 2 | 3 | 4)}
                 activeOpacity={0.9}
               >
                 <Text style={styles.primaryBtnLabel}>Continuer</Text>
               </TouchableOpacity>
             ) : (
-              /* La capsule PREND LA PLACE du bouton « Continuer » : meme
-                 hauteur, meme largeur restante, le footer ne bouge pas d'une
-                 page a l'autre. Seule la saisie du numero y figure — le montant
-                 est deja sur les cards au-dessus.
+              /* DERNIERE page : la capsule PREND LA PLACE du bouton, comme
+                 l'ancienne page 5 — meme hauteur, meme largeur restante, le
+                 footer ne bouge pas d'une page a l'autre.
 
-                 Ce n'est PAS un champ de saisie : c'est un leurre. Deux
-                 `TextInput` voulaient le focus, celui d'ici passait derriere le
-                 clavier et le curseur y restait invisible. Le tap ouvre la
-                 capsule flottante, seul vrai champ, qui prend le focus. */
+                 Ce n'est PAS un champ de saisie : c'est un leurre. Le tap ouvre
+                 la capsule flottante (voile a hauteur du sheet, capsule
+                 centree), seul vrai champ, qui prend le focus. */
               <TouchableOpacity
                 style={styles.payCapsule}
-                onPress={() => setPaymentState("input")}
+                onPress={() => setDetailCapsule(true)}
                 disabled={isBusy || isProcessing}
                 activeOpacity={0.85}
               >
@@ -535,7 +550,7 @@ export const CartGroupedDeliverySheet: React.FC<
                 </Text>
                 <TouchableOpacity
                   style={styles.payCapsuleBtn}
-                  onPress={handlePay}
+                  onPress={() => setDetailCapsule(true)}
                   disabled={isBusy || isProcessing}
                   activeOpacity={0.85}
                 >
@@ -667,6 +682,8 @@ export const CartGroupedDeliverySheet: React.FC<
         paymentState={paymentState === "total" ? "input" : paymentState}
         ussdMessage={ussdMessage}
         onError={onError}
+        network={network}
+        onNetworkChange={onNetworkChange}
         keyboardHeight={keyboardHeight}
         isKeyboardVisible={isKeyboardVisible}
         translateY={translateY}

@@ -101,10 +101,9 @@ export const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 13.5,
     fontWeight: "600",
-    // Le champ occupe toute la hauteur : la zone tactile suit la capsule.
-    height: "100%",
-    padding: 0,
   },
+  /** Numero pas encore saisi : le libelle se lit comme un placeholder. */
+  payCapsulePlaceholder: { color: "rgba(255,255,255,0.5)" },
   /**
    * Fond de repli de la capsule flottante quand le flou natif manque
    * (Android < 12) : sans lui, le contenu du sheet reste lisible au travers.

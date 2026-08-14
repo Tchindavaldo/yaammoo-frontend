@@ -6,12 +6,12 @@ import React from "react";
 import {
   ActivityIndicator,
   Animated,
+  Easing,
   Keyboard,
   Modal,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -40,12 +40,6 @@ const VEIL_TOP_GAP = 10;
  * repoussait la capsule d'une trentaine de pixels pour rien.
  */
 const CAPSULE_KEYBOARD_GAP = 8;
-
-/**
- * `AppBlurView` anime : le voile du bas suit la hauteur du clavier, qui est une
- * `Animated.Value`.
- */
-const AnimatedBlur = Animated.createAnimatedComponent(AppBlurView);
 
 interface CartGroupedDeliverySheetProps {
   visible: boolean;
@@ -220,13 +214,122 @@ export const CartGroupedDeliverySheet: React.FC<
    * flottante se demonte aussitot (elle ne redescend pas — le champ du footer
    * garde le numero), et un futur focus pourra la faire remonter.
    *
-   * Le retour est IMMEDIAT : le champ du footer garde le focus, il n'y a plus
-   * de passage de relais a attendre.
+   * Le garde `keyboardWasVisible` est indispensable : `autoFocus` demande le
+   * clavier au montage de la capsule, et sans lui l'effet la refermerait dans
+   * l'intervalle ou il n'est pas encore visible.
    */
+  const keyboardWasVisible = React.useRef(false);
   React.useEffect(() => {
-    if (!isKeyboardVisible && paymentState === "input")
-      setPaymentState("total");
+    if (paymentState !== "input") {
+      keyboardWasVisible.current = false;
+      return;
+    }
+    if (isKeyboardVisible) keyboardWasVisible.current = true;
+    else if (keyboardWasVisible.current) setPaymentState("total");
   }, [isKeyboardVisible, paymentState, setPaymentState]);
+
+  /**
+   * Sortie EN FONDU de la capsule flottante et de son voile. Sans elle, la
+   * fermeture du clavier les faisait disparaitre d'un coup, en pleine descente
+   * du clavier : le calque reste monte le temps du fondu, puis se retire.
+   */
+  const showPayOverlay =
+    step === 5 &&
+    (paymentState === "input" ||
+      paymentState === "waiting" ||
+      paymentState === "ussd_sent" ||
+      paymentState === "success" ||
+      paymentState === "success_created");
+  const payOverlayAnim = React.useRef(new Animated.Value(0)).current;
+  const [payOverlayMounted, setPayOverlayMounted] = React.useState(false);
+
+  /**
+   * Glissement d'ENTREE de la capsule, distinct du fondu. Le clavier s'ouvrant
+   * d'emblee (`autoFocus`), la capsule etait deja en haut quand le fondu se
+   * terminait : on ne la voyait pas monter. Cette valeur reste a 1 a la sortie,
+   * qui doit rester un fondu sur place.
+   */
+  const payEnterAnim = React.useRef(new Animated.Value(0)).current;
+
+  /**
+   * Dernier etat REELLEMENT affiche par la capsule. Pendant le fondu de sortie,
+   * `paymentState` est deja repasse a « total » : sans ce gel, la capsule
+   * basculait sur l'ecran « Total a payer » en pleine disparition, alors qu'il
+   * n'a plus lieu d'etre ici (le montant est sur les cards).
+   */
+  const lastPayState = React.useRef<CartPaymentState>("input");
+
+  /**
+   * Hauteur clavier GELEE pour la capsule. Son `bottom` suit `keyboardHeight` :
+   * a la fermeture, elle redescendait donc avec le clavier pendant son fondu.
+   * On memorise la derniere hauteur vue en saisie et on l'utilise telle quelle
+   * pendant la sortie — le fondu se joue sur place, sans translation.
+   */
+  const veilKb = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    if (!showPayOverlay) return; // Sortie : on cesse de suivre, la valeur reste.
+    // Ouverture : la capsule s'ouvre clavier ferme (tap sur le leurre du
+    // footer). On repart de 0, sinon le voile s'affiche d'emblee a la hauteur
+    // gelee de la fermeture precedente au lieu de grandir avec le clavier.
+    veilKb.setValue(0);
+    const id = (keyboardHeight as Animated.Value).addListener(({ value }) => {
+      veilKb.setValue(value);
+    });
+    return () => (keyboardHeight as Animated.Value).removeListener(id);
+  }, [showPayOverlay, keyboardHeight, veilKb]);
+
+  React.useEffect(() => {
+    if (showPayOverlay) lastPayState.current = paymentState;
+  }, [showPayOverlay, paymentState]);
+
+  React.useEffect(() => {
+    if (showPayOverlay) {
+      setPayOverlayMounted(true);
+      // Glissement depuis le bas, joue a chaque ouverture.
+      payEnterAnim.setValue(0);
+      Animated.timing(payEnterAnim, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: false,
+      }).start();
+      Animated.timing(payOverlayAnim, {
+        toValue: 1,
+        duration: 160,
+        // `useNativeDriver: false` OBLIGATOIRE : cette opacite cohabite, dans
+        // le meme noeud de style, avec `height` / `bottom` calcules sur
+        // `keyboardHeight`. En natif, Animated basculerait tout le noeud —
+        // donc `keyboardHeight` — cote natif, et le ressort JS qui la pilote
+        // dans `cart.tsx` planterait.
+        useNativeDriver: false,
+      }).start();
+      return;
+    }
+    // Sortie : simple fondu. La capsule reste accrochee au clavier et redescend
+    // avec lui — la figer sur place supprimait ce mouvement.
+    Animated.timing(payOverlayAnim, {
+      toValue: 0,
+      // Sortie DOUCE : le clavier natif descend vite et on ne peut pas le
+      // ralentir ; on etale le fondu pour que le retrait ne paraisse pas sec.
+      duration: 240,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false,
+    }).start(({ finished }) => {
+      if (finished) setPayOverlayMounted(false);
+    });
+  }, [showPayOverlay, payOverlayAnim, payEnterAnim]);
+
+  // Sortie ETAGEE : la capsule s'efface en premier (fin de course de l'anim),
+  // le voile la suit — on la voit partir, puis le flou se retire.
+  const capsuleOpacity = payOverlayAnim.interpolate({
+    inputRange: [0.15, 1],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
+  const veilOpacity = payOverlayAnim.interpolate({
+    inputRange: [0, 0.9],
+    outputRange: [0, 1],
+    extrapolate: "clamp",
+  });
 
   React.useEffect(() => {
     if (visible) {
@@ -366,26 +469,28 @@ export const CartGroupedDeliverySheet: React.FC<
               /* La capsule PREND LA PLACE du bouton « Continuer » : meme
                  hauteur, meme largeur restante, le footer ne bouge pas d'une
                  page a l'autre. Seule la saisie du numero y figure — le montant
-                 est deja sur les cards au-dessus. */
-              <View style={styles.payCapsule}>
+                 est deja sur les cards au-dessus.
+
+                 Ce n'est PAS un champ de saisie : c'est un leurre. Deux
+                 `TextInput` voulaient le focus, celui d'ici passait derriere le
+                 clavier et le curseur y restait invisible. Le tap ouvre la
+                 capsule flottante, seul vrai champ, qui prend le focus. */
+              <TouchableOpacity
+                style={styles.payCapsule}
+                onPress={() => setPaymentState("input")}
+                disabled={isBusy || isProcessing}
+                activeOpacity={0.85}
+              >
                 <Ionicons name="call-outline" size={16} color="#fff" />
-                <TextInput
-                  style={styles.payCapsuleInput}
-                  placeholder="Numéro de paiement"
-                  placeholderTextColor="rgba(255,255,255,0.5)"
-                  keyboardType="phone-pad"
-                  value={phone}
-                  onChangeText={onPhoneChange}
-                  editable={!isBusy && !isProcessing}
-                  selectionColor="#ec4913"
-                  cursorColor="#ec4913"
-                  /* Focus : la capsule flottante monte avec le clavier, en
-                     etat « input ». Les deux champs partagent `phone`, la
-                     saisie de l'une se lit sur l'autre. Ce champ GARDE le
-                     focus — se le passer d'un champ a l'autre faisait
-                     clignoter le clavier. */
-                  onFocus={() => setPaymentState("input")}
-                />
+                <Text
+                  style={[
+                    styles.payCapsuleInput,
+                    !phone && styles.payCapsulePlaceholder,
+                  ]}
+                  numberOfLines={1}
+                >
+                  {phone || "Numéro de paiement"}
+                </Text>
                 <TouchableOpacity
                   style={styles.payCapsuleBtn}
                   onPress={handlePay}
@@ -398,7 +503,7 @@ export const CartGroupedDeliverySheet: React.FC<
                     <Ionicons name="arrow-forward" size={17} color="#fff" />
                   )}
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -412,7 +517,7 @@ export const CartGroupedDeliverySheet: React.FC<
           - transaction (attente, USSD, succes).
           Clavier ferme au repos, elle est DEMONTEE net : le champ du bas porte
           deja le numero saisi, la faire redescendre n'apporterait rien. */}
-      {step === 5 && (isBusy || paymentState === "input") && (
+      {payOverlayMounted && (
         <Animated.View
           pointerEvents="box-none"
           style={[sheetStyles.capsuleSlot, { transform: [{ translateY }] }]}
@@ -421,51 +526,87 @@ export const CartGroupedDeliverySheet: React.FC<
             jusqu'au bord superieur de la capsule (sa position + sa hauteur),
             couvrant la zone occupee par le clavier. Rendu AVANT la capsule, il
             passe donc dessous. */}
-          <AnimatedBlur
+          <Animated.View
             pointerEvents="none"
-            intensity={45}
-            tint="dark"
-            fallbackStyle={styles.keyboardVeilFallback}
             style={[
               styles.keyboardVeil,
               {
+                opacity: veilOpacity,
+                /* Comme la capsule, la hauteur est GELEE en sortie : sinon le
+                   voile se retracte avec le clavier et semble partir avant
+                   elle, alors qu'il doit partir apres. */
                 height: Animated.add(
-                  keyboardHeight as any,
+                  veilKb,
                   CAPSULE_BOTTOM_OFFSET +
-                    (isKeyboardVisible
-                      ? CAPSULE_KEYBOARD_GAP
-                      : insets.bottom) +
+                    CAPSULE_KEYBOARD_GAP +
                     CAPSULE_HEIGHT +
                     VEIL_TOP_GAP,
                 ),
               },
             ]}
-          />
+          >
+            <AppBlurView
+              intensity={45}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+              fallbackStyle={styles.keyboardVeilFallback}
+            />
+          </Animated.View>
+          {/* Calque de fondu PROPRE a la capsule : elle s'efface avant le
+              voile, on la voit partir puis le flou se retire. */}
+          <Animated.View
+            pointerEvents="box-none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                opacity: capsuleOpacity,
+                transform: [
+                  {
+                    translateY: payEnterAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [34, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
           <CartPaymentOverlay
             phone={phone}
             onPhoneChange={onPhoneChange}
             onConfirm={guardedConfirm}
             totalAmount={articlesTotal + fraisGroupes}
-            paymentState={paymentState}
+            /* Pendant le fondu de sortie, on rejoue le DERNIER etat affiche :
+               `paymentState` est deja retombe a « total » et la capsule
+               montrait « Total a payer » en pleine disparition. */
+            paymentState={showPayOverlay ? paymentState : lastPayState.current}
             setPaymentState={setPaymentState}
             network={network}
             onNetworkChange={onNetworkChange}
             ussdMessage={ussdMessage}
             onClose={onClose}
             onError={onError}
-            isKeyboardVisible={isKeyboardVisible}
-            /* Pas d'`autoFocus` : le champ du footer garde le focus (les deux
-             partagent `phone`, la saisie s'y reflete). Le lui reprendre
-             refermait puis rouvrait le clavier. */
+            /* TOUJOURS `true` : l'apparence « clavier ouvert » est l'etat par
+               defaut de la capsule dans ce parcours. En repassant a `false` a
+               la fermeture du clavier, elle faisait surgir la croix de
+               fermeture et changeait l'icone du bouton — des elements caches
+               pendant la saisie qui reapparaissaient brutalement. */
+            isKeyboardVisible
+            /* SEUL vrai champ du parcours : il prend le focus des l'ouverture,
+               le footer n'etant qu'un leurre. Plus de concurrence entre deux
+               `TextInput`, donc plus de clignotement ni de curseur invisible. */
+            autoFocus
             /* Android < 12 : pas de flou natif, on opacifie le fond pour que la
              capsule reste lisible. */
             blurFallbackStyle={styles.payCapsuleBlurFallback}
+            /* En sortie on fige la hauteur : sinon la capsule redescend avec le
+               clavier au lieu de disparaitre sur place. */
             bottom={Animated.add(
-              keyboardHeight as any,
-              CAPSULE_BOTTOM_OFFSET +
-                (isKeyboardVisible ? CAPSULE_KEYBOARD_GAP : insets.bottom),
+              veilKb,
+              CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP,
             )}
           />
+          </Animated.View>
         </Animated.View>
       )}
 

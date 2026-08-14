@@ -300,6 +300,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
           <TouchableOpacity
             style={[
               styles.deliveryTypeBtn,
+              localStyles.deliveryTypeBtn,
               delivery.type === "express" && styles.deliveryTypeActive,
             ]}
             onPress={() =>
@@ -345,6 +346,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
           <TouchableOpacity
             style={[
               styles.deliveryTypeBtn,
+              localStyles.deliveryTypeBtn,
               delivery.type === "standard" && styles.deliveryTypeActive,
             ]}
             onPress={() =>
@@ -414,6 +416,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
           <TouchableOpacity
             style={[
               styles.deliveryTypeBtn,
+              localStyles.deliveryTypeBtn,
               delivery.type === "aucune" && styles.deliveryTypeActive,
             ]}
             onPress={() =>
@@ -447,7 +450,8 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
 
 const localStyles = StyleSheet.create({
   deliveryContainer: {
-    height: 250,
+    height: 235,
+    paddingTop: 0,
     // Neutralise le `flex: 1` herite : le bloc mesure ses deux zones, il ne
     // s'etire pas jusqu'au bouton.
     flex: 0,
@@ -474,10 +478,12 @@ const localStyles = StyleSheet.create({
   },
   // Respiration au-dessus de « Select Type », mesuree ici et nulle part ailleurs.
   bottomZone: {
-    paddingBottom: 10,
+    paddingBottom: 1,
     justifyContent: "flex-end",
     // backgroundColor: "rgba(255, 0, 0, 0.12)",
   },
+  // Cards « Select Type » : bordure plus fine/discrete que celle du checkout.
+  deliveryTypeBtn: { borderWidth: 1, borderColor: "#e2e8f0" },
   // Titre « Select Type » resserre sur sa grille : l'original reserve 16 px
   // sous le filet, trop dans ce sheet ou la place est comptee.
   sectionHeader: { paddingBottom: 4, marginBottom: 12 },

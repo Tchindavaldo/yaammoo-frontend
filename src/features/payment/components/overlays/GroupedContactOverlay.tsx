@@ -67,6 +67,8 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
       showSubscription.remove();
       hideSubscription.remove();
     };
+    // keyboardHeight est une Animated.Value stable (useRef).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup.
@@ -235,7 +237,6 @@ const styles = StyleSheet.create({
     elevation: 10,
     borderWidth: 1,
     borderColor: "#f1f5f9",
-    // backgroundColor: "red",
     height: 400,
   },
   header: {

@@ -50,6 +50,8 @@ export const GroupedVoiceNoteOverlay: React.FC<
         clearInterval(timerInterval.current);
       }
     };
+    // Cleanup au demontage uniquement : on veut les valeurs du moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -78,6 +80,8 @@ export const GroupedVoiceNoteOverlay: React.FC<
         clearInterval(timerInterval.current);
       }
     }
+    // pulseAnim est une Animated.Value stable (useRef).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   async function startRecording() {

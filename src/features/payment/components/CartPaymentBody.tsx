@@ -138,7 +138,7 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
       {/* Cards de mode de livraison (design d'origine), en haut de la zone.
           LECTURE SEULE : le mode est fixé commande par commande dans le panier
           — la card active est celle réellement payée. */}
-      <Text style={styles.label}>MODE DE RÉCEPTION</Text>
+      {/* <Text style={styles.label}>MODE DE RÉCEPTION</Text> */}
       <View style={styles.modes}>
         {modes.map((m) => {
           const active = m.count > 0;
@@ -164,8 +164,8 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
         })}
       </View>
 
-      <Text style={[styles.label, styles.labelSpaced]}>RÉCAPITULATIF</Text>
-      <View style={styles.recap}>
+      {/* <Text style={[styles.label, styles.labelSpaced]}>RÉCAPITULATIF</Text> */}
+      <View style={[styles.recap, styles.labelSpaced]}>
         <View style={styles.recapRow}>
           <Text style={styles.recapLabel}>
             Total commande{" "}

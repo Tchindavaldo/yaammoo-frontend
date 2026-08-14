@@ -372,9 +372,17 @@ Au clic sur **Buy**, deux overlays s'affichent simultanément par-dessus le shee
   revient à `input`, overlays ouverts, seul le toast top affiche l'erreur.
 - `resetCheckout()` remet `paymentState` à `network_select`.
 
-### Ouverture du sheet
-- Modal en `animationType="fade"` (voile noir en fondu) + sheet en spring slide-up
+### Ouverture / fermeture du sheet
+- Modal en `animationType="fade"` (voile noir en fondu) + sheet en slide-up
   interne (`Animated.Value`), au lieu du `slide` natif qui faisait monter le voile.
+- ⚠️ **`EXIT_DISTANCE` = hauteur d'écran, PAS `SHEET_HEIGHT`.** `SHEET_HEIGHT`
+  (384) ne sert qu'à la hauteur du conteneur ; la hauteur **réelle** du sheet la
+  dépasse (safe area `insets.bottom` + contenu débordant). Translater de
+  `SHEET_HEIGHT` laissait le bas du sheet à l'écran, figé, jusqu'au démontage —
+  la fermeture paraissait **caler** juste avant la fin. Vaut pour `CheckoutSheet`
+  et `CartCheckoutSheet`.
+- Entrée et sortie en `timing` borné (280ms / 240ms) : depuis un écran entier, un
+  `spring` mettrait visiblement plus longtemps à monter.
 - Toast `paymentError` rendu **dans** le Modal (1er plan, au-dessus du voile).
 
 ---

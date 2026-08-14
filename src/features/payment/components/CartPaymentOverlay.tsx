@@ -4,11 +4,13 @@ import React from "react";
 import {
   Animated,
   Keyboard,
+  StyleProp,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
@@ -25,10 +27,33 @@ interface CartPaymentOverlayProps {
   onNetworkChange: (n: "orange" | "mtn") => void;
   ussdMessage?: string | null;
   onClose: () => void;
+  /**
+   * Glyphe du bouton rond de gauche. Defaut `close` (fermeture du sheet) ;
+   * le parcours groupe passe `arrow-back`, ce bouton y ramenant a l'etape
+   * precedente au lieu de fermer.
+   */
+  closeIcon?: keyof typeof Ionicons.glyphMap;
+  /**
+   * Glyphe du bouton de validation. Defaut `arrow-forward-outline` ; le
+   * parcours groupe passe un check, le paiement y etant la derniere etape.
+   */
+  confirmIcon?: keyof typeof Ionicons.glyphMap;
   onError?: (error: string) => void;
   /** Position depuis le bas (au-dessus de la tab bar / clavier). */
   bottom: Animated.AnimatedInterpolation<number> | number;
   isKeyboardVisible: boolean;
+  /**
+   * Curseur place d'emblee dans le champ (opt-in, defaut `false` : le flux du
+   * panier ouvre la capsule a l'etat « total », ou il n'y a rien a saisir).
+   * Le parcours groupe l'active — sa capsule ne s'ouvre QUE sur le focus du
+   * champ du footer, le curseur doit donc y etre deja.
+   */
+  autoFocus?: boolean;
+  /**
+   * Opacifie le fond quand le flou natif manque (Android < 12), pour que la
+   * capsule reste lisible au lieu d'un simple voile.
+   */
+  blurFallbackStyle?: StyleProp<ViewStyle>;
 }
 
 /**
@@ -48,13 +73,18 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
   onNetworkChange,
   ussdMessage,
   onClose,
+  closeIcon = "close",
+  confirmIcon = "arrow-forward-outline",
   onError,
   bottom,
   isKeyboardVisible,
+  autoFocus = false,
+  blurFallbackStyle,
 }) => {
   const [isProcessing, setIsProcessing] = React.useState(false);
   // Fondu du contenu lors d'un changement d'étape.
   const contentOpacity = React.useRef(new Animated.Value(1)).current;
+
 
   React.useEffect(() => {
     contentOpacity.setValue(0);
@@ -86,7 +116,12 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
 
   return (
     <Animated.View style={[styles.capsule, { bottom }]}>
-      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView
+        intensity={80}
+        tint="dark"
+        style={StyleSheet.absoluteFill}
+        fallbackStyle={blurFallbackStyle}
+      />
       <AnimatedBorderGlow
         active={
           paymentState === "waiting" ||
@@ -127,7 +162,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
           <>
             {!isKeyboardVisible && (
               <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
-                <Ionicons name="close" size={16} color="white" />
+                <Ionicons name={closeIcon} size={16} color="white" />
               </TouchableOpacity>
             )}
             <View style={styles.inputWrapper}>
@@ -144,6 +179,11 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
                 keyboardType="phone-pad"
                 value={phone}
                 onChangeText={onPhoneChange}
+                autoFocus={autoFocus}
+                /* Curseur explicite : la teinte systeme (bleu iOS) se voyait a
+                   peine sur le fond sombre de la capsule. */
+                selectionColor="#ec4913"
+                cursorColor="#ec4913"
               />
             </View>
             <TouchableOpacity
@@ -155,7 +195,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
                 <ActivityIndicator size="small" color="white" />
               ) : (
                 <Ionicons
-                  name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"}
+                  name={isKeyboardVisible ? "chevron-down" : confirmIcon}
                   size={16}
                   color="white"
                 />

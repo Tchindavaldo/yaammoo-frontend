@@ -31,7 +31,7 @@ export const C = {
  * le passage de l'une à l'autre faisait sauter le sheet. Le contenu qui déborde
  * scrolle à l'intérieur.
  */
-export const SHEET_HEIGHT = 515;
+export const SHEET_HEIGHT = 270;
 
 export const styles = StyleSheet.create({
   scrim: {

@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Easing,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Toast } from "../../../components/Toast";
@@ -70,7 +71,12 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   // (et son contenu) fait un slide-up net — jamais d'opacité sur le contenu.
   const insets = useSafeAreaInsets();
   const SHEET_HEIGHT = 384;
-  const sheetTranslate = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  // Distance de sortie : un ECRAN, pas SHEET_HEIGHT. La hauteur reelle du sheet
+  // depasse la constante (safe area + contenu qui deborde), donc translater de
+  // SHEET_HEIGHT laissait le bas du sheet a l'ecran, fige, jusqu'au demontage —
+  // d'ou l'impression de calage juste avant la fin de la fermeture.
+  const EXIT_DISTANCE = Dimensions.get("window").height;
+  const sheetTranslate = useRef(new Animated.Value(EXIT_DISTANCE)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   // Garde le Modal monté le temps de l'animation de sortie.
   const [modalMounted, setModalMounted] = useState(visible);
@@ -79,11 +85,13 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     if (visible) {
       setModalMounted(true);
       Animated.parallel([
-        Animated.spring(sheetTranslate, {
+        // `timing` borne et non `spring` : le depart se fait desormais d'un
+        // ecran entier, un ressort mettrait visiblement plus longtemps a monter.
+        Animated.timing(sheetTranslate, {
           toValue: 0,
+          duration: 380,
+          easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
-          tension: 70,
-          friction: 12,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 1,
@@ -94,13 +102,13 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     } else {
       Animated.parallel([
         Animated.timing(sheetTranslate, {
-          toValue: SHEET_HEIGHT,
-          duration: 240,
+          toValue: EXIT_DISTANCE,
+          duration: 320,
           useNativeDriver: true,
         }),
         Animated.timing(backdropOpacity, {
           toValue: 0,
-          duration: 240,
+          duration: 320,
           useNativeDriver: true,
         }),
       ]).start(({ finished }) => {

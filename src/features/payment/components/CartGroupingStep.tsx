@@ -92,7 +92,7 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
     >
       <Text style={styles.primaryBtnLabel}>Tout livrer ensemble</Text>
     </TouchableOpacity>
-    {/* 
+    {/*
     <Text style={styles.hint}>
       Toutes vos commandes seront livrées à la même adresse, au même moment.
     </Text> */}

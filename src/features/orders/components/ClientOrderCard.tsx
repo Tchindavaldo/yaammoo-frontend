@@ -304,14 +304,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
   },
 );
 
-const qtyBtnMain = {
-  backgroundColor: "black",
-  width: 24,
-  height: 24,
-  borderRadius: 12,
-  justifyContent: "center" as const,
-  alignItems: "center" as const,
-};
+ClientOrderCard.displayName = "ClientOrderCard";
 
 const styles = StyleSheet.create({
   wrapper: {

@@ -147,6 +147,8 @@ export class FastFood {
     public name: string,
     public image: string,
     public designIndex?: number,
+    public logo?: string,
+    public coverImage?: string,
   ) {}
 }
 

@@ -75,6 +75,8 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
       showSubscription.remove();
       hideSubscription.remove();
     };
+    // keyboardHeight est une Animated.Value stable (useRef).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Pas d'auto-refresh GPS à l'ouverture : si une position est déjà enregistrée
@@ -126,7 +128,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
       });
       const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
       setLocalAddress(coords);
-    } catch (error) {
+    } catch {
       alert(
         "Error fetching location or timeout. Using last known if available.",
       );
@@ -137,7 +139,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
           const coords = `${last.coords.latitude.toFixed(6)}, ${last.coords.longitude.toFixed(6)}`;
           setLocalAddress(coords);
         }
-      } catch (e) {}
+      } catch {}
     } finally {
       setIsLocating(false);
     }

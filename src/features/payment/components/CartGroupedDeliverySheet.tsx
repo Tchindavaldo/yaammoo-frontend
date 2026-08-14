@@ -310,7 +310,7 @@ export const CartGroupedDeliverySheet: React.FC<
       toValue: 0,
       // Sortie DOUCE : le clavier natif descend vite et on ne peut pas le
       // ralentir ; on etale le fondu pour que le retrait ne paraisse pas sec.
-      duration: 240,
+      duration: 850,
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start(({ finished }) => {
@@ -571,41 +571,43 @@ export const CartGroupedDeliverySheet: React.FC<
               },
             ]}
           >
-          <CartPaymentOverlay
-            phone={phone}
-            onPhoneChange={onPhoneChange}
-            onConfirm={guardedConfirm}
-            totalAmount={articlesTotal + fraisGroupes}
-            /* Pendant le fondu de sortie, on rejoue le DERNIER etat affiche :
+            <CartPaymentOverlay
+              phone={phone}
+              onPhoneChange={onPhoneChange}
+              onConfirm={guardedConfirm}
+              totalAmount={articlesTotal + fraisGroupes}
+              /* Pendant le fondu de sortie, on rejoue le DERNIER etat affiche :
                `paymentState` est deja retombe a « total » et la capsule
                montrait « Total a payer » en pleine disparition. */
-            paymentState={showPayOverlay ? paymentState : lastPayState.current}
-            setPaymentState={setPaymentState}
-            network={network}
-            onNetworkChange={onNetworkChange}
-            ussdMessage={ussdMessage}
-            onClose={onClose}
-            onError={onError}
-            /* TOUJOURS `true` : l'apparence « clavier ouvert » est l'etat par
+              paymentState={
+                showPayOverlay ? paymentState : lastPayState.current
+              }
+              setPaymentState={setPaymentState}
+              network={network}
+              onNetworkChange={onNetworkChange}
+              ussdMessage={ussdMessage}
+              onClose={onClose}
+              onError={onError}
+              /* TOUJOURS `true` : l'apparence « clavier ouvert » est l'etat par
                defaut de la capsule dans ce parcours. En repassant a `false` a
                la fermeture du clavier, elle faisait surgir la croix de
                fermeture et changeait l'icone du bouton — des elements caches
                pendant la saisie qui reapparaissaient brutalement. */
-            isKeyboardVisible
-            /* SEUL vrai champ du parcours : il prend le focus des l'ouverture,
+              isKeyboardVisible
+              /* SEUL vrai champ du parcours : il prend le focus des l'ouverture,
                le footer n'etant qu'un leurre. Plus de concurrence entre deux
                `TextInput`, donc plus de clignotement ni de curseur invisible. */
-            autoFocus
-            /* Android < 12 : pas de flou natif, on opacifie le fond pour que la
+              autoFocus
+              /* Android < 12 : pas de flou natif, on opacifie le fond pour que la
              capsule reste lisible. */
-            blurFallbackStyle={styles.payCapsuleBlurFallback}
-            /* En sortie on fige la hauteur : sinon la capsule redescend avec le
+              blurFallbackStyle={styles.payCapsuleBlurFallback}
+              /* En sortie on fige la hauteur : sinon la capsule redescend avec le
                clavier au lieu de disparaitre sur place. */
-            bottom={Animated.add(
-              veilKb,
-              CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP,
-            )}
-          />
+              bottom={Animated.add(
+                veilKb,
+                CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP,
+              )}
+            />
           </Animated.View>
         </Animated.View>
       )}

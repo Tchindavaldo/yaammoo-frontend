@@ -26,6 +26,7 @@ import {
   CAPSULE_BOTTOM_OFFSET,
   styles,
 } from "./CartGroupedDeliverySheet.styles";
+import { CartGroupedDetailCapsule } from "./CartGroupedDetailCapsule";
 import { CartGroupedPaymentBody } from "./CartGroupedPaymentBody";
 import { CartPaymentOverlay } from "./CartPaymentOverlay";
 import { C, styles as sheetStyles } from "./CartPaymentSheet.styles";
@@ -210,6 +211,44 @@ export const CartGroupedDeliverySheet: React.FC<
   }, [visible]);
 
   /**
+   * Capsule DEDIEE de l'etape 4 (« Le detail de votre commande ») : sa propre
+   * copie autonome (`CartGroupedDetailCapsule`), ouverte par « Continuer ».
+   * L'etape 5 et sa capsule d'origine sont inchangees.
+   */
+  const [detailCapsule, setDetailCapsule] = React.useState(false);
+
+  // Paiement parti : plus de fermeture au tap ni de changement de reseau.
+  const isBusy =
+    paymentState === "waiting" ||
+    paymentState === "ussd_sent" ||
+    paymentState === "success" ||
+    paymentState === "success_created";
+
+  React.useEffect(() => {
+    if (step !== 4) setDetailCapsule(false);
+  }, [step]);
+
+  /**
+   * Clavier referme alors que la capsule de l'etape 4 etait ouverte : elle se
+   * retire en fondu, comme celle de l'etape 5. Le garde est indispensable —
+   * `autoFocus` demande le clavier au montage, sans lui l'effet la refermerait
+   * dans l'intervalle ou il n'est pas encore visible.
+   */
+  const detailKbWasVisible = React.useRef(false);
+  React.useEffect(() => {
+    if (!detailCapsule) {
+      detailKbWasVisible.current = false;
+      return;
+    }
+    // Transaction partie : la capsule et son voile RESTENT — c'est la qu'on
+    // suit l'attente, le message USSD puis le succes. Le clavier peut se
+    // fermer, la capsule ne doit pas partir avec lui.
+    if (isBusy) return;
+    if (isKeyboardVisible) detailKbWasVisible.current = true;
+    else if (detailKbWasVisible.current) setDetailCapsule(false);
+  }, [detailCapsule, isKeyboardVisible, isBusy]);
+
+  /**
    * Clavier referme alors qu'on saisissait : on repasse au repos. La capsule
    * flottante se demonte aussitot (elle ne redescend pas — le champ du footer
    * garde le numero), et un futur focus pourra la faire remonter.
@@ -310,7 +349,7 @@ export const CartGroupedDeliverySheet: React.FC<
       toValue: 0,
       // Sortie DOUCE : le clavier natif descend vite et on ne peut pas le
       // ralentir ; on etale le fondu pour que le retrait ne paraisse pas sec.
-      duration: 850,
+      duration: 450,
       easing: Easing.out(Easing.quad),
       useNativeDriver: false,
     }).start(({ finished }) => {
@@ -321,12 +360,12 @@ export const CartGroupedDeliverySheet: React.FC<
   // Sortie ETAGEE : la capsule s'efface en premier (fin de course de l'anim),
   // le voile la suit — on la voit partir, puis le flou se retire.
   const capsuleOpacity = payOverlayAnim.interpolate({
-    inputRange: [0.15, 1],
+    inputRange: [0.5, 1],
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
   const veilOpacity = payOverlayAnim.interpolate({
-    inputRange: [0, 0.9],
+    inputRange: [0, 0.5],
     outputRange: [0, 1],
     extrapolate: "clamp",
   });
@@ -373,13 +412,6 @@ export const CartGroupedDeliverySheet: React.FC<
   const fraisGroupes = groups.reduce((s, g) => Math.max(s, g.livraison), 0);
   /** Total des articles du lot, hors livraison (source de verite du backend). */
   const articlesTotal = groups.reduce((s, g) => s + g.articles, 0);
-
-  // Paiement parti : plus de fermeture au tap ni de changement de reseau.
-  const isBusy =
-    paymentState === "waiting" ||
-    paymentState === "ussd_sent" ||
-    paymentState === "success" ||
-    paymentState === "success_created";
 
   if (!mounted) return null;
 
@@ -460,7 +492,13 @@ export const CartGroupedDeliverySheet: React.FC<
             {step < 5 ? (
               <TouchableOpacity
                 style={[styles.primaryBtn, styles.actionRowPrimary]}
-                onPress={() => setStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5)}
+                onPress={() =>
+                  // Etape 4 : « Continuer » ouvre la capsule dediee (le rendu
+                  // demande). Les autres pages avancent normalement.
+                  step === 4
+                    ? setDetailCapsule(true)
+                    : setStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5)
+                }
                 activeOpacity={0.9}
               >
                 <Text style={styles.primaryBtnLabel}>Continuer</Text>
@@ -546,11 +584,14 @@ export const CartGroupedDeliverySheet: React.FC<
             ]}
           >
             <AppBlurView
-              intensity={45}
+              intensity={65}
               tint="dark"
               style={StyleSheet.absoluteFill}
               fallbackStyle={styles.keyboardVeilFallback}
             />
+            {/* Teinte posee SUR le flou : l'intensite seule ne noircit pas
+                assez, la zone du clavier restait claire. */}
+            <View pointerEvents="none" style={styles.keyboardVeilTint} />
           </Animated.View>
           {/* Calque de fondu PROPRE a la capsule : elle s'efface avant le
               voile, on la voit partir puis le flou se retire. */}
@@ -611,6 +652,20 @@ export const CartGroupedDeliverySheet: React.FC<
           </Animated.View>
         </Animated.View>
       )}
+
+      {/* Capsule DEDIEE de l'etape 4 — copie autonome, independante de celle
+          de l'etape 5 (qui reste inchangee juste au-dessus). */}
+      <CartGroupedDetailCapsule
+        visible={detailCapsule}
+        phone={phone}
+        onPhoneChange={onPhoneChange}
+        onConfirm={guardedConfirm}
+        paymentState={paymentState === "total" ? "input" : paymentState}
+        ussdMessage={ussdMessage}
+        onError={onError}
+        keyboardHeight={keyboardHeight}
+        translateY={translateY}
+      />
 
       <CartGroupedDeliveryOverlays
         open={overlay}

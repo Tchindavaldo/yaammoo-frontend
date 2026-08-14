@@ -127,7 +127,12 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
   },
   /** Android < 12 : sans flou natif, le voile se rabat sur un fond sombre. */
-  keyboardVeilFallback: { backgroundColor: "rgba(0,0,0,0.55)" },
+  keyboardVeilFallback: { backgroundColor: "rgba(0,0,0,0.72)" },
+  /** Teinte sombre posee sur le flou, qui seul ne noircit pas assez. */
+  keyboardVeilTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
   /** Bouton rond de validation, cale dans la capsule. */
   payCapsuleBtn: {
     width: 40,

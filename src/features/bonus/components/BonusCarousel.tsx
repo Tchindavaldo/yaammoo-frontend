@@ -6,11 +6,11 @@ import React, {
   useRef,
 } from "react";
 import {
-  StyleSheet,
   Animated,
   Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  StyleSheet,
 } from "react-native";
 import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
 import { BonusCard } from "./BonusCard";
@@ -104,9 +104,12 @@ const BonusCarouselBase = forwardRef<BonusCarouselHandle, BonusCarouselProps>(
         snapToInterval={INTERVAL}
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: SIDE }}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false },
+        )}
         onMomentumScrollEnd={onMomentumEnd}
-        scrollEventThrottle={16}
+        scrollEventThrottle={32}
       >
         {bonuses.map((bonus, i) => {
           return (

@@ -12,6 +12,7 @@ import { StyleSheet } from "react-native";
 import { HapticTab } from "@/components/haptic-tab";
 import { Theme as Colors } from "@/src/theme";
 import { useColorScheme } from "@/src/hooks/use-color-scheme";
+import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -19,7 +20,13 @@ export default function TabLayout() {
 
   // Hauteur de base de la navbar + safe area bottom
   const TAB_BAR_BASE_HEIGHT = 58;
-  const tabBarHeight = TAB_BAR_BASE_HEIGHT + insets.bottom;
+  /**
+   * Part de la safe area basse REELLEMENT reservee — ratio partage avec
+   * `useTabBarHeight`, dont dependent tous les ecrans (Android en prend plus,
+   * ses touches de navigation etant plus hautes).
+   */
+  const bottomInset = insets.bottom * TAB_BAR_INSET_RATIO;
+  const tabBarHeight = TAB_BAR_BASE_HEIGHT + bottomInset;
 
   return (
     <Tabs
@@ -53,7 +60,7 @@ export default function TabLayout() {
           bottom: 0,
           left: 0,
           right: 0,
-          paddingBottom: insets.bottom,
+          paddingBottom: bottomInset,
           paddingTop: 8,
         },
         tabBarItemStyle: {

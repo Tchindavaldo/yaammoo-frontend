@@ -13,7 +13,7 @@ import {
 import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import type { CartPaymentState } from "../hooks/useCartPayment";
-import { SHEET_HEIGHT } from "./CartPaymentSheet.styles";
+import { GROUPED_SHEET_HEIGHT } from "./CartGroupedDeliverySheet.styles";
 
 /**
  * COPIE DEDIEE et AUTONOME de la capsule flottante du parcours groupe
@@ -187,8 +187,8 @@ export const CartGroupedDetailCapsule: React.FC<
    * il suit le clavier comme avant.
    */
   const veilFloored = veilRaw.interpolate({
-    inputRange: [0, SHEET_HEIGHT, SHEET_HEIGHT + 1],
-    outputRange: [SHEET_HEIGHT, SHEET_HEIGHT, SHEET_HEIGHT + 1],
+    inputRange: [0, GROUPED_SHEET_HEIGHT, GROUPED_SHEET_HEIGHT + 1],
+    outputRange: [GROUPED_SHEET_HEIGHT, GROUPED_SHEET_HEIGHT, GROUPED_SHEET_HEIGHT + 1],
     // Au-dela du seuil, la hauteur continue de suivre le clavier a l'identique.
     extrapolateRight: "extend",
     extrapolateLeft: "clamp",
@@ -214,7 +214,7 @@ export const CartGroupedDetailCapsule: React.FC<
    * son ouverture au lieu de sauter. Aucune des animations existantes
    * (`enterAnim`, `anim`, suivi du clavier) n'est touchee.
    */
-  const CENTERED_BOTTOM = (SHEET_HEIGHT - CAPSULE_HEIGHT) / 2;
+  const CENTERED_BOTTOM = (GROUPED_SHEET_HEIGHT - CAPSULE_HEIGHT) / 2;
   const ANCHORED = CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP;
   const capsuleBottom = Animated.add(
     // Ancrage d'origine, attenue par `centerAnim`.

@@ -1,5 +1,12 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { C, SHEET_HEIGHT } from "./CartPaymentSheet.styles";
+
+/**
+ * Hauteur du sheet GROUPE. Android gagne 60 px : la barre de navigation y mange
+ * la safe area basse, et les cinq pages s'y retrouvaient a l'etroit.
+ */
+export const GROUPED_SHEET_HEIGHT =
+  SHEET_HEIGHT + (Platform.OS === "android" ? 40 : 0);
 
 /** Hauteur reservee en bas du sheet pour la capsule de paiement (etape 3). */
 export const CAPSULE_SPACE = 0;
@@ -16,7 +23,7 @@ export const styles = StyleSheet.create({
    * Hauteur PLEINE : le sheet porte de nouveau un en-tete (son titre), il n'a
    * donc plus a retrancher la place que celui-ci occupait.
    */
-  sheet: { height: SHEET_HEIGHT },
+  sheet: { height: GROUPED_SHEET_HEIGHT },
   /** Titre du sheet — seul en-tete, ni sous-titre ni croix. */
   sheetTitle: {
     marginBottom: 14,

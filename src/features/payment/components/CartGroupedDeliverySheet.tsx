@@ -9,6 +9,7 @@ import {
   Easing,
   Keyboard,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -442,7 +443,10 @@ export const CartGroupedDeliverySheet: React.FC<
           {
             // Footer resserre : la safe area suffit a degager la nav bar, on
             // n'y ajoute qu'un filet de marge (le sheet est deja court).
-            paddingBottom: 6 + insets.bottom * 0.5,
+            // Android degage ses touches de navigation ; iOS garde la moitie de
+            // la safe area, comme a l'origine.
+            paddingBottom:
+              6 + insets.bottom * (Platform.OS === "android" ? 1.1 : 0.5),
             transform: [{ translateY }],
           },
         ]}

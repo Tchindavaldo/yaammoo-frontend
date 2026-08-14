@@ -1,5 +1,4 @@
 import { Theme } from "@/src/theme";
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
@@ -16,8 +15,8 @@ import {
   GLASS_BORDER,
 } from "./BonusGlassCard";
 import { BonusProgressBar } from "./BonusProgressBar";
-import { BonusSparkline } from "./BonusSparkline";
 import { BonusUsageRing } from "./BonusUsageRing";
+import { ClaimRowSlide } from "./ClaimRowSlide";
 
 interface BonusCardProps {
   bonus: Bonus;
@@ -25,16 +24,18 @@ interface BonusCardProps {
   onClaim: (bonus: Bonus) => void;
   /** Image de fond de la carte principale (URI locale). null = asset par défaut. */
   cardImage?: string | null;
+  /** Bascule l'armement du bonus (relayé à `ClaimRowSlide`). */
+  onActivate?: (bonus: Bonus) => void;
+  /** Requête d'armement en vol pour CE bonus : le bouton passe en spinner. */
+  arming?: boolean;
+  /** Action tentée hors période de campagne : remonte le motif au parent. */
+  onBlocked?: (reason: string) => void;
 }
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
-const fmtK = (n: number) =>
-  n >= 1000 ? `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `${n}`;
-const numOrDash = (n?: number) => (typeof n === "number" ? fmt(n) : "—");
 
 const DARK = Theme.colors.dark;
 const GRAY = Theme.colors.gray[600];
-const GRAY_L = Theme.colors.gray[400];
 const LIGHT = "#ffffff";
 // Glassmorphism : c'est BonusGlassCard qui porte le fond (blur + blanc très
 // translucide). Les cartes elles-mêmes ne peignent plus rien, sinon l'aplat
@@ -52,8 +53,6 @@ const BORDER = CARD_IMAGE_BG ? GLASS_BORDER : "rgba(0,0,0,0.01)";
 // GUTTER MOINS son propre padding interne : marge + padding = 16.
 const GUTTER = Theme.spacing.md;
 const CARD_PAD = 10;
-const CLAIM_PAD = 12;
-const MINI_PAD = 10;
 
 /** Titre principal de la carte : l'émetteur du bonus (fastfood ou yaammoo). */
 const issuerText = (bonus: Bonus): string => bonus.fastFoodName || "yaammoo";
@@ -125,12 +124,21 @@ const durationText = (bonus: Bonus) => {
 /**
  * Carte bonus : design minimaliste / épuré — carte blanche, bordure fine + ombre
  * douce, couleur du bonus en accent. Rendue dans le carrousel de `UserBonusSheet`.
+ *
+ * Porte aussi, EN BAS, la ligne de réclamation (`ClaimRowSlide`) : elle vivait
+ * auparavant dans la carte de pagination du footer, figée sur le bonus
+ * courant — elle est désormais DANS ce composant, donc dans le même
+ * `ScrollView` natif du carrousel, et slide avec la carte au lieu de sauter
+ * d'un coup au changement d'index.
  */
 export const BonusCard: React.FC<BonusCardProps> = ({
   bonus,
   claimStatus = "idle",
   onClaim,
   cardImage,
+  onActivate,
+  arming,
+  onBlocked,
 }) => {
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
@@ -238,84 +246,22 @@ export const BonusCard: React.FC<BonusCardProps> = ({
             />
           )}
         </View>
+
+        {/* Ligne de réclamation DANS la carte : elle slide donc avec elle, dans
+            le même ScrollView natif du carrousel — plus de piste dupliquée
+            dans le footer, plus de risque de désynchro. */}
+        <View style={styles.claimDivider} />
+        <ClaimRowSlide
+          bonus={bonus}
+          claimStatus={claimStatus}
+          onClaim={onClaim}
+          onActivate={onActivate}
+          arming={arming}
+          onBlocked={onBlocked}
+        />
       </BonusGlassCard>
 
       {/* Ligne mini-cartes (Proposés / Mes reçus / Distribués) retirée. */}
-    </View>
-  );
-};
-
-/** Panneau stats propre à ce bonus (Commandes / Montant) */
-const StatsPanel = ({
-  stats,
-  color,
-}: {
-  stats: NonNullable<Bonus["bonusStats"]>;
-  color: string;
-}) => {
-  return (
-    <View style={stylesStats.row}>
-      <BonusGlassCard
-        style={[stylesStats.block, stylesStats.blockOrders]}
-        radius={16}
-      >
-        <View style={[stylesStats.head, stylesStats.headStart]}>
-          <Ionicons name="receipt-outline" size={14} color={color} />
-          <Text style={stylesStats.title}>Commandes</Text>
-        </View>
-        <View style={stylesStats.cells}>
-          {/* Première colonne calée à gauche : son texte tombe sur la même
-                verticale que le header et les autres cartes. */}
-          <View style={[stylesStats.cell, stylesStats.cellStart]}>
-            <Text style={[stylesStats.cellValue, { color }]}>
-              {stats.day.count}
-            </Text>
-            <Text style={stylesStats.cellKey}>Jour</Text>
-          </View>
-          <View style={stylesStats.cell}>
-            <Text style={[stylesStats.cellValue, { color }]}>
-              {stats.week.count}
-            </Text>
-            <Text style={stylesStats.cellKey}>Sem.</Text>
-          </View>
-          <View style={stylesStats.cell}>
-            <Text style={[stylesStats.cellValue, { color }]}>
-              {stats.month.count}
-            </Text>
-            <Text style={stylesStats.cellKey}>Mois</Text>
-          </View>
-        </View>
-      </BonusGlassCard>
-      <BonusGlassCard
-        style={[stylesStats.block, stylesStats.blockAmount]}
-        radius={16}
-      >
-        <View style={stylesStats.head}>
-          <Ionicons name="cash-outline" size={14} color={color} />
-          <Text style={stylesStats.title}>Montant</Text>
-        </View>
-        <View style={stylesStats.cells}>
-          <View style={stylesStats.cell}>
-            <Text style={[stylesStats.cellValue, { color }]}>
-              {fmtK(stats.day.amount)}
-            </Text>
-            <Text style={stylesStats.cellKey}>Jour</Text>
-          </View>
-          <View style={stylesStats.cell}>
-            <Text style={[stylesStats.cellValue, { color }]}>
-              {fmtK(stats.week.amount)}
-            </Text>
-            <Text style={stylesStats.cellKey}>Sem.</Text>
-          </View>
-          {/* Dernière colonne calée à droite : symétrique de la première. */}
-          <View style={[stylesStats.cell, stylesStats.cellEnd]}>
-            <Text style={[stylesStats.cellValue, { color }]}>
-              {fmtK(stats.month.amount)}
-            </Text>
-            <Text style={stylesStats.cellKey}>Mois</Text>
-          </View>
-        </View>
-      </BonusGlassCard>
     </View>
   );
 };
@@ -325,48 +271,6 @@ const Info = ({ label, value }: { label: string; value: string }) => (
     <Text style={styles.infoLabel}>{label}</Text>
     <Text style={styles.infoValue}>{value}</Text>
   </View>
-);
-
-const MiniStat = ({
-  color,
-  variant,
-  title,
-  sub,
-  value,
-  ratio,
-}: {
-  color: string;
-  variant: number;
-  title: string;
-  sub: string;
-  value: string;
-  ratio: number;
-}) => (
-  <BonusGlassCard style={styles.mini} radius={16}>
-    <Text style={styles.miniTitle} numberOfLines={1}>
-      {title}
-    </Text>
-    <Text style={styles.miniSub} numberOfLines={1}>
-      {sub}
-    </Text>
-    <View style={styles.miniChart}>
-      <BonusSparkline color={color} variant={variant} height={34} />
-    </View>
-    <View style={styles.miniBottom}>
-      <View style={styles.miniBar}>
-        <View
-          style={[
-            styles.miniBarFill,
-            {
-              width: `${Math.max(6, Math.min(100, ratio * 100))}%`,
-              backgroundColor: color,
-            },
-          ]}
-        />
-      </View>
-      <Text style={styles.miniValue}>{value}</Text>
-    </View>
-  </BonusGlassCard>
 );
 
 const styles = StyleSheet.create({
@@ -398,6 +302,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 10,
   },
+  claimDivider: {
+    height: 1,
+    backgroundColor: "rgba(0,0,0,0.06)",
+  },
   issuerBlock: { flex: 1 },
   issuerValue: { color: DARK, fontSize: 24, fontWeight: "800", marginTop: 2 },
   statusPill: {
@@ -415,100 +323,4 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   infoLabel: { color: GRAY, fontSize: 12, fontWeight: "500" },
   infoValue: { color: DARK, fontSize: 16, fontWeight: "800", marginTop: 2 },
-  miniRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginHorizontal: GUTTER - MINI_PAD,
-  },
-  mini: {
-    flex: 1,
-    backgroundColor: CARD_BG,
-    borderRadius: 16,
-    padding: MINI_PAD,
-    gap: 2,
-    borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
-    borderColor: BORDER,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  miniTitle: { color: DARK, fontSize: 13, fontWeight: "700" },
-  miniSub: { color: GRAY_L, fontSize: 10, fontWeight: "500" },
-  miniChart: { height: 34, marginVertical: 4 },
-  miniBottom: { flexDirection: "row", alignItems: "center", gap: 6 },
-  miniBar: {
-    flex: 1,
-    height: 5,
-    borderRadius: 3,
-    // Plus foncé que CARD_BG (gray[100]), sinon la piste s'y confond.
-    backgroundColor: TRACK,
-    overflow: "hidden",
-  },
-  miniBarFill: { height: "100%", borderRadius: 3 },
-  miniValue: { color: DARK, fontSize: 13, fontWeight: "800" },
-
-  // Ligne de réclamation : 2 cartes distinctes (infos à gauche, action à droite).
-  // Variante identifiants : le verre porte l'apparence de la carte, le
-  // Touchable interne se contente de la disposition + de la zone de tap.
-});
-
-// Styles du panneau stats propre à chaque bonus
-const stylesStats = StyleSheet.create({
-  // Les deux blocs sont des cartes autonomes (comme les mini-cartes de la ligne
-  // 3) : pas de carte englobante, sinon un niveau d'imbrication de plus ajoute
-  // son propre padding et casse le rythme vertical des autres lignes.
-  row: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    marginHorizontal: GUTTER - MINI_PAD,
-    gap: 10,
-  },
-  block: {
-    gap: 4,
-    padding: MINI_PAD,
-    backgroundColor: CARD_BG,
-    borderRadius: 16,
-    borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
-    borderColor: BORDER,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  // Commandes : 2 colonnes → moins large. Montant : 3 colonnes (Jour/Sem./Mois)
-  // et des valeurs plus longues ("19,1k") → part plus généreuse.
-  blockOrders: { flex: 4 },
-  blockAmount: { flex: 5 },
-  head: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    // Les deux titres commencent à gauche, au-dessus de leur 1re colonne.
-    justifyContent: "flex-start",
-  },
-  headStart: { justifyContent: "flex-start" },
-  title: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: GRAY,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  cells: {
-    flexDirection: "row",
-    marginTop: 4,
-    // Espaces égaux entre colonnes (et non des tiers centrés) : les valeurs
-    // respirent de la même façon quel que soit le nombre de colonnes.
-    justifyContent: "space-between",
-  },
-  cell: { alignItems: "flex-start" },
-  // Colonnes extrêmes : calées sur leur bord (et non centrées dans leur tiers)
-  // pour tomber sur la verticale de texte commune aux autres cartes.
-  cellStart: { alignItems: "flex-start" },
-  cellEnd: { alignItems: "flex-end" },
-  cellValue: { fontSize: 18, fontWeight: "800", color: DARK },
-  cellKey: { fontSize: 10, color: GRAY, marginTop: 1 },
 });

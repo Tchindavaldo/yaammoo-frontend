@@ -105,7 +105,7 @@ export const CartFilterChipsRow: React.FC<CartFilterChipsRowProps> = ({
               fontSize: 12,
               fontWeight: "bold",
               letterSpacing: 0.4,
-              maxWidth: 140,
+              maxWidth: 115,
             }}
             numberOfLines={1}
           >
@@ -114,7 +114,7 @@ export const CartFilterChipsRow: React.FC<CartFilterChipsRowProps> = ({
                 heure se suffisent a elles-memes (« Express », « 12h »). */}
             {!active
               ? LABELS[c.kind]
-              : c.kind === "zone"
+              : c.kind === "zone" && c.value !== "Retrait en boutique"
                 ? `Zone ${c.value}`
                 : c.value}
           </Text>

@@ -38,6 +38,13 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
   const articles = groups.reduce((s, g) => s + g.articles, 0);
   const livraison = groups.reduce((s, g) => s + g.livraison, 0);
   const total = groups.reduce((s, g) => s + g.total, 0);
+  /**
+   * Retrait en boutique : `livraison` vaut 0 parce qu'il n'y a AUCUNE course a
+   * facturer, pas parce qu'elle est offerte. Les deux cas partagent le meme
+   * montant nul, donc on distingue via le type — sinon "0 F" s'affichait
+   * "Offerte" comme un vrai bonus livraison.
+   */
+  const isPickupOnly = groups.every((g) => g.type !== "express" && g.type !== "time");
 
   /**
    * En-tete : `LIVRAISON · ZONE · HEURE` (ou `· EXPRESS` a la place de l'heure
@@ -85,7 +92,6 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
           celle du recap fixe du panier). */}
       {!inlineHeader && (
         <View style={styles.headerRow}>
-          <Ionicons name="location" size={12} color="#64748b" />
           <Text style={styles.headerText} numberOfLines={1}>
             {header}
           </Text>
@@ -105,10 +111,12 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
                 footValue,
                 livraison > 0
                   ? { color: "#ec4913" }
-                  : { color: "#16a34a", fontSize: 11 },
+                  : isPickupOnly
+                    ? undefined
+                    : { color: "#16a34a", fontSize: 11 },
               ]}
             >
-              {livraison > 0 ? fmt(livraison) : "Offerte"}
+              {livraison > 0 ? fmt(livraison) : isPickupOnly ? "0 F" : "Offerte"}
             </Text>
             <Text style={footLabel}>COURSE</Text>
           </View>
@@ -151,7 +159,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
             onPress={() => onPay(groups)}
             style={styles.payBtn}
           >
-            <Ionicons name="card-outline" size={14} color="#475569" />
+            <Ionicons name="card-outline" size={14} color="#fff" />
             <Text style={styles.payText}>commander</Text>
           </TouchableOpacity>
         )}
@@ -221,14 +229,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
+    backgroundColor: "#0f172a",
     paddingHorizontal: 13,
     height: 34,
     borderRadius: 17,
   },
-  payText: { color: "#334155", fontSize: 12, fontWeight: "600" },
+  payText: { color: "#fff", fontSize: 12, fontWeight: "600" },
 });
 
 // Libelle discret (petites capitales espacees), valeur mise en avant dessous.

@@ -11,10 +11,10 @@ calculent **en direct** à partir des commandes (`OrderContext`).
 (`SHEET_HEIGHT = 400`), réduite à l'essentiel :
 
 1. **Carte principale** du bonus courant (`BonusCard` dans le carrousel) —
-   récompense, chip de statut, description, progression, Début/Fin/Durée ;
-2. **Carte de pagination** du bas, intégrale, qui porte les **deux** lignes :
-   la ligne de réclamation (`BonusClaimRow`) **et** la ligne de pagination
-   (galerie de mini-cartes à gauche + panneau « héro » à droite).
+   récompense, chip de statut, description, progression, Début/Fin/Durée,
+   **et la ligne de réclamation** (`ClaimRowSlide`) EN BAS de la carte ;
+2. **Carte de pagination** du bas — la ligne de pagination seule (galerie de
+   mini-cartes à gauche + panneau « héro » à droite).
 
 Cartes blanches (`BonusCard`) : **bordure fine** + ombre très douce, couleur du
 bonus en accent. Navigation au **swipe** du carrousel ou au **tap** sur une
@@ -103,15 +103,16 @@ src/features/bonus/
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
 └── components/
     ├── UserBonusSheet.tsx        # Coquille : BOTTOM SHEET (hauteur fixe 400) — carrousel + carte de pagination bas
-    ├── BonusCarousel.tsx         # Carrousel centré (forwardRef goTo, onIndexChange, peek voisins) — remplit la hauteur
-    ├── BonusPagerInfo.tsx        # Colonne droite pagination — panneau « héro » : n° géant en filigrane, icône+émetteur+reste, nom, statut, jauge de position
+    ├── BonusCarousel.tsx         # Carrousel centré (forwardRef goTo, onIndexChange, peek voisins) — remplit la hauteur ; relaie onActivate/arming/onBlocked à CardComponent
+    ├── BonusPagerInfo.tsx        # Colonne droite pagination — panneau « héro », rendu en PISTE carrousel (n° géant, icône+émetteur+reste, nom, statut, jauge)
     ├── BonusGalleryCard.tsx      # Mini-carte de la galerie de pagination : fond + barre de progression interpolés sur scrollX (sans bordure)
     ├── gallery.constants.ts      # Dimensions de la galerie (largeur/gap/pas/radius)
-    ├── BonusClaimRow.tsx         # Ligne de réclamation du bonus courant (statut + boutons Réclamer / Profil / Compte)
+    ├── ClaimRowSlide.tsx         # Ligne de réclamation d'UN bonus (statut + boutons Réclamer / Profil / Compte / anneau) — rendue DANS BonusCard, en bas
+    ├── claimRowText.ts           # Dérivation pure icône/titre/description de ClaimRowSlide (extrait pour respecter R4)
     ├── BonusCredentialsSheet.tsx # Bottom sheet des identifiants livrés (profil, code, email, mot de passe — copiables)
     ├── BonusUploadToast.tsx      # Verdict d'envoi de preuve (succès/échec) affiché hors de la sheet — monté par BonusProvider
-    ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes)
-    ├── BonusCard.tsx             # Carte bonus : carte blanche, bordure fine + ombre douce, couleur du bonus en accent
+    ├── BonusSparkline.tsx        # Petit graphique sparkline (tendance commandes) — réserve, non branché
+    ├── BonusCard.tsx             # Carte bonus (carte blanche, bordure fine + ombre douce, couleur en accent) + ClaimRowSlide en bas
     ├── BonusGlassCard.tsx        # Fond « verre » des cartes (blur + blanc translucide) — CARD_IMAGE_BG / CARD_BG_COLOR
     ├── BonusPageBackground.tsx   # Fond de page + `prefetchBonusBackground()` (préchargé au boot, cf. app/_layout.tsx)
     ├── BonusProgressBar.tsx      # Barre de progression animée réutilisable
@@ -203,6 +204,69 @@ mini-carte (`goToBonus`), `scrollX` traverse toutes les cartes intermédiaires
 pendant l'animation — un `jumpTarget` (ref) fait ignorer ces étapes au listener,
 sinon le titre et la ligne de réclamation défileraient en accéléré jusqu'à la
 destination.
+
+> **Panneau héro (galerie de droite) : vrai carrousel, même principe que la
+> carte du haut (`BonusCarousel`).** Le contenu ENTIER d'un bonus (numéro en
+> filigrane + icône + émetteur + nom + statut) est rendu dans une PISTE
+> (`TextSlide` × N, `bonuses.length * PANEL_W` de large) : la piste translate
+> en bloc sur `scrollX`, exactement comme le `ScrollView` du carrousel
+> principal. Le slide suivant est physiquement à côté du courant et entre dans
+> le cadre au même rythme que celui-ci en sort — pas de fondu, pas de calcul
+> de voisin en JS.
+>
+> **Couleur d'icône/filigrane PAR SLIDE, pas depuis le bonus courant du
+> parent** : `accent` était auparavant `colors[index]`, calculé UNE FOIS dans
+> `UserBonusSheet` pour le bonus centré — l'icône et le filigrane restaient
+> donc calés sur cette couleur pendant tout le slide, ne changeant que d'un
+> coup au changement d'`index`. `TextSlide` calcule maintenant sa PROPRE
+> couleur (`getBonusDescriptor(bonus.type).color`, le bonus de CE slide) et
+> son propre `iconBg` (interpolé sur `scrollX` via sa `position`, même
+> logique que `BonusGalleryCard`) : chaque slide porte sa couleur, la piste
+> entière glisse en un mouvement cohérent. `BonusPagerInfo` n'a donc plus
+> besoin des props `index`/`accent` — retirées de son interface et de l'appel
+> dans `UserBonusSheet` (`colors` y est devenu mort et a été retiré aussi).
+> Seule la largeur de jauge (`gaugeWidth`, dérivée de `scrollX` global — pas
+> d'un bonus précis) reste calculée une fois dans le parent.
+>
+> `statusOf()` (fonction pure, dupliquée volontairement depuis
+> `useBonusStatus` — un hook ne peut pas être appelé dans la boucle `.map`
+> des slides, R16) donne le libellé/couleur de statut à chaque slide.
+> Structure/CSS de chaque slide identiques au design d'origine (icône+émetteur,
+> nom, statut+jauge sur 3 lignes) — aucune hauteur ajoutée.
+>
+> **Un seul mouvement animé, pas un par élément.** Badge icône et jauge
+> avaient chacun leur propre interpolation `scrollX` (fond de l'icône,
+> largeur de la jauge) en plus de la translation de la piste — visuellement,
+> ils semblaient glisser chacun à leur rythme au lieu de suivre le bloc en un
+> seul mouvement cohérent. `TextSlide` est maintenant un contenu **100 %
+> statique** (aucun `Animated.*`, aucune interpolation) : fond d'icône fixé
+> sur `${accent}1f`, jauge fixée sur sa fraction finale
+> (`position / (total - 1)`). Seul `trackTranslateX` (dans le parent, sur
+> `trackInner`) est animé — c'est lui, et lui seul, qui porte tout le contenu
+> du slide en bloc.
+
+> **Ligne de réclamation : déplacée DANS `BonusCard`, plus de piste séparée.**
+> Elle vivait « hors du carrousel » (dans la carte de pagination du footer),
+> figée sur `bonuses[index]` — son contenu (icône, titre, description, bouton)
+> sautait d'un coup au changement d'index au lieu de suivre le doigt. Une
+> première tentative avait reconstruit une piste `scrollX`-synchronisée dédiée
+> (`BonusClaimRow`) — **abandonnée** : mécanique dupliquée fragile (mesure de
+> largeur via `onLayout`, calcul de gap manuel) qui cassait l'app en pratique.
+>
+> La solution retenue est plus simple : `ClaimRowSlide` (le contenu, ex
+> `BonusClaimRowBase`) est rendue **directement dans `BonusCard`**, en bas de
+> chaque carte du carrousel principal — donc DANS le vrai `ScrollView` natif
+> de `BonusCarousel`, qui gère déjà tout le slide (transform, snap, momentum)
+> pour le reste de la carte. Elle suit le carrousel automatiquement, sans
+> aucune interpolation `scrollX` à écrire pour elle : un seul mécanisme de
+> slide au lieu de deux qui doivent rester synchronisés.
+>
+> `BonusCardComponent` (le type de carte injectable dans `BonusCarousel`)
+> porte désormais `onActivate`/`arming`/`onBlocked`, relayés par carte comme
+> `claimStatus`/`onClaim` déjà présents. `UserBonusSheet` les passe au
+> carrousel au lieu de les passer à une `BonusClaimRow` dédiée (fichier
+> supprimé). La carte de pagination du bas ne porte plus que la galerie +
+> `BonusPagerInfo`.
 
 Le carrousel reste en
 `useNativeDriver: false` car le parent interpole `scrollX` vers des couleurs, ce que

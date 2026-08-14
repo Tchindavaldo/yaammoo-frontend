@@ -22,6 +22,9 @@ export type BonusCardComponent = React.ComponentType<{
   bonus: Bonus;
   claimStatus?: BonusClaimStatus;
   onClaim: (bonus: Bonus) => void;
+  onActivate?: (bonus: Bonus) => void;
+  arming?: boolean;
+  onBlocked?: (reason: string) => void;
 }>;
 
 interface BonusCarouselProps {
@@ -36,6 +39,10 @@ interface BonusCarouselProps {
   CardComponent?: BonusCardComponent;
   /** Relayé tel quel à chaque carte. */
   cardImage?: string | null;
+  /** Relayés tels quels à chaque carte — ligne de réclamation intégrée. */
+  onActivate?: (bonus: Bonus) => void;
+  arming?: Record<string, boolean>;
+  onBlocked?: (reason: string) => void;
 }
 
 /** Méthodes impératives exposées au parent (piloter les flèches de pagination). */
@@ -65,6 +72,9 @@ const BonusCarouselBase = forwardRef<BonusCarouselHandle, BonusCarouselProps>(
       onIndexChange,
       CardComponent = BonusCard,
       cardImage,
+      onActivate,
+      arming,
+      onBlocked,
     },
     ref,
   ) => {
@@ -106,6 +116,9 @@ const BonusCarouselBase = forwardRef<BonusCarouselHandle, BonusCarouselProps>(
                 claimStatus={claims[bonus.id]}
                 onClaim={onClaim}
                 cardImage={cardImage}
+                onActivate={onActivate}
+                arming={!!arming?.[bonus.id]}
+                onBlocked={onBlocked}
               />
             </Animated.View>
           );

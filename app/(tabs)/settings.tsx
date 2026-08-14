@@ -1,4 +1,6 @@
 import { Config } from '@/src/api/config';
+import { APP_VERSION } from '@/src/api/version';
+import { TAB_BAR_INSET_RATIO } from '@/src/hooks/useTabBarHeight';
 import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
@@ -88,8 +90,11 @@ export default function SettingsScreen() {
   // bande grise disgracieuse. On la retire tant que la modale V2 est ouverte,
   // puis on restaure le style par défaut à la fermeture (navbar inchangée sinon).
   useEffect(() => {
+    // MEME calcul que `app/(tabs)/_layout.tsx` / `useTabBarHeight` : la navbar
+    // ne doit pas changer de hauteur d'un onglet a l'autre.
+    const bottomInset = insets.bottom * TAB_BAR_INSET_RATIO;
     const base = {
-      height: 58 + insets.bottom,
+      height: 58 + bottomInset,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       backgroundColor: 'rgba(255, 255, 255, 0.7)',
@@ -98,7 +103,7 @@ export default function SettingsScreen() {
       bottom: 0,
       left: 0,
       right: 0,
-      paddingBottom: insets.bottom,
+      paddingBottom: bottomInset,
       paddingTop: 8,
     };
     navigation.setOptions({
@@ -499,10 +504,13 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* App version */}
+        {/* App version — reflete TOUJOURS `app.json` (via `APP_VERSION`), jamais
+            une valeur en dur a remettre a jour manuellement. Annee courante idem. */}
         <View style={styles.versionBlock}>
-          <Text style={styles.versionText}>Yaammoo v1.0.0</Text>
-          <Text style={styles.versionSubtext}>© 2025 Yaammoo. Tous droits réservés.</Text>
+          <Text style={styles.versionText}>Yaammoo v{APP_VERSION}</Text>
+          <Text style={styles.versionSubtext}>
+            © {new Date().getFullYear()} Yaammoo. Tous droits réservés.
+          </Text>
         </View>
       </ScrollView>
 

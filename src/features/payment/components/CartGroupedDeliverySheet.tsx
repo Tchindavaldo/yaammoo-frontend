@@ -217,6 +217,12 @@ export const CartGroupedDeliverySheet: React.FC<
    * la page de groupage (1) n'a pas de sens. Le parcours demarre directement
    * sur le type de livraison (2) et le retour s'arrete la.
    */
+  /**
+   * "Deja groupe" : toutes les commandes du lot tombent dans un seul
+   * `CartZoneGroup` — meme type + zone + creneau (`groupCartOrdersByZone`,
+   * qui regroupe deja sur ces criteres). Des lors, la page groupage (1) n'a
+   * rien a arbitrer : on demarre direct sur le type de livraison (2).
+   */
   const singleOrder = groups.length <= 1;
 
   /**
@@ -226,9 +232,14 @@ export const CartGroupedDeliverySheet: React.FC<
    */
   const [step, setStep] = React.useState<1 | 2 | 3 | 4>(singleOrder ? 2 : 1);
 
-  // Fermeture : la prochaine ouverture repart de la premiere page pertinente.
+  /**
+   * Le sheet reste MONTE en permanence (anim de sortie) : recalculer `step`
+   * seulement a la fermeture le figeait sur la valeur de l'ouverture
+   * precedente. On le repositionne aussi a l'OUVERTURE, sur les `groups` du
+   * nouveau lot.
+   */
   React.useEffect(() => {
-    if (!visible) setStep(singleOrder ? 2 : 1);
+    setStep(singleOrder ? 2 : 1);
   }, [visible, singleOrder]);
 
   /**
@@ -605,7 +616,7 @@ export const CartGroupedDeliverySheet: React.FC<
                   ]}
                   numberOfLines={1}
                 >
-                  {phone || "Entrez le Numéro de paiement"}
+                  {phone || "Numéro de paiement"}
                 </Text>
                 <TouchableOpacity
                   style={styles.payCapsuleBtn}

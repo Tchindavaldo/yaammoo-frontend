@@ -112,6 +112,14 @@
     - impacte la page 2 de EditBoutiquePanel/CreateBoutiquePanel + buildDeliveryPayload
     - vérifier l'affichage résultant dans CheckoutExpressOverlay (checkout)
 
+[ ] ⚠️ IMPORTANT — gérer les heures de récupération de commande "sur place"
+    - au passage de commande, option livraison "Sur place" : la card Heure
+      (ajoutée dans CartDeliverySegmentStep, page infos) est posée mais n'ouvre
+      encore rien
+    - définir/brancher les créneaux horaires de retrait en boutique (source :
+      horaires du fastfood ou créneau dédié au retrait sur place)
+    - à croiser avec la tâche "gestion livraison surplace" plus haut
+
 [ ] tester les perfs des listes de commandes avec un gros volume
     - pages concernées : liste cmd côté user ET côté fastfood (marchand)
     - jeu de test : 100 puis 200 cmd sur UN SEUL statut, pour voir si ça rame

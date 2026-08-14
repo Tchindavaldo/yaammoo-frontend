@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { useFocusEffect } from "expo-router";
 import {
   StyleSheet,
   FlatList,
@@ -401,6 +402,20 @@ export default function OrdersScreen() {
   // Hauteur mesurée du recap fixe du bas : la liste doit la réserver.
   const [filterBarHeight, setFilterBarHeight] = useState(0);
 
+  /**
+   * Retour sur l'onglet panier : les filtres (zone/période/heure + boutique)
+   * ne doivent pas persister d'une visite à l'autre — on repart d'une vue
+   * complète du panier a chaque fois qu'on quitte puis revient sur la page.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      setZoneFilter(null);
+      setPeriodeFilter(null);
+      setHeureFilter(null);
+      setSelectedFastFoodId(null);
+    }, []),
+  );
+
   /** Libellé de période d'une commande : "Express" / "Créneau" / "Sur place". */
   const periodeOf = (o: any) =>
     o?.delivery?.status !== true
@@ -694,13 +709,17 @@ export default function OrdersScreen() {
           />
 
           {/* Chips de filtre FIXES : dans le meme bloc absolu que le filtre
-              boutique, donc mesures dans `filterHeight` et jamais scrolles. */}
+              boutique, donc mesures dans `filterHeight` et jamais scrolles.
+              Un seul fastfood : `CartFastFoodFilter` se masque (rend `null`)
+              et les chips collent au header — on ajoute alors un peu d'air. */}
           {pendingToBuy.length > 0 && (
-            <CartFilterChipsRow
-              chips={filterChips}
-              onOpen={setOpenFilterKind}
-              onClear={(kind) => setFilterValue(kind, null)}
-            />
+            <View style={cartFastFoods.length <= 1 ? { paddingTop: 10 } : undefined}>
+              <CartFilterChipsRow
+                chips={filterChips}
+                onOpen={setOpenFilterKind}
+                onClear={(kind) => setFilterValue(kind, null)}
+              />
+            </View>
           )}
         </View>
 
@@ -844,7 +863,14 @@ export default function OrdersScreen() {
       <CartGroupedDeliverySheet
         visible={!orderToDelete && groupedDelivery !== null}
         groups={groupedDelivery || []}
-        onSplit={() => setGroupedDelivery(null)}
+        onSplit={() => {
+          setGroupedDelivery(null);
+          setToast({
+            message:
+              "Utilisez les filtres pour isoler les commandes à livrer dans la même zone et le même créneau, ou validez-les individuellement.",
+            type: "success",
+          });
+        }}
         fastFoodId={
           (groupedDelivery?.[0]?.entries[0]?.order as any)?.fastFoodId ||
           selectedFastFoodId ||

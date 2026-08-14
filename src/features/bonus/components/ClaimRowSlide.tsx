@@ -17,8 +17,9 @@ import { useCampaignPhase } from "../hooks/useCampaignPhase";
 import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
 import { BonusCredentialsSheet } from "./BonusCredentialsSheet";
 import { BonusUsageRing } from "./BonusUsageRing";
+import { claimDescOf, claimIconOf, claimTitleOf } from "./claimRowText";
 
-interface BonusClaimRowProps {
+export interface ClaimRowSlideProps {
   bonus: Bonus;
   claimStatus?: BonusClaimStatus;
   onClaim: (bonus: Bonus) => void;
@@ -42,9 +43,7 @@ const GRAY = Theme.colors.gray[600];
 const LIGHT = "#ffffff";
 
 /** Hauteur fixe de la ligne : titre (19) + 2 lignes de description (30) + marge. */
-const CLAIM_ROW_H = 52;
-
-const fmt = (n: number) => n.toLocaleString("fr-FR");
+export const CLAIM_ROW_H = 52;
 
 /** Infos d'utilisation du code (faites / restantes) si un plafond est défini. */
 const usageInfo = (bonus: Bonus) => {
@@ -59,13 +58,16 @@ const usageInfo = (bonus: Bonus) => {
 };
 
 /**
- * Ligne de réclamation du bonus COURANT : message de statut à gauche, action à
- * droite (Réclamer / Voir les identifiants / anneau d'utilisation).
+ * Ligne de réclamation d'UN bonus : message de statut à gauche, action à
+ * droite (Réclamer / Voir les identifiants / anneau d'utilisation). Rendue
+ * une fois par bonus dans la piste de `BonusClaimRow` (carrousel) — chaque
+ * instance porte son propre état local (`copied`, `sheetOpen`), aucune fuite
+ * entre bonus.
  *
- * Vit hors du carrousel — dans la carte commune du bas, avec la pagination —
- * et suit donc le bonus sélectionné plutôt que de défiler avec les cartes.
+ * Les dérivations purement TEXTUELLES (icône/titre/description) vivent dans
+ * `claimRowText.ts`, extraites pour respecter le plafond de 500 lignes (R4).
  */
-const BonusClaimRowBase: React.FC<BonusClaimRowProps> = ({
+const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
   bonus,
   claimStatus = "idle",
   onClaim,
@@ -148,82 +150,24 @@ const BonusClaimRowBase: React.FC<BonusClaimRowProps> = ({
   const hasReward = fields.length > 0;
   const inactiveWithReward = isInactive && hasReward;
 
-  const claimIcon = (): keyof typeof Ionicons.glyphMap => {
-    if (upload)
-      return upload.phase === "compressing"
-        ? "cog-outline"
-        : "cloud-upload-outline";
-    if (inactiveWithReward) return cred ? "key-outline" : "checkmark-circle";
-    if (isInactive) return "eye-off-outline";
-    if (isRedeemed) return "checkmark-done-outline";
-    if (isApproved) return "checkmark-circle";
-    if (isPending) return "hourglass-outline";
-    if (isFlyerStep)
-      return campaign.action === "upload"
-        ? "videocam-outline"
-        : campaign.phase === "before_download"
-          ? "time-outline"
-          : "download-outline";
-    if (isEligible) return "gift";
-    return "lock-closed-outline";
+  const textFlags = {
+    upload,
+    inactiveWithReward,
+    isInactive,
+    isRedeemed,
+    isApproved,
+    isPending,
+    isFlyerStep,
+    isEligible,
+    campaign,
+    fieldsCount: fields.length,
+    hasFastFoodId: !!bonus.fastFoodId,
+    progress: p,
+    description: bonus.description,
   };
-
-  const claimTitle = (): string => {
-    if (upload)
-      return upload.phase === "compressing"
-        ? "Compression en cours"
-        : "Envoi en cours";
-    if (inactiveWithReward) return "Ta récompense reste disponible";
-    if (isInactive) return "Offre non activée";
-    if (isRedeemed) return "Bonus déjà utilisé";
-    if (isApproved) return "Bonus validé";
-    if (isPending) return "Demande en cours";
-    if (isFlyerStep) return campaign.title || "Télécharger le flyer";
-    if (isEligible) return "Réclamer ce bonus";
-    return "Pas encore disponible";
-  };
-
-  const claimDesc = (): string => {
-    // Envoi en cours : la phase prime sur le message de campagne — le user doit
-    // comprendre pourquoi ça dure (une compression peut prendre une minute).
-    if (upload)
-      return upload.phase === "compressing"
-        ? "Compression de ta vidéo en cours… Garde l'application ouverte."
-        : "Envoi de ta vidéo en cours… Garde l'application ouverte.";
-    if (inactiveWithReward)
-      return "Le fastfood a retiré cette offre, mais ta récompense reste valable — tu peux toujours y accéder.";
-    if (isInactive)
-      return "Cette offre n'est pas encore activée. reviens bientôt pour en profiter.";
-    if (isRedeemed)
-      return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
-    // Approuvé mais rien à délivrer encore : la récompense est provisionnée
-    // manuellement (Netflix…), elle arrivera par socket `bonus.reward_credentials`.
-    if (isApproved)
-      return fields.length > 0
-        ? "Ta récompense est prête !"
-        : "Récompense en cours de préparation. Tu seras notifié dès qu'elle est prête.";
-    if (isPending)
-      return bonus.fastFoodId
-        ? "Ta demande a bien été envoyée et attend la validation du fastfood. Tu recevras une notification dès qu'elle est acceptée."
-        : "Ta demande est en cours de traitement. Tu seras notifié dès qu'elle est validée et que ton bonus est disponible.";
-    // Campagne datée : le message suit la phase (avant téléchargement, jour J,
-    // publication, envoi de la preuve). À défaut de calendrier, la consigne du
-    // bonus fait foi — plus précise que n'importe quel texte générique.
-    if (isFlyerStep)
-      return (
-        campaign.desc ||
-        bonus.description ||
-        "Télécharge le flyer et publie-le en statut pour obtenir ce bonus."
-      );
-    if (isEligible)
-      return "Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.";
-    if (p.measurable && p.target > 0) {
-      return p.unit === "FCFA"
-        ? `Tu y es presque ! Encore ${fmt(p.remaining)} FCFA à dépenser pour remplir les conditions et débloquer ce bonus.`
-        : `Tu y es presque ! Encore ${p.remaining} commande${p.remaining > 1 ? "s" : ""} à passer pour remplir les conditions et débloquer ce bonus.`;
-    }
-    return "Continue de commander pour remplir les conditions de ce bonus. Il se débloquera automatiquement dès que tu y seras.";
-  };
+  const claimIcon = claimIconOf(textFlags, !!cred);
+  const claimTitle = claimTitleOf(textFlags);
+  const claimDesc = claimDescOf(textFlags);
 
   const handleCopy = (value: string) => {
     Clipboard.setString(value);
@@ -425,11 +369,11 @@ const BonusClaimRowBase: React.FC<BonusClaimRowProps> = ({
   return (
     <View style={styles.row}>
       <View style={[styles.icon, { backgroundColor: statusColor }]}>
-        <Ionicons name={claimIcon()} size={20} color={LIGHT} />
+        <Ionicons name={claimIcon} size={20} color={LIGHT} />
       </View>
       <View style={styles.text}>
         <Text style={styles.title} numberOfLines={1}>
-          {claimTitle()}
+          {claimTitle}
         </Text>
         {isApproved && !cred && fields.length > 0 ? (
           <Text
@@ -441,7 +385,7 @@ const BonusClaimRowBase: React.FC<BonusClaimRowProps> = ({
           </Text>
         ) : (
           <Text style={styles.desc} numberOfLines={2}>
-            {claimDesc()}
+            {claimDesc}
           </Text>
         )}
       </View>
@@ -460,16 +404,13 @@ const BonusClaimRowBase: React.FC<BonusClaimRowProps> = ({
 };
 
 /**
- * Mémoïsée : la sheet re-rend à chaque changement d'index du carrousel, et
- * cette ligne recalcule alors éligibilité, statut et phase de campagne. Sur des
- * slides rapides successifs, ce travail retardait sa propre mise à jour.
- *
- * Les callbacks du parent sont déjà stables (`useCallback`), donc seul un vrai
- * changement de bonus ou de statut la re-rend. Elle reste évidemment sensible
- * au contexte bonus, qu'aucune comparaison de props ne peut court-circuiter.
+ * Mémoïsée : la piste re-rend toutes ses lignes à chaque changement d'index du
+ * carrousel (le parent `BonusClaimRow` change de props), et chaque ligne
+ * recalcule alors éligibilité, statut et phase de campagne. Sur des slides
+ * rapides successifs, ce travail retardait la mise à jour visuelle.
  */
-export const BonusClaimRow = React.memo(
-  BonusClaimRowBase,
+export const ClaimRowSlide = React.memo(
+  ClaimRowSlideBase,
   (a, b) =>
     a.bonus === b.bonus &&
     a.claimStatus === b.claimStatus &&
@@ -480,9 +421,6 @@ export const BonusClaimRow = React.memo(
 );
 
 const styles = StyleSheet.create({
-  // Hauteur fixe : la description varie de 1 à 3 lignes selon le statut, ce qui
-  // faisait « sauter » la carte de pagination à chaque slide. On borne à la
-  // hauteur du pire cas (titre + 2 lignes) pour un conteneur stable.
   row: {
     flexDirection: "row",
     alignItems: "center",

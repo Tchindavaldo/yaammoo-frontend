@@ -2,19 +2,47 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { useBonusStatus } from "../hooks/useBonusStatus";
+import { computeEligibility } from "../hooks/useBonusEligibility";
 import type { Bonus } from "../types/bonus.types";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
 
+/**
+ * Libellé + couleur d'un bonus, en fonction PURE (pas un hook) : `TextSlide`
+ * est rendu dans une boucle `.map`, où `useBonusStatus` (hook) est interdit.
+ * Reprend exactement la même dérivation que `useBonusStatus` — dupliquée ici
+ * plutôt que d'ajouter une variante au hook partagé (R16) — mais s'appuie sur
+ * la même fonction pure `computeEligibility` pour ne pas diverger du calcul
+ * d'éligibilité réel.
+ */
+const statusOf = (bonus: Bonus) => {
+  const d = getBonusDescriptor(bonus.type);
+  const p = computeEligibility(bonus);
+  const reqStatus = bonus.requestStatus ?? "none";
+  const isInactive = bonus.active === false;
+  const isRedeemed = bonus.redeemed === true;
+  const isPending = reqStatus === "pending";
+  const isApproved = reqStatus === "approved";
+  const isEligible =
+    !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
+  const label = isInactive
+    ? "Inactif"
+    : isRedeemed
+      ? "Utilisé"
+      : isApproved
+        ? "Validé"
+        : isPending
+          ? "En attente"
+          : isEligible
+            ? "Éligible"
+            : "Non éligible";
+  return { label, color: d.color };
+};
+
 interface BonusPagerInfoProps {
   bonuses: Bonus[];
-  /** Index du bonus centré. */
-  index: number;
   scrollX: Animated.Value;
   /** Couleur des points de pagination. */
   dotColor: string;
-  /** Couleur d'accent du bonus courant (numéro). */
-  accent: string;
 }
 
 const PANEL_W = 168;
@@ -33,51 +61,105 @@ const remainingUses = (bonus?: Bonus): number | null => {
  * (icône + nom + statut) se pose par-dessus, calé en bas. La pagination n'est
  * plus des points scolaires mais une JAUGE horizontale dont la portion pleine
  * suit le scroll — elle dit « où on en est » dans la pile de bonus.
+ *
+ * **Texte = vrai carrousel**, même principe que `BonusCarousel` (carte du
+ * haut) : une PISTE contenant un slide par bonus, large de `bonuses.length *
+ * PANEL_W`, translatée en un seul bloc via `scrollX`. Pas de fondu, pas de
+ * calcul de voisin — le slide N+1 est physiquement à côté du slide N et entre
+ * dans le cadre au même rythme que celui-ci en sort, comme un scroll normal.
  */
 export const BonusPagerInfo = ({
   bonuses,
-  index,
   scrollX,
   dotColor,
-  accent,
 }: BonusPagerInfoProps) => {
-  const bonus = bonuses[index];
-  const desc = getBonusDescriptor(bonus?.type);
-  const status = useBonusStatus(bonus);
-  const issuer = bonus?.fastFoodName || "yaammoo";
-  const remaining = remainingUses(bonus);
-
-  // Portion pleine de la jauge : suit la position de scroll de 0 (premier
-  // bonus) à 100% (dernier bonus). N'atteint 100% QUE sur la toute dernière
-  // carte — elle progresse en continu, une fraction par bonus.
-  const gaugeWidth =
+  // Translation de la PISTE de texte : `scrollX` (0..N-1 en unités de
+  // CAROUSEL_INTERVAL) est ramené à l'échelle de la piste (0..N-1 en unités
+  // de PANEL_W), puis inversé — la piste glisse dans le sens opposé au doigt,
+  // exactement comme un ScrollView natif.
+  const trackTranslateX =
     bonuses.length > 1
       ? scrollX.interpolate({
           inputRange: bonuses.map((_, i) => i * CAROUSEL_INTERVAL),
-          outputRange: bonuses.map(
-            (_, i) => `${Math.round((i / (bonuses.length - 1)) * 100)}%`,
-          ),
+          outputRange: bonuses.map((_, i) => -i * PANEL_W),
           extrapolate: "clamp",
         })
-      : "100%";
+      : 0;
 
   return (
     <View style={styles.wrap}>
-      {/* Filigrane : le numéro du bonus, hors-flux, ancre le panneau. */}
+      {/* Piste : un slide par bonus (numéro + icône + textes + statut),
+          translate en bloc — le filigrane glisse donc avec le reste. */}
+      <View style={styles.track}>
+        <Animated.View
+          style={[
+            styles.trackInner,
+            { width: bonuses.length * PANEL_W, transform: [{ translateX: trackTranslateX }] },
+          ]}
+        >
+          {bonuses.map((b, i) => (
+            <TextSlide
+              key={b.id ?? i}
+              bonus={b}
+              position={i}
+              total={bonuses.length}
+              dotColor={dotColor}
+            />
+          ))}
+        </Animated.View>
+      </View>
+    </View>
+  );
+};
+
+/**
+ * Un slide de la piste : icône + émetteur + nom + statut d'un seul bonus.
+ * AUCUNE interpolation ici, sur AUCUN élément — le slide entier est un bloc
+ * 100 % STATIQUE, porté en bloc par la translation unique de la piste
+ * (`trackTranslateX`, seule chose animée dans tout `BonusPagerInfo`). Icône,
+ * texte et jauge bougeaient chacun selon leur propre interpolation avant
+ * cette version : ils semblaient glisser individuellement au lieu de suivre
+ * le bloc en un seul mouvement — désormais rien ici ne réagit à `scrollX`.
+ */
+const TextSlide = ({
+  bonus,
+  position,
+  total,
+  dotColor,
+}: {
+  bonus: Bonus;
+  /** Position du bonus dans la liste — alimente le numéro en filigrane. */
+  position: number;
+  /** Nombre total de bonus — fixe la portion pleine de la jauge (statique). */
+  total: number;
+  dotColor: string;
+}) => {
+  const desc = getBonusDescriptor(bonus.type);
+  const accent = desc.color;
+  const issuer = bonus.fastFoodName || "yaammoo";
+  const remaining = remainingUses(bonus);
+  const status = statusOf(bonus);
+  // Portion pleine de la jauge DE CE bonus, fixe : sa position dans la pile
+  // (0 → 100% sur le dernier), plus d'interpolation continue sur scrollX.
+  const gaugeWidth =
+    total > 1 ? `${Math.round((position / (total - 1)) * 100)}%` : "100%";
+
+  return (
+    <View style={styles.slide}>
+      {/* Filigrane : le numéro DE CE bonus, ancre son propre slide. */}
       <Text
         style={[styles.ghost, { color: accent }]}
         numberOfLines={1}
         pointerEvents="none"
       >
-        {index + 1}
+        {position + 1}
       </Text>
 
-      <View style={styles.content}>
-        {/* Icône du type + émetteur, sur une ligne discrète. */}
-        <View style={styles.topRow}>
-          <View style={[styles.iconBadge, { backgroundColor: `${accent}1f` }]}>
-            <Ionicons name={desc.icon} size={13} color={accent} />
-          </View>
+      <View style={styles.topRow}>
+        <View style={[styles.iconBadge, { backgroundColor: `${accent}1f` }]}>
+          <Ionicons name={desc.icon} size={13} color={accent} />
+        </View>
+        <View style={styles.topRowText}>
           <Text style={styles.issuer} numberOfLines={1}>
             {issuer}
           </Text>
@@ -87,28 +169,18 @@ export const BonusPagerInfo = ({
             </Text>
           )}
         </View>
-
-        <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
-          {bonus?.name}
+      </View>
+      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+        {bonus.name}
+      </Text>
+      {/* Statut + jauge sur LA MÊME LIGNE, comme dans le design d'origine. */}
+      <View style={styles.statusRow}>
+        <View style={[styles.statusDot, { backgroundColor: status.color }]} />
+        <Text style={[styles.statusText, { color: status.color }]} numberOfLines={1}>
+          {status.label}
         </Text>
-
-        {/* Statut + jauge de progression sur LA MÊME LIGNE. */}
-        <View style={styles.statusRow}>
-          <View style={[styles.statusDot, { backgroundColor: status.color }]} />
-          <Text
-            style={[styles.statusText, { color: status.color }]}
-            numberOfLines={1}
-          >
-            {status.label}
-          </Text>
-          <View style={styles.gaugeTrack}>
-            <Animated.View
-              style={[
-                styles.gaugeFill,
-                { width: gaugeWidth, backgroundColor: dotColor },
-              ]}
-            />
-          </View>
+        <View style={styles.gaugeTrack}>
+          <View style={[styles.gaugeFill, { width: gaugeWidth, backgroundColor: dotColor }]} />
         </View>
       </View>
     </View>
@@ -128,12 +200,20 @@ const styles = StyleSheet.create({
     opacity: 0.07,
     letterSpacing: -4,
   },
-  content: { gap: 6 },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    // Sans width fixe, `issuer` (flexShrink) tronque avant de pousser `remaining`.
+  },
+  // Cadre visible de la piste : largeur d'un panneau, le reste est masqué.
+  track: { width: PANEL_W, overflow: "hidden" },
+  trackInner: { flexDirection: "row" },
+  // Un slide = un panneau plein, mêmes dimensions que l'ancien bloc texte.
+  slide: { width: PANEL_W, gap: 6 },
+  topRowText: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     width: "100%",
   },
   iconBadge: {

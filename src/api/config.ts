@@ -9,7 +9,7 @@ const PROD_API_URL = "https://yaammoo-backend.fly.dev";
 // Autres IP locales pratiques (décommente celle qui te sert en dev) :
 // const DEV_API_URL = "http://192.168.8.101:5000";
 // const DEV_API_URL = "https://yaammoo-backend.fly.dev";
-// const DEV_API_URL = "http://172.20.10.4:5000";
+const DEV_API_URL = "http://172.20.10.4:5000";
 // const DEV_API_URL = "http://localhost:5000";
 
 export const Config = {

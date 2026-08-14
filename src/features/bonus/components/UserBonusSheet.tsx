@@ -16,7 +16,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getBonusDescriptor } from "../config/bonusRegistry";
 import { useBonusContext } from "../context/BonusContext";
 import type { Bonus } from "../types/bonus.types";
 import { BonusCard } from "./BonusCard";
@@ -25,7 +24,6 @@ import {
   BonusCarouselHandle,
   CAROUSEL_INTERVAL,
 } from "./BonusCarousel";
-import { BonusClaimRow } from "./BonusClaimRow";
 import { BonusGalleryCard } from "./BonusGalleryCard";
 import {
   BonusGlassCard,
@@ -54,10 +52,11 @@ const SHEET_HEIGHT = 400;
 /**
  * « Bonus et parrainage » (Settings). Présenté en BOTTOM SHEET et réduit à
  * l'essentiel : la carte principale du bonus courant (récompense + Début/Fin/
- * Durée via BonusCard dans le carrousel) et la CARTE DE PAGINATION du bas —
- * dernière carte intégrale contenant les DEUX lignes : la ligne de réclamation
- * (BonusClaimRow) ET la ligne de pagination (galerie + panneau héro). Le panneau
- * stats du haut n'est pas repris.
+ * Durée + ligne de réclamation, toutes DANS BonusCard, via le carrousel) et
+ * la CARTE DE PAGINATION du bas (galerie + panneau héro) — la ligne de
+ * réclamation ne vit plus dans cette carte du bas : elle slide avec le
+ * carrousel principal, dans le même ScrollView natif. Le panneau stats du
+ * haut n'est pas repris.
  */
 export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   visible,
@@ -208,11 +207,6 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     [bonuses.length],
   );
 
-  const colors = useMemo(
-    () => bonuses.map((b) => getBonusDescriptor(b.type).color),
-    [bonuses],
-  );
-
   const handleClaim = useCallback(
     async (bonus: Bonus) => {
       const res = await claimBonus(bonus);
@@ -325,64 +319,53 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 onIndexChange={handleIndexChange}
                 CardComponent={BonusCard}
                 cardImage={null}
+                onActivate={handleActivate}
+                arming={arming}
+                onBlocked={handleBlocked}
               />
             </View>
           )}
 
-          {/* Carte de pagination EN BAS : dernière carte intégrale — ligne de
-              réclamation + ligne de pagination (galerie + panneau héro). */}
-          {hasBonuses && (
+          {/* Carte de pagination EN BAS : ligne de pagination seule (galerie +
+              panneau héro). La ligne de réclamation vit désormais DANS
+              BonusCard, en haut — elle slide donc avec le carrousel. */}
+          {hasBonuses && bonuses.length > 1 && (
             <BonusGlassCard
               style={[styles.pagCard, styles.pagCardOutlined]}
               radius={20}
             >
-              <BonusClaimRow
-                bonus={bonuses[index]}
-                claimStatus={claims[bonuses[index]?.id]}
-                onClaim={handleClaim}
-                onActivate={handleActivate}
-                arming={!!arming[bonuses[index]?.id]}
-                onBlocked={handleBlocked}
-              />
-
-              {bonuses.length > 1 && <View style={styles.pagDivider} />}
-
-              {bonuses.length > 1 && (
-                <View style={styles.pagInner}>
-                  <View style={styles.galleryScroll}>
-                    <Animated.ScrollView
-                      key={openKey}
-                      ref={galleryRef}
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.gallery}
-                    >
-                      {bonuses.map((b, i) => (
-                        <BonusGalleryCard
-                          key={b.id ?? i}
-                          bonus={b}
-                          position={i}
-                          scrollX={scrollX}
-                          active={i === index}
-                          activeTextColor={DARK_ICON}
-                          // `goToBonus` reçoit la position : une fermeture
-                          // `() => goToBonus(i)` serait recréée par carte à
-                          // chaque rendu et casserait la mémoïsation.
-                          onPress={goToBonus}
-                        />
-                      ))}
-                    </Animated.ScrollView>
-                  </View>
-
-                  <BonusPagerInfo
-                    bonuses={bonuses}
-                    index={index}
-                    scrollX={scrollX}
-                    dotColor={DARK_ICON}
-                    accent={colors[index] || Theme.colors.primary}
-                  />
+              <View style={styles.pagInner}>
+                <View style={styles.galleryScroll}>
+                  <Animated.ScrollView
+                    key={openKey}
+                    ref={galleryRef}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.gallery}
+                  >
+                    {bonuses.map((b, i) => (
+                      <BonusGalleryCard
+                        key={b.id ?? i}
+                        bonus={b}
+                        position={i}
+                        scrollX={scrollX}
+                        active={i === index}
+                        activeTextColor={DARK_ICON}
+                        // `goToBonus` reçoit la position : une fermeture
+                        // `() => goToBonus(i)` serait recréée par carte à
+                        // chaque rendu et casserait la mémoïsation.
+                        onPress={goToBonus}
+                      />
+                    ))}
+                  </Animated.ScrollView>
                 </View>
-              )}
+
+                <BonusPagerInfo
+                  bonuses={bonuses}
+                  scrollX={scrollX}
+                  dotColor={DARK_ICON}
+                />
+              </View>
             </BonusGlassCard>
           )}
         </Animated.View>
@@ -455,10 +438,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-  },
-  pagDivider: {
-    height: 1,
-    backgroundColor: "rgba(0,0,0,0.06)",
-    marginVertical: 10,
   },
 });

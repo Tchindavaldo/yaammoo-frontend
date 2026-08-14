@@ -1,8 +1,8 @@
+import { Commande, FastFood } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
-import { Commande, FastFood } from "@/src/types";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { computeGrandTotal } from "../../merchant/components/MerchantOrderMontantTab";
 
@@ -55,8 +55,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
       const orderCount = allOrders.length;
       const ffName = fastFood?.nom || fastFood?.name || "Boutique";
       const initials = ffName.substring(0, 2).toUpperCase();
-      const ffImage =
-        (fastFood as any)?.logo || (fastFood as any)?.coverImage;
+      const ffImage = (fastFood as any)?.logo || (fastFood as any)?.coverImage;
 
       // Status delivery group
       const isAnyDelivering = allOrders.some(
@@ -67,6 +66,10 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
       // On calcule le prix total de toutes les commandes du groupe
       const totalPriceGroup = allOrders.reduce(
         (sum, o) => sum + (o.total || 0),
+        0,
+      );
+      const totalQuantityGroup = allOrders.reduce(
+        (sum, o) => sum + (o.quantity || 1),
         0,
       );
 
@@ -104,11 +107,13 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                     {ffName}
                   </Text>
                 </View>
-                {/* Rang LOCAL au bord droit, comme sur la carte marchand. */}
+                {/* Quantite totale du groupe au bord droit, a la place de
+                    l'ancien rang local. */}
                 {localRank !== undefined && (
                   <View style={styles.rankContainerRow}>
-                    <Ionicons name="trophy-outline" size={14} color="#111827" />
-                    <Text style={styles.rankBadgeRow}>{localRank}</Text>
+                    <Text style={styles.rankBadgeRow}>
+                      x{totalQuantityGroup}
+                    </Text>
                   </View>
                 )}
                 {isAnyDelivering && (
@@ -193,7 +198,10 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
     // Item réellement sélectionné : les entrées placeholder "Aucun"/"Aucune" ne
     // comptent pas (même règle que `computeItemsTotal` de l'onglet Montant).
     const isRealItem = (x: any) =>
-      x?.status === true && x?.name && x.name !== "Aucun" && x.name !== "Aucune";
+      x?.status === true &&
+      x?.name &&
+      x.name !== "Aucun" &&
+      x.name !== "Aucune";
     // Sur une ligne groupée, les compteurs totalisent TOUT le groupe.
     const countedOrders = groupedOrders || [order];
     const countIn = (key: "extra" | "drink") =>
@@ -235,13 +243,11 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                   {` ${menuName} · ${deliverySuffix}`}
                 </Text>
               </View>
-              {/* Rang LOCAL au bord droit, comme sur la carte marchand : simple
-                  numero d'ordre dans la liste, sans rapport avec le `rank`
-                  backend des files pending/processing. */}
+              {/* Quantite de plats choisis au bord droit, a la place de
+                  l'ancien rang local. */}
               {localRank !== undefined && (
                 <View style={styles.rankContainerRow}>
-                  <Ionicons name="trophy-outline" size={14} color="#111827" />
-                  <Text style={styles.rankBadgeRow}>{localRank}</Text>
+                  <Text style={styles.rankBadgeRow}>x{quantity}</Text>
                 </View>
               )}
               {isDelivering && (
@@ -418,6 +424,8 @@ const styles = StyleSheet.create({
   summaryTitleContainer: {
     flexDirection: "column",
     flex: 1,
+    minWidth: 0,
+    maxWidth: "65%",
     justifyContent: "flex-start",
   },
   statusBadge: {

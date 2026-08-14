@@ -224,15 +224,12 @@ export const CartGroupedDeliverySheet: React.FC<
    * la livraison ne tient plus d'un bloc : 1 = groupage, 2 = type de livraison,
    * 3 = informations, 4 = montants, 5 = recapitulatif et paiement.
    */
-  const [step, setStep] = React.useState<1 | 2 | 3 | 4>(
-    singleOrder ? 2 : 1,
-  );
+  const [step, setStep] = React.useState<1 | 2 | 3 | 4>(singleOrder ? 2 : 1);
 
   // Fermeture : la prochaine ouverture repart de la premiere page pertinente.
   React.useEffect(() => {
     if (!visible) setStep(singleOrder ? 2 : 1);
   }, [visible, singleOrder]);
-
 
   /**
    * Capsule DEDIEE de l'etape 4 (« Le detail de votre commande ») : sa propre
@@ -608,7 +605,7 @@ export const CartGroupedDeliverySheet: React.FC<
                   ]}
                   numberOfLines={1}
                 >
-                  {phone || "Numéro de paiement"}
+                  {phone || "Entrez le Numéro de paiement"}
                 </Text>
                 <TouchableOpacity
                   style={styles.payCapsuleBtn}

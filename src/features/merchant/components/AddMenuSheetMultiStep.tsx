@@ -1,8 +1,8 @@
 import { Config } from "@/src/api/config";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
@@ -41,8 +41,8 @@ interface AddMenuSheetProps {
 const STEPS: Step[] = ["nameImage", "details", "recap"];
 
 // Hauteur fixe du modal d'édition (px) — identique sur tous les écrans.
-// = 68% d'un écran de référence de 844px de haut.
-const MODAL_HEIGHT = 574;
+// = 62% d'un écran de référence de 844px de haut.
+const MODAL_HEIGHT = 550;
 
 // Hauteur auto de l'input description : min (1 ligne) → max (puis scroll interne).
 const DESC_MIN = 44;
@@ -449,8 +449,15 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       setSubmitting(true);
       await onSave(menuData);
       reset();
-    } catch (e) {
-      Alert.alert("Erreur", "Impossible de sauvegarder le menu");
+    } catch (e: any) {
+      // Priorité au message précis renvoyé par le backend (champ rejeté,
+      // raison métier) — le générique ne sert que de filet si l'API ne
+      // renvoie rien d'exploitable.
+      const backendMessage = e?.response?.data?.message || e?.message;
+      Alert.alert(
+        "Erreur",
+        backendMessage || "Impossible de sauvegarder le menu",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -504,504 +511,518 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={KEYBOARD_OFFSET}
       >
-      <ScrollView
-        ref={scrollRef}
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Étape 1 : nom + prix + description.
+        <ScrollView
+          ref={scrollRef}
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Étape 1 : nom + prix + description.
             Pressable : un tap dans le vide ferme le clavier (sortie de la description). */}
-        {step === "nameImage" && (
-          <DismissKeyboardWrapper>
-            <Text style={styles.fieldLabel}>Nom du menu</Text>
-            <TextInput
-              style={[styles.input, styles.inputCompact, ...fieldStyle("nom")]}
-              placeholder="Ex: Burger Spécial Maison"
-              value={nom}
-              onChangeText={(t) => {
-                setNom(t);
-                setErrorFields((e) => e.filter((f) => f !== "nom"));
-              }}
-              {...focusProps("nom")}
-            />
+          {step === "nameImage" && (
+            <DismissKeyboardWrapper>
+              <Text style={styles.fieldLabel}>Nom du menu</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.inputCompact,
+                  ...fieldStyle("nom"),
+                ]}
+                placeholder="Ex: Burger Spécial Maison"
+                value={nom}
+                onChangeText={(t) => {
+                  setNom(t);
+                  setErrorFields((e) => e.filter((f) => f !== "nom"));
+                }}
+                {...focusProps("nom")}
+              />
 
-            {/* Label (change selon l'onglet) + tabs Prix 1 / 2 / 3 sur la même ligne */}
-            <View
-              style={[styles.priceHeaderRow, { marginTop: Theme.spacing.lg }]}
-            >
-              <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
-                {selectedPriceIdx === 0
-                  ? "Prix 1 (obligatoire)"
-                  : `Prix ${selectedPriceIdx + 1} (optionnel)`}
+              {/* Label (change selon l'onglet) + tabs Prix 1 / 2 / 3 sur la même ligne */}
+              <View
+                style={[styles.priceHeaderRow, { marginTop: Theme.spacing.lg }]}
+              >
+                <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
+                  {selectedPriceIdx === 0
+                    ? "Prix 1 (obligatoire)"
+                    : `Prix ${selectedPriceIdx + 1} (optionnel)`}
+                </Text>
+                <View style={styles.priceTabs}>
+                  {["Prix 1 *", "Prix 2", "Prix 3"].map((label, idx) => (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[
+                        styles.priceTab,
+                        selectedPriceIdx === idx && styles.priceTabActive,
+                      ]}
+                      onPress={() => setSelectedPriceIdx(idx)}
+                    >
+                      <Text
+                        style={[
+                          styles.priceTabText,
+                          selectedPriceIdx === idx && styles.priceTabTextActive,
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              {/* Prix + description sur la même ligne, pour le prix sélectionné */}
+              <View style={styles.priceDescRow}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.priceCol,
+                    ...fieldStyle(`prix${selectedPriceIdx}`),
+                  ]}
+                  placeholder={
+                    selectedPriceIdx === 0
+                      ? "2000"
+                      : selectedPriceIdx === 1
+                        ? "3500"
+                        : "5000"
+                  }
+                  keyboardType="numeric"
+                  value={
+                    selectedPriceIdx === 0
+                      ? prix1
+                      : selectedPriceIdx === 1
+                        ? prix2
+                        : prix3
+                  }
+                  onChangeText={(t) => {
+                    (selectedPriceIdx === 0
+                      ? setPrix1
+                      : selectedPriceIdx === 1
+                        ? setPrix2
+                        : setPrix3)(t);
+                    setErrorFields((e) =>
+                      e.filter((f) => f !== `prix${selectedPriceIdx}`),
+                    );
+                  }}
+                  onLayout={(e) => {
+                    const h = e.nativeEvent.layout.height;
+                    if (h && h !== priceColH) setPriceColH(h);
+                  }}
+                  {...focusProps(`prix${selectedPriceIdx}`)}
+                />
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.descCol,
+                    // Hauteur auto : min = hauteur de l'input prix (même ligne),
+                    // grandit avec le contenu jusqu'à DESC_MAX, puis scroll interne.
+                    {
+                      height: Math.min(
+                        DESC_MAX,
+                        Math.max(
+                          priceColH || DESC_MIN,
+                          descHeights[selectedPriceIdx],
+                        ),
+                      ),
+                    },
+                    ...fieldStyle(`desc${selectedPriceIdx}`),
+                  ]}
+                  placeholder={`Description du prix ${selectedPriceIdx + 1}`}
+                  value={
+                    selectedPriceIdx === 0
+                      ? desc1
+                      : selectedPriceIdx === 1
+                        ? desc2
+                        : desc3
+                  }
+                  onChangeText={(t) => {
+                    (selectedPriceIdx === 0
+                      ? setDesc1
+                      : selectedPriceIdx === 1
+                        ? setDesc2
+                        : setDesc3)(t);
+                    setErrorFields((e) =>
+                      e.filter((f) => f !== `desc${selectedPriceIdx}`),
+                    );
+                  }}
+                  onContentSizeChange={(e) => {
+                    const h = e.nativeEvent.contentSize.height;
+                    setDescHeights((prev) => {
+                      if (prev[selectedPriceIdx] === h) return prev;
+                      const next = [...prev] as [number, number, number];
+                      next[selectedPriceIdx] = h;
+                      return next;
+                    });
+                  }}
+                  multiline
+                  scrollEnabled
+                  {...focusProps(`desc${selectedPriceIdx}`)}
+                />
+              </View>
+
+              <Text
+                style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}
+              >
+                Photos du plat (3 requises)
               </Text>
-              <View style={styles.priceTabs}>
-                {["Prix 1 *", "Prix 2", "Prix 3"].map((label, idx) => (
+              <View style={styles.imageRow}>
+                {[0, 1, 2].map((idx) => (
                   <TouchableOpacity
                     key={idx}
                     style={[
-                      styles.priceTab,
-                      selectedPriceIdx === idx && styles.priceTabActive,
+                      styles.imageSlot,
+                      uploadingIdx !== null && styles.imageSlotDisabled,
                     ]}
-                    onPress={() => setSelectedPriceIdx(idx)}
+                    onPress={() => pickImage(idx)}
+                    // Pendant un upload en cours, on bloque toute autre sélection.
+                    disabled={uploadingIdx !== null}
                   >
-                    <Text
-                      style={[
-                        styles.priceTabText,
-                        selectedPriceIdx === idx && styles.priceTabTextActive,
-                      ]}
-                    >
-                      {label}
-                    </Text>
+                    {images[idx] ? (
+                      <>
+                        <Image
+                          source={{ uri: images[idx] }}
+                          style={styles.imagePreview}
+                        />
+                        {uploadingIdx === idx && (
+                          <View style={styles.uploadOverlay}>
+                            <ActivityIndicator color="white" />
+                            <Text style={styles.uploadText}>
+                              {uploadProgress[idx]}%
+                            </Text>
+                          </View>
+                        )}
+                      </>
+                    ) : (
+                      <View style={styles.imagePlaceholder}>
+                        <Ionicons
+                          name="camera-outline"
+                          size={28}
+                          color={Theme.colors.gray[400]}
+                        />
+                        <Text style={styles.imagePlaceholderText}>
+                          Photo {idx + 1}
+                        </Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ))}
               </View>
-            </View>
-            {/* Prix + description sur la même ligne, pour le prix sélectionné */}
-            <View style={styles.priceDescRow}>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.priceCol,
-                  ...fieldStyle(`prix${selectedPriceIdx}`),
-                ]}
-                placeholder={
-                  selectedPriceIdx === 0
-                    ? "2000"
-                    : selectedPriceIdx === 1
-                      ? "3500"
-                      : "5000"
-                }
-                keyboardType="numeric"
-                value={
-                  selectedPriceIdx === 0
-                    ? prix1
-                    : selectedPriceIdx === 1
-                      ? prix2
-                      : prix3
-                }
-                onChangeText={(t) => {
-                  (selectedPriceIdx === 0
-                    ? setPrix1
-                    : selectedPriceIdx === 1
-                      ? setPrix2
-                      : setPrix3)(t);
-                  setErrorFields((e) =>
-                    e.filter((f) => f !== `prix${selectedPriceIdx}`),
-                  );
-                }}
-                onLayout={(e) => {
-                  const h = e.nativeEvent.layout.height;
-                  if (h && h !== priceColH) setPriceColH(h);
-                }}
-                {...focusProps(`prix${selectedPriceIdx}`)}
-              />
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.descCol,
-                  // Hauteur auto : min = hauteur de l'input prix (même ligne),
-                  // grandit avec le contenu jusqu'à DESC_MAX, puis scroll interne.
-                  {
-                    height: Math.min(
-                      DESC_MAX,
-                      Math.max(
-                        priceColH || DESC_MIN,
-                        descHeights[selectedPriceIdx],
-                      ),
-                    ),
-                  },
-                  ...fieldStyle(`desc${selectedPriceIdx}`),
-                ]}
-                placeholder={`Description du prix ${selectedPriceIdx + 1}`}
-                value={
-                  selectedPriceIdx === 0
-                    ? desc1
-                    : selectedPriceIdx === 1
-                      ? desc2
-                      : desc3
-                }
-                onChangeText={(t) => {
-                  (selectedPriceIdx === 0
-                    ? setDesc1
-                    : selectedPriceIdx === 1
-                      ? setDesc2
-                      : setDesc3)(t);
-                  setErrorFields((e) =>
-                    e.filter((f) => f !== `desc${selectedPriceIdx}`),
-                  );
-                }}
-                onContentSizeChange={(e) => {
-                  const h = e.nativeEvent.contentSize.height;
-                  setDescHeights((prev) => {
-                    if (prev[selectedPriceIdx] === h) return prev;
-                    const next = [...prev] as [number, number, number];
-                    next[selectedPriceIdx] = h;
-                    return next;
-                  });
-                }}
-                multiline
-                scrollEnabled
-                {...focusProps(`desc${selectedPriceIdx}`)}
-              />
-            </View>
+            </DismissKeyboardWrapper>
+          )}
 
-            <Text style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}>
-              Photos du plat (3 requises)
-            </Text>
-            <View style={styles.imageRow}>
-              {[0, 1, 2].map((idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={[
-                    styles.imageSlot,
-                    uploadingIdx !== null && styles.imageSlotDisabled,
-                  ]}
-                  onPress={() => pickImage(idx)}
-                  // Pendant un upload en cours, on bloque toute autre sélection.
-                  disabled={uploadingIdx !== null}
-                >
-                  {images[idx] ? (
-                    <>
-                      <Image
-                        source={{ uri: images[idx] }}
-                        style={styles.imagePreview}
-                      />
-                      {uploadingIdx === idx && (
-                        <View style={styles.uploadOverlay}>
-                          <ActivityIndicator color="white" />
-                          <Text style={styles.uploadText}>
-                            {uploadProgress[idx]}%
-                          </Text>
-                        </View>
-                      )}
-                    </>
-                  ) : (
-                    <View style={styles.imagePlaceholder}>
-                      <Ionicons
-                        name="camera-outline"
-                        size={28}
-                        color={Theme.colors.gray[400]}
-                      />
-                      <Text style={styles.imagePlaceholderText}>
-                        Photo {idx + 1}
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </DismissKeyboardWrapper>
-        )}
-
-        {/* Étape détails : extras + boissons (tabs) + stock + statut du menu */}
-        {step === "details" && (
-          <DismissKeyboardWrapper>
-            {/* Deux sections empilées (Extras puis Boissons), même design que les prix :
+          {/* Étape détails : extras + boissons (tabs) + stock + statut du menu */}
+          {step === "details" && (
+            <DismissKeyboardWrapper>
+              {/* Deux sections empilées (Extras puis Boissons), même design que les prix :
                 ligne label + chips scrollables horizontalement, puis ligne d'édition
                 (input nom, input prix, boutons Supprimer / Valider). */}
-            {(
-              [
-                {
-                  key: "extras",
-                  label: "Extras",
-                  list: extras,
-                  setList: setExtras,
-                  draft: extraDraft,
-                  setDraft: setExtraDraft,
-                  editIdx: extraEditIdx,
-                  setEditIdx: setExtraEditIdx,
-                },
-                {
-                  key: "drinks",
-                  label: "Boissons",
-                  list: drinks,
-                  setList: setDrinks,
-                  draft: drinkDraft,
-                  setDraft: setDrinkDraft,
-                  editIdx: drinkEditIdx,
-                  setEditIdx: setDrinkEditIdx,
-                },
-              ] as const
-            ).map((sec) => {
-              const items = sec.list.filter((i) => i.name.trim());
-              // Annule l'édition / vide le draft.
-              const resetDraft = () => {
-                sec.setDraft({ name: "", prix: "" });
-                sec.setEditIdx(null);
-              };
-              // Valide le draft : crée un nouvel item ou met à jour celui en édition.
-              const validate = () => {
-                if (!sec.draft.name.trim()) return;
-                const item: Item = {
-                  name: sec.draft.name.trim(),
-                  prix: sec.draft.prix.trim() || "0",
-                  quantite: "1",
-                  status: true,
-                };
-                if (sec.editIdx === null) {
-                  sec.setList([...sec.list, item]);
-                } else {
-                  const next = [...sec.list];
-                  next[sec.editIdx] = { ...next[sec.editIdx], ...item };
-                  sec.setList(next);
-                }
-                resetDraft();
-              };
-              return (
-                <View
-                  key={sec.key}
-                  style={{
-                    marginTop: sec.key === "drinks" ? Theme.spacing.lg : 0,
-                  }}
-                >
-                  {/* Ligne label + chips scrollables (pas de retour à la ligne) */}
-                  <View
-                    style={[
-                      styles.priceHeaderRow,
-                      { marginBottom: Theme.spacing.sm },
-                    ]}
-                  >
-                    <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
-                      {sec.label}
-                    </Text>
-                    {items.length > 0 && (
-                      <Text style={styles.itemCountText}>×{items.length}</Text>
-                    )}
-                    {items.length > 0 && (
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={styles.chipScroll}
-                        contentContainerStyle={styles.chipScrollContent}
-                        keyboardShouldPersistTaps="handled"
-                      >
-                        {items.map((it, i) => {
-                          const realIdx = sec.list.indexOf(it);
-                          return (
-                            <React.Fragment key={realIdx}>
-                              {i > 0 && (
-                                <Text style={styles.chipSeparator}>·</Text>
-                              )}
-                              <TouchableOpacity
-                                style={styles.itemChip}
-                                onPress={() => {
-                                  sec.setDraft({
-                                    name: it.name,
-                                    prix: it.prix,
-                                  });
-                                  sec.setEditIdx(realIdx);
-                                }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.itemChipText,
-                                    sec.editIdx === realIdx &&
-                                      styles.itemChipTextActive,
-                                  ]}
-                                  numberOfLines={1}
-                                >
-                                  {it.name}
-                                </Text>
-                              </TouchableOpacity>
-                            </React.Fragment>
-                          );
-                        })}
-                      </ScrollView>
-                    )}
-                  </View>
-
-                  {/* Ligne d'édition : nom, prix, supprimer, valider */}
-                  <View style={styles.priceDescRow}>
-                    <TextInput
-                      style={[
-                        styles.input,
-                        styles.itemInputCompact,
-                        styles.descCol,
-                      ]}
-                      placeholder={
-                        sec.key === "extras"
-                          ? "Nom de l'extra"
-                          : "Nom de la boisson"
-                      }
-                      value={sec.draft.name}
-                      onChangeText={(t) =>
-                        sec.setDraft({ ...sec.draft, name: t })
-                      }
-                    />
-                    <TextInput
-                      style={[
-                        styles.input,
-                        styles.itemInputCompact,
-                        styles.priceCol,
-                      ]}
-                      placeholder="Prix"
-                      keyboardType="numeric"
-                      value={sec.draft.prix}
-                      onChangeText={(t) =>
-                        sec.setDraft({ ...sec.draft, prix: t })
-                      }
-                    />
-                    {/* Supprimer : retire l'item en édition (sinon vide juste le draft) */}
-                    <TouchableOpacity
-                      style={styles.itemActionBtn}
-                      onPress={() => {
-                        if (sec.editIdx !== null) {
-                          sec.setList(
-                            sec.list.filter((_, i) => i !== sec.editIdx),
-                          );
-                        }
-                        resetDraft();
-                      }}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color={Theme.colors.danger}
-                      />
-                    </TouchableOpacity>
-                    {/* Valider : ajoute / met à jour */}
-                    <TouchableOpacity
-                      style={[styles.itemActionBtn, styles.itemValidateBtn]}
-                      onPress={validate}
-                    >
-                      <Ionicons name="checkmark" size={18} color="white" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              );
-            })}
-
-            {/* Ligne 1 : disponibilité (Disponible / Indisponible côte à côte) */}
-            <Text style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}>
-              Disponibilité
-            </Text>
-            <View style={styles.availRow}>
               {(
                 [
                   {
-                    key: "available",
-                    label: "Disponible",
-                    color: Theme.colors.success,
+                    key: "extras",
+                    label: "Extras",
+                    list: extras,
+                    setList: setExtras,
+                    draft: extraDraft,
+                    setDraft: setExtraDraft,
+                    editIdx: extraEditIdx,
+                    setEditIdx: setExtraEditIdx,
                   },
                   {
-                    key: "unavailable",
-                    label: "Indisponible",
-                    color: Theme.colors.danger,
+                    key: "drinks",
+                    label: "Boissons",
+                    list: drinks,
+                    setList: setDrinks,
+                    draft: drinkDraft,
+                    setDraft: setDrinkDraft,
+                    editIdx: drinkEditIdx,
+                    setEditIdx: setDrinkEditIdx,
                   },
                 ] as const
-              ).map((s) => {
-                const active = availability === s.key;
+              ).map((sec) => {
+                const items = sec.list.filter((i) => i.name.trim());
+                // Annule l'édition / vide le draft.
+                const resetDraft = () => {
+                  sec.setDraft({ name: "", prix: "" });
+                  sec.setEditIdx(null);
+                };
+                // Valide le draft : crée un nouvel item ou met à jour celui en édition.
+                const validate = () => {
+                  if (!sec.draft.name.trim()) return;
+                  const item: Item = {
+                    name: sec.draft.name.trim(),
+                    prix: sec.draft.prix.trim() || "0",
+                    quantite: "1",
+                    status: true,
+                  };
+                  if (sec.editIdx === null) {
+                    sec.setList([...sec.list, item]);
+                  } else {
+                    const next = [...sec.list];
+                    next[sec.editIdx] = { ...next[sec.editIdx], ...item };
+                    sec.setList(next);
+                  }
+                  resetDraft();
+                };
                 return (
-                  <TouchableOpacity
-                    key={s.key}
-                    style={[
-                      styles.availBtn,
-                      active && {
-                        backgroundColor: s.color,
-                        borderColor: s.color,
-                      },
-                    ]}
-                    onPress={() => setAvailability(s.key)}
+                  <View
+                    key={sec.key}
+                    style={{
+                      marginTop: sec.key === "drinks" ? Theme.spacing.lg : 0,
+                    }}
                   >
-                    <Text
+                    {/* Ligne label + chips scrollables (pas de retour à la ligne) */}
+                    <View
                       style={[
-                        styles.availBtnText,
-                        { color: active ? "white" : s.color },
+                        styles.priceHeaderRow,
+                        { marginBottom: Theme.spacing.sm },
                       ]}
                     >
-                      {s.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                      <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
+                        {sec.label}
+                      </Text>
+                      {items.length > 0 && (
+                        <Text style={styles.itemCountText}>
+                          ×{items.length}
+                        </Text>
+                      )}
+                      {items.length > 0 && (
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          style={styles.chipScroll}
+                          contentContainerStyle={styles.chipScrollContent}
+                          keyboardShouldPersistTaps="handled"
+                        >
+                          {items.map((it, i) => {
+                            const realIdx = sec.list.indexOf(it);
+                            return (
+                              <React.Fragment key={realIdx}>
+                                {i > 0 && (
+                                  <Text style={styles.chipSeparator}>·</Text>
+                                )}
+                                <TouchableOpacity
+                                  style={styles.itemChip}
+                                  onPress={() => {
+                                    sec.setDraft({
+                                      name: it.name,
+                                      prix: it.prix,
+                                    });
+                                    sec.setEditIdx(realIdx);
+                                  }}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.itemChipText,
+                                      sec.editIdx === realIdx &&
+                                        styles.itemChipTextActive,
+                                    ]}
+                                    numberOfLines={1}
+                                  >
+                                    {it.name}
+                                  </Text>
+                                </TouchableOpacity>
+                              </React.Fragment>
+                            );
+                          })}
+                        </ScrollView>
+                      )}
+                    </View>
 
-            {/* Ligne 2 : stock — chiffres horizontaux scrollables + gros chiffre + -/+ */}
-            <View style={styles.stockSection}>
-              <Text style={styles.fieldLabel}>Stock disponible</Text>
-              <View style={styles.stockSectionHead}>
-                {/* Chiffres horizontaux scrollables, puis le stepper */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.tensScroll}
-                  contentContainerStyle={styles.tensRowContent}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {Array.from({ length: 21 }, (_, i) => i * 10).map((n) => {
-                    const active = (Number(stock) || 0) === n;
-                    return (
-                      <TouchableOpacity
-                        key={n}
+                    {/* Ligne d'édition : nom, prix, supprimer, valider */}
+                    <View style={styles.priceDescRow}>
+                      <TextInput
                         style={[
-                          styles.tensChip,
-                          active && styles.tensChipActive,
+                          styles.input,
+                          styles.itemInputCompact,
+                          styles.descCol,
                         ]}
+                        placeholder={
+                          sec.key === "extras"
+                            ? "Nom de l'extra"
+                            : "Nom de la boisson"
+                        }
+                        value={sec.draft.name}
+                        onChangeText={(t) =>
+                          sec.setDraft({ ...sec.draft, name: t })
+                        }
+                      />
+                      <TextInput
+                        style={[
+                          styles.input,
+                          styles.itemInputCompact,
+                          styles.priceCol,
+                        ]}
+                        placeholder="Prix"
+                        keyboardType="numeric"
+                        value={sec.draft.prix}
+                        onChangeText={(t) =>
+                          sec.setDraft({ ...sec.draft, prix: t })
+                        }
+                      />
+                      {/* Supprimer : retire l'item en édition (sinon vide juste le draft) */}
+                      <TouchableOpacity
+                        style={styles.itemActionBtn}
                         onPress={() => {
-                          setStock(String(n));
-                          setErrorFields((e) => e.filter((f) => f !== "stock"));
+                          if (sec.editIdx !== null) {
+                            sec.setList(
+                              sec.list.filter((_, i) => i !== sec.editIdx),
+                            );
+                          }
+                          resetDraft();
                         }}
                       >
-                        <Text
-                          style={[
-                            styles.tensChipText,
-                            active && styles.tensChipTextActive,
-                          ]}
-                        >
-                          {n}
-                        </Text>
+                        <Ionicons
+                          name="trash-outline"
+                          size={18}
+                          color={Theme.colors.danger}
+                        />
                       </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-                <View style={styles.stockStepperRow}>
-                  <TouchableOpacity
-                    style={styles.stockStepBtn}
-                    onPress={() => {
-                      setStock(String(Math.max(0, (Number(stock) || 0) - 1)));
-                      setErrorFields((e) => e.filter((f) => f !== "stock"));
-                    }}
+                      {/* Valider : ajoute / met à jour */}
+                      <TouchableOpacity
+                        style={[styles.itemActionBtn, styles.itemValidateBtn]}
+                        onPress={validate}
+                      >
+                        <Ionicons name="checkmark" size={18} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Ligne 1 : disponibilité (Disponible / Indisponible côte à côte) */}
+              <Text
+                style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}
+              >
+                Disponibilité
+              </Text>
+              <View style={styles.availRow}>
+                {(
+                  [
+                    {
+                      key: "available",
+                      label: "Disponible",
+                      color: Theme.colors.success,
+                    },
+                    {
+                      key: "unavailable",
+                      label: "Indisponible",
+                      color: Theme.colors.danger,
+                    },
+                  ] as const
+                ).map((s) => {
+                  const active = availability === s.key;
+                  return (
+                    <TouchableOpacity
+                      key={s.key}
+                      style={[
+                        styles.availBtn,
+                        active && {
+                          backgroundColor: s.color,
+                          borderColor: s.color,
+                        },
+                      ]}
+                      onPress={() => setAvailability(s.key)}
+                    >
+                      <Text
+                        style={[
+                          styles.availBtnText,
+                          { color: active ? "white" : s.color },
+                        ]}
+                      >
+                        {s.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* Ligne 2 : stock — chiffres horizontaux scrollables + gros chiffre + -/+ */}
+              <View style={styles.stockSection}>
+                <Text style={styles.fieldLabel}>Stock disponible</Text>
+                <View style={styles.stockSectionHead}>
+                  {/* Chiffres horizontaux scrollables, puis le stepper */}
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.tensScroll}
+                    contentContainerStyle={styles.tensRowContent}
+                    keyboardShouldPersistTaps="handled"
                   >
-                    <Ionicons
-                      name="remove"
-                      size={20}
-                      color={Theme.colors.dark}
-                    />
-                  </TouchableOpacity>
-                  <Text style={styles.stockBigValue}>{Number(stock) || 0}</Text>
-                  <TouchableOpacity
-                    style={[styles.stockStepBtn, styles.stockStepBtnPlus]}
-                    onPress={() => {
-                      setStock(String((Number(stock) || 0) + 1));
-                      setErrorFields((e) => e.filter((f) => f !== "stock"));
-                    }}
-                  >
-                    <Ionicons name="add" size={20} color="white" />
-                  </TouchableOpacity>
+                    {Array.from({ length: 21 }, (_, i) => i * 10).map((n) => {
+                      const active = (Number(stock) || 0) === n;
+                      return (
+                        <TouchableOpacity
+                          key={n}
+                          style={[
+                            styles.tensChip,
+                            active && styles.tensChipActive,
+                          ]}
+                          onPress={() => {
+                            setStock(String(n));
+                            setErrorFields((e) =>
+                              e.filter((f) => f !== "stock"),
+                            );
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.tensChipText,
+                              active && styles.tensChipTextActive,
+                            ]}
+                          >
+                            {n}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                  <View style={styles.stockStepperRow}>
+                    <TouchableOpacity
+                      style={styles.stockStepBtn}
+                      onPress={() => {
+                        setStock(String(Math.max(0, (Number(stock) || 0) - 1)));
+                        setErrorFields((e) => e.filter((f) => f !== "stock"));
+                      }}
+                    >
+                      <Ionicons
+                        name="remove"
+                        size={20}
+                        color={Theme.colors.dark}
+                      />
+                    </TouchableOpacity>
+                    <Text style={styles.stockBigValue}>
+                      {Number(stock) || 0}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.stockStepBtn, styles.stockStepBtnPlus]}
+                      onPress={() => {
+                        setStock(String((Number(stock) || 0) + 1));
+                        setErrorFields((e) => e.filter((f) => f !== "stock"));
+                      }}
+                    >
+                      <Ionicons name="add" size={20} color="white" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          </DismissKeyboardWrapper>
-        )}
+            </DismissKeyboardWrapper>
+          )}
 
-        {/* Étape récapitulatif : 3 designs explorables (Aperçu / Blocs / Édito). */}
-        {step === "recap" && (
-          <MenuRecap
-            draft={{
-              nom,
-              prix: [prix1, prix2, prix3],
-              desc: [desc1, desc2, desc3],
-              extras,
-              drinks,
-              availability,
-              stock,
-              images,
-            }}
-          />
-        )}
-      </ScrollView>
+          {/* Étape récapitulatif : 3 designs explorables (Aperçu / Blocs / Édito). */}
+          {step === "recap" && (
+            <MenuRecap
+              draft={{
+                nom,
+                prix: [prix1, prix2, prix3],
+                desc: [desc1, desc2, desc3],
+                extras,
+                drinks,
+                availability,
+                stock,
+                images,
+              }}
+            />
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Footer navigation */}
@@ -1079,7 +1100,13 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
           style={[
             styles.sheetWrap,
             // La barre de navigation système recouvrait le bas de la sheet.
-            { height: MODAL_HEIGHT + insets.bottom, paddingBottom: insets.bottom },
+            // ⚠️ Pas de `paddingBottom` ici : un padding sur CE wrapper pousse
+            // `sheet` (fond blanc, flex:1) vers le haut et laisse voir le
+            // fond gris de l'overlay sous le footer, au lieu d'un fond blanc
+            // continu. `insets.bottom` doit gonfler la hauteur totale
+            // uniquement — l'absorption se fait dans le footer (padding
+            // interne, cf. styles.footer / `embedded` ci-dessous).
+            { height: MODAL_HEIGHT + insets.bottom },
             {
               transform: [
                 {

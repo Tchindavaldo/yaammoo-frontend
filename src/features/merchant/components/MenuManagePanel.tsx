@@ -189,7 +189,11 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     const isAvailable = status === "available";
     const prix = item.prices?.[0]?.price || item.prix1 || 0;
     const menuImage = item.coverImage || item.images?.[0] || item.image;
-    const statusColor = isAvailable ? "#2dd36f" : "rgba(236,73,19,1.00)";
+    // Hex obligatoire : le chip statut concatène `statusColor + "14"/"22"`
+    // pour obtenir une teinte translucide (8%/13% d'opacité) — une valeur
+    // `rgba(...)` ne peut pas être suffixée de la sorte, React Native rendait
+    // alors un fond plein illisible au lieu d'un fond léger.
+    const statusColor = isAvailable ? "#2dd36f" : "#ec4913";
 
     return (
       <View style={styles.menuRowWrapper}>

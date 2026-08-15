@@ -15,6 +15,7 @@ import { MenuManageModal } from '@/src/features/merchant/components/MenuManageMo
 import { MerchantSupportModal } from '@/src/features/merchant/components/support/MerchantSupportModal';
 import { WalletManageModal } from '@/src/features/merchant/components/WalletManageModal';
 import { getDeviceId } from '@/src/features/notifications/services/deviceId';
+import { useNotificationSetup } from '@/src/features/notifications/hooks/useNotificationSetup';
 import { UserOrdersModal } from '@/src/features/orders/components/UserOrdersModal';
 import { SettingItem } from '@/src/features/profile/components/SettingItem';
 import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
@@ -30,6 +31,7 @@ import {
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import React, { useEffect, useState } from 'react';
+import * as Notifications from 'expo-notifications';
 import {
   ActivityIndicator,
   Alert,
@@ -57,7 +59,13 @@ export default function SettingsScreen() {
   const { isSignedIn } = useAuthGate();
   // Mode review Apple : masque les items liés au paiement / portefeuille.
   const { appleReviewMode } = useFastFoods();
-  const [notifEnabled, setNotifEnabled] = useState(true);
+  // Reflète l'état RÉEL : permission OS native (lue au montage), pas un
+  // simple booléen local. Le OFF (révocation) ne peut pas être fait par code
+  // (iOS/Android l'interdisent) : au tap OFF le switch reste visuel, non
+  // fonctionnel. Le ON relance le même flux qu'au premier lancement de l'app
+  // (permission + sync du token en BD).
+  const [notifEnabled, setNotifEnabled] = useState(false);
+  const { setup: setupNotifications } = useNotificationSetup();
   const [darkMode, setDarkMode] = useState(false);
   const [editBoutiqueVisible, setEditBoutiqueVisible] = useState(false);
   const [menuManageVisible, setMenuManageVisible] = useState(false);
@@ -142,6 +150,45 @@ export default function SettingsScreen() {
       setDeleteError(null);
     }
   }, [isSignedIn]);
+
+  // État réel du switch Notifications : ON seulement si la permission OS est
+  // accordée ET qu'un token de CE device est déjà synced en BD
+  // (userData.pushTokens). Un refus au premier lancement (permission refusée
+  // → jamais de token envoyé) affiche donc bien OFF, et le tap relance la
+  // demande native. Re-lu à chaque focus de l'écran (retour depuis les
+  // réglages système après un changement de permission).
+  useEffect(() => {
+    let cancelled = false;
+    const readState = async () => {
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        if (!cancelled) setNotifEnabled(false);
+        return;
+      }
+      const deviceId = await getDeviceId();
+      const pushTokens = ((userData as any)?.pushTokens as Array<{ deviceId: string }> | undefined) || [];
+      const hasTokenSynced = pushTokens.some((t) => t?.deviceId === deviceId);
+      if (!cancelled) setNotifEnabled(hasTokenSynced);
+    };
+    readState();
+    const unsub = navigation.addListener('focus', readState);
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, [navigation, userData]);
+
+  const handleNotifToggle = async (next: boolean) => {
+    if (!next) {
+      // Pas de révocation possible par code : état visuel seulement.
+      setNotifEnabled(false);
+      return;
+    }
+    // ON = même flux que le premier lancement (permission native + sync BD).
+    await setupNotifications();
+    const { status } = await Notifications.getPermissionsAsync();
+    setNotifEnabled(status === 'granted');
+  };
 
   // Deep-link : notifications / home « Mes commandes » → ouvre le modal commandes.
   const { section } = useLocalSearchParams<{ section?: string }>();
@@ -414,7 +461,7 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={notifEnabled}
-              onValueChange={setNotifEnabled}
+              onValueChange={handleNotifToggle}
               trackColor={{ false: Theme.colors.gray[200], true: Theme.colors.primary + '60' }}
               thumbColor={notifEnabled ? Theme.colors.primary : Theme.colors.gray[400]}
             />

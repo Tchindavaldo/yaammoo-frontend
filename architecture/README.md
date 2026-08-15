@@ -20,6 +20,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |
 | [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank) |
 | [orders-merchant.md](./orders-merchant.md) | Gestion commandes côté marchand (panel, cartes, statuts) |
+| [menu.md](./menu.md) | Gestion des menus côté marchand (panel, formulaire multi-étapes, designs récap) |
 | [bonus.md](./bonus.md) | Bonus & récompenses client (bottom sheet, carrousel, registre évolutif, moteur d'éligibilité, claim, campagne `status_view` : flyer + preuve vidéo) |
 | [driver.md](./driver.md) | Rôle driver — commandes déléguées (onglet, panel, carte, socket, contrat backend) |
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |

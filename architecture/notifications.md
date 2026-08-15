@@ -88,14 +88,19 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 **`src/features/notifications/hooks/useNotificationSetup.ts`**
 
 **Init**
-- Demande les permissions Expo, enregistre le device.
-- Récupère le token (FCM natif ou Expo Push selon disponibilité).
-- Sync token backend : `PUT /user/:uid` avec `{ fcmToken }`.
+- Demande les permissions Expo (+ `PermissionsAndroid.POST_NOTIFICATIONS` sur Android 13+), enregistre le device.
+- Récupère le token natif (`getDevicePushTokenAsync` — FCM sur Android, APNs hex sur iOS), fallback Expo Push si `EXPO_PUBLIC_USE_EXPO_PUSH=true`.
+- Sync token backend : `POST /user/push-token/add` avec `{ token, platform, deviceId }` (Bearer du user courant).
 
 **Gestion locale**
-- Après sync, met à jour `userData.fcmTokens[]` dans AuthContext + AsyncStorage.
-- Skip re-sync si token déjà dans le tableau.
-- Fallback `unsentFcmToken` dans storage si erreur réseau.
+- Après sync, met à jour `userData.pushTokens[]` (`{ token, platform, deviceId, lastSeen }`) dans AuthContext + AsyncStorage (`user_data`).
+- Skip re-sync si un token pour ce `deviceId` est déjà dans le tableau.
+- Fallback `unsentFcmToken` dans storage si erreur réseau, rejoué au prochain `setup()`.
+- `deviceId` = identifiant stable par installation (`src/features/notifications/services/deviceId.ts`, `expo-secure-store`) — survit aux relances, disparaît à la désinstallation. C'est la clé qui rattache un token à CE device, indépendamment du compte connecté.
+
+**Déclenchement de `setup()`**
+- `app/_layout.tsx` : à chaque connexion (`isSignedIn` + nouvel `user.uid`), relance `setupNotifications()` — pas de re-déclenchement si le même `uid` reste connecté.
+- ⚠️ La **permission OS est globale à l'app, pas par compte**. Si un premier compte l'a accordée, un second compte connecté sur le même device en hérite automatiquement (l'OS ne redemande pas) — `setup()` retrouve alors `granted` direct et sync juste le token pour le nouveau `uid`.
 
 **Foreground (app ouverte)**
 - `addNotificationReceivedListener` : ne déclenche plus de refresh auto (la mise à jour de la liste passe par le socket `newNotification` → `addFromSocket`).
@@ -181,6 +186,21 @@ La page [`app/(tabs)/cart.tsx`](../app/(tabs)/cart.tsx) lit `useLocalSearchParam
 - Pull-to-refresh → `refresh()` avec loader natif visible
 - Empty state : "Aucune notification"
 - Intègre `NotificationDetailSheet`
+
+### Switch « Notifications » — Settings
+**`app/(tabs)/settings.tsx`**, section Préférences.
+
+Reflète l'état **réel**, pas un booléen local :
+
+```
+ON  = permission OS "granted"  ET  un token pour CE deviceId existe dans userData.pushTokens
+OFF = sinon (permission refusée, OU permission accordée mais token jamais synced pour ce device)
+```
+
+- **Lecture** : `useEffect` au montage + à chaque `navigation.addListener('focus', ...)` (retour depuis les réglages système) + à chaque changement de `userData` (switch de compte). Compare `Notifications.getPermissionsAsync()` et `getDeviceId()` contre `userData.pushTokens`.
+- **Tap ON** : rejoue exactement le flux du premier lancement — `useNotificationSetup().setup()` (demande permission native + `syncToken` + màj `userData.pushTokens`) — puis relit l'état réel.
+- **Tap OFF** : **purement visuel, non fonctionnel.** Aucune API OS (iOS/Android) ne permet à une app de révoquer sa propre permission de notification par code — seul l'utilisateur peut le faire depuis les réglages système. Décision produit : pas de redirection vers les réglages au tap OFF, le switch retombe simplement à OFF côté état local jusqu'au prochain re-calcul (focus/remount), qui le restaurera à ON si la BD/permission réelle dit toujours ON.
+- **Cas multi-comptes sur un même device** : la permission OS est **globale à l'app**, pas par compte. Si le compte A l'a accordée puis qu'on se connecte avec le compte B sur le même téléphone, `setup()` (relancé par `_layout.tsx` à chaque nouvel `uid`) retrouve `granted` sans redemander à l'OS et attache directement le token de ce device au `pushTokens` de B. Le switch de B affichera donc ON même s'il n'a personnellement rien accepté — limite native, non contournable.
 
 ---
 

@@ -19,6 +19,7 @@ import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { CartOrderCard } from "@/src/features/orders/components/CartOrderCard";
+import { CartOrderSkeleton } from "@/src/features/orders/components/CartOrderSkeleton";
 import { CartZoneFooterBar } from "@/src/features/orders/components/CartZoneFooterBar";
 import {
   CartFilterChipsRow,
@@ -651,12 +652,21 @@ export default function OrdersScreen() {
     );
   }
 
+  // Chargement initial / refetch forcé : on affiche un loader qui réplique la
+  // structure des CartOrderCard (skeleton), sous le TabHeader, pour éviter le
+  // saut visuel du spinner plein écran.
   if ((loading && orders.length === 0) || forceLoading) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={styles.loadingText}>Chargement de vos commandes...</Text>
+      <View style={styles.container}>
+        <TabHeader
+          title="Mon panier"
+          subtitle="Chargement..."
+          onHeightChange={setHeaderHeight}
+        />
+        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <CartOrderSkeleton key={i} />
+          ))}
         </View>
       </View>
     );
@@ -970,10 +980,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 40,
     gap: 12,
-  },
-  loadingText: {
-    color: Theme.colors.gray[500],
-    fontSize: 14,
   },
   listContent: {
     // Pas de padding horizontal ni de gap : les CartOrderCard portent leur

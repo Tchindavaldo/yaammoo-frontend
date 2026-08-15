@@ -76,3 +76,19 @@ Exemple concret : `deliveryHours` est servi en ancien format, OU en nouveau form
 `{ deliveryHours, expressZones }`, selon la version portée par le header. L'app
 reçoit donc toujours des données qu'elle sait interpréter, quelle que soit sa
 version.
+
+## Mise à jour forcée (`src/features/appVersion/`)
+
+Utilise le même header pour bloquer les clients trop anciens, côté backend
+`GET /settings/app-version` (public, table `settings` : `min_app_version` /
+`latest_app_version`, jamais bloquant par défaut — repli `"0.0.0"`).
+
+| Fichier | Rôle |
+|---|---|
+| `hooks/useAppVersionGate.ts` | Appelle `/settings/app-version` au boot, expose `{ forceUpdate, updateAvailable, minVersion, latestVersion, clientVersion }`. N'échoue jamais bloquant (erreur réseau → `gate = null`). |
+| `components/ForceUpdateScreen.tsx` | Écran plein écran non fermable, monté à la place du `Stack` entier dans `app/_layout.tsx` quand `forceUpdate` est vrai. |
+| `components/UpdateAvailableSheet.tsx` | Modal dismissible ("Plus tard" / "Mettre à jour"), affichée par-dessus l'app normale quand `updateAvailable` est vrai sans `forceUpdate`. |
+| `services/storeLinks.ts` | `openStorePage()` — ouvre le Play Store (`market://`, repli web) ou l'App Store (`https://apps.apple.com/app/id...`) selon `Platform.OS`. Utilise `Config.androidPackageName` / `Config.iosAppStoreId`. |
+
+`Config.iosAppStoreId` (`src/api/config.ts`) est vide tant que l'app n'est pas
+publiée sur l'App Store — à renseigner une fois l'Apple ID connu.

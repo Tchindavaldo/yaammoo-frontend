@@ -16,6 +16,13 @@ export const Config = {
   // Sélection automatique : prod en release, locale en dev.
   apiUrl: __DEV__ ? DEV_API_URL : PROD_API_URL,
 
+  // ─── Store (mise à jour forcée) ────────────────────────────────────────────
+  // Identifiant Play Store = bundleIdentifier Android (app.json → android.package).
+  androidPackageName: "com.rauval.yaammoo",
+  // Identifiant numérique App Store (Apple Connect → App Information → Apple ID).
+  // À renseigner une fois l'app publiée sur l'App Store.
+  iosAppStoreId: "",
+
   // ─── Sentry (crash reporting) ──────────────────────────────────────────────
   // Colle ici le DSN de ton projet Sentry (sentry.io → Settings → Client Keys).
   // Tant que c'est vide, Sentry est désactivé et l'app fonctionne normalement.

@@ -19,6 +19,10 @@ import { BonusProvider } from "@/src/features/bonus/context/BonusContext";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
 import { AuthGateProvider } from "@/src/features/auth/context/AuthGateContext";
+import {
+  AppVersionProvider,
+  useAppVersion,
+} from "@/src/features/appVersion/context/AppVersionContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
 import { useEffect, useRef, useState } from "react";
@@ -27,9 +31,7 @@ import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 import { initSentry, wrapWithSentry } from "@/src/services/sentry";
 import { setupHttp } from "@/src/api/setupHttp";
 import { prefetchBonusBackground } from "@/src/features/bonus/components/BonusPageBackground";
-import { useAppVersionGate } from "@/src/features/appVersion/hooks/useAppVersionGate";
 import ForceUpdateScreen from "@/src/features/appVersion/components/ForceUpdateScreen";
-import UpdateAvailableSheet from "@/src/features/appVersion/components/UpdateAvailableSheet";
 
 // Initialise le crash reporting le plus tôt possible (avant tout rendu),
 // pour capturer aussi les crashs au démarrage. No-op tant que le DSN est vide.
@@ -55,8 +57,7 @@ export const unstable_settings = {
 function AppContent() {
   const { user, userData, loading } = useAuth();
   const { hasLoadedOnce: homeReady } = useFastFoods();
-  const { gate } = useAppVersionGate();
-  const [updateSheetDismissed, setUpdateSheetDismissed] = useState(false);
+  const { forceUpdate } = useAppVersion();
   // uid pour lequel le setup notif a déjà été fait (null = aucun). On mémorise
   // l'uid (et pas juste un booléen) pour re-déclencher le setup à CHAQUE nouvelle
   // connexion : reconnexion du même user OU changement de compte, sans fermer
@@ -120,7 +121,19 @@ function AppContent() {
 
   // Version sous le minimum requis : blocage total, aucune navigation
   // possible tant que l'app n'est pas mise à jour.
-  if (gate?.forceUpdate) {
+  //
+  // Le splash natif est normalement caché depuis un écran du <Stack> via `onLayout`
+  // (useHideSplash). Ici le Stack n'est JAMAIS monté → le splash resterait figé
+  // par-dessus ForceUpdateScreen. On le cache donc explicitement dès que le gate
+  // exige une mise à jour, le temps que l'écran de blocage soit peint.
+  useEffect(() => {
+    if (!forceUpdate || isSplashHidden()) return;
+    requestAnimationFrame(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    });
+  }, [forceUpdate]);
+
+  if (forceUpdate) {
     return (
       <ThemeProvider value={DefaultTheme}>
         <ForceUpdateScreen />
@@ -130,12 +143,6 @@ function AppContent() {
 
   return (
     <ThemeProvider value={DefaultTheme}>
-      {gate?.updateAvailable && (
-        <UpdateAvailableSheet
-          visible={!updateSheetDismissed}
-          onDismiss={() => setUpdateSheetDismissed(true)}
-        />
-      )}
       <Stack screenOptions={{ headerShown: false }}>
         {/* Tant que l'auth n'est pas résolue, aucun groupe n'est monté : le splash
             natif couvre l'écran. On ne monte le bon groupe qu'une fois l'état connu.
@@ -172,7 +179,9 @@ function RootLayout() {
                   <FastFoodProvider>
                     <BonusProvider>
                       <AuthGateProvider>
-                        <AppContent />
+                        <AppVersionProvider>
+                          <AppContent />
+                        </AppVersionProvider>
                       </AuthGateProvider>
                     </BonusProvider>
                   </FastFoodProvider>

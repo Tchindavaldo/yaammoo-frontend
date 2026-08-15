@@ -86,9 +86,10 @@ Utilise le même header pour bloquer les clients trop anciens, côté backend
 | Fichier | Rôle |
 |---|---|
 | `hooks/useAppVersionGate.ts` | Appelle `/settings/app-version` au boot, expose `{ forceUpdate, updateAvailable, minVersion, latestVersion, clientVersion }`. N'échoue jamais bloquant (erreur réseau → `gate = null`). |
-| `components/ForceUpdateScreen.tsx` | Écran plein écran non fermable, monté à la place du `Stack` entier dans `app/_layout.tsx` quand `forceUpdate` est vrai. |
-| `components/UpdateAvailableSheet.tsx` | Modal dismissible ("Plus tard" / "Mettre à jour"), affichée par-dessus l'app normale quand `updateAvailable` est vrai sans `forceUpdate`. |
+| `context/AppVersionContext.tsx` | Provider seul point d'entrée du gate : appelle `useAppVersionGate` une fois, expose `{ gate, updateAvailable, forceUpdate, recheck }` aux écrans via `useAppVersion()`. |
+| `components/ForceUpdateScreen.tsx` | Écran plein écran non fermable, monté à la place du `Stack` entier dans `app/_layout.tsx` quand `forceUpdate` est vrai. Le splash natif y est caché explicitement (le Stack n'étant pas monté, son `onLayout` ne pourrait pas le faire). |
+| `components/UpdateAvailableSheet.tsx` | Modal dismissible ("Plus tard" / "Mettre à jour"), affichée **par-dessus le HomeScreen** (écran home, pas le layout racine) quand `updateAvailable` est vrai sans `forceUpdate`. Montée une fois le home peint → pas de page blanche entre le splash et le home. |
 | `services/storeLinks.ts` | `openStorePage()` — ouvre le Play Store (`market://`, repli web) ou l'App Store (`https://apps.apple.com/app/id...`) selon `Platform.OS`. Utilise `Config.androidPackageName` / `Config.iosAppStoreId`. |
 
-`Config.iosAppStoreId` (`src/api/config.ts`) est vide tant que l'app n'est pas
-publiée sur l'App Store — à renseigner une fois l'Apple ID connu.
+`Config.iosAppStoreId` (`src/api/config.ts`) est l'Apple ID numérique de l'app sur
+l'App Store (APPSTORE_CONNECT.html), renseigné une fois l'app publiée.

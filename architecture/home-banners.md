@@ -37,7 +37,13 @@ pour ne jamais laisser le home vide.
 
 - `HeroBanner` est `memo`isé ; `handleBannerPress` est `useCallback` stable en
   fonction de `router` ; `listHeader` est un `useMemo([banners, handleBannerPress])`.
-- Pagination par `pagingEnabled` + `getItemLayout` (largeur pleine écran), dots
-  via `onViewableItemsChanged`.
+- **Rendu Carrousel & Animation** :
+  - `Animated.FlatList` gère le scroll horizontal et la pagination natif (`pagingEnabled`).
+  - Espacement horizontal personnalisé entre les cartes (`bannerItemContainer` avec `paddingHorizontal`).
+  - Animation au scroll : interpolation natif de `scrollX` pour effectuer un zoom (`scale: 0.90 -> 1.0 -> 0.90`) et ajuster l'opacité (`opacity: 0.8 -> 1.0 -> 0.8`) des bannières au défilement.
+- **Boucle Infinie & Autoplay** :
+  - **Loop infini** (`extendedBanners`) : multiplication virtuelle du tableau de bannières pour un défilement infini sans fin de liste.
+  - **Autoplay** : défilement automatique toutes les 3.5 secondes.
+  - **Pause sur slide manuel** (`onScrollBeginDrag`) : lorsqu'un utilisateur effectue un slide manuel, l'autoplay s'interrompt pendant 20 secondes avant de reprendre automatiquement.
 - R16 : le carrousel est rendu **dans** `HeroBanner` (pas de composant carrousel
   partagé) ; `UserBonusSheet` n'est pas modifiée.

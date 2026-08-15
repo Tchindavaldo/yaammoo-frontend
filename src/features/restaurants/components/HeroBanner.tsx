@@ -1,8 +1,8 @@
-import React, { memo, useCallback, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList, ViewToken } from 'react-native';
-import { Image } from 'expo-image';
 import { Theme } from '@/src/theme';
 import { AppBanner } from '@/src/types';
+import { Image } from 'expo-image';
+import React, { memo, useCallback, useRef, useState } from 'react';
+import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -26,6 +26,7 @@ interface Props {
  */
 function HeroBannerBase({ banners, onBonusPress }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -40,30 +41,32 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
   if (!hasCarousel) {
     return (
       <View style={styles.container}>
-        <View style={styles.bannerWrapper}>
-          <Image
-            source={require('@/assets/images/banner-shawamar.webp')}
-            style={styles.backgroundImage}
-            contentFit="cover"
-          />
-          <View style={styles.overlay}>
-            <View style={styles.topLine}>
-              <Text style={styles.codeText}>Use code </Text>
-              <View style={styles.codeBadge}>
-                <Text style={styles.badgeText}>FIRST50</Text>
+        <View style={styles.bannerItemContainer}>
+          <View style={styles.bannerWrapper}>
+            <Image
+              source={require('@/assets/images/banner-shawamar.webp')}
+              style={styles.backgroundImage}
+              contentFit="cover"
+            />
+            <View style={styles.overlay}>
+              <View style={styles.topLine}>
+                <Text style={styles.codeText}>Use code </Text>
+                <View style={styles.codeBadge}>
+                  <Text style={styles.badgeText}>FIRST50</Text>
+                </View>
               </View>
+              <Text style={styles.hurry}>Offer ends soon!</Text>
+              <Text style={styles.bigTitle}>Get 50% Off Your{"\n"}First Order!</Text>
+
+              <TouchableOpacity style={styles.orderBtn} activeOpacity={0.8}>
+                <Text style={styles.orderBtnText}>Order Now</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.hurry}>Offer ends soon!</Text>
-            <Text style={styles.bigTitle}>Get 50% Off Your{"\n"}First Order!</Text>
 
-            <TouchableOpacity style={styles.orderBtn} activeOpacity={0.8}>
-              <Text style={styles.orderBtnText}>Order Now</Text>
-            </TouchableOpacity>
+            {/* Decorative Blobs */}
+            <View style={[styles.blob, styles.blob1]} />
+            <View style={[styles.blob, styles.blob2]} />
           </View>
-
-          {/* Decorative Blobs */}
-          <View style={[styles.blob, styles.blob1]} />
-          <View style={[styles.blob, styles.blob2]} />
         </View>
       </View>
     );
@@ -71,12 +74,17 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <Animated.FlatList
         data={banners}
         keyExtractor={(item) => item.id}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
+        scrollEventThrottle={16}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
         getItemLayout={(_, index) => ({
@@ -84,25 +92,49 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
           offset: width * index,
           index,
         })}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.bannerWrapper}
-            activeOpacity={0.9}
-            disabled={item.type !== 'bonus'}
-            onPress={() => item.type === 'bonus' && onBonusPress(item)}
-          >
-            <Image
-              source={{ uri: item.imageUrl }}
-              style={styles.backgroundImage}
-              contentFit="cover"
-            />
-            {item.title ? (
-              <View style={styles.overlay}>
-                <Text style={styles.bannerTitle}>{item.title}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-        )}
+        renderItem={({ item, index }) => {
+          const inputRange = [
+            (index - 1) * width,
+            index * width,
+            (index + 1) * width,
+          ];
+
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.90, 1, 0.90],
+            extrapolate: 'clamp',
+          });
+
+          const opacity = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.8, 1, 0.8],
+            extrapolate: 'clamp',
+          });
+
+          return (
+            <View style={styles.bannerItemContainer}>
+              <Animated.View style={[styles.animatedWrapper, { transform: [{ scale }], opacity }]}>
+                <TouchableOpacity
+                  style={styles.bannerWrapper}
+                  activeOpacity={0.9}
+                  disabled={item.type !== 'bonus'}
+                  onPress={() => item.type === 'bonus' && onBonusPress(item)}
+                >
+                  <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.backgroundImage}
+                    contentFit="cover"
+                  />
+                  {item.title ? (
+                    <View style={styles.overlay}>
+                      <Text style={styles.bannerTitle}>{item.title}</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          );
+        }}
       />
       {banners.length > 1 && (
         <View style={styles.dotsRow}>
@@ -122,13 +154,22 @@ export const HeroBanner: React.FC<Props> = memo(HeroBannerBase);
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width,
+    marginHorizontal: -Theme.design.horizontalPadding,
     marginTop: 4,
     marginBottom: 10,
   },
-  bannerWrapper: {
+  bannerItemContainer: {
     width,
+    paddingHorizontal: 8,
+  },
+  animatedWrapper: {
+    width: '100%',
     height: 210,
+  },
+  bannerWrapper: {
+    width: '100%',
+    height: '100%',
     borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: '#e8440a',

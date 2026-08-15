@@ -5,7 +5,7 @@ import { RestaurantHeader } from "@/src/features/restaurants/components/Restaura
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
 import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
-import { Menu } from "@/src/types";
+import { Menu, AppBanner } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -49,6 +49,7 @@ export default function HomeScreen() {
     fastFoods,
     loading,
     refresh,
+    banners,
     searchQuery,
     setSearchQuery,
     selectedCategory,
@@ -83,7 +84,17 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const listHeader = useMemo(() => <HeroBanner />, []);
+  const handleBannerPress = useCallback((banner: AppBanner) => {
+    // Une bannière `bonus` ouvre la sheet Bonus (Settings → Bonus et parrainage).
+    if (banner.type === 'bonus') {
+      router.push('/(tabs)/settings?section=bonus');
+    }
+  }, [router]);
+
+  const listHeader = useMemo(
+    () => <HeroBanner banners={banners} onBonusPress={handleBannerPress} />,
+    [banners, handleBannerPress],
+  );
 
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
@@ -118,29 +129,6 @@ export default function HomeScreen() {
       return false;
     }
   };
-
-  const renderHeader = () => (
-    <>
-      <RestaurantHeader
-        userName={[userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(' ') || user?.displayName || "Utilisateur"}
-        userPhoto={
-          (userData as any)?.photoUrl || (userData as any)?.photo || ""
-        }
-        location="Banganté, Cameroun"
-        unreadCount={unreadCount}
-        onNotifPress={() => router.push("/(tabs)/notifications")}
-        onProfilePress={() => router.push("/(tabs)/settings")}
-        searchVisible={searchOpen}
-        onSearchToggle={() => setSearchOpen(!searchOpen)}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        categories={CATEGORIES}
-        selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
-      />
-      <HeroBanner />
-    </>
-  );
 
   if ((loading && fastFoods.length === 0) || forceLoading) {
     return (

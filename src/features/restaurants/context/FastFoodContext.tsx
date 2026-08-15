@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
-import { DeliveryOffer, FastFood } from '@/src/types';
+import { DeliveryOffer, FastFood, AppBanner } from '@/src/types';
 
 interface FastFoodContextType {
   fastFoods: FastFood[];
@@ -41,6 +41,8 @@ interface FastFoodContextType {
    * (celles d'autres bonus / campagnes sont préservées).
    */
   clearDeliveryOfferForBonus: (bonusId: string) => void;
+  /** Bannières publicitaires actives du home, reçues via GET /fastfood/all. */
+  banners: AppBanner[];
 }
 
 // ── Normalisation (partagée entre le fetch HTTP et l'injection socket) ──
@@ -96,6 +98,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [appleReviewMode, setAppleReviewMode] = useState(false);
+  const [banners, setBanners] = useState<AppBanner[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -117,6 +120,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       // Flag review Apple porté par la réponse (défaut false si absent).
       setAppleReviewMode(response.data?.appleReviewMode === true);
+
+      // Bannières publicitaires du carrousel (défaut à vide si absentes).
+      setBanners(Array.isArray(response.data?.banners) ? response.data.banners : []);
 
       if (response.data && response.data.data) {
         const data = response.data.data.map((item: any, index: number) =>
@@ -239,6 +245,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         loading,
         hasLoadedOnce,
         appleReviewMode,
+        banners,
         error,
         searchQuery,
         setSearchQuery,

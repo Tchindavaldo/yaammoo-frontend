@@ -44,6 +44,21 @@ export interface DeliveryOffer {
   fastFoodId: string | null;
 }
 
+/**
+ * Bannière publicitaire du carrousel home (`GET /fastfood/all` → `banners[]`).
+ * `type='bonus'` → au clic on ouvre la sheet bonus ciblée par `targetId` ;
+ * `type='none'` → pas d'action au clic.
+ */
+export interface AppBanner {
+  id: string;
+  title: string | null;
+  imageUrl: string;
+  type: "bonus" | "none";
+  targetId: string | null;
+  active: boolean;
+  sortOrder: number;
+}
+
 export class Livraison {
   constructor(
     public statut: boolean,

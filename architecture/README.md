@@ -28,6 +28,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [support-merchant.md](./support-merchant.md) | Messages boutique — discussions clients reçues par le marchand (feature séparée, HTTP + socket) |
 | [support.md](./support.md) | Contactez-nous — chat support client (écran plein écran, chips d'objet, historique, HTTP + socket) |
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |
+| [home-banners.md](./home-banners.md) | Bannière pub du home — carrousel dynamique, images via `/fastfood/all`, fallback statique |
 
 ---
 

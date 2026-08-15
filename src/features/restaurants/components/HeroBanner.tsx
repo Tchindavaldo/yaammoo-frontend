@@ -1,129 +1,240 @@
-import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { memo, useCallback, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, FlatList, ViewToken } from 'react-native';
 import { Image } from 'expo-image';
 import { Theme } from '@/src/theme';
+import { AppBanner } from '@/src/types';
 
 const { width } = Dimensions.get('window');
 
-export const HeroBanner: React.FC = React.memo(() => {
+interface Props {
+  /** Bannières publicitaires reçues via GET /fastfood/all (actives). */
+  banners: AppBanner[];
+  /** Action invoquée quand on tape une bannière de type `bonus`. */
+  onBonusPress: (banner: AppBanner) => void;
+}
+
+/**
+ * Bannière publicitaire du home.
+ *
+ * S'il y a des bannières (carrousel), on affiche un carrousel horizontal
+ * paginé (dots) qui sert chaque `imageUrl`. `type='bonus'` → on remonte
+ * `onBonusPress` ; `type='none'` → aucun action au tap.
+ *
+ * S'il n'y a aucune bannière active côté backend, on retombe sur l'ancienne
+ * bannière statique embarquée (image locale + code promo) pour ne jamais
+ * laisser le home vide.
+ */
+function HeroBannerBase({ banners, onBonusPress }: Props) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      const first = viewableItems?.[0];
+      if (first?.index != null) setActiveIndex(first.index);
+    },
+    [],
+  );
+
+  const hasCarousel = Array.isArray(banners) && banners.length > 0;
+
+  if (!hasCarousel) {
     return (
-        <View style={styles.container}>
-            <View style={styles.bannerWrapper}>
-                <Image 
-                    source={require('@/assets/images/banner-shawamar.webp')}
-                    style={styles.backgroundImage}
-                    contentFit="cover"
-                />
-                <View style={styles.overlay}>
-                    <View style={styles.topLine}>
-                        <Text style={styles.codeText}>Use code </Text>
-                        <View style={styles.codeBadge}>
-                            <Text style={styles.badgeText}>FIRST50</Text>
-                        </View>
-                    </View>
-                    <Text style={styles.hurry}>Offer ends soon!</Text>
-                    <Text style={styles.bigTitle}>Get 50% Off Your{"\n"}First Order!</Text>
-                    
-                    <TouchableOpacity style={styles.orderBtn} activeOpacity={0.8}>
-                        <Text style={styles.orderBtnText}>Order Now</Text>
-                    </TouchableOpacity>
-                </View>
-                
-                {/* Decorative Blobs */}
-                <View style={[styles.blob, styles.blob1]} />
-                <View style={[styles.blob, styles.blob2]} />
+      <View style={styles.container}>
+        <View style={styles.bannerWrapper}>
+          <Image
+            source={require('@/assets/images/banner-shawamar.webp')}
+            style={styles.backgroundImage}
+            contentFit="cover"
+          />
+          <View style={styles.overlay}>
+            <View style={styles.topLine}>
+              <Text style={styles.codeText}>Use code </Text>
+              <View style={styles.codeBadge}>
+                <Text style={styles.badgeText}>FIRST50</Text>
+              </View>
             </View>
+            <Text style={styles.hurry}>Offer ends soon!</Text>
+            <Text style={styles.bigTitle}>Get 50% Off Your{"\n"}First Order!</Text>
+
+            <TouchableOpacity style={styles.orderBtn} activeOpacity={0.8}>
+              <Text style={styles.orderBtnText}>Order Now</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Decorative Blobs */}
+          <View style={[styles.blob, styles.blob1]} />
+          <View style={[styles.blob, styles.blob2]} />
         </View>
+      </View>
     );
-});
+  }
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={banners}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.bannerWrapper}
+            activeOpacity={0.9}
+            disabled={item.type !== 'bonus'}
+            onPress={() => item.type === 'bonus' && onBonusPress(item)}
+          >
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.backgroundImage}
+              contentFit="cover"
+            />
+            {item.title ? (
+              <View style={styles.overlay}>
+                <Text style={styles.bannerTitle}>{item.title}</Text>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+        )}
+      />
+      {banners.length > 1 && (
+        <View style={styles.dotsRow}>
+          {banners.map((b, i) => (
+            <View
+              key={b.id}
+              style={[styles.dot, i === activeIndex && styles.dotActive]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+export const HeroBanner: React.FC<Props> = memo(HeroBannerBase);
 
 const styles = StyleSheet.create({
-    container: {
-        // paddingHorizontal: Theme.spacing.md,
-        width: '100%',
-        marginTop: 4,
-        marginBottom: 10,
-    },
-    bannerWrapper: {
-        width: '100%',
-        height: 210,
-        borderRadius: 24,
-        overflow: 'hidden',
-        backgroundColor: '#e8440a', // Fallback color (orange typical of hunger apps)
-    },
-    backgroundImage: {
-        ...StyleSheet.absoluteFillObject,
-        width: '100%',
-        height: '100%',
-    },
-    overlay: {
-        flex: 1,
-        padding: 24,
-        zIndex: 2,
-    },
-    topLine: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    codeText: {
-        color: 'white',
-        fontSize: 13,
-        fontWeight: '500',
-    },
-    codeBadge: {
-        backgroundColor: 'white',
-        paddingHorizontal: 10,
-        paddingVertical: 2,
-        borderRadius: 20,
-    },
-    badgeText: {
-        color: '#e8440a',
-        fontSize: 12,
-        fontWeight: '900',
-    },
-    hurry: {
-        color: 'white',
-        fontSize: 14,
-        marginBottom: 8,
-    },
-    bigTitle: {
-        fontSize: 26,
-        fontWeight: '900',
-        color: 'white',
-        lineHeight: 30,
-    },
-    orderBtn: {
-        position: 'absolute',
-        bottom: 16,
-        right: 16,
-        backgroundColor: '#111',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 30,
-        zIndex: 10,
-    },
-    orderBtnText: {
-        color: '#f5c842',
-        fontSize: 14,
-        fontWeight: '900',
-    },
-    blob: {
-        position: 'absolute',
-        backgroundColor: 'rgba(255,255,255,0.08)',
-    },
-    blob1: {
-        width: 150,
-        height: 150,
-        borderRadius: 75,
-        top: -60,
-        left: -40,
-    },
-    blob2: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        bottom: -50,
-        left: 80,
-    }
+  container: {
+    width: '100%',
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  bannerWrapper: {
+    width,
+    height: 210,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#e8440a',
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  overlay: {
+    flex: 1,
+    padding: 24,
+    zIndex: 2,
+  },
+  topLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  codeText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  codeBadge: {
+    backgroundColor: 'white',
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  badgeText: {
+    color: '#e8440a',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  hurry: {
+    color: 'white',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  bigTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: 'white',
+    lineHeight: 30,
+  },
+  orderBtn: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    backgroundColor: '#111',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 30,
+    zIndex: 10,
+  },
+  orderBtnText: {
+    color: '#f5c842',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  blob: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  blob1: {
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    top: -60,
+    left: -40,
+  },
+  blob2: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    bottom: -50,
+    left: 80,
+  },
+  bannerTitle: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#d8d2ce',
+    marginHorizontal: 3,
+  },
+  dotActive: {
+    backgroundColor: Theme.colors.primary,
+    width: 18,
+  },
 });

@@ -21,6 +21,7 @@ yaammoo/src/features/orders/
 └── components/
     ├── CartFastFoodFilter.tsx # Filtre fastfood collant du panier (duplication autonome d'OrderTrackingHeader)
     ├── CartOrderCard.tsx      # Carte commande du PANIER (duplication autonome de ClientOrderCard)
+    ├── CartOrderSkeleton.tsx   # Loader squelette du panier (réplique la structure de CartOrderCard pendant le fetch)
     ├── CartFilterChipsRow.tsx # 3 chips de filtre du panier (zone / periode / heure)
     ├── CartFilterOptionsSheet.tsx # Bottom sheet de choix d'une valeur de filtre
     ├── CartZoneFooterBar.tsx  # Recap fixe du panier (total + bouton commander)

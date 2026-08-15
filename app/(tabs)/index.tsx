@@ -24,6 +24,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { useAppVersion } from "@/src/features/appVersion/context/AppVersionContext";
+import UpdateAvailableSheet from "@/src/features/appVersion/components/UpdateAvailableSheet";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useRouter } from "expo-router";
@@ -60,6 +62,11 @@ export default function HomeScreen() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
+
+  // Sheet « mise à jour disponible » : affichée une fois le home peint, ne se
+  // re-montre pas si l'utilisateur choisit « Plus tard » dans la session.
+  const { updateAvailable } = useAppVersion();
+  const [updateSheetDismissed, setUpdateSheetDismissed] = useState(false);
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
@@ -213,6 +220,13 @@ export default function HomeScreen() {
         menu={selectedMenu}
         onConfirm={handleConfirmOrder}
       />
+
+      {updateAvailable && !updateSheetDismissed && (
+        <UpdateAvailableSheet
+          visible
+          onDismiss={() => setUpdateSheetDismissed(true)}
+        />
+      )}
 
       {toast && (
         <Toast

@@ -1,10 +1,11 @@
 import { Theme } from '@/src/theme';
 import { AppBanner } from '@/src/types';
 import { Image } from 'expo-image';
-import React, { memo, useCallback, useRef, useState } from 'react';
-import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
 
 const { width } = Dimensions.get('window');
+const LOOP_MULTIPLIER = 50;
 
 interface Props {
   /** Bannières publicitaires reçues via GET /fastfood/all (actives). */
@@ -26,17 +27,88 @@ interface Props {
  */
 function HeroBannerBase({ banners, onBonusPress }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
+  const currentIndexRef = useRef(0);
+
+  const hasCarousel = Array.isArray(banners) && banners.length > 0;
+
+  // Répétition des bannières pour créer l'effet de boucle infinie
+  const extendedBanners = useMemo(() => {
+    if (!banners || banners.length <= 1) return banners || [];
+    const list: (AppBanner & { uniqueId: string })[] = [];
+    for (let i = 0; i < LOOP_MULTIPLIER; i++) {
+      banners.forEach((b, idx) => {
+        list.push({ ...b, uniqueId: `${b.id}_${i}_${idx}` });
+      });
+    }
+    return list;
+  }, [banners]);
+
+  const initialIndex = useMemo(() => {
+    if (!banners || banners.length <= 1) return 0;
+    return Math.floor(LOOP_MULTIPLIER / 2) * banners.length;
+  }, [banners]);
+
+  useEffect(() => {
+    if (initialIndex > 0) {
+      currentIndexRef.current = initialIndex;
+    }
+  }, [initialIndex]);
+
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startAutoplay = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      const nextIndex = currentIndexRef.current + 1;
+      currentIndexRef.current = nextIndex;
+      flatListRef.current?.scrollToOffset({
+        offset: nextIndex * width,
+        animated: true,
+      });
+    }, 3500);
+  }, []);
+
+  // Initialisation de l'autoplay au montage
+  useEffect(() => {
+    if (!hasCarousel || banners.length <= 1) return;
+
+    startAutoplay();
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
+    };
+  }, [hasCarousel, banners.length, startAutoplay]);
+
+  // Pause de 20s lors d'un slide manuel de l'utilisateur
+  const handleScrollBeginDrag = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+    pauseTimeoutRef.current = setTimeout(() => {
+      startAutoplay();
+    }, 20000);
+  }, [startAutoplay]);
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       const first = viewableItems?.[0];
-      if (first?.index != null) setActiveIndex(first.index);
+      if (first?.index != null) {
+        currentIndexRef.current = first.index;
+        if (banners.length > 0) {
+          setActiveIndex(first.index % banners.length);
+        }
+      }
     },
-    [],
+    [banners.length],
   );
-
-  const hasCarousel = Array.isArray(banners) && banners.length > 0;
 
   if (!hasCarousel) {
     return (
@@ -75,11 +147,14 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
   return (
     <View style={styles.container}>
       <Animated.FlatList
-        data={banners}
-        keyExtractor={(item) => item.id}
+        ref={flatListRef as any}
+        data={extendedBanners as any}
+        keyExtractor={(item: any) => item.uniqueId || item.id}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        initialScrollIndex={initialIndex > 0 ? initialIndex : undefined}
+        onScrollBeginDrag={handleScrollBeginDrag}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: true }
@@ -101,7 +176,7 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
 
           const scale = scrollX.interpolate({
             inputRange,
-            outputRange: [0.90, 1, 0.90],
+            outputRange: [0.40, 1, 0.40],
             extrapolate: 'clamp',
           });
 
@@ -155,13 +230,14 @@ export const HeroBanner: React.FC<Props> = memo(HeroBannerBase);
 const styles = StyleSheet.create({
   container: {
     width,
+    // marginHorizontal: -Theme.design.horizontalPadding,
     marginHorizontal: -Theme.design.horizontalPadding,
     marginTop: 4,
     marginBottom: 10,
   },
   bannerItemContainer: {
     width,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
   },
   animatedWrapper: {
     width: '100%',

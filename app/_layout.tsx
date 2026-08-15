@@ -27,6 +27,9 @@ import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 import { initSentry, wrapWithSentry } from "@/src/services/sentry";
 import { setupHttp } from "@/src/api/setupHttp";
 import { prefetchBonusBackground } from "@/src/features/bonus/components/BonusPageBackground";
+import { useAppVersionGate } from "@/src/features/appVersion/hooks/useAppVersionGate";
+import ForceUpdateScreen from "@/src/features/appVersion/components/ForceUpdateScreen";
+import UpdateAvailableSheet from "@/src/features/appVersion/components/UpdateAvailableSheet";
 
 // Initialise le crash reporting le plus tôt possible (avant tout rendu),
 // pour capturer aussi les crashs au démarrage. No-op tant que le DSN est vide.
@@ -52,6 +55,8 @@ export const unstable_settings = {
 function AppContent() {
   const { user, userData, loading } = useAuth();
   const { hasLoadedOnce: homeReady } = useFastFoods();
+  const { gate } = useAppVersionGate();
+  const [updateSheetDismissed, setUpdateSheetDismissed] = useState(false);
   // uid pour lequel le setup notif a déjà été fait (null = aucun). On mémorise
   // l'uid (et pas juste un booléen) pour re-déclencher le setup à CHAQUE nouvelle
   // connexion : reconnexion du même user OU changement de compte, sans fermer
@@ -113,8 +118,24 @@ function AppContent() {
     }
   }, [isSignedIn, user, setupNotifications]);
 
+  // Version sous le minimum requis : blocage total, aucune navigation
+  // possible tant que l'app n'est pas mise à jour.
+  if (gate?.forceUpdate) {
+    return (
+      <ThemeProvider value={DefaultTheme}>
+        <ForceUpdateScreen />
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider value={DefaultTheme}>
+      {gate?.updateAvailable && (
+        <UpdateAvailableSheet
+          visible={!updateSheetDismissed}
+          onDismiss={() => setUpdateSheetDismissed(true)}
+        />
+      )}
       <Stack screenOptions={{ headerShown: false }}>
         {/* Tant que l'auth n'est pas résolue, aucun groupe n'est monté : le splash
             natif couvre l'écran. On ne monte le bon groupe qu'une fois l'état connu.

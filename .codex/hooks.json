@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Grep|Glob|Bash|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/valdoblair/Documents/RUDAVO/APPS/yaammoo/Y0/yaammoo/.codex/hooks/require-architecture-read.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/valdoblair/Documents/RUDAVO/APPS/yaammoo/Y0/yaammoo/.codex/hooks/session-start-read.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

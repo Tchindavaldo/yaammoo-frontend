@@ -43,3 +43,6 @@ app-example
 
 # generated native folders
 /android
+
+# Variables d environnement locales (R8)
+.env

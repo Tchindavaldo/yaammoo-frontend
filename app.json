@@ -2,7 +2,7 @@
   "expo": {
     "name": "yaammoo",
     "slug": "yaammoo",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "yaammoo",
@@ -21,8 +21,12 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "UIBackgroundModes": ["remote-notification"],
-        "LSApplicationQueriesSchemes": ["comgooglemaps"],
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
+        "LSApplicationQueriesSchemes": [
+          "comgooglemaps"
+        ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.",
         "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus."
@@ -30,7 +34,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -38,6 +42,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.rauval.yaammoo",
+      "versionCode": 3,
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {

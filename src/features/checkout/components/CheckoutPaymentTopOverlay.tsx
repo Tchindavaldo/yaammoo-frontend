@@ -237,6 +237,11 @@ export const CheckoutPaymentTopOverlay: React.FC<
         <AnimatedBlurView
           intensity={80}
           tint="light"
+          // Voile decoratif : il ne doit capter aucun geste.
+          pointerEvents="none"
+          // Android < 12 : pas de flou natif -> fond blanc opaque. iOS et
+          // Android 12+ gardent le flou, ce style n'y est jamais applique.
+          fallbackStyle={styles.blurFallbackLight}
           style={StyleSheet.absoluteFill}
         />
 
@@ -269,6 +274,8 @@ export const CheckoutPaymentTopOverlay: React.FC<
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 (pas de flou natif) : fond clair opaque.
+  blurFallbackLight: { backgroundColor: "#ffffff" },
   wrapper: {
     // Contraint à la zone du sheet (ancré en bas), pas tout l'écran.
     position: "absolute",

@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import {
   Animated,
+  Keyboard,
+  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -18,6 +20,8 @@ import { verifyBonusCode } from "../services/verifyBonusCode";
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
 // inset, sinon il s'arrete au-dessus du bord bas du sheet.
 const SHEET_HEIGHT = 384;
+
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 interface PeriodItem {
   hour: string;
@@ -65,16 +69,55 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     Animated.timing(fade, {
       toValue: 1,
       duration: 180,
-      useNativeDriver: true,
+      // Driver JS : sur Android une opacite pilotee en natif cree un calque de
+      // composition qui n'achemine plus les evenements de mouvement aux
+      // scrollables enfants (le tap passe, le drag est perdu).
+      useNativeDriver: false,
     }).start();
   }, [fade]);
+
+  // Saisie du code bonus : l'overlay remonte avec le clavier, comme sur le
+  // parcours groupe. Sans cela la ligne de validation restait cachee dessous.
+  const keyboardHeight = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (event) => {
+        Animated.spring(keyboardHeight, {
+          toValue: event.endCoordinates.height,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      },
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        Animated.spring(keyboardHeight, {
+          toValue: 0,
+          useNativeDriver: false,
+          tension: 40,
+          friction: 8,
+        }).start();
+      },
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+    // keyboardHeight est une Animated.Value stable (useRef).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const closeWithFade = React.useCallback(
     (after?: () => void) => {
       Animated.timing(fade, {
+        // Meme driver que l'entree : melanger natif et JS sur la meme
+        // `Animated.Value` leve une exception au runtime.
         toValue: 0,
         duration: 150,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start(() => {
         after?.();
         onClose();
@@ -246,12 +289,42 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
 
   return (
     <Animated.View style={[styles.keyboardWrapper, { opacity: fade }]}>
-      <BlurView
+      <AnimatedBlurView
         intensity={40}
         tint="light"
-        style={[styles.blurOverlay, { height: sheetHeight }]}
+        // Voile decoratif : il ne doit capter aucun geste.
+        pointerEvents="none"
+        // Android < 12 : pas de flou natif -> voile blanc opaque. iOS et
+        // Android 12+ gardent le flou, ce style n'y est jamais applique.
+        fallbackStyle={styles.blurFallbackOpaque}
+        style={[
+          styles.blurOverlay,
+          {
+            // Meme reglage que les overlays Lieu / Contact / Note vocale : le
+            // voile grandit avec le clavier. Fige a `sheetHeight`, il laissait
+            // la zone liberee a decouvert (fond transparent sur Android < 12).
+            height: keyboardHeight.interpolate({
+              inputRange: [0, 700],
+              outputRange: [sheetHeight, sheetHeight + 1000],
+            }),
+          },
+        ]}
       />
-      <View style={[styles.container, { height: sheetHeight }]}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            height: sheetHeight,
+            // `sheetHeight` COMPREND la safe area : sans ce padding la card
+            // descend dessous et se colle a la barre de navigation Android.
+            paddingBottom: insets.bottom,
+            // On decale `bottom` et NON `transform` : un parent porteur d'un
+            // transform anime en JS ne retransmet pas les evenements de
+            // mouvement sur Android, ce qui bloquerait le scroll de la liste.
+            bottom: keyboardHeight,
+          },
+        ]}
+      >
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -382,15 +455,26 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
             verifying={verifying}
           />
         </View>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 (pas de flou natif) : voile blanc opaque, memes coins
+  // que la card posee dessus.
+  blurFallbackOpaque: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex : sans une
+    // elevation superieure a celle du sheet, c'est lui qui recoit le geste et
+    // son ScrollView le consomme — la liste ne defilait jamais.
+    elevation: 30,
   },
   blurOverlay: {
     position: "absolute",

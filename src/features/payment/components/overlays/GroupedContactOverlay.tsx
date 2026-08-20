@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
@@ -34,6 +35,7 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
   phone,
   onSelectPhone,
 }) => {
+  const insets = useSafeAreaInsets();
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
@@ -124,6 +126,11 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
       <AnimatedBlurView
         intensity={40}
         tint="light"
+        // Voile decoratif : il ne doit capter aucun geste.
+        pointerEvents="none"
+        // Android < 12 : pas de flou natif -> voile blanc opaque. iOS et
+        // Android 12+ gardent le flou, ce style n'y est jamais applique.
+        fallbackStyle={styles.blurFallbackOpaque}
         style={[
           styles.blurOverlay,
           {
@@ -140,6 +147,9 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
       <Animated.View
         style={[
           styles.container,
+          // Reserve la barre de navigation Android : la hauteur de l'overlay ne
+          // change pas, seul le contenu est remonte au-dessus de la navbar.
+          { paddingBottom: insets.bottom },
           {
             transform: [
               {
@@ -217,9 +227,19 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 du voile de fond : blanc opaque.
+  blurFallbackOpaque: {
+    backgroundColor: "#ffffff",
+    // Memes coins que la card posee dessus : sans cela le voile opaque du repli
+    // Android < 12 laisse depasser deux angles droits.
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex (sheet = 20).
+    elevation: 30,
   },
   blurOverlay: {
     // Ancre en bas : sa hauteur est animee (sheet au repos, plein ecran clavier

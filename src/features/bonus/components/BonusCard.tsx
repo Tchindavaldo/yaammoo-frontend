@@ -288,13 +288,10 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     paddingHorizontal: CARD_PAD,
     gap: 10,
+    // Pas d'ombre ni d'elevation : sur Android elles dessinaient un lisere gris
+    // sur les bords de la carte. La bordure fine suffit a la detacher du fond.
     borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
     borderColor: BORDER,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
   },
   top: {
     flexDirection: "row",

@@ -25,6 +25,13 @@ interface Props {
  * bannière statique embarquée (image locale + code promo) pour ne jamais
  * laisser le home vide.
  */
+/**
+ * Defilement automatique du carrousel. Desactive : le scroll auto reprenait la
+ * main pendant la lecture d'une banniere. Repasser a `true` pour le retablir
+ * (toute la mecanique autoplay/pause reste en place).
+ */
+const AUTOPLAY_ENABLED = false;
+
 function HeroBannerBase({ banners, onBonusPress }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
@@ -73,7 +80,7 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
 
   // Initialisation de l'autoplay au montage
   useEffect(() => {
-    if (!hasCarousel || banners.length <= 1) return;
+    if (!AUTOPLAY_ENABLED || !hasCarousel || banners.length <= 1) return;
 
     startAutoplay();
 
@@ -85,6 +92,7 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
 
   // Pause de 20s lors d'un slide manuel de l'utilisateur
   const handleScrollBeginDrag = useCallback(() => {
+    if (!AUTOPLAY_ENABLED) return;
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;

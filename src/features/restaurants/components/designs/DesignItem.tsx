@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,18 +54,18 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           style={[StyleSheet.absoluteFill, { transform: [{ scale: 1.5 }] }]}
           contentFit="cover"
         />
-        <BlurView intensity={40} tint="light" style={StyleSheet.absoluteFill} />
+        <BlurView disableAndroidBlur intensity={40} tint="light" style={StyleSheet.absoluteFill} fallbackStyle={styles.blurFallbackLight} />
         
         <View style={styles.v1Header}>
-          <BlurView intensity={60} tint="dark" style={styles.v1LabelBlur}>
+          <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1LabelBlur} fallbackStyle={styles.blurFallbackDark}>
             <Text style={styles.v1Label}>{menu.titre}</Text>
           </BlurView>
-          <BlurView intensity={60} tint="dark" style={styles.v1Heart}>
+          <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1Heart} fallbackStyle={styles.blurFallbackDark}>
             <Ionicons name="heart" size={16} color="#e8440a" />
           </BlurView>
         </View>
         
-        {/* <BlurView intensity={80} tint="dark" style={styles.v1ValBlur}>
+        {/* <BlurView disableAndroidBlur intensity={80} tint="dark" style={styles.v1ValBlur} fallbackStyle={styles.blurFallbackDark}>
           <Text style={styles.v1Val}>{price}</Text>
         </BlurView> */}
  
@@ -75,17 +75,17 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             style={styles.v1Image} 
             contentFit="contain"
           />
-          <BlurView intensity={60} tint="dark" style={styles.v1BadgeTime}>
+          <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1BadgeTime} fallbackStyle={styles.blurFallbackDark}>
             <Ionicons name="time-outline" size={12} color="white" />
             {/* <Text style={styles.v1BadgeTextDetail}>3500 f</Text> */}
              <Text style={styles.v1Val}>{price} </Text>
           </BlurView>
-          <BlurView intensity={60} tint="dark" style={styles.v1BadgeCal}>
+          <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1BadgeCal} fallbackStyle={styles.blurFallbackDark}>
             <Text style={styles.v1BadgeTextDetail}>350 cal</Text>
           </BlurView>
         </View>
          
-        <BlurView intensity={60} tint="dark" style={styles.v1BrandBar}>
+        <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1BrandBar} fallbackStyle={styles.blurFallbackDark}>
           <View style={styles.v2Delivery}>
   <View style={styles.v2DeliveryTimer}>
     <Text style={styles.v2DeliveryHour}>12</Text>
@@ -250,8 +250,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           <Text style={styles.v4TitleNew} numberOfLines={2}>{menu.titre}</Text>
 
           {/* Prix badge audacieux */}
-          <BlurView
-            experimentalBlurMethod="dimezisBlurView"
+          <BlurView disableAndroidBlur
             intensity={0}
             style={styles.v4PriceBadgeNew}
           >
@@ -260,8 +259,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         </View>
 
         {/* Barre de stock + livraison en bas */}
-        <BlurView
-          experimentalBlurMethod="dimezisBlurView"
+        <BlurView disableAndroidBlur
           intensity={60}
           tint="light"
           style={styles.v4StockBar}
@@ -291,7 +289,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             </View> */}
 
              {/* Livraison — bande glass en bas */}
-        <View style={styles.v5DeliveryStrip}>
+        <View style={styles.v4DeliveryStrip}>
           <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
            
                        <Ionicons name="flash" size={10} color="white" />
@@ -509,7 +507,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           </View>
 
           {/* Stock chip */}
-          <BlurView intensity={80} tint="dark" style={styles.v7StockChip}>
+          <BlurView disableAndroidBlur intensity={80} tint="dark" style={styles.v7StockChip} fallbackStyle={styles.blurFallbackDark}>
             <Text style={styles.v7StockNumber}>{stock}</Text>
             <Text style={styles.v7StockLabel}>DISPO</Text>
           </BlurView>
@@ -543,6 +541,11 @@ export const DesignItem: React.FC<DesignItemProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Android < 12 : pas de flou natif (cf. AppBlurView). On opacifie le fond pour
+  // garder le contenu lisible : blanc sous les zones claires, sombre sous les
+  // chips a texte blanc.
+  blurFallbackLight: { backgroundColor: "#ffffff" },
+  blurFallbackDark: { backgroundColor: "rgba(0, 0, 0, 0.55)" },
     // --- DESIGN 1 (Ex-D3) ---
     v1Card: { width: 260, height: 280, borderRadius: 32, paddingHorizontal:14, paddingVertical: 14, marginRight: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 8 },
     v1Header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 30 },
@@ -632,7 +635,22 @@ const styles = StyleSheet.create({
     v4Image: { width: '110%', height: '110%', borderRadius: 110 },
     v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 10, zIndex: 5, overflow: 'hidden' },
     v4StockMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
-    v4StockLeftSection: { flex: 1, justifyContent: 'center' },
+    // ANDROID UNIQUEMENT : le flou de la barre est coupe (cf.
+    // `disableAndroidBlur`), le bloc « N en stock » + sa barre de progression
+    // porte donc lui-meme son fond. iOS garde le flou, donc aucun fond.
+    v4StockLeftSection: {
+      flex: 1,
+      justifyContent: 'center',
+      ...(Platform.OS === 'android'
+        ? {
+            alignSelf: 'flex-start' as const,
+            backgroundColor: '#ffffff',
+            borderRadius: 14,
+            paddingVertical: 6,
+            paddingHorizontal: 10,
+          }
+        : null),
+    },
     v4StockInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 5 },
     v4StockPulse: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 4 },
     v4StockCount: { fontSize: 13, fontWeight: '700' },
@@ -656,6 +674,11 @@ const styles = StyleSheet.create({
     v5Title: { fontSize: 14, fontWeight: '900', color: '#111', textAlign: 'center', marginBottom: 14, zIndex: 2 },
     v5DeliveryStrip: {alignSelf:'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10, zIndex: 2 },
     v5DeliveryStrip1: { flexDirection: 'row', alignItems: 'center',  backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10, zIndex: 2 },
+    // Copie dediee de `v5DeliveryStrip` pour LE SEUL design a barre de stock
+    // (le style d'origine est partage avec un autre design, qu'on ne touche pas).
+    // ANDROID : fond opaque, le flou de la barre etant coupe
+    // (cf. `disableAndroidBlur`) — un gris translucide laisserait voir la photo.
+    v4DeliveryStrip: {alignSelf:'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Platform.OS === 'android' ? '#ffffff' : 'rgba(0,0,0,0.04)', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 10, zIndex: 2 },
     v5DeliveryIcon: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     v5DeliveryLabel: { fontSize: 10, fontWeight: '700', color: '#000000e1', letterSpacing: 0.8 },
     v5DeliveryTime: { fontSize: 10, fontWeight: '800' },

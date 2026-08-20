@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { GroupedValidateRow } from "./GroupedValidateRow";
 
@@ -65,6 +66,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
+  const insets = useSafeAreaInsets();
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup,
   // c'est donc ici qu'on l'amene et qu'on retarde la fermeture le temps de
   // l'animation. `closeWithFade` remplace `onClose` sur tous les chemins de
@@ -231,6 +233,11 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
       <AnimatedBlurView
         intensity={40}
         tint="light"
+        // Voile decoratif : il ne doit capter aucun geste.
+        pointerEvents="none"
+        // Android < 12 : pas de flou natif -> voile blanc opaque. iOS et
+        // Android 12+ gardent le flou, ce style n'y est jamais applique.
+        fallbackStyle={styles.blurFallbackOpaque}
         style={[
           styles.blurOverlay,
           {
@@ -245,6 +252,9 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
       <Animated.View
         style={[
           styles.container,
+          // Reserve la barre de navigation Android : la hauteur de l'overlay ne
+          // change pas, seul le contenu est remonte au-dessus de la navbar.
+          { paddingBottom: insets.bottom },
           {
             transform: [
               {
@@ -358,9 +368,19 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 du voile de fond : blanc opaque.
+  blurFallbackOpaque: {
+    backgroundColor: "#ffffff",
+    // Memes coins que la card posee dessus : sans cela le voile opaque du repli
+    // Android < 12 laisse depasser deux angles droits.
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex (sheet = 20).
+    elevation: 30,
   },
   blurOverlay: {
     position: "absolute",

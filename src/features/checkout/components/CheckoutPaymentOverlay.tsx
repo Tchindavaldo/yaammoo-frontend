@@ -200,9 +200,12 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
         intensity={90}
         tint="dark"
         // Seul flou qui fonctionne dans le sheet : il floute la carte récap,
-        // qui est dans la même fenêtre que lui.
-        experimentalBlurMethod="dimezisBlurView"
+        // qui est dans la même fenêtre que lui. `AppBlurView` ne l'active qu'à
+        // partir d'Android 12 — le forcer en dur rétablirait le chemin
+        // RenderScript, qui fait crasher au scroll en dessous.
         pointerEvents="none"
+        // Android < 12 : voile sombre opaque, la capsule reste lisible.
+        fallbackStyle={styles.blurFallbackDark}
         style={[
           styles.blurOverlay,
           // Pas d'animation ici : le voile apparaît et disparaît avec le
@@ -255,9 +258,12 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
               le fond noir seul suffit. */}
           {!(Platform.OS === "android" && isKeyboardVisible) && (
             <BlurView
-              experimentalBlurMethod="dimezisBlurView"
               intensity={80}
               tint="dark"
+              // Pas de `experimentalBlurMethod` force : `AppBlurView` choisit le
+              // chemin sur selon la version d'Android (RenderScript crashe < 12).
+              pointerEvents="none"
+              fallbackStyle={styles.blurFallbackDark}
               style={StyleSheet.absoluteFill}
             />
           )}
@@ -369,9 +375,15 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 (pas de flou natif) : voile sombre opaque, la capsule
+  // porte du texte clair.
+  blurFallbackDark: { backgroundColor: "rgba(17, 17, 17, 0.92)" },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex : sans elle le
+    // sheet (elevation 20) recoit le geste a la place de l'overlay.
+    elevation: 30,
   },
   // Conteneur du contenu (reproduit le flex-row de la capsule) — animé en fondu.
   contentRow: {

@@ -49,6 +49,7 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
         tint="light"
         intensity={120}
         style={StyleSheet.absoluteFill}
+        fallbackStyle={styles.blurFallback}
       />
       {/* Dégradé doux orange par-dessus le blur (le texte reste foncé/lisible). */}
       <LinearGradient
@@ -73,6 +74,8 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Android < 12 : pas de flou natif, on opacifie pour garder le header lisible.
+  blurFallback: { backgroundColor: "#ffffff" },
   header: {
     position: "absolute",
     top: 0,

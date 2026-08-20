@@ -166,6 +166,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginTop: 12,
+    // Footer de taille fixe : sans `flexShrink: 0` il se comprime au lieu de
+    // laisser la liste des creneaux (flex: 1) prendre la place restante.
+    flexShrink: 0,
   },
   leftWrap: {
     flex: 1,

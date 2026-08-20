@@ -74,7 +74,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     Animated.timing(fade, {
       toValue: 1,
       duration: 180,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
   }, [fade]);
 
@@ -91,7 +91,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
     Animated.timing(fade, {
       toValue: 0,
       duration: 150,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start(() => {
       onClose();
     });
@@ -153,6 +153,8 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       <AnimatedBlurView
         intensity={40}
         tint="light"
+        pointerEvents="none"
+        fallbackStyle={styles.blurFallbackOpaque}
         style={[
           styles.blurOverlay,
           {
@@ -166,7 +168,13 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       <Animated.View
         style={[
           styles.container,
-          { height: sheetHeight },
+          {
+            height: sheetHeight,
+            // `sheetHeight` COMPREND la safe area : sans ce padding la card se
+            // centre sur une zone qui deborde sous la barre de navigation et
+            // parait collee en bas.
+            paddingBottom: insets.bottom,
+          },
           { transform: [{ translateY: keyboardHeight.interpolate({
             inputRange: [0, 100],
             outputRange: [0, -95]
@@ -204,7 +212,12 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
                 />
                 
                 {isLocating && (
-                  <BlurView intensity={30} tint="light" style={styles.locatingOverlay}>
+                  <BlurView
+                  intensity={30}
+                  tint="light"
+                  fallbackStyle={styles.blurFallbackLight}
+                  style={styles.locatingOverlay}
+                >
                     <Loader size={40} color="#ec4913" />
                     <Text style={styles.locatingText}>Récupération de votre position actuelle...</Text>
                   </BlurView>
@@ -244,9 +257,16 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 (pas de flou natif).
+  blurFallbackLight: { backgroundColor: "#ffffff" },
+  // Repli Android < 12 (pas de flou natif).
+  blurFallbackOpaque: { backgroundColor: "#ffffff", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex : sans elle le
+    // sheet (elevation 20) recoit le geste a la place de l'overlay.
+    elevation: 30,
   },
   blurOverlay: {
     position: 'absolute',

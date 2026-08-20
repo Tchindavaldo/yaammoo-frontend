@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 
 // L'overlay recouvre EXACTEMENT le sheet groupe. La card, elle, est retrecie par
@@ -25,6 +26,7 @@ type RecordingStatus = "idle" | "recording" | "recorded" | "playing";
 export const GroupedVoiceNoteOverlay: React.FC<
   GroupedVoiceNoteOverlayProps
 > = ({ onClose, onSave }) => {
+  const insets = useSafeAreaInsets();
   const [status, setStatus] = useState<RecordingStatus>("idle");
   const [timer, setTimer] = useState(0);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -212,8 +214,9 @@ export const GroupedVoiceNoteOverlay: React.FC<
         intensity={40}
         tint="light"
         style={[styles.blurOverlay, { height: SHEET_BASE_HEIGHT }]}
+        fallbackStyle={styles.blurFallbackLight}
       />
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingBottom: insets.bottom }]}>
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -335,9 +338,13 @@ export const GroupedVoiceNoteOverlay: React.FC<
 };
 
 const styles = StyleSheet.create({
+  // Android < 12 : pas de flou natif -> voile opaque, sinon on voit au travers.
+  blurFallbackLight: { backgroundColor: "rgba(255, 255, 255, 0.97)" },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex (sheet = 20).
+    elevation: 30,
   },
   blurOverlay: {
     position: "absolute",

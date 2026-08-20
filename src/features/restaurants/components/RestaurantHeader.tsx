@@ -56,6 +56,9 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
     <BlurView
       intensity={80}
       tint="light"
+      // Porte des controles : reste interactif malgre le `pointerEvents="none"`
+      // par defaut du repli Android < 12.
+      pointerEvents="auto"
       style={[
         styles.container,
         !isNativeBlurAvailable && styles.containerOpaque,

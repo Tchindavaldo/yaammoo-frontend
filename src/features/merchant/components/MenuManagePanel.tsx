@@ -410,7 +410,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
               { transform: [{ translateY: slideAnim }] },
             ]}
           >
-            <BlurView intensity={55} tint="dark" style={styles.cfnGlassCard}>
+            <BlurView intensity={55} tint="dark" style={styles.cfnGlassCard} pointerEvents="auto">
               <LinearGradient
                 colors={[
                   "rgba(145,24,24,0.55)",

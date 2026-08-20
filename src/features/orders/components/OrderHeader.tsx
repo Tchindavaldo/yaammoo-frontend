@@ -20,7 +20,7 @@ export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange
   ];
 
   return (
-    <BlurView intensity={80} tint="light" style={[styles.container, { paddingTop: insets.top }]}>
+    <BlurView intensity={80} tint="light" pointerEvents="auto" style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.rowSegment}>
         {tabs.map((tab) => (
           <View key={tab.id} style={styles.colSegment}>

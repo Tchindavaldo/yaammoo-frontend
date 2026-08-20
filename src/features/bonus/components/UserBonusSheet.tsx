@@ -1,12 +1,6 @@
 import { Toast } from "@/src/components/Toast";
 import { Theme } from "@/src/theme";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Modal,
@@ -70,15 +64,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   } | null>(null);
   const carouselRef = useRef<BonusCarouselHandle>(null);
 
-  const {
-    bonuses,
-    loading,
-    error,
-    claims,
-    claimBonus,
-    arming,
-    armBonus,
-  } = useBonusContext();
+  const { bonuses, loading, error, claims, claimBonus, arming, armBonus } =
+    useBonusContext();
 
   // Suivi du scroll horizontal du carousel (transition couleur des cartes).
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -272,7 +259,13 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
         <Animated.View
           style={[
             styles.sheet,
-            { paddingBottom: insets.bottom + 12 },
+            // La safe area s'AJOUTE a la hauteur utile au lieu de la rogner :
+            // `SHEET_HEIGHT` reste l'espace reellement disponible pour le
+            // contenu, quelle que soit la barre de navigation.
+            {
+              height: SHEET_HEIGHT + insets.bottom + 0,
+              paddingBottom: insets.bottom + 12,
+            },
             // Sur fond image, la sheet doit être transparente : un aplat blanc
             // recouvrirait BonusPageBackground.
             USE_IMAGE_BG && { backgroundColor: "transparent" },
@@ -389,8 +382,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.45)",
   },
   sheet: {
-    // Hauteur fixe (px, pas en %) : ajuste SHEET_HEIGHT pour la régler.
-    height: SHEET_HEIGHT,
+    // Hauteur portée au runtime : `SHEET_HEIGHT` + la safe area (voir le rendu).
+    // En dur, les `paddingBottom: insets.bottom + 12` se prenaient SUR les 400 px
+    // et le contenu perdait la hauteur de la barre de navigation Android — les
+    // cartes se chevauchaient.
     backgroundColor: LIGHT,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -414,13 +409,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   pagCardOutlined: {
+    // Pas d'ombre ni d'elevation : sur Android elles dessinaient un lisere gris
+    // sur les bords de la carte. La bordure fine suffit a la detacher du fond.
     borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
     borderColor: CARD_IMAGE_BG ? GLASS_BORDER : "rgba(0,0,0,0.04)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 3,
-    elevation: 1,
   },
   // Largeur bornée à ~2 mini-cartes : la galerie défile (auto-scroll) au lieu
   // d'étaler toutes les cartes. Le pager héro garde sa place à droite.

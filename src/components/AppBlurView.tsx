@@ -23,6 +23,19 @@ interface AppBlurViewProps extends BlurViewProps {
    * semi-transparent laisse lire le contenu situé derrière.
    */
   fallbackStyle?: StyleProp<ViewStyle>;
+  /**
+   * `true` = jamais de flou natif sur Android, TOUTES versions confondues : on
+   * rend une `View` opacifiee par `fallbackStyle`.
+   *
+   * A poser sur les blurs places DEVANT une liste qui defile. Le chemin
+   * `dimezisBlurView` (bibliotheque `eightbitlab`) redessine l'arbre de vues a
+   * chaque frame et leve une `IndexOutOfBoundsException` dans
+   * `ViewGroup.getAndVerifyPreorderedView` des qu'un enfant est retire pendant
+   * le scroll — constate sur Android 16, independamment de la version.
+   *
+   * iOS n'est pas concerne (UIVisualEffectView, aucun probleme).
+   */
+  disableAndroidBlur?: boolean;
 }
 
 /**
@@ -40,17 +53,32 @@ interface AppBlurViewProps extends BlurViewProps {
 export const AppBlurView: React.FC<AppBlurViewProps> = ({
   experimentalBlurMethod,
   fallbackStyle,
+  disableAndroidBlur,
   style,
   intensity,
   tint,
   blurReductionFactor,
   ...props
 }) => {
-  // Sans flou natif ET avec un fond de repli fourni, on rend une View simple :
-  // en mode "none", expo-blur écrase la couleur de fond de la vue native avec
-  // son propre voile, ce qui rendrait `fallbackStyle` sans effet.
-  if (!isNativeBlurAvailable && fallbackStyle) {
+  // Flou coupe sur Android quel que soit l'OS (blur devant une liste scrollable).
+  // Pas de `pointerEvents="none"` par defaut ici : ces blurs ENVELOPPENT du
+  // contenu (badges, barre de stock), le sous-arbre doit rester interactif.
+  if (disableAndroidBlur && Platform.OS === "android") {
     return <View {...props} style={[style, fallbackStyle]} />;
+  }
+
+  // Sans flou natif, on ne monte JAMAIS le composant natif d'expo-blur : même en
+  // mode "none" il instancie une vue RenderScript, qui crashe au scroll sous
+  // Android 12. On rend une View simple, opacifiée par `fallbackStyle` quand il
+  // est fourni (en mode "none" expo-blur écraserait cette couleur avec son voile).
+  if (!isNativeBlurAvailable) {
+    // `pointerEvents="none"` : un BlurView est un voile decoratif et ne capte
+    // aucun geste. Une `View` de repli, elle, intercepte le drag — la liste
+    // rendue dessous devenait alors impossible a faire defiler sur Android < 12.
+    // L'appelant peut le forcer via `props` s'il a besoin de capter les touches.
+    return (
+      <View pointerEvents="none" {...props} style={[style, fallbackStyle]} />
+    );
   }
 
   return (

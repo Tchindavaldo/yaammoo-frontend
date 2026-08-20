@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { GroupedValidateRow } from "./GroupedValidateRow";
 
@@ -25,6 +26,14 @@ const SCREEN_HEIGHT = Dimensions.get("window").height;
 // des creneaux respirer. La card remplit toute cette hauteur, moins le
 // `paddingVertical` du conteneur (marge haute et basse).
 const SHEET_BASE_HEIGHT = GROUPED_SHEET_HEIGHT + 90;
+
+/**
+ * Hauteur occupee dans la card par tout ce qui n'est PAS la liste : padding
+ * (2 x 16), en-tete (36 + 8), bande de dates (33 + 10) et ligne de validation
+ * (12 + 44). On en deduit une `maxHeight` explicite pour la liste : sur Android
+ * le `flex: 1` seul ne la bornait pas et elle debordait au lieu de scroller.
+ */
+const SLOT_LIST_CHROME = 175;
 
 interface PeriodItem {
   hour: string;
@@ -61,6 +70,7 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
+  const insets = useSafeAreaInsets();
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup,
   // c'est donc ici qu'on l'amene et qu'on retarde la fermeture le temps de
   // l'animation.
@@ -69,7 +79,11 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
     Animated.timing(fade, {
       toValue: 1,
       duration: 180,
-      useNativeDriver: true,
+      // Driver JS et NON natif : sur Android une opacite pilotee en natif cree
+      // un calque de composition hors ecran qui n'achemine plus les evenements
+      // de mouvement aux scrollables enfants. Le tap passait (down), mais la
+      // liste ne defilait pas (move perdus) tant que le clavier restait ferme.
+      useNativeDriver: false,
     }).start();
   }, [fade]);
 
@@ -109,9 +123,11 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
   const closeWithFade = React.useCallback(
     (after?: () => void) => {
       Animated.timing(fade, {
+        // Meme driver que l'animation d'entree : melanger natif et JS sur la
+        // meme `Animated.Value` leve une exception au runtime.
         toValue: 0,
         duration: 150,
-        useNativeDriver: true,
+        useNativeDriver: false,
       }).start(() => {
         after?.();
         onClose();
@@ -297,6 +313,14 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
       <AnimatedBlurView
         intensity={40}
         tint="light"
+        // Voile purement decoratif : sans cela, le repli Android < 12 (une `View`
+        // pleine, haute de SHEET_BASE_HEIGHT) recouvre la card au repos et
+        // avale le drag — la liste ne defilait que clavier ouvert, quand le
+        // voile monte a SCREEN_HEIGHT.
+        pointerEvents="none"
+        // Android < 12 : pas de flou natif -> voile blanc opaque. iOS et
+        // Android 12+ gardent le flou, ce style n'y est jamais applique.
+        fallbackStyle={styles.blurFallbackOpaque}
         style={[
           styles.blurOverlay,
           {
@@ -311,16 +335,19 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
       <Animated.View
         style={[
           styles.container,
+          // Reserve la barre de navigation Android : la hauteur de l'overlay ne
+          // change pas, seul le contenu est remonte au-dessus de la navbar.
+          { paddingBottom: insets.bottom },
           {
-            transform: [
-              {
-                // Clavier ouvert : la card remonte pour ne pas coller au clavier.
-                translateY: keyboardHeight.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: [0, -98],
-                }),
-              },
-            ],
+            // Clavier ouvert : la card remonte pour ne pas y coller. On decale
+            // `bottom` et NON `transform` : un parent porteur d'un transform
+            // anime en JS (`useNativeDriver: false`) ne retransmet pas les
+            // evenements de mouvement sur Android — le tap passait, mais la
+            // liste des creneaux ne defilait jamais.
+            bottom: keyboardHeight.interpolate({
+              inputRange: [0, 100],
+              outputRange: [0, 98],
+            }),
           },
         ]}
       >
@@ -369,9 +396,16 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
 
           {/* Liste des périodes */}
           <ScrollView
-            style={styles.slotList}
+            style={[
+              styles.slotList,
+              {
+                maxHeight:
+                  SHEET_BASE_HEIGHT - SLOT_LIST_CHROME - insets.bottom,
+              },
+            ]}
             contentContainerStyle={styles.scrollInner}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
+            nestedScrollEnabled
             keyboardShouldPersistTaps="handled"
           >
             {validPeriods.map((item, idx) => {
@@ -456,9 +490,22 @@ export const GroupedPeriodOverlay: React.FC<GroupedPeriodOverlayProps> = ({
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 du voile de fond : blanc opaque.
+  blurFallbackOpaque: {
+    backgroundColor: "#ffffff",
+    // Memes coins que la card posee dessus : sans cela le voile opaque du repli
+    // Android < 12 laisse depasser deux angles droits.
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex. Le sheet porte
+    // `elevation: 20` : sans une elevation superieure ici, c'est lui qui recoit
+    // le geste et son propre ScrollView le consomme — le tap atteignait la
+    // liste, mais le drag ne la faisait jamais defiler.
+    elevation: 30,
   },
   blurOverlay: {
     position: "absolute",
@@ -480,6 +527,9 @@ const styles = StyleSheet.create({
   card: {
     // La card remplit le conteneur, qui porte la hauteur de l'overlay.
     flex: 1,
+    // Idem `slotList` : laisse la card se borner a la hauteur du conteneur pour
+    // que la liste des creneaux scrolle au lieu de pousser le footer hors ecran.
+    minHeight: 0,
     backgroundColor: "white",
     // Card collee aux bords du sheet : seuls les coins hauts sont arrondis.
     borderTopLeftRadius: 24,
@@ -523,11 +573,15 @@ const styles = StyleSheet.create({
   // chips et au-dessus de la ligne de validation.
   slotList: {
     flex: 1,
+    // `minHeight: 0` : sans lui un enfant flex ne rétrécit pas sous la hauteur de
+    // son contenu -> la liste déborde de la card au lieu de devenir scrollable.
+    minHeight: 0,
   },
   // Bande de chips horizontale : sans hauteur propre elle s'etire dans la card
   // et ecrase les chips. `flexGrow: 0` la fige sur son contenu.
   dateStrip: {
     flexGrow: 0,
+    flexShrink: 0,
     marginBottom: 10,
   },
   dateStripInner: {

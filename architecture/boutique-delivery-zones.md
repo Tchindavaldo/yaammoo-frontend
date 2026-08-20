@@ -6,19 +6,17 @@ Documentation du formulaire de création et d'édition de la boutique marchande,
 
 ## Pages & Navigation (Pagination)
 
-`CreateBoutiquePanel` reste en **2 pages**. `EditBoutiquePanel` est desormais en
-**page unique** : toutes les infos generales, le bloc "Zone de livraison"
-(icones add / view ouvrant les bottom sheets) et la checkbox pickup, avec le
-bouton "Mettre a jour" fixe en bas. Il n'y a plus de page 2 en edition
+`CreateBoutiquePanel` **et** `EditBoutiquePanel` sont en **page unique** : toutes
+les infos generales, le bloc "Zone de livraison" (icones add / view ouvrant les
+bottom sheets) et la checkbox pickup, avec le bouton d'action fixe en bas
+("Creer ma boutique" / "Mettre a jour"). Il n'y a plus de page 2
 (`DeliveryPage.tsx` supprime) : les zones se gerent via `ZoneListSheet` et
 `ZoneFormSheet`.
 
-Pagination de `CreateBoutiquePanel` (inchangée) :
-
-| Page | Contenu | Bouton bas |
-|---|---|---|
-| **1** | Avatar + Nom, Ouverture/Fermeture, OM/MOMO/WhatsApp, Villes, Délai, Jours | "Suivant" (fixe) |
-| **2** | Créneaux horaires + zones périodiques/express + pickup | "Retour" + "Créer" |
+**Deux arborescences jumelles, entierement separees (R16)** : `create-boutique/`
+et `edit-boutique/` portent chacune sa copie des sheets, styles, pickers et
+helpers. Aucun import ne traverse d'un dossier a l'autre — les deux ecrans
+peuvent diverger sans risque l'un pour l'autre.
 
 ---
 
@@ -100,7 +98,9 @@ expressEditIdx: number | null
 | `src/features/merchant/components/edit-boutique/ZoneSlotGrid.tsx` | Grille des tarifs : toujours 4 cartes en haut et 4 en bas. Page 1 = express + créneaux ; places libres comblées par des cartes `--:-- / 000 F / Non défini` ; s'il reste des créneaux, la dernière carte devient `+N` et pagine en fondu |
 | `src/features/merchant/components/edit-boutique/ZoneListSheet.styles.ts` | Styles du sheet et de ses deux composants (palette crème/orange express/bleu ardoise programmé) |
 | `src/features/merchant/components/edit-boutique/useSheetAnimation.ts` | Animation partagée des bottom sheets (fond noir en fondu + glissement) |
-| `src/features/merchant/components/CreateBoutiquePanel.tsx` | Création boutique (pleine page) |
+| `src/features/merchant/components/CreateBoutiquePanel.tsx` | Création boutique (orchestrateur ; logique et rendu découpés dans `create-boutique/`) |
+| `src/features/merchant/components/create-boutique/useCreateBoutique.ts` | État + `handleCreate` (POST `/fastFood`, arme `fastFoodId` / `isMarchand` sur le user). Pas de chargement initial : la boutique n'existe pas encore |
+| `src/features/merchant/components/create-boutique/*` | Copies dédiées des sheets, styles, pickers et helpers d'`edit-boutique/` (R16) |
 | `src/features/merchant/components/NoBoutiquePanel.tsx` | Écran d'accueil "pas de boutique" (inchangé) |
 
 ### Liste des villes du Cameroun
@@ -111,14 +111,12 @@ Constante `CAMEROON_CITIES` (30 villes) utilisée dans les deux panneaux pour le
 
 ## Flux utilisateur
 
-**Création** (2 pages) :
+**Création** (page unique) — même parcours que l'édition :
 
-1. Remplir page 1 (infos générales) → clic "Suivant"
-2. Page 2 : ajouter des heures via le time picker
-3. Pour chaque heure : cocher périodique et/ou express
-4. Saisir les lieux/prix dans chaque bloc activé
-5. Option : cocher "Le client peut passer à la boutique"
-6. Clic "Créer ma boutique"
+1. Remplir les infos générales
+2. Bloc "Zone de livraison" : icône `+` → `ZoneFormSheet` (heure, périodique/express, prix, lieu) ; icône œil → `ZoneListSheet`
+3. Option : cocher "Le client peut passer à la boutique"
+4. Clic "Créer ma boutique"
 
 **Édition** (page unique) :
 

@@ -105,7 +105,11 @@ export default function SettingsScreen() {
       height: 58 + bottomInset,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
-      backgroundColor: 'rgba(255, 255, 255, 0.7)',
+      // MEME regle que `_layout.tsx` : sans flou natif (Android < 12), un fond
+      // semi-transparent laisse voir le contenu au travers -> blanc opaque.
+      backgroundColor: isNativeBlurAvailable
+        ? 'rgba(255, 255, 255, 0.7)'
+        : '#ffffff',
       borderTopWidth: 0,
       position: 'absolute' as const,
       bottom: 0,
@@ -318,6 +322,7 @@ export default function SettingsScreen() {
       <BlurView
         intensity={80}
         tint="light"
+        pointerEvents="auto"
         style={[styles.profileCard, { paddingTop: insets.top + 20 }]}
         fallbackStyle={styles.profileCardOpaque}
       >
@@ -867,11 +872,9 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.lg,
     marginHorizontal: Theme.spacing.md,
     backgroundColor: Theme.colors.white,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    // Pas d'ombre ni d'elevation : sur Android elles dessinaient un lisere gris
+    // sur les bords du bloc. Pas de bordure non plus — les separateurs
+    // horizontaux entre items (`SettingItem`) suffisent a structurer la liste.
   },
   switchItem: {
     flexDirection: 'row',

@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "136139892705-4oeq3c1fbv0h0cpnacngbmt33hp8736h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rauval.yaammoo",
+            "certificate_hash": "ea260dbd6c7308e6a6ecaf8576990e3f2b993e9b"
+          }
+        },
+        {
           "client_id": "136139892705-3ahf4grc1prt7jtuk5toifjgi7mgt40c.apps.googleusercontent.com",
           "client_type": 3
         }

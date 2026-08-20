@@ -179,7 +179,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
     Animated.timing(fade, {
       toValue: 1,
       duration: 180,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
   }, [fade]);
 
@@ -187,7 +187,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
     Animated.timing(fade, {
       toValue: 0,
       duration: 150,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start(() => onClose());
   };
 
@@ -202,9 +202,21 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
       <BlurView
         intensity={40}
         tint="light"
+        pointerEvents="none"
+        fallbackStyle={styles.blurFallbackOpaque}
         style={[styles.blurOverlay, { height: sheetHeight }]}
       />
-      <View style={[styles.container, { height: sheetHeight }]}>
+      <View
+        style={[
+          styles.container,
+          {
+            height: sheetHeight,
+            // `sheetHeight` COMPREND la safe area : sans ce padding la card se
+            // centre sur une zone qui deborde sous la barre de navigation.
+            paddingBottom: insets.bottom,
+          },
+        ]}
+      >
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -305,9 +317,14 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
 };
 
 const styles = StyleSheet.create({
+  // Repli Android < 12 (pas de flou natif).
+  blurFallbackOpaque: { backgroundColor: "#ffffff", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   keyboardWrapper: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 100,
+    // Android ordonne les touches par ELEVATION, pas par zIndex : sans elle le
+    // sheet (elevation 20) recoit le geste a la place de l'overlay.
+    elevation: 30,
   },
   blurOverlay: {
     position: 'absolute',

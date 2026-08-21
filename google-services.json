@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "136139892705-145cb5g1umuihn378rnunijc9eg6008g.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rauval.yaammoo",
+            "certificate_hash": "c81e62f855798dbea23aea9c266d1727103d0cef"
+          }
+        },
+        {
           "client_id": "136139892705-3s9mp9mbvc39ud3v7hhmu6947v7aepde.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

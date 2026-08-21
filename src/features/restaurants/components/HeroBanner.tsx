@@ -1,6 +1,7 @@
 import { Theme } from '@/src/theme';
 import { AppBanner } from '@/src/types';
 import { Image } from 'expo-image';
+import { SkeletonImage } from '@/src/components/SkeletonImage';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
 
@@ -203,10 +204,11 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
                   disabled={item.type !== 'bonus'}
                   onPress={() => item.type === 'bonus' && onBonusPress(item)}
                 >
-                  <Image
+                  <SkeletonImage
                     source={{ uri: item.imageUrl }}
                     style={styles.backgroundImage}
                     contentFit="cover"
+                    skeletonStyle={styles.bannerSkeleton}
                   />
                   {item.title ? (
                     <View style={styles.overlay}>
@@ -256,13 +258,16 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: '#e8440a',
+    // Fond neutre : l'orange de marque restait visible pendant tout le
+    // telechargement de la banniere. Le skeleton couvre desormais l'attente.
+    backgroundColor: '#eef1f5',
   },
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
   },
+  bannerSkeleton: { borderRadius: 24 },
   overlay: {
     flex: 1,
     padding: 24,

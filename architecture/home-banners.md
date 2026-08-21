@@ -47,3 +47,16 @@ pour ne jamais laisser le home vide.
   - **Pause sur slide manuel** (`onScrollBeginDrag`) : lorsqu'un utilisateur effectue un slide manuel, l'autoplay s'interrompt pendant 20 secondes avant de reprendre automatiquement.
 - R16 : le carrousel est rendu **dans** `HeroBanner` (pas de composant carrousel
   partagé) ; `UserBonusSheet` n'est pas modifiée.
+
+## Skeleton de chargement
+
+`SkeletonImage` (`src/components/SkeletonImage.tsx`) remplace `Image` pour les
+images distantes : un voile neutre **pulse tant que `onLoad` n'a pas ete emis**,
+puis disparait en fondu. Sans lui, le `backgroundColor` du conteneur restait
+visible pendant tout le telechargement (l'orange de marque `#e8440a` sur la
+banniere, desormais un gris neutre `#eef1f5`).
+
+Le voile est `position: absolute` et reprend le `style` de l'image, donc il
+fonctionne aussi bien sur une image en `absoluteFill` que sur une image en flux.
+Utilise par `HeroBanner` (banniere) et par les 7 images `menu.image` de
+`DesignItem`.

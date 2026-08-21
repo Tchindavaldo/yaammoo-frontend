@@ -27,6 +27,7 @@ import Svg, {
 } from "react-native-svg";
 import { useRouter } from "expo-router";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   useFonts,
@@ -74,8 +75,17 @@ export default function WelcomeScreen() {
   // connecté (transition login → home, ou boot à froid déjà loggé), on laisse
   // le splash en place : c'est la home qui le cachera une fois prête. Évite de
   // flasher l'écran de login pendant la transition.
+  //
+  // ACCES INVITE : depuis que les invités entrent dans (tabs), `!isSignedIn` ne
+  // suffit plus — un invité n'est PAS destiné à rester ici. Tant que le 1er
+  // fetch des restaurants tourne (`!homeReady`), (tabs) reste la destination
+  // probable : on garde le splash. Sans ca, sur un reseau lent (constate sur
+  // Android), l'auth se resout avant le fetch et cet ecran leve le splash le
+  // temps que la home soit prete → flash du get-started apres le splash.
   const isSignedIn = !!user && !!userData;
-  const onLayoutRootView = !loading && !isSignedIn ? hideSplash : undefined;
+  const { hasLoadedOnce: homeReady } = useFastFoods();
+  const onLayoutRootView =
+    !loading && !isSignedIn && homeReady ? hideSplash : undefined;
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
+import { SkeletonImage } from '@/src/components/SkeletonImage';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -70,7 +71,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         </BlurView> */}
  
         <View style={styles.v1ImgWrapper}>
-          <Image 
+          <SkeletonImage 
             source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')} 
             style={styles.v1Image} 
             contentFit="contain"
@@ -117,7 +118,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           </View>
         {/* Image avec overlay gradient */}
         <View style={styles.v2ImgWrap}>
-          <Image
+          <SkeletonImage
             source={menu.image ? { uri: menu.image } : require('@/assets/images/riz-spaghettis-oeuf-poulet-pane-fritz-platain-noBG.png')}
             style={styles.v2Image}
           />
@@ -176,7 +177,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         {/* Stock texte */}
     
           {/* Image centrée */}
-          <Image
+          <SkeletonImage
             source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.webp')}
             style={styles.v3Image}
             contentFit="contain"
@@ -238,7 +239,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
 
         {/* Image dramatique en bas-droite avec shadow */}
         <View style={[styles.v4ImgWrap, { shadowColor: accentColor }]}>
-            <Image
+            <SkeletonImage
                 source={menu.image ? { uri: menu.image } : require('@/assets/images/purre-avocat-tomate-legume.png')}
                 style={styles.v4Image}
             />
@@ -365,7 +366,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         {/* Image produit — flottante, débordante, dramatique */}
         <View style={styles.v5ImgZone}>
           <View style={[styles.v5ImgShadow, { shadowColor: accent }]}>
-            <Image
+            <SkeletonImage
               source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
               style={styles.v5ProductImg}
               contentFit="contain"
@@ -455,7 +456,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           {/* Colonne droite — image dramatique */}
           <View style={styles.v6Right}>
             <View style={[styles.v6ImgGlow, { shadowColor: accent }]}>
-              <Image
+              <SkeletonImage
                 source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
                 style={styles.v6Img}
                 contentFit="contain"
@@ -483,7 +484,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
     return (
       <TouchableOpacity style={[styles.v7Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Image plein fond */}
-        <Image
+        <SkeletonImage
           source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
           style={styles.v7BgImg}
           contentFit="cover"

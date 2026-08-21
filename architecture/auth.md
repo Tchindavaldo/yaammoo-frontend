@@ -149,6 +149,13 @@ Règles clés (chacune corrige un bug observé) :
    > est une coupure nette (`none`), pas de fondu au boot. **Comportement voulu**
    > (pas de flash possible) ; ne pas chercher à le « corriger ».
 
+   > **Accès invité — `WelcomeScreen` attend aussi `homeReady`** : depuis que les
+   > invités entrent dans `(tabs)`, `!isSignedIn` ne suffit plus à décider que
+   > cet écran est la destination finale. `onLayoutRootView` exige donc
+   > `!loading && !isSignedIn && homeReady`. Sans ça, sur réseau lent (constaté
+   > sur Android), l'auth se résout avant le 1er fetch des restaurants et
+   > l'écran get-started lève le splash le temps que la home soit prête → flash.
+
 `FastFoodContext` expose pour cela `hasLoadedOnce` (passe à `true` dans le
 `finally` du 1er `fetchFastFoods`, reste `true` ensuite même au pull-to-refresh).
 

@@ -12,20 +12,20 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
 import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
-import { Menu, AppBanner } from "@/src/types";
+import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
+import UpdateAvailableSheet from "@/src/features/appVersion/components/UpdateAvailableSheet";
+import { useAppVersion } from "@/src/features/appVersion/context/AppVersionContext";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
-import { useAppVersion } from "@/src/features/appVersion/context/AppVersionContext";
-import UpdateAvailableSheet from "@/src/features/appVersion/components/UpdateAvailableSheet";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useRouter } from "expo-router";
@@ -45,7 +45,7 @@ const CATEGORIES = [
  * laisse la home se poser d'abord ; l'apparition se fait ensuite en fondu
  * (`animationType="fade"` du Modal).
  */
-const UPDATE_SHEET_DELAY_MS = 1800;
+const UPDATE_SHEET_DELAY_MS = 500;
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
@@ -84,7 +84,10 @@ export default function HomeScreen() {
   const [updateSheetReady, setUpdateSheetReady] = useState(false);
   useEffect(() => {
     if (!updateAvailable || updateSheetDismissed) return;
-    const t = setTimeout(() => setUpdateSheetReady(true), UPDATE_SHEET_DELAY_MS);
+    const t = setTimeout(
+      () => setUpdateSheetReady(true),
+      UPDATE_SHEET_DELAY_MS,
+    );
     return () => clearTimeout(t);
   }, [updateAvailable, updateSheetDismissed]);
 
@@ -103,12 +106,15 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const handleBannerPress = useCallback((banner: AppBanner) => {
-    // Une bannière `bonus` ouvre la sheet Bonus (Settings → Bonus et parrainage).
-    if (banner.type === 'bonus') {
-      router.push('/(tabs)/settings?section=bonus');
-    }
-  }, [router]);
+  const handleBannerPress = useCallback(
+    (banner: AppBanner) => {
+      // Une bannière `bonus` ouvre la sheet Bonus (Settings → Bonus et parrainage).
+      if (banner.type === "bonus") {
+        router.push("/(tabs)/settings?section=bonus");
+      }
+    },
+    [router],
+  );
 
   const listHeader = useMemo(
     () => <HeroBanner banners={banners} onBonusPress={handleBannerPress} />,
@@ -165,7 +171,13 @@ export default function HomeScreen() {
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
       <RestaurantHeader
-        userName={[userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(' ') || user?.displayName || "Utilisateur"}
+        userName={
+          [userData?.infos?.prenom, userData?.infos?.nom]
+            .filter(Boolean)
+            .join(" ") ||
+          user?.displayName ||
+          "Utilisateur"
+        }
         userPhoto={
           (userData as any)?.photoUrl || (userData as any)?.photo || ""
         }

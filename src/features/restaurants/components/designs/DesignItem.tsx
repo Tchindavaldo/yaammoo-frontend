@@ -70,21 +70,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
   const [imgLoaded, setImgLoaded] = React.useState(!menu.image);
   const showSkeleton = FORCE_SKELETON || !imgLoaded;
 
-  // L'image n'etant pas montee pendant le squelette, `onLoad` ne partirait
-  // jamais : on prefetch l'URL et on bascule quand le cache la tient.
-  React.useEffect(() => {
-    if (!menu.image) return;
-    let alive = true;
-    Image.prefetch(menu.image)
-      .catch(() => {})
-      .finally(() => {
-        if (alive) setImgLoaded(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [menu.image]);
-
   // Dimensions de la carte courante, pour que le squelette occupe exactement sa
   // place dans la liste horizontale (sinon la rangee saute au chargement).
   const skel = SKELETON_SIZES[variant];
@@ -95,6 +80,24 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           { width: skel.width, height: skel.height, marginRight: isLast ? 0 : skel.gap },
         ]}
       >
+        {/*
+          L'image est montee DES MAINTENANT, cachee derriere le squelette.
+          ⚠️ Elle etait auparavant prechargee via `Image.prefetch` puis montee
+          seulement une fois resolue : le telechargement ne demarrait qu'apres
+          le rendu, et il fallait encore un re-render plus une relecture du
+          cache pour l'afficher. Les cartes accusaient un retard visible sur la
+          banniere, qui monte son `<Image>` directement — l'ecart etait flagrant
+          en connexion lente. Ici le chargement part au premier rendu, comme la
+          banniere, et `onLoad` remplace le prefetch.
+        */}
+        <Image
+          source={{ uri: menu.image }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(true)}
+        />
         <CardSkeleton radius={skel.radius} />
       </View>
     );

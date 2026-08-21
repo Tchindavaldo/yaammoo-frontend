@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
@@ -6,9 +6,27 @@ import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DeliveryOffer, FastFood, AppBanner } from '@/src/types';
 import { prefetchHomeImages } from '@/src/features/restaurants/utils/prefetchHomeImages';
 
+/**
+ * Boutiques chargées par page. Le catalogue vise 500 boutiques : tout charger
+ * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
+ */
+const PAGE_SIZE = 10;
+
+/** Délai avant qu'une frappe dans la recherche parte au serveur. */
+const SEARCH_DEBOUNCE_MS = 350;
+
 interface FastFoodContextType {
   fastFoods: FastFood[];
   loading: boolean;
+  /** Chargement d'une page SUIVANTE (le pull-to-refresh utilise `loading`). */
+  loadingMore: boolean;
+  /** false quand toutes les boutiques ont été chargées. */
+  hasMore: boolean;
+  /**
+   * Charge la page suivante et l'ajoute à la liste. Sans effet si un
+   * chargement est déjà en cours ou si la fin est atteinte.
+   */
+  loadMore: () => void;
   /** true une fois le 1er fetch terminé (succès, liste vide OU erreur). Reste true
    *  ensuite, même pendant un pull-to-refresh. Sert à savoir quand la home a fini
    *  son chargement initial → bascule login → home. */
@@ -97,17 +115,47 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { user } = useAuth();
   const [fastFoods, setFastFoods] = useState<FastFood[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  /** Curseur de la page suivante. `null` = fin de liste atteinte. */
+  const cursorRef = useRef<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  /**
+   * Numéro de la requête en cours. Une réponse dont le numéro n'est plus le
+   * dernier est ignorée : sans ça, une recherche lente écraserait le résultat
+   * d'une frappe plus récente, et un `loadMore` en vol viendrait polluer une
+   * liste déjà réinitialisée.
+   */
+  const runIdRef = useRef(0);
   const [appleReviewMode, setAppleReviewMode] = useState(false);
   const [banners, setBanners] = useState<AppBanner[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const fetchFastFoods = useCallback(async () => {
+  /**
+   * Charge UNE page de boutiques.
+   *
+   * @param cursor `undefined` = première page (remplace la liste) ; sinon on
+   *   concatène à l'existant.
+   * @param q recherche par nom, résolue par le serveur.
+   *
+   * ⚠️ La recherche est SERVEUR et non locale : filtrer `fastFoods` côté client
+   * ne verrait que les pages déjà chargées, donc une boutique du fond du
+   * catalogue serait introuvable — une régression silencieuse.
+   */
+  const fetchPage = useCallback(async (cursor?: string, q?: string) => {
+    const isFirstPage = !cursor;
+    // ⚠️ Seule une PREMIÈRE page ouvre une nouvelle génération. Un `loadMore`
+    // se contente de vérifier qu'il appartient toujours à la génération
+    // courante : s'il l'incrémentait, il invaliderait la première page encore
+    // en vol et la liste ne serait jamais remplacée.
+    const myRun = isFirstPage ? ++runIdRef.current : runIdRef.current;
     try {
-      setLoading(true);
+      if (isFirstPage) setLoading(true);
+      else setLoadingMore(true);
       setError(null);
+
       // Route PUBLIQUE mais à auth OPTIONNELLE : sans Bearer, le backend ne sait
       // pas quel user demande et renvoie `deliveryOffer: null` sur TOUS les
       // fastfoods — silencieusement, sans erreur HTTP. Le token est donc envoyé
@@ -117,37 +165,104 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const idToken = await auth.currentUser?.getIdToken().catch(() => null);
       const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+        params: {
+          limit: PAGE_SIZE,
+          ...(cursor ? { cursor } : {}),
+          ...(q ? { q } : {}),
+        },
       });
+
+      // Réponse périmée (recherche plus récente, ou liste réinitialisée) :
+      // l'appliquer ferait réapparaître des résultats obsolètes.
+      if (myRun !== runIdRef.current) return;
 
       // Flag review Apple porté par la réponse (défaut false si absent).
       setAppleReviewMode(response.data?.appleReviewMode === true);
 
-      // Bannières publicitaires du carrousel (défaut à vide si absentes).
-      setBanners(Array.isArray(response.data?.banners) ? response.data.banners : []);
+      // Bannières : servies uniquement sur la première page par le backend.
+      // Sur un `loadMore` le tableau est vide — ne pas écraser celles en place.
+      if (isFirstPage) {
+        setBanners(Array.isArray(response.data?.banners) ? response.data.banners : []);
+      }
+
+      const next = response.data?.nextCursor ?? null;
+      cursorRef.current = next;
+      setHasMore(!!next);
 
       if (response.data && response.data.data) {
-        const data = response.data.data.map((item: any, index: number) =>
-          normalizeFastFood(item, index % 6),
-        );
-        setFastFoods(data);
-        prefetchHomeImages(data, response.data?.banners);
+        const raw: any[] = response.data.data;
+        if (isFirstPage) {
+          const data = raw.map((item, index) => normalizeFastFood(item, index % 6));
+          setFastFoods(data);
+          prefetchHomeImages(data, response.data?.banners);
+        } else {
+          setFastFoods((prev) => {
+            // Dédup par id : un `newFastfood` reçu par socket pendant le
+            // chargement peut déjà avoir inséré une boutique de cette page.
+            const known = new Set(prev.map((ff) => ff.id));
+            const added = raw
+              .filter((item) => item?.id && !known.has(item.id))
+              .map((item, i) => normalizeFastFood(item, (prev.length + i) % 6));
+            if (added.length === 0) return prev;
+            // Les images des pages suivantes doivent aussi être préchargées,
+            // sinon seule la première page en profite.
+            prefetchHomeImages(added);
+            return [...prev, ...added];
+          });
+        }
       }
     } catch (err: any) {
+      if (myRun !== runIdRef.current) return;
       console.error('Error fetching fast foods:', err);
       setError('Connection internet indisponible, vérifiez votre réseau');
     } finally {
-      setLoading(false);
-      setHasLoadedOnce(true);
+      // Chaque appel n'éteint QUE son propre indicateur : un `loadMore` qui
+      // remettrait `loading` à false masquerait une première page encore en vol.
+      if (myRun === runIdRef.current) {
+        if (isFirstPage) setLoading(false);
+        else setLoadingMore(false);
+        setHasLoadedOnce(true);
+      }
     }
   }, []);
+
+  /** Recharge depuis le début (boot, pull-to-refresh, changement d'identité). */
+  const refresh = useCallback(async () => {
+    cursorRef.current = null;
+    await fetchPage(undefined, searchQuery.trim() || undefined);
+  }, [fetchPage, searchQuery]);
+
+  const loadMore = useCallback(() => {
+    // Une recherche affiche ses propres résultats pagines ; on continue de
+    // paginer dedans avec le meme `q`, sinon on melangerait deux listes.
+    if (loadingMore || loading || !cursorRef.current) return;
+    void fetchPage(cursorRef.current, searchQuery.trim() || undefined);
+  }, [fetchPage, loading, loadingMore, searchQuery]);
 
   // Refetch à CHAQUE changement d'identité (y compris `null` → user au boot :
   // la restauration de session Firebase est asynchrone et se termine APRÈS le
   // montage). Sans ce second passage, le premier appel partirait sans Bearer et
   // la home resterait sur des `deliveryOffer: null` jusqu'au prochain reload.
   useEffect(() => {
-    fetchFastFoods();
-  }, [fetchFastFoods, user?.uid]);
+    cursorRef.current = null;
+    void fetchPage(undefined, undefined);
+  }, [fetchPage, user?.uid]);
+
+  // Recherche serveur, debouncée : chaque frappe repart de la première page.
+  // ⚠️ On saute le tout premier passage — l'effet d'identité ci-dessus a déjà
+  // lancé le chargement initial, et le rejouer ici doublerait la requête.
+  const searchMounted = useRef(false);
+  useEffect(() => {
+    if (!searchMounted.current) {
+      searchMounted.current = true;
+      return;
+    }
+    const t = setTimeout(() => {
+      cursorRef.current = null;
+      void fetchPage(undefined, searchQuery.trim() || undefined);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+  }, [searchQuery, fetchPage]);
 
   // ── Injection socket : upsert/remove sur le state local, sans requête ──
   const upsertMenuFromSocket = useCallback((rawMenu: any) => {
@@ -191,7 +306,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const idx = prev.findIndex((ff) => ff.id === rawFastFood.id);
       const normalized = normalizeFastFood(
         rawFastFood,
-        idx >= 0 ? prev[idx].designIndex ?? 0 : prev.length % 6,
+        // Insertion en tête (voir plus bas) : le design 0 est celui de la
+        // première position. `prev.length % 6` valait pour un ajout en fin.
+        idx >= 0 ? prev[idx].designIndex ?? 0 : 0,
       );
       if (idx >= 0) {
         const next = [...prev];
@@ -203,7 +320,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         };
         return next;
       }
-      return [...prev, normalized];
+      // ⚠️ Nouvelle boutique : elle s'insère en TÊTE, pas en fin. Le backend
+      // trie par `createdAt` décroissant — la plus récente est donc première.
+      // L'ajouter en fin la placerait au milieu d'une liste paginée, à un
+      // endroit qui ne correspond à rien, et elle disparaîtrait au prochain
+      // refresh. En tête, rien ne se décale sous les yeux de l'utilisateur.
+      return [normalized, ...prev];
     });
   }, []);
 
@@ -245,6 +367,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       value={{
         fastFoods,
         loading,
+        loadingMore,
+        hasMore,
+        loadMore,
         hasLoadedOnce,
         appleReviewMode,
         banners,
@@ -253,7 +378,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setSearchQuery,
         selectedCategory,
         setSelectedCategory,
-        refresh: fetchFastFoods,
+        refresh,
         upsertMenuFromSocket,
         removeMenuFromSocket,
         upsertFastFoodFromSocket,

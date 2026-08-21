@@ -47,6 +47,9 @@ export default function HomeScreen() {
   const {
     fastFoods,
     loading,
+    loadingMore,
+    hasMore,
+    loadMore,
     refresh,
     banners,
     searchQuery,
@@ -95,6 +98,18 @@ export default function HomeScreen() {
     [banners, handleBannerPress],
   );
 
+  // Pied de liste : indicateur pendant le chargement de la page suivante.
+  // `hasMore` évite de laisser un espace vide en bas quand tout est chargé.
+  const listFooter = useMemo(
+    () =>
+      loadingMore && hasMore ? (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color={Theme.colors.primary} />
+        </View>
+      ) : null,
+    [loadingMore, hasMore],
+  );
+
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
     // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
@@ -129,7 +144,12 @@ export default function HomeScreen() {
     }
   };
 
-  if ((loading && fastFoods.length === 0) || forceLoading) {
+  // Écran de chargement plein — RÉSERVÉ au tout premier affichage.
+  // ⚠️ `!searchQuery` est indispensable : une recherche vide la liste et
+  // repasse `loading` à true. Sans cette garde, l'écran plein remplacerait la
+  // home et ferait disparaître la barre de recherche, empêchant l'utilisateur
+  // de corriger sa saisie.
+  if ((loading && fastFoods.length === 0 && !searchQuery) || forceLoading) {
     return (
       <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
         <View style={styles.centered}>
@@ -192,6 +212,11 @@ export default function HomeScreen() {
               colors={[Theme.colors.primary]}
             />
           }
+          // Pagination : la page suivante part avant d'atteindre le bas, pour
+          // que les boutiques soient là quand l'utilisateur y arrive.
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={listFooter}
           ListEmptyComponent={
             <View style={styles.centered}>
               <Ionicons
@@ -200,7 +225,9 @@ export default function HomeScreen() {
                 color={Theme.colors.gray[200]}
               />
               <Text style={styles.emptyText}>
-                Aucun restaurant trouvé pour "{searchQuery || selectedCategory}"
+                {searchQuery
+                  ? `Aucun restaurant trouvé pour "${searchQuery}"`
+                  : "Aucun restaurant disponible pour le moment"}
               </Text>
             </View>
           }
@@ -243,6 +270,10 @@ const styles = StyleSheet.create({
   },
   listContent: {
     // paddingBottom géré dynamiquement avec useTabBarHeight
+  },
+  footerLoader: {
+    paddingVertical: 24,
+    alignItems: "center",
   },
   emptyText: {
     color: Theme.colors.gray[500],

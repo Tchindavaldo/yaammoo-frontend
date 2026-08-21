@@ -128,7 +128,11 @@ function AppContent() {
   // uid pour lequel le setup a tourné. Au logout, isSignedIn repasse false → on
   // remet notifSetupUid à null pour que le prochain login le relance.
   useEffect(() => {
-    if (isSignedIn && user && notifSetupUid.current !== user.uid) {
+    // ⚠️ `userData` est une condition d'ENTREE, pas un detail : `setup()` sort
+    // immediatement sur `if (!userData) return`. Declenche avant que le profil
+    // soit charge, il ne demandait jamais la permission — tout en marquant le
+    // garde comme fait, ce qui rendait l'oubli definitif pour la session.
+    if (isSignedIn && user && userData && notifSetupUid.current !== user.uid) {
       // Differe : au login, `isSignedIn` bascule pendant que la sheet d'auth est
       // encore en train de redescendre. La demande de permission ouvre une
       // popup native qui bloque le thread UI — l'animation se figeait a
@@ -151,7 +155,7 @@ function AppContent() {
     if (!isSignedIn) {
       notifSetupUid.current = null;
     }
-  }, [isSignedIn, user, setupNotifications]);
+  }, [isSignedIn, user, userData, setupNotifications]);
 
   // Écran de mise à jour — UN SEUL, pour les deux cas :
   //   `forceUpdate`     → version sous le minimum, aucune issue.

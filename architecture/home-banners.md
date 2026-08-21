@@ -75,12 +75,24 @@ inspecter son rendu sans dependre du reseau.
 
 ## Performances de chargement
 
-- **Prefetch en amont** (`src/features/restaurants/utils/prefetchHomeImages.ts`) :
-  appele des que `/fastfood/all` repond, il remplit le cache disque avant que
-  les cartes ne se montent. Sans lui, chaque carte ne commencait a telecharger
-  qu'a son montage — donc au scroll, une par une, alors que toutes les URLs
-  etaient deja connues. Priorite aux bannieres puis aux 4 premiers menus par
-  boutique, 6 requetes simultanees, dedoublonnage par session.
+- **Prefetch sequentiel dans l'ordre d'affichage**
+  (`src/features/restaurants/utils/prefetchHomeImages.ts`), appele des que
+  `/fastfood/all` repond : bannieres, puis **une boutique a la fois**, en
+  suivant l'ordre du tableau `fastFoods` — qui est exactement l'ordre de rendu
+  de la FlatList.
+
+  Deux regles :
+  1. **Un seul lot en vol.** La boutique suivante n'est attaquee qu'une fois la
+     precedente terminee. Sans ca les requetes s'accumulent et on retombe sur un
+     telechargement massif (~24 Mo) pour des images que l'utilisateur ne verra
+     peut-etre jamais, en retardant celles qu'il a sous les yeux.
+  2. **Pas d'observation du scroll.** L'ordre est deja connu par l'index du
+     tableau ; une file sequentielle suit la descente sans avoir a suivre la
+     position de scroll.
+
+  3 images en parallele a l'interieur d'une meme boutique (3 a 5 menus chacune),
+  dedoublonnage par session, et un `runId` annule la file si le catalogue est
+  rafraichi entre-temps.
 - **`cachePolicy="memory-disk"`** sur toutes les images distantes : elles
   survivent au redemarrage de l'app.
 - **`transition={180}`** : fondu court a l'apparition au lieu d'un « pop ».

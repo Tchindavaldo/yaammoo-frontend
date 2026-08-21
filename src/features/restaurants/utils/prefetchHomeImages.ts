@@ -2,77 +2,84 @@ import { Image } from "expo-image";
 import type { AppBanner, FastFood } from "@/src/types";
 
 /**
- * Precharge les images du home des que `/fastfood/all` a repondu.
+ * Precharge les images du home DANS L'ORDRE D'AFFICHAGE, boutique par boutique.
  *
- * Pourquoi : sans ca, chaque carte ne lance son telechargement qu'au moment ou
- * elle se monte — donc au scroll, une par une, alors que toutes les URLs sont
- * connues des la reponse. Resultat : squelettes visibles longtemps a mesure que
- * l'utilisateur descend. Ici on remplit le cache disque en amont, pendant que
- * l'utilisateur regarde le haut de la page.
+ * Pourquoi pas tout d'un coup : le catalogue represente ~24 Mo. Les lancer
+ * ensemble sature la connexion pour des images que l'utilisateur ne verra
+ * peut-etre jamais, et retarde justement celles qu'il a sous les yeux.
  *
- * Ordre : les bannieres d'abord (visibles immediatement), puis les premiers
- * menus de chaque boutique (au-dessus de la ligne de flottaison), puis le reste.
+ * Pourquoi pas un declenchement au scroll : l'ordre est deja connu. La FlatList
+ * rend `fastFoods` dans l'ordre du tableau, donc l'index 0 est la premiere
+ * boutique vue, l'index 1 la suivante, etc. Une file sequentielle suit
+ * naturellement la descente, sans avoir a observer la position de scroll.
  *
- * Volontairement silencieux et non bloquant : un echec de prechargement n'est
- * pas une erreur — l'image sera simplement chargee normalement a l'affichage.
+ * Regle : **un seul lot en vol a la fois**. On n'attaque la boutique suivante
+ * qu'une fois la precedente terminee — sinon les requetes s'accumulent et on
+ * retombe sur le telechargement massif qu'on cherche a eviter.
+ *
+ * Silencieux et non bloquant : un echec de prechargement n'est pas une erreur,
+ * l'image sera simplement chargee au moment de l'affichage.
  */
 
-/** Nombre de menus par boutique consideres comme « visibles rapidement ». */
-const EAGER_PER_SHOP = 4;
-/** Requetes de prechargement simultanees. Au-dela on sature le reseau. */
-const CONCURRENCY = 6;
+/** Images chargees en parallele A L'INTERIEUR d'une meme boutique. */
+const CONCURRENCY = 3;
 
+/** URLs deja demandees dans cette session (le refresh renvoie le meme catalogue). */
 const seen = new Set<string>();
 
-async function runPool(urls: string[]): Promise<void> {
+/** Une seule file active : un nouveau fetch annule la precedente. */
+let runId = 0;
+
+async function loadBatch(urls: string[], myRun: number): Promise<void> {
   let cursor = 0;
-  const workers = Array.from({ length: Math.min(CONCURRENCY, urls.length) }, async () => {
-    while (cursor < urls.length) {
-      const url = urls[cursor++];
-      try {
-        await Image.prefetch(url, { cachePolicy: "memory-disk" });
-      } catch {
-        // Silencieux : l'image sera chargee normalement au rendu.
+  const workers = Array.from(
+    { length: Math.min(CONCURRENCY, urls.length) },
+    async () => {
+      while (cursor < urls.length) {
+        // Le catalogue a ete rafraichi entre-temps : cette file est obsolete.
+        if (myRun !== runId) return;
+        const url = urls[cursor++];
+        try {
+          await Image.prefetch(url, { cachePolicy: "memory-disk" });
+        } catch {
+          // Silencieux : l'image sera chargee normalement au rendu.
+        }
       }
-    }
-  });
+    },
+  );
   await Promise.all(workers);
+}
+
+function pending(urls: (string | undefined | null)[]): string[] {
+  const out: string[] = [];
+  for (const u of urls) {
+    if (typeof u !== "string" || !u) continue;
+    if (seen.has(u)) continue;
+    seen.add(u);
+    out.push(u);
+  }
+  return out;
 }
 
 export function prefetchHomeImages(
   fastFoods: FastFood[],
   banners?: AppBanner[] | null,
 ): void {
-  const eager: string[] = [];
-  const lazy: string[] = [];
+  const myRun = ++runId;
 
-  if (Array.isArray(banners)) {
-    for (const b of banners) {
-      if (b?.imageUrl) eager.push(b.imageUrl);
+  void (async () => {
+    // 1. Les bannieres : c'est le premier bloc visible du home.
+    const bannerUrls = pending((banners ?? []).map((b) => b?.imageUrl));
+    if (bannerUrls.length) await loadBatch(bannerUrls, myRun);
+
+    // 2. Les boutiques, dans l'ordre du tableau = ordre d'affichage. Chaque
+    //    boutique attend la fin de la precedente : la file avance au rythme ou
+    //    l'utilisateur descend, sans jamais tout mettre en vol.
+    for (const shop of fastFoods ?? []) {
+      if (myRun !== runId) return;
+      const menus = Array.isArray(shop?.menu) ? shop.menu : [];
+      const urls = pending(menus.map((m: any) => m?.image));
+      if (urls.length) await loadBatch(urls, myRun);
     }
-  }
-
-  for (const shop of fastFoods ?? []) {
-    const menus = Array.isArray(shop?.menu) ? shop.menu : [];
-    menus.forEach((m, i) => {
-      if (!m?.image) return;
-      (i < EAGER_PER_SHOP ? eager : lazy).push(m.image);
-    });
-  }
-
-  // Une URL deja demandee dans cette session ne l'est pas deux fois (le refresh
-  // du home renvoie le meme catalogue).
-  const dedup = (list: string[]) =>
-    list.filter((u) => {
-      if (seen.has(u)) return false;
-      seen.add(u);
-      return true;
-    });
-
-  const first = dedup(eager);
-  const rest = dedup(lazy);
-
-  // Le lot prioritaire part tout de suite ; le reste enchaine derriere pour ne
-  // pas concurrencer les images que l'utilisateur regarde deja.
-  void runPool(first).then(() => runPool(rest));
+  })();
 }

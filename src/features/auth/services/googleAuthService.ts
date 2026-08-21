@@ -34,22 +34,32 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
 
     // Configuration Google Signin (Android Client ID est lu depuis
     // google-services.json automatiquement par la lib, ne pas le passer ici)
+    //
+    // PAS de `offlineAccess` : cette option reclame un serverAuthCode destine a
+    // un backend agissant hors ligne au nom de l'utilisateur. On ne consomme que
+    // l'idToken (signInWithCredential Firebase), donc elle n'apporte rien et
+    // ajoute un echange serveur via le client Web — source de DEVELOPER_ERROR
+    // (code 10) sur Android APRES la selection du compte.
     GoogleSignin.configure({
       webClientId: Config.googleAuth.webClientId,
       iosClientId: Config.googleAuth.iosClientId,
-      offlineAccess: true,
     });
     // Vérifie que Google Play Services est disponible (Android)
     await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
     console.log("🔵 [GoogleAuth] Étape 2: Lancement du sélecteur de compte");
-    // Lance le flow de connexion Google
-    await GoogleSignin.signIn();
+    // Lance le flow de connexion Google. `signIn()` renvoie DEJA l'idToken :
+    // on le lit dans sa reponse au lieu de rappeler `getTokens()`, qui declenche
+    // une requete serveur supplementaire (l'etape qui echouait sur Android).
+    // v16 : reponse discriminee { type: 'success', data: User } | { type: 'cancelled' }.
+    const signInResponse = await GoogleSignin.signIn();
+
+    if (signInResponse.type === "cancelled") {
+      return { success: false, isNewUser: false, error: "Connexion annulée" };
+    }
 
     console.log("🔵 [GoogleAuth] Étape 3: Récupération du token");
-    // Récupère les tokens
-    const tokens = await GoogleSignin.getTokens();
-    const idToken = tokens.idToken;
+    const idToken = signInResponse.data.idToken;
 
     if (!idToken) {
       console.error("❌ [GoogleAuth] Token Google invalide");

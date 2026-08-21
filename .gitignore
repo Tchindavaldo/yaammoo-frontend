@@ -46,3 +46,4 @@ app-example
 
 # Variables d environnement locales (R8)
 .env
+.env.sentry-build-plugin

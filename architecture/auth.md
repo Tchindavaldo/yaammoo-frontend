@@ -149,12 +149,14 @@ Règles clés (chacune corrige un bug observé) :
    > est une coupure nette (`none`), pas de fondu au boot. **Comportement voulu**
    > (pas de flash possible) ; ne pas chercher à le « corriger ».
 
-   > **Accès invité — `WelcomeScreen` attend aussi `homeReady`** : depuis que les
-   > invités entrent dans `(tabs)`, `!isSignedIn` ne suffit plus à décider que
-   > cet écran est la destination finale. `onLayoutRootView` exige donc
-   > `!loading && !isSignedIn && homeReady`. Sans ça, sur réseau lent (constaté
-   > sur Android), l'auth se résout avant le 1er fetch des restaurants et
-   > l'écran get-started lève le splash le temps que la home soit prête → flash.
+   > **Accès invité — `WelcomeScreen` ne cache JAMAIS le splash.** Depuis que les
+   > invités entrent dans `(tabs)`, la destination après le splash est toujours
+   > la home, connecté ou non. Cet écran n'est monté que transitoirement, sous le
+   > splash, le temps que la home soit prête. Le laisser lever le splash — même
+   > sous condition — faisait apparaître le get-started avant la home sur un
+   > appareil lent (constaté sur Pixel 2). Seule la home appelle `useHideSplash`,
+   > et `hasLoadedOnce` passe à `true` dans un `finally`, donc même une erreur
+   > réseau ne peut pas figer l'app sur le splash.
 
 `FastFoodContext` expose pour cela `hasLoadedOnce` (passe à `true` dans le
 `finally` du 1er `fetchFastFoods`, reste `true` ensuite même au pull-to-refresh).

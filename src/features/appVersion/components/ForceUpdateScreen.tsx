@@ -18,14 +18,27 @@ import { openStorePage } from "@/src/features/appVersion/services/storeLinks";
 
 interface Props {
   onUpdatePress?: () => void;
+  /**
+   * `false` = mise à jour simplement DISPONIBLE : le message s'adoucit et un
+   * bouton « Plus tard » permet de rejoindre la home. `true` (défaut) = version
+   * sous le minimum requis, aucune issue hors mise à jour.
+   */
+  mandatory?: boolean;
+  /** Appelé au tap sur « Plus tard ». Requis quand `mandatory` est false. */
+  onDismiss?: () => void;
 }
 
 /**
- * Écran plein écran, non fermable : la version du client est sous le
- * minimum requis (`forceUpdate` = true). Aucun bouton retour ni fermeture —
- * seule issue : mettre à jour.
+ * Écran plein écran de mise à jour, utilisé pour les DEUX cas — blocage et
+ * simple disponibilité. Une seule page : seuls le texte et la présence du
+ * bouton « Plus tard » changent, pour que l'utilisateur voie toujours la même
+ * mise en page quelle que soit la situation.
  */
-export default function ForceUpdateScreen({ onUpdatePress }: Props) {
+export default function ForceUpdateScreen({
+  onUpdatePress,
+  mandatory = true,
+  onDismiss,
+}: Props) {
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
@@ -61,10 +74,13 @@ export default function ForceUpdateScreen({ onUpdatePress }: Props) {
         </Svg>
       </View>
 
-      <Text style={styles.title}>Mise à jour requise</Text>
+      <Text style={styles.title}>
+        {mandatory ? "Mise à jour requise" : "Nouvelle version disponible"}
+      </Text>
       <Text style={styles.subtitle}>
-        Une nouvelle version de yaammoo est nécessaire pour continuer.{"\n"}
-        Mets à jour l'application pour poursuivre.
+        {mandatory
+          ? `Une nouvelle version de yaammoo est nécessaire pour continuer.\nMets à jour l'application pour poursuivre.`
+          : `Une nouvelle version de yaammoo est disponible.\nMets à jour pour profiter des dernières améliorations.`}
       </Text>
 
       <TouchableOpacity
@@ -79,6 +95,17 @@ export default function ForceUpdateScreen({ onUpdatePress }: Props) {
           <Text style={styles.btnText}>Mettre à jour</Text>
         )}
       </TouchableOpacity>
+
+      {!mandatory && (
+        <TouchableOpacity
+          style={styles.laterBtn}
+          activeOpacity={0.7}
+          onPress={onDismiss}
+          disabled={opening}
+        >
+          <Text style={styles.laterText}>Plus tard</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -127,5 +154,15 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_700Bold",
     fontSize: 15,
     color: "#ffffff",
+  },
+  laterBtn: {
+    marginTop: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  laterText: {
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontSize: 15,
+    color: "#8a827e",
   },
 });

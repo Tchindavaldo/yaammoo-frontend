@@ -26,9 +26,6 @@ import Svg, {
   Rect,
 } from "react-native-svg";
 import { useRouter } from "expo-router";
-import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
-import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   useFonts,
   PlusJakartaSans_600SemiBold,
@@ -67,25 +64,13 @@ function Doodle({
 
 export default function WelcomeScreen() {
   const router = useRouter();
-  const hideSplash = useHideSplash();
-  const { user, userData, loading } = useAuth();
 
-  // On ne cache le splash depuis cet écran QUE si l'auth est résolue et l'user
-  // est réellement non connecté (vrai écran de login au boot). Si l'user est
-  // connecté (transition login → home, ou boot à froid déjà loggé), on laisse
-  // le splash en place : c'est la home qui le cachera une fois prête. Évite de
-  // flasher l'écran de login pendant la transition.
-  //
-  // ACCES INVITE : depuis que les invités entrent dans (tabs), `!isSignedIn` ne
-  // suffit plus — un invité n'est PAS destiné à rester ici. Tant que le 1er
-  // fetch des restaurants tourne (`!homeReady`), (tabs) reste la destination
-  // probable : on garde le splash. Sans ca, sur un reseau lent (constate sur
-  // Android), l'auth se resout avant le fetch et cet ecran leve le splash le
-  // temps que la home soit prete → flash du get-started apres le splash.
-  const isSignedIn = !!user && !!userData;
-  const { hasLoadedOnce: homeReady } = useFastFoods();
-  const onLayoutRootView =
-    !loading && !isSignedIn && homeReady ? hideSplash : undefined;
+  // Cet ecran ne cache JAMAIS le splash. Depuis l'acces invite, la destination
+  // apres le splash est TOUJOURS la home — connecte ou non. Cet ecran n'est
+  // monte que transitoirement, sous le splash, le temps que la home soit prete ;
+  // le laisser lever le splash faisait apparaitre le get-started avant la home
+  // (visible sur un appareil lent, ou le fetch traine). C'est la home seule qui
+  // appelle `useHideSplash`.
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
@@ -146,7 +131,7 @@ export default function WelcomeScreen() {
   });
 
   return (
-    <View style={styles.stage} onLayout={onLayoutRootView}>
+    <View style={styles.stage}>
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.phone}>

@@ -111,8 +111,12 @@ l'autre.
 - `forceUpdate` : `ForceUpdateScreen` remplace tout le Stack et cache le splash
   lui-meme (aucun ecran du Stack ne peut le faire). On passe donc directement du
   splash au blocage.
-- `updateAvailable` (non bloquant) : `UpdateAvailableSheet` est montee dans la
-  home mais **differee de `UPDATE_SHEET_DELAY_MS` (1800 ms)**. Affichee
+- `updateAvailable` (non bloquant) : `UpdateAvailableSheet` n'est plus une carte
+  flottante distincte — elle rend **la meme page** que le blocage
+  (`ForceUpdateScreen mandatory={false}`), en plein ecran par-dessus la home.
+  Seuls le texte et la presence du bouton **« Plus tard »** changent, pour que
+  l'utilisateur voie une mise en page identique dans les deux cas.
+  Montee dans la home et **differee de `UPDATE_SHEET_DELAY_MS`** : affichee
   immediatement, elle chevauchait le splash encore en cours de retrait (constate
-  sur iOS). L'apparition se fait en fondu (`animationType="fade"`). Meme delai
-  sur les deux plateformes.
+  sur iOS). Apparition en fondu (`animationType="fade"`), meme delai sur les
+  deux plateformes.

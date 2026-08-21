@@ -127,13 +127,19 @@ function AppContent() {
   // remet notifSetupUid à null pour que le prochain login le relance.
   useEffect(() => {
     if (isSignedIn && user && notifSetupUid.current !== user.uid) {
-      notifSetupUid.current = user.uid;
       // Differe : au login, `isSignedIn` bascule pendant que la sheet d'auth est
       // encore en train de redescendre. La demande de permission ouvre une
       // popup native qui bloque le thread UI — l'animation se figeait a
       // mi-course et ne reprenait qu'apres validation (constate sur Android).
       // On laisse la transition se terminer avant de la declencher.
+      //
+      // ⚠️ Le garde `notifSetupUid` est pose DANS le timer, pas avant : le
+      // cleanup annule le timer a chaque re-rendu de l'effet (et il y en a
+      // plusieurs juste apres le login, `user` changeant de reference). Pose
+      // trop tot, il restait marque alors que le setup n'avait jamais tourne →
+      // la permission n'etait plus jamais demandee.
       const t = setTimeout(() => {
+        notifSetupUid.current = user.uid;
         setupNotifications().catch((error) => {
           console.error("Erreur lors de l'initialisation des notifications:", error);
         });
@@ -179,9 +185,11 @@ function AppContent() {
         {/* (auth) reste monté tant que (tabs) n'est PAS prêt (canEnterApp false).
             On NE met PAS authResolved ici : sinon, pendant la re-vérification auth
             au login (loading=true → authResolved=false), les deux guards seraient
-            faux en même temps → écran blanc. Au boot à froid, (auth) est monté mais
-            le splash natif le couvre jusqu'à ce que la home (ou l'écran auth) appelle
-            onLayoutRootView → pas de flash. */}
+            faux en même temps → écran blanc.
+            Au boot, cet écran n'est qu'un support monté SOUS le splash : il ne
+            l'a jamais caché lui-même (cf. `onLayoutRootView` de (auth)/index),
+            donc le get-started n'apparaît pas avant la home. Seule la home lève
+            le splash, une fois peinte. */}
         <Stack.Protected guard={!canEnterApp}>
           {/* Vers (auth) : "none" au boot (sous splash), "fade" sur déconnexion
               (transition douce vers le login). */}

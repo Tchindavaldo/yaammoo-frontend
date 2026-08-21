@@ -80,7 +80,14 @@
           "project": "react-native"
         }
       ],
-      "react-native-compressor"
+      "react-native-compressor",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo-notification-white.png",
+          "color": "#e8440a"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

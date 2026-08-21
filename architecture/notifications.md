@@ -166,6 +166,28 @@ La page [`app/(tabs)/cart.tsx`](../app/(tabs)/cart.tsx) lit `useLocalSearchParam
 
 ---
 
+## Icône de la barre de statut (Android)
+
+Déclarée via le plugin `expo-notifications` dans `app.json` :
+
+```json
+["expo-notifications", {
+  "icon": "./assets/images/logo-notification-white.png",
+  "color": "#e8440a"
+}]
+```
+
+**Contrainte Android** : l'icône de notification est traitée comme un **masque**
+— seule la silhouette alpha est conservée, la couleur du fichier est ignorée.
+Elle doit donc être **entièrement blanche sur fond transparent**. Sans cette
+déclaration, Android retombe sur l'icône de l'app et affiche généralement un
+carré blanc informe.
+
+`color` teinte la silhouette et l'accent de la notification.
+
+> `logo-notification-white-distinct.png` existe aussi dans `assets/images/` mais
+> contient des pixels non blancs : ne pas l'utiliser pour ce rôle.
+
 ## Composants UI
 
 ### NotificationItem

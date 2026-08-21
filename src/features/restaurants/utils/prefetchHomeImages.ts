@@ -4,9 +4,11 @@ import type { AppBanner, FastFood } from "@/src/types";
 /**
  * Precharge les images du home DANS L'ORDRE D'AFFICHAGE, boutique par boutique.
  *
- * Pourquoi pas tout d'un coup : le catalogue represente ~24 Mo. Les lancer
- * ensemble sature la connexion pour des images que l'utilisateur ne verra
- * peut-etre jamais, et retarde justement celles qu'il a sous les yeux.
+ * Pourquoi pas tout d'un coup : les lancer ensemble sature la connexion pour
+ * des images que l'utilisateur ne verra peut-etre jamais, et retarde justement
+ * celles qu'il a sous les yeux. Le backend sert desormais du WebP (~30 Ko par
+ * carte, ~150 Ko par banniere), mais le principe reste : on charge ce qui va
+ * etre vu, dans l'ordre ou ce sera vu.
  *
  * Pourquoi pas un declenchement au scroll : l'ordre est deja connu. La FlatList
  * rend `fastFoods` dans l'ordre du tableau, donc l'index 0 est la premiere
@@ -23,40 +25,6 @@ import type { AppBanner, FastFood } from "@/src/types";
 
 /** Images chargees en parallele A L'INTERIEUR d'une meme boutique. */
 const CONCURRENCY = 3;
-
-/**
- * Journalise le poids des images prechargees (bannieres + par boutique).
- * `__DEV__` uniquement : chaque mesure coute une requete HEAD supplementaire,
- * hors de question de la payer en production.
- */
-const LOG_SIZES = __DEV__;
-
-/** Poids d'une image via HEAD. `null` si le serveur ne renvoie pas la taille. */
-async function weighKb(url: string): Promise<number | null> {
-  try {
-    const res = await fetch(url, { method: "HEAD" });
-    const len = res.headers.get("content-length");
-    return len ? Math.round(parseInt(len, 10) / 1024) : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Mesure un lot et l'affiche : total, moyenne, et le detail par fichier. */
-async function logGroup(label: string, urls: string[]): Promise<void> {
-  const sizes = await Promise.all(urls.map(weighKb));
-  const known = sizes.filter((s): s is number => s !== null);
-  const total = known.reduce((a, b) => a + b, 0);
-  const avg = known.length ? Math.round(total / known.length) : 0;
-  console.log(
-    `[prefetch] ${label} — ${urls.length} image(s), ${total} Ko total, ${avg} Ko en moyenne`,
-  );
-  urls.forEach((u, i) => {
-    const kb = sizes[i];
-    const name = u.split("/").pop()?.slice(0, 44) ?? u;
-    console.log(`[prefetch]    ${kb === null ? "  ?" : String(kb).padStart(5)} Ko  ${name}`);
-  });
-}
 
 /** URLs deja demandees dans cette session (le refresh renvoie le meme catalogue). */
 const seen = new Set<string>();
@@ -102,34 +70,19 @@ export function prefetchHomeImages(
   const myRun = ++runId;
 
   void (async () => {
-    let grandTotal = 0;
-
     // 1. Les bannieres : c'est le premier bloc visible du home.
     const bannerUrls = pending((banners ?? []).map((b) => b?.imageUrl));
-    if (bannerUrls.length) {
-      if (LOG_SIZES) await logGroup("BANNIERES", bannerUrls);
-      await loadBatch(bannerUrls, myRun);
-      grandTotal += bannerUrls.length;
-    }
+    if (bannerUrls.length) await loadBatch(bannerUrls, myRun);
 
     // 2. Les boutiques, dans l'ordre du tableau = ordre d'affichage. Chaque
     //    boutique attend la fin de la precedente : la file avance au rythme ou
     //    l'utilisateur descend, sans jamais tout mettre en vol.
-    for (const [i, shop] of (fastFoods ?? []).entries()) {
+    for (const shop of fastFoods ?? []) {
       if (myRun !== runId) return;
       const menus = Array.isArray(shop?.menu) ? shop.menu : [];
       const urls = pending(menus.map((m: any) => m?.image));
       if (!urls.length) continue;
-      if (LOG_SIZES) {
-        const name = (shop as any)?.nom || (shop as any)?.name || "sans nom";
-        await logGroup(`#${i} ${name}`, urls);
-      }
       await loadBatch(urls, myRun);
-      grandTotal += urls.length;
-    }
-
-    if (LOG_SIZES) {
-      console.log(`[prefetch] termine — ${grandTotal} image(s) prechargee(s)`);
     }
   })();
 }

@@ -71,7 +71,9 @@ function AppContent() {
   // montait, la home cachait le splash, puis `forceUpdate` basculait a true →
   // le Stack etait demonte et remplace par l'ecran de blocage, laissant une
   // frame blanche (constate sur Android, ou la reponse arrive apres le 1er rendu).
-  const { forceUpdate, checked: versionChecked } = useAppVersion();
+  const { forceUpdate, updateAvailable, checked: versionChecked } = useAppVersion();
+  // « Plus tard » : vaut pour la session, on ne re-propose pas a chaque rendu.
+  const [updateDismissed, setUpdateDismissed] = useState(false);
   // uid pour lequel le setup notif a déjà été fait (null = aucun). On mémorise
   // l'uid (et pas juste un booléen) pour re-déclencher le setup à CHAQUE nouvelle
   // connexion : reconnexion du même user OU changement de compte, sans fermer
@@ -151,24 +153,37 @@ function AppContent() {
     }
   }, [isSignedIn, user, setupNotifications]);
 
-  // Version sous le minimum requis : blocage total, aucune navigation
-  // possible tant que l'app n'est pas mise à jour.
-  //
-  // Le splash natif est normalement caché depuis un écran du <Stack> via `onLayout`
-  // (useHideSplash). Ici le Stack n'est JAMAIS monté → le splash resterait figé
-  // par-dessus ForceUpdateScreen. On le cache donc explicitement dès que le gate
-  // exige une mise à jour, le temps que l'écran de blocage soit peint.
+  // Écran de mise à jour — UN SEUL, pour les deux cas :
+  //   `forceUpdate`     → version sous le minimum, aucune issue.
+  //   `updateAvailable` → nouvelle version dispo, bouton « Plus tard » en plus.
+  // Même écran, même emplacement : il remplace le Stack, donc on arrive dessus
+  // DIRECTEMENT après le splash, sans passer par la home. `mandatory` ne change
+  // que le texte et la présence du bouton.
+  // « Plus tard » ne retire l'ecran QUE si la home est prete a le remplacer.
+  // Sinon le Stack se monterait sur `canEnterApp` faux → c'est (auth) qui
+  // s'affiche, a nu, le splash etant deja cache : l'utilisateur voyait le
+  // get-started en cliquant « Plus tard ».
+  const dismissHonored = updateDismissed && canEnterApp;
+  const showUpdate = forceUpdate || (updateAvailable && !dismissHonored);
+
+  // Le splash natif est normalement caché depuis un écran du <Stack> via
+  // `onLayout` (useHideSplash). Ici le Stack n'est PAS monté → le splash
+  // resterait figé par-dessus. On le cache donc explicitement, le temps que
+  // l'écran de mise à jour soit peint.
   useEffect(() => {
-    if (!forceUpdate || isSplashHidden()) return;
+    if (!showUpdate || isSplashHidden()) return;
     requestAnimationFrame(() => {
       SplashScreen.hideAsync().catch(() => {});
     });
-  }, [forceUpdate]);
+  }, [showUpdate]);
 
-  if (forceUpdate) {
+  if (showUpdate) {
     return (
       <ThemeProvider value={DefaultTheme}>
-        <ForceUpdateScreen />
+        <ForceUpdateScreen
+          mandatory={forceUpdate}
+          onDismiss={() => setUpdateDismissed(true)}
+        />
       </ThemeProvider>
     );
   }

@@ -108,15 +108,18 @@ l'autre.
   `forceUpdate` basculait a true → Stack demonte et remplace par l'ecran de
   blocage, laissant **une frame blanche** (constate sur Android, ou la reponse
   arrive apres le 1er rendu).
-- `forceUpdate` : `ForceUpdateScreen` remplace tout le Stack et cache le splash
-  lui-meme (aucun ecran du Stack ne peut le faire). On passe donc directement du
-  splash au blocage.
-- `updateAvailable` (non bloquant) : `UpdateAvailableSheet` n'est plus une carte
-  flottante distincte — elle rend **la meme page** que le blocage
-  (`ForceUpdateScreen mandatory={false}`), en plein ecran par-dessus la home.
-  Seuls le texte et la presence du bouton **« Plus tard »** changent, pour que
-  l'utilisateur voie une mise en page identique dans les deux cas.
-  Montee dans la home et **differee de `UPDATE_SHEET_DELAY_MS`** : affichee
-  immediatement, elle chevauchait le splash encore en cours de retrait (constate
-  sur iOS). Apparition en fondu (`animationType="fade"`), meme delai sur les
-  deux plateformes.
+- **Un seul écran pour les deux cas** : `ForceUpdateScreen`, monté à la place du
+  `<Stack>` — donc atteint **directement après le splash**, sans passer par la
+  home. La prop `mandatory` ne change que le texte et la présence du bouton
+  « Plus tard ». Il n'existe plus de second composant (`UpdateAvailableSheet` a
+  été supprimé) : deux écrans pour un même propos, c'était deux choses à
+  maintenir et deux rendus qui divergeaient.
+  - `forceUpdate` → `mandatory={true}`, aucune issue.
+  - `updateAvailable` → `mandatory={false}`, bouton « Plus tard ».
+- Le splash est caché explicitement quand cet écran s'affiche : aucun écran du
+  Stack ne peut le faire puisque le Stack n'est pas monté.
+- **« Plus tard » n'est honoré que si `canEnterApp`** est vrai. Sinon le Stack se
+  monterait sur un état incomplet et afficherait `(auth)` à nu — le splash étant
+  déjà caché, l'utilisateur voyait le get-started en cliquant « Plus tard ».
+  `hasLoadedOnce` passant à `true` dans un `finally`, le clic finit toujours par
+  aboutir, même sur erreur réseau.

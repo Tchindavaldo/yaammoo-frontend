@@ -22,8 +22,6 @@ import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
-import UpdateAvailableSheet from "@/src/features/appVersion/components/UpdateAvailableSheet";
-import { useAppVersion } from "@/src/features/appVersion/context/AppVersionContext";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
@@ -39,13 +37,6 @@ const CATEGORIES = [
   { name: "Rice", icon: "restaurant-outline" },
 ];
 
-/**
- * Delai avant de presenter la sheet « Nouvelle version disponible ». Affichee
- * immediatement, elle chevauchait le splash encore en cours de retrait. On
- * laisse la home se poser d'abord ; l'apparition se fait ensuite en fondu
- * (`animationType="fade"` du Modal).
- */
-const UPDATE_SHEET_DELAY_MS = 500;
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
@@ -72,24 +63,7 @@ export default function HomeScreen() {
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
 
-  // Sheet « mise à jour disponible » : affichée une fois le home peint, ne se
-  // re-montre pas si l'utilisateur choisit « Plus tard » dans la session.
-  const { updateAvailable } = useAppVersion();
-  const [updateSheetDismissed, setUpdateSheetDismissed] = useState(false);
 
-  // La sheet de mise a jour ne s'affiche PAS des l'arrivee sur la home : elle
-  // apparaissait pendant que le splash se retirait encore et le chevauchait
-  // (constate sur iOS). On laisse la home s'installer, puis on la presente en
-  // fondu. Meme delai sur les deux plateformes pour un comportement identique.
-  const [updateSheetReady, setUpdateSheetReady] = useState(false);
-  useEffect(() => {
-    if (!updateAvailable || updateSheetDismissed) return;
-    const t = setTimeout(
-      () => setUpdateSheetReady(true),
-      UPDATE_SHEET_DELAY_MS,
-    );
-    return () => clearTimeout(t);
-  }, [updateAvailable, updateSheetDismissed]);
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
@@ -240,12 +214,6 @@ export default function HomeScreen() {
         onConfirm={handleConfirmOrder}
       />
 
-      {updateAvailable && updateSheetReady && !updateSheetDismissed && (
-        <UpdateAvailableSheet
-          visible
-          onDismiss={() => setUpdateSheetDismissed(true)}
-        />
-      )}
 
       {toast && (
         <Toast

@@ -93,3 +93,26 @@ Utilise le même header pour bloquer les clients trop anciens, côté backend
 
 `Config.iosAppStoreId` (`src/api/config.ts`) est l'Apple ID numérique de l'app sur
 l'App Store (APPSTORE_CONNECT.html), renseigné une fois l'app publiée.
+
+
+## Gate de version — sequence apres le splash
+
+Regle : **apres le splash, une seule destination s'affiche**, jamais l'une puis
+l'autre.
+
+- `AppVersionContext` expose `checked` (issu de `useAppVersionGate`), vrai des
+  que le backend a repondu **ou a echoue** — un serveur injoignable ne bloque
+  donc jamais le demarrage.
+- `canEnterApp` inclut `versionChecked` : le `<Stack>` n'est monte qu'une fois
+  le verdict connu. Sans ca le Stack se montait, la home cachait le splash, puis
+  `forceUpdate` basculait a true → Stack demonte et remplace par l'ecran de
+  blocage, laissant **une frame blanche** (constate sur Android, ou la reponse
+  arrive apres le 1er rendu).
+- `forceUpdate` : `ForceUpdateScreen` remplace tout le Stack et cache le splash
+  lui-meme (aucun ecran du Stack ne peut le faire). On passe donc directement du
+  splash au blocage.
+- `updateAvailable` (non bloquant) : `UpdateAvailableSheet` est montee dans la
+  home mais **differee de `UPDATE_SHEET_DELAY_MS` (1800 ms)**. Affichee
+  immediatement, elle chevauchait le splash encore en cours de retrait (constate
+  sur iOS). L'apparition se fait en fondu (`animationType="fade"`). Meme delai
+  sur les deux plateformes.

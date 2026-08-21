@@ -5,7 +5,7 @@ import { RestaurantHeader } from "@/src/features/restaurants/components/Restaura
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -39,6 +39,14 @@ const CATEGORIES = [
   { name: "Rice", icon: "restaurant-outline" },
 ];
 
+/**
+ * Delai avant de presenter la sheet « Nouvelle version disponible ». Affichee
+ * immediatement, elle chevauchait le splash encore en cours de retrait. On
+ * laisse la home se poser d'abord ; l'apparition se fait ensuite en fondu
+ * (`animationType="fade"` du Modal).
+ */
+const UPDATE_SHEET_DELAY_MS = 1800;
+
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
   const { user, userData } = useAuth();
@@ -68,6 +76,17 @@ export default function HomeScreen() {
   // re-montre pas si l'utilisateur choisit « Plus tard » dans la session.
   const { updateAvailable } = useAppVersion();
   const [updateSheetDismissed, setUpdateSheetDismissed] = useState(false);
+
+  // La sheet de mise a jour ne s'affiche PAS des l'arrivee sur la home : elle
+  // apparaissait pendant que le splash se retirait encore et le chevauchait
+  // (constate sur iOS). On laisse la home s'installer, puis on la presente en
+  // fondu. Meme delai sur les deux plateformes pour un comportement identique.
+  const [updateSheetReady, setUpdateSheetReady] = useState(false);
+  useEffect(() => {
+    if (!updateAvailable || updateSheetDismissed) return;
+    const t = setTimeout(() => setUpdateSheetReady(true), UPDATE_SHEET_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [updateAvailable, updateSheetDismissed]);
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
@@ -209,7 +228,7 @@ export default function HomeScreen() {
         onConfirm={handleConfirmOrder}
       />
 
-      {updateAvailable && !updateSheetDismissed && (
+      {updateAvailable && updateSheetReady && !updateSheetDismissed && (
         <UpdateAvailableSheet
           visible
           onDismiss={() => setUpdateSheetDismissed(true)}

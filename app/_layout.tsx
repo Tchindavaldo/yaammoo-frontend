@@ -65,7 +65,13 @@ const NOTIF_SETUP_DELAY_MS = Platform.OS === "android" ? 900 : 600;
 function AppContent() {
   const { user, userData, loading } = useAuth();
   const { hasLoadedOnce: homeReady } = useFastFoods();
-  const { forceUpdate } = useAppVersion();
+  // `checked` passe a true des que le backend a repondu OU a echoue — on ne
+  // reste donc jamais bloque sur le splash si le serveur est injoignable.
+  // On attend ce verdict avant d'entrer dans l'app : sans ca, le Stack se
+  // montait, la home cachait le splash, puis `forceUpdate` basculait a true →
+  // le Stack etait demonte et remplace par l'ecran de blocage, laissant une
+  // frame blanche (constate sur Android, ou la reponse arrive apres le 1er rendu).
+  const { forceUpdate, checked: versionChecked } = useAppVersion();
   // uid pour lequel le setup notif a déjà été fait (null = aucun). On mémorise
   // l'uid (et pas juste un booléen) pour re-déclencher le setup à CHAQUE nouvelle
   // connexion : reconnexion du même user OU changement de compte, sans fermer
@@ -93,7 +99,10 @@ function AppContent() {
   // pour (auth) puis on y reviendrait = flash. On garde donc les tabs montées
   // tant qu'un user Firebase est présent (login en cours), même si loading=true.
   // Au vrai logout, `user` devient null → on sort proprement vers (auth).
-  const canEnterApp = homeReady && (authResolved || !!user);
+  // `versionChecked` : on ne monte le Stack qu'une fois le verdict de version
+  // connu, pour n'afficher QU'UNE seule destination apres le splash (home ou
+  // ecran de blocage), jamais l'une puis l'autre.
+  const canEnterApp = homeReady && versionChecked && (authResolved || !!user);
 
   // Animation de bascule de groupe (auth ↔ tabs) :
   // - Au BOOT, on est monté directement dans le groupe cible pendant que le

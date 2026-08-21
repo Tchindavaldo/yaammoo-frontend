@@ -13,6 +13,8 @@ interface AppVersionContextValue {
   forceUpdate: boolean;
   /** Relance une vérification de version. */
   recheck: () => Promise<void>;
+  /** True dès que le backend a répondu OU a échoué — jamais bloquant. */
+  checked: boolean;
 }
 
 const AppVersionContext = createContext<AppVersionContextValue | null>(null);
@@ -22,7 +24,7 @@ export function AppVersionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { gate, recheck } = useAppVersionGate();
+  const { gate, checked, recheck } = useAppVersionGate();
 
   const value = useMemo<AppVersionContextValue>(
     () => ({
@@ -30,8 +32,9 @@ export function AppVersionProvider({
       updateAvailable: !!gate?.updateAvailable,
       forceUpdate: !!gate?.forceUpdate,
       recheck,
+      checked,
     }),
-    [gate, recheck],
+    [gate, checked, recheck],
   );
 
   return (

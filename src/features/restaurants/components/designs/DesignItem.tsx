@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { SkeletonImage } from '@/src/components/SkeletonImage';
+import { CardSkeleton } from '@/src/components/CardSkeleton';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +14,26 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const V1_COLORS = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
 const V1_COLORS2 = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
 const USE_VARIABLE_BACKGROUNDS = false; // Set to true to enable variable backgrounds for Design 5 & 6
+
+/** Mettre a `true` pour figer le squelette et inspecter son rendu. */
+const FORCE_SKELETON = false;
+
+/**
+ * Gabarit du squelette par variante : il doit occuper EXACTEMENT la place de la
+ * carte finale, sinon la rangee horizontale saute au moment du chargement.
+ * Valeurs alignees sur les styles `vNCard` (width/height/borderRadius/marginRight).
+ * Les designs 2 et 3 n'ont pas de hauteur fixe (elle depend du contenu) : on
+ * reprend la hauteur rendue observee.
+ */
+const SKELETON_SIZES: Record<number, { width: number; height: number; radius: number; gap: number }> = {
+  1: { width: 260, height: 280, radius: 32, gap: 16 },
+  2: { width: 220, height: 260, radius: 22, gap: 16 },
+  3: { width: 130, height: 200, radius: 20, gap: 14 },
+  4: { width: 240, height: 240, radius: 28, gap: 16 },
+  5: { width: 200, height: 250, radius: 28, gap: 16 },
+  6: { width: SCREEN_WIDTH * 0.78, height: 200, radius: 26, gap: 16 },
+  7: { width: 150, height: 190, radius: 22, gap: 14 },
+};
 
 interface DesignItemProps {
   menu: Menu;
@@ -41,6 +61,44 @@ export const DesignItem: React.FC<DesignItemProps> = ({
   const isAvailable = menu.disponibilite === 'available' || menu.disponibilite === 'Disponible';
   const price = `${menu.prix1} F`;
   const deliveryTime = useNextDeliveryTime(deliveryHours, orderLeadTime);
+
+  // Chargement de l'image du menu. Tant qu'elle n'est pas prete on ne rend QUE
+  // le squelette : superposer un voile au design laissait passer par-dessus les
+  // elements en `position: absolute` (badges, blurs, prix) — on voyait la carte
+  // et le squelette en meme temps. Retour anticipe = un seul rendu possible.
+  // Une image locale (pas de `menu.image`) est immediate : aucun squelette.
+  const [imgLoaded, setImgLoaded] = React.useState(!menu.image);
+  const showSkeleton = FORCE_SKELETON || !imgLoaded;
+
+  // L'image n'etant pas montee pendant le squelette, `onLoad` ne partirait
+  // jamais : on prefetch l'URL et on bascule quand le cache la tient.
+  React.useEffect(() => {
+    if (!menu.image) return;
+    let alive = true;
+    Image.prefetch(menu.image)
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setImgLoaded(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [menu.image]);
+
+  // Dimensions de la carte courante, pour que le squelette occupe exactement sa
+  // place dans la liste horizontale (sinon la rangee saute au chargement).
+  const skel = SKELETON_SIZES[variant];
+  if (showSkeleton && skel) {
+    return (
+      <View
+        style={[
+          { width: skel.width, height: skel.height, marginRight: isLast ? 0 : skel.gap },
+        ]}
+      >
+        <CardSkeleton radius={skel.radius} />
+      </View>
+    );
+  }
 
   // --- DESIGN 1: SPECIAL OFFERS (Ex-D3) ---
   if (variant === 1) {
@@ -71,10 +129,12 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         </BlurView> */}
  
         <View style={styles.v1ImgWrapper}>
-          <SkeletonImage 
+          <Image 
             source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')} 
             style={styles.v1Image} 
             contentFit="contain"
+            cachePolicy="memory-disk"
+            transition={180}
           />
           <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1BadgeTime} fallbackStyle={styles.blurFallbackDark}>
             <Ionicons name="time-outline" size={12} color="white" />
@@ -99,7 +159,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
   <View style={styles.v2DeliveryDot} />
 </View>
         </BlurView>
-      </TouchableOpacity>
+        </TouchableOpacity>
     );
   }
 
@@ -118,9 +178,11 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           </View>
         {/* Image avec overlay gradient */}
         <View style={styles.v2ImgWrap}>
-          <SkeletonImage
+          <Image
             source={menu.image ? { uri: menu.image } : require('@/assets/images/riz-spaghettis-oeuf-poulet-pane-fritz-platain-noBG.png')}
             style={styles.v2Image}
+            cachePolicy="memory-disk"
+            transition={180}
           />
         </View>
 
@@ -147,8 +209,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             </View>
           </View>
         </View>
-
-      </TouchableOpacity>
+        </TouchableOpacity>
     );
   }
 
@@ -177,10 +238,12 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         {/* Stock texte */}
     
           {/* Image centrée */}
-          <SkeletonImage
+          <Image
             source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground.webp')}
             style={styles.v3Image}
             contentFit="contain"
+            cachePolicy="memory-disk"
+            transition={180}
           />
           {/* Prix en overlay bas-gauche */}
           <View style={styles.v3PriceFloat}>
@@ -201,7 +264,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             <Text style={styles.v3LiveHour}>{deliveryTime}</Text> 
           </View>
         </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
     );
   }
 
@@ -239,10 +302,12 @@ export const DesignItem: React.FC<DesignItemProps> = ({
 
         {/* Image dramatique en bas-droite avec shadow */}
         <View style={[styles.v4ImgWrap, { shadowColor: accentColor }]}>
-            <SkeletonImage
+            <Image
                 source={menu.image ? { uri: menu.image } : require('@/assets/images/purre-avocat-tomate-legume.png')}
                 style={styles.v4Image}
-            />
+            cachePolicy="memory-disk"
+            transition={180}
+          />
         </View>
 
         {/* SECTION HAUT: Titre + Prix — REDESIGNÉE */}
@@ -307,7 +372,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         </View>
           </View>
         </BlurView>
-      </TouchableOpacity>
+        </TouchableOpacity>
     );
   }
 
@@ -366,11 +431,13 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         {/* Image produit — flottante, débordante, dramatique */}
         <View style={styles.v5ImgZone}>
           <View style={[styles.v5ImgShadow, { shadowColor: accent }]}>
-            <SkeletonImage
+            <Image
               source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
               style={styles.v5ProductImg}
               contentFit="contain"
-            />
+            cachePolicy="memory-disk"
+            transition={180}
+          />
           </View>
         </View>
 
@@ -399,7 +466,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         <View style={[styles.v5AddBtn, { backgroundColor: accent }]}>
           <Ionicons name="add" size={18} color="white" />
         </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
     );
   }
 
@@ -456,11 +523,13 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           {/* Colonne droite — image dramatique */}
           <View style={styles.v6Right}>
             <View style={[styles.v6ImgGlow, { shadowColor: accent }]}>
-              <SkeletonImage
+              <Image
                 source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
                 style={styles.v6Img}
                 contentFit="contain"
-              />
+            cachePolicy="memory-disk"
+            transition={180}
+          />
             </View>
           </View>
         </View>
@@ -469,7 +538,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         <View style={[styles.v6AddBtn, { backgroundColor: accent }]}>
           <Ionicons name="arrow-forward" size={16} color="white" />
         </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
     );
   }
 
@@ -484,11 +553,13 @@ export const DesignItem: React.FC<DesignItemProps> = ({
     return (
       <TouchableOpacity style={[styles.v7Card, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Image plein fond */}
-        <SkeletonImage
+        <Image
           source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')}
           style={styles.v7BgImg}
           contentFit="cover"
-        />
+            cachePolicy="memory-disk"
+            transition={180}
+          />
 
         {/* Triple gradient: haut clair → transparent → bas ultra sombre */}
         <LinearGradient
@@ -537,7 +608,7 @@ export const DesignItem: React.FC<DesignItemProps> = ({
   return (
     <TouchableOpacity style={styles.defaultContainer} onPress={onPress}>
       <Text>{menu.titre}</Text>
-    </TouchableOpacity>
+        </TouchableOpacity>
   );
 };
 

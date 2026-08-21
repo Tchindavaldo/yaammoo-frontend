@@ -100,6 +100,10 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 
 **Déclenchement de `setup()`**
 - `app/_layout.tsx` : à chaque connexion (`isSignedIn` + nouvel `user.uid`), relance `setupNotifications()` — pas de re-déclenchement si le même `uid` reste connecté.
+- ⚠️ **Appel différé** (`NOTIF_SETUP_DELAY_MS` : 900 ms Android, 600 ms iOS). Au
+  login, `isSignedIn` bascule pendant que la sheet d'auth est encore en train de
+  redescendre ; la popup de permission gèle le thread UI et figeait l'animation
+  à mi-course jusqu'à validation. Le timer laisse la transition se terminer.
 - ⚠️ La **permission OS est globale à l'app, pas par compte**. Si un premier compte l'a accordée, un second compte connecté sur le même device en hérite automatiquement (l'OS ne redemande pas) — `setup()` retrouve alors `granted` direct et sync juste le token pour le nouveau `uid`.
 
 **Foreground (app ouverte)**

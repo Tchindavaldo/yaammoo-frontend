@@ -4,6 +4,7 @@ import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DeliveryOffer, FastFood, AppBanner } from '@/src/types';
+import { prefetchHomeImages } from '@/src/features/restaurants/utils/prefetchHomeImages';
 
 interface FastFoodContextType {
   fastFoods: FastFood[];
@@ -129,6 +130,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           normalizeFastFood(item, index % 6),
         );
         setFastFoods(data);
+        prefetchHomeImages(data, response.data?.banners);
       }
     } catch (err: any) {
       console.error('Error fetching fast foods:', err);

@@ -1,7 +1,7 @@
 import { Theme } from '@/src/theme';
 import { AppBanner } from '@/src/types';
 import { Image } from 'expo-image';
-import { SkeletonImage } from '@/src/components/SkeletonImage';
+import { CardSkeleton } from '@/src/components/CardSkeleton';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
 
@@ -32,6 +32,31 @@ interface Props {
  * (toute la mecanique autoplay/pause reste en place).
  */
 const AUTOPLAY_ENABLED = false;
+
+/** Mettre a `true` pour figer le squelette et inspecter son rendu. */
+const FORCE_SKELETON = false;
+
+/**
+ * Une banniere du carrousel : l'image plus le voile de chargement qui couvre
+ * TOUTE la carte tant qu'elle n'est pas prete. Composant a part car chaque
+ * banniere porte son propre etat de chargement.
+ */
+function BannerImage({ uri }: { uri: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      <Image
+        source={{ uri }}
+        style={styles.backgroundImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={180}
+        onLoad={() => setLoaded(true)}
+      />
+      {(FORCE_SKELETON || !loaded) && <CardSkeleton radius={24} />}
+    </>
+  );
+}
 
 function HeroBannerBase({ banners, onBonusPress }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -204,12 +229,7 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
                   disabled={item.type !== 'bonus'}
                   onPress={() => item.type === 'bonus' && onBonusPress(item)}
                 >
-                  <SkeletonImage
-                    source={{ uri: item.imageUrl }}
-                    style={styles.backgroundImage}
-                    contentFit="cover"
-                    skeletonStyle={styles.bannerSkeleton}
-                  />
+                  <BannerImage uri={item.imageUrl} />
                   {item.title ? (
                     <View style={styles.overlay}>
                       <Text style={styles.bannerTitle}>{item.title}</Text>
@@ -267,7 +287,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  bannerSkeleton: { borderRadius: 24 },
   overlay: {
     flex: 1,
     padding: 24,

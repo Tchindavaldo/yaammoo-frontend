@@ -50,13 +50,37 @@ pour ne jamais laisser le home vide.
 
 ## Skeleton de chargement
 
-`SkeletonImage` (`src/components/SkeletonImage.tsx`) remplace `Image` pour les
-images distantes : un voile neutre **pulse tant que `onLoad` n'a pas ete emis**,
-puis disparait en fondu. Sans lui, le `backgroundColor` du conteneur restait
-visible pendant tout le telechargement (l'orange de marque `#e8440a` sur la
-banniere, desormais un gris neutre `#eef1f5`).
+`CardSkeleton` (`src/components/CardSkeleton.tsx`) couvre **toute la carte**,
+pas seulement l'image : un fondu de couleur entre `#e6eaef` et `#f4f7fa`
+(800 ms par sens, aucun deplacement).
 
-Le voile est `position: absolute` et reprend le `style` de l'image, donc il
-fonctionne aussi bien sur une image en `absoluteFill` que sur une image en flux.
-Utilise par `HeroBanner` (banniere) et par les 7 images `menu.image` de
-`DesignItem`.
+Deux regles apprises en corrigeant le rendu :
+
+1. **Plein carte, jamais autour de la seule image.** Habiller l'image laissait
+   voir le chrome du design autour du voile — liseres, bandeau haut, fonds de
+   blocs — donc un rendu different d'un design a l'autre.
+2. **A la place de la carte, jamais par-dessus.** Superpose en dernier enfant,
+   les elements en `position: absolute` (badges, blurs, prix) passaient
+   au-dessus : on voyait la carte ET le squelette en meme temps. `DesignItem`
+   fait donc un **retour anticipe** avec le squelette seul, dimensionne par
+   `SKELETON_SIZES[variant]` pour occuper exactement la place de la carte
+   finale (sinon la rangee horizontale saute au chargement).
+
+Comme l'image n'est pas montee pendant le squelette, `onLoad` ne partirait
+jamais : `DesignItem` fait un `Image.prefetch` et bascule quand le cache tient
+l'URL. `HeroBanner` monte l'image en meme temps et peut donc utiliser `onLoad`.
+
+`FORCE_SKELETON` (dans `DesignItem` et `HeroBanner`) fige le squelette pour
+inspecter son rendu sans dependre du reseau.
+
+## Performances de chargement
+
+- **Prefetch en amont** (`src/features/restaurants/utils/prefetchHomeImages.ts`) :
+  appele des que `/fastfood/all` repond, il remplit le cache disque avant que
+  les cartes ne se montent. Sans lui, chaque carte ne commencait a telecharger
+  qu'a son montage — donc au scroll, une par une, alors que toutes les URLs
+  etaient deja connues. Priorite aux bannieres puis aux 4 premiers menus par
+  boutique, 6 requetes simultanees, dedoublonnage par session.
+- **`cachePolicy="memory-disk"`** sur toutes les images distantes : elles
+  survivent au redemarrage de l'app.
+- **`transition={180}`** : fondu court a l'apparition au lieu d'un « pop ».

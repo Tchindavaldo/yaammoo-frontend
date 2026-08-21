@@ -5,7 +5,7 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { LogBox } from "react-native";
+import { LogBox, Platform } from "react-native";
 import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
@@ -53,6 +53,14 @@ LogBox.ignoreAllLogs();
 export const unstable_settings = {
   anchor: "(tabs)",
 };
+
+/**
+ * Delai avant la demande de permission notifications au login. La popup native
+ * gele le thread UI : declenchee trop tot, elle fige l'animation de fermeture
+ * de la sheet d'auth. Android est plus lent a terminer la transition, d'ou une
+ * marge superieure (constate sur emulateur ET sur appareil reel).
+ */
+const NOTIF_SETUP_DELAY_MS = Platform.OS === "android" ? 900 : 600;
 
 function AppContent() {
   const { user, userData, loading } = useAuth();
@@ -111,10 +119,19 @@ function AppContent() {
   useEffect(() => {
     if (isSignedIn && user && notifSetupUid.current !== user.uid) {
       notifSetupUid.current = user.uid;
-      setupNotifications().catch((error) => {
-        console.error("Erreur lors de l'initialisation des notifications:", error);
-      });
-    } else if (!isSignedIn) {
+      // Differe : au login, `isSignedIn` bascule pendant que la sheet d'auth est
+      // encore en train de redescendre. La demande de permission ouvre une
+      // popup native qui bloque le thread UI — l'animation se figeait a
+      // mi-course et ne reprenait qu'apres validation (constate sur Android).
+      // On laisse la transition se terminer avant de la declencher.
+      const t = setTimeout(() => {
+        setupNotifications().catch((error) => {
+          console.error("Erreur lors de l'initialisation des notifications:", error);
+        });
+      }, NOTIF_SETUP_DELAY_MS);
+      return () => clearTimeout(t);
+    }
+    if (!isSignedIn) {
       notifSetupUid.current = null;
     }
   }, [isSignedIn, user, setupNotifications]);

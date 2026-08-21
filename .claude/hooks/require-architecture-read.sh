@@ -63,7 +63,34 @@ if [ "$tool" = "Read" ]; then
   exit 0
 fi
 
-# --- Cas 2 : recherche -> determiner la feature visee et verifier son marqueur ---
+# --- Cas 2 : agent d'exploration -> INTERDIT sans condition (R3) ---
+#
+# R3 interdit de lancer un agent pour "decouvrir" le projet : architecture/ est
+# ecrit precisement pour ca. Aucun marqueur ne leve ce blocage — contrairement
+# aux recherches, il n'y a pas de lecture prealable qui rendrait l'agent
+# legitime. Les agents non exploratoires (ex. statusline-setup) passent.
+if [ "$tool" = "Agent" ] || [ "$tool" = "Task" ]; then
+  subagent=$(printf '%s' "$payload" | jq -r '.tool_input.subagent_type // empty')
+  case "$subagent" in
+    Explore|general-purpose|Plan)
+      cat >&2 <<EOF
+BLOQUE (R3) — agent "${subagent}" lance pour explorer le projet.
+
+R3 : « INTERDIT : lancer un agent Explore pour "decouvrir" le projet. »
+architecture/README.md et les .md par feature sont ecrits pour eviter cette
+perte de temps. Lis-les avec Read direct (1 seul appel), c'est suffisant.
+
+Un agent ne se justifie QUE pour une recherche ultra-precise introuvable dans
+architecture/ (ex. une signature de fonction exacte) — et dans ce cas, fais la
+recherche toi-meme avec Grep plutot que de deleguer.
+EOF
+      exit 2
+      ;;
+  esac
+  exit 0
+fi
+
+# --- Cas 3 : recherche -> determiner la feature visee et verifier son marqueur ---
 target=""
 case "$tool" in
   Grep|Glob)
@@ -83,9 +110,27 @@ esac
 
 feature=$(feature_of "$target")
 
-# Chemin non reconnu OU aucune doc feature correspondante -> pas de blocage
-# (recherche generique, config, ou feature pas encore documentee).
-[ -z "$feature" ] && exit 0
+# Chemin non reconnu (recherche generique, config...) -> pas de blocage.
+if [ -z "$feature" ]; then
+  # Sous-cas : le chemin DESIGNE bien une feature, mais elle n'a aucun
+  # architecture/*.md. Le hook ne peut rien exiger — on le SIGNALE au lieu de
+  # laisser passer en silence, sinon une feature non documentee reste un angle
+  # mort permanent (cas rencontre avec "restaurants", qui est pourtant le home).
+  raw=""
+  if [[ "$target" =~ src/features/([a-zA-Z0-9_-]+) ]]; then
+    raw="${BASH_REMATCH[1]}"
+  fi
+  if [ -n "$raw" ]; then
+    cat >&2 <<EOF
+NOTE (R3) — la feature "${raw}" n'a pas de architecture/${raw}*.md.
+
+La recherche est autorisee (rien a exiger), mais R9 demande que chaque feature
+soit documentee. Pense a creer architecture/${raw}.md et a l'ajouter a l'index
+de architecture/README.md.
+EOF
+  fi
+  exit 0
+fi
 
 # Marqueur deja pose pour CETTE feature -> ok.
 [ -f "$marker_dir/$feature" ] && exit 0

@@ -120,17 +120,32 @@ export default function HomeScreen() {
     [banners, handleBannerPress, loading],
   );
 
-  // Pied de liste : indicateur pendant le chargement de la page suivante.
-  // `hasMore` évite de laisser un espace vide en bas quand tout est chargé.
-  const listFooter = useMemo(
-    () =>
-      loadingMore && hasMore ? (
+  // Pied de liste, trois états :
+  //  - chargement de la page suivante → indicateur ;
+  //  - catalogue épuisé → message de fin, pour que le bas de liste ne se
+  //    termine pas sur un blanc qui laisse croire que ça charge encore ;
+  //  - sinon rien (évite un espace vide pendant le défilement normal).
+  const listFooter = useMemo(() => {
+    if (loadingMore && hasMore) {
+      return (
         <View style={styles.footerLoader}>
           <ActivityIndicator size="small" color={Theme.colors.primary} />
         </View>
-      ) : null,
-    [loadingMore, hasMore],
-  );
+      );
+    }
+    // `fastFoods.length > 0` : sur une liste vide, c'est `ListEmptyComponent`
+    // qui parle — deux messages se contrediraient.
+    if (!hasMore && !loading && fastFoods.length > 0) {
+      return (
+        <View style={styles.footerEnd}>
+          <Text style={styles.footerEndText}>
+            Vous avez vu toutes les boutiques
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  }, [loadingMore, hasMore, loading, fastFoods.length]);
 
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
@@ -348,6 +363,14 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 24,
     alignItems: "center",
+  },
+  footerEnd: {
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  footerEndText: {
+    fontSize: 13,
+    color: Theme.colors.gray[400],
   },
   emptyText: {
     color: Theme.colors.gray[500],

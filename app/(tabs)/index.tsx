@@ -5,7 +5,7 @@ import { RestaurantHeader } from "@/src/features/restaurants/components/Restaura
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -28,7 +28,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 
 const CATEGORIES = [
   { name: "All", icon: "grid-outline" },
@@ -85,6 +85,25 @@ export default function HomeScreen() {
     await refresh();
     setRefreshing(false);
   };
+
+  // Retour en haut quand on retape l'onglet Home alors qu'on y est deja.
+  //
+  // ⚠️ Gere ICI et pas dans `(tabs)/_layout.tsx` : ce layout est partage par
+  // tous les onglets, et il n'a pas acces a la liste de cet ecran. L'evenement
+  // `tabPress` remonte au screen, qui est le seul a tenir la ref.
+  const listRef = useRef<FlatList>(null);
+  const navigation = useNavigation();
+  useEffect(() => {
+    // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
+    // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
+    // home » ; sinon on remonterait la liste pendant la navigation entrante,
+    // ce qui annulerait la position d'un retour arriere.
+    const unsubscribe = (navigation as any).addListener('tabPress', () => {
+      if (!(navigation as any).isFocused()) return;
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
@@ -266,6 +285,7 @@ export default function HomeScreen() {
       <ShopRevealProvider expect={firstScreenUris}>
       <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
         <FlatList
+          ref={listRef}
           data={fastFoods}
           ListHeaderComponent={listHeader}
           renderItem={({ item, index }) => (

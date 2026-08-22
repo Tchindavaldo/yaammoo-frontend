@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -47,6 +48,7 @@ export default function HomeScreen() {
   const {
     fastFoods,
     loading,
+    error,
     loadingMore,
     hasMore,
     loadMore,
@@ -94,8 +96,14 @@ export default function HomeScreen() {
   );
 
   const listHeader = useMemo(
-    () => <HeroBanner banners={banners} onBonusPress={handleBannerPress} />,
-    [banners, handleBannerPress],
+    () => (
+      <HeroBanner
+        banners={banners}
+        onBonusPress={handleBannerPress}
+        loading={loading}
+      />
+    ),
+    [banners, handleBannerPress, loading],
   );
 
   // Pied de liste : indicateur pendant le chargement de la page suivante.
@@ -162,6 +170,36 @@ export default function HomeScreen() {
     );
   }
 
+  // Échec du chargement initial : la page entière est remplacée par un message
+  // centré et un bouton de relance. Rien d'autre n'est affiché — ni header, ni
+  // liste : il n'y a aucune donnée à montrer, et un contenu partiel donnerait
+  // l'impression d'une page cassée plutôt que d'un réseau indisponible.
+  if (error && fastFoods.length === 0 && !loading) {
+    return (
+      <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
+        <View style={styles.centered}>
+          <Ionicons
+            name="cloud-offline-outline"
+            size={54}
+            color={Theme.colors.gray[300]}
+          />
+          <Text style={styles.errorTitle}>Connexion indisponible</Text>
+          <Text style={styles.errorText}>
+            Impossible de charger le contenu. Vérifiez votre connexion.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            activeOpacity={0.8}
+            onPress={refresh}
+          >
+            <Ionicons name="refresh" size={17} color={Theme.colors.white} />
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
       <RestaurantHeader
@@ -214,6 +252,15 @@ export default function HomeScreen() {
           }
           // Pagination : la page suivante part avant d'atteindre le bas, pour
           // que les boutiques soient là quand l'utilisateur y arrive.
+          // ⚠️ Par défaut `initialNumToRender` vaut 10 : la première passe de
+          // rendu montait la bannière ET dix boutiques (header + rangée de
+          // menus chacune). Le squelette de la bannière n'était peint qu'à la
+          // fin de cette passe — d'où son apparition en retard alors que les
+          // cartes, elles, étaient déjà là. On ne rend que ce qui tient à
+          // l'écran ; le reste suit à la passe suivante.
+          initialNumToRender={2}
+          maxToRenderPerBatch={3}
+          windowSize={5}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={listFooter}
@@ -281,6 +328,33 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 10,
     paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: Theme.colors.dark,
+  },
+  errorText: {
+    fontSize: 14,
+    color: Theme.colors.gray[500],
+    textAlign: "center",
+    paddingHorizontal: 40,
+    marginTop: -4,
+  },
+  retryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginTop: 10,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: Theme.borderRadius.pill,
+    backgroundColor: Theme.colors.primary,
+  },
+  retryText: {
+    color: Theme.colors.white,
+    fontSize: 14,
+    fontWeight: "700",
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

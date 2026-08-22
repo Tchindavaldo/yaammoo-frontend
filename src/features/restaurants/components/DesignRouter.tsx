@@ -7,6 +7,7 @@ import { Design4 } from './designs/Design4';
 import { Design5 } from './designs/Design5';
 import { Design6 } from './designs/Design6';
 import { Design7 } from './designs/Design7';
+import { ShopRevealProvider } from '../context/ShopRevealContext';
 
 interface DesignRouterProps {
   fastFood: FastFood;
@@ -43,5 +44,11 @@ export const DesignRouter: React.FC<DesignRouterProps> = ({ fastFood, onMenuClic
     <Design5 fastFood={fastFood} onMenuClick={handleMenuClick} />,
   ];
 
-  return designs[index % designs.length];
+  // ⚠️ Un provider PAR boutique : le header et les cartes de cette rangee
+  // partagent un meme etat de chargement et se revelent donc ensemble. Sans
+  // lui, chaque carte levait son squelette a son propre rythme et la boutique
+  // apparaissait en morceaux.
+  return (
+    <ShopRevealProvider>{designs[index % designs.length]}</ShopRevealProvider>
+  );
 };

@@ -4,7 +4,12 @@ import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { DeliveryOffer, FastFood, AppBanner } from '@/src/types';
-import { prefetchHomeImages } from '@/src/features/restaurants/utils/prefetchHomeImages';
+// ⚠️ `prefetchHomeImages` n'est PLUS appele. Chaque carte monte desormais son
+// image des son rendu (cf. DesignItem) : le prechargement faisait donc DOUBLON.
+// Les deux mecanismes se disputaient la bande passante, les requetes
+// s'accumulaient, et les images arrivaient toutes en bloc au lieu d'apparaitre
+// boutique par boutique. La FlatList ne monte que ce qui est visible : le
+// chargement suit donc naturellement l'ordre d'affichage, sans file a gerer.
 
 /**
  * Boutiques chargées par page. Le catalogue vise 500 boutiques : tout charger
@@ -146,11 +151,21 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
    */
   const fetchPage = useCallback(async (cursor?: string, q?: string) => {
     const isFirstPage = !cursor;
-    // ⚠️ Seule une PREMIÈRE page ouvre une nouvelle génération. Un `loadMore`
-    // se contente de vérifier qu'il appartient toujours à la génération
-    // courante : s'il l'incrémentait, il invaliderait la première page encore
-    // en vol et la liste ne serait jamais remplacée.
+    // ⚠️ Le compteur de génération sert UNIQUEMENT à la recherche : empêcher
+    // qu'une frappe lente écrase le résultat d'une frappe plus récente. Il ne
+    // doit PAS arbitrer entre deux chargements normaux.
+    //
+    // Au boot, l'effet d'identité part deux fois (`user = null`, puis la
+    // session restaurée). Quand ce garde s'appliquait à tous les appels, le
+    // second invalidait le premier : la réponse du premier était jetée sans
+    // remplir la liste, et le home restait en chargement jusqu'au second
+    // aller-retour. C'était la latence ressentie en cliquant « Plus tard ».
+    //
+    // Une liste remplie par un fetch « périmé » n'est pas un problème : le
+    // fetch suivant la remplacera. Une liste VIDE, elle, bloque l'affichage.
     const myRun = isFirstPage ? ++runIdRef.current : runIdRef.current;
+    /** Seule une recherche a un résultat à protéger d'une réponse tardive. */
+    const guarded = !!q;
     try {
       if (isFirstPage) setLoading(true);
       else setLoadingMore(true);
@@ -172,9 +187,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         },
       });
 
-      // Réponse périmée (recherche plus récente, ou liste réinitialisée) :
-      // l'appliquer ferait réapparaître des résultats obsolètes.
-      if (myRun !== runIdRef.current) return;
+      // Réponse d'une recherche périmée : l'appliquer ferait réapparaître les
+      // résultats d'une frappe précédente. Hors recherche, on applique
+      // toujours — voir l'explication sur `guarded` plus haut.
+      if (guarded && myRun !== runIdRef.current) return;
 
       // Flag review Apple porté par la réponse (défaut false si absent).
       setAppleReviewMode(response.data?.appleReviewMode === true);
@@ -194,7 +210,6 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (isFirstPage) {
           const data = raw.map((item, index) => normalizeFastFood(item, index % 6));
           setFastFoods(data);
-          prefetchHomeImages(data, response.data?.banners);
         } else {
           setFastFoods((prev) => {
             // Dédup par id : un `newFastfood` reçu par socket pendant le
@@ -204,40 +219,45 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               .filter((item) => item?.id && !known.has(item.id))
               .map((item, i) => normalizeFastFood(item, (prev.length + i) % 6));
             if (added.length === 0) return prev;
-            // Les images des pages suivantes doivent aussi être préchargées,
-            // sinon seule la première page en profite.
-            prefetchHomeImages(added);
             return [...prev, ...added];
           });
         }
       }
     } catch (err: any) {
-      if (myRun !== runIdRef.current) return;
+      if (guarded && myRun !== runIdRef.current) return;
       console.error('Error fetching fast foods:', err);
       setError('Connection internet indisponible, vérifiez votre réseau');
     } finally {
-      // Chaque appel n'éteint QUE son propre indicateur : un `loadMore` qui
-      // remettrait `loading` à false masquerait une première page encore en vol.
-      if (myRun === runIdRef.current) {
-        if (isFirstPage) setLoading(false);
-        else setLoadingMore(false);
-        setHasLoadedOnce(true);
-      }
+      // `hasLoadedOnce` pilote la revelation de (tabs) : une reponse recue,
+      // quelle qu'elle soit, prouve que le chargement a eu lieu.
+      setHasLoadedOnce(true);
+
+      // Chaque appel n'eteint QUE son propre indicateur, sinon un `loadMore`
+      // masquerait une premiere page encore en vol.
+      if (isFirstPage) setLoading(false);
+      else setLoadingMore(false);
     }
   }, []);
 
-  /** Recharge depuis le début (boot, pull-to-refresh, changement d'identité). */
+  // ⚠️ La recherche courante est lue via une REF, pas via la dependance d'un
+  // `useCallback`. Sinon `refresh` et `loadMore` changent de reference a chaque
+  // frappe, ce qui reexecute les effets qui en dependent (chez leurs
+  // consommateurs comme ici) et peut relancer des requetes.
+  const searchRef = useRef('');
+  searchRef.current = searchQuery;
+
+  /** Recharge depuis le début (pull-to-refresh). */
   const refresh = useCallback(async () => {
     cursorRef.current = null;
-    await fetchPage(undefined, searchQuery.trim() || undefined);
-  }, [fetchPage, searchQuery]);
+    await fetchPage(undefined, searchRef.current.trim() || undefined);
+  }, [fetchPage]);
 
   const loadMore = useCallback(() => {
     // Une recherche affiche ses propres résultats pagines ; on continue de
     // paginer dedans avec le meme `q`, sinon on melangerait deux listes.
     if (loadingMore || loading || !cursorRef.current) return;
-    void fetchPage(cursorRef.current, searchQuery.trim() || undefined);
-  }, [fetchPage, loading, loadingMore, searchQuery]);
+    void fetchPage(cursorRef.current, searchRef.current.trim() || undefined);
+  }, [fetchPage, loading, loadingMore]);
 
   // Refetch à CHAQUE changement d'identité (y compris `null` → user au boot :
   // la restauration de session Firebase est asynchrone et se termine APRÈS le
@@ -248,21 +268,30 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     void fetchPage(undefined, undefined);
   }, [fetchPage, user?.uid]);
 
-  // Recherche serveur, debouncée : chaque frappe repart de la première page.
-  // ⚠️ On saute le tout premier passage — l'effet d'identité ci-dessus a déjà
-  // lancé le chargement initial, et le rejouer ici doublerait la requête.
-  const searchMounted = useRef(false);
-  useEffect(() => {
-    if (!searchMounted.current) {
-      searchMounted.current = true;
-      return;
-    }
-    const t = setTimeout(() => {
-      cursorRef.current = null;
-      void fetchPage(undefined, searchQuery.trim() || undefined);
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [searchQuery, fetchPage]);
+  // Recherche serveur, debouncée.
+  //
+  // ⚠️ Declenchee par la SAISIE, pas par un `useEffect` sur `searchQuery`. Un
+  // effet se serait execute au montage — donc pendant le splash, avant meme
+  // que le home existe — et aurait rejoue a chaque changement de reference de
+  // `fetchPage`, ajoutant des requetes au boot. Le chargement initial est le
+  // seul fait de l'effet d'identite ci-dessus, comme avant la pagination.
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearchChange = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      searchTimer.current = setTimeout(() => {
+        cursorRef.current = null;
+        void fetchPage(undefined, query.trim() || undefined);
+      }, SEARCH_DEBOUNCE_MS);
+    },
+    [fetchPage],
+  );
+
+  // Un timer en vol au demontage relancerait un fetch sur un contexte mort.
+  useEffect(() => () => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
 
   // ── Injection socket : upsert/remove sur le state local, sans requête ──
   const upsertMenuFromSocket = useCallback((rawMenu: any) => {
@@ -375,7 +404,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         banners,
         error,
         searchQuery,
-        setSearchQuery,
+        // Expose le handler debounce, pas le setter brut : taper doit lancer la
+        // recherche serveur, et l'ecran n'a pas a s'en charger.
+        setSearchQuery: handleSearchChange,
         selectedCategory,
         setSelectedCategory,
         refresh,

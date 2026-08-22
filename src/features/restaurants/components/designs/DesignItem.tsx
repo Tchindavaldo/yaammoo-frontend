@@ -9,6 +9,7 @@ import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
 import { useNextDeliveryTime } from '../../utils/deliveryUtils';
+import { useShopReveal } from '../../context/ShopRevealContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const V1_COLORS = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
@@ -68,7 +69,52 @@ export const DesignItem: React.FC<DesignItemProps> = ({
   // et le squelette en meme temps. Retour anticipe = un seul rendu possible.
   // Une image locale (pas de `menu.image`) est immediate : aucun squelette.
   const [imgLoaded, setImgLoaded] = React.useState(!menu.image);
-  const showSkeleton = FORCE_SKELETON || !imgLoaded;
+
+  // ⚠️ La revelation appartient a la BOUTIQUE, pas a la carte. Chaque carte
+  // levait son squelette des que son image arrivait : la rangee se remplissait
+  // une carte a la fois, dans l'ordre des telechargements, et le header sortait
+  // encore a un autre moment. On s'inscrit ici aupres de la boutique, qui fait
+  // basculer tout le monde ensemble.
+  const shop = useShopReveal();
+  // Inscription pendant le rendu, pas dans un effet : les effets s'executent
+  // apres le rendu initial, donc apres la fermeture de la fenetre d'inscription.
+  if (shop && menu.image) shop.register(menu.image);
+
+  const markResolved = React.useCallback(() => {
+    setImgLoaded(true);
+    if (menu.image) shop?.resolve(menu.image);
+  }, [menu.image, shop]);
+  // ⚠️ PAS de fondu de sortie ici, contrairement a la banniere. Le voile couvre
+  // un placeholder (l'image nue, sans les badges ni le prix du design). Le
+  // faire disparaitre progressivement montrait cet etat intermediaire : on
+  // voyait l'image seule pendant ~260 ms, puis la carte complete apparaissait
+  // d'un coup — deux etapes visibles a l'oeil. La bascule doit etre directe ;
+  // la douceur vient du `transition` des images du design lui-meme.
+  // Sous une boutique, c'est SON etat qui decide (toutes les cartes basculent
+  // ensemble). Hors contexte, la carte retombe sur son propre chargement.
+  const rawReady = shop ? shop.ready : imgLoaded;
+
+  // ⚠️ Chaque variante de design monte sa PROPRE `<Image>` sur `menu.image`,
+  // distincte de celle montee ci-dessous sous le squelette. Au switch,
+  // l'ancienne est demontee et la nouvelle montee dans le meme commit React,
+  // mais leur premiere frame peinte ne tombe pas forcement au meme instant (deux
+  // instances expo-image separees, meme lues depuis le cache memoire) — c'est le
+  // micro-decalage visible seulement au ralenti, jamais dans le meme sens d'une
+  // ouverture a l'autre. On laisse passer une frame native avant de basculer :
+  // le temps que la frame en cours (encore sur l'ancienne image) soit peinte,
+  // avant de commiter la nouvelle — la bascule tombe alors au meme instant pour
+  // toutes les cartes et le header de la boutique.
+  const [settled, setSettled] = React.useState(rawReady);
+  React.useEffect(() => {
+    if (!rawReady) {
+      setSettled(false);
+      return;
+    }
+    const frame = requestAnimationFrame(() => setSettled(true));
+    return () => cancelAnimationFrame(frame);
+  }, [rawReady]);
+
+  const showSkeleton = FORCE_SKELETON || !settled;
 
   // Dimensions de la carte courante, pour que le squelette occupe exactement sa
   // place dans la liste horizontale (sinon la rangee saute au chargement).
@@ -77,7 +123,17 @@ export const DesignItem: React.FC<DesignItemProps> = ({
     return (
       <View
         style={[
-          { width: skel.width, height: skel.height, marginRight: isLast ? 0 : skel.gap },
+          {
+            width: skel.width,
+            height: skel.height,
+            marginRight: isLast ? 0 : skel.gap,
+            // ⚠️ Indispensables : l'image ci-dessous est en `absoluteFill` et
+            // n'a pas de rayon propre. Sans decoupe du conteneur, ses quatre
+            // angles CARRES depassaient du squelette arrondi — on voyait les
+            // coins de la photo autour du rectangle gris pendant le chargement.
+            borderRadius: skel.radius,
+            overflow: 'hidden',
+          },
         ]}
       >
         {/*
@@ -95,8 +151,8 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
-          onLoad={() => setImgLoaded(true)}
-          onError={() => setImgLoaded(true)}
+          onLoad={markResolved}
+          onError={markResolved}
         />
         <CardSkeleton radius={skel.radius} />
       </View>
@@ -134,10 +190,9 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         <View style={styles.v1ImgWrapper}>
           <Image 
             source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')} 
-            style={styles.v1Image} 
+            style={styles.v1Image}
             contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
           <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1BadgeTime} fallbackStyle={styles.blurFallbackDark}>
             <Ionicons name="time-outline" size={12} color="white" />
@@ -185,7 +240,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             source={menu.image ? { uri: menu.image } : require('@/assets/images/riz-spaghettis-oeuf-poulet-pane-fritz-platain-noBG.png')}
             style={styles.v2Image}
             cachePolicy="memory-disk"
-            transition={180}
           />
         </View>
 
@@ -246,7 +300,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             style={styles.v3Image}
             contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
           {/* Prix en overlay bas-gauche */}
           <View style={styles.v3PriceFloat}>
@@ -309,7 +362,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
                 source={menu.image ? { uri: menu.image } : require('@/assets/images/purre-avocat-tomate-legume.png')}
                 style={styles.v4Image}
             cachePolicy="memory-disk"
-            transition={180}
           />
         </View>
 
@@ -439,7 +491,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
               style={styles.v5ProductImg}
               contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
           </View>
         </View>
@@ -531,7 +582,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
                 style={styles.v6Img}
                 contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
             </View>
           </View>
@@ -561,7 +611,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           style={styles.v7BgImg}
           contentFit="cover"
             cachePolicy="memory-disk"
-            transition={180}
           />
 
         {/* Triple gradient: haut clair → transparent → bas ultra sombre */}

@@ -13,11 +13,11 @@ tournant, plus le carrousel de bannières.
 ```
 src/features/restaurants/
 ├── context/FastFoodContext.tsx     # État + fetch paginé + injection socket
+├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
-├── utils/prefetchHomeImages.ts     # Préchargement séquentiel des images
 ├── utils/deliveryUtils.ts
 └── components/
-    ├── DesignRouter.tsx            # Aiguille vers Design1..7 selon `designIndex`
+    ├── DesignRouter.tsx            # Aiguille vers Design1..7 + ShopRevealProvider
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
@@ -124,20 +124,56 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 - **Écran de chargement plein** : gardé par `!searchQuery`. Une recherche sans
   résultat vide la liste ; sans cette garde l'écran plein masquerait la barre de
   recherche, empêchant l'utilisateur de corriger sa saisie.
+- **Écran d'erreur réseau** (`error && !fastFoods.length && !loading`) : remplace
+  TOUTE la page par un message centré + bouton « Réessayer » (`refresh`). Ni
+  header ni liste : il n'y a aucune donnée à montrer, et un contenu partiel
+  donnerait l'impression d'une page cassée plutôt que d'un réseau indisponible.
+  ⚠️ L'ancienne bannière promo statique (« Get 50% Off ») a été **supprimée** :
+  image locale donc peinte instantanément, elle s'affichait avant les vraies
+  bannières — un clignotement à chaque ouverture du home. Sans bannière,
+  `HeroBanner` ne rend plus rien.
 
 ---
 
 ## Images
 
-`prefetchHomeImages(fastFoods, banners)` précharge dans l'ordre d'affichage :
-bannières d'abord, puis boutique par boutique, **un seul lot en vol** (3 images
-en parallèle au sein d'une boutique). Il est **rappelé à chaque page** — sinon
-seule la première profiterait du préchargement.
+**Pas de préchargement.** `prefetchHomeImages` a été supprimé : il dupliquait le
+chargement déjà fait par les cartes, qui montent leur `<Image>` **dès le premier
+rendu**, caché derrière le squelette. Une version antérieure attendait la fin
+d'un `Image.prefetch` puis un re-render : les cartes accusaient un retard visible
+sur la bannière, qui monte son image directement.
 
-Chaque `DesignItem` monte par ailleurs son `<Image>` **dès le premier rendu**,
-caché derrière le squelette. Auparavant il attendait la fin d'un
-`Image.prefetch` puis un re-render : les cartes accusaient un retard visible sur
-la bannière, qui monte son image directement.
+### Révélation groupée par boutique
+
+`ShopRevealContext` — un `ShopRevealProvider` **par boutique**, posé par
+`DesignRouter`. Le `MerchantHeader` et tous les `DesignItem` de la rangée
+s'inscrivent (`register(uri)`) puis signalent (`resolve(uri)`), et lisent le même
+`ready` : la boutique se révèle **d'un bloc**.
+
+- ⚠️ Sans lui, chaque carte levait son squelette dès que **son** image arrivait :
+  la rangée se remplissait carte par carte, et l'avatar du header sortait encore
+  à un autre moment — la boutique apparaissait en morceaux.
+- **Inscription pendant le rendu**, pas dans un effet : les effets s'exécutent
+  après le rendu initial, donc après la fermeture de la fenêtre d'inscription.
+- **Fenêtre d'inscription** (`sealedRef`) : sans elle, le premier `onLoad` arrivé
+  avant l'inscription des cartes suivantes trouvait un set vide et révélait la
+  boutique alors que des images étaient encore en route.
+- **Comptage par URL** : une même URL sur deux cartes ne doit être attendue
+  qu'une fois. Garde-fou `MAX_WAIT_MS` (8 s) contre une image qui ne répond ni
+  par `onLoad` ni par `onError`.
+- Hors provider, `useShopReveal()` renvoie `null` et chaque composant retombe sur
+  son chargement individuel.
+
+### Squelette de la bannière
+
+Il est monté **hors de la FlatList** du carrousel (`carouselOverlay`, une `View`
+en absolu au-dessus). ⚠️ Il vivait dans les items : il n'était donc peint
+qu'après le positionnement de la liste sur `initialScrollIndex` (index 15) — il
+arrivait visiblement en retard alors que les cartes étaient déjà là.
+
+Côté home, la FlatList fixe `initialNumToRender={2}` : par défaut (10) la
+première passe montait la bannière **et** dix boutiques, et le squelette de la
+bannière n'était peint qu'à la fin de cette passe.
 
 Les images sont servies en WebP par le backend (`thumbnailUrl.js`), dimensions
 d'origine conservées.

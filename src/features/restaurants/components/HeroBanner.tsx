@@ -1,18 +1,33 @@
 import { Theme } from '@/src/theme';
 import { AppBanner } from '@/src/types';
 import { Image } from 'expo-image';
+import { Ionicons } from '@expo/vector-icons';
 import { CardSkeleton } from '@/src/components/CardSkeleton';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
 
 const { width } = Dimensions.get('window');
-const LOOP_MULTIPLIER = 50;
+/**
+ * Nombre de repetitions de la liste pour simuler une boucle infinie.
+ *
+ * ⚠️ Etait a 50 : avec 3 bannieres, cela faisait 150 items et un
+ * `initialScrollIndex` a 75. La FlatList devait se positionner la avant de
+ * peindre quoi que ce soit — d'ou un blanc visible avant meme l'apparition du
+ * squelette, alors que les cartes, elles, etaient instantanees. 10 repetitions
+ * suffisent largement a ne jamais atteindre le bord en usage reel.
+ */
+const LOOP_MULTIPLIER = 10;
 
 interface Props {
   /** Bannières publicitaires reçues via GET /fastfood/all (actives). */
   banners: AppBanner[];
   /** Action invoquée quand on tape une bannière de type `bonus`. */
   onBonusPress: (banner: AppBanner) => void;
+  /**
+   * Chargement du home en cours. Tant qu'il vaut `true` et qu'aucune bannière
+   * n'est arrivée, on montre le squelette plutôt que le fallback statique.
+   */
+  loading?: boolean;
 }
 
 /**
@@ -22,9 +37,9 @@ interface Props {
  * paginé (dots) qui sert chaque `imageUrl`. `type='bonus'` → on remonte
  * `onBonusPress` ; `type='none'` → aucun action au tap.
  *
- * S'il n'y a aucune bannière active côté backend, on retombe sur l'ancienne
- * bannière statique embarquée (image locale + code promo) pour ne jamais
- * laisser le home vide.
+ * S'il n'y a aucune bannière, on ne rend rien : l'échec du chargement est géré
+ * par la home (écran d'erreur centré), les bannières arrivant dans la même
+ * réponse que les boutiques.
  */
 /**
  * Defilement automatique du carrousel. Desactive : le scroll auto reprenait la
@@ -41,24 +56,36 @@ const FORCE_SKELETON = false;
  * TOUTE la carte tant qu'elle n'est pas prete. Composant a part car chaque
  * banniere porte son propre etat de chargement.
  */
-function BannerImage({ uri }: { uri: string }) {
-  const [loaded, setLoaded] = useState(false);
+/**
+ * Une banniere du carrousel. Elle ne porte PLUS son propre voile : celui-ci est
+ * monte hors de la FlatList (voir `carouselOverlay`), sans quoi il n'etait
+ * peint qu'apres le positionnement de la liste.
+ */
+function BannerImage({ uri, onReady }: { uri: string; onReady?: () => void }) {
   return (
-    <>
-      <Image
-        source={{ uri }}
-        style={styles.backgroundImage}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        transition={180}
-        onLoad={() => setLoaded(true)}
-      />
-      {(FORCE_SKELETON || !loaded) && <CardSkeleton radius={24} />}
-    </>
+    <Image
+      source={{ uri }}
+      style={styles.backgroundImage}
+      contentFit="cover"
+      cachePolicy="memory-disk"
+      transition={180}
+      onLoad={() => onReady?.()}
+    />
   );
 }
 
-function HeroBannerBase({ banners, onBonusPress }: Props) {
+function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
+  // ⚠️ Les puces suivent l'image, pas la donnee. Elles etaient rendues des que
+  // `banners` arrivait — donc a cote d'une banniere encore en squelette. Elles
+  // restent en squelette tant que la premiere image n'est pas peinte.
+  const [firstBannerLoaded, setFirstBannerLoaded] = useState(false);
+  // Le voile reste monte le temps de son fondu de sortie ; le retirer des
+  // `onLoad` le faisait disparaitre d'un coup.
+  const [skeletonGone, setSkeletonGone] = useState(false);
+  // ⚠️ Seule la PREMIERE image compte. Le carrousel monte plusieurs items a la
+  // fois : sans ce garde, une banniere hors ecran arrivee avant celle qu'on
+  // regarde levait le voile sur une carte encore vide.
+  const markLoaded = useCallback(() => setFirstBannerLoaded(true), []);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -144,42 +171,58 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
     [banners.length],
   );
 
-  if (!hasCarousel) {
+  // ⚠️ Chargement en cours et aucune banniere encore recue : on affiche le
+  // SQUELETTE, pas le fallback statique. Sinon la promo « Get 50% Off » (une
+  // image locale, donc instantanee) s'affichait une fraction de seconde avant
+  // d'etre remplacee par les vraies bannieres — un clignotement a chaque
+  // ouverture du home.
+  if (loading && !hasCarousel) {
     return (
       <View style={styles.container}>
         <View style={styles.bannerItemContainer}>
           <View style={styles.bannerWrapper}>
-            <Image
-              source={require('@/assets/images/banner-shawamar.webp')}
-              style={styles.backgroundImage}
-              contentFit="cover"
-            />
-            <View style={styles.overlay}>
-              <View style={styles.topLine}>
-                <Text style={styles.codeText}>Use code </Text>
-                <View style={styles.codeBadge}>
-                  <Text style={styles.badgeText}>FIRST50</Text>
-                </View>
-              </View>
-              <Text style={styles.hurry}>Offer ends soon!</Text>
-              <Text style={styles.bigTitle}>Get 50% Off Your{"\n"}First Order!</Text>
-
-              <TouchableOpacity style={styles.orderBtn} activeOpacity={0.8}>
-                <Text style={styles.orderBtnText}>Order Now</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Decorative Blobs */}
-            <View style={[styles.blob, styles.blob1]} />
-            <View style={[styles.blob, styles.blob2]} />
+            <CardSkeleton radius={24} />
+          </View>
+        </View>
+        {/* Un seul point, plus large : on ignore combien de bannieres
+            arriveront, afficher 3 puces figerait une mise en page fausse. */}
+        <View style={styles.dotsRow}>
+          <View style={styles.dotSkeleton}>
+            <CardSkeleton radius={4} />
           </View>
         </View>
       </View>
     );
   }
 
+  // ⚠️ Plus de banniere promo statique en secours. Elle etait locale, donc
+  // peinte instantanement, et s'inserait avant les vraies bannieres — d'ou le
+  // clignotement et la page blanche sans squelette. Sans banniere, on ne rend
+  // RIEN : l'echec du chargement est traite par la home, qui affiche un ecran
+  // d'erreur centre a la place de toute la page.
+  if (!hasCarousel) return null;
+
   return (
     <View style={styles.container}>
+      {/* ⚠️ Voile monte HORS de la FlatList du carrousel, et rendu avant elle.
+          Le squelette vivait dans les items : il attendait donc que la liste se
+          positionne sur `initialScrollIndex` avant d'etre peint — c'est ce qui
+          le faisait arriver en retard alors que les cartes etaient deja la. Ici
+          c'est une simple `View` en absolu : elle est peinte des la premiere
+          passe, quel que soit l'etat de la liste dessous. */}
+      {(FORCE_SKELETON || !skeletonGone) && (
+        <View style={styles.carouselOverlay} pointerEvents="none">
+          <View style={[styles.bannerItemContainer, { height: '100%' }]}>
+            <View style={styles.bannerWrapper}>
+              <CardSkeleton
+                radius={24}
+                fadeOut={firstBannerLoaded && !FORCE_SKELETON}
+                onFadedOut={() => setSkeletonGone(true)}
+              />
+            </View>
+          </View>
+        </View>
+      )}
       <Animated.FlatList
         ref={flatListRef as any}
         data={extendedBanners as any}
@@ -229,7 +272,7 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
                   disabled={item.type !== 'bonus'}
                   onPress={() => item.type === 'bonus' && onBonusPress(item)}
                 >
-                  <BannerImage uri={item.imageUrl} />
+                  <BannerImage uri={item.imageUrl} onReady={markLoaded} />
                   {item.title ? (
                     <View style={styles.overlay}>
                       <Text style={styles.bannerTitle}>{item.title}</Text>
@@ -241,7 +284,14 @@ function HeroBannerBase({ banners, onBonusPress }: Props) {
           );
         }}
       />
-      {banners.length > 1 && (
+      {banners.length > 1 && !firstBannerLoaded && (
+        <View style={styles.dotsRow}>
+          <View style={styles.dotSkeleton}>
+            <CardSkeleton radius={4} />
+          </View>
+        </View>
+      )}
+      {banners.length > 1 && firstBannerLoaded && (
         <View style={styles.dotsRow}>
           {banners.map((b, i) => (
             <View
@@ -264,6 +314,15 @@ const styles = StyleSheet.create({
     marginHorizontal: -Theme.design.horizontalPadding,
     marginTop: 4,
     marginBottom: 10,
+  },
+  // Superpose au carrousel, a la meme geometrie que ses items.
+  carouselOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 210,
+    zIndex: 5,
   },
   bannerItemContainer: {
     width,
@@ -291,71 +350,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     zIndex: 2,
-  },
-  topLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  codeText: {
-    color: 'white',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  codeBadge: {
-    backgroundColor: 'white',
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 20,
-  },
-  badgeText: {
-    color: '#e8440a',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  hurry: {
-    color: 'white',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  bigTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: 'white',
-    lineHeight: 30,
-  },
-  orderBtn: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    backgroundColor: '#111',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 30,
-    zIndex: 10,
-  },
-  orderBtnText: {
-    color: '#f5c842',
-    fontSize: 14,
-    fontWeight: '900',
-  },
-  blob: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  blob1: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    top: -60,
-    left: -40,
-  },
-  blob2: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    bottom: -50,
-    left: 80,
   },
   bannerTitle: {
     position: 'absolute',
@@ -385,5 +379,14 @@ const styles = StyleSheet.create({
   dotActive: {
     backgroundColor: Theme.colors.primary,
     width: 18,
+  },
+  // Une seule puce, a la largeur de la puce active : le nombre de bannieres
+  // n'est pas encore connu au moment du squelette.
+  dotSkeleton: {
+    width: 18,
+    height: 7,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginHorizontal: 3,
   },
 });

@@ -32,6 +32,14 @@ interface CardSkeletonProps {
   color?: string;
   /** Seconde teinte du fondu. */
   highlight?: string;
+  /**
+   * Passer à `true` dès que le contenu est prêt : le voile s'efface en fondu
+   * au lieu de disparaître d'un coup. Le parent doit garder le composant monté
+   * le temps du fondu (`onFadedOut` signale la fin).
+   */
+  fadeOut?: boolean;
+  /** Appelé une fois le fondu de sortie terminé. */
+  onFadedOut?: () => void;
 }
 
 export const CardSkeleton: React.FC<CardSkeletonProps> = ({
@@ -39,8 +47,12 @@ export const CardSkeleton: React.FC<CardSkeletonProps> = ({
   style,
   color = "#e6eaef",
   highlight = "#f4f7fa",
+  fadeOut = false,
+  onFadedOut,
 }) => {
   const fade = useRef(new Animated.Value(0)).current;
+  /** Opacité du voile : 1 pendant le chargement, 0 une fois l'image prête. */
+  const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -64,6 +76,24 @@ export const CardSkeleton: React.FC<CardSkeletonProps> = ({
     return () => loop.stop();
   }, [fade]);
 
+  // Fondu de sortie : sans lui le voile disparaissait d'un coup au demontage,
+  // la bascule squelette -> image etait brusque.
+  useEffect(() => {
+    if (!fadeOut) return;
+    const anim = Animated.timing(opacity, {
+      toValue: 0,
+      duration: 260,
+      easing: Easing.out(Easing.ease),
+      // Coherent avec l'interpolation de couleur ci-dessus, qui interdit le
+      // driver natif : les deux animations doivent tourner sur le meme driver.
+      useNativeDriver: false,
+    });
+    anim.start(({ finished }) => {
+      if (finished) onFadedOut?.();
+    });
+    return () => anim.stop();
+  }, [fadeOut, opacity, onFadedOut]);
+
   // Va-et-vient entre les deux teintes : le squelette « respire » sans qu'aucun
   // element ne se deplace.
   const backgroundColor = fade.interpolate({
@@ -76,7 +106,7 @@ export const CardSkeleton: React.FC<CardSkeletonProps> = ({
       pointerEvents="none"
       style={[
         StyleSheet.absoluteFill,
-        { backgroundColor, borderRadius: radius },
+        { backgroundColor, borderRadius: radius, opacity },
         style,
       ]}
     />

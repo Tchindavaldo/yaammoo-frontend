@@ -284,14 +284,14 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
           );
         }}
       />
-      {banners.length > 1 && !firstBannerLoaded && (
+      {banners.length > 1 && !skeletonGone && (
         <View style={styles.dotsRow}>
           <View style={styles.dotSkeleton}>
             <CardSkeleton radius={4} />
           </View>
         </View>
       )}
-      {banners.length > 1 && firstBannerLoaded && (
+      {banners.length > 1 && skeletonGone && (
         <View style={styles.dotsRow}>
           {banners.map((b, i) => (
             <View

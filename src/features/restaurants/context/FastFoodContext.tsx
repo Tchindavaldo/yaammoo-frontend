@@ -14,8 +14,12 @@ import { DeliveryOffer, FastFood, AppBanner } from '@/src/types';
 /**
  * Boutiques chargées par page. Le catalogue vise 500 boutiques : tout charger
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
+ *
+ * ⚠️ VALEUR DE TEST — remise à 10 avant de livrer. À 3, la pagination se
+ * déclenche dès les premiers scrolls : on voit le loader de page suivante et la
+ * fin de liste sans avoir à parcourir tout le catalogue.
  */
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 3;
 
 /** Délai avant qu'une frappe dans la recherche parte au serveur. */
 const SEARCH_DEBOUNCE_MS = 350;

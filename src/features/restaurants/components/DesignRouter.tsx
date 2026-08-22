@@ -12,9 +12,11 @@ import { ShopRevealProvider } from '../context/ShopRevealContext';
 interface DesignRouterProps {
   fastFood: FastFood;
   onMenuClick: (menu: Menu) => void;
+  /** Rang dans la liste. Seule la boutique 0 partage le groupe de la banniere. */
+  index?: number;
 }
 
-export const DesignRouter: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick }) => {
+export const DesignRouter: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, index: listIndex = 0 }) => {
   const index = fastFood.designIndex ?? 0;
 
   // Attache au menu cliqué les infos de livraison du fastfood parent — toutes
@@ -44,11 +46,19 @@ export const DesignRouter: React.FC<DesignRouterProps> = ({ fastFood, onMenuClic
     <Design5 fastFood={fastFood} onMenuClick={handleMenuClick} />,
   ];
 
-  // ⚠️ Un provider PAR boutique : le header et les cartes de cette rangee
-  // partagent un meme etat de chargement et se revelent donc ensemble. Sans
-  // lui, chaque carte levait son squelette a son propre rythme et la boutique
-  // apparaissait en morceaux.
-  return (
-    <ShopRevealProvider>{designs[index % designs.length]}</ShopRevealProvider>
-  );
+  const design = designs[index % designs.length];
+
+  // ⚠️ La PREMIERE boutique n'ouvre pas son propre groupe : elle herite de celui
+  // pose par la home, qu'elle partage avec la banniere. Les deux se revelent
+  // donc a la meme frame, sur la meme valeur animee.
+  //
+  // ⚠️ UNE SEULE boutique dans ce groupe, jamais plus. Avec deux, la boutique 0
+  // devait aussi attendre les images de la boutique 1 : c'est ce qui avait
+  // rajoute de la latence a l'arrivee sur le home. Ici la boutique 0 n'attend
+  // que ce qu'elle attendait deja ; seule la banniere patiente un peu plus, le
+  // temps de sortir en meme temps qu'elle.
+  if (listIndex === 0) return design;
+
+  // Plus bas dans la liste : un provider PAR boutique, independant du reste.
+  return <ShopRevealProvider>{design}</ShopRevealProvider>;
 };

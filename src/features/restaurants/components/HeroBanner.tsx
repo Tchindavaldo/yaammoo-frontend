@@ -4,7 +4,8 @@ import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { CardSkeleton } from '@/src/components/CardSkeleton';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
+import { Animated, Dimensions, Easing, FlatList, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
+import { REVEAL_MS, useShopReveal } from '../context/ShopRevealContext';
 
 const { width } = Dimensions.get('window');
 /**
@@ -68,24 +69,78 @@ function BannerImage({ uri, onReady }: { uri: string; onReady?: () => void }) {
       style={styles.backgroundImage}
       contentFit="cover"
       cachePolicy="memory-disk"
-      transition={180}
       onLoad={() => onReady?.()}
     />
   );
 }
 
 function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
-  // ⚠️ Les puces suivent l'image, pas la donnee. Elles etaient rendues des que
-  // `banners` arrivait — donc a cote d'une banniere encore en squelette. Elles
-  // restent en squelette tant que la premiere image n'est pas peinte.
-  const [firstBannerLoaded, setFirstBannerLoaded] = useState(false);
+  // ⚠️ UNE SEULE valeur pour tout le fondu de la banniere : l'image monte de 0
+  // a 1 pendant que le squelette ET les puces-squelette descendent de 1 a 0,
+  // par interpolation de cette meme valeur. Il y avait avant deux mecanismes
+  // concurrents (le `transition` interne d'expo-image et le `fadeOut` du
+  // squelette), de durees et de departs differents : ils ne pouvaient pas se
+  // croiser au meme instant, et l'ecart variait a chaque ouverture.
+  //
+  // ⚠️ La banniere partage le groupe de la PREMIERE boutique (provider pose par
+  // la home) : elle sort donc exactement avec son avatar et ses menus, sur la
+  // meme valeur animee. Une animation identique ne suffisait pas — il faut la
+  // MEME valeur, sinon chacun part quand SES images a lui sont pretes, et la
+  // banniere (une seule image) gagnait toujours la course.
+  const group = useShopReveal();
+  const soloReveal = useRef(new Animated.Value(0)).current;
+  const bannerReveal = group ? group.revealAnim : soloReveal;
+  const skeletonOpacity = useMemo(
+    () => bannerReveal.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+    [bannerReveal],
+  );
+
+  // L'image effectivement visible au premier rendu : le carrousel demarre au
+  // milieu de la boucle, ce qui retombe toujours sur `banners[0]`. C'est elle
+  // que le groupe attend — pas une banniere hors ecran.
+  const firstUri = banners?.[0]?.imageUrl;
+  // Inscription pendant le rendu : les effets tournent apres la fermeture de la
+  // fenetre d'inscription du provider.
+  if (group && firstUri) group.register(firstUri);
+
   // Le voile reste monte le temps de son fondu de sortie ; le retirer des
   // `onLoad` le faisait disparaitre d'un coup.
   const [skeletonGone, setSkeletonGone] = useState(false);
   // ⚠️ Seule la PREMIERE image compte. Le carrousel monte plusieurs items a la
   // fois : sans ce garde, une banniere hors ecran arrivee avant celle qu'on
   // regarde levait le voile sur une carte encore vide.
-  const markLoaded = useCallback(() => setFirstBannerLoaded(true), []);
+  const revealStartedRef = useRef(false);
+  const markLoaded = useCallback(
+    (uri: string) => {
+      if (uri !== firstUri) return;
+      if (group) {
+        // C'est le groupe qui donnera le depart, quand la boutique 0 sera prete.
+        group.resolve(uri);
+        return;
+      }
+      if (revealStartedRef.current) return;
+      revealStartedRef.current = true;
+      Animated.timing(soloReveal, {
+        toValue: 1,
+        duration: REVEAL_MS,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        // Le squelette respire en boucle : inutile de le garder sous une image
+        // devenue opaque.
+        if (finished) setSkeletonGone(true);
+      });
+    },
+    [firstUri, group, soloReveal],
+  );
+
+  // Sous le groupe, le depart vient de lui : on demonte le voile une fois le
+  // fondu ecoule.
+  useEffect(() => {
+    if (!group?.ready) return;
+    const timer = setTimeout(() => setSkeletonGone(true), REVEAL_MS + 60);
+    return () => clearTimeout(timer);
+  }, [group?.ready]);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -211,17 +266,21 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
           c'est une simple `View` en absolu : elle est peinte des la premiere
           passe, quel que soit l'etat de la liste dessous. */}
       {(FORCE_SKELETON || !skeletonGone) && (
-        <View style={styles.carouselOverlay} pointerEvents="none">
+        <Animated.View
+          style={[
+            styles.carouselOverlay,
+            FORCE_SKELETON ? null : { opacity: skeletonOpacity },
+          ]}
+          pointerEvents="none"
+        >
           <View style={[styles.bannerItemContainer, { height: '100%' }]}>
             <View style={styles.bannerWrapper}>
-              <CardSkeleton
-                radius={24}
-                fadeOut={firstBannerLoaded && !FORCE_SKELETON}
-                onFadedOut={() => setSkeletonGone(true)}
-              />
+              {/* Le fondu de sortie n'est plus gere par `CardSkeleton` : il
+                  suit ici l'inverse exact du fondu d'entree de l'image. */}
+              <CardSkeleton radius={24} />
             </View>
           </View>
-        </View>
+        </Animated.View>
       )}
       <Animated.FlatList
         ref={flatListRef as any}
@@ -272,7 +331,17 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
                   disabled={item.type !== 'bonus'}
                   onPress={() => item.type === 'bonus' && onBonusPress(item)}
                 >
-                  <BannerImage uri={item.imageUrl} onReady={markLoaded} />
+                  <Animated.View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      FORCE_SKELETON ? { opacity: 0 } : { opacity: bannerReveal },
+                    ]}
+                  >
+                    <BannerImage
+                      uri={item.imageUrl}
+                      onReady={() => markLoaded(item.imageUrl)}
+                    />
+                  </Animated.View>
                   {item.title ? (
                     <View style={styles.overlay}>
                       <Text style={styles.bannerTitle}>{item.title}</Text>
@@ -284,21 +353,33 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
           );
         }}
       />
-      {banners.length > 1 && !skeletonGone && (
+      {/* Les puces suivent l'image sur la MEME valeur : elles ne peuvent plus
+          apparaitre a cote d'une banniere encore en squelette. */}
+      {banners.length > 1 && (
         <View style={styles.dotsRow}>
-          <View style={styles.dotSkeleton}>
-            <CardSkeleton radius={4} />
-          </View>
-        </View>
-      )}
-      {banners.length > 1 && skeletonGone && (
-        <View style={styles.dotsRow}>
-          {banners.map((b, i) => (
-            <View
-              key={b.id}
-              style={[styles.dot, i === activeIndex && styles.dotActive]}
-            />
-          ))}
+          {!skeletonGone && (
+            <Animated.View
+              pointerEvents="none"
+              style={[styles.dotsLayer, { opacity: skeletonOpacity }]}
+            >
+              <View style={styles.dotSkeleton}>
+                <CardSkeleton radius={4} />
+              </View>
+            </Animated.View>
+          )}
+          <Animated.View
+            style={[
+              styles.dotsLayer,
+              FORCE_SKELETON ? { opacity: 0 } : { opacity: bannerReveal },
+            ]}
+          >
+            {banners.map((b, i) => (
+              <View
+                key={b.id}
+                style={[styles.dot, i === activeIndex && styles.dotActive]}
+              />
+            ))}
+          </Animated.View>
         </View>
       )}
     </View>
@@ -363,11 +444,19 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+  // Hauteur fixe : les deux couches de puces (squelette et reelles) sont
+  // superposees le temps du fondu croise, la ligne ne doit pas bouger.
   dotsRow: {
-    flexDirection: 'row',
+    height: 7,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
+  },
+  dotsLayer: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dot: {
     width: 7,

@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Theme } from '@/src/theme';
 import { CardSkeleton } from '@/src/components/CardSkeleton';
-import { useShopReveal } from '../context/ShopRevealContext';
+import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 
 interface MerchantHeaderProps {
   name: string;
@@ -52,21 +52,36 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
     if (image) shop?.resolve(image);
   }, [image, shop]);
 
-  const rawReady = shop ? shop.ready : menuReady && avatarReady;
+  const ready = shop ? shop.ready : menuReady && avatarReady;
 
-  // ⚠️ L'avatar reel (ci-dessous, branche `ready`) monte sa PROPRE `<Image>`,
-  // distincte du temoin. Meme decalage d'une frame que les cartes de
-  // `DesignItem` — necessaire pour que le header bascule au meme instant que la
-  // rangee, pas juste au meme instant logique (`setState`).
-  const [ready, setReady] = React.useState(rawReady);
+  // ⚠️ C'est ici que se joue la synchro FINE avec les cartes. L'avatar est une
+  // instance native distincte des images de menu : meme en basculant au meme
+  // rendu React, rien ne garantissait qu'il peigne a la meme frame qu'elles.
+  // En branchant son opacite sur `revealAnim` — la valeur que lisent AUSSI
+  // toutes les cartes de la rangee — les deux suivent la meme rampe native,
+  // frame par frame. Voir ShopRevealContext pour le detail.
+  const soloAnim = React.useRef(new Animated.Value(0)).current;
+  const reveal = shop ? shop.revealAnim : soloAnim;
   React.useEffect(() => {
-    if (!rawReady) {
-      setReady(false);
+    if (shop || !ready) return;
+    Animated.timing(soloAnim, {
+      toValue: 1,
+      duration: REVEAL_MS,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [shop, ready, soloAnim]);
+
+  // Le squelette respire en boucle : une fois le fondu fini, on le demonte.
+  const [skeletonGone, setSkeletonGone] = React.useState(false);
+  React.useEffect(() => {
+    if (!ready) {
+      setSkeletonGone(false);
       return;
     }
-    const frame = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(frame);
-  }, [rawReady]);
+    const timer = setTimeout(() => setSkeletonGone(true), REVEAL_MS + 60);
+    return () => clearTimeout(timer);
+  }, [ready]);
 
   // ⚠️ On MONTE des images temoins plutot que d'appeler `Image.prefetch`. Le
   // prefetch se resout nettement plus tard que le `onLoad` d'une image montee
@@ -105,48 +120,82 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
     return fill;
   });
 
-  if (!ready) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.left}>
-          <View style={styles.avatarContainer}>
-            <CardSkeleton radius={16} />
-          </View>
-          <View style={styles.nameSkeleton}>
-            <CardSkeleton radius={6} />
-          </View>
-        </View>
-        {/* Un bloc unique a la place des 5 etoiles : le squelette suggere la
-            zone, il n'a pas a en mimer le detail. */}
-        <View style={styles.ratingSkeleton}>
-          <CardSkeleton radius={6} />
-        </View>
-        {witnesses}
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
+  const skeletonRow = (
+    <>
       <View style={styles.left}>
         <View style={styles.avatarContainer}>
-          <Image
-            source={image ? { uri: image } : require('@/assets/blur3.jpg')}
-            style={styles.avatar}
-          />
+          <CardSkeleton radius={16} />
         </View>
-        <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+        <View style={styles.nameSkeleton}>
+          <CardSkeleton radius={6} />
+        </View>
       </View>
-      <View style={styles.ratingContainer}>
-        {stars.map((fill, i) => (
-          <View key={i} style={styles.starWrapper}>
-            <Ionicons name="star" size={14} color={Theme.colors.gray[200]} />
-            <View style={[styles.starFill, { width: `${fill * 100}%` }]}>
-              <Ionicons name="star" size={14} color="#e8440a" />
-            </View>
+      {/* Un bloc unique a la place des 5 etoiles : le squelette suggere la
+          zone, il n'a pas a en mimer le detail. */}
+      <View style={styles.ratingSkeleton}>
+        <CardSkeleton radius={6} />
+      </View>
+    </>
+  );
+
+  // ⚠️ REGLE CENTRALE — le contenu reel est monte DES LE PREMIER RENDU, cache
+  // sous le squelette. NE PAS remettre un `if (!ready) return <squelette>`.
+  //
+  // Le squelette est un CALQUE AU-DESSUS du contenu, jamais un remplacement.
+  // Avec un retour anticipe, l'avatar ne montait sa `<Image>` qu'au moment du
+  // reveal : il lui restait a decoder puis a compositer, soit quelques frames
+  // APRES le debut du fondu — alors que la banniere, elle, monte son image des
+  // le depart (juste maintenue a l'opacite 0) et etait donc deja peinte. Meme
+  // `revealAnim`, meme opacite a la frame pres, mais un contenu pret et l'autre
+  // non : c'est ce qui faisait « sortir la banniere en premier », visible
+  // seulement au ralenti.
+  //
+  // Partager une valeur animee ne suffit pas ; il faut aussi que les contenus
+  // soient dans le meme etat de preparation quand le fondu demarre.
+  // Voir architecture/restaurants.md, section « RÈGLE CENTRALE ».
+  return (
+    <View style={styles.container}>
+      <Animated.View style={[styles.row, { opacity: reveal }]}>
+        <View style={styles.left}>
+          <View style={styles.avatarContainer}>
+            <Image
+              source={image ? { uri: image } : require('@/assets/blur3.jpg')}
+              style={styles.avatar}
+            />
           </View>
-        ))}
-      </View>
+          <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+        </View>
+        <View style={styles.ratingContainer}>
+          {stars.map((fill, i) => (
+            <View key={i} style={styles.starWrapper}>
+              <Ionicons name="star" size={14} color={Theme.colors.gray[200]} />
+              <View style={[styles.starFill, { width: `${fill * 100}%` }]}>
+                <Ionicons name="star" size={14} color="#e8440a" />
+              </View>
+            </View>
+          ))}
+        </View>
+      </Animated.View>
+      {/* Fondu de sortie sur la MEME valeur que l'entree du contenu : les deux
+          se croisent exactement, sans trou ni chevauchement visible. */}
+      {!skeletonGone ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            styles.skeletonOverlay,
+            {
+              opacity: reveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 0],
+              }),
+            },
+          ]}
+        >
+          {skeletonRow}
+        </Animated.View>
+      ) : null}
+      {witnesses}
     </View>
   );
 };
@@ -159,6 +208,22 @@ const styles = StyleSheet.create({
     paddingVertical: Theme.spacing.sm,
     backgroundColor: Theme.colors.white,
     marginBottom: Theme.spacing.sm,
+  },
+  // Reprend la mise en page de `container` pour le contenu reel, qui vit
+  // desormais dans une vue animee intermediaire.
+  row: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  // Meme mise en page, superposee : le squelette occupe exactement la place du
+  // contenu pendant le fondu croise.
+  skeletonOverlay: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Theme.spacing.sm,
   },
   left: {
     flexDirection: 'row',

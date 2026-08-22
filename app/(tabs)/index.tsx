@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
+import { ShopRevealProvider } from "@/src/features/restaurants/context/ShopRevealContext";
 import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
@@ -94,6 +95,19 @@ export default function HomeScreen() {
     },
     [router],
   );
+
+  // Images que la banniere et la PREMIERE boutique vont charger. Elles sont
+  // declarees au groupe AVANT que la FlatList ne monte quoi que ce soit : sans
+  // ca, le groupe se scelle en ne connaissant que la banniere (le header monte
+  // avant les cellules) et la laisse partir seule.
+  const firstScreenUris = useMemo(() => {
+    const first: any = fastFoods[0];
+    return [
+      banners?.[0]?.imageUrl,
+      first?.image,
+      ...((first?.menu ?? []).map((m: any) => m?.image) as string[]),
+    ].filter(Boolean) as string[];
+  }, [banners, fastFoods]);
 
   const listHeader = useMemo(
     () => (
@@ -227,12 +241,24 @@ export default function HomeScreen() {
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
       />
+      {/* ⚠️ Groupe de revelation partage par la BANNIERE et la PREMIERE
+          boutique uniquement (cf. DesignRouter) : les deux sortent a la meme
+          frame. La boutique 0 n'attend rien de plus qu'avant — seule la
+          banniere patiente le temps de sortir avec elle. Les boutiques
+          suivantes gardent leur propre groupe : les mettre ici ferait attendre
+          la boutique 0 derriere elles, et c'est ce qui avait rajoute de la
+          latence a l'arrivee sur le home. */}
+      <ShopRevealProvider expect={firstScreenUris}>
       <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
         <FlatList
           data={fastFoods}
           ListHeaderComponent={listHeader}
-          renderItem={({ item }) => (
-            <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
+          renderItem={({ item, index }) => (
+            <DesignRouter
+              fastFood={item}
+              onMenuClick={handleMenuClick}
+              index={index}
+            />
           )}
           keyExtractor={(item, index) => item.id || index.toString()}
           contentContainerStyle={[
@@ -280,6 +306,7 @@ export default function HomeScreen() {
           }
         />
       </View>
+      </ShopRevealProvider>
       <CheckoutSheet
         key={selectedMenu?.id || "checkout"}
         visible={checkoutVisible}

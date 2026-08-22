@@ -13,7 +13,7 @@ tournant, plus le carrousel de bannières.
 ```
 src/features/restaurants/
 ├── context/FastFoodContext.tsx     # État + fetch paginé + injection socket
-├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique
+├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique (+ revealAnim)
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
 ├── utils/deliveryUtils.ts
 └── components/
@@ -22,7 +22,7 @@ src/features/restaurants/
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
     └── designs/
-        ├── DesignItem.tsx          # UNE carte menu, 7 variantes + squelette
+        ├── DesignItem.tsx          # Enveloppe (squelette + fondu) + DesignItemCard (7 variantes)
         └── Design1..7.tsx          # Rangées horizontales par boutique
 ```
 
@@ -162,7 +162,119 @@ s'inscrivent (`register(uri)`) puis signalent (`resolve(uri)`), et lisent le mê
   qu'une fois. Garde-fou `MAX_WAIT_MS` (8 s) contre une image qui ne répond ni
   par `onLoad` ni par `onError`.
 - Hors provider, `useShopReveal()` renvoie `null` et chaque composant retombe sur
-  son chargement individuel.
+  son chargement individuel (même mécanique, groupe d'un seul membre).
+
+### Synchro au pixel — `revealAnim`
+
+`ready` fait basculer tout le groupe dans le **même rendu React**, mais pas à la
+**même frame peinte** : l'avatar, chaque carte et leurs images sont des instances
+natives distinctes, chacune avec son propre passage de composition. `onLoad`
+d'expo-image dit « décodée », pas « affichée ». D'où un décalage résiduel de
+quelques frames — invisible à l'œil nu, net au ralenti, et différent à chaque
+ouverture.
+
+> ⚠️ Deux approches ont été essayées et **retirées** parce qu'elles restaient
+> probabilistes : un `requestAnimationFrame` par composant (callbacks
+> indépendants, aucune raison de tomber ensemble) puis un délai fixe deviné
+> (`SETTLE_MS`) avant la bascule. Ne pas les réintroduire.
+
+Le contexte expose donc **`revealAnim`**, une `Animated.Value` unique par
+boutique, jouée sur le **driver natif**. Une frame d'animation met à jour toutes
+les vues qui y sont liées dans la même opération du thread UI : l'opacité de
+l'avatar et celle de chaque carte sont rigoureusement égales à chaque frame,
+quel que soit l'instant où leur bitmap a fini de compositer. On ne synchronise
+plus des événements, on partage un état.
+
+Le squelette et le contenu réel sont montés **ensemble** le temps du fondu et se
+croisent sur cette valeur (contenu `0 → 1`, squelette `1 → 0` par interpolation) :
+aucun trou entre les deux. Le squelette est démonté après `REVEAL_MS` — son
+animation de respiration tourne en boucle et n'a pas à survivre sous une carte
+opaque.
+
+`DesignItem` est scindé en deux : **`DesignItemCard`** (les 7 variantes de
+design, qui ne connaissent rien du chargement) et **`DesignItem`**, l'enveloppe
+qui porte squelette, `register`/`resolve` et fondu. C'est ce qui permet
+d'envelopper les 7 variantes d'un coup au lieu de répéter la logique à chaque
+retour.
+
+### RÈGLE CENTRALE — monter le contenu AVANT le fondu, jamais au fondu
+
+**Toute vue du groupe doit monter ses `<Image>` dès le PREMIER rendu, cachée
+sous le squelette. Jamais derrière un `if (!ready) return <squelette>`.**
+
+C'est la cause du dernier décalage, celui qui a résisté le plus longtemps, et la
+seule règle à retenir si on retouche ce code.
+
+Une opacité partagée ne suffit pas si les contenus ne sont pas dans le **même
+état de préparation** quand le fondu démarre :
+
+| | Image montée | Au démarrage du fondu |
+|---|---|---|
+| Bannière | dès le 1er rendu, opacité 0 | pixel déjà décodé et composité → apparaît **instantanément** |
+| Cartes / avatar *(ancien code)* | seulement quand `ready` passe à vrai | doivent encore décoder puis compositer → **quelques frames de retard** |
+
+Résultat : `revealAnim` était rigoureusement synchrone, les logs le prouvaient
+(`SEAL pending=3` → 3 × `-res` → `READY`), et pourtant la bannière sortait
+visiblement avant. Ce n'était pas l'animation qui décalait, c'était le contenu
+qui n'était pas prêt à être peint.
+
+> ⚠️ Le retour anticipé sur squelette paraît plus propre et plus économe — c'est
+> un piège. Il déplace le montage des images au pire moment possible : celui où
+> elles doivent déjà être visibles. **Ne pas le réintroduire** dans `DesignItem`
+> ni dans `MerchantHeader`.
+
+Corollaire : le squelette est un **calque au-dessus** du contenu réel, pas un
+remplacement de celui-ci. Il porte l'image témoin qui signale le chargement au
+groupe (même URL que la carte dessous — expo-image dédoublonne la requête).
+
+#### Historique des tentatives ratées (ne pas refaire)
+
+| Tentative | Pourquoi ça ne marchait pas |
+|---|---|
+| `requestAnimationFrame` par composant | Callbacks indépendants, aucune raison de tomber sur la même frame. |
+| Délai fixe deviné (`SETTLE_MS`) avant la bascule | On parie sur la durée de composition ; ça reste probabiliste. |
+| Provider d'écran incluant **2 boutiques** + bannière | La boutique 0 attendait aussi les images de la boutique 1 → latence réelle à l'arrivée sur le home. |
+| Inscription des membres pendant le rendu, sans `expect` | Sous `FlatList`, le header monte dans un commit et les cellules dans le suivant : le groupe se scellait sur la seule bannière. |
+
+**La méthode qui a trouvé la cause** : instrumenter le provider
+(`SEED` / `SEAL` / `register` / `resolve` / `READY`) et lire les logs. Les
+hypothèses successives ont toutes échoué ; les logs ont montré en une fois que
+le groupe était correct et que le problème était ailleurs. À refaire d'emblée
+en cas de nouveau symptôme de ce type.
+
+### Bannière + boutique 0 — un groupe, déclaré à l'avance
+
+La home pose un `ShopRevealProvider` autour de la FlatList. Y sont réunies
+**la bannière et la première boutique uniquement** : `DesignRouter` n'ouvre pas
+de provider pour `index === 0`, elle hérite de celui-ci.
+
+> ⚠️ **UNE SEULE boutique dans ce groupe, jamais deux.** Avec deux, la boutique 0
+> devait aussi attendre les images de la boutique 1 — c'est ce qui avait rajouté
+> de la latence à l'arrivée sur le home. Ici la boutique 0 n'attend rien de plus
+> qu'avant ; seule la bannière patiente, le temps de sortir avec elle.
+
+**`expect` — la pré-inscription, et pourquoi elle est indispensable.** La home
+passe au provider la liste des URLs à attendre (bannière + avatar + menus de la
+boutique 0), calculée depuis les données.
+
+> ⚠️ Sans elle, la bannière sortait **toujours en premier**. Une `FlatList` monte
+> son `ListHeaderComponent` dans un commit et ses cellules dans le suivant : le
+> groupe se scellait en ne connaissant que la bannière, elle se résolvait, le
+> groupe partait — et la boutique 0 s'inscrivait trop tard (`register`
+> court-circuité par `readyRef`). L'inscription pendant le rendu ne suffit que
+> si provider et membres sont rendus **dans le même commit** — ce qui est le cas
+> des providers par boutique de `DesignRouter`, pas de celui-ci.
+
+Côté bannière, il ne reste qu'un fondu :
+
+> ⚠️ Elle cumulait **deux fondus concurrents** : le `transition={180}` interne
+> d'expo-image (non pilotable) et le `fadeOut`/`onFadedOut` du `CardSkeleton`
+> (~260 ms, un `Animated` séparé). Deux timelines de durées et de départs
+> différents ne peuvent pas se croiser proprement. Le `transition` a été retiré ;
+> image, voile et puces suivent la valeur du groupe.
+
+Les puces sont superposées en deux couches (`dotsLayer`, absolues) dans un
+`dotsRow` de **hauteur fixe** : elles se croisent sans faire bouger la ligne.
 
 ### Squelette de la bannière
 

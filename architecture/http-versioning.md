@@ -95,6 +95,43 @@ Utilise le même header pour bloquer les clients trop anciens, côté backend
 l'App Store (APPSTORE_CONNECT.html), renseigné une fois l'app publiée.
 
 
+## Mises a jour OTA (`expo-updates`)
+
+Livre du **JS et des assets** sans repasser par les stores. Complementaire du
+gate ci-dessus, qui couvre les versions **natives** — celles-la exigent un
+nouveau binaire et ne peuvent pas etre poussees en OTA.
+
+| Endroit | Role |
+|---|---|
+| `app.json` → `updates.url` | Serveur EAS Update, derive du `projectId`. |
+| `app.json` → `runtimeVersion.policy: "appVersion"` | Un update ne s'applique qu'aux apps de **meme `version`**. |
+| `eas.json` → `channel` par profil | `production` / `preview` / `development`. |
+| `src/services/useOtaUpdates.ts` | Verifie, telecharge et **applique** la mise a jour. |
+
+Publier : `eas update --branch production --message "..."`.
+
+### Points a connaitre
+
+- ⚠️ **Rebuild obligatoire.** L'OTA ne fonctionne qu'a partir d'un binaire
+  compile **apres** cette configuration. Les installations anterieures ne
+  recevront jamais d'update, quel que soit le nombre de `eas update` publies.
+- ⚠️ **`runtimeVersion` suit `version`.** Passer de 1.0.6 a 1.0.7 coupe les
+  clients restes en 1.0.6 : chaque bump de version publique exige donc un
+  nouveau build store. C'est voulu — cela garantit que le JS livre correspond au
+  natif qui l'execute. L'`autoIncrement` du `versionCode` / `buildNumber`, lui,
+  ne change pas le `runtimeVersion` et ne casse rien.
+- **Application immediate.** Par defaut `expo-updates` telecharge au demarrage
+  mais n'applique qu'au lancement **suivant** : l'utilisateur passerait une
+  session entiere sur l'ancien code. `useOtaUpdates` force donc
+  `fetchUpdateAsync()` puis `reloadAsync()`.
+  - `reloadAsync` redemarre le bundle JS : tout etat non persiste est perdu.
+    D'ou l'appel **uniquement au boot et au retour au premier plan**, jamais
+    pendant que l'utilisateur agit.
+  - `CHECK_INTERVAL_MS` (5 min) evite une requete a chaque bascule d'app.
+- **Jamais bloquant** : reseau indisponible ou canal absent → l'app continue sur
+  le bundle embarque, l'erreur est avalee. Le hook est aussi court-circuite par
+  `__DEV__`, sinon chaque rechargement Metro declencherait une requete inutile.
+
 ## Gate de version — sequence apres le splash
 
 Regle : **apres le splash, une seule destination s'affiche**, jamais l'une puis

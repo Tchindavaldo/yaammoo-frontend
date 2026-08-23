@@ -60,6 +60,8 @@ export default function HomeScreen() {
     loadMore,
     refresh,
     resetToFirstPage,
+    notifyUserScroll,
+    cancelPendingLoadMore,
     banners,
     searchQuery,
     setSearchQuery,
@@ -106,9 +108,26 @@ export default function HomeScreen() {
   // ⚠️ Declenchee a l'arret du scroll (`onMomentumScrollEnd`), jamais pendant
   // (`onScroll`) : retirer des cellules sous un doigt qui defile ferait sauter
   // la liste. Et toujours derriere la garde « on est bien en haut ».
-  const handleScroll = useCallback((e: any) => {
-    atTopRef.current = e.nativeEvent.contentOffset.y <= 4;
-  }, []);
+  /** Derniere position connue, pour deduire le SENS du scroll. */
+  const lastOffsetRef = useRef(0);
+  const handleScroll = useCallback(
+    (e: any) => {
+      const y = e.nativeEvent.contentOffset.y;
+      atTopRef.current = y <= 4;
+      // Remontee franche : meme raison que sur le tap Home, une page suivante
+      // encore en vol monterait ses cellules pendant que l'utilisateur defile
+      // vers le haut, et bloquerait le thread JS en plein geste. Le seuil evite
+      // de declencher sur le tremblement d'un doigt pose.
+      if (lastOffsetRef.current - y > 24) cancelPendingLoadMore();
+      lastOffsetRef.current = y;
+      // Un scroll reel leve le verrou pose par la troncature : sans ce signal,
+      // le contexte ne peut pas distinguer le rebond automatique de
+      // `onEndReached` (la liste raccourcit, sa fin remonte sous le viewport)
+      // d'une descente voulue par l'utilisateur.
+      notifyUserScroll();
+    },
+    [notifyUserScroll, cancelPendingLoadMore],
+  );
 
   const handleMomentumEnd = useCallback(() => {
     if (atTopRef.current) resetToFirstPage();
@@ -120,6 +139,12 @@ export default function HomeScreen() {
     // ce qui annulerait la position d'un retour arriere.
     const unsubscribe = (navigation as any).addListener("tabPress", () => {
       if (!(navigation as any).isFocused()) return;
+      // ⚠️ AVANT l'animation : une page suivante encore en vol arriverait
+      // pendant la remontee et ferait monter ses cellules (~100 ms de commit
+      // natif chacune), bloquant le thread JS au moment ou l'animation doit
+      // tourner. La troncature seule est trop tardive : elle n'intervient
+      // qu'apres les 450 ms ci-dessous, quand le mal est fait.
+      cancelPendingLoadMore();
       listRef.current?.scrollToOffset({ offset: 0, animated: true });
       // Troncature une fois la remontee terminee : moins de cellules en
       // memoire, la liste retrouve l'etat qu'elle avait apres le premier GET.
@@ -137,7 +162,7 @@ export default function HomeScreen() {
       unsubscribe();
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
     };
-  }, [navigation, resetToFirstPage]);
+  }, [navigation, resetToFirstPage, cancelPendingLoadMore]);
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {

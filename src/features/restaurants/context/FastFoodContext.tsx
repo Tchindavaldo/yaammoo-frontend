@@ -62,6 +62,17 @@ interface FastFoodContextType {
    * du home pour ne pas garder des dizaines de cellules en memoire.
    */
   resetToFirstPage: () => void;
+  /**
+   * Signale un geste de scroll reel de l'utilisateur. Rearme `loadMore` apres
+   * une troncature (voir `notifyUserScroll` dans l'implementation).
+   */
+  notifyUserScroll: () => void;
+  /**
+   * Invalide une page suivante encore en vol, sans tronquer. A appeler au DEBUT
+   * d'une remontee vers le haut : le montage de ses cellules bloquerait le
+   * thread JS pendant l'animation de scroll.
+   */
+  cancelPendingLoadMore: () => void;
   // ── Injection directe depuis les payloads socket (pas de refetch) ──
   /** newGlobalMenu / globalMenuUpdated → upsert d'un menu dans son fastfood. */
   upsertMenuFromSocket: (menu: any) => void;
@@ -143,6 +154,14 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // et il devient disponible dès la restauration de session.
   const { user } = useAuth();
   const [fastFoods, setFastFoods] = useState<FastFood[]>([]);
+  /**
+   * Longueur courante de `fastFoods`, lisible HORS d'un updater.
+   * `resetToFirstPage()` en a besoin pour decider s'il y a lieu de tronquer
+   * sans avoir a placer ses effets de bord dans le `setFastFoods` — un updater
+   * peut etre rejoue par React, ce qui reposerait le verrou de troncature.
+   */
+  const fastFoodsLenRef = useRef(0);
+  fastFoodsLenRef.current = fastFoods.length;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -153,6 +172,14 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    * `resetToFirstPage()` puisse repartir exactement de la fin de cette page.
    */
   const firstPageCursorRef = useRef<string | null>(null);
+  /**
+   * Numero de troncature, incremente a chaque `resetToFirstPage()`. Compare a
+   * l'arrivee d'une page suivante : un `loadMore` parti AVANT le reset a une
+   * reponse caduque, qu'il ne faut ni concatener ni laisser ecrire le curseur
+   * ou `loadingMore`. Un enchainement rapide haut/bas incremente autant de
+   * fois : toute reponse anterieure au dernier reset est ecartee.
+   */
+  const resetSeqRef = useRef(0);
   const [hasMore, setHasMore] = useState(false);
   /**
    * Numéro de la requête en cours. Une réponse dont le numéro n'est plus le
@@ -180,6 +207,17 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    */
   const fetchPage = useCallback(async (cursor?: string, q?: string) => {
     const isFirstPage = !cursor;
+    /**
+     * Numero de troncature au moment du DEPART de cette requete.
+     *
+     * ⚠️ Un `loadMore` peut etre encore en vol quand l'utilisateur remonte en
+     * haut : `resetToFirstPage()` tronque la liste, mais n'annule pas la
+     * requete. Sa reponse arrivait ensuite et concatenait sa page aux boutiques
+     * conservees — on rechargeait donc exactement ce qu'on venait de retirer,
+     * avec la pause du reseau et un ordre qui ne correspondait plus a la
+     * position de l'utilisateur. On compare donc ce numero a l'arrivee.
+     */
+    const myReset = resetSeqRef.current;
     // ⚠️ Le compteur de génération sert UNIQUEMENT à la recherche : empêcher
     // qu'une frappe lente écrase le résultat d'une frappe plus récente. Il ne
     // doit PAS arbitrer entre deux chargements normaux.
@@ -220,6 +258,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // résultats d'une frappe précédente. Hors recherche, on applique
       // toujours — voir l'explication sur `guarded` plus haut.
       if (guarded && myRun !== runIdRef.current) return;
+
+      // ⚠️ Page suivante devenue caduque : un `resetToFirstPage()` est survenu
+      // pendant le vol. Concatener cette page ARAJOUTERAIT exactement les
+      // boutiques qu'on vient de retirer, et `cursorRef` (remis a la fin de la
+      // premiere page par le reset) serait ecrase par le curseur de cette
+      // reponse — la pagination repartirait du mauvais endroit. On jette donc
+      // AVANT toute ecriture. Le `finally` n'eteint plus `loadingMore` pour ce
+      // cas : le reset l'a deja eteint, et le prochain `loadMore` est libre.
+      if (!isFirstPage && myReset !== resetSeqRef.current) return;
 
       // Flag review Apple porté par la réponse (défaut false si absent).
       setAppleReviewMode(response.data?.appleReviewMode === true);
@@ -268,8 +315,13 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Chaque appel n'eteint QUE son propre indicateur, sinon un `loadMore`
       // masquerait une premiere page encore en vol.
+      //
+      // ⚠️ Une page suivante devenue caduque (reset pendant son vol) ne touche
+      // plus a `loadingMore` : le reset l'a deja eteint pour faire disparaitre
+      // le loader tout de suite, et un `loadMore` legitime a pu repartir
+      // depuis. L'eteindre ici masquerait CE chargement-la.
       if (isFirstPage) setLoading(false);
-      else setLoadingMore(false);
+      else if (myReset === resetSeqRef.current) setLoadingMore(false);
     }
   }, []);
 
@@ -287,15 +339,21 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [fetchPage]);
 
   /**
-   * Instant du dernier `resetToFirstPage()`. Juste apres une troncature, la
-   * liste raccourcit brutalement : sa fin remonte sous le viewport et
-   * `onEndReached` repart aussitot. Sans ce verrou, on rechargeait la page
-   * qu'on venait de retirer — boucle de pagination infinie.
+   * Verrou pose par `resetToFirstPage()`. Juste apres une troncature, la liste
+   * raccourcit brutalement : sa fin remonte sous le viewport et `onEndReached`
+   * repart AUSSITOT, sans le moindre geste de l'utilisateur. Sans verrou, on
+   * rechargeait la page qu'on venait de retirer — boucle de pagination infinie.
+   *
+   * ⚠️ Ce verrou etait un COOLDOWN de 800 ms, remplace ici par un rearmement au
+   * geste (`notifyUserScroll`). Un delai fixe est une devinette : il refusait
+   * aussi les demandes LEGITIMES d'un utilisateur qui redescend vite — avec
+   * PAGE_SIZE=3 le bas de liste est atteint en ~300 ms, donc quasi toujours
+   * dans la fenetre. Le loader restait alors fige et la page suivante
+   * n'arrivait jamais. On ne devine plus une duree : on distingue le rebond
+   * automatique (aucun scroll entre la troncature et `onEndReached`) du scroll
+   * reel (un `onScroll` est passe entre-temps).
    */
-  const lastResetAtRef = useRef(0);
-  const RESET_COOLDOWN_MS = 800;
-  /** Timer du `loadMore` REPORTE pendant le cooldown (voir plus bas). */
-  const deferredLoadRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetLockRef = useRef(false);
 
   /** Lance reellement la page suivante, une fois toutes les gardes passees. */
   const runLoadMore = useCallback(() => {
@@ -308,24 +366,16 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     // paginer dedans avec le meme `q`, sinon on melangerait deux listes.
     if (loadingMore || loading || !cursorRef.current) return;
 
-    // ⚠️ Pendant le cooldown, on REPORTE la demande — on ne la jette pas.
+    // ⚠️ Verrou de troncature : on refuse UNIQUEMENT le rebond automatique.
     //
-    // Un simple `return` la perdait definitivement, et la `FlatList` ne rappelle
-    // `onEndReached` que si le seuil est franchi A NOUVEAU : rester en bas ne
-    // relance rien. L'utilisateur devait donc remonter puis redescendre
-    // plusieurs fois avant de revoir le loader. Le symptome ne se voyait qu'au
-    // retour en haut par SCROLL : le bouton Home, lui, reset dans un
-    // `setTimeout(450)` apres son animation, si bien que le cooldown est deja
-    // consomme quand l'utilisateur redescend.
-    const sinceReset = Date.now() - lastResetAtRef.current;
-    if (sinceReset < RESET_COOLDOWN_MS) {
-      if (deferredLoadRef.current) return; // un report est deja arme
-      deferredLoadRef.current = setTimeout(() => {
-        deferredLoadRef.current = null;
-        runLoadMore();
-      }, RESET_COOLDOWN_MS - sinceReset);
-      return;
-    }
+    // Juste apres `resetToFirstPage()`, la `FlatList` voit sa fin remonter sous
+    // le viewport et rappelle `onEndReached` d'elle-meme, sans geste de
+    // l'utilisateur. C'est CETTE demande-la qu'il faut refuser — pas la suivante.
+    // Le verrou tombe des que `notifyUserScroll()` signale un scroll reel, donc
+    // un utilisateur qui redescend est servi immediatement, quelle que soit sa
+    // vitesse. Le refus n'a rien a reporter : le seuil sera franchi a nouveau
+    // par le scroll qui leve justement le verrou.
+    if (resetLockRef.current) return;
 
     runLoadMore();
   }, [loading, loadingMore, runLoadMore]);
@@ -342,21 +392,56 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    * declencher un rendu pour rien reintroduirait le probleme qu'on corrige.
    */
   const resetToFirstPage = useCallback(() => {
-    setFastFoods((prev) => {
-      if (prev.length <= PAGE_SIZE) return prev;
-      lastResetAtRef.current = Date.now();
-      // Un report arme avant CE reset visait l'ancienne fin de liste : le
-      // laisser partir rechargerait la page qu'on vient justement de retirer.
-      if (deferredLoadRef.current) {
-        clearTimeout(deferredLoadRef.current);
-        deferredLoadRef.current = null;
-      }
-      // Le curseur doit repartir de la fin de la page conservee, sinon
-      // `loadMore` rechargerait des boutiques deja affichees.
-      cursorRef.current = firstPageCursorRef.current;
-      setHasMore(!!firstPageCursorRef.current);
-      return prev.slice(0, PAGE_SIZE);
-    });
+    // ⚠️ Les effets de bord sont ICI, PAS dans l'updater de `setFastFoods`.
+    // Un updater n'est pas garanti execute une seule fois : React le rejoue
+    // (StrictMode, rendu concurrent, re-rendu declenche par un contexte
+    // voisin — frequent sur ce home). Quand le verrou et le curseur y vivaient,
+    // une simple notification entrante les reposait apres coup et gelait la
+    // pagination. Ne pas les y remettre.
+    if (fastFoodsLenRef.current <= PAGE_SIZE) return;
+
+    // Verrou leve au premier scroll reel (`notifyUserScroll`) : seule la
+    // demande automatique nee de la troncature est refusee.
+    resetLockRef.current = true;
+    // Invalide toute page suivante encore en vol : sa reponse ne sera ni
+    // concatenee ni autorisee a ecrire le curseur (voir `fetchPage`).
+    resetSeqRef.current += 1;
+    // ⚠️ Le loader de pagination s'eteint ICI, sans attendre la reponse en vol.
+    // Sinon il restait anime en bas d'une liste qu'on vient de tronquer, alors
+    // que l'utilisateur est remonte en haut et que plus rien ne sera ajoute.
+    setLoadingMore(false);
+    // Le curseur doit repartir de la fin de la page conservee, sinon
+    // `loadMore` rechargerait des boutiques deja affichees.
+    cursorRef.current = firstPageCursorRef.current;
+    setHasMore(!!firstPageCursorRef.current);
+    setFastFoods((prev) =>
+      prev.length <= PAGE_SIZE ? prev : prev.slice(0, PAGE_SIZE),
+    );
+  }, []);
+
+  /**
+   * Appele par l'ecran a chaque `onScroll`. Leve le verrou pose par la
+   * troncature : a partir de la, `onEndReached` traduit une intention reelle
+   * de l'utilisateur et non le rebond de la liste qui vient de raccourcir.
+   */
+  const notifyUserScroll = useCallback(() => {
+    if (resetLockRef.current) resetLockRef.current = false;
+  }, []);
+
+  /**
+   * Appele au DEBUT d'une remontee vers le haut (tap sur l'onglet Home), avant
+   * l'animation de scroll et donc bien avant la troncature.
+   *
+   * ⚠️ Sans lui, une page suivante encore en vol arrivait PENDANT la remontee :
+   * la `FlatList` montait ses cellules (~100 ms de commit natif chacune, cf.
+   * architecture/restaurants.md), ce qui bloque le thread JS au moment precis
+   * ou l'animation de scroll doit tourner — d'où la pause et le saut ressentis.
+   * Le reset seul ne suffisait pas : il n'intervient qu'a la fin de l'animation
+   * (`setTimeout(450)`), donc apres que les cellules se sont montees pour rien.
+   */
+  const cancelPendingLoadMore = useCallback(() => {
+    resetSeqRef.current += 1;
+    setLoadingMore(false);
   }, []);
 
   // Refetch à CHAQUE changement d'identité (y compris `null` → user au boot :
@@ -392,7 +477,6 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(
     () => () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
-      if (deferredLoadRef.current) clearTimeout(deferredLoadRef.current);
     },
     [],
   );
@@ -521,6 +605,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       setSelectedCategory,
       refresh,
       resetToFirstPage,
+      notifyUserScroll,
+      cancelPendingLoadMore,
       upsertMenuFromSocket,
       removeMenuFromSocket,
       upsertFastFoodFromSocket,
@@ -542,6 +628,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       selectedCategory,
       refresh,
       resetToFirstPage,
+      notifyUserScroll,
+      cancelPendingLoadMore,
       upsertMenuFromSocket,
       removeMenuFromSocket,
       upsertFastFoodFromSocket,

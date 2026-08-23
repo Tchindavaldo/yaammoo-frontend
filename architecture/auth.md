@@ -11,8 +11,13 @@
 | `src/features/auth/services/googleAuthService.ts` | Flow complet Google Sign-In |
 | `src/features/auth/services/userFirestore.ts` | CRUD utilisateur (GET/POST/PUT /user) |
 | `src/features/auth/context/AuthContext.tsx` | État global user + AsyncStorage |
-| `src/features/auth/components/WhatsAppAuthStep.tsx` | Flux WhatsApp en 2 étapes (numéro → code). **Design seul, non branché.** |
+| `src/features/auth/components/WhatsAppAuthStep.tsx` | Flux WhatsApp en 2 étapes (numéro → code), **branché** sur `whatsappAuthService` |
+| `src/features/auth/services/whatsappAuthService.ts` | `POST /auth/phone/request` + `/auth/phone/verify`, échange du `customToken` |
+| `src/features/auth/components/EmailAuthStep.tsx` | Étape email/mot de passe extraite de `AuthSheetContent` (login + inscription) |
+| `src/features/auth/components/AuthFieldCapsule.tsx` | Capsule flottante de saisie posée au-dessus du clavier custom |
 | `src/features/auth/components/NumericKeypad.tsx` | Clavier numérique custom (remplace le clavier natif) |
+| `src/features/auth/components/TextKeyboard.tsx` | Clavier alphanumérique custom (saisie email/mot de passe) |
+| `src/features/auth/constants.ts` | `AUTH_SHEET_HEIGHT` + `AUTH_SHEET_PADDING_BOTTOM`, partagés sheet ↔ capsule |
 | `src/features/auth/components/AuthProviderIcons.tsx` | Logos SVG Apple / Google / WhatsApp |
 | `src/api/config.ts` | apiUrl + Firebase config + Google Client IDs |
 
@@ -61,31 +66,42 @@ setUserData() → AuthContext + AsyncStorage
 
 ---
 
-## Flow WhatsApp (design seul — endpoints non branchés)
+## Flow WhatsApp (branché)
 
 Bouton « Continue with WhatsApp » dans `AuthSheetContent`, placé après Google.
 Il bascule la sheet sur `WhatsAppAuthStep`, qui **remplace tout le contenu**
 (titre et footer compris) le temps de ses deux étapes.
 
 ```
-[etape 1] numero  → onSubmitPhone(phone)  → loader  → [etape 2]
-[etape 2] code    → onSubmitCode(code)    → loader  → setUserData (a brancher)
+[etape 1] numero → requestPhoneCode()  → POST /auth/phone/request → [etape 2]
+[etape 2] code   → verifyPhoneCode()   → POST /auth/phone/verify  → customToken
+                        ↓
+        signInWithCustomToken(Firebase)  →  firebaseUser
+                        ↓
+        userFirestore.getUser() (+ createUser si isNewUser)
+                        ↓
+        setUserData() → le guard Stack.Protected révèle (tabs)
 ```
+
+> ⚠️ **Le `customToken` n'est PAS un token d'accès.** Il ne fonctionne pas dans
+> un en-tête `Authorization` : seul `signInWithCustomToken` ouvre la session, et
+> c'est l'`idToken` qui en résulte qui authentifie les appels backend.
+
+Erreurs typées par le service : `isRateLimited()` (trop de demandes) et
+`isInvalidCode()` (code faux ou expiré), affichées **inline** dans la sheet.
 
 | Point | Choix retenu |
 |---|---|
 | Composant dédié | `AuthSheetContent` faisait déjà 465 lignes ; deux étapes de plus dépassaient le plafond de 500 (R4). Les icônes SVG ont aussi été extraites. |
 | Clavier | **Custom** (`NumericKeypad`), rendu dans la sheet. **Aucun `TextInput`, jamais de clavier natif** : sa hauteur varie selon l'appareil et l'OS, ce qui ferait sauter la sheet à chaque étape. Les chiffres alimentent un affichage en lecture seule. |
-| Hauteur de sheet | **Fixe** (`height: SCREEN_H * 0.82`, plus `maxHeight`) aux **deux** points d'entrée — `AuthGateContext` et `app/(auth)/index.tsx`. Leurs `ScrollView` portent `contentContainerStyle={{ flexGrow: 1 }}`, sinon le `flex: 1` de l'écran WhatsApp ne remplit pas la sheet et le clavier n'est plus plaqué en bas. |
+| Hauteur de sheet | **Fixe** (`AUTH_SHEET_HEIGHT` : 0.59 × écran sur Android, 0.57 sur iOS — la barre de navigation Android mange le bas) aux **deux** points d'entrée — `AuthGateContext` et `app/(auth)/index.tsx`. Leurs `ScrollView` portent `contentContainerStyle={{ flexGrow: 1 }}`, sinon le `flex: 1` de l'écran WhatsApp ne remplit pas la sheet et le clavier n'est plus plaqué en bas. |
 | Stabilité de mise en page | Zones à hauteur réservée (`display`, `errorSlot`, `resendSlot`) : l'apparition d'une erreur ou le passage numéro → code ne décale rien. |
 | Erreurs | **Inline**, jamais d'`Alert` natif : la boîte de dialogue ferait perdre le focus et le clavier à la sheet. |
 | Retour | L'étape 2 revient à l'étape 1 ; l'étape 1 revient aux boutons sociaux. |
 | Loader sur succès | Maintenu, comme Google/Apple — jusqu'au démontage par le guard. |
 | Numéro | Nettoyé (`digitsOnly`) : un numéro collé depuis les contacts porte espaces et tirets. Le code est limité à 6 chiffres. |
 
-> **TODO backend** : `onSubmitPhone` et `onSubmitCode` sont pour l'instant des
-> `setTimeout` de simulation dans `AuthSheetContent`. Y brancher les endpoints
-> d'envoi et de vérification, puis `setUserData()` sur succès.
+| Hauteur partagée | `AUTH_SHEET_HEIGHT` vit dans `constants.ts`, **pas** dans `AuthGateContext` : la capsule flottante en a besoin, et l'importer du contexte fermait un cycle `AuthGateContext → AuthSheetContent → EmailAuthStep → capsule`. |
 
 ---
 

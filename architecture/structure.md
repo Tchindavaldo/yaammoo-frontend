@@ -29,11 +29,23 @@ app/
 ```
 src/features/
 ├── auth/
-│   ├── context/AuthContext.tsx          # user state + AsyncStorage
+│   ├── context/
+│   │   ├── AuthContext.tsx              # user state + AsyncStorage
+│   │   └── AuthGateContext.tsx          # requireAuth() + sheet d'auth en overlay
+│   ├── constants.ts                     # AUTH_SHEET_HEIGHT (partage sheet <-> capsule)
 │   ├── services/
 │   │   ├── authService.ts               # GET /user/:uid
 │   │   ├── googleAuthService.ts         # Flow Google Sign-In complet
+│   │   ├── appleAuthService.ts          # Flow Sign in with Apple
+│   │   ├── whatsappAuthService.ts       # POST /auth/phone/request + /verify
 │   │   └── userFirestore.ts             # CRUD /user (GET/POST/PUT)
+│   ├── components/
+│   │   ├── AuthSheetContent.tsx         # Aiguillage boutons sociaux / email / WhatsApp
+│   │   ├── EmailAuthStep.tsx            # Login + inscription email
+│   │   ├── WhatsAppAuthStep.tsx         # Numero -> code
+│   │   ├── AuthFieldCapsule.tsx         # Capsule de saisie au-dessus du clavier custom
+│   │   ├── NumericKeypad.tsx / TextKeyboard.tsx  # Claviers custom (pas de TextInput natif)
+│   │   └── AuthProviderIcons.tsx / GuestGate.tsx
 │   └── hooks/
 │
 ├── checkout/

@@ -17,6 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 interface NumericKeypadProps {
   onPress: (digit: string) => void;
   onDelete: () => void;
+  /** Retour, rendu dans la case a gauche du 0 (vide si non fourni). */
+  onBack?: () => void;
   /** Grise les touches pendant une requete. */
   disabled?: boolean;
 }
@@ -31,6 +33,7 @@ const ROWS = [
 export const NumericKeypad: React.FC<NumericKeypadProps> = ({
   onPress,
   onDelete,
+  onBack,
   disabled = false,
 }) => {
   const renderKey = (label: string) => (
@@ -53,8 +56,21 @@ export const NumericKeypad: React.FC<NumericKeypadProps> = ({
         </View>
       ))}
       <View style={styles.row}>
-        {/* Case vide : garde le 0 aligne avec le 2, 5 et 8. */}
-        <View style={styles.key} />
+        {/* Case a gauche du 0 : le retour s'y loge, sinon elle reste vide pour
+            garder le 0 aligne avec le 2, 5 et 8. */}
+        {onBack ? (
+          <TouchableOpacity
+            style={styles.key}
+            onPress={onBack}
+            disabled={disabled}
+            activeOpacity={0.6}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#141414" />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.key} />
+        )}
         {renderKey("0")}
         <TouchableOpacity
           style={styles.key}

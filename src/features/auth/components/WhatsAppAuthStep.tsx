@@ -1,13 +1,17 @@
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
   ActivityIndicator,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { NumericKeypad } from "./NumericKeypad";
+import {
+  isInvalidCode,
+  isRateLimited,
+} from "../services/whatsappAuthService";
 
 /**
  * Authentification WhatsApp — etapes « numero » puis « code ».
@@ -42,6 +46,21 @@ const CODE_LENGTH = 6;
 const PHONE_MIN = 8;
 /** Garde-fou de saisie : au-dela, l'utilisateur s'est trompe de champ. */
 const PHONE_MAX = 15;
+/**
+ * Part de l'espace libre placee AU-DESSUS du header, sur Android.
+ * Le reste va entre la saisie et le clavier. 0 = mise en page d'origine,
+ * 1 = saisie collee au clavier. Les boutons du bas ne bougent jamais : le
+ * clavier reste plaque en bas dans tous les cas.
+ */
+const TOP_SPACE_RATIO = Platform.OS === "android" ? 1 : 0;
+/**
+ * ESPACE SAISIE ↔ CLAVIER. Ce sont les deux seules valeurs a baisser : le
+ * spacer etant deja a zero sur Android, le vide restant vient de la hauteur
+ * reservee au bloc de saisie et a la ligne d'erreur.
+ * Minimum utile : 52 (hauteur d'une case de code) et 0.
+ */
+const DISPLAY_H = Platform.OS === "android" ? 56 : 64;
+const ERROR_SLOT_H = Platform.OS === "android" ? 4 : 18;
 
 export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
   onSubmitPhone,
@@ -54,6 +73,18 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
   const [code, setCode] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  /**
+   * Secondes restantes avant de pouvoir redemander un code (429). Le backend
+   * les donne dans `Retry-After` ; le bouton « renvoyer » reste desactive
+   * jusqu'a 0.
+   */
+  const [cooldown, setCooldown] = React.useState(0);
+
+  React.useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => setCooldown((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
 
   const isPhone = step === "phone";
   const value = isPhone ? phone : code;
@@ -79,13 +110,50 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
     setLoading(true);
     setError(null);
     try {
-      // L'indicatif est affiche a part mais doit partir AVEC le numero.
-      await onSubmitPhone(`${DIAL_CODE}${phone}`);
+      // ⚠️ Numero NU, sans indicatif : c'est ce qu'attend
+      // `POST /auth/phone/request` (ex. « 698087460 »). Le `+237` affiche a
+      // gauche du champ n'est qu'un repere visuel.
+      await onSubmitPhone(phone);
       // Le champ du code repart vide : un code precedent encore present serait
       // envoye par erreur au premier appui sur « Verifier ».
       setCode("");
       setStep("code");
     } catch (err: any) {
+      if (isRateLimited(err)) {
+        // Trop de demandes : on arme le compte a rebours et on passe quand
+        // meme a l'etape du code — un code precedent peut encore etre valide.
+        setCooldown(err.retryAfter);
+        setError(
+          `Trop de tentatives. Réessayez dans ${err.retryAfter} secondes.`,
+        );
+        setStep("code");
+        return;
+      }
+      setError(err?.message ?? "Envoi du code impossible.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Renvoi du code. Passe par `onSubmitPhone` — c'est le MEME endpoint que le
+   * premier envoi — et arme le compte a rebours si le backend refuse (429).
+   */
+  const handleResend = async () => {
+    if (loading || cooldown > 0) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await (onResend ? onResend() : onSubmitPhone(phone));
+      setCode("");
+    } catch (err: any) {
+      if (isRateLimited(err)) {
+        setCooldown(err.retryAfter);
+        setError(
+          `Trop de tentatives. Réessayez dans ${err.retryAfter} secondes.`,
+        );
+        return;
+      }
       setError(err?.message ?? "Envoi du code impossible.");
     } finally {
       setLoading(false);
@@ -101,6 +169,22 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
       // Succes : on NE coupe PAS le loader. Comme Google/Apple, il tourne
       // jusqu'a ce que le guard demonte la sheet (cf. architecture/auth.md).
     } catch (err: any) {
+      if (isInvalidCode(err)) {
+        // Le backend precise le motif et ce qu'il reste de tentatives : on les
+        // affiche plutot qu'un « code invalide » sec.
+        const left =
+          err.attemptsRemaining !== undefined
+            ? ` ${err.attemptsRemaining} tentative${
+                err.attemptsRemaining > 1 ? "s" : ""
+              } restante${err.attemptsRemaining > 1 ? "s" : ""}.`
+            : "";
+        setError(`${err.reason ?? "Code invalide."}${left}`);
+        // Le code refuse est efface : l'utilisateur ressaisit sans avoir a
+        // vider les cases une a une.
+        setCode("");
+        setLoading(false);
+        return;
+      }
       setError(err?.message ?? "Code invalide.");
       setLoading(false);
     }
@@ -163,26 +247,18 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
       {/* `flex: 1` : pousse le clavier et le bouton en bas de la sheet, quelle
           que soit la hauteur du bloc du dessus. Les deux etapes gardent donc
           exactement la meme mise en page. */}
-      <View style={styles.spacer} />
+      <View style={styles.gapSpace} />
 
       <NumericKeypad
         onPress={handleKey}
         onDelete={handleDelete}
+        onBack={handleBack}
         disabled={loading}
       />
 
-      {/* Retour et action sur la meme ligne : le retour est carre a gauche,
-          l'action prend le reste de la largeur. */}
+      {/* Le retour a rejoint le clavier (case a gauche du 0) : l'action occupe
+          desormais toute la largeur. */}
       <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={handleBack}
-          disabled={loading}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={22} color="#141414" />
-        </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.btn, !valid && styles.btnDisabled]}
           onPress={isPhone ? submitPhone : submitCode}
@@ -197,25 +273,28 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
             </Text>
           )}
         </TouchableOpacity>
-      </View>
 
-      {/* Hauteur reservee aussi a l'etape 1 : sans elle, la sheet perdrait
-          cette ligne au changement d'etape et le clavier remonterait. */}
-      <View style={styles.resendSlot}>
+        {/* Etape code : « Renvoyer » a droite de « Verifier », en contour pour
+            rester secondaire. */}
         {!isPhone ? (
           <TouchableOpacity
-            onPress={onResend}
-            disabled={loading}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[styles.resendBtn, cooldown > 0 && styles.resendBtnOff]}
+            onPress={handleResend}
+            // Verrouille pendant le compte a rebours impose par le backend
+            // (429 + `Retry-After`).
+            disabled={loading || cooldown > 0}
             activeOpacity={0.7}
           >
-            <Text style={styles.resendText}>
-              Vous n&apos;avez rien reçu ?{" "}
-              <Text style={styles.resendLink}>Renvoyer</Text>
+            <Text style={styles.resendBtnText}>
+              {cooldown > 0 ? `${cooldown} s` : "Renvoyer"}
             </Text>
           </TouchableOpacity>
         ) : null}
       </View>
+
+      {/* Espace libre rejete SOUS les boutons (Android) : le clavier se colle a
+          la zone de saisie au lieu d'etre plaque en bas de la sheet. */}
+      {TOP_SPACE_RATIO > 0 ? <View style={styles.bottomSpace} /> : null}
     </View>
   );
 };
@@ -240,7 +319,7 @@ const styles = StyleSheet.create({
   },
   // Hauteur fixe : le passage numero → code ne doit rien decaler.
   display: {
-    height: 64,
+    height: DISPLAY_H,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -275,29 +354,24 @@ const styles = StyleSheet.create({
   },
   codeBoxFilled: { borderColor: "#141414", backgroundColor: "#ffffff" },
   codeDigit: { fontSize: 20, fontWeight: "700", color: "#141414" },
-  errorSlot: { height: 18, justifyContent: "center" },
+  errorSlot: { height: ERROR_SLOT_H, justifyContent: "center" },
   error: {
     fontSize: 13,
     color: "#d92d20",
     fontWeight: "500",
     textAlign: "center",
   },
-  spacer: { flex: 1 },
+  // Les deux se partagent l'espace libre : ce qui va au-dessus du header n'est
+  // plus entre la saisie et le clavier. Total constant, donc le clavier et les
+  // boutons restent exactement a la meme place aux deux etapes.
+  bottomSpace: { flex: TOP_SPACE_RATIO },
+  gapSpace: { flex: 1 - TOP_SPACE_RATIO },
   actionRow: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     marginTop: 10,
-  },
-  backBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#ececec",
-    alignItems: "center",
-    justifyContent: "center",
   },
   btn: {
     // `flex: 1` : occupe la largeur restante a cote du bouton retour.
@@ -311,7 +385,16 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.35 },
   btnText: { fontSize: 15, fontWeight: "600", color: "#ffffff" },
-  resendSlot: { height: 30, justifyContent: "center" },
-  resendText: { fontSize: 13, color: "#7a7a78", fontWeight: "500" },
-  resendLink: { color: "#141414", fontWeight: "700" },
+  /** Compte a rebours en cours : le bouton se lit comme indisponible. */
+  resendBtnOff: { opacity: 0.4 },
+  resendBtn: {
+    height: 52,
+    paddingHorizontal: 18,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#ececec",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resendBtnText: { fontSize: 15, fontWeight: "600", color: "#141414" },
 });

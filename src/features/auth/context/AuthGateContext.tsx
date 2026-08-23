@@ -1,4 +1,7 @@
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+// ⚠️ `expo-blur` en direct, PAS `AppBlurView` : ce dernier coupe le flou sous
+// Android 12 pour eviter un crash lie au scroll. Ici rien ne defile derriere la
+// sheet, donc on veut le flou sur toutes les versions.
+import { BlurView } from "expo-blur";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
@@ -107,10 +110,15 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           pointerEvents="auto"
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={close}>
+            {/* Flou + voile sombre, sur les deux OS. `dimezisBlurView` est
+                force meme sous Android 12 : le crash que `AppBlurView` evite
+                vient du redessin d'une liste qui defile, et rien ne scrolle
+                derriere cette sheet. */}
             <BlurView
               intensity={30}
               tint="light"
               style={StyleSheet.absoluteFill}
+              experimentalBlurMethod="dimezisBlurView"
             />
             <View style={styles.backdropDim} />
           </Pressable>

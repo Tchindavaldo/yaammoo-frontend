@@ -2,6 +2,7 @@ import React from "react";
 import {
   ActivityIndicator,
   Keyboard,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -39,6 +40,14 @@ interface EmailAuthStepProps {
 /** Champ ouvert dans la capsule. `null` = capsule fermee. */
 type Field = "email" | "password" | null;
 
+/**
+ * ANDROID : pied COMPACT — logos en pastilles et bascule en pilule, sur une
+ * seule rangee. Empiles, le separateur, le cadre des logos et le lien
+ * debordaient de la sheet. iOS garde sa disposition d'origine.
+ */
+const COMPACT_FOOTER = Platform.OS === "android";
+
+
 export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
   isRegister,
   onSubmit,
@@ -54,6 +63,15 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
   // Plus de suivi du clavier ici : la capsule est a position fixe et se ferme
   // sur la perte de focus de son champ, pas sur la descente du clavier.
   const closeCapsule = React.useCallback(() => setField(null), []);
+
+  /**
+   * Dernier champ REELLEMENT ouvert. Sert a alimenter la capsule pendant son
+   * fondu de sortie, quand `field` est deja retombe a `null` (cf. sa prop
+   * `field` plus bas).
+   */
+  const lastField = React.useRef<"email" | "password">("email");
+  if (field !== null) lastField.current = field;
+
 
   const submit = React.useCallback(
     async (mail: string, pwd: string) => {
@@ -80,19 +98,6 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
     [loading, onSubmit, isRegister],
   );
 
-  /**
-   * Validation DEPUIS la capsule. Sur l'email, elle enchaine sur le mot de
-   * passe sans repasser par la sheet ; sur le mot de passe, elle soumet.
-   */
-  const handleCapsuleSubmit = React.useCallback(() => {
-    if (field === "email") {
-      setField("password");
-      return;
-    }
-    Keyboard.dismiss();
-    void submit(email, password);
-  }, [field, email, password, submit]);
-
   /** Un leurre : meme gabarit que l'input d'origine, mais non editable. */
   const renderField = (target: Exclude<Field, null>) => {
     const isPwd = target === "password";
@@ -106,30 +111,42 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
           style={styles.inputIcon}
         />
         <TextInput
-          style={styles.input}
+          /* ⚠️ Texte MASQUE tant que la capsule est ouverte. Le leurre reste
+             monte et remplissable — c'est lui qui recoit l'identifiant de
+             l'autoremplissage — mais on ne veut pas le voir se remplir DERRIERE
+             le voile : ce changement transparaissait a travers le flou, en meme
+             temps que la capsule, et se lisait comme un rafraichissement de
+             l'ecran. Le champ reprend sa couleur des la capsule refermee, avec
+             la valeur a jour. */
+          style={[styles.input, field !== null && styles.inputMuted]}
           placeholder={isPwd ? "Mot de passe" : "Adresse email"}
-          placeholderTextColor="#a8a8a6"
+          placeholderTextColor={field !== null ? "transparent" : "#a8a8a6"}
           value={isPwd ? password : email}
           onChangeText={(v) => {
             setError(null);
             (isPwd ? setPassword : setEmail)(v);
           }}
           secureTextEntry={isPwd}
-          keyboardType={isPwd ? "default" : "email-address"}
+          /* ⚠️ Type COMMUN aux deux leurres. C'est ce champ que
+             l'autoremplissage sert en premier (cible `username`) avant de
+             passer au mot de passe : deux types differents faisaient
+             reconstruire le clavier entre les deux, d'ou le flash observe
+             uniquement quand les DEUX champs se remplissent d'un coup.
+             Ces leurres n'ouvrent de toute facon jamais le clavier
+             (`showSoftInputOnFocus={false}`). */
+          keyboardType="default"
           autoCapitalize="none"
-          autoComplete={
-            isPwd
-              ? isRegister
-                ? "new-password"
-                : "current-password"
-              : "email"
-          }
-          /* ⚠️ `textContentType` branche l'AutoFill du trousseau sur iOS :
-             c'est parce que ces champs sont de VRAIS `TextInput` que
-             l'autoremplissage peut ecrire dedans. */
-          textContentType={
-            isPwd ? (isRegister ? "newPassword" : "password") : "username"
-          }
+          /* ⚠️ L'IDENTIFIANT est rempli ICI, dans le leurre — c'est verifie :
+             iOS remplit la paire A CHEVAL sur les deux vues. Le champ focalise
+             (celui de la capsule) recoit le mot de passe, et ce leurre, bien
+             que non focalise, recoit l'identifiant. Un champ non focalise
+             DANS la capsule, lui, n'a jamais rien recu.
+
+             Le leurre du mot de passe reste neutre : sa donnee est servie a la
+             capsule. Chaque donnee n'a ainsi qu'UNE cible — deux cibles pour
+             la meme donnee provoquaient le va-et-vient visible. */
+          autoComplete={isPwd ? "off" : "username"}
+          textContentType={isPwd ? "none" : "username"}
           editable={!loading}
           /* ⚠️ Le clavier natif ne s'ouvre PAS ici : la saisie se fait dans la
              capsule. Le champ prend le focus (donc l'AutoFill le vise), et le
@@ -197,55 +214,114 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
             )}
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>Ou continuer avec</Text>
-            <View style={styles.dividerLine} />
-          </View>
+          {/* iOS : separateur + cadre des logos, disposition d'ORIGINE. Sur
+              Android ces deux blocs sont remplacés par la rangee compacte
+              ci-dessous, ou ils debordaient de la sheet. */}
+          {!COMPACT_FOOTER ? (
+            <>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Ou continuer avec</Text>
+                <View style={styles.dividerLine} />
+              </View>
 
-          <TouchableOpacity
-            style={styles.btn}
-            onPress={onBack}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            <View style={styles.socialIconsRow}>
-              <AppleIcon />
-              <View style={{ width: 18 }} />
-              <GoogleIcon />
-              <View style={{ width: 18 }} />
-              <WhatsAppIcon />
+              <TouchableOpacity
+                style={styles.btn}
+                onPress={onBack}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <View style={styles.socialIconsRow}>
+                  <AppleIcon />
+                  <View style={{ width: 18 }} />
+                  <GoogleIcon />
+                  <View style={{ width: 18 }} />
+                  <WhatsAppIcon />
+                </View>
+              </TouchableOpacity>
+            </>
+          ) : null}
+        </View>
+
+        {COMPACT_FOOTER ? (
+          /* ANDROID : logos en pastilles et bascule en pilule, sur UNE SEULE
+             rangee. */
+          <View style={styles.compactFooter}>
+            <View style={styles.compactSocial}>
+              <TouchableOpacity
+                style={styles.socialChip}
+                onPress={onBack}
+                disabled={loading}
+                activeOpacity={0.7}
+              >
+                <AppleIcon />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.socialChip}
+                onPress={onBack}
+                disabled={loading}
+                activeOpacity={0.7}
+              >
+                <GoogleIcon />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.socialChip}
+                onPress={onBack}
+                disabled={loading}
+                activeOpacity={0.7}
+              >
+                <WhatsAppIcon />
+              </TouchableOpacity>
             </View>
-          </TouchableOpacity>
-        </View>
 
-        <View style={styles.footerLine}>
-          <Text style={styles.footerText}>
-            {isRegister ? "Déjà un compte ?" : "Pas encore de compte ?"}
-          </Text>
-          <TouchableOpacity
-            onPress={onToggleMode}
-            disabled={loading}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.footerLink}>
-              {isRegister ? " Se connecter" : " S'inscrire"}
+            {/* Pilule, a la hauteur des pastilles : le lien souligne faisait
+                tache a cote d'elles. */}
+            <TouchableOpacity
+              style={styles.compactToggle}
+              onPress={onToggleMode}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.compactToggleLink} numberOfLines={1}>
+                {isRegister ? "Se connecter" : "S'inscrire"}
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color="#141414" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* iOS : ligne de bascule d'ORIGINE, sous le cadre des logos. */
+          <View style={styles.footerLine}>
+            <Text style={styles.footerText}>
+              {isRegister ? "Déjà un compte ?" : "Pas encore de compte ?"}
             </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={onToggleMode}
+              disabled={loading}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.footerLink}>
+                {isRegister ? " Se connecter" : " S'inscrire"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Capsule rendue APRES le contenu : elle se pose par-dessus la sheet et
           monte avec le clavier sans etre rognee. */}
       <AuthFieldCapsule
         visible={field !== null}
-        field={field ?? "email"}
+        /* ⚠️ On garde le DERNIER champ affiche pendant la fermeture. `field`
+           repasse a `null` des que la capsule se ferme, mais elle reste montee
+           le temps de son fondu de sortie : retomber sur « email » lui faisait
+           changer de champ sous les yeux (placeholder, icone et valeur), ce
+           qu'on voyait comme un FLASH en fin d'autoremplissage. */
+        field={field ?? lastField.current}
         email={email}
         password={password}
         onChangeEmail={setEmail}
         onChangePassword={setPassword}
-        onSubmit={handleCapsuleSubmit}
         onClose={closeCapsule}
       />
     </>
@@ -294,7 +370,26 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   inputPlaceholder: { color: "#a8a8a6" },
-  errorSlot: { height: 18, justifyContent: "center" },
+  /**
+   * Leurre pendant que la capsule est ouverte : texte invisible.
+   *
+   * ⚠️ On MASQUE, on ne demonte pas. Le champ doit rester monte pour recevoir
+   * l'identifiant de l'autoremplissage — c'est lui la cible `username`, pas
+   * celui de la capsule.
+   */
+  inputMuted: { color: "transparent" },
+  /**
+   * Hauteur reservee a l'erreur, RESSERREE : avec les `gap` de part et d'autre,
+   * elle creusait un vide entre le mot de passe et le bouton. Les marges
+   * negatives absorbent ces deux `gap` — l'erreur reste lisible, mais ne pousse
+   * plus le bouton quand il n'y en a pas.
+   */
+  errorSlot: {
+    height: 16,
+    justifyContent: "center",
+    marginTop: -6,
+    marginBottom: -6,
+  },
   error: {
     fontSize: 13,
     color: "#d92d20",
@@ -315,6 +410,7 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 15, fontWeight: "600", color: "#141414" },
   btnPrimary: { backgroundColor: "#141414", borderColor: "#141414" },
   btnTextPrimary: { color: "#ffffff" },
+  // --- Pied iOS (disposition d'origine) ---
   divider: {
     flexDirection: "row",
     alignItems: "center",
@@ -333,6 +429,50 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 6,
   },
+  // --- Pied Android (rangee compacte) ---
+  /**
+   * Une rangee LIBRE, sans cadre ni filet — pastilles
+   * de logos a gauche, lien de bascule a droite. Remplace a elle seule le
+   * separateur, le cadre des logos et la ligne de bascule, qui empiles
+   * debordaient de la sheet.
+   */
+  compactFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "stretch",
+    // Ecart FIXE entre les deux groupes : `space-between` les plaquait aux
+    // bords et laissait un grand vide au milieu.
+    gap: 10,
+    marginTop: 16,
+  },
+  compactSocial: { flexDirection: "row", alignItems: "center", gap: 10 },
+  /** Pastille ronde : le logo se detache sur un fond gris tres clair. */
+  socialChip: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#f6f5f4",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  /**
+   * Bascule en PILULE, calee sur la hauteur des pastilles : meme famille de
+   * formes, le bas de l'ecran se lit comme une seule rangee coherente.
+   */
+  compactToggle: {
+    // `flex: 1` : la pilule OCCUPE la largeur restante au lieu de laisser un
+    // trou entre elle et les pastilles.
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    height: 42,
+    paddingHorizontal: 16,
+    borderRadius: 21,
+    backgroundColor: "#f6f5f4",
+  },
+  compactToggleLink: { fontSize: 13.5, color: "#141414", fontWeight: "700" },
   footerText: { fontSize: 14, color: "#7a7a78", fontWeight: "500" },
   footerLink: { fontSize: 14, color: "#141414", fontWeight: "700" },
 });

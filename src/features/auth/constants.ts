@@ -14,7 +14,7 @@ const { height: SCREEN_H } = Dimensions.get("window");
  * l'ecran, le contenu s'y retrouvait a l'etroit.
  */
 export const AUTH_SHEET_HEIGHT =
-  SCREEN_H * (Platform.OS === "android" ? 0.69 : 0.59);
+  SCREEN_H * (Platform.OS === "android" ? 0.59 : 0.57);
 
 /**
  * Gouttiere basse de la sheet (`styles.sheet.paddingBottom`).

@@ -23,6 +23,10 @@ import { Users, UsersInfos } from "@/src/types";
 import { WhatsAppAuthStep } from "./WhatsAppAuthStep";
 import { EmailAuthStep } from "./EmailAuthStep";
 import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
+import {
+  requestPhoneCode,
+  verifyPhoneCode,
+} from "@/src/features/auth/services/whatsappAuthService";
 
 export default function AuthSheetContent() {
   const { user, userData, setUserData } = useAuth();
@@ -36,6 +40,9 @@ export default function AuthSheetContent() {
   // Sous-flux WhatsApp (numero puis code). Meme principe : un composant dedie
   // remplace tout le contenu de la sheet le temps des deux etapes.
   const [whatsappMode, setWhatsappMode] = useState(false);
+  // Numero saisi a l'etape 1 : la verification et le renvoi en ont besoin, et
+  // le composant ne le repasse pas a l'etape 2.
+  const [whatsappPhone, setWhatsappPhone] = useState("");
 
   // Réinitialise le sheet quand l'utilisateur n'est PAS connecté (boot invité,
   // ou retour après déconnexion/suppression). Au login on laisse les loaders
@@ -48,6 +55,7 @@ export default function AuthSheetContent() {
       setEmailMode(false);
       setIsRegister(false);
       setWhatsappMode(false);
+      setWhatsappPhone("");
       setGoogleLoading(false);
       setAppleLoading(false);
     }
@@ -151,16 +159,46 @@ export default function AuthSheetContent() {
   if (whatsappMode) {
     return (
       <WhatsAppAuthStep
-        // TODO(backend) : brancher l'envoi du code une fois l'endpoint fourni.
-        onSubmitPhone={async () => {
-          await new Promise((r) => setTimeout(r, 900));
+        onSubmitPhone={async (phone) => {
+          setWhatsappPhone(phone);
+          await requestPhoneCode(phone);
         }}
-        // TODO(backend) : brancher la verification + setUserData().
-        onSubmitCode={async () => {
-          await new Promise((r) => setTimeout(r, 900));
+        onSubmitCode={async (code) => {
+          const { userData: data, isNewUser } = await verifyPhoneCode(
+            whatsappPhone,
+            code,
+          );
+
+          // ⚠️ PREMIERE connexion : le backend a bien cree le compte Firebase,
+          // mais aucun profil n'existe encore cote `/user` — `getUser` renvoie
+          // donc `null`. Sans creation, `isSignedIn` resterait faux et la sheet
+          // tournerait indefiniment sur son loader. On cree le profil minimal
+          // avec ce qu'on a : le numero.
+          if (!data && isNewUser && auth.currentUser) {
+            const infos = new UsersInfos(
+              "",
+              "",
+              0,
+              Number(whatsappPhone),
+              auth.currentUser.email ?? "",
+              "",
+            );
+            await userFirestore.createUser(
+              new Users(auth.currentUser.uid, auth.currentUser.uid, infos, false, 0, []),
+              auth.currentUser,
+            );
+            const created = await userFirestore.getUser(auth.currentUser);
+            if (created) setUserData(created);
+            return;
+          }
+
+          // ⚠️ Comme Google/Apple : on ne coupe pas le loader et on ne
+          // redirige pas ici. Le guard demonte la sheet des que `isSignedIn`
+          // passe a true (cf. app/_layout.tsx).
+          if (data) setUserData(data);
         }}
         onResend={async () => {
-          await new Promise((r) => setTimeout(r, 600));
+          await requestPhoneCode(whatsappPhone);
         }}
         onBack={() => setWhatsappMode(false)}
       />
@@ -333,6 +371,7 @@ const styles = StyleSheet.create({
   footerLine: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     marginTop: 6,
   },
   footerText: { fontSize: 14, color: "#7a7a78", fontWeight: "500" },

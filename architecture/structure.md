@@ -157,7 +157,8 @@ src/
 ├── types/                       # Commande, Menu, Livraison, User…
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
-    └── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
+    ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
+    └── useOtaUpdates.ts        # Mises a jour OTA expo-updates (voir http-versioning.md)
 ```
 
 ## Ordre des providers (app/_layout.tsx)

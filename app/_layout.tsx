@@ -24,6 +24,7 @@ import {
   useAppVersion,
 } from "@/src/features/appVersion/context/AppVersionContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
+import { useOtaUpdates } from "@/src/services/useOtaUpdates";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
@@ -63,6 +64,10 @@ export const unstable_settings = {
 const NOTIF_SETUP_DELAY_MS = Platform.OS === "android" ? 900 : 600;
 
 function AppContent() {
+  // Mises a jour OTA (JS/assets). Complementaire de `useAppVersion` ci-dessous,
+  // qui couvre les versions NATIVES : celles-la exigent un passage par le store
+  // et ne peuvent pas etre livrees par `expo-updates`.
+  useOtaUpdates();
   const { user, userData, loading } = useAuth();
   const { hasLoadedOnce: homeReady } = useFastFoods();
   // `checked` passe a true des que le backend a repondu OU a echoue — on ne

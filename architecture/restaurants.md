@@ -107,7 +107,9 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |
 | `refresh()` | Repart de la première page (pull-to-refresh). |
-| `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. |
+| `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
+| `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |
+| `cancelPendingLoadMore()` | Invalide une page en vol **sans tronquer**. Appelé au début d'une remontée. |
 | `hasLoadedOnce` | ⚠️ **Pilote la révélation de `(tabs)`** — voir [structure.md](./structure.md). Ne pas casser. |
 | `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie inactive). |
 | `appleReviewMode` · `banners` | Portés par la réponse. |
@@ -117,18 +119,54 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 
 - **`runIdRef`** : une réponse dont le numéro n'est plus le dernier est ignorée.
   Sans ça, une recherche lente écraserait une frappe plus récente.
-- **`RESET_COOLDOWN_MS` (800 ms)** : `loadMore` est neutralisé juste après un
-  `resetToFirstPage()`. ⚠️ Sans lui, tronquer la liste fait remonter sa fin sous
-  le viewport → `onEndReached` part → `loadMore` recharge la page qu'on vient de
-  retirer → on retronque. **Boucle de pagination infinie**, ~120 ms le tour.
-- **`deferredLoadRef` — le cooldown REPORTE, il ne jette pas.** ⚠️ Le refus était
-  d'abord un simple `return` : la demande était perdue, et la `FlatList` ne
-  rappelle `onEndReached` que si le seuil est franchi À NOUVEAU — rester en bas
-  ne relance rien. Il fallait remonter/redescendre plusieurs fois avant de revoir
-  le loader. Le bug ne se voyait qu'au retour en haut **par scroll** : le bouton
-  Home reset dans un `setTimeout(450)` après son animation, donc le cooldown est
-  déjà consommé quand l'utilisateur redescend. Un `resetToFirstPage()` survenant
-  pendant qu'un report est armé l'**annule** — il visait l'ancienne fin de liste.
+- **`resetLockRef` — verrou levé au GESTE, pas au chrono.** Après un
+  `resetToFirstPage()`, la liste raccourcit : sa fin remonte sous le viewport et
+  `onEndReached` repart **tout seul**, sans geste de l'utilisateur. C'est cette
+  demande-là qu'il faut refuser, sinon on recharge la page qu'on vient de retirer
+  → on retronque : **boucle de pagination infinie**, ~120 ms le tour. Le verrou
+  tombe au premier `onScroll` réel (`notifyUserScroll`, appelé par l'écran).
+
+  > ⚠️ C'était un **cooldown de 800 ms** (`RESET_COOLDOWN_MS`), avec report de la
+  > demande refusée (`deferredLoadRef`). Un délai fixe est une devinette : il
+  > refusait aussi les demandes **légitimes**. Avec `PAGE_SIZE = 3`, le bas de
+  > liste est atteint en ~300 ms, donc quasi toujours dans la fenêtre. Ne pas
+  > réintroduire de délai : on distingue le rebond automatique du geste réel.
+
+- **Effets de bord HORS de l'updater `setFastFoods`.** ⚠️ `resetToFirstPage()`
+  posait son verrou, son curseur et son `clearTimeout` **à l'intérieur** de
+  l'updater. Un updater n'est pas garanti exécuté une seule fois : React le
+  rejoue (StrictMode, rendu concurrent, re-rendu déclenché par un contexte
+  voisin — fréquent sur ce home, cf. « références stables »). Une simple
+  notification entrante reposait donc le verrou **après coup** et gelait la
+  pagination : le loader restait figé et la page suivante n'arrivait jamais.
+  L'updater doit rester **pur** ; la garde de longueur se lit via
+  `fastFoodsLenRef`.
+
+- **`resetSeqRef` — invalidation des réponses en vol.** `resetToFirstPage()`
+  n'annule pas un `loadMore` déjà parti. Sa réponse arrivait après la troncature
+  et concaténait sa page aux boutiques conservées : on **ré-ajoutait exactement
+  ce qu'on venait de retirer**, et `cursorRef` (remis à la fin de la première
+  page) était écrasé par le curseur de cette réponse. Chaque reset incrémente
+  donc un compteur, capturé au départ de la requête et comparé à l'arrivée
+  **avant toute écriture**. Un enchaînement rapide haut/bas incrémente autant de
+  fois : toute réponse antérieure au dernier reset est écartée.
+
+- **Le loader s'éteint au reset, pas à la réponse.** `resetToFirstPage()` fait
+  `setLoadingMore(false)` immédiatement — sinon le spinner restait animé en bas
+  d'une liste qu'on vient de tronquer, alors que plus rien ne sera ajouté. En
+  contrepartie, une réponse devenue caduque ne touche **plus** à `loadingMore`
+  dans son `finally` : un `loadMore` légitime a pu repartir depuis, et l'éteindre
+  masquerait *ce* chargement-là.
+
+- **`cancelPendingLoadMore()` — invalider dès le DÉBUT de la remontée.** ⚠️ Le
+  reset seul est trop tardif : sur le tap Home il n'intervient qu'après les
+  450 ms d'animation. Une page en vol arrivait **pendant** la remontée et faisait
+  monter ses cellules (~100 ms de commit natif chacune, voir « Performance du
+  montage »), bloquant le thread JS au moment précis où l'animation de scroll
+  doit tourner — d'où la pause et le saut ressentis. L'écran appelle donc cette
+  fonction **avant** `scrollToOffset`, et au scroll manuel dès une remontée de
+  plus de 24 px (`lastOffsetRef`). Contrepartie assumée : un simple recul de
+  l'utilisateur sacrifie la requête en cours, qui repartira à la redescente.
 - **`firstPageCursorRef`** : curseur rendu par la première page, conservé pour
   que `resetToFirstPage()` reparte exactement de sa fin — sinon `loadMore`
   rechargerait des boutiques déjà affichées.
@@ -353,19 +391,43 @@ Quatre sources ont été trouvées et corrigées ; **aucune ne doit revenir** :
 cellules **immobiles**, par vagues synchronisées sur toutes les cellules à la
 fois. Vagues simultanées = c'est le parent qui se re-rend, pas les cellules.
 
-### Sondes de diagnostic (conservées)
+### Performance du montage — MESURÉ, ne pas refaire
 
-Volontairement laissées en place, toutes sous `__DEV__` (aucun effet en
-production) :
+Les sondes de diagnostic (`[CELL]`, `[JS] blocage`, `[END]`, `DISABLE_FOOTER`)
+ont été **retirées** une fois la mesure faite. Résultats sur appareil réel
+(iPhone), stables sur plusieurs cycles :
 
-- `[CELL] MOUNT / UNMOUNT / re-rendu #N (xN)` — `DesignRouter` ;
-- `[JS] blocage Nms` — sonde de blocage du thread, `app/(tabs)/index.tsx` ;
-- `[END] onEndReached` — déclenchements de la pagination ;
-- `DISABLE_FOOTER` — neutralise le pied de liste pour l'isoler d'un test.
+| Cellule | `render` (JS) | `commit` (natif) |
+|---|---|---|
+| #3 (1re du lot) | 0 ms | 104-109 ms |
+| #4 | 0 ms | 67-72 ms |
+| #5 | 0 ms | 43-48 ms |
+
+**Conclusions, chiffrées :**
+
+- `render = 0 ms` partout : le JavaScript ne coûte rien. Tout le temps part
+  dans le **commit** (création des vues natives). Alléger le JS des cartes
+  n'apporterait donc rien.
+- Le coût **décroît dans un même lot** (109 → 72 → 48), reproductible à
+  l'identique sur iOS et Android : le premier montage paie un amorçage amorti
+  par les suivants.
+- **Aucun lien avec le nombre de menus** : 1 menu = 81 ms, 5 menus = 50 ms.
+  Limiter les cartes rendues par `menu.map()` ne servirait à rien.
+- Un blocage JS de ~150 ms par page, pendant que le loader est affiché.
+  Acceptable — pas d'optimisation retenue.
+
+**Pistes testées et écartées** (ne pas y revenir sans nouvelle mesure) :
+`windowSize` élargi à 11 + `removeClippedSubviews` + `updateCellsBatchingPeriod`
+(aucun effet), BlurView (`disableAndroidBlur` est déjà actif sur Android),
+nombre de menus par boutique.
+
+> ⚠️ Les blocages de 8 à 20 s observés sur émulateur Android venaient de la
+> machine hôte saturée, pas du code : sur iPhone, le même parcours ne dépasse
+> jamais 165 ms. **Ne jamais conclure une mesure de perf sur émulateur.**
 
 > ⚠️ Une mesure de durée par `Date.now()` capturé au rendu et relu dans un
 > `useEffect` donne des valeurs **fausses** (on a vu « 42909 ms ») : l'effet
-> s'exécute bien après le rendu. Se fier à la sonde `[JS]`, pas à ça.
+> s'exécute bien après le rendu.
 
 **La méthode** : instrumenter et lire les logs. Sur ce chantier, les hypothèses
 successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toutes

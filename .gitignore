@@ -33,6 +33,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Fichiers temporaires d editeur (vim)
+*.swp
+*.swo
+*~
+
 # local env files
 .env*.local
 

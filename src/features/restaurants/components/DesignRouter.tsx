@@ -19,27 +19,12 @@ interface DesignRouterProps {
 const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, index: listIndex = 0 }) => {
   const index = fastFood.designIndex ?? 0;
 
-  // DIAGNOSTIC TEMPORAIRE — montage/demontage des cellules.
-  //
-  // ⚠️ La mesure de duree precedente etait FAUSSE : `t0` etait capture au rendu
-  // et relu dans un effet execute bien plus tard, d'ou les « 42909ms ». On ne
-  // mesure plus que ce qui est fiable : le nombre de rendus par cellule et les
-  // montages. Le blocage reel du thread est mesure par la sonde `[JS]`.
-  const renderCountRef = React.useRef(0);
-  renderCountRef.current += 1;
-
-  React.useEffect(() => {
-    if (__DEV__) console.log(`[CELL] MOUNT #${listIndex} ${fastFood.nom}`);
-    return () => {
-      if (__DEV__) console.log(`[CELL] UNMOUNT #${listIndex} ${fastFood.nom}`);
-    };
-  }, [listIndex, fastFood.nom]);
-
-  // Un rendu = normal. Plusieurs rendus repetes sur une cellule immobile = le
-  // vrai signal a chercher.
-  if (__DEV__ && renderCountRef.current > 1) {
-    console.log(`[CELL] re-rendu #${listIndex} (x${renderCountRef.current})`);
-  }
+  // NOTE perf (mesure faite, ne pas refaire) : le montage d'une boutique coute
+  // 43 a 109 ms de COMMIT sur appareil reel (iPhone), pour 0 ms de rendu JS. Le
+  // cout est donc la creation des vues natives, pas le JavaScript. Il decroit
+  // dans un meme lot (109 → 72 → 48) : le premier montage paie un amorçage
+  // amorti par les suivants. Sans lien avec le nombre de menus (1 menu = 81 ms,
+  // 5 menus = 50 ms). Rien a optimiser ici.
 
   // Attache au menu cliqué les infos de livraison du fastfood parent — toutes
   // déjà présentes dans `GET /fastfood/all` (deliveryHours, orderLeadTime,

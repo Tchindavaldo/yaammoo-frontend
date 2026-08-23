@@ -1,3 +1,13 @@
+// ⚠️ `expo-blur` en direct, PAS `AppBlurView` : ce dernier coupe le flou sous
+// Android 12 pour eviter un crash lie au scroll. Ici rien ne defile derriere la
+// sheet, donc on veut le flou sur toutes les versions.
+import { BlurView } from "expo-blur";
+import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
+import {
+  AUTH_SHEET_HEIGHT,
+  AUTH_SHEET_PADDING_BOTTOM,
+} from "@/src/features/auth/constants";
 import React, {
   createContext,
   useCallback,
@@ -9,16 +19,10 @@ import React, {
 import {
   Animated,
   Dimensions,
-  Keyboard,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
 } from "react-native";
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
-import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
-import { useAuth } from "@/src/features/auth/context/AuthContext";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -80,39 +84,14 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
     }).start();
   }, [open, slide]);
 
-  // Décalage clavier : on translate le sheet entier vers le haut de la hauteur
-  // du clavier (un KeyboardAvoidingView interne est inopérant ici, le sheet
-  // étant positionné en absolu + transform). Combiné avec l'anim d'ouverture.
-  const keyboardOffset = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const showSub = Keyboard.addListener(showEvt, (e) => {
-      Animated.timing(keyboardOffset, {
-        toValue: e.endCoordinates.height,
-        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
-        useNativeDriver: true,
-      }).start();
-    });
-    const hideSub = Keyboard.addListener(hideEvt, (e) => {
-      Animated.timing(keyboardOffset, {
-        toValue: 0,
-        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
-        useNativeDriver: true,
-      }).start();
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [keyboardOffset]);
-
-  const openTranslateY = slide.interpolate({
+  // ⚠️ La sheet NE REMONTE PAS avec le clavier — elle reste FIXE, comme celle
+  // du panier groupe. La saisie ne se fait pas dans la sheet mais dans une
+  // capsule flottante (`AuthFieldCapsule`), qui s'ancre elle-meme au clavier.
+  // Translater la sheet en plus la ferait monter deux fois.
+  const sheetTranslateY = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [SCREEN_H, 0],
   });
-  // translateY final = position d'ouverture − hauteur clavier (remonte le sheet).
-  const sheetTranslateY = Animated.subtract(openTranslateY, keyboardOffset);
   const backdropOpacity = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],
@@ -124,11 +103,23 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
 
       {open && (
         <Animated.View
-          style={[StyleSheet.absoluteFill, { opacity: backdropOpacity, zIndex: 999 }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { opacity: backdropOpacity, zIndex: 999 },
+          ]}
           pointerEvents="auto"
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={close}>
-            <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+            {/* Flou + voile sombre, sur les deux OS. `dimezisBlurView` est
+                force meme sous Android 12 : le crash que `AppBlurView` evite
+                vient du redessin d'une liste qui defile, et rien ne scrolle
+                derriere cette sheet. */}
+            <BlurView
+              intensity={30}
+              tint="light"
+              style={StyleSheet.absoluteFill}
+              experimentalBlurMethod="dimezisBlurView"
+            />
             <View style={styles.backdropDim} />
           </Pressable>
         </Animated.View>
@@ -138,14 +129,12 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
         style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}
         pointerEvents={open ? "auto" : "none"}
       >
-        <View style={styles.sheetHandle} />
-        <ScrollView
-          bounces={false}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+        {/* ⚠️ PAS de `ScrollView` : la sheet a une hauteur fixe et son contenu
+            est calibre pour y tenir. Un scroll ne ferait que permettre de
+            deplacer le contenu par accident. */}
+        <View style={styles.sheetBody}>
           <AuthSheetContent />
-        </ScrollView>
+        </View>
       </Animated.View>
     </AuthGateContext.Provider>
   );
@@ -164,31 +153,27 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(20,20,20,0.25)",
   },
+  sheetBody: { flex: 1 },
   sheet: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    maxHeight: SCREEN_H * 0.82,
+    // ⚠️ Hauteur FIXE, pas `maxHeight` : la sheet doit garder exactement la
+    // meme taille sur tous ses ecrans (social, email, WhatsApp numero, WhatsApp
+    // code). Avec `maxHeight` elle se dimensionnait sur son contenu et sautait
+    // a chaque changement d'etape.
+    height: AUTH_SHEET_HEIGHT,
     backgroundColor: "#ffffff",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingTop: 8,
-    paddingBottom: 24,
+    paddingTop: 0,
+    paddingBottom: AUTH_SHEET_PADDING_BOTTOM,
     zIndex: 1000,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -8 },
     shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 20,
-  },
-  sheetHandle: {
-    alignSelf: "center",
-    width: 44,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: "#e0e0de",
-    marginTop: 8,
-    marginBottom: 4,
   },
 });

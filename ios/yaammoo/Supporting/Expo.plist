@@ -1,12 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Configuration expo-updates pour les builds iOS.
+
+  ⚠️ Le dossier `ios/` est VERSIONNE (workflow bare) : ce fichier prime sur la
+  section `updates` de `app.json`, qui n'est appliquee qu'au moment d'un
+  `prebuild`. Xcode Cloud, lui, compile le projet natif tel quel et ne lit
+  jamais `app.json` — toute valeur absente ici est absente du binaire.
+
+  `EXUpdatesRuntimeVersion` doit rester aligne sur `expo.version` de `app.json`
+  (policy "appVersion") : il est reecrit au build par `ios/ci_scripts/ci_post_clone.sh`.
+-->
 <plist version="1.0">
   <dict>
     <key>EXUpdatesCheckOnLaunch</key>
     <string>ALWAYS</string>
     <key>EXUpdatesEnabled</key>
-    <false/>
+    <true/>
     <key>EXUpdatesLaunchWaitMs</key>
     <integer>0</integer>
+    <key>EXUpdatesURL</key>
+    <string>https://u.expo.dev/24675cd4-f658-43d1-9bfc-0ce0ff16a007</string>
+    <key>EXUpdatesRuntimeVersion</key>
+    <string>1.0.6</string>
+    <key>EXUpdatesRequestHeaders</key>
+    <dict>
+      <key>expo-channel-name</key>
+      <string>production</string>
+    </dict>
   </dict>
 </plist>

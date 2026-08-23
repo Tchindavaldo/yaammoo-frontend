@@ -110,6 +110,25 @@ nouveau binaire et ne peuvent pas etre poussees en OTA.
 
 Publier : `eas update --branch production --message "..."`.
 
+### iOS buildé par Xcode Cloud — configuration NATIVE obligatoire
+
+⚠️ **Xcode Cloud ne lit jamais `app.json`.** Le dossier `ios/` etant versionne
+(workflow bare), c'est `ios/yaammoo/Supporting/Expo.plist` qui fait foi : la
+section `updates` de `app.json` ne s'y applique qu'au moment d'un `prebuild`.
+
+`EXUpdatesEnabled` y valait `false` : aucun build Xcode Cloud n'aurait recu
+d'update, quelle que soit la configuration EAS. Le plist porte donc desormais
+l'activation, l'URL, le runtimeVersion et le canal (`expo-channel-name`) — ce
+dernier n'etant sinon pose que par les builds EAS, via le `channel` d'`eas.json`.
+
+`ci_post_clone.sh` recopie `expo.version` dans `EXUpdatesRuntimeVersion` a chaque
+build (comme il le fait deja pour les versions natives) : sans cela le binaire
+embarquerait un runtimeVersion perime des le premier bump de version, et ne
+recevrait plus aucun update.
+
+> Android passe par EAS, qui pose canal et runtimeVersion automatiquement — rien
+> a maintenir de ce cote.
+
 ### Points a connaitre
 
 - ⚠️ **Rebuild obligatoire.** L'OTA ne fonctionne qu'a partir d'un binaire

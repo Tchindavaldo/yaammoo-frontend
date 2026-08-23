@@ -36,4 +36,13 @@ cd ios
 xcrun agvtool new-marketing-version "$APP_VERSION"
 xcrun agvtool new-version -all "$BUILD_NUMBER"
 
+# ─── runtimeVersion OTA (expo-updates) ───────────────────────────────────────
+# Même raison que ci-dessus : Xcode Cloud ne lit pas app.json, donc la policy
+# "appVersion" n'est pas résolue toute seule. On recopie la version dans
+# Expo.plist, sinon le binaire embarquerait un runtimeVersion périmé et ne
+# recevrait AUCUN update après un bump de version.
+PLIST="yaammoo/Supporting/Expo.plist"
+/usr/libexec/PlistBuddy -c "Set :EXUpdatesRuntimeVersion $APP_VERSION" "$PLIST"
+echo "[ci] runtimeVersion OTA → $APP_VERSION"
+
 pod install

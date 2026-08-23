@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Animated, Easing } from 'react-native';
 import { Image } from 'expo-image';
 import { CardSkeleton } from '@/src/components/CardSkeleton';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
@@ -9,6 +9,7 @@ import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
 import { useNextDeliveryTime } from '../../utils/deliveryUtils';
+import { useShopReveal, REVEAL_MS } from '../../context/ShopRevealContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const V1_COLORS = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
@@ -47,7 +48,13 @@ interface DesignItemProps {
   stock?: number;
 }
 
-export const DesignItem: React.FC<DesignItemProps> = ({
+/**
+ * La carte elle-meme, dans sa variante de design. Elle ne connait RIEN du
+ * chargement ni du squelette : c'est `DesignItem` (plus bas) qui l'enveloppe et
+ * decide quand la reveler. Separer les deux est ce qui permet d'envelopper les
+ * 7 variantes d'un seul coup, au lieu de repeter la logique a chaque retour.
+ */
+const DesignItemCard: React.FC<DesignItemProps> = ({
   menu,
   variant,
   merchantName,
@@ -61,44 +68,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
   const isAvailable = menu.disponibilite === 'available' || menu.disponibilite === 'Disponible';
   const price = `${menu.prix1} F`;
   const deliveryTime = useNextDeliveryTime(deliveryHours, orderLeadTime);
-
-  // Chargement de l'image du menu. Tant qu'elle n'est pas prete on ne rend QUE
-  // le squelette : superposer un voile au design laissait passer par-dessus les
-  // elements en `position: absolute` (badges, blurs, prix) — on voyait la carte
-  // et le squelette en meme temps. Retour anticipe = un seul rendu possible.
-  // Une image locale (pas de `menu.image`) est immediate : aucun squelette.
-  const [imgLoaded, setImgLoaded] = React.useState(!menu.image);
-  const showSkeleton = FORCE_SKELETON || !imgLoaded;
-
-  // L'image n'etant pas montee pendant le squelette, `onLoad` ne partirait
-  // jamais : on prefetch l'URL et on bascule quand le cache la tient.
-  React.useEffect(() => {
-    if (!menu.image) return;
-    let alive = true;
-    Image.prefetch(menu.image)
-      .catch(() => {})
-      .finally(() => {
-        if (alive) setImgLoaded(true);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [menu.image]);
-
-  // Dimensions de la carte courante, pour que le squelette occupe exactement sa
-  // place dans la liste horizontale (sinon la rangee saute au chargement).
-  const skel = SKELETON_SIZES[variant];
-  if (showSkeleton && skel) {
-    return (
-      <View
-        style={[
-          { width: skel.width, height: skel.height, marginRight: isLast ? 0 : skel.gap },
-        ]}
-      >
-        <CardSkeleton radius={skel.radius} />
-      </View>
-    );
-  }
 
   // --- DESIGN 1: SPECIAL OFFERS (Ex-D3) ---
   if (variant === 1) {
@@ -131,10 +100,9 @@ export const DesignItem: React.FC<DesignItemProps> = ({
         <View style={styles.v1ImgWrapper}>
           <Image 
             source={menu.image ? { uri: menu.image } : require('@/assets/images/burger1-nobackground1.webp')} 
-            style={styles.v1Image} 
+            style={styles.v1Image}
             contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
           <BlurView disableAndroidBlur intensity={60} tint="dark" style={styles.v1BadgeTime} fallbackStyle={styles.blurFallbackDark}>
             <Ionicons name="time-outline" size={12} color="white" />
@@ -182,7 +150,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             source={menu.image ? { uri: menu.image } : require('@/assets/images/riz-spaghettis-oeuf-poulet-pane-fritz-platain-noBG.png')}
             style={styles.v2Image}
             cachePolicy="memory-disk"
-            transition={180}
           />
         </View>
 
@@ -243,7 +210,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
             style={styles.v3Image}
             contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
           {/* Prix en overlay bas-gauche */}
           <View style={styles.v3PriceFloat}>
@@ -306,7 +272,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
                 source={menu.image ? { uri: menu.image } : require('@/assets/images/purre-avocat-tomate-legume.png')}
                 style={styles.v4Image}
             cachePolicy="memory-disk"
-            transition={180}
           />
         </View>
 
@@ -436,7 +401,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
               style={styles.v5ProductImg}
               contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
           </View>
         </View>
@@ -528,7 +492,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
                 style={styles.v6Img}
                 contentFit="contain"
             cachePolicy="memory-disk"
-            transition={180}
           />
             </View>
           </View>
@@ -558,7 +521,6 @@ export const DesignItem: React.FC<DesignItemProps> = ({
           style={styles.v7BgImg}
           contentFit="cover"
             cachePolicy="memory-disk"
-            transition={180}
           />
 
         {/* Triple gradient: haut clair → transparent → bas ultra sombre */}
@@ -609,6 +571,129 @@ export const DesignItem: React.FC<DesignItemProps> = ({
     <TouchableOpacity style={styles.defaultContainer} onPress={onPress}>
       <Text>{menu.titre}</Text>
         </TouchableOpacity>
+  );
+};
+
+/**
+ * UNE carte menu, avec son squelette et sa revelation.
+ *
+ * Tant que l'image n'est pas resolue : seul le squelette est rendu, l'image
+ * chargeant cachee derriere lui (le telechargement part donc au premier rendu,
+ * pas apres un aller-retour de prefetch).
+ *
+ * Une fois le groupe pret, la carte et le squelette sont montes ENSEMBLE et se
+ * croisent sur `revealAnim` : le squelette descend de 1 a 0 pendant que la carte
+ * monte de 0 a 1, sur la meme valeur native. Aucun trou entre les deux, et
+ * surtout : toutes les cartes de la rangee et l'avatar du header lisent CETTE
+ * valeur, donc leurs opacites sont egales a chaque frame. C'est ce qui remplace
+ * la bascule seche d'avant, qui dependait de l'instant de peinture propre a
+ * chaque instance native — d'ou le decalage visible au ralenti.
+ */
+export const DesignItem: React.FC<DesignItemProps> = (props) => {
+  const { menu, variant, isLast = false } = props;
+
+  // Une image locale (pas de `menu.image`) est immediate : aucun squelette.
+  const [imgLoaded, setImgLoaded] = React.useState(!menu.image);
+
+  // ⚠️ La revelation appartient a la BOUTIQUE, pas a la carte. Inscription
+  // pendant le rendu, pas dans un effet : les effets s'executent apres le rendu
+  // initial, donc apres la fermeture de la fenetre d'inscription du provider.
+  const shop = useShopReveal();
+  if (shop && menu.image) shop.register(menu.image);
+
+  const markResolved = React.useCallback(() => {
+    setImgLoaded(true);
+    if (menu.image) shop?.resolve(menu.image);
+  }, [menu.image, shop]);
+
+  const ready = FORCE_SKELETON ? false : shop ? shop.ready : imgLoaded;
+
+  // Hors `ShopRevealProvider` : meme mecanique, groupe d'un seul membre.
+  const soloAnim = React.useRef(new Animated.Value(0)).current;
+  const reveal = shop ? shop.revealAnim : soloAnim;
+  React.useEffect(() => {
+    if (shop || !ready) return;
+    Animated.timing(soloAnim, {
+      toValue: 1,
+      duration: REVEAL_MS,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [shop, ready, soloAnim]);
+
+  // Le squelette anime une boucle de respiration sans fin : une fois le fondu
+  // termine il est invisible sous une carte opaque, on le demonte.
+  const [skeletonGone, setSkeletonGone] = React.useState(false);
+  React.useEffect(() => {
+    if (!ready) {
+      setSkeletonGone(false);
+      return;
+    }
+    const timer = setTimeout(() => setSkeletonGone(true), REVEAL_MS + 60);
+    return () => clearTimeout(timer);
+  }, [ready]);
+
+  // Dimensions de la carte courante, pour que le squelette occupe exactement sa
+  // place dans la liste horizontale (sinon la rangee saute au chargement).
+  const skel = SKELETON_SIZES[variant];
+  // Variante sans gabarit connu : rien a habiller.
+  if (!skel) return <DesignItemCard {...props} />;
+
+  // ⚠️ REGLE CENTRALE — LA CARTE EST MONTEE DES LE PREMIER RENDU, cachee sous
+  // le squelette. NE PAS remettre un `if (!ready) return <squelette>`.
+  // Voir architecture/restaurants.md, section « RÈGLE CENTRALE ».
+  //
+  // C'etait LA cause du decalage residuel avec la banniere. Avec un retour
+  // anticipe (`if (!ready) return <squelette>`), les `<Image>` de la carte
+  // n'etaient montees qu'au moment du reveal : il leur restait a decoder puis a
+  // compositer, soit quelques frames APRES le debut du fondu. La banniere, elle,
+  // monte son image des le depart (juste maintenue a l'opacite 0) : au reveal
+  // son pixel est deja pret, elle apparait donc instantanement. Meme opacite,
+  // meme valeur animee, mais un contenu pret et l'autre non — d'ou « la banniere
+  // sort en premier », visible seulement au ralenti.
+  //
+  // Ici les deux sont dans le meme etat au moment du fondu : deja peintes,
+  // simplement invisibles.
+  return (
+    <View>
+      <Animated.View style={{ opacity: reveal }}>
+        <DesignItemCard {...props} />
+      </Animated.View>
+      {!skeletonGone ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              // La carte porte sa propre marge droite : le voile doit couvrir
+              // la carte, pas la gouttiere qui la suit.
+              right: isLast ? 0 : skel.gap,
+              borderRadius: skel.radius,
+              overflow: 'hidden',
+              opacity: reveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [1, 0],
+              }),
+            },
+          ]}
+        >
+          {/* Image temoin : c'est elle qui signale le chargement au groupe.
+              Elle porte la meme URL que celle de la carte dessous — expo-image
+              dedoublonne la requete, les deux sont donc pretes ensemble. */}
+          {menu.image ? (
+            <Image
+              source={{ uri: menu.image }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              onLoad={markResolved}
+              onError={markResolved}
+            />
+          ) : null}
+          <CardSkeleton radius={skel.radius} />
+        </Animated.View>
+      ) : null}
+    </View>
   );
 };
 

@@ -104,7 +104,15 @@ function AppContent() {
   // `versionChecked` : on ne monte le Stack qu'une fois le verdict de version
   // connu, pour n'afficher QU'UNE seule destination apres le splash (home ou
   // ecran de blocage), jamais l'une puis l'autre.
-  const canEnterApp = homeReady && versionChecked && (authResolved || !!user);
+  //
+  // ⚠️ `|| updateDismissed` : `homeReady` sert a ne pas montrer une home vide
+  // AU BOOT, sous le splash. Apres un clic sur « Plus tard », l'utilisateur a
+  // deja un ecran devant les yeux — le faire patienter jusqu'a la fin du
+  // `GET /fastFood/all` rendait le bouton inerte pendant plusieurs secondes.
+  // La home a son PROPRE loader : elle n'a pas besoin des donnees pour
+  // s'afficher, on y va donc immediatement.
+  const canEnterApp =
+    (homeReady || updateDismissed) && versionChecked && (authResolved || !!user);
 
   // Animation de bascule de groupe (auth ↔ tabs) :
   // - Au BOOT, on est monté directement dans le groupe cible pendant que le

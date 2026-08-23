@@ -17,6 +17,7 @@ export const Design5: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         name={fastFood.nom}
         image={fastFood.image}
         rating={fastFood.stats?.rating}
+        syncWithImage={fastFood.menu?.[0]?.image}
       />
       <View style={styles.scrollWrapper}>
         <ScrollView

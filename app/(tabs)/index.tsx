@@ -5,19 +5,21 @@ import { RestaurantHeader } from "@/src/features/restaurants/components/Restaura
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
+import { ShopRevealProvider } from "@/src/features/restaurants/context/ShopRevealContext";
 import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,7 +28,28 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
+
+/**
+ * DIAGNOSTIC TEMPORAIRE — mesure les blocages du thread JS.
+ *
+ * On programme un tick toutes les 16 ms (une frame). Si l'ecart reel depasse
+ * nettement 16 ms, c'est que le thread JS etait occupe : c'est exactement la
+ * micro-saccade ressentie au retour en haut de liste.
+ */
+function startJsBlockProbe() {
+  let last = Date.now();
+  const id = setInterval(() => {
+    const now = Date.now();
+    const gap = now - last;
+    last = now;
+    // Seuil bas : on veut voir TOUS les accrocs, pour comparer le scroll juste
+    // apres le premier GET (ou rien n'est ressenti) et le scroll plus bas dans
+    // la liste (ou la pause se sent).
+    if (gap > 40) console.log(`[JS] blocage ${gap}ms`);
+  }, 16);
+  return () => clearInterval(id);
+}
 
 const CATEGORIES = [
   { name: "All", icon: "grid-outline" },
@@ -47,7 +70,12 @@ export default function HomeScreen() {
   const {
     fastFoods,
     loading,
+    error,
+    loadingMore,
+    hasMore,
+    loadMore,
     refresh,
+    resetToFirstPage,
     banners,
     searchQuery,
     setSearchQuery,
@@ -80,6 +108,61 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
+  // Retour en haut quand on retape l'onglet Home alors qu'on y est deja.
+  //
+  // ⚠️ Gere ICI et pas dans `(tabs)/_layout.tsx` : ce layout est partage par
+  // tous les onglets, et il n'a pas acces a la liste de cet ecran. L'evenement
+  // `tabPress` remonte au screen, qui est le seul a tenir la ref.
+  const listRef = useRef<FlatList>(null);
+  const navigation = useNavigation();
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Position courante : garde-fou contre une troncature hors du haut de liste. */
+  const atTopRef = useRef(true);
+
+  // Retour en haut AU SCROLL MANUEL : meme troncature que par le bouton.
+  //
+  // ⚠️ Declenchee a l'arret du scroll (`onMomentumScrollEnd`), jamais pendant
+  // (`onScroll`) : retirer des cellules sous un doigt qui defile ferait sauter
+  // la liste. Et toujours derriere la garde « on est bien en haut ».
+  const handleScroll = useCallback((e: any) => {
+    atTopRef.current = e.nativeEvent.contentOffset.y <= 4;
+  }, []);
+
+  const handleMomentumEnd = useCallback(() => {
+    if (atTopRef.current) resetToFirstPage();
+  }, [resetToFirstPage]);
+  useEffect(() => {
+    // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
+    // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
+    // home » ; sinon on remonterait la liste pendant la navigation entrante,
+    // ce qui annulerait la position d'un retour arriere.
+    const unsubscribe = (navigation as any).addListener('tabPress', () => {
+      if (!(navigation as any).isFocused()) return;
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      // Troncature une fois la remontee terminee : moins de cellules en
+      // memoire, la liste retrouve l'etat qu'elle avait apres le premier GET.
+      //
+      // ⚠️ `atTopRef` est la garde INDISPENSABLE. Tronquer sans savoir ou on se
+      // trouve fait remonter le bas de liste sous le viewport, ce qui declenche
+      // `onEndReached` → `loadMore` recharge → on retronque… boucle de
+      // pagination infinie a ~120 ms le tour. On ne tronque donc QUE si on est
+      // reellement revenu en haut.
+      resetTimerRef.current = setTimeout(() => {
+        if (atTopRef.current) resetToFirstPage();
+      }, 450);
+    });
+    return () => {
+      unsubscribe();
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, [navigation, resetToFirstPage]);
+
+  // DIAGNOSTIC TEMPORAIRE — sonde de blocage JS active en permanence.
+  useEffect(() => {
+    if (!__DEV__) return;
+    return startJsBlockProbe();
+  }, []);
+
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
       // Une bannière `bonus` ouvre la sheet Bonus (Settings → Bonus et parrainage).
@@ -90,10 +173,60 @@ export default function HomeScreen() {
     [router],
   );
 
+  // Images que la banniere et la PREMIERE boutique vont charger. Elles sont
+  // declarees au groupe AVANT que la FlatList ne monte quoi que ce soit : sans
+  // ca, le groupe se scelle en ne connaissant que la banniere (le header monte
+  // avant les cellules) et la laisse partir seule.
+  const firstScreenUris = useMemo(() => {
+    const first: any = fastFoods[0];
+    return [
+      banners?.[0]?.imageUrl,
+      first?.image,
+      ...((first?.menu ?? []).map((m: any) => m?.image) as string[]),
+    ].filter(Boolean) as string[];
+  }, [banners, fastFoods]);
+
   const listHeader = useMemo(
-    () => <HeroBanner banners={banners} onBonusPress={handleBannerPress} />,
-    [banners, handleBannerPress],
+    () => (
+      <HeroBanner
+        banners={banners}
+        onBonusPress={handleBannerPress}
+        loading={loading}
+      />
+    ),
+    [banners, handleBannerPress, loading],
   );
+
+  // Pied de liste, trois états :
+  //  - chargement de la page suivante → indicateur ;
+  //  - catalogue épuisé → message de fin, pour que le bas de liste ne se
+  //    termine pas sur un blanc qui laisse croire que ça charge encore ;
+  //  - sinon rien (évite un espace vide pendant le défilement normal).
+  const listFooter = useMemo(() => {
+    if (loadingMore && hasMore) {
+      return (
+        <View style={styles.footerLoader}>
+          <ActivityIndicator size="small" color={Theme.colors.primary} />
+        </View>
+      );
+    }
+    // `fastFoods.length > 0` : sur une liste vide, c'est `ListEmptyComponent`
+    // qui parle — deux messages se contrediraient.
+    if (!hasMore && !loading && fastFoods.length > 0) {
+      return (
+        <View style={styles.footerEnd}>
+          <Text style={styles.footerEndText}>
+            Vous avez vu toutes les boutiques
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  }, [loadingMore, hasMore, loading, fastFoods.length]);
+
+  // Le pied de liste a ete teste et MIS HORS DE CAUSE dans la boucle
+  // mount/unmount de la derniere cellule : desactive, la boucle continuait.
+  const DISABLE_FOOTER = false;
 
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
@@ -103,6 +236,46 @@ export default function HomeScreen() {
       setCheckoutVisible(true);
     });
   };
+
+  // Le handler change a chaque rendu (il capture `requireAuth` et les setters),
+  // mais `renderItem` doit rester stable. La ref donne le meilleur des deux :
+  // une identite figee cote FlatList, toujours la derniere version a l'appel.
+  const handleMenuClickRef = useRef(handleMenuClick);
+  handleMenuClickRef.current = handleMenuClick;
+
+  // ⚠️ `renderItem` et `keyExtractor` DOIVENT rester stables.
+  //
+  // Inlines, ils etaient recrees a chaque rendu : la FlatList voyait des
+  // cellules « neuves » et remontait la derniere en boucle
+  // (mount → 65 ms de rendu → unmount → mount …), avec ~70 ms de blocage JS a
+  // chaque tour, EN CONTINU, meme sans scroller. C'est la micro-saccade
+  // ressentie au retour en haut de liste. Ne pas les reinliner.
+  // ⚠️ Identite figee : passer `(menu) => ref.current(menu)` recreait une
+  // lambda par cellule et par rendu, ce qui aurait annule le `memo` de
+  // `DesignRouter`.
+  const onMenuClickStable = useCallback(
+    (menu: Menu) => handleMenuClickRef.current(menu),
+    [],
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <DesignRouter
+        fastFood={item}
+        onMenuClick={onMenuClickStable}
+        index={index}
+      />
+    ),
+    [onMenuClickStable],
+  );
+
+  // ⚠️ `index` en secours produisait une cle DEPENDANTE DE LA POSITION : a
+  // l'insertion d'une boutique en tete (socket), toutes les cles se decalaient
+  // et React remontait toute la liste. Prefixe explicite, jamais l'index nu.
+  const keyExtractor = useCallback(
+    (item: any, index: number) => item.id ?? `idx-${index}`,
+    [],
+  );
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -129,7 +302,12 @@ export default function HomeScreen() {
     }
   };
 
-  if ((loading && fastFoods.length === 0) || forceLoading) {
+  // Écran de chargement plein — RÉSERVÉ au tout premier affichage.
+  // ⚠️ `!searchQuery` est indispensable : une recherche vide la liste et
+  // repasse `loading` à true. Sans cette garde, l'écran plein remplacerait la
+  // home et ferait disparaître la barre de recherche, empêchant l'utilisateur
+  // de corriger sa saisie.
+  if ((loading && fastFoods.length === 0 && !searchQuery) || forceLoading) {
     return (
       <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
         <View style={styles.centered}>
@@ -137,6 +315,36 @@ export default function HomeScreen() {
           <Text style={styles.loadingText}>
             Recherche des meilleurs plats...
           </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Échec du chargement initial : la page entière est remplacée par un message
+  // centré et un bouton de relance. Rien d'autre n'est affiché — ni header, ni
+  // liste : il n'y a aucune donnée à montrer, et un contenu partiel donnerait
+  // l'impression d'une page cassée plutôt que d'un réseau indisponible.
+  if (error && fastFoods.length === 0 && !loading) {
+    return (
+      <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
+        <View style={styles.centered}>
+          <Ionicons
+            name="cloud-offline-outline"
+            size={54}
+            color={Theme.colors.gray[300]}
+          />
+          <Text style={styles.errorTitle}>Connexion indisponible</Text>
+          <Text style={styles.errorText}>
+            Impossible de charger le contenu. Vérifiez votre connexion.
+          </Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            activeOpacity={0.8}
+            onPress={refresh}
+          >
+            <Ionicons name="refresh" size={17} color={Theme.colors.white} />
+            <Text style={styles.retryText}>Réessayer</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -169,14 +377,24 @@ export default function HomeScreen() {
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
       />
+      {/* ⚠️ Groupe de revelation partage par la BANNIERE et la PREMIERE
+          boutique uniquement (cf. DesignRouter) : les deux sortent a la meme
+          frame. La boutique 0 n'attend rien de plus qu'avant — seule la
+          banniere patiente le temps de sortir avec elle. Les boutiques
+          suivantes gardent leur propre groupe : les mettre ici ferait attendre
+          la boutique 0 derriere elles, et c'est ce qui avait rajoute de la
+          latence a l'arrivee sur le home. */}
+      <ShopRevealProvider expect={firstScreenUris}>
       <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
         <FlatList
+          ref={listRef}
           data={fastFoods}
           ListHeaderComponent={listHeader}
-          renderItem={({ item }) => (
-            <DesignRouter fastFood={item} onMenuClick={handleMenuClick} />
-          )}
-          keyExtractor={(item, index) => item.id || index.toString()}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          onScroll={handleScroll}
+          scrollEventThrottle={64}
+          onMomentumScrollEnd={handleMomentumEnd}
           contentContainerStyle={[
             styles.listContent,
             {
@@ -192,6 +410,26 @@ export default function HomeScreen() {
               colors={[Theme.colors.primary]}
             />
           }
+          // Pagination : la page suivante part avant d'atteindre le bas, pour
+          // que les boutiques soient là quand l'utilisateur y arrive.
+          // ⚠️ Par défaut `initialNumToRender` vaut 10 : la première passe de
+          // rendu montait la bannière ET dix boutiques (header + rangée de
+          // menus chacune). Le squelette de la bannière n'était peint qu'à la
+          // fin de cette passe — d'où son apparition en retard alors que les
+          // cartes, elles, étaient déjà là. On ne rend que ce qui tient à
+          // l'écran ; le reste suit à la passe suivante.
+          initialNumToRender={2}
+          maxToRenderPerBatch={3}
+          windowSize={5}
+          onEndReached={() => {
+            // DIAGNOSTIC TEMPORAIRE — `onEndReached` qui se redeclenche en
+            // boucle en bas de liste est l'autre cause possible du cycle
+            // mount/unmount de la derniere cellule.
+            if (__DEV__) console.log(`[END] onEndReached hasMore=${hasMore} loadingMore=${loadingMore}`);
+            loadMore();
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={DISABLE_FOOTER ? null : listFooter}
           ListEmptyComponent={
             <View style={styles.centered}>
               <Ionicons
@@ -200,12 +438,15 @@ export default function HomeScreen() {
                 color={Theme.colors.gray[200]}
               />
               <Text style={styles.emptyText}>
-                Aucun restaurant trouvé pour "{searchQuery || selectedCategory}"
+                {searchQuery
+                  ? `Aucun restaurant trouvé pour "${searchQuery}"`
+                  : "Aucun restaurant disponible pour le moment"}
               </Text>
             </View>
           }
         />
       </View>
+      </ShopRevealProvider>
       <CheckoutSheet
         key={selectedMenu?.id || "checkout"}
         visible={checkoutVisible}
@@ -244,12 +485,51 @@ const styles = StyleSheet.create({
   listContent: {
     // paddingBottom géré dynamiquement avec useTabBarHeight
   },
+  footerLoader: {
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  footerEnd: {
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  footerEndText: {
+    fontSize: 13,
+    color: Theme.colors.gray[400],
+  },
   emptyText: {
     color: Theme.colors.gray[500],
     fontSize: 16,
     textAlign: "center",
     marginTop: 10,
     paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: Theme.colors.dark,
+  },
+  errorText: {
+    fontSize: 14,
+    color: Theme.colors.gray[500],
+    textAlign: "center",
+    paddingHorizontal: 40,
+    marginTop: -4,
+  },
+  retryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginTop: 10,
+    paddingHorizontal: 22,
+    paddingVertical: 11,
+    borderRadius: Theme.borderRadius.pill,
+    backgroundColor: Theme.colors.primary,
+  },
+  retryText: {
+    color: Theme.colors.white,
+    fontSize: 14,
+    fontWeight: "700",
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

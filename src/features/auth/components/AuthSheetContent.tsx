@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  TextInput,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,24 +21,21 @@ import { authService } from "@/src/features/auth/services/authService";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { Users, UsersInfos } from "@/src/types";
 import { WhatsAppAuthStep } from "./WhatsAppAuthStep";
+import { EmailAuthStep } from "./EmailAuthStep";
 import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
 
 export default function AuthSheetContent() {
   const { user, userData, setUserData } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
-  // "social" = boutons Apple/Google ; "login" = email+password (connexion) ;
-  // "register" = email+password (création de compte). login/register partagent
-  // la même UI, seuls le bouton et le handler changent.
+  // Sous-flux email (`EmailAuthStep`) : `isRegister` distingue connexion et
+  // creation de compte. La SAISIE elle-meme appartient a ce composant dedie —
+  // la sheet ne garde plus ni email, ni mot de passe, ni loader.
   const [emailMode, setEmailMode] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
-  // Sous-flux WhatsApp (numero puis code). Rendu par un composant dedie qui
+  // Sous-flux WhatsApp (numero puis code). Meme principe : un composant dedie
   // remplace tout le contenu de la sheet le temps des deux etapes.
   const [whatsappMode, setWhatsappMode] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [loggingIn, setLoggingIn] = useState(false);
 
   // Réinitialise le sheet quand l'utilisateur n'est PAS connecté (boot invité,
   // ou retour après déconnexion/suppression). Au login on laisse les loaders
@@ -54,10 +50,6 @@ export default function AuthSheetContent() {
       setWhatsappMode(false);
       setGoogleLoading(false);
       setAppleLoading(false);
-      setLoggingIn(false);
-      setEmail("");
-      setPassword("");
-      setShowPassword(false);
     }
   }, [signedOut]);
 
@@ -105,63 +97,57 @@ export default function AuthSheetContent() {
     }
   };
 
-  const onLogin = async () => {
-    if (loggingIn) return;
-    if (!email || !password) {
-      Alert.alert("Erreur", "L'email ou le mot de passe ne doit pas être vide.");
-      return;
-    }
-    setLoggingIn(true);
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const data = await authService.getUserById(cred.user.uid);
-      // Loader maintenu jusqu'au montage de la home (voir onGoogle).
-      if (data) {
-        setUserData(data);
-        return;
-      }
-      setLoggingIn(false);
-    } catch (err: any) {
-      Alert.alert("Erreur", err?.message ?? "Connexion échouée.");
-      setLoggingIn(false);
-    }
+  // ⚠️ Les identifiants arrivent en ARGUMENT et l'erreur est PROPAGEE (throw),
+  // plus d'`Alert` : `EmailAuthStep` tient sa propre saisie et affiche l'erreur
+  // inline. Une boite de dialogue par-dessus la sheet a clavier custom serait
+  // incoherente avec le reste du flux.
+  const onLoginWith = async (mail: string, pwd: string) => {
+    const cred = await signInWithEmailAndPassword(auth, mail, pwd);
+    const data = await authService.getUserById(cred.user.uid);
+    // Loader maintenu jusqu'au montage de la home (voir onGoogle).
+    if (data) setUserData(data);
   };
 
-  const onRegister = async () => {
-    if (loggingIn) return;
-    if (!email || !password) {
-      Alert.alert("Erreur", "L'email ou le mot de passe ne doit pas être vide.");
-      return;
-    }
-    setLoggingIn(true);
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      const firebaseUser = cred.user;
-      // Nom par défaut depuis l'email (le profil pourra être complété plus tard).
-      const nom = email.split("@")[0] || "Utilisateur";
-      const newUser = new Users(
-        firebaseUser.uid,
-        firebaseUser.uid,
-        new UsersInfos(nom, "", 0, 0, email, ""),
-        false,
-        100,
-        [],
-        undefined,
-      );
-      await userFirestore.createUser(newUser, firebaseUser);
-      const data = await userFirestore.getUser(firebaseUser);
-      // Loader maintenu jusqu'au montage de la home (voir onGoogle).
-      setUserData(data ?? newUser);
-    } catch (err: any) {
-      Alert.alert("Erreur", err?.message ?? "Inscription échouée.");
-      setLoggingIn(false);
-    }
+  const onRegisterWith = async (mail: string, pwd: string) => {
+    const cred = await createUserWithEmailAndPassword(auth, mail, pwd);
+    const firebaseUser = cred.user;
+    // Nom par défaut depuis l'email (le profil pourra être complété plus tard).
+    const nom = mail.split("@")[0] || "Utilisateur";
+    const newUser = new Users(
+      firebaseUser.uid,
+      firebaseUser.uid,
+      new UsersInfos(nom, "", 0, 0, mail, ""),
+      false,
+      100,
+      [],
+      undefined,
+    );
+    await userFirestore.createUser(newUser, firebaseUser);
+    const data = await userFirestore.getUser(firebaseUser);
+    // Loader maintenu jusqu'au montage de la home (voir onGoogle).
+    setUserData(data ?? newUser);
   };
 
   // ⚠️ Le sous-flux WhatsApp remplace TOUT le contenu de la sheet (titre et
   // footer compris) : ses deux etapes ont leur propre titre et leur propre
   // bouton retour. Laisser le « Welcome to Yaammoo » au-dessus donnerait deux
   // titres concurrents et pousserait le champ sous le clavier.
+  // ⚠️ Meme principe que WhatsApp : l'ecran email remplace TOUT le contenu de
+  // la sheet. Il porte son propre clavier custom, son retour et son bascule
+  // connexion/inscription.
+  if (emailMode) {
+    return (
+      <EmailAuthStep
+        isRegister={isRegister}
+        onSubmit={(mail, pwd) =>
+          isRegister ? onRegisterWith(mail, pwd) : onLoginWith(mail, pwd)
+        }
+        onToggleMode={() => setIsRegister((v) => !v)}
+        onBack={() => setEmailMode(false)}
+      />
+    );
+  }
+
   if (whatsappMode) {
     return (
       <WhatsAppAuthStep
@@ -184,15 +170,16 @@ export default function AuthSheetContent() {
   return (
     <View style={styles.content}>
       <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-        Welcome to Yaammoo <Text style={styles.wave}>👋</Text>
+        Bienvenue sur Yaammoo
       </Text>
       <Text style={styles.subtitle}>
-        The best cooking and food recipes app of the century.
+        La meilleure application de cuisine et de recettes du siècle.
       </Text>
 
+      {/* Plus de ternaire `emailMode` ici : la saisie email a son propre ecran
+          (`EmailAuthStep`), retourne plus haut. Ce bloc n'affiche donc que les
+          boutons de fournisseurs. */}
       <View style={styles.auth}>
-        {!emailMode ? (
-          <>
             {Platform.OS === "ios" && (
               <TouchableOpacity
                 style={styles.btn}
@@ -211,7 +198,7 @@ export default function AuthSheetContent() {
                     <AppleIcon />
                   </View>
                 )}
-                <Text style={styles.btnText}>Continue with Apple</Text>
+                <Text style={styles.btnText}>Continuer avec Apple</Text>
               </TouchableOpacity>
             )}
 
@@ -232,7 +219,7 @@ export default function AuthSheetContent() {
                   <GoogleIcon />
                 </View>
               )}
-              <Text style={styles.btnText}>Continue with Google</Text>
+              <Text style={styles.btnText}>Continuer avec Google</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -243,12 +230,12 @@ export default function AuthSheetContent() {
               <View style={styles.btnIcon}>
                 <WhatsAppIcon />
               </View>
-              <Text style={styles.btnText}>Continue with WhatsApp</Text>
+              <Text style={styles.btnText}>Continuer avec WhatsApp</Text>
             </TouchableOpacity>
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or sign in with</Text>
+              <Text style={styles.dividerText}>Ou connectez-vous avec</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -267,125 +254,25 @@ export default function AuthSheetContent() {
                 style={styles.btnIcon}
               />
               <Text style={[styles.btnText, styles.btnTextPrimary]}>
-                Sign In with email
+                Se connecter avec un email
               </Text>
             </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <View style={styles.inputWrap}>
-              <Ionicons
-                name="mail-outline"
-                size={18}
-                color="#7a7a78"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor="#a8a8a6"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                editable={!loggingIn}
-              />
-            </View>
-
-            <View style={styles.inputWrap}>
-              <Ionicons
-                name="lock-closed-outline"
-                size={18}
-                color="#7a7a78"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#a8a8a6"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                editable={!loggingIn}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword((v) => !v)}
-                style={styles.inputRight}
-              >
-                <Ionicons
-                  name={showPassword ? "eye-off-outline" : "eye-outline"}
-                  size={18}
-                  color="#7a7a78"
-                />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.btn, styles.btnPrimary]}
-              onPress={isRegister ? onRegister : onLogin}
-              disabled={loggingIn}
-              activeOpacity={0.85}
-            >
-              {loggingIn ? (
-                <ActivityIndicator size="small" color="#ffffff" />
-              ) : (
-                <Text style={[styles.btnText, styles.btnTextPrimary]}>
-                  {isRegister ? "Sign Up" : "Login"}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <TouchableOpacity
-              style={styles.btn}
-              onPress={() => setEmailMode(false)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.socialIconsRow}>
-                <AppleIcon />
-                <View style={{ width: 18 }} />
-                <GoogleIcon />
-              </View>
-            </TouchableOpacity>
-          </>
-        )}
       </View>
 
+      {/* Ce footer n'est visible que sur l'ecran des fournisseurs : la bascule
+          connexion <-> inscription appartient desormais a `EmailAuthStep`. */}
       <View style={styles.footerLine}>
-        {emailMode && isRegister ? (
-          <>
-            <Text style={styles.footerText}>Already have an account?</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setIsRegister(false);
-                setEmailMode(true);
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.footerLink}> Sign In</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <Text style={styles.footerText}>Don&apos;t have account?</Text>
-            <TouchableOpacity
-              onPress={() => {
-                setIsRegister(true);
-                setEmailMode(true);
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.footerLink}> Sign Up</Text>
-            </TouchableOpacity>
-          </>
-        )}
+        <Text style={styles.footerText}>Pas encore de compte ?</Text>
+        <TouchableOpacity
+          onPress={() => {
+            setIsRegister(true);
+            setEmailMode(true);
+          }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.footerLink}> S&apos;inscrire</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -411,7 +298,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     textAlign: "center",
   },
-  wave: { fontSize: 26 },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,

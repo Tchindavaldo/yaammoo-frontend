@@ -13,8 +13,6 @@ import {
   Animated,
   Dimensions,
   Image,
-  Keyboard,
-  Platform,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -88,44 +86,18 @@ export default function WelcomeScreen() {
     }).start();
   }, [sheetOpen, slide]);
 
-  // Décalage clavier : on remonte le sheet entier de la hauteur du clavier
-  // (le sheet est en absolu + transform, un KeyboardAvoidingView est inopérant).
-  const keyboardOffset = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    const showEvt =
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvt =
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const showSub = Keyboard.addListener(showEvt, (e) => {
-      Animated.timing(keyboardOffset, {
-        toValue: e.endCoordinates.height,
-        duration: Platform.OS === "ios" ? (e.duration ?? 250) : 150,
-        useNativeDriver: true,
-      }).start();
-    });
-    const hideSub = Keyboard.addListener(hideEvt, (e) => {
-      Animated.timing(keyboardOffset, {
-        toValue: 0,
-        duration: Platform.OS === "ios" ? (e.duration ?? 250) : 150,
-        useNativeDriver: true,
-      }).start();
-    });
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, [keyboardOffset]);
-
   if (!fontsLoaded) return null;
 
   const onGetStarted = () => setSheetOpen(true);
   const closeSheet = () => setSheetOpen(false);
 
-  const openTranslateY = slide.interpolate({
+  // ⚠️ La sheet NE REMONTE PAS avec le clavier — elle reste FIXE, comme celle
+  // du panier groupe. La saisie se fait dans une capsule flottante
+  // (`AuthFieldCapsule`), qui s'ancre elle-meme au clavier.
+  const sheetTranslateY = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [SCREEN_H, 0],
   });
-  const sheetTranslateY = Animated.subtract(openTranslateY, keyboardOffset);
   const backdropOpacity = slide.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1],

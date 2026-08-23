@@ -2,8 +2,10 @@ import React from "react";
 import {
   ActivityIndicator,
   Keyboard,
+  Pressable,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -79,33 +81,6 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
   );
 
   /**
-   * Saisie recue de la capsule, ROUTEE vers le bon champ.
-   *
-   * ⚠️ Un seul champ est monte a la fois, mais l'AutoFill du trousseau
-   * remplit le couple identifiant + mot de passe d'un coup. Depuis le champ
-   * email, une valeur arrivant d'un bloc et ne ressemblant pas a une adresse
-   * est donc le MOT DE PASSE : on la range ou il faut plutot que de l'ecrire
-   * dans l'email.
-   */
-  const handleCapsuleChange = React.useCallback(
-    (v: string) => {
-      setError(null);
-      if (field === "password") {
-        setPassword(v);
-        return;
-      }
-      // Saisie au clavier : un caractere a la fois, jamais un bloc.
-      const pasted = v.length - email.length > 1;
-      if (pasted && !v.includes("@") && v.length >= 4) {
-        setPassword(v);
-        return;
-      }
-      setEmail(v);
-    },
-    [field, email],
-  );
-
-  /**
    * Validation DEPUIS la capsule. Sur l'email, elle enchaine sur le mot de
    * passe sans repasser par la sheet ; sur le mot de passe, elle soumet.
    */
@@ -119,39 +94,68 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
   }, [field, email, password, submit]);
 
   /** Un leurre : meme gabarit que l'input d'origine, mais non editable. */
-  const renderLure = (target: Exclude<Field, null>) => {
+  const renderField = (target: Exclude<Field, null>) => {
     const isPwd = target === "password";
-    const value = isPwd ? password : email;
 
     return (
-      <TouchableOpacity
-        style={styles.inputWrap}
-        onPress={() => {
-          setError(null);
-          setField(target);
-        }}
-        disabled={loading}
-        activeOpacity={0.7}
-      >
+      <View style={styles.inputWrap}>
         <Ionicons
           name={isPwd ? "lock-closed-outline" : "mail-outline"}
           size={18}
           color="#7a7a78"
           style={styles.inputIcon}
         />
-        <Text
-          style={[styles.input, !value && styles.inputPlaceholder]}
-          numberOfLines={1}
-        >
-          {value
-            ? isPwd
-              ? "•".repeat(value.length)
-              : value
-            : isPwd
-              ? "Mot de passe"
-              : "Adresse email"}
-        </Text>
-      </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          placeholder={isPwd ? "Mot de passe" : "Adresse email"}
+          placeholderTextColor="#a8a8a6"
+          value={isPwd ? password : email}
+          onChangeText={(v) => {
+            setError(null);
+            (isPwd ? setPassword : setEmail)(v);
+          }}
+          secureTextEntry={isPwd}
+          keyboardType={isPwd ? "default" : "email-address"}
+          autoCapitalize="none"
+          autoComplete={
+            isPwd
+              ? isRegister
+                ? "new-password"
+                : "current-password"
+              : "email"
+          }
+          /* ⚠️ `textContentType` branche l'AutoFill du trousseau sur iOS :
+             c'est parce que ces champs sont de VRAIS `TextInput` que
+             l'autoremplissage peut ecrire dedans. */
+          textContentType={
+            isPwd ? (isRegister ? "newPassword" : "password") : "username"
+          }
+          editable={!loading}
+          /* ⚠️ Le clavier natif ne s'ouvre PAS ici : la saisie se fait dans la
+             capsule. Le champ prend le focus (donc l'AutoFill le vise), et le
+             tap ouvre la capsule. */
+          showSoftInputOnFocus={false}
+          /* La frappe se voit dans la capsule : un curseur qui clignote ici en
+             meme temps donnerait deux points de saisie a l'ecran. */
+          caretHidden
+          /* ⚠️ La capsule s'ouvre sur un TAP, jamais sur `onFocus`. L'AutoFill
+             focalise lui-meme le champ email pour y ecrire : passer par
+             `onFocus` faisait alors basculer la capsule du mot de passe vers
+             l'email en pleine selection d'identifiant. */
+        />
+
+        {/* Surface tactile POSEE SUR le champ : c'est elle qui ouvre la
+            capsule. Le `TextInput` dessous reste focalisable par le systeme
+            (indispensable a l'AutoFill) mais ne recoit aucun tap. */}
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={() => {
+            setError(null);
+            setField(target);
+          }}
+          disabled={loading}
+        />
+      </View>
     );
   };
 
@@ -170,8 +174,8 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
         </Text>
 
         <View style={styles.auth}>
-          {renderLure("email")}
-          {renderLure("password")}
+          {renderField("email")}
+          {renderField("password")}
 
           {/* Hauteur reservee : l'apparition de l'erreur ne decale rien. */}
           <View style={styles.errorSlot}>
@@ -237,8 +241,10 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
       <AuthFieldCapsule
         visible={field !== null}
         field={field ?? "email"}
-        value={field === "password" ? password : email}
-        onChange={handleCapsuleChange}
+        email={email}
+        password={password}
+        onChangeEmail={setEmail}
+        onChangePassword={setPassword}
         onSubmit={handleCapsuleSubmit}
         onClose={closeCapsule}
       />

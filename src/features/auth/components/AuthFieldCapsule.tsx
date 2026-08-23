@@ -60,8 +60,12 @@ const CAPSULE_DELAY_MS = 230;
  * translation est purement decorative et jouee sur le driver natif.
  */
 const CAPSULE_SLIDE_FROM = -28;
-/** Fondu de sortie, volontairement LENT : la disparition doit se voir. */
-const FADE_OUT_MS = 1000;
+/** Fondu de sortie de la CAPSULE : plus rapide, elle part la premiere. */
+const CAPSULE_FADE_OUT_MS = 0;
+/** Fondu de sortie du VOILE : plus lent, il se retire apres la capsule. */
+const VEIL_FADE_OUT_MS = 1000;
+/** Retard du voile sur la capsule a la SORTIE. */
+const VEIL_OUT_DELAY_MS = 0;
 /**
  * Delai avant de donner le focus, donc avant que le clavier ne monte. C'est ce
  * qui laisse la capsule partir en PREMIER — a augmenter si le clavier devance
@@ -78,10 +82,12 @@ const BLUR_GRACE_MS = 80;
 interface AuthFieldCapsuleProps {
   /** Capsule demandee a l'ecran (le fondu de sortie la garde montee un temps). */
   visible: boolean;
-  /** Champ en cours de saisie. */
+  /** Champ en cours de saisie : c'est lui qui prend le focus. */
   field: "email" | "password";
-  value: string;
-  onChange: (v: string) => void;
+  email: string;
+  password: string;
+  onChangeEmail: (v: string) => void;
+  onChangePassword: (v: string) => void;
   /** Validation depuis la capsule (touche du clavier ou bouton rond). */
   onSubmit: () => void;
   /** Demande de fermeture (champ vide, ou perte de focus). */
@@ -91,8 +97,10 @@ interface AuthFieldCapsuleProps {
 export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
   visible,
   field,
-  value,
-  onChange,
+  email,
+  password,
+  onChangeEmail,
+  onChangePassword,
   onSubmit,
   onClose,
 }) => {
@@ -133,18 +141,20 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
       ]).start();
       return;
     }
-    // SORTIE : la capsule s'efface la premiere, le voile la suit.
+    // SORTIE : la capsule part VITE, le voile se retire ensuite, plus
+    // lentement. Deux durees distinctes — partager la meme les faisait
+    // disparaitre d'un bloc.
     Animated.parallel([
       Animated.timing(capsuleAnim, {
         toValue: 0,
-        duration: FADE_OUT_MS,
+        duration: CAPSULE_FADE_OUT_MS,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(veilAnim, {
         toValue: 0,
-        duration: FADE_OUT_MS,
-        delay: CAPSULE_DELAY_MS,
+        duration: VEIL_FADE_OUT_MS,
+        delay: VEIL_OUT_DELAY_MS,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
@@ -154,27 +164,22 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
   }, [visible, veilAnim, capsuleAnim]);
 
   /**
-   * FERMETURE PILOTEE PAR LE FOCUS, et non par le clavier.
+   * FERMETURE PILOTEE PAR LE FOCUS, et DIFFEREE.
    *
-   * ⚠️ Se fier a la disparition du clavier ne marche PAS sur iOS : le bouton
-   * « Mots de passe » de la barre du clavier ouvre une feuille systeme qui le
-   * fait descendre alors que le champ GARDE le focus. La capsule se fermait
-   * donc en pleine selection, et l'AutoFill n'avait plus ou ecrire. Aucun
-   * delai ne reglait ca — la feuille reste ouverte le temps que l'utilisateur
-   * choisisse.
-   *
-   * `onBlur` ne se declenche pas pendant l'AutoFill : c'est le signal fiable.
-   * Il est quand meme differe d'une frame, le temps qu'un `focus()` interne
-   * (bascule email -> mot de passe) reprenne la main sans fermer la capsule.
+   * ⚠️ Le sursis est essentiel : a la fin de l'AutoFill, iOS retire brievement
+   * le focus au champ avant de le lui rendre. Fermer sur le champ un `onBlur`
+   * refermait donc la capsule juste apres l'autoremplissage. Tout retour de
+   * focus dans le delai annule la fermeture — celui du systeme comme celui de
+   * la bascule email -> mot de passe.
    */
+  const blurTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleBlur = React.useCallback(() => {
     if (!visible) return;
     blurTimer.current = setTimeout(onClose, BLUR_GRACE_MS);
   }, [visible, onClose]);
 
-  const blurTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleFocus = React.useCallback(() => {
-    // Le champ reprend le focus : toute fermeture en attente est annulee.
     if (blurTimer.current) {
       clearTimeout(blurTimer.current);
       blurTimer.current = null;
@@ -187,6 +192,12 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
     },
     [],
   );
+
+  // ⚠️ La capsule NE se ferme PAS sur la descente du clavier : iOS le fait
+  // descendre pour sa feuille « Mots de passe » alors que le champ garde le
+  // focus. Elle reste donc simplement affichee pendant l'AutoFill — les
+  // tentatives de la masquer (opacite, deplacement) rendaient son champ
+  // inelligible a l'autoremplissage. Seul `onBlur` la ferme.
 
   // Le mot de passe repart toujours masque d'une ouverture a l'autre.
   React.useEffect(() => {
@@ -250,13 +261,53 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
   const capsuleBottom =
     VEIL_HEIGHT - CAPSULE_HEIGHT - VEIL_TOP_GAP - CAPSULE_TOP_INSET;
 
+  /**
+   * Saisie recue, ROUTEE vers le bon champ — DANS LES DEUX SENS.
+   *
+   * ⚠️ L'AutoFill remplit le COUPLE identifiant + mot de passe, alors qu'un
+   * seul champ est monte ici. Une valeur qui arrive d'un BLOC est donc rangee
+   * d'apres sa forme, pas d'apres le champ ouvert : une adresse part dans
+   * l'email, le reste dans le mot de passe. On peut ainsi rester sur la
+   * capsule du mot de passe et voir les DEUX champs se remplir, sans avoir a
+   * repasser par l'email.
+   */
+  const handleChange = React.useCallback(
+    (v: string) => {
+      const current = isPwd ? password : email;
+      // Frappe au clavier : un caractere a la fois, jamais un bloc entier.
+      const bulk = v.length - current.length > 1;
+
+      if (bulk && v.length >= 4) {
+        // Une adresse est reconnaissable ; tout le reste est un mot de passe.
+        if (v.includes("@")) {
+          onChangeEmail(v);
+          return;
+        }
+        onChangePassword(v);
+        return;
+      }
+
+      (isPwd ? onChangePassword : onChangeEmail)(v);
+    },
+    [isPwd, email, password, onChangeEmail, onChangePassword],
+  );
+
   /** Champ vide : le bouton ne valide pas, il FERME la capsule. */
-  const isEmpty = !value.trim();
+  const isEmpty = !(isPwd ? password : email).trim();
+
+  /**
+   * Le bouton FERME sur le mot de passe, il n'envoie rien.
+   *
+   * ⚠️ La requete part uniquement du bouton principal de la sheet. Depuis la
+   * capsule, seul le champ email fait AVANCER (vers le mot de passe) ; sur le
+   * mot de passe, comme sur un champ vide, on referme.
+   */
+  const closes = isEmpty || isPwd;
 
   const handleAction = () => {
-    if (isEmpty) {
-      // Fermeture par le clavier : le garde ci-dessus appelle `onClose`.
+    if (closes) {
       Keyboard.dismiss();
+      onClose();
       return;
     }
     onSubmit();
@@ -324,24 +375,26 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                   color="white"
                   style={styles.inputIcon}
                 />
+                {/* ⚠️ C'est CE champ qui porte l'AutoFill : c'est lui qui a le
+                    focus et le clavier, donc lui que le trousseau vise. Les
+                    champs de la sheet ne peuvent pas s'en charger — sans
+                    clavier ouvert, iOS n'affiche pas la barre AutoFill. */}
                 <TextInput
                   style={styles.textInput}
                   placeholder={isPwd ? "Mot de passe" : "Adresse email"}
                   placeholderTextColor="rgba(255,255,255,0.5)"
-                  value={value}
-                  onChangeText={onChange}
+                  value={isPwd ? password : email}
+                  onChangeText={handleChange}
                   secureTextEntry={isPwd && !showPassword}
                   keyboardType={isPwd ? "default" : "email-address"}
                   autoCapitalize="none"
                   autoComplete={isPwd ? "current-password" : "email"}
-                  /* ⚠️ `autoComplete` seul ne suffit PAS sur iOS : c'est
-                   `textContentType` qui branche l'AutoFill du trousseau. Sans
-                   lui, la suggestion apparaissait mais ne remplissait rien. */
-                  textContentType={isPwd ? "password" : "emailAddress"}
+                  textContentType={isPwd ? "password" : "username"}
                   ref={inputRef}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
-                  returnKeyType={isPwd ? "go" : "next"}
+                  // Le mot de passe ne valide plus : la touche referme.
+                  returnKeyType={isPwd ? "done" : "next"}
                   onSubmitEditing={handleAction}
                   keyboardAppearance="dark"
                   /* Curseur explicite : la teinte systeme se voit a peine sur le
@@ -349,7 +402,8 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                   selectionColor="#ec4913"
                   cursorColor="#ec4913"
                 />
-                {isPwd && value ? (
+
+                {isPwd && password ? (
                   <TouchableOpacity
                     onPress={() => setShowPassword((v) => !v)}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -365,7 +419,8 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
 
               <TouchableOpacity style={styles.actionBtn} onPress={handleAction}>
                 <Ionicons
-                  name={isEmpty ? "chevron-down" : "arrow-forward-outline"}
+                  // L'icone suit ce que fait le bouton : fermer ou avancer.
+                  name={closes ? "chevron-down" : "arrow-forward-outline"}
                   size={16}
                   color="white"
                 />
@@ -446,6 +501,12 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     padding: 0,
   },
+  /**
+   * Champ INACTIF : reduit a rien, mais toujours monte — l'AutoFill a besoin
+   * des deux champs presents pour remplir le couple. Ni `display: none` ni
+   * `opacity: 0`, qui le rendraient invisible au systeme.
+   */
+  textInputHidden: { width: 0, height: 0, padding: 0, opacity: 0.01 },
   actionBtn: {
     flexDirection: "row",
     alignItems: "center",

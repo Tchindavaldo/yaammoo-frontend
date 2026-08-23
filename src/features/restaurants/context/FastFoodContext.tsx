@@ -294,14 +294,41 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    */
   const lastResetAtRef = useRef(0);
   const RESET_COOLDOWN_MS = 800;
+  /** Timer du `loadMore` REPORTE pendant le cooldown (voir plus bas). */
+  const deferredLoadRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Lance reellement la page suivante, une fois toutes les gardes passees. */
+  const runLoadMore = useCallback(() => {
+    if (!cursorRef.current) return;
+    void fetchPage(cursorRef.current, searchRef.current.trim() || undefined);
+  }, [fetchPage]);
 
   const loadMore = useCallback(() => {
     // Une recherche affiche ses propres résultats pagines ; on continue de
     // paginer dedans avec le meme `q`, sinon on melangerait deux listes.
     if (loadingMore || loading || !cursorRef.current) return;
-    if (Date.now() - lastResetAtRef.current < RESET_COOLDOWN_MS) return;
-    void fetchPage(cursorRef.current, searchRef.current.trim() || undefined);
-  }, [fetchPage, loading, loadingMore]);
+
+    // ⚠️ Pendant le cooldown, on REPORTE la demande — on ne la jette pas.
+    //
+    // Un simple `return` la perdait definitivement, et la `FlatList` ne rappelle
+    // `onEndReached` que si le seuil est franchi A NOUVEAU : rester en bas ne
+    // relance rien. L'utilisateur devait donc remonter puis redescendre
+    // plusieurs fois avant de revoir le loader. Le symptome ne se voyait qu'au
+    // retour en haut par SCROLL : le bouton Home, lui, reset dans un
+    // `setTimeout(450)` apres son animation, si bien que le cooldown est deja
+    // consomme quand l'utilisateur redescend.
+    const sinceReset = Date.now() - lastResetAtRef.current;
+    if (sinceReset < RESET_COOLDOWN_MS) {
+      if (deferredLoadRef.current) return; // un report est deja arme
+      deferredLoadRef.current = setTimeout(() => {
+        deferredLoadRef.current = null;
+        runLoadMore();
+      }, RESET_COOLDOWN_MS - sinceReset);
+      return;
+    }
+
+    runLoadMore();
+  }, [loading, loadingMore, runLoadMore]);
 
   /**
    * Retour a la premiere page SANS requete : on tronque la liste deja chargee.
@@ -318,6 +345,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     setFastFoods((prev) => {
       if (prev.length <= PAGE_SIZE) return prev;
       lastResetAtRef.current = Date.now();
+      // Un report arme avant CE reset visait l'ancienne fin de liste : le
+      // laisser partir rechargerait la page qu'on vient justement de retirer.
+      if (deferredLoadRef.current) {
+        clearTimeout(deferredLoadRef.current);
+        deferredLoadRef.current = null;
+      }
       // Le curseur doit repartir de la fin de la page conservee, sinon
       // `loadMore` rechargerait des boutiques deja affichees.
       cursorRef.current = firstPageCursorRef.current;
@@ -359,6 +392,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(
     () => () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
+      if (deferredLoadRef.current) clearTimeout(deferredLoadRef.current);
     },
     [],
   );

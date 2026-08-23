@@ -121,6 +121,14 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
   `resetToFirstPage()`. ⚠️ Sans lui, tronquer la liste fait remonter sa fin sous
   le viewport → `onEndReached` part → `loadMore` recharge la page qu'on vient de
   retirer → on retronque. **Boucle de pagination infinie**, ~120 ms le tour.
+- **`deferredLoadRef` — le cooldown REPORTE, il ne jette pas.** ⚠️ Le refus était
+  d'abord un simple `return` : la demande était perdue, et la `FlatList` ne
+  rappelle `onEndReached` que si le seuil est franchi À NOUVEAU — rester en bas
+  ne relance rien. Il fallait remonter/redescendre plusieurs fois avant de revoir
+  le loader. Le bug ne se voyait qu'au retour en haut **par scroll** : le bouton
+  Home reset dans un `setTimeout(450)` après son animation, donc le cooldown est
+  déjà consommé quand l'utilisateur redescend. Un `resetToFirstPage()` survenant
+  pendant qu'un report est armé l'**annule** — il visait l'ancienne fin de liste.
 - **`firstPageCursorRef`** : curseur rendu par la première page, conservé pour
   que `resetToFirstPage()` reparte exactement de sa fin — sinon `loadMore`
   rechargerait des boutiques déjà affichées.

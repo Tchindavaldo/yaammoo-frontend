@@ -353,19 +353,43 @@ Quatre sources ont été trouvées et corrigées ; **aucune ne doit revenir** :
 cellules **immobiles**, par vagues synchronisées sur toutes les cellules à la
 fois. Vagues simultanées = c'est le parent qui se re-rend, pas les cellules.
 
-### Sondes de diagnostic (conservées)
+### Performance du montage — MESURÉ, ne pas refaire
 
-Volontairement laissées en place, toutes sous `__DEV__` (aucun effet en
-production) :
+Les sondes de diagnostic (`[CELL]`, `[JS] blocage`, `[END]`, `DISABLE_FOOTER`)
+ont été **retirées** une fois la mesure faite. Résultats sur appareil réel
+(iPhone), stables sur plusieurs cycles :
 
-- `[CELL] MOUNT / UNMOUNT / re-rendu #N (xN)` — `DesignRouter` ;
-- `[JS] blocage Nms` — sonde de blocage du thread, `app/(tabs)/index.tsx` ;
-- `[END] onEndReached` — déclenchements de la pagination ;
-- `DISABLE_FOOTER` — neutralise le pied de liste pour l'isoler d'un test.
+| Cellule | `render` (JS) | `commit` (natif) |
+|---|---|---|
+| #3 (1re du lot) | 0 ms | 104-109 ms |
+| #4 | 0 ms | 67-72 ms |
+| #5 | 0 ms | 43-48 ms |
+
+**Conclusions, chiffrées :**
+
+- `render = 0 ms` partout : le JavaScript ne coûte rien. Tout le temps part
+  dans le **commit** (création des vues natives). Alléger le JS des cartes
+  n'apporterait donc rien.
+- Le coût **décroît dans un même lot** (109 → 72 → 48), reproductible à
+  l'identique sur iOS et Android : le premier montage paie un amorçage amorti
+  par les suivants.
+- **Aucun lien avec le nombre de menus** : 1 menu = 81 ms, 5 menus = 50 ms.
+  Limiter les cartes rendues par `menu.map()` ne servirait à rien.
+- Un blocage JS de ~150 ms par page, pendant que le loader est affiché.
+  Acceptable — pas d'optimisation retenue.
+
+**Pistes testées et écartées** (ne pas y revenir sans nouvelle mesure) :
+`windowSize` élargi à 11 + `removeClippedSubviews` + `updateCellsBatchingPeriod`
+(aucun effet), BlurView (`disableAndroidBlur` est déjà actif sur Android),
+nombre de menus par boutique.
+
+> ⚠️ Les blocages de 8 à 20 s observés sur émulateur Android venaient de la
+> machine hôte saturée, pas du code : sur iPhone, le même parcours ne dépasse
+> jamais 165 ms. **Ne jamais conclure une mesure de perf sur émulateur.**
 
 > ⚠️ Une mesure de durée par `Date.now()` capturé au rendu et relu dans un
 > `useEffect` donne des valeurs **fausses** (on a vu « 42909 ms ») : l'effet
-> s'exécute bien après le rendu. Se fier à la sonde `[JS]`, pas à ça.
+> s'exécute bien après le rendu.
 
 **La méthode** : instrumenter et lire les logs. Sur ce chantier, les hypothèses
 successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toutes

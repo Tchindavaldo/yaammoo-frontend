@@ -5,7 +5,13 @@ import { RestaurantHeader } from "@/src/features/restaurants/components/Restaura
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   FlatList,
   RefreshControl,
@@ -19,8 +25,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
-import { ShopRevealProvider } from "@/src/features/restaurants/context/ShopRevealContext";
 import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
+import { ShopRevealProvider } from "@/src/features/restaurants/context/ShopRevealContext";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -30,27 +36,6 @@ import { useNotifications } from "@/src/features/notifications/hooks/useNotifica
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useNavigation, useRouter } from "expo-router";
 
-/**
- * DIAGNOSTIC TEMPORAIRE — mesure les blocages du thread JS.
- *
- * On programme un tick toutes les 16 ms (une frame). Si l'ecart reel depasse
- * nettement 16 ms, c'est que le thread JS etait occupe : c'est exactement la
- * micro-saccade ressentie au retour en haut de liste.
- */
-function startJsBlockProbe() {
-  let last = Date.now();
-  const id = setInterval(() => {
-    const now = Date.now();
-    const gap = now - last;
-    last = now;
-    // Seuil bas : on veut voir TOUS les accrocs, pour comparer le scroll juste
-    // apres le premier GET (ou rien n'est ressenti) et le scroll plus bas dans
-    // la liste (ou la pause se sent).
-    if (gap > 40) console.log(`[JS] blocage ${gap}ms`);
-  }, 16);
-  return () => clearInterval(id);
-}
-
 const CATEGORIES = [
   { name: "All", icon: "grid-outline" },
   { name: "Fast Food", icon: "fast-food-outline" },
@@ -59,7 +44,6 @@ const CATEGORIES = [
   { name: "Drinks", icon: "beer-outline" },
   { name: "Rice", icon: "restaurant-outline" },
 ];
-
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
@@ -90,8 +74,6 @@ export default function HomeScreen() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
   const [checkoutVisible, setCheckoutVisible] = useState(false);
-
-
 
   // For testing: force loader to persist
   const [forceLoading, setForceLoading] = useState(false);
@@ -136,7 +118,7 @@ export default function HomeScreen() {
     // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
     // home » ; sinon on remonterait la liste pendant la navigation entrante,
     // ce qui annulerait la position d'un retour arriere.
-    const unsubscribe = (navigation as any).addListener('tabPress', () => {
+    const unsubscribe = (navigation as any).addListener("tabPress", () => {
       if (!(navigation as any).isFocused()) return;
       listRef.current?.scrollToOffset({ offset: 0, animated: true });
       // Troncature une fois la remontee terminee : moins de cellules en
@@ -156,12 +138,6 @@ export default function HomeScreen() {
       if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
     };
   }, [navigation, resetToFirstPage]);
-
-  // DIAGNOSTIC TEMPORAIRE — sonde de blocage JS active en permanence.
-  useEffect(() => {
-    if (!__DEV__) return;
-    return startJsBlockProbe();
-  }, []);
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
@@ -223,10 +199,6 @@ export default function HomeScreen() {
     }
     return null;
   }, [loadingMore, hasMore, loading, fastFoods.length]);
-
-  // Le pied de liste a ete teste et MIS HORS DE CAUSE dans la boucle
-  // mount/unmount de la derniere cellule : desactive, la boucle continuait.
-  const DISABLE_FOOTER = false;
 
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
@@ -385,67 +357,76 @@ export default function HomeScreen() {
           la boutique 0 derriere elles, et c'est ce qui avait rajoute de la
           latence a l'arrivee sur le home. */}
       <ShopRevealProvider expect={firstScreenUris}>
-      <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
-        <FlatList
-          ref={listRef}
-          data={fastFoods}
-          ListHeaderComponent={listHeader}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          onScroll={handleScroll}
-          scrollEventThrottle={64}
-          onMomentumScrollEnd={handleMomentumEnd}
-          contentContainerStyle={[
-            styles.listContent,
-            {
-              paddingBottom: tabBarHeight + 20,
-              paddingHorizontal: Theme.design.horizontalPadding,
-            },
-          ]}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onManualRefresh}
-              tintColor={Theme.colors.primary}
-              colors={[Theme.colors.primary]}
-            />
-          }
-          // Pagination : la page suivante part avant d'atteindre le bas, pour
-          // que les boutiques soient là quand l'utilisateur y arrive.
-          // ⚠️ Par défaut `initialNumToRender` vaut 10 : la première passe de
-          // rendu montait la bannière ET dix boutiques (header + rangée de
-          // menus chacune). Le squelette de la bannière n'était peint qu'à la
-          // fin de cette passe — d'où son apparition en retard alors que les
-          // cartes, elles, étaient déjà là. On ne rend que ce qui tient à
-          // l'écran ; le reste suit à la passe suivante.
-          initialNumToRender={2}
-          maxToRenderPerBatch={3}
-          windowSize={5}
-          onEndReached={() => {
-            // DIAGNOSTIC TEMPORAIRE — `onEndReached` qui se redeclenche en
-            // boucle en bas de liste est l'autre cause possible du cycle
-            // mount/unmount de la derniere cellule.
-            if (__DEV__) console.log(`[END] onEndReached hasMore=${hasMore} loadingMore=${loadingMore}`);
-            loadMore();
-          }}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={DISABLE_FOOTER ? null : listFooter}
-          ListEmptyComponent={
-            <View style={styles.centered}>
-              <Ionicons
-                name="search-outline"
-                size={60}
-                color={Theme.colors.gray[200]}
+        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
+          <FlatList
+            ref={listRef}
+            data={fastFoods}
+            ListHeaderComponent={listHeader}
+            renderItem={renderItem}
+            keyExtractor={keyExtractor}
+            onScroll={handleScroll}
+            scrollEventThrottle={64}
+            onMomentumScrollEnd={handleMomentumEnd}
+            contentContainerStyle={[
+              styles.listContent,
+              {
+                paddingBottom: tabBarHeight + 20,
+                paddingHorizontal: Theme.design.horizontalPadding,
+              },
+            ]}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onManualRefresh}
+                tintColor={Theme.colors.primary}
+                colors={[Theme.colors.primary]}
               />
-              <Text style={styles.emptyText}>
-                {searchQuery
-                  ? `Aucun restaurant trouvé pour "${searchQuery}"`
-                  : "Aucun restaurant disponible pour le moment"}
-              </Text>
-            </View>
-          }
-        />
-      </View>
+            }
+            // Pagination : la page suivante part avant d'atteindre le bas, pour
+            // que les boutiques soient là quand l'utilisateur y arrive.
+            // ⚠️ Par défaut `initialNumToRender` vaut 10 : la première passe de
+            // rendu montait la bannière ET dix boutiques (header + rangée de
+            // menus chacune). Le squelette de la bannière n'était peint qu'à la
+            // fin de cette passe — d'où son apparition en retard alors que les
+            // cartes, elles, étaient déjà là. On ne rend que ce qui tient à
+            // l'écran ; le reste suit à la passe suivante.
+            initialNumToRender={2}
+            maxToRenderPerBatch={3}
+            // ⚠️ NE PAS elargir `windowSize` pour supprimer le cycle
+            // UNMOUNT/MOUNT #3..#6 vu en bas de liste : teste a 11 (avec
+            // `removeClippedSubviews` et `updateCellsBatchingPeriod`), aucun
+            // effet — cycle identique, blocages JS toujours a 145-160 ms. Ce
+            // cycle ne vient PAS de la virtualisation mais de
+            // `resetToFirstPage()`, qui tronque volontairement la liste a la
+            // premiere page au retour en haut ; les pages suivantes sont ensuite
+            // rechargees au scroll. C'est le comportement voulu.
+            windowSize={5}
+            onEndReached={loadMore}
+            // ⚠️ 0.5 declenchait la requete une demi-hauteur d'ecran AVANT le bas.
+            // En scroll lent la reponse revenait avant qu'on y arrive : les
+            // boutiques etaient deja la, le loader n'apparaissait jamais. En
+            // scroll rapide on doublait la requete et on le voyait. Comportement
+            // inverse de celui voulu — le loader doit se voir a TOUTE vitesse.
+            // A 0.1, la page ne part qu'une fois le bas reellement atteint : on
+            // voit l'espace vide, le loader, puis les nouvelles boutiques.
+            onEndReachedThreshold={0.1}
+            ListFooterComponent={listFooter}
+            ListEmptyComponent={
+              <View style={styles.centered}>
+                <Ionicons
+                  name="search-outline"
+                  size={60}
+                  color={Theme.colors.gray[200]}
+                />
+                <Text style={styles.emptyText}>
+                  {searchQuery
+                    ? `Aucun restaurant trouvé pour "${searchQuery}"`
+                    : "Aucun restaurant disponible pour le moment"}
+                </Text>
+              </View>
+            }
+          />
+        </View>
       </ShopRevealProvider>
       <CheckoutSheet
         key={selectedMenu?.id || "checkout"}
@@ -454,7 +435,6 @@ export default function HomeScreen() {
         menu={selectedMenu}
         onConfirm={handleConfirmOrder}
       />
-
 
       {toast && (
         <Toast
@@ -485,9 +465,14 @@ const styles = StyleSheet.create({
   listContent: {
     // paddingBottom géré dynamiquement avec useTabBarHeight
   },
+  // ⚠️ Hauteur FIXE et genereuse (et non un simple padding de 24) : le loader
+  // doit se remarquer meme en scroll rapide. Trop court, il defilait sans
+  // qu'on le voie — on avait l'impression que les boutiques apparaissaient
+  // sans chargement.
   footerLoader: {
-    paddingVertical: 24,
+    height: 48,
     alignItems: "center",
+    justifyContent: "center",
   },
   footerEnd: {
     paddingVertical: 24,

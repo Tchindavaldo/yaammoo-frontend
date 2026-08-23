@@ -10,7 +10,6 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Path } from "react-native-svg";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { handleGoogleSignIn } from "@/src/features/auth/services/googleAuthService";
 import { handleAppleSignIn } from "@/src/features/auth/services/appleAuthService";
@@ -22,36 +21,8 @@ import { auth } from "@/src/services/firebase";
 import { authService } from "@/src/features/auth/services/authService";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { Users, UsersInfos } from "@/src/types";
-
-const AppleIcon = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24">
-    <Path
-      fill="#141414"
-      d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.32-.05-.01-.06-.04-.21-.04-.36 0-1.13.541-2.33 1.16-3.05.79-.93 2.05-1.6 3.1-1.62.04.16.06.32.06.43zM20.5 17.34c-.55 1.21-.81 1.74-1.51 2.81-1 1.49-2.4 3.34-4.13 3.36-1.55.02-1.95-1.01-4.05-1-2.1.01-2.54 1.02-4.09.99C5.04 23.49 3.7 21.74 2.7 20.25 0 16.41-.36 11.91 1.4 9.5c1.27-1.71 3.27-2.71 5.15-2.71 1.92 0 3.13 1.05 4.71 1.05 1.54 0 2.48-1.05 4.7-1.05 1.68 0 3.45.91 4.71 2.49-4.13 2.26-3.46 8.16.83 8.06z"
-    />
-  </Svg>
-);
-
-const GoogleIcon = () => (
-  <Svg width={20} height={20} viewBox="0 0 48 48">
-    <Path
-      fill="#FFC107"
-      d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"
-    />
-    <Path
-      fill="#FF3D00"
-      d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
-    />
-    <Path
-      fill="#4CAF50"
-      d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2c-2 1.5-4.5 2.4-7.2 2.4-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.5 39.6 16.2 44 24 44z"
-    />
-    <Path
-      fill="#1976D2"
-      d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.6l6.2 5.2C41.3 35.3 44 30 44 24c0-1.3-.1-2.4-.4-3.5z"
-    />
-  </Svg>
-);
+import { WhatsAppAuthStep } from "./WhatsAppAuthStep";
+import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
 
 export default function AuthSheetContent() {
   const { user, userData, setUserData } = useAuth();
@@ -62,6 +33,9 @@ export default function AuthSheetContent() {
   // la même UI, seuls le bouton et le handler changent.
   const [emailMode, setEmailMode] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
+  // Sous-flux WhatsApp (numero puis code). Rendu par un composant dedie qui
+  // remplace tout le contenu de la sheet le temps des deux etapes.
+  const [whatsappMode, setWhatsappMode] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -77,6 +51,7 @@ export default function AuthSheetContent() {
     if (signedOut) {
       setEmailMode(false);
       setIsRegister(false);
+      setWhatsappMode(false);
       setGoogleLoading(false);
       setAppleLoading(false);
       setLoggingIn(false);
@@ -183,6 +158,29 @@ export default function AuthSheetContent() {
     }
   };
 
+  // ⚠️ Le sous-flux WhatsApp remplace TOUT le contenu de la sheet (titre et
+  // footer compris) : ses deux etapes ont leur propre titre et leur propre
+  // bouton retour. Laisser le « Welcome to Yaammoo » au-dessus donnerait deux
+  // titres concurrents et pousserait le champ sous le clavier.
+  if (whatsappMode) {
+    return (
+      <WhatsAppAuthStep
+        // TODO(backend) : brancher l'envoi du code une fois l'endpoint fourni.
+        onSubmitPhone={async () => {
+          await new Promise((r) => setTimeout(r, 900));
+        }}
+        // TODO(backend) : brancher la verification + setUserData().
+        onSubmitCode={async () => {
+          await new Promise((r) => setTimeout(r, 900));
+        }}
+        onResend={async () => {
+          await new Promise((r) => setTimeout(r, 600));
+        }}
+        onBack={() => setWhatsappMode(false)}
+      />
+    );
+  }
+
   return (
     <View style={styles.content}>
       <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
@@ -235,6 +233,17 @@ export default function AuthSheetContent() {
                 </View>
               )}
               <Text style={styles.btnText}>Continue with Google</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.btn}
+              onPress={() => setWhatsappMode(true)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.btnIcon}>
+                <WhatsAppIcon />
+              </View>
+              <Text style={styles.btnText}>Continue with WhatsApp</Text>
             </TouchableOpacity>
 
             <View style={styles.divider}>
@@ -383,11 +392,16 @@ export default function AuthSheetContent() {
 }
 
 const styles = StyleSheet.create({
+  // ⚠️ `flex: 1` + `justifyContent: center` : la sheet a desormais une hauteur
+  // FIXE (voir AuthGateContext). Sans ca, le bloc social resterait colle en
+  // haut avec un grand vide dessous.
   content: {
+    flex: 1,
     paddingHorizontal: 28,
     paddingTop: 24,
     paddingBottom: 32,
     alignItems: "center",
+    justifyContent: "center",
     gap: 14,
   },
   title: {

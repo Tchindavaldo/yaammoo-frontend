@@ -1,37 +1,36 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  StatusBar,
-  Dimensions,
-  Animated,
-  Pressable,
-  ScrollView,
-  Keyboard,
-  Platform,
-} from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
-import Svg, {
-  Path,
-  Circle,
-  G,
-  Defs,
-  RadialGradient as SvgRadialGradient,
-  Stop,
-  Rect,
-} from "react-native-svg";
-import { useRouter } from "expo-router";
 import {
-  useFonts,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
+  useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Image,
+  Keyboard,
+  Platform,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Svg, {
+  Circle,
+  Defs,
+  G,
+  Path,
+  Rect,
+  Stop,
+  RadialGradient as SvgRadialGradient,
+} from "react-native-svg";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -93,19 +92,21 @@ export default function WelcomeScreen() {
   // (le sheet est en absolu + transform, un KeyboardAvoidingView est inopérant).
   const keyboardOffset = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const showEvt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvt = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showEvt =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvt =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
     const showSub = Keyboard.addListener(showEvt, (e) => {
       Animated.timing(keyboardOffset, {
         toValue: e.endCoordinates.height,
-        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
+        duration: Platform.OS === "ios" ? (e.duration ?? 250) : 150,
         useNativeDriver: true,
       }).start();
     });
     const hideSub = Keyboard.addListener(hideEvt, (e) => {
       Animated.timing(keyboardOffset, {
         toValue: 0,
-        duration: Platform.OS === "ios" ? e.duration ?? 250 : 150,
+        duration: Platform.OS === "ios" ? (e.duration ?? 250) : 150,
         useNativeDriver: true,
       }).start();
     });
@@ -142,11 +143,7 @@ export default function WelcomeScreen() {
           style={StyleSheet.absoluteFill}
         />
         {/* Warm radial glows via SVG */}
-        <Svg
-          style={StyleSheet.absoluteFill}
-          width={SCREEN_W}
-          height={SCREEN_H}
-        >
+        <Svg style={StyleSheet.absoluteFill} width={SCREEN_W} height={SCREEN_H}>
           <Defs>
             <SvgRadialGradient
               id="g1"
@@ -189,9 +186,27 @@ export default function WelcomeScreen() {
               <Stop offset="65%" stopColor="#fac88c" stopOpacity={0} />
             </SvgRadialGradient>
           </Defs>
-          <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="url(#g1)" />
-          <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="url(#g2)" />
-          <Rect x={0} y={0} width={SCREEN_W} height={SCREEN_H} fill="url(#g3)" />
+          <Rect
+            x={0}
+            y={0}
+            width={SCREEN_W}
+            height={SCREEN_H}
+            fill="url(#g1)"
+          />
+          <Rect
+            x={0}
+            y={0}
+            width={SCREEN_W}
+            height={SCREEN_H}
+            fill="url(#g2)"
+          />
+          <Rect
+            x={0}
+            y={0}
+            width={SCREEN_W}
+            height={SCREEN_H}
+            fill="url(#g3)"
+          />
         </Svg>
 
         {/* Sparkles top-right */}
@@ -303,11 +318,18 @@ export default function WelcomeScreen() {
         {/* Bottom sheet backdrop */}
         {sheetOpen && (
           <Animated.View
-            style={[StyleSheet.absoluteFill, { opacity: backdropOpacity, zIndex: 9 }]}
+            style={[
+              StyleSheet.absoluteFill,
+              { opacity: backdropOpacity, zIndex: 9 },
+            ]}
             pointerEvents="auto"
           >
             <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
-              <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+              <BlurView
+                intensity={30}
+                tint="light"
+                style={StyleSheet.absoluteFill}
+              />
               <View style={styles.backdropDim} />
             </Pressable>
           </Animated.View>
@@ -321,14 +343,11 @@ export default function WelcomeScreen() {
           ]}
           pointerEvents={sheetOpen ? "auto" : "none"}
         >
-          <View style={styles.sheetHandle} />
-          <ScrollView
-            bounces={false}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
+          {/* ⚠️ PAS de `ScrollView` — meme raison que dans AuthGateContext :
+              hauteur fixe, contenu calibre pour y tenir. */}
+          <View style={styles.sheetBody}>
             <AuthSheetContent />
-          </ScrollView>
+          </View>
         </Animated.View>
       </View>
     </View>
@@ -439,16 +458,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(20,20,20,0.25)",
   },
+  sheetBody: { flex: 1 },
   sheet: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    maxHeight: SCREEN_H * 0.82,
+    // ⚠️ Hauteur FIXE (pas `maxHeight`), identique a celle de la sheet de
+    // `AuthGateContext` : la taille ne doit changer ni entre les deux points
+    // d'entree, ni entre les etapes du flux WhatsApp.
+    height: SCREEN_H * 0.59,
     backgroundColor: "#ffffff",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingTop: 8,
+    paddingTop: 0,
     paddingBottom: 24,
     zIndex: 10,
     shadowColor: "#000",
@@ -456,14 +479,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 20,
-  },
-  sheetHandle: {
-    alignSelf: "center",
-    width: 44,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: "#e0e0de",
-    marginTop: 8,
-    marginBottom: 4,
   },
 });

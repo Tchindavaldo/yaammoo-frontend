@@ -30,6 +30,27 @@ import { useNotifications } from "@/src/features/notifications/hooks/useNotifica
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useNavigation, useRouter } from "expo-router";
 
+/**
+ * DIAGNOSTIC TEMPORAIRE — mesure les blocages du thread JS.
+ *
+ * On programme un tick toutes les 16 ms (une frame). Si l'ecart reel depasse
+ * nettement 16 ms, c'est que le thread JS etait occupe : c'est exactement la
+ * micro-saccade ressentie au retour en haut de liste.
+ */
+function startJsBlockProbe() {
+  let last = Date.now();
+  const id = setInterval(() => {
+    const now = Date.now();
+    const gap = now - last;
+    last = now;
+    // Seuil bas : on veut voir TOUS les accrocs, pour comparer le scroll juste
+    // apres le premier GET (ou rien n'est ressenti) et le scroll plus bas dans
+    // la liste (ou la pause se sent).
+    if (gap > 40) console.log(`[JS] blocage ${gap}ms`);
+  }, 16);
+  return () => clearInterval(id);
+}
+
 const CATEGORIES = [
   { name: "All", icon: "grid-outline" },
   { name: "Fast Food", icon: "fast-food-outline" },
@@ -54,6 +75,7 @@ export default function HomeScreen() {
     hasMore,
     loadMore,
     refresh,
+    resetToFirstPage,
     banners,
     searchQuery,
     setSearchQuery,
@@ -93,6 +115,22 @@ export default function HomeScreen() {
   // `tabPress` remonte au screen, qui est le seul a tenir la ref.
   const listRef = useRef<FlatList>(null);
   const navigation = useNavigation();
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Position courante : garde-fou contre une troncature hors du haut de liste. */
+  const atTopRef = useRef(true);
+
+  // Retour en haut AU SCROLL MANUEL : meme troncature que par le bouton.
+  //
+  // ⚠️ Declenchee a l'arret du scroll (`onMomentumScrollEnd`), jamais pendant
+  // (`onScroll`) : retirer des cellules sous un doigt qui defile ferait sauter
+  // la liste. Et toujours derriere la garde « on est bien en haut ».
+  const handleScroll = useCallback((e: any) => {
+    atTopRef.current = e.nativeEvent.contentOffset.y <= 4;
+  }, []);
+
+  const handleMomentumEnd = useCallback(() => {
+    if (atTopRef.current) resetToFirstPage();
+  }, [resetToFirstPage]);
   useEffect(() => {
     // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
     // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
@@ -101,9 +139,29 @@ export default function HomeScreen() {
     const unsubscribe = (navigation as any).addListener('tabPress', () => {
       if (!(navigation as any).isFocused()) return;
       listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      // Troncature une fois la remontee terminee : moins de cellules en
+      // memoire, la liste retrouve l'etat qu'elle avait apres le premier GET.
+      //
+      // ⚠️ `atTopRef` est la garde INDISPENSABLE. Tronquer sans savoir ou on se
+      // trouve fait remonter le bas de liste sous le viewport, ce qui declenche
+      // `onEndReached` → `loadMore` recharge → on retronque… boucle de
+      // pagination infinie a ~120 ms le tour. On ne tronque donc QUE si on est
+      // reellement revenu en haut.
+      resetTimerRef.current = setTimeout(() => {
+        if (atTopRef.current) resetToFirstPage();
+      }, 450);
     });
-    return unsubscribe;
-  }, [navigation]);
+    return () => {
+      unsubscribe();
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    };
+  }, [navigation, resetToFirstPage]);
+
+  // DIAGNOSTIC TEMPORAIRE — sonde de blocage JS active en permanence.
+  useEffect(() => {
+    if (!__DEV__) return;
+    return startJsBlockProbe();
+  }, []);
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
@@ -166,6 +224,10 @@ export default function HomeScreen() {
     return null;
   }, [loadingMore, hasMore, loading, fastFoods.length]);
 
+  // Le pied de liste a ete teste et MIS HORS DE CAUSE dans la boucle
+  // mount/unmount de la derniere cellule : desactive, la boucle continuait.
+  const DISABLE_FOOTER = false;
+
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
     // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
@@ -174,6 +236,46 @@ export default function HomeScreen() {
       setCheckoutVisible(true);
     });
   };
+
+  // Le handler change a chaque rendu (il capture `requireAuth` et les setters),
+  // mais `renderItem` doit rester stable. La ref donne le meilleur des deux :
+  // une identite figee cote FlatList, toujours la derniere version a l'appel.
+  const handleMenuClickRef = useRef(handleMenuClick);
+  handleMenuClickRef.current = handleMenuClick;
+
+  // ⚠️ `renderItem` et `keyExtractor` DOIVENT rester stables.
+  //
+  // Inlines, ils etaient recrees a chaque rendu : la FlatList voyait des
+  // cellules « neuves » et remontait la derniere en boucle
+  // (mount → 65 ms de rendu → unmount → mount …), avec ~70 ms de blocage JS a
+  // chaque tour, EN CONTINU, meme sans scroller. C'est la micro-saccade
+  // ressentie au retour en haut de liste. Ne pas les reinliner.
+  // ⚠️ Identite figee : passer `(menu) => ref.current(menu)` recreait une
+  // lambda par cellule et par rendu, ce qui aurait annule le `memo` de
+  // `DesignRouter`.
+  const onMenuClickStable = useCallback(
+    (menu: Menu) => handleMenuClickRef.current(menu),
+    [],
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <DesignRouter
+        fastFood={item}
+        onMenuClick={onMenuClickStable}
+        index={index}
+      />
+    ),
+    [onMenuClickStable],
+  );
+
+  // ⚠️ `index` en secours produisait une cle DEPENDANTE DE LA POSITION : a
+  // l'insertion d'une boutique en tete (socket), toutes les cles se decalaient
+  // et React remontait toute la liste. Prefixe explicite, jamais l'index nu.
+  const keyExtractor = useCallback(
+    (item: any, index: number) => item.id ?? `idx-${index}`,
+    [],
+  );
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -288,14 +390,11 @@ export default function HomeScreen() {
           ref={listRef}
           data={fastFoods}
           ListHeaderComponent={listHeader}
-          renderItem={({ item, index }) => (
-            <DesignRouter
-              fastFood={item}
-              onMenuClick={handleMenuClick}
-              index={index}
-            />
-          )}
-          keyExtractor={(item, index) => item.id || index.toString()}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          onScroll={handleScroll}
+          scrollEventThrottle={64}
+          onMomentumScrollEnd={handleMomentumEnd}
           contentContainerStyle={[
             styles.listContent,
             {
@@ -322,9 +421,15 @@ export default function HomeScreen() {
           initialNumToRender={2}
           maxToRenderPerBatch={3}
           windowSize={5}
-          onEndReached={loadMore}
+          onEndReached={() => {
+            // DIAGNOSTIC TEMPORAIRE — `onEndReached` qui se redeclenche en
+            // boucle en bas de liste est l'autre cause possible du cycle
+            // mount/unmount de la derniere cellule.
+            if (__DEV__) console.log(`[END] onEndReached hasMore=${hasMore} loadingMore=${loadingMore}`);
+            loadMore();
+          }}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={listFooter}
+          ListFooterComponent={DISABLE_FOOTER ? null : listFooter}
           ListEmptyComponent={
             <View style={styles.centered}>
               <Ionicons

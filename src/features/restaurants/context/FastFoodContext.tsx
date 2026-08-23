@@ -1,9 +1,17 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { Config } from '@/src/api/config';
-import { auth } from '@/src/services/firebase';
-import { useAuth } from '@/src/features/auth/context/AuthContext';
-import { DeliveryOffer, FastFood, AppBanner } from '@/src/types';
+import { Config } from "@/src/api/config";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { auth } from "@/src/services/firebase";
+import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
+import axios from "axios";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 // ⚠️ `prefetchHomeImages` n'est PLUS appele. Chaque carte monte desormais son
 // image des son rendu (cf. DesignItem) : le prechargement faisait donc DOUBLON.
 // Les deux mecanismes se disputaient la bande passante, les requetes
@@ -16,7 +24,7 @@ import { DeliveryOffer, FastFood, AppBanner } from '@/src/types';
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 3;
 
 /** Délai avant qu'une frappe dans la recherche parte au serveur. */
 const SEARCH_DEBOUNCE_MS = 350;
@@ -49,6 +57,11 @@ interface FastFoodContextType {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   refresh: () => Promise<void>;
+  /**
+   * Tronque la liste a la premiere page, sans requete. Appele au retour en haut
+   * du home pour ne pas garder des dizaines de cellules en memoire.
+   */
+  resetToFirstPage: () => void;
   // ── Injection directe depuis les payloads socket (pas de refetch) ──
   /** newGlobalMenu / globalMenuUpdated → upsert d'un menu dans son fastfood. */
   upsertMenuFromSocket: (menu: any) => void;
@@ -75,23 +88,29 @@ interface FastFoodContextType {
 /** Normalise un menu brut backend vers le format attendu par l'UI. */
 export const normalizeMenu = (m: any) => {
   const menuImage =
-    m.image || m.coverImage || (m.images && m.images.length > 0 ? m.images[0] : null);
+    m.image ||
+    m.coverImage ||
+    (m.images && m.images.length > 0 ? m.images[0] : null);
   return {
     ...m,
-    titre: m.titre || m.name || 'Produit',
+    titre: m.titre || m.name || "Produit",
     prix1: m.prix1 || (m.prices && m.prices[0] ? m.prices[0].price : 0),
     prix2: m.prix2 || (m.prices && m.prices[1] ? m.prices[1].price : 0),
     prix3: m.prix3 || (m.prices && m.prices[2] ? m.prices[2].price : 0),
-    optionPrix1: m.optionPrix1 || (m.prices && m.prices[0] ? m.prices[0].description : ''),
-    optionPrix2: m.optionPrix2 || (m.prices && m.prices[1] ? m.prices[1].description : ''),
-    optionPrix3: m.optionPrix3 || (m.prices && m.prices[2] ? m.prices[2].description : ''),
+    optionPrix1:
+      m.optionPrix1 || (m.prices && m.prices[0] ? m.prices[0].description : ""),
+    optionPrix2:
+      m.optionPrix2 || (m.prices && m.prices[1] ? m.prices[1].description : ""),
+    optionPrix3:
+      m.optionPrix3 || (m.prices && m.prices[2] ? m.prices[2].description : ""),
     // Prix bruts (hors marge) aplatis depuis `prices[]`, comme prix1/2/3.
     rawPrice1: m.prices?.[0]?.rawPrice,
     rawPrice2: m.prices?.[1]?.rawPrice,
     rawPrice3: m.prices?.[2]?.rawPrice,
-    image: menuImage || '',
-    images: m.images && m.images.length > 0 ? m.images : (menuImage ? [menuImage] : []),
-    disponibilite: m.disponibilite || m.status || 'available',
+    image: menuImage || "",
+    images:
+      m.images && m.images.length > 0 ? m.images : menuImage ? [menuImage] : [],
+    disponibilite: m.disponibilite || m.status || "available",
   };
 };
 
@@ -106,16 +125,20 @@ export const normalizeFastFood = (item: any, designIndex = 0) => {
     (mappedMenu.length > 0 ? mappedMenu[0].image : null);
   return {
     ...item,
-    nom: item.nom || item.name || 'Restaurant',
-    image: restaurantImage || '',
+    nom: item.nom || item.name || "Restaurant",
+    image: restaurantImage || "",
     menu: mappedMenu,
     designIndex,
   };
 };
 
-const FastFoodContext = createContext<FastFoodContextType | undefined>(undefined);
+const FastFoodContext = createContext<FastFoodContextType | undefined>(
+  undefined,
+);
 
-export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   // `user` (Firebase User) plutôt que `userData` : c'est lui qui porte le token,
   // et il devient disponible dès la restauration de session.
   const { user } = useAuth();
@@ -125,6 +148,11 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   /** Curseur de la page suivante. `null` = fin de liste atteinte. */
   const cursorRef = useRef<string | null>(null);
+  /**
+   * Curseur rendu par la PREMIERE page. Conserve pour que
+   * `resetToFirstPage()` puisse repartir exactement de la fin de cette page.
+   */
+  const firstPageCursorRef = useRef<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   /**
    * Numéro de la requête en cours. Une réponse dont le numéro n'est plus le
@@ -136,8 +164,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [appleReviewMode, setAppleReviewMode] = useState(false);
   const [banners, setBanners] = useState<AppBanner[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   /**
    * Charge UNE page de boutiques.
@@ -199,17 +227,22 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Bannières : servies uniquement sur la première page par le backend.
       // Sur un `loadMore` le tableau est vide — ne pas écraser celles en place.
       if (isFirstPage) {
-        setBanners(Array.isArray(response.data?.banners) ? response.data.banners : []);
+        setBanners(
+          Array.isArray(response.data?.banners) ? response.data.banners : [],
+        );
       }
 
       const next = response.data?.nextCursor ?? null;
       cursorRef.current = next;
+      if (isFirstPage) firstPageCursorRef.current = next;
       setHasMore(!!next);
 
       if (response.data && response.data.data) {
         const raw: any[] = response.data.data;
         if (isFirstPage) {
-          const data = raw.map((item, index) => normalizeFastFood(item, index % 6));
+          const data = raw.map((item, index) =>
+            normalizeFastFood(item, index % 6),
+          );
           setFastFoods(data);
         } else {
           setFastFoods((prev) => {
@@ -226,8 +259,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     } catch (err: any) {
       if (guarded && myRun !== runIdRef.current) return;
-      console.error('Error fetching fast foods:', err);
-      setError('Connection internet indisponible, vérifiez votre réseau');
+      console.error("Error fetching fast foods:", err);
+      setError("Connection internet indisponible, vérifiez votre réseau");
     } finally {
       // `hasLoadedOnce` pilote la revelation de (tabs) : une reponse recue,
       // quelle qu'elle soit, prouve que le chargement a eu lieu.
@@ -244,7 +277,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // `useCallback`. Sinon `refresh` et `loadMore` changent de reference a chaque
   // frappe, ce qui reexecute les effets qui en dependent (chez leurs
   // consommateurs comme ici) et peut relancer des requetes.
-  const searchRef = useRef('');
+  const searchRef = useRef("");
   searchRef.current = searchQuery;
 
   /** Recharge depuis le début (pull-to-refresh). */
@@ -253,12 +286,45 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     await fetchPage(undefined, searchRef.current.trim() || undefined);
   }, [fetchPage]);
 
+  /**
+   * Instant du dernier `resetToFirstPage()`. Juste apres une troncature, la
+   * liste raccourcit brutalement : sa fin remonte sous le viewport et
+   * `onEndReached` repart aussitot. Sans ce verrou, on rechargeait la page
+   * qu'on venait de retirer — boucle de pagination infinie.
+   */
+  const lastResetAtRef = useRef(0);
+  const RESET_COOLDOWN_MS = 800;
+
   const loadMore = useCallback(() => {
     // Une recherche affiche ses propres résultats pagines ; on continue de
     // paginer dedans avec le meme `q`, sinon on melangerait deux listes.
     if (loadingMore || loading || !cursorRef.current) return;
+    if (Date.now() - lastResetAtRef.current < RESET_COOLDOWN_MS) return;
     void fetchPage(cursorRef.current, searchRef.current.trim() || undefined);
   }, [fetchPage, loading, loadingMore]);
+
+  /**
+   * Retour a la premiere page SANS requete : on tronque la liste deja chargee.
+   *
+   * Appele quand l'utilisateur revient en haut du home. Moins de cellules en
+   * memoire = moins de travail pour la `FlatList`, et la liste retrouve l'etat
+   * exact qu'elle avait apres le premier GET. Les pages suivantes seront
+   * rechargees normalement au scroll.
+   *
+   * ⚠️ Sans effet si rien n'a ete pagine (`fastFoods.length <= PAGE_SIZE`) :
+   * declencher un rendu pour rien reintroduirait le probleme qu'on corrige.
+   */
+  const resetToFirstPage = useCallback(() => {
+    setFastFoods((prev) => {
+      if (prev.length <= PAGE_SIZE) return prev;
+      lastResetAtRef.current = Date.now();
+      // Le curseur doit repartir de la fin de la page conservee, sinon
+      // `loadMore` rechargerait des boutiques deja affichees.
+      cursorRef.current = firstPageCursorRef.current;
+      setHasMore(!!firstPageCursorRef.current);
+      return prev.slice(0, PAGE_SIZE);
+    });
+  }, []);
 
   // Refetch à CHAQUE changement d'identité (y compris `null` → user au boot :
   // la restauration de session Firebase est asynchrone et se termine APRÈS le
@@ -290,9 +356,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   );
 
   // Un timer en vol au demontage relancerait un fetch sur un contexte mort.
-  useEffect(() => () => {
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    },
+    [],
+  );
 
   // ── Injection socket : upsert/remove sur le state local, sans requête ──
   const upsertMenuFromSocket = useCallback((rawMenu: any) => {
@@ -338,7 +407,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         rawFastFood,
         // Insertion en tête (voir plus bas) : le design 0 est celui de la
         // première position. `prev.length % 6` valait pour un ajout en fin.
-        idx >= 0 ? prev[idx].designIndex ?? 0 : 0,
+        idx >= 0 ? (prev[idx].designIndex ?? 0) : 0,
       );
       if (idx >= 0) {
         const next = [...prev];
@@ -392,32 +461,63 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     );
   }, []);
 
+  // ⚠️ `useMemo` OBLIGATOIRE — ne JAMAIS repasser un objet litteral en `value`.
+  //
+  // Un litteral est recree a chaque rendu du provider : TOUS les consommateurs
+  // du contexte se re-rendent alors, meme quand aucune donnee n'a bouge. Sur le
+  // home, cela re-rendait en vagues les cellules visibles de la `FlatList` —
+  // des cartes pourtant immobiles — avec 70 a 190 ms de blocage JS a chaque
+  // vague. C'etait la cause de la micro-saccade au scroll.
+  const value = useMemo(
+    () => ({
+      fastFoods,
+      loading,
+      loadingMore,
+      hasMore,
+      loadMore,
+      hasLoadedOnce,
+      appleReviewMode,
+      banners,
+      error,
+      searchQuery,
+      // Expose le handler debounce, pas le setter brut : taper doit lancer la
+      // recherche serveur, et l'ecran n'a pas a s'en charger.
+      setSearchQuery: handleSearchChange,
+      selectedCategory,
+      setSelectedCategory,
+      refresh,
+      resetToFirstPage,
+      upsertMenuFromSocket,
+      removeMenuFromSocket,
+      upsertFastFoodFromSocket,
+      applyDeliveryOffer,
+      clearDeliveryOfferForBonus,
+    }),
+    [
+      fastFoods,
+      loading,
+      loadingMore,
+      hasMore,
+      loadMore,
+      hasLoadedOnce,
+      appleReviewMode,
+      banners,
+      error,
+      searchQuery,
+      handleSearchChange,
+      selectedCategory,
+      refresh,
+      resetToFirstPage,
+      upsertMenuFromSocket,
+      removeMenuFromSocket,
+      upsertFastFoodFromSocket,
+      applyDeliveryOffer,
+      clearDeliveryOfferForBonus,
+    ],
+  );
+
   return (
-    <FastFoodContext.Provider
-      value={{
-        fastFoods,
-        loading,
-        loadingMore,
-        hasMore,
-        loadMore,
-        hasLoadedOnce,
-        appleReviewMode,
-        banners,
-        error,
-        searchQuery,
-        // Expose le handler debounce, pas le setter brut : taper doit lancer la
-        // recherche serveur, et l'ecran n'a pas a s'en charger.
-        setSearchQuery: handleSearchChange,
-        selectedCategory,
-        setSelectedCategory,
-        refresh,
-        upsertMenuFromSocket,
-        removeMenuFromSocket,
-        upsertFastFoodFromSocket,
-        applyDeliveryOffer,
-        clearDeliveryOfferForBonus,
-      }}
-    >
+    <FastFoodContext.Provider value={value}>
       {children}
     </FastFoodContext.Provider>
   );
@@ -426,7 +526,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const useFastFoodContext = () => {
   const context = useContext(FastFoodContext);
   if (context === undefined) {
-    throw new Error('useFastFoodContext must be used within a FastFoodProvider');
+    throw new Error(
+      "useFastFoodContext must be used within a FastFoodProvider",
+    );
   }
   return context;
 };

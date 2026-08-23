@@ -107,6 +107,7 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |
 | `refresh()` | Repart de la première page (pull-to-refresh). |
+| `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. |
 | `hasLoadedOnce` | ⚠️ **Pilote la révélation de `(tabs)`** — voir [structure.md](./structure.md). Ne pas casser. |
 | `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie inactive). |
 | `appleReviewMode` · `banners` | Portés par la réponse. |
@@ -116,6 +117,13 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 
 - **`runIdRef`** : une réponse dont le numéro n'est plus le dernier est ignorée.
   Sans ça, une recherche lente écraserait une frappe plus récente.
+- **`RESET_COOLDOWN_MS` (800 ms)** : `loadMore` est neutralisé juste après un
+  `resetToFirstPage()`. ⚠️ Sans lui, tronquer la liste fait remonter sa fin sous
+  le viewport → `onEndReached` part → `loadMore` recharge la page qu'on vient de
+  retirer → on retronque. **Boucle de pagination infinie**, ~120 ms le tour.
+- **`firstPageCursorRef`** : curseur rendu par la première page, conservé pour
+  que `resetToFirstPage()` reparte exactement de sa fin — sinon `loadMore`
+  rechargerait des boutiques déjà affichées.
 - **Dédup par id** au `loadMore` : un `newFastfood` reçu par socket pendant le
   chargement peut avoir déjà inséré une boutique de cette page.
 - **`upsertFastFoodFromSocket` insère en TÊTE** (`[normalized, ...prev]`).
@@ -291,6 +299,69 @@ Les images sont servies en WebP par le backend (`thumbnailUrl.js`), dimensions
 d'origine conservées.
 
 ---
+
+## Retour en haut — bouton Home et scroll manuel
+
+Deux déclencheurs, même effet : remontée puis **troncature à la première page**
+(`resetToFirstPage`), pour ne pas garder des dizaines de cellules montées.
+
+- **Tap sur l'onglet Home** : écouteur `tabPress`, posé **dans l'écran** et non
+  dans `(tabs)/_layout.tsx` — ce layout est partagé par les 5 onglets et n'a pas
+  accès à la liste. Garde `isFocused()` : sans elle, taper Home depuis un autre
+  onglet remonterait la liste pendant la navigation entrante.
+- **Scroll manuel** : `onMomentumScrollEnd`, jamais `onScroll` — retirer des
+  cellules pendant que la liste défile la ferait sauter.
+
+> ⚠️ **`atTopRef` est obligatoire avant toute troncature.** Tronquer sans savoir
+> où l'on se trouve fait remonter le bas de liste sous le viewport et déclenche
+> `onEndReached` → boucle de pagination (voir `RESET_COOLDOWN_MS`). Un simple
+> `setTimeout` ne suffit pas : il a été essayé et il créait la boucle.
+
+Le pied de liste et `onEndReached` ont été **testés et mis hors de cause** dans
+la boucle mount/unmount de la dernière cellule.
+
+## Performance de la liste — références stables (OBLIGATOIRE)
+
+Le home se re-rend à **chaque agitation des contextes voisins** (notifications,
+auth, socket). Si quoi que ce soit d'instable descend jusqu'à la `FlatList`,
+elle reconstruit toutes ses cellules visibles — des cartes lourdes (`BlurView`,
+`LinearGradient`, `Svg`, ombres) — et bloque le thread JS **70 à 190 ms**. C'est
+la micro-saccade ressentie au scroll.
+
+Quatre sources ont été trouvées et corrigées ; **aucune ne doit revenir** :
+
+| Fichier | À ne jamais refaire | Correctif en place |
+|---|---|---|
+| `FastFoodContext` | `value={{ ... }}` littéral | `useMemo` sur la `value` |
+| `useFastFoods` | `.filter()` + `{...context}` dans le corps du hook | `useMemo` sur les deux |
+| `app/(tabs)/index.tsx` | `renderItem` / `keyExtractor` inline | `useCallback`, plus `handleMenuClickRef` pour figer le handler |
+| `DesignRouter` | pas de `memo` ; tableau des 6 variantes JSX instanciées | `React.memo` ; on sélectionne le **composant**, pas l'élément |
+
+> ⚠️ `keyExtractor` ne doit **jamais** retomber sur l'index nu : une insertion en
+> tête (socket) décalerait toutes les clés et remonterait la liste entière.
+> Préfixe explicite : `item.id ?? \`idx-${index}\``.
+
+**Symptôme à reconnaître** : des `re-rendu #N (xN)` qui s'incrémentent sur des
+cellules **immobiles**, par vagues synchronisées sur toutes les cellules à la
+fois. Vagues simultanées = c'est le parent qui se re-rend, pas les cellules.
+
+### Sondes de diagnostic (conservées)
+
+Volontairement laissées en place, toutes sous `__DEV__` (aucun effet en
+production) :
+
+- `[CELL] MOUNT / UNMOUNT / re-rendu #N (xN)` — `DesignRouter` ;
+- `[JS] blocage Nms` — sonde de blocage du thread, `app/(tabs)/index.tsx` ;
+- `[END] onEndReached` — déclenchements de la pagination ;
+- `DISABLE_FOOTER` — neutralise le pied de liste pour l'isoler d'un test.
+
+> ⚠️ Une mesure de durée par `Date.now()` capturé au rendu et relu dans un
+> `useEffect` donne des valeurs **fausses** (on a vu « 42909 ms ») : l'effet
+> s'exécute bien après le rendu. Se fier à la sonde `[JS]`, pas à ça.
+
+**La méthode** : instrumenter et lire les logs. Sur ce chantier, les hypothèses
+successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toutes
+été démenties par la mesure. Instrumenter d'abord.
 
 ## Points d'attention
 

@@ -507,8 +507,6 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
 
   // --- DESIGN 7: IMMERSIVE MINI ---
   if (variant === 7) {
-    const V7_TINT = ['#e8440a', '#6c5ce7', '#00b894', '#e84393', '#0984e3', '#e17055', '#fdcb6e', '#00cec9'];
-    const tint = V7_TINT[index % V7_TINT.length];
     const stockRadius = 13;
     const stockCircumference = 2 * Math.PI * stockRadius;
     const stockProgress = stockCircumference - (stock / 100) * stockCircumference;
@@ -529,9 +527,6 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           locations={[0, 0.15, 0.35, 0.6, 1]}
           style={StyleSheet.absoluteFill}
         />
-
-        {/* Ligne accent diagonale décorative */}
-        <View style={[styles.v7AccentStripe, { backgroundColor: tint }]} />
 
         {/* Top chips: Prix + Stock */}
         <View style={styles.v7TopChips}>
@@ -864,8 +859,7 @@ const styles = StyleSheet.create({
 
     // --- DESIGN 7: IMMERSIVE MINI ---
     v7Card: { width: 150, height: 190, borderRadius: 22, marginRight: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
-    v7BgImg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' ,transform:'scale(1.5)'},
-    v7AccentStripe: { position: 'absolute', top: 30, left: -10, width: 60, height: 3, borderRadius: 2, transform: [{ rotate: '45deg' }], opacity: 0.7, zIndex: 2 },
+    v7BgImg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     v7TopChips: { position: 'absolute', top: 8, left: 8, right: 8, flexDirection: 'row', gap: 8, alignItems: 'center', zIndex: 3 },
     v7PricePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
     v7StockChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' },

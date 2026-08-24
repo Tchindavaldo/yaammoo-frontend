@@ -29,6 +29,10 @@ npm install
 APP_VERSION="$(node -p "require('./app.json').expo.version")"
 BUILD_NUMBER="${CI_BUILD_NUMBER:-1}"
 
+# Lu ICI, avant le `cd ios` ci-dessous : depuis ios/, `require('./app.json')`
+# ne resout plus (MODULE_NOT_FOUND). Utilise plus bas pour l'OTA.
+RUNTIME_VERSION="$(node -p "require('./app.json').expo.runtimeVersion")"
+
 echo "[ci] Versioning natif → version=$APP_VERSION build=$BUILD_NUMBER"
 
 cd ios
@@ -47,7 +51,6 @@ xcrun agvtool new-version -all "$BUILD_NUMBER"
 #     de leur profil (eas.json) ; Xcode Cloud, lui, ne le connaît pas. Le poser
 #     ici évite de le figer dans le plist versionné, que le prebuild EAS écrase
 #     à chaque build local.
-RUNTIME_VERSION="$(node -p "require('./app.json').expo.runtimeVersion")"
 PLIST="yaammoo/Supporting/Expo.plist"
 /usr/libexec/PlistBuddy -c "Set :EXUpdatesRuntimeVersion $RUNTIME_VERSION" "$PLIST"
 /usr/libexec/PlistBuddy -c "Delete :EXUpdatesRequestHeaders" "$PLIST" 2>/dev/null || true

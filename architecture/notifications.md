@@ -172,8 +172,7 @@ Déclarée via le plugin `expo-notifications` dans `app.json` :
 
 ```json
 ["expo-notifications", {
-  "icon": "./assets/images/logo-notification-white.png",
-  "color": "#e8440a"
+  "icon": "./assets/images/logo-notification-white.png"
 }]
 ```
 
@@ -183,10 +182,52 @@ Elle doit donc être **entièrement blanche sur fond transparent**. Sans cette
 déclaration, Android retombe sur l'icône de l'app et affiche généralement un
 carré blanc informe.
 
-`color` teinte la silhouette et l'accent de la notification.
-
 > `logo-notification-white-distinct.png` existe aussi dans `assets/images/` mais
 > contient des pixels non blancs : ne pas l'utiliser pour ce rôle.
+
+### Forme du dessin : compacte, jamais un mot
+
+L'asset portait le logo « yaammoo » complet (ratio 2,6:1). Android inscrit
+l'icône dans un **cercle** et la reduit jusqu'a ce que la largeur rentre : un
+dessin aussi allonge finissait ecrase et illisible. L'asset porte donc
+desormais le **« y » seul** (ratio 0,80, quasi carre), occupant ~2/3 du canevas
+— la zone sure Android.
+
+Le sourire du logo a ete essaye et **ecarte** : ratio 3,3:1, encore pire que le
+mot entier.
+
+### Generer l'asset
+
+Source **vectorielle** (SVG du « y »), rendue en haute resolution puis reduite
+sur un canevas carre de 512 px, dessin centre a 66 % de la largeur. Partir d'un
+PNG deja pixelise donne des bords crenelés.
+
+`expo prebuild` decoupe ensuite cet asset en **5 drawables fixes**
+(`android/app/src/main/res/drawable-{m,h,xh,xxh,xxxh}dpi/notification_icon.png`,
+24 → 96 px). Android ne redimensionne rien a l'affichage : il pioche la densite
+de l'ecran. La densite utile maximale est donc 96 px — inutile de monter au-dela
+de 512 px pour l'asset source.
+
+> Verifier quelle version tourne reellement sur un appareil : comparer le md5
+> des drawables de l'APK installe (`adb pull` du `base.apk`) avec ceux du
+> projet. Les variantes se ressemblent trop pour se fier a l'œil.
+
+### ⚠️ Le payload FCM prime, app fermee
+
+**App ouverte**, c'est le JS (`expo-notifications`) qui construit la notif et
+prend `default_notification_icon` du manifeste. **App fermee**, le JS ne tourne
+pas : Android affiche directement le bloc `notification` du payload FCM, ou le
+champ `icon` **ecrase** le defaut du manifeste.
+
+Le backend doit donc envoyer `icon: 'notification_icon'` — voir
+`BACKEND/architecture/notifications.md`. Il envoyait `ic_launcher`, opaque sur
+toute sa surface : Android n'en gardait que l'alpha et affichait un **rond gris
+uni**, uniquement app fermee.
+
+> Consequence pour les tests : une icone qui s'affiche bien app ouverte ne prouve
+> rien. Toujours tester **app en arriere-plan** (bouton home — pas
+> `am force-stop`, qui bloque la reception FCM jusqu'au prochain lancement
+> manuel).
 
 ## Composants UI
 

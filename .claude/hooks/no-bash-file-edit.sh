@@ -11,11 +11,14 @@
 
 set -uo pipefail
 
+# shellcheck source=lib-payload.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib-payload.sh"
+
 payload=$(cat)
-tool=$(printf '%s' "$payload" | jq -r '.tool_name // empty')
+tool=$(payload_get "$payload" '.tool_name') || payload_die
 [ "$tool" = "Bash" ] || exit 0
 
-cmd=$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')
+cmd=$(payload_get "$payload" '.tool_input.command') || payload_die
 
 # ⚠️ Les chevrons a l'interieur d'une chaine ne sont PAS des redirections : un
 # message de commit contient `Co-Authored-By: <noreply@…>`, un echo peut citer

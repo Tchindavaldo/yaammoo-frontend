@@ -17,10 +17,14 @@
 
 set -uo pipefail
 
+# shellcheck source=lib-payload.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib-payload.sh"
+
 payload=$(cat)
 
-tool=$(printf '%s' "$payload" | jq -r '.tool_name // empty')
-session=$(printf '%s' "$payload" | jq -r '.session_id // "nosession"')
+tool=$(payload_get "$payload" '.tool_name') || payload_die
+session=$(payload_get "$payload" '.session_id') || payload_die
+[ -z "$session" ] && session="nosession"
 marker_dir="/tmp/claude-arch-read-${session}"
 arch_dir="${CLAUDE_PROJECT_DIR:-.}/architecture"
 
@@ -53,7 +57,7 @@ mkdir -p "$marker_dir" 2>/dev/null
 
 # --- Cas 1 : lecture d'un architecture/*.md -> on pose le marqueur pour CETTE feature ---
 if [ "$tool" = "Read" ]; then
-  path=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty')
+  path=$(payload_get "$payload" '.tool_input.file_path') || payload_die
   case "$path" in
     */architecture/*.md)
       base=$(basename "$path" .md)
@@ -70,7 +74,7 @@ fi
 # aux recherches, il n'y a pas de lecture prealable qui rendrait l'agent
 # legitime. Les agents non exploratoires (ex. statusline-setup) passent.
 if [ "$tool" = "Agent" ] || [ "$tool" = "Task" ]; then
-  subagent=$(printf '%s' "$payload" | jq -r '.tool_input.subagent_type // empty')
+  subagent=$(payload_get "$payload" '.tool_input.subagent_type') || payload_die
   case "$subagent" in
     Explore|general-purpose|Plan)
       cat >&2 <<EOF
@@ -94,10 +98,12 @@ fi
 target=""
 case "$tool" in
   Grep|Glob)
-    target=$(printf '%s' "$payload" | jq -r '(.tool_input.pattern // "") + " " + (.tool_input.path // "")')
+    pattern=$(payload_get "$payload" '.tool_input.pattern') || payload_die
+    gpath=$(payload_get "$payload" '.tool_input.path') || payload_die
+    target="${pattern} ${gpath}"
     ;;
   Bash)
-    cmd=$(printf '%s' "$payload" | jq -r '.tool_input.command // ""')
+    cmd=$(payload_get "$payload" '.tool_input.command') || payload_die
     case "$cmd" in
       *grep*|*"rg "*|*"find "*) target="$cmd" ;;
       *) exit 0 ;;

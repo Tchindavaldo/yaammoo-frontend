@@ -104,7 +104,7 @@ nouveau binaire et ne peuvent pas etre poussees en OTA.
 | Endroit | Role |
 |---|---|
 | `app.json` → `updates.url` | Serveur EAS Update, derive du `projectId`. |
-| `app.json` → `runtimeVersion.policy: "appVersion"` | Un update ne s'applique qu'aux apps de **meme `version`**. |
+| `app.json` → `runtimeVersion` (valeur manuelle) | Un update ne s'applique qu'aux apps de **meme runtimeVersion**. |
 | `eas.json` → `channel` par profil | `production` / `preview` / `development`. |
 | `src/services/useOtaUpdates.ts` | Verifie, telecharge et **applique** la mise a jour. |
 
@@ -117,26 +117,44 @@ Publier : `eas update --branch production --message "..."`.
 section `updates` de `app.json` ne s'y applique qu'au moment d'un `prebuild`.
 
 `EXUpdatesEnabled` y valait `false` : aucun build Xcode Cloud n'aurait recu
-d'update, quelle que soit la configuration EAS. Le plist porte donc desormais
-l'activation, l'URL, le runtimeVersion et le canal (`expo-channel-name`) — ce
-dernier n'etant sinon pose que par les builds EAS, via le `channel` d'`eas.json`.
+d'update, quelle que soit la configuration EAS. Le plist versionne porte donc
+l'activation, l'URL et le runtimeVersion.
 
-`ci_post_clone.sh` recopie `expo.version` dans `EXUpdatesRuntimeVersion` a chaque
-build (comme il le fait deja pour les versions natives) : sans cela le binaire
-embarquerait un runtimeVersion perime des le premier bump de version, et ne
-recevrait plus aucun update.
+Le **canal** (`expo-channel-name`) n'est PAS fige dans le plist : le `prebuild`
+d'un build EAS local regenere le fichier et y ecrit le canal du profil lance
+(`development`, `preview`...), ecrasant toute valeur commitee. `ci_post_clone.sh`
+le pose donc lui-meme a `production` a chaque build Xcode Cloud, comme il le fait
+pour le runtimeVersion. Les deux chaines cessent ainsi de se disputer le fichier.
 
-> Android passe par EAS, qui pose canal et runtimeVersion automatiquement — rien
-> a maintenir de ce cote.
+`ci_post_clone.sh` recopie `expo.runtimeVersion` d'`app.json` dans
+`EXUpdatesRuntimeVersion` a chaque build : sans cela le binaire embarquerait un
+runtimeVersion perime, et ne recevrait plus aucun update.
+
+> Android passe par EAS, qui pose le canal automatiquement — rien a maintenir de
+> ce cote.
+
+#### runtimeVersion : valeur manuelle (et non policy)
+
+`app.json` porte une **valeur en dur** (`"runtimeVersion": "1.0.6"`) la ou une
+policy `"appVersion"` serait plus automatique. Raison : les dossiers natifs
+existent sur le disque, donc Expo considere le projet en **workflow bare**, ou
+les policies ne sont pas supportees — `expo start` s'arretait sur
+`CommandError: ... runtime version policies are not supported`, empechant le dev
+client de se connecter.
+
+Ce mode manuel ne gene pas : `app.json` reste la source unique, lue aussi bien
+par EAS que par `ci_post_clone.sh`. Seule contrainte, **bumper `runtimeVersion`
+a la main** en meme temps que `version`. Repasser en policy reste possible (voir
+`fingerprint`, supportee en bare) : le choix est ouvert.
 
 ### Points a connaitre
 
 - ⚠️ **Rebuild obligatoire.** L'OTA ne fonctionne qu'a partir d'un binaire
   compile **apres** cette configuration. Les installations anterieures ne
   recevront jamais d'update, quel que soit le nombre de `eas update` publies.
-- ⚠️ **`runtimeVersion` suit `version`.** Passer de 1.0.6 a 1.0.7 coupe les
-  clients restes en 1.0.6 : chaque bump de version publique exige donc un
-  nouveau build store. C'est voulu — cela garantit que le JS livre correspond au
+- ⚠️ **`runtimeVersion` se bumpe a la main.** Passer de 1.0.6 a 1.0.7 coupe les
+  clients restes en 1.0.6 : chaque bump exige donc un nouveau build store. Le
+  bumper en meme temps que `version` (aucun automatisme ne le fait). C'est voulu — cela garantit que le JS livre correspond au
   natif qui l'execute. L'`autoIncrement` du `versionCode` / `buildNumber`, lui,
   ne change pas le `runtimeVersion` et ne casse rien.
 - **Application immediate.** Par defaut `expo-updates` telecharge au demarrage

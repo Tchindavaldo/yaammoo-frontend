@@ -36,13 +36,23 @@ cd ios
 xcrun agvtool new-marketing-version "$APP_VERSION"
 xcrun agvtool new-version -all "$BUILD_NUMBER"
 
-# ─── runtimeVersion OTA (expo-updates) ───────────────────────────────────────
-# Même raison que ci-dessus : Xcode Cloud ne lit pas app.json, donc la policy
-# "appVersion" n'est pas résolue toute seule. On recopie la version dans
-# Expo.plist, sinon le binaire embarquerait un runtimeVersion périmé et ne
-# recevrait AUCUN update après un bump de version.
+# ─── runtimeVersion + canal OTA (expo-updates) ───────────────────────────────
+# Même raison que ci-dessus : Xcode Cloud ne lit ni app.json ni eas.json. Les
+# deux valeurs OTA sont donc posées ICI, à chaque build :
+#
+#   - EXUpdatesRuntimeVersion ← app.json `expo.runtimeVersion` (source unique).
+#     Sans cela le binaire embarquerait un runtimeVersion périmé et ne recevrait
+#     AUCUN update après un bump.
+#   - expo-channel-name ← "production". Les builds EAS le posent via le `channel`
+#     de leur profil (eas.json) ; Xcode Cloud, lui, ne le connaît pas. Le poser
+#     ici évite de le figer dans le plist versionné, que le prebuild EAS écrase
+#     à chaque build local.
+RUNTIME_VERSION="$(node -p "require('./app.json').expo.runtimeVersion")"
 PLIST="yaammoo/Supporting/Expo.plist"
-/usr/libexec/PlistBuddy -c "Set :EXUpdatesRuntimeVersion $APP_VERSION" "$PLIST"
-echo "[ci] runtimeVersion OTA → $APP_VERSION"
+/usr/libexec/PlistBuddy -c "Set :EXUpdatesRuntimeVersion $RUNTIME_VERSION" "$PLIST"
+/usr/libexec/PlistBuddy -c "Delete :EXUpdatesRequestHeaders" "$PLIST" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :EXUpdatesRequestHeaders dict" "$PLIST"
+/usr/libexec/PlistBuddy -c "Add :EXUpdatesRequestHeaders:expo-channel-name string production" "$PLIST"
+echo "[ci] runtimeVersion OTA → $RUNTIME_VERSION (canal production)"
 
 pod install

@@ -12,9 +12,7 @@
       "url": "https://u.expo.dev/24675cd4-f658-43d1-9bfc-0ce0ff16a007",
       "fallbackToCacheTimeout": 0
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.6",
     "extra": {
       "eas": {
         "projectId": "24675cd4-f658-43d1-9bfc-0ce0ff16a007"

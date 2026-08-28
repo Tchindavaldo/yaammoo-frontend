@@ -332,7 +332,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
       <TouchableOpacity style={[styles.v4Card, { backgroundColor: bgColor }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Image de fond plein cadre */}
         <Image
-          source={V4_BACKGROUNDS[index % V4_BACKGROUNDS.length]}
+          source={menu.image ? { uri: menu.image } : V4_BACKGROUNDS[index % V4_BACKGROUNDS.length]}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
@@ -443,7 +443,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
 
         {/* Image de fond plein cadre */}
         <Image
-          source={V5_BACKGROUNDS[index % V5_BACKGROUNDS.length]}
+          source={menu.image ? { uri: menu.image } : V5_BACKGROUNDS[index % V5_BACKGROUNDS.length]}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
@@ -570,7 +570,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
       <TouchableOpacity style={[styles.v6Card, { backgroundColor: bg }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Image de fond plein cadre */}
         <Image
-          source={V6_BACKGROUND}
+          source={menu.image ? { uri: menu.image } : V6_BACKGROUND}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"

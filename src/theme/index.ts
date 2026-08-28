@@ -38,7 +38,7 @@ export const Theme = {
         round: 9999,
     },
     design: {
-        marginBottom: 32,
+        marginBottom: 20,
         horizontalPadding: 4,
     }
 };

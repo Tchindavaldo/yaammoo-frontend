@@ -19,6 +19,36 @@ const USE_VARIABLE_BACKGROUNDS = false; // Set to true to enable variable backgr
 /** Mettre a `true` pour figer le squelette et inspecter son rendu. */
 const FORCE_SKELETON = false;
 
+/** TEMPORAIRE — `false` masque tout le contenu de la carte variant 5 pour ne
+ *  laisser voir que son image de fond. */
+const V5_SHOW_CONTENT = false;
+
+/** TEMPORAIRE — idem pour la carte variant 4. */
+const V4_SHOW_CONTENT = false;
+
+/** TEMPORAIRE — idem pour la carte variant 6. */
+const V6_SHOW_CONTENT = false;
+
+/** TEMPORAIRE — `false` masque les bandes blur du bas (variants 4 et 5). */
+const SHOW_BOTTOM_BAR = true;
+
+/** Fonds du variant 5 : un poster different par menu, en boucle sur l'index. */
+const V5_BACKGROUNDS = [
+  require('@/assets/images/background/pop-chicken-poster.jpg'),
+  require('@/assets/images/background/macdonald-poster.jpg'),
+  require('@/assets/images/background/molten-cheese-burger-poster.jpg'),
+];
+
+/** Fonds du variant 4 : un poster different par menu, en boucle sur l'index. */
+const V4_BACKGROUNDS = [
+  require('@/assets/images/background/spicy-biryani-poster.jpg'),
+  require('@/assets/images/background/pisang-goreng-poster.jpg'),
+  require('@/assets/images/background/sushi-bar-poster.jpg'),
+];
+
+/** Fond du variant 6. */
+const V6_BACKGROUND = require('@/assets/images/background/design6-poster.png');
+
 /**
  * Gabarit du squelette par variante : il doit occuper EXACTEMENT la place de la
  * carte finale, sinon la rangee horizontale saute au moment du chargement.
@@ -27,13 +57,13 @@ const FORCE_SKELETON = false;
  * reprend la hauteur rendue observee.
  */
 const SKELETON_SIZES: Record<number, { width: number; height: number; radius: number; gap: number }> = {
-  1: { width: 260, height: 280, radius: 32, gap: 16 },
-  2: { width: 220, height: 260, radius: 22, gap: 16 },
-  3: { width: 130, height: 200, radius: 20, gap: 14 },
-  4: { width: 240, height: 240, radius: 28, gap: 16 },
-  5: { width: 200, height: 250, radius: 28, gap: 16 },
-  6: { width: SCREEN_WIDTH * 0.78, height: 200, radius: 26, gap: 16 },
-  7: { width: 150, height: 190, radius: 22, gap: 14 },
+  1: { width: 260, height: 280, radius: 18, gap: 8 },
+  2: { width: 220, height: 260, radius: 14, gap: 8 },
+  3: { width: 130, height: 200, radius: 12, gap: 8 },
+  4: { width: 240, height: 240, radius: 16, gap: 8 },
+  5: { width: 200, height: 250, radius: 16, gap: 8 },
+  6: { width: SCREEN_WIDTH * 0.78, height: 200, radius: 14, gap: 8 },
+  7: { width: 150, height: 190, radius: 12, gap: 8 },
 };
 
 interface DesignItemProps {
@@ -54,6 +84,45 @@ interface DesignItemProps {
  * decide quand la reveler. Separer les deux est ce qui permet d'envelopper les
  * 7 variantes d'un seul coup, au lieu de repeter la logique a chaque retour.
  */
+/**
+ * Bloc d'infos rendu SOUS la carte, hors de celle-ci : nom du menu, livraison
+ * (montant barre + offert), note et votes, statut de disponibilite.
+ */
+const ItemMeta: React.FC<{ menu: Menu; variant: number; width: number; marginRight: number }> = ({
+  menu, variant, width, marginRight,
+}) => {
+  const available = menu.disponibilite === 'available' || menu.disponibilite === 'Disponible';
+  const rating = (menu as any)?.rating ?? 4.5;
+  const votes = (menu as any)?.votes ?? 0;
+  const deliveryFee = (menu as any)?.deliveryFee ?? 500;
+
+  return (
+    <View style={[styles.metaBlock, { width, marginRight }]}>
+      <View style={styles.metaTitleRow}>
+        <Text style={styles.metaTitle} numberOfLines={1}>{menu.titre}</Text>
+        <View style={{ flex: 1 }} />
+        <View style={[styles.metaDot, { backgroundColor: available ? '#00b894' : '#d63031' }]} />
+        <Text style={[styles.metaText, { color: available ? '#00b894' : '#d63031' }]}>
+          {available ? 'Disponible' : 'Indisponible'}
+        </Text>
+      </View>
+
+      <View style={styles.metaRow}>
+        <Ionicons name="bicycle-outline" size={12} color="#666" />
+        <Text style={styles.metaText}>Livraison</Text>
+        <Text style={styles.metaStrike}>{deliveryFee} F</Text>
+        <Text style={styles.metaFree}>offert</Text>
+        <View style={{ flex: 1 }} />
+        {/* Le variant 7 n'affiche pas de note. */}
+        {variant !== 7 ? <Ionicons name="star" size={12} color="#f5a623" /> : null}
+        {variant !== 7 ? <Text style={styles.metaText}>{rating}</Text> : null}
+        {/* La carte du variant 5 est plus etroite : le nombre d'avis deborde. */}
+        {variant !== 5 && variant !== 7 ? <Text style={styles.metaMuted}>({votes} avis)</Text> : null}
+      </View>
+    </View>
+  );
+};
+
 const DesignItemCard: React.FC<DesignItemProps> = ({
   menu,
   variant,
@@ -227,7 +296,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
          
           <View>
             <Text style={styles.v3LiveLabel}>Prochaine livraison</Text>
-            <Text style={styles.v3LiveHour}>{deliveryTime}</Text> 
+            <Text style={styles.v3LiveHour}>{deliveryTime}</Text>
           </View>
         </View>
         </TouchableOpacity>
@@ -261,7 +330,17 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
 
     return (
       <TouchableOpacity style={[styles.v4Card, { backgroundColor: bgColor }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
+        {/* Image de fond plein cadre */}
+        <Image
+          source={V4_BACKGROUNDS[index % V4_BACKGROUNDS.length]}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
 
+        {/* TEMPORAIRE — contenu masque pour ne voir que l'image de fond.
+            Remettre `V4_SHOW_CONTENT` a true pour le retablir. */}
+        {V4_SHOW_CONTENT && (<>
         {/* Motifs décoratifs — blobs comme Design 5 & 6 */}
         <View style={[styles.v4Blob, { backgroundColor: accentColor }]} />
         <View style={[styles.v4Blob2, { backgroundColor: accentColor }]} />
@@ -288,8 +367,10 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
             <Text style={styles.v4PriceNew}>{price}</Text>
           </BlurView>
         </View>
+        </>)}
 
         {/* Barre de stock + livraison en bas */}
+        {SHOW_BOTTOM_BAR && (
         <BlurView disableAndroidBlur
           intensity={60}
           tint="light"
@@ -333,10 +414,11 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
 
             <Text style={[styles.v5DeliveryLabel, {fontSize:10}]}>Prochaine</Text>
             <Text style={[styles.v5DeliveryTime, { color: 'black',fontSize:11 }]}>Livraison {deliveryTime}</Text>
-          </View> 
+          </View>
         </View>
           </View>
         </BlurView>
+        )}
         </TouchableOpacity>
     );
   }
@@ -359,6 +441,17 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={StyleSheet.absoluteFill}
         />
 
+        {/* Image de fond plein cadre */}
+        <Image
+          source={V5_BACKGROUNDS[index % V5_BACKGROUNDS.length]}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+
+        {/* TEMPORAIRE — contenu masque pour ne voir que l'image de fond.
+            Remettre `V5_SHOW_CONTENT` a true pour le retablir. */}
+        {V5_SHOW_CONTENT && (<>
         {/* Cercle décoratif accent en arrière-plan */}
         <View style={[styles.v5DecorCircle, { backgroundColor: accent, opacity: 0.08 }]} />
         <View style={[styles.v5DecorCircle2, { borderColor: accent, opacity: 0.12 }]} />
@@ -430,6 +523,35 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
         <View style={[styles.v5AddBtn, { backgroundColor: accent }]}>
           <Ionicons name="add" size={18} color="white" />
         </View>
+        </>)}
+
+        {/* Prix + stock en chips blur en haut — comme le variant 7 */}
+        <View style={[styles.v7TopChips, styles.v5TopChips]}>
+          <View style={[styles.v7PricePill, { backgroundColor: accent }]}>
+            <Text style={styles.v7PriceText}>{price}</Text>
+          </View>
+          <BlurView disableAndroidBlur intensity={80} tint="dark" style={styles.v7StockChip} fallbackStyle={styles.blurFallbackDark}>
+            <Text style={styles.v7StockNumber}>{stock}</Text>
+            <Text style={styles.v7StockLabel}>DISPO</Text>
+          </BlurView>
+        </View>
+
+        {/* Bas : uniquement la prochaine livraison — bande basse et compacte */}
+        {SHOW_BOTTOM_BAR && (
+        <BlurView disableAndroidBlur
+          intensity={60}
+          tint="light"
+          style={styles.v5BottomBar}
+        >
+          <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
+            <Ionicons name="flash" size={10} color="white" />
+          </View>
+          <View>
+            <Text style={[styles.v5DeliveryLabel, { fontSize: 10 }]}>Prochaine</Text>
+            <Text style={[styles.v5DeliveryTime, { color: 'black', fontSize: 11 }]}>Livraison {deliveryTime}</Text>
+          </View>
+        </BlurView>
+        )}
         </TouchableOpacity>
     );
   }
@@ -446,6 +568,17 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
 
     return (
       <TouchableOpacity style={[styles.v6Card, { backgroundColor: bg }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
+        {/* Image de fond plein cadre */}
+        <Image
+          source={V6_BACKGROUND}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+        />
+
+        {/* TEMPORAIRE — contenu masque pour ne voir que l'image de fond.
+            Remettre `V6_SHOW_CONTENT` a true pour le retablir. */}
+        {V6_SHOW_CONTENT && (<>
         {/* Grand cercle décoratif flou */}
         <View style={[styles.v6Blob, { backgroundColor: accent }]} />
         <View style={[styles.v6Blob2, { backgroundColor: accent }]} />
@@ -501,6 +634,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
         <View style={[styles.v6AddBtn, { backgroundColor: accent }]}>
           <Ionicons name="arrow-forward" size={16} color="white" />
         </View>
+        </>)}
         </TouchableOpacity>
     );
   }
@@ -653,6 +787,12 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
     <View>
       <Animated.View style={{ opacity: reveal }}>
         <DesignItemCard {...props} />
+        <ItemMeta
+          menu={menu}
+          variant={variant}
+          width={skel.width}
+          marginRight={isLast ? 0 : skel.gap}
+        />
       </Animated.View>
       {!skeletonGone ? (
         <Animated.View
@@ -660,6 +800,10 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
           style={[
             StyleSheet.absoluteFill,
             {
+              // Le bloc d'infos est rendu SOUS la carte : le voile s'arrete au
+              // bas de la carte et ne le recouvre pas.
+              bottom: undefined,
+              height: skel.height,
               // La carte porte sa propre marge droite : le voile doit couvrir
               // la carte, pas la gouttiere qui la suit.
               right: isLast ? 0 : skel.gap,
@@ -699,7 +843,7 @@ const styles = StyleSheet.create({
   blurFallbackLight: { backgroundColor: "#ffffff" },
   blurFallbackDark: { backgroundColor: "rgba(0, 0, 0, 0.55)" },
     // --- DESIGN 1 (Ex-D3) ---
-    v1Card: { width: 260, height: 280, borderRadius: 32, paddingHorizontal:14, paddingVertical: 14, marginRight: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 8 },
+    v1Card: { width: 260, height: 280, borderRadius: 18, paddingHorizontal:14, paddingVertical: 14, marginRight: 8, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 20, elevation: 8 },
     v1Header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 30 },
     v1Heart: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
     v1LabelBlur: { borderRadius: 12, overflow: 'hidden', alignSelf: 'flex-start', marginRight: 10 },
@@ -728,7 +872,7 @@ const styles = StyleSheet.create({
     v2DeliveryDot: { width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#4ade80', shadowColor: '#4ade80', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 4 },
 
     // --- DESIGN 2 (Ex-D4) ---
-    v2Card: { width: 220, backgroundColor: 'white', borderRadius: 22, padding: 14, marginRight: 16, borderWidth: 1, borderColor: '#efefef' },
+    v2Card: { width: 220, backgroundColor: 'white', borderRadius: 14, padding: 14, marginRight: 8, borderWidth: 1, borderColor: '#efefef' },
     v2ImgWrap: { width: '100%', height: 140, borderRadius: 16, overflow: 'hidden' },
     v2Image: { width: 130, height: 130,marginLeft:-3 },
     // v2Rating: { position: 'absolute', top: 18, right: 18, backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
@@ -760,7 +904,7 @@ const styles = StyleSheet.create({
     v2MiniProgressLabel: { fontSize: 7, fontWeight: '600', color: '#bbb', textTransform: 'uppercase', letterSpacing: 0.5 },
 
     // --- DESIGN 3 (Ex-D2) ---
-    v3Card: { width: 130, borderRadius: 20, marginRight: 14, overflow: 'hidden', backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 5 },
+    v3Card: { width: 130, borderRadius: 12, marginRight: 8, overflow: 'hidden', backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.1, shadowRadius: 14, elevation: 5 },
     v3HeroZone: { width: '100%', height: 120, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', position: 'relative' },
     v3Image: { width: 90, height: 90, transform: [{ scale: 1.2 }, { rotate: '-6deg' }] },
     v3PriceFloat: { position: 'absolute', bottom: 6, left: 6, backgroundColor: '#e8440a', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
@@ -776,7 +920,7 @@ const styles = StyleSheet.create({
     v3LiveHour: { fontSize: 9, fontWeight: '800', color: 'black' ,textAlign:'center'},
 
     // --- DESIGN 4 (Ex-D5) ---
-    v4Card: { width: 240, height: 240, borderRadius: 28, marginRight: 16, overflow: 'hidden' },
+    v4Card: { width: 240, height: 240, borderRadius: 16, marginRight: 8, overflow: 'hidden' },
     v4Blob: { position: 'absolute', top: -50, right: -30, width: 160, height: 160, borderRadius: 80, opacity: 0.07 },
     v4Blob2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, opacity: 0.05 },
     v4TopSection: { padding: 14, paddingBottom: 10, zIndex: 3, position: 'relative' },
@@ -785,7 +929,7 @@ const styles = StyleSheet.create({
     v4PriceNew: { color: '#e8440a', fontSize: 16, fontWeight: '900', letterSpacing: 0 },
     v4ImgWrap: { position: 'absolute', bottom: -20, right: -40, width: 220, height: 220, zIndex: 1, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 8 },
     v4Image: { width: '110%', height: '110%', borderRadius: 110 },
-    v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 10, zIndex: 5, overflow: 'hidden' },
+    v4StockBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, paddingVertical: 10, zIndex: 5, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.55)' },
     v4StockMainRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
     // ANDROID UNIQUEMENT : le flou de la barre est coupe (cf.
     // `disableAndroidBlur`), le bloc « N en stock » + sa barre de progression
@@ -813,7 +957,21 @@ const styles = StyleSheet.create({
     v4ProgressFill: { height: '100%', backgroundColor: '#e8440a', borderRadius: 2 },
 
     // --- DESIGN 5: GLASS SHOWCASE ---
-    v5Card: { width: 200, height: 250, borderRadius: 28, marginRight: 16, overflow: 'hidden', padding: 14,paddingVertical:8 },
+    v5Card: { width: 200, height: 250, borderRadius: 16, marginRight: 8, overflow: 'hidden', padding: 14,paddingVertical:8 },
+    // Chips du variant 5 : ecartes aux deux bords, contrairement au variant 7
+    // ou ils sont colles l'un a l'autre.
+    v5TopChips: { justifyContent: 'space-between' },
+
+    // Bande basse du variant 5 : uniquement la prochaine livraison, donc plus
+    // basse que la barre du variant 4 qui portait aussi stock + progression.
+    v5BottomBar: {
+      position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 5,
+      flexDirection: 'row', alignItems: 'center', gap: 8,
+      paddingHorizontal: 12, paddingVertical: 6, overflow: 'hidden',
+      // Voile blanc par-dessus le flou : la bande tire vers le blanc tout en
+      // laissant transparaitre l'image de fond.
+      backgroundColor: 'rgba(255,255,255,0.55)',
+    },
     v5DecorCircle: { position: 'absolute', top: -40, right: -40, width: 140, height: 140, borderRadius: 70 },
     v5DecorCircle2: { position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, borderRadius: 50, borderWidth: 2 },
     v5TopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 },
@@ -838,7 +996,7 @@ const styles = StyleSheet.create({
     v5AddBtn: { position: 'absolute', bottom: 11, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 
     // --- DESIGN 6: PANORAMIC SPLIT ---
-    v6Card: { width: SCREEN_WIDTH * 0.78, height: 200, borderRadius: 26, marginRight: 16, overflow: 'hidden', padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 6 },
+    v6Card: { width: SCREEN_WIDTH * 0.78, height: 200, borderRadius: 14, marginRight: 8, overflow: 'hidden', padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 6 },
     v6Blob: { position: 'absolute', top: -50, right: -30, width: 160, height: 160, borderRadius: 80, opacity: 0.07 },
     v6Blob2: { position: 'absolute', bottom: -40, left: -40, width: 120, height: 120, borderRadius: 60, opacity: 0.05 },
     v6Split: { flex: 1, flexDirection: 'row', gap: 12 },
@@ -858,7 +1016,7 @@ const styles = StyleSheet.create({
     v6AddBtn: { position: 'absolute', bottom: 14, right: 14, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', zIndex: 4, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
 
     // --- DESIGN 7: IMMERSIVE MINI ---
-    v7Card: { width: 150, height: 190, borderRadius: 22, marginRight: 14, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
+    v7Card: { width: 150, height: 190, borderRadius: 12, marginRight: 8, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8 },
     v7BgImg: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
     v7TopChips: { position: 'absolute', top: 8, left: 8, right: 8, flexDirection: 'row', gap: 8, alignItems: 'center', zIndex: 3 },
     v7PricePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
@@ -874,5 +1032,16 @@ const styles = StyleSheet.create({
     v7LiveMeta: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.7)' },
     v7LiveHour: { fontSize: 11, fontWeight: '900', marginTop: 1, color: 'white' },
 
-    defaultContainer: { padding: 20, backgroundColor: 'white', marginRight: 16, borderRadius: 10 }
+    defaultContainer: { padding: 20, backgroundColor: 'white', marginRight: 16, borderRadius: 10 },
+
+    // Bloc d'infos sous la carte (hors de la carte).
+    metaBlock: { paddingTop: 8, paddingLeft: 6, gap: 3 },
+    metaTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    metaTitle: { fontSize: 13, fontWeight: '900', color: '#111', flexShrink: 1 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    metaText: { fontSize: 11, fontWeight: '700', color: '#444' },
+    metaMuted: { fontSize: 11, fontWeight: '600', color: '#999' },
+    metaStrike: { fontSize: 11, fontWeight: '700', color: '#999', textDecorationLine: 'line-through' },
+    metaFree: { fontSize: 11, fontWeight: '900', color: '#00b894' },
+    metaDot: { width: 6, height: 6, borderRadius: 3 }
 });

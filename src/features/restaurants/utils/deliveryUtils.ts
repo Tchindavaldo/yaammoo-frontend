@@ -69,6 +69,79 @@ export const getNextDeliveryTime = (
 };
 
 /**
+ * Temps restant AVANT la fermeture des commandes du prochain créneau, en
+ * minutes. La limite est `heure du créneau - orderLeadTime` : passé ce point,
+ * le créneau bascule sur le suivant.
+ *
+ * Renvoie `null` si aucun créneau du jour n'est encore ouvert (report à demain,
+ * un décompte n'aurait plus de sens).
+ */
+export const getOrderCutoffMinutes = (
+  deliveryHours?: any[],
+  orderLeadTime: number = 0,
+): number | null => {
+  const defaultHours = ["12:00", "13:00", "14:00", "18:00", "19:00", "20:00"];
+  const raw =
+    deliveryHours && deliveryHours.length > 0 ? deliveryHours : defaultHours;
+  const hours = raw.map(extractHour).filter(Boolean);
+  if (hours.length === 0) return null;
+
+  const now = new Date();
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+
+  for (const hour of hours) {
+    const [hoursStr, minutesStr] = hour.split(":");
+    const hourTotalMinutes =
+      parseInt(hoursStr, 10) * 60 + parseInt(minutesStr, 10);
+    const cutoffTime = hourTotalMinutes - orderLeadTime;
+    if (currentTotalMinutes < cutoffTime) return cutoffTime - currentTotalMinutes;
+  }
+
+  return null;
+};
+
+/** Met en forme un décompte de minutes : « 2h 15min », « 45min ». */
+export const formatCountdown = (minutes: number): string => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+};
+
+/**
+ * Décompte réactif du temps restant pour commander. Recalculé chaque minute et
+ * au retour en foreground, comme `useNextDeliveryTime`.
+ */
+export const useOrderCountdown = (
+  deliveryHours?: any[],
+  orderLeadTime: number = 0,
+): string | null => {
+  const [left, setLeft] = useState(() =>
+    getOrderCutoffMinutes(deliveryHours, orderLeadTime),
+  );
+
+  useEffect(() => {
+    const recompute = () =>
+      setLeft(getOrderCutoffMinutes(deliveryHours, orderLeadTime));
+
+    recompute();
+    const interval = setInterval(recompute, 60_000);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") recompute();
+    });
+
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(deliveryHours), orderLeadTime]);
+
+  return left === null ? null : formatCountdown(left);
+};
+
+/**
  * Version réactive de getNextDeliveryTime : recalcule chaque minute et au
  * retour de l'app en foreground, pour que l'heure affichée ne prenne jamais
  * de retard sur l'heure réelle (bug de valeur figée au premier render).

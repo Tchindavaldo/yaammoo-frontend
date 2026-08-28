@@ -21,6 +21,8 @@ interface MerchantHeaderProps {
    * la requete : les deux se resolvent donc ensemble.
    */
   syncWithImage?: string | null;
+  /** Boutique ouverte ou fermee, affiche sous le nom. */
+  isOpen?: boolean;
 }
 
 export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
@@ -28,6 +30,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   image,
   rating = 4.5,
   syncWithImage,
+  isOpen = true,
 }) => {
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec
   // les cartes) et son PROPRE avatar.
@@ -163,7 +166,15 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
               style={styles.avatar}
             />
           </View>
-          <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+          <View>
+            <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: isOpen ? '#00b894' : '#d63031' }]} />
+              <Text style={[styles.statusText, { color: isOpen ? '#00b894' : '#d63031' }]}>
+                {isOpen ? 'Ouvert' : 'Fermé'}
+              </Text>
+            </View>
+          </View>
         </View>
         <View style={styles.ratingContainer}>
           {stars.map((fill, i) => (
@@ -205,9 +216,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Theme.spacing.sm,
+    paddingVertical: Theme.spacing.xs,
     backgroundColor: Theme.colors.white,
-    marginBottom: Theme.spacing.sm,
+    marginBottom: 2,
   },
   // Reprend la mise en page de `container` pour le contenu reel, qui vit
   // desormais dans une vue animee intermediaire.
@@ -223,7 +234,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Theme.spacing.sm,
+    paddingVertical: Theme.spacing.xs,
   },
   left: {
     flexDirection: 'row',
@@ -247,6 +258,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Theme.colors.dark,
     maxWidth: 120,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 1,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
   ratingContainer: {
     flexDirection: 'row',

@@ -3,21 +3,21 @@ import { Theme } from "@/src/theme";
 import { AppBanner } from "@/src/types";
 import { Image } from "expo-image";
 import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
+    memo,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
 } from "react";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 // ⚠️ `ScrollView` de gesture-handler, PAS celle de react-native. La ScrollView
 // RN passe par le systeme de responder JS historique, qui s'arbitre mal avec la
@@ -524,7 +524,6 @@ const styles = StyleSheet.create({
     height: 18,
     paddingHorizontal: 6,
     borderRadius: 9,
-    // backgroundColor: "rgba(0,0,0,0.85)",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",

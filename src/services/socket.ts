@@ -7,11 +7,33 @@ class SocketService {
 
     constructor() {
         this.socket = io(Config.apiUrl, {
-            transports: ['websocket'],
+            // ⚠️ `websocket` en TETE mais `polling` en repli. En forcant le seul
+            // websocket, une coupure du lien (veille iOS, bascule wifi/4G, proxy
+            // qui coupe l'upgrade) ne laisse AUCUNE autre voie : socket.io
+            // retente le meme transport en boucle et n'emet que des
+            // `connect_error`, alors qu'une premiere connexion avait reussi.
+            transports: ['websocket', 'polling'],
+            // Le repli ne sert a rien si le client ne retente jamais l'upgrade.
+            upgrade: true,
+            // Reconnexion espacee au lieu d'une rafale : sans plafond, les
+            // tentatives s'enchainent toutes les ~1 s et saturent les logs.
+            reconnection: true,
+            reconnectionDelay: 1_000,
+            reconnectionDelayMax: 10_000,
+            // Bruit aleatoire : evite que tous les clients reconnectent en meme
+            // temps apres une coupure cote serveur.
+            randomizationFactor: 0.5,
         });
 
         this.socket.on('connect', () => {
-            console.log('✅ Socket connected', this.socket.id);
+            // Le transport reellement retenu : `websocket` ou repli `polling`.
+            const transport = (this.socket as any).io?.engine?.transport?.name;
+            console.log('✅ Socket connected', this.socket.id, transport);
+        });
+        // `disconnect` porte la RAISON de la chute, que `connect_error` n'a pas.
+        // Sans lui on ne voyait que les echecs de reconnexion, jamais la cause.
+        this.socket.on('disconnect', (reason) => {
+            console.log('⚠️ Socket disconnect:', reason);
         });
         this.socket.on('connect_error', (err) => {
             console.log('❌ Socket connect_error:', err?.message);

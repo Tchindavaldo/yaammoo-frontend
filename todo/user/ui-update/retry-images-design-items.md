@@ -1,0 +1,6 @@
+# Retry sur les images par défaut (DesignItems 1 à 7)
+
+[ ] Remplacer les images par défaut (fallbacks) par une icône "retry".
+    - Si le chargement d'une image échoue, afficher une icône circulaire de rafraîchissement.
+    - Au clic sur l'icône, tenter de re-fetcher l'image concernée pour la charger à nouveau.
+    - S'assurer que cela s'applique à tous les DesignItems (Design 1 à 7).

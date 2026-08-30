@@ -497,6 +497,13 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
           <CheckoutPaymentTopOverlay
             visible={isPaymentPopupVisible}
             menu={menu}
+            priceDescription={
+              menu
+                ? [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
+                    selectedPriceIndex - 1
+                  ] || ""
+                : ""
+            }
             menuPrice={menuPrice}
             extrasPrice={extrasPrice}
             drinksPrice={drinksPrice}

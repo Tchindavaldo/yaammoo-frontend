@@ -25,7 +25,7 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 3;
 
 /** Délai avant qu'une frappe dans la recherche parte au serveur. */
 const SEARCH_DEBOUNCE_MS = 350;
@@ -153,7 +153,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   // `user` (Firebase User) plutôt que `userData` : c'est lui qui porte le token,
   // et il devient disponible dès la restauration de session.
-  const { user } = useAuth();
+  // `loading` : Firebase n'a pas encore tranche sur la session. Tant qu'il est
+  // vrai, `user` peut etre `null` alors qu'une session existe — d'ou la garde
+  // du premier fetch plus bas (suppression du double appel au boot).
+  const { user, loading: authLoading } = useAuth();
   const [fastFoods, setFastFoods] = useState<FastFood[]>([]);
   /**
    * Longueur courante de `fastFoods`, lisible HORS d'un updater.
@@ -445,14 +448,25 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoadingMore(false);
   }, []);
 
-  // Refetch à CHAQUE changement d'identité (y compris `null` → user au boot :
-  // la restauration de session Firebase est asynchrone et se termine APRÈS le
-  // montage). Sans ce second passage, le premier appel partirait sans Bearer et
-  // la home resterait sur des `deliveryOffer: null` jusqu'au prochain reload.
+  // Refetch à CHAQUE changement d'identité — mais JAMAIS avant que Firebase
+  // ait tranché.
+  //
+  // ⚠️ `authLoading` est la garde qui supprime le DOUBLE appel du boot. La
+  // restauration de session Firebase est asynchrone : sans elle, `user` vaut
+  // `null` au montage, un premier `/fastFood/all` partait SANS Bearer (donc
+  // `deliveryOffer: null` partout, resultat inutilisable), puis la session
+  // arrivait et un SECOND appel repartait avec le token. Deux fois la meme
+  // page, dont la premiere jetee — visible dans les logs backend en paires
+  // « AUCUN Bearer envoye » suivi de « token OK ».
+  //
+  // On attend donc la resolution : un seul appel part, deja authentifie. Le
+  // refetch sur changement d'uid (login, logout, bascule de compte) reste
+  // assure par `user?.uid` dans les dependances.
   useEffect(() => {
+    if (authLoading) return;
     cursorRef.current = null;
     void fetchPage(undefined, undefined);
-  }, [fetchPage, user?.uid]);
+  }, [fetchPage, user?.uid, authLoading]);
 
   // Changement de compte : on repart de zero. La liste porte les
   // `deliveryOffer` du compte precedent (le backend les resout depuis le

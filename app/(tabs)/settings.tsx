@@ -1,37 +1,39 @@
-import { Config } from '@/src/api/config';
-import { APP_VERSION } from '@/src/api/version';
-import { TAB_BAR_INSET_RATIO } from '@/src/hooks/useTabBarHeight';
-import { GuestGate } from '@/src/features/auth/components/GuestGate';
-import { useAuth } from '@/src/features/auth/context/AuthContext';
-import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
-import { UserBonusSheet } from '@/src/features/bonus/components/UserBonusSheet';
-import { SupportChatSheet } from '@/src/features/support/components/SupportChatSheet';
-import { DriverApplyModal } from '@/src/features/driver/components/DriverApplyModal';
-import { DriverManageModal } from '@/src/features/driver/components/DriverManageModal';
-import { DriverMyApplicationsModal } from '@/src/features/driver/components/DriverMyApplicationsModal';
-import { DriverOrdersModal } from '@/src/features/driver/components/DriverOrdersModal';
-import { EditBoutiquePanel } from '@/src/features/merchant/components/EditBoutiquePanel';
-import { MenuManageModal } from '@/src/features/merchant/components/MenuManageModal';
-import { MerchantSupportModal } from '@/src/features/merchant/components/support/MerchantSupportModal';
-import { WalletManageModal } from '@/src/features/merchant/components/WalletManageModal';
-import { getDeviceId } from '@/src/features/notifications/services/deviceId';
-import { useNotificationSetup } from '@/src/features/notifications/hooks/useNotificationSetup';
-import { UserOrdersModal } from '@/src/features/orders/components/UserOrdersModal';
-import { SettingItem } from '@/src/features/profile/components/SettingItem';
-import { useFastFoods } from '@/src/features/restaurants/hooks/useFastFoods';
-import { UserWalletModal } from '@/src/features/wallet/components/UserWalletModal';
-import { auth } from '@/src/services/firebase';
-import { Theme } from '@/src/theme';
-import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
+import { Config } from "@/src/api/config";
+import { APP_VERSION } from "@/src/api/version";
 import {
   AppBlurView as BlurView,
   isNativeBlurAvailable,
-} from '@/src/components/AppBlurView';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
-import { signOut } from 'firebase/auth';
-import React, { useEffect, useState } from 'react';
-import * as Notifications from 'expo-notifications';
+} from "@/src/components/AppBlurView";
+import { GuestGate } from "@/src/features/auth/components/GuestGate";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { UserBonusSheet } from "@/src/features/bonus/components/UserBonusSheet";
+import { DriverApplyModal } from "@/src/features/driver/components/DriverApplyModal";
+import { DriverManageModal } from "@/src/features/driver/components/DriverManageModal";
+import { DriverMyApplicationsModal } from "@/src/features/driver/components/DriverMyApplicationsModal";
+import { DriverOrdersModal } from "@/src/features/driver/components/DriverOrdersModal";
+import { EditBoutiquePanel } from "@/src/features/merchant/components/EditBoutiquePanel";
+import { MenuManageModal } from "@/src/features/merchant/components/MenuManageModal";
+import { MerchantSupportModal } from "@/src/features/merchant/components/support/MerchantSupportModal";
+import { WalletManageModal } from "@/src/features/merchant/components/WalletManageModal";
+import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
+import { getDeviceId } from "@/src/features/notifications/services/deviceId";
+import { UserOrdersModal } from "@/src/features/orders/components/UserOrdersModal";
+import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
+import { SettingGridItem } from "@/src/features/profile/components/SettingGridItem";
+import { SettingGridSwitch } from "@/src/features/profile/components/SettingGridSwitch";
+import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { SupportChatSheet } from "@/src/features/support/components/SupportChatSheet";
+import { UserWalletModal } from "@/src/features/wallet/components/UserWalletModal";
+import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
+import { auth } from "@/src/services/firebase";
+import { Theme } from "@/src/theme";
+import { Ionicons } from "@expo/vector-icons";
+import axios from "axios";
+import * as Notifications from "expo-notifications";
+import { useLocalSearchParams, useNavigation } from "expo-router";
+import { signOut } from "firebase/auth";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -39,13 +41,12 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
@@ -88,9 +89,9 @@ export default function SettingsScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutVisible, setLogoutVisible] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const REQUIRED_CONFIRM = 'SUPPRIMER';
+  const REQUIRED_CONFIRM = "SUPPRIMER";
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
@@ -108,10 +109,10 @@ export default function SettingsScreen() {
       // MEME regle que `_layout.tsx` : sans flou natif (Android < 12), un fond
       // semi-transparent laisse voir le contenu au travers -> blanc opaque.
       backgroundColor: isNativeBlurAvailable
-        ? 'rgba(255, 255, 255, 0.7)'
-        : '#ffffff',
+        ? "rgba(255, 255, 255, 0.7)"
+        : "#ffffff",
       borderTopWidth: 0,
-      position: 'absolute' as const,
+      position: "absolute" as const,
       bottom: 0,
       left: 0,
       right: 0,
@@ -123,7 +124,7 @@ export default function SettingsScreen() {
         ? {
             ...base,
             elevation: 2,
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: -1 },
             shadowOpacity: 0.05,
             shadowRadius: 3,
@@ -131,7 +132,7 @@ export default function SettingsScreen() {
         : {
             ...base,
             elevation: 8,
-            shadowColor: '#000',
+            shadowColor: "#000",
             shadowOffset: { width: 0, height: -2 },
             shadowOpacity: 0.08,
             shadowRadius: 8,
@@ -150,7 +151,7 @@ export default function SettingsScreen() {
       setIsLoggingOut(false);
       setDeleteVisible(false);
       setIsDeleting(false);
-      setDeleteConfirmText('');
+      setDeleteConfirmText("");
       setDeleteError(null);
     }
   }, [isSignedIn]);
@@ -165,17 +166,20 @@ export default function SettingsScreen() {
     let cancelled = false;
     const readState = async () => {
       const { status } = await Notifications.getPermissionsAsync();
-      if (status !== 'granted') {
+      if (status !== "granted") {
         if (!cancelled) setNotifEnabled(false);
         return;
       }
       const deviceId = await getDeviceId();
-      const pushTokens = ((userData as any)?.pushTokens as Array<{ deviceId: string }> | undefined) || [];
+      const pushTokens =
+        ((userData as any)?.pushTokens as
+          | Array<{ deviceId: string }>
+          | undefined) || [];
       const hasTokenSynced = pushTokens.some((t) => t?.deviceId === deviceId);
       if (!cancelled) setNotifEnabled(hasTokenSynced);
     };
     readState();
-    const unsub = navigation.addListener('focus', readState);
+    const unsub = navigation.addListener("focus", readState);
     return () => {
       cancelled = true;
       unsub();
@@ -191,21 +195,25 @@ export default function SettingsScreen() {
     // ON = même flux que le premier lancement (permission native + sync BD).
     await setupNotifications();
     const { status } = await Notifications.getPermissionsAsync();
-    setNotifEnabled(status === 'granted');
+    setNotifEnabled(status === "granted");
   };
 
   // Deep-link : notifications / home « Mes commandes » → ouvre le modal commandes.
   const { section } = useLocalSearchParams<{ section?: string }>();
   useEffect(() => {
-    if (section === 'pending' || section === 'active' || section === 'finished') {
+    if (
+      section === "pending" ||
+      section === "active" ||
+      section === "finished"
+    ) {
       setUserOrdersVisible(true);
-    } else if (section === 'drivers') {
+    } else if (section === "drivers") {
       // Notif « demande de livraison » (marchand) → modal Livreurs.
       setDriverManageVisible(true);
-    } else if (section === 'my-applications') {
+    } else if (section === "my-applications") {
       // Notif « demande décidée » (candidat) → modal Mes demandes.
       setDriverMyAppsVisible(true);
-    } else if (section === 'bonus') {
+    } else if (section === "bonus") {
       // Notif « bonus éligible » → modal Bonus.
       setUserBonusVisible(true);
     }
@@ -232,15 +240,18 @@ export default function SettingsScreen() {
           {
             headers: {
               Authorization: `Bearer ${idToken}`,
-              'Content-Type': 'application/json',
-              'ngrok-skip-browser-warning': 'true',
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
             },
           },
         );
-        console.log('🗑️ [Settings] push-token/remove OK pour ce device');
+        console.log("🗑️ [Settings] push-token/remove OK pour ce device");
       }
     } catch (e: any) {
-      console.warn('⚠️ [Settings] push-token/remove échoué (on continue le logout):', e?.message);
+      console.warn(
+        "⚠️ [Settings] push-token/remove échoué (on continue le logout):",
+        e?.message,
+      );
     }
 
     // Le retour vers (auth) est piloté par le guard Stack.Protected dans
@@ -254,15 +265,20 @@ export default function SettingsScreen() {
   };
 
   const handleComingSoon = (label: string) => {
-    if (Platform.OS === 'web') {
-      window.alert(`La section "${label}" sera disponible dans une prochaine version.`);
+    if (Platform.OS === "web") {
+      window.alert(
+        `La section "${label}" sera disponible dans une prochaine version.`,
+      );
     } else {
-      Alert.alert('Bientôt disponible', `La section "${label}" sera disponible dans une prochaine version.`);
+      Alert.alert(
+        "Bientôt disponible",
+        `La section "${label}" sera disponible dans une prochaine version.`,
+      );
     }
   };
 
   const handleDeleteAccount = () => {
-    setDeleteConfirmText('');
+    setDeleteConfirmText("");
     setDeleteError(null);
     setDeleteVisible(true);
   };
@@ -270,7 +286,7 @@ export default function SettingsScreen() {
   const cancelDelete = () => {
     if (isDeleting) return;
     setDeleteVisible(false);
-    setDeleteConfirmText('');
+    setDeleteConfirmText("");
     setDeleteError(null);
   };
 
@@ -293,7 +309,7 @@ export default function SettingsScreen() {
         error?.response?.data?.error ||
           error?.response?.data?.message ||
           error?.message ||
-          'Impossible de supprimer le compte. Réessayez ou contactez le support.',
+          "Impossible de supprimer le compte. Réessayez ou contactez le support.",
       );
     }
   };
@@ -312,9 +328,19 @@ export default function SettingsScreen() {
   }
 
   const firebaseName = user?.displayName || "";
-  const initiales = (userData?.infos.prenom || userData?.infos.nom || firebaseName)?.charAt(0)?.toUpperCase() || 'U';
-  const nomComplet = [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(' ') || firebaseName || 'Utilisateur';
-  const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || '';
+  const initiales =
+    (userData?.infos.prenom || userData?.infos.nom || firebaseName)
+      ?.charAt(0)
+      ?.toUpperCase() || "U";
+  const nomComplet =
+    [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(" ") ||
+    firebaseName ||
+    "Utilisateur";
+  const contact =
+    userData?.infos.email ||
+    user?.email ||
+    userData?.infos.numero?.toString() ||
+    "";
 
   return (
     <View style={styles.container}>
@@ -331,8 +357,16 @@ export default function SettingsScreen() {
           <View style={styles.onlineDot} />
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">{nomComplet}</Text>
-          <Text style={styles.userContact} numberOfLines={1} ellipsizeMode="tail">{contact}</Text>
+          <Text style={styles.userName} numberOfLines={1} ellipsizeMode="tail">
+            {nomComplet}
+          </Text>
+          <Text
+            style={styles.userContact}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {contact}
+          </Text>
           {userData?.isMarchand && (
             <View style={styles.merchantBadge}>
               <Ionicons name="storefront-outline" size={12} color="white" />
@@ -340,221 +374,227 @@ export default function SettingsScreen() {
             </View>
           )}
         </View>
-        <TouchableOpacity style={styles.editProfileBtn} onPress={() => handleComingSoon('Édition du profil')}>
-          <Ionicons name="create-outline" size={18} color={Theme.colors.primary} />
+        <TouchableOpacity
+          style={styles.editProfileBtn}
+          onPress={() => handleComingSoon("Édition du profil")}
+        >
+          <Ionicons
+            name="create-outline"
+            size={18}
+            color={Theme.colors.primary}
+          />
         </TouchableOpacity>
       </BlurView>
 
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: insets.top + 100, paddingBottom: 40 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + 100,
+          paddingBottom: 40,
+          paddingHorizontal: 16,
+        }}
       >
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
         <SectionHeader title="Mes activités" />
-        <View style={styles.section}>
-          <SettingItem
+        <SettingGrid>
+          <SettingGridItem
             icon="receipt-outline"
             title="État des commandes"
+            tone="accent"
             onPress={() => setUserOrdersVisible(true)}
           />
           {!appleReviewMode && (
-            <SettingItem
+            <SettingGridItem
               icon="wallet-outline"
               title="Portefeuille"
+              tone="accent"
               onPress={() => setUserWalletVisible(true)}
             />
           )}
-        </View>
+        </SettingGrid>
 
         {/* Compte */}
         <SectionHeader title="Compte" />
-        <View style={styles.section}>
-          <SettingItem
+        <SettingGrid>
+          <SettingGridItem
             icon="person-outline"
             title="Mon profil"
-            onPress={() => handleComingSoon('Mon profil')}
+            onPress={() => handleComingSoon("Mon profil")}
           />
-          <SettingItem
+          <SettingGridItem
             icon="key-outline"
             title="Sécurité"
-            onPress={() => handleComingSoon('Sécurité')}
+            onPress={() => handleComingSoon("Sécurité")}
           />
           {!appleReviewMode && (
-            <SettingItem
+            <SettingGridItem
               icon="card-outline"
               title="Paiement"
-              onPress={() => handleComingSoon('Paiement')}
+              onPress={() => handleComingSoon("Paiement")}
             />
           )}
-          <SettingItem
+          <SettingGridItem
             icon="gift-outline"
-            title="Bonus et parrainage"
+            title="Bonus"
             onPress={() => setUserBonusVisible(true)}
           />
-        </View>
+        </SettingGrid>
 
         {/* Boutique - only show for merchants (AVANT Livraison) */}
         {userData?.isMarchand && userData?.fastFoodId && (
           <>
             <SectionHeader title="Boutique" />
-            <View style={styles.section}>
-              <SettingItem
+            <SettingGrid>
+              <SettingGridItem
                 icon="storefront-outline"
                 title="Gérer ma boutique"
                 onPress={() => setEditBoutiqueVisible(true)}
               />
-              <SettingItem
+              <SettingGridItem
                 icon="restaurant-outline"
                 title="Gestion menu"
                 onPress={() => setMenuManageVisible(true)}
               />
-              <SettingItem
+              <SettingGridItem
                 icon="bicycle-outline"
                 title="Livreurs"
                 onPress={() => setDriverManageVisible(true)}
               />
-              <SettingItem
+              <SettingGridItem
                 icon="chatbubbles-outline"
                 title="Messages"
                 onPress={() => setMerchantSupportVisible(true)}
               />
               {!appleReviewMode && (
-                <SettingItem
+                <SettingGridItem
                   icon="wallet-outline"
-                  title="Portefeuille"
+                  title="Portefeuille boutique"
                   onPress={() => setWalletManageVisible(true)}
                 />
               )}
-            </View>
+            </SettingGrid>
           </>
         )}
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
         <SectionHeader title="Livraison" />
-        <View style={styles.section}>
+        <SettingGrid>
           {/* Un livreur peut servir plusieurs boutiques → toujours pouvoir
               postuler ailleurs, même déjà livreur. */}
           {isDriver && (
-            <SettingItem
+            <SettingGridItem
               icon="bicycle-outline"
               title="Mes livraisons"
               onPress={() => setDriverOrdersVisible(true)}
             />
           )}
-          <SettingItem
-            icon="add-circle-outline"
-            title={isDriver ? "Postuler à une boutique" : "Devenir livreur"}
-            onPress={() => setDriverApplyVisible(true)}
-          />
-          <SettingItem
+          <SettingGridItem
             icon="document-text-outline"
             title="Mes demandes"
             onPress={() => setDriverMyAppsVisible(true)}
           />
-        </View>
+          <SettingGridItem
+            icon="add-circle-outline"
+            title={isDriver ? "Postuler à une boutique" : "Devenir livreur"}
+            onPress={() => setDriverApplyVisible(true)}
+          />
+        </SettingGrid>
 
         {/* Préférences */}
         <SectionHeader title="Préférences" />
-        <View style={styles.section}>
-          <View style={styles.switchItem}>
-            <View style={styles.switchLeft}>
-              <View style={[styles.switchIcon, { backgroundColor: Theme.colors.info + '15' }]}>
-                <Ionicons name="notifications-outline" size={20} color={Theme.colors.info} />
-              </View>
-              <Text style={styles.switchLabel}>Notifications</Text>
-            </View>
-            <Switch
-              value={notifEnabled}
-              onValueChange={handleNotifToggle}
-              trackColor={{ false: Theme.colors.gray[200], true: Theme.colors.primary + '60' }}
-              thumbColor={notifEnabled ? Theme.colors.primary : Theme.colors.gray[400]}
-            />
-          </View>
-
-          <View style={styles.switchItem}>
-            <View style={styles.switchLeft}>
-              <View style={[styles.switchIcon, { backgroundColor: '#1c1c1e15' }]}>
-                <Ionicons name="moon-outline" size={20} color="#1c1c1e" />
-              </View>
-              <Text style={styles.switchLabel}>Mode sombre</Text>
-            </View>
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
-              trackColor={{ false: Theme.colors.gray[200], true: Theme.colors.primary + '60' }}
-              thumbColor={darkMode ? Theme.colors.primary : Theme.colors.gray[400]}
-            />
-          </View>
-
-          <SettingItem
+        {/* 1 colonne : une tuile par ligne, icone et libelle cote a cote. */}
+        <SettingGrid columns={1}>
+          <SettingGridSwitch
+            icon="notifications-outline"
+            title="Notifications"
+            tone="accent"
+            value={notifEnabled}
+            onValueChange={handleNotifToggle}
+          />
+          <SettingGridSwitch
+            icon="moon-outline"
+            title="Mode sombre"
+            tone="accent"
+            value={darkMode}
+            onValueChange={setDarkMode}
+          />
+          <SettingGridItem
             icon="language-outline"
             title="Langue"
-            onPress={() => handleComingSoon('Langue')}
+            tone="accent"
+            hint="Français"
+            onPress={() => handleComingSoon("Langue")}
           />
-        </View>
+        </SettingGrid>
 
-        {/* Aide & Legal */}
-        <SectionHeader title="Aide & Légal" />
-        <View style={styles.section}>
-          <SettingItem
+        {/* Aide */}
+        <SectionHeader title="Aide" />
+        <SettingGrid>
+          <SettingGridItem
             icon="help-circle-outline"
             title="Assistance"
-            onPress={() => handleComingSoon('Assistance')}
+            onPress={() => handleComingSoon("Assistance")}
           />
-          <SettingItem
+          <SettingGridItem
             icon="chatbox-outline"
             title="Signaler un problème"
-            onPress={() => handleComingSoon('Signaler un problème')}
+            onPress={() => handleComingSoon("Signaler un problème")}
           />
-          <SettingItem
+          <SettingGridItem
             icon="flag-outline"
             title="Faire une suggestion"
-            onPress={() => handleComingSoon('Faire une suggestion')}
+            onPress={() => handleComingSoon("Faire une suggestion")}
           />
-          <SettingItem
-            icon="document-text-outline"
-            title="Politique & Conditions"
-            onPress={() => handleComingSoon('Politique & Conditions')}
-          />
-          <SettingItem
-            icon="lock-closed-outline"
-            title="Confidentialité"
-            onPress={() => handleComingSoon('Confidentialité')}
-          />
-          <SettingItem
+          <SettingGridItem
             icon="call-outline"
             title="Contactez-nous"
+            tone="accent"
             onPress={() => setSupportChatVisible(true)}
           />
-        </View>
+        </SettingGrid>
+
+        {/* Legal */}
+        <SectionHeader title="Légal" />
+        <SettingGrid>
+          <SettingGridItem
+            icon="document-text-outline"
+            title="Politique & Conditions"
+            onPress={() => handleComingSoon("Politique & Conditions")}
+          />
+          <SettingGridItem
+            icon="lock-closed-outline"
+            title="Confidentialité"
+            onPress={() => handleComingSoon("Confidentialité")}
+          />
+        </SettingGrid>
 
         {/* Sessions */}
         <SectionHeader title="Session" />
-        <View style={styles.section}>
-          <SettingItem
+        <SettingGrid>
+          <SettingGridItem
             icon="swap-horizontal-outline"
             title="Changer de compte"
-            onPress={() => handleComingSoon('Changer de compte')}
+            onPress={() => handleComingSoon("Changer de compte")}
           />
-          <SettingItem
+          <SettingGridItem
             icon="exit-outline"
             title="Déconnexion"
-            color={Theme.colors.danger}
+            tone="danger"
             onPress={handleLogout}
           />
-        </View>
+        </SettingGrid>
 
         {/* Zone de danger */}
         <SectionHeader title="Zone de danger" />
-        <View style={[styles.section, { borderWidth: 1, borderColor: Theme.colors.danger + '30' }]}>
-          <SettingItem
+        <SettingGrid>
+          <SettingGridItem
             icon="trash-outline"
             title="Supprimer mon compte"
-            color={Theme.colors.danger}
+            tone="danger"
             onPress={handleDeleteAccount}
           />
-        </View>
+        </SettingGrid>
 
         {/* App version — reflete TOUJOURS `app.json` (via `APP_VERSION`), jamais
             une valeur en dur a remettre a jour manuellement. Annee courante idem. */}
@@ -652,14 +692,19 @@ export default function SettingsScreen() {
             </View>
             <Text style={styles.deleteTitle}>Supprimer mon compte</Text>
             <Text style={styles.deleteMessage}>
-              Cette action est <Text style={{ fontWeight: '700' }}>définitive et irréversible</Text>.{'\n\n'}
-              Toutes vos données seront supprimées :{'\n'}
-              • Votre profil et identifiants{'\n'}
-              • Vos commandes et transactions{'\n'}
-              • Vos bonus et notifications{'\n'}
-              {userData?.isMarchand ? '• Votre boutique et menus\n' : ''}
-              {'\n'}Pour confirmer, tapez{' '}
-              <Text style={{ fontWeight: '700', color: Theme.colors.danger }}>{REQUIRED_CONFIRM}</Text>{' '}
+              Cette action est{" "}
+              <Text style={{ fontWeight: "700" }}>
+                définitive et irréversible
+              </Text>
+              .{"\n\n"}
+              Toutes vos données seront supprimées :{"\n"}• Votre profil et
+              identifiants{"\n"}• Vos commandes et transactions{"\n"}• Vos bonus
+              et notifications{"\n"}
+              {userData?.isMarchand ? "• Votre boutique et menus\n" : ""}
+              {"\n"}Pour confirmer, tapez{" "}
+              <Text style={{ fontWeight: "700", color: Theme.colors.danger }}>
+                {REQUIRED_CONFIRM}
+              </Text>{" "}
               ci-dessous.
             </Text>
 
@@ -694,7 +739,8 @@ export default function SettingsScreen() {
                 style={[
                   styles.deleteBtn,
                   styles.deleteBtnDanger,
-                  deleteConfirmText.trim().toUpperCase() !== REQUIRED_CONFIRM && { opacity: 0.5 },
+                  deleteConfirmText.trim().toUpperCase() !==
+                    REQUIRED_CONFIRM && { opacity: 0.5 },
                 ]}
                 onPress={confirmDelete}
                 disabled={
@@ -730,8 +776,17 @@ export default function SettingsScreen() {
       >
         <View style={styles.deleteBackdrop}>
           <View style={styles.deleteCard}>
-            <View style={[styles.deleteIconWrap, { backgroundColor: Theme.colors.danger + '15' }]}>
-              <Ionicons name="exit-outline" size={32} color={Theme.colors.danger} />
+            <View
+              style={[
+                styles.deleteIconWrap,
+                { backgroundColor: Theme.colors.danger + "15" },
+              ]}
+            >
+              <Ionicons
+                name="exit-outline"
+                size={32}
+                color={Theme.colors.danger}
+              />
             </View>
             <Text style={styles.deleteTitle}>Déconnexion</Text>
             <Text style={styles.deleteMessage}>
@@ -770,22 +825,22 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   // Sans flou natif (Android < 12), fond opaque : le contenu qui scrolle
   // dessous ne doit pas transparaître.
   profileCardOpaque: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   profileCard: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
     padding: Theme.spacing.lg,
     paddingBottom: 20,
     borderBottomWidth: 1,
@@ -793,21 +848,21 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.md,
   },
   avatarContainer: {
-    position: 'relative',
+    position: "relative",
   },
   avatarText: {
-    color: 'white',
+    color: "white",
     fontSize: 26,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     width: 64,
     height: 64,
     borderRadius: 32,
     backgroundColor: Theme.colors.primary,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 64,
   },
   onlineDot: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 2,
     right: 2,
     width: 14,
@@ -822,7 +877,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 17,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Theme.colors.dark,
   },
   userContact: {
@@ -831,10 +886,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   merchantBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Theme.colors.primary,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -842,68 +897,33 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   merchantBadgeText: {
-    color: 'white',
+    color: "white",
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   editProfileBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Theme.colors.primary + '10',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: Theme.colors.primary + "10",
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     flex: 1,
   },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Theme.colors.gray[500],
-    marginLeft: Theme.spacing.md,
+    fontSize: 11.5,
+    fontWeight: "800",
+    color: Theme.colors.gray[600],
+    marginLeft: 4,
     marginTop: 22,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  section: {
-    overflow: 'hidden',
-    borderRadius: Theme.borderRadius.lg,
-    marginHorizontal: Theme.spacing.md,
-    backgroundColor: Theme.colors.white,
-    // Pas d'ombre ni d'elevation : sur Android elles dessinaient un lisere gris
-    // sur les bords du bloc. Pas de bordure non plus — les separateurs
-    // horizontaux entre items (`SettingItem`) suffisent a structurer la liste.
-  },
-  switchItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: Theme.spacing.sm,
-    paddingHorizontal: Theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Theme.colors.gray[100],
-  },
-  switchLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Theme.spacing.md,
-  },
-  switchIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  switchLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: Theme.colors.dark,
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   versionBlock: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: Theme.spacing.xl,
     paddingBottom: 40,
   },
@@ -918,46 +938,46 @@ const styles = StyleSheet.create({
   },
   deleteBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 32,
   },
   deleteCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 360,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 20,
     paddingTop: 24,
     paddingHorizontal: 24,
     paddingBottom: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 10,
   },
   deleteIconWrap: {
-    alignSelf: 'center',
+    alignSelf: "center",
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: Theme.colors.danger + '20',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: Theme.colors.danger + "20",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 12,
   },
   deleteTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Theme.colors.dark,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 6,
   },
   deleteMessage: {
     fontSize: 14,
     color: Theme.colors.gray[500],
-    textAlign: 'left',
+    textAlign: "left",
     marginBottom: 18,
     lineHeight: 20,
   },
@@ -969,37 +989,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 15,
     color: Theme.colors.dark,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 18,
     backgroundColor: Theme.colors.gray[100],
-    textAlign: 'center',
+    textAlign: "center",
     letterSpacing: 2,
   },
   deleteErrorText: {
     color: Theme.colors.danger,
     fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
     marginTop: -8,
     marginBottom: 16,
   },
   deleteActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 10,
   },
   deleteBtn: {
     flex: 1,
     height: 48,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   deleteBtnCancel: {
     backgroundColor: Theme.colors.gray[100],
   },
   deleteBtnCancelText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Theme.colors.dark,
   },
   deleteBtnDanger: {
@@ -1007,7 +1027,7 @@ const styles = StyleSheet.create({
   },
   deleteBtnDangerText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: "700",
+    color: "#fff",
   },
 });

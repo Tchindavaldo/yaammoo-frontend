@@ -367,6 +367,29 @@ Deux déclencheurs, même effet : remontée puis **troncature à la première pa
 Le pied de liste et `onEndReached` ont été **testés et mis hors de cause** dans
 la boucle mount/unmount de la dernière cellule.
 
+## Bas de liste — scroll figé pendant le chargement (`debug/home-bottom-overscroll`)
+
+Arrivé en bas avec le loader de pagination visible, on pouvait continuer à tirer
+vers le bas : le loader remontait et découvrait un blanc qui se lisait comme une
+fin de liste. La liste est donc rendue **non défilante** (`scrollEnabled={false}`)
+tant que la page suivante charge.
+
+- **`atBottom` se calcule dans `onScroll`**, pas dans `onEndReached` : celui-ci
+  se déclenche AVANT le bas (`onEndReachedThreshold`) et figerait la liste en
+  plein défilement.
+- **`atBottomRef` double l'état** : le `setState` n'est appelé qu'aux deux
+  transitions, jamais à chaque frame — les cellules du home sont lourdes (voir
+  « références stables » ci-dessous) et un setter par frame les reconstruirait
+  en plein geste.
+- **Le gel est libéré dès l'arrivée de la page** : la liste s'est allongée, on
+  n'est plus en bas.
+- `FOOTER_LOADER_HEIGHT` (48) est volontairement généreuse : le loader doit se
+  remarquer même en scroll rapide.
+
+> ⚠️ **Pistes écartées, ne pas les refaire.** `bounces={false}` / `contentInset`
+> négatif : le défilement continuait. Reclamper depuis `onScroll` en JS : saut
+> visuel au contact du bas, le doigt ayant déjà tiré au-delà quand JS réagit.
+
 ## Performance de la liste — références stables (OBLIGATOIRE)
 
 Le home se re-rend à **chaque agitation des contextes voisins** (notifications,

@@ -15,6 +15,7 @@ src/features/restaurants/
 ├── context/FastFoodContext.tsx     # État + fetch paginé + injection socket
 ├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique (+ revealAnim)
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
+├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
 ├── utils/deliveryUtils.ts
 └── components/
     ├── DesignRouter.tsx            # Aiguille vers Design1..7 + ShopRevealProvider

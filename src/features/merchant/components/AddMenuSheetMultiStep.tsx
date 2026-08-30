@@ -584,6 +584,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                         ? "3500"
                         : "5000"
                   }
+                  placeholderTextColor="#cbd5e1"
                   keyboardType="numeric"
                   value={
                     selectedPriceIdx === 0
@@ -625,7 +626,14 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                     },
                     ...fieldStyle(`desc${selectedPriceIdx}`),
                   ]}
-                  placeholder={`Description du prix ${selectedPriceIdx + 1}`}
+                  placeholder={
+                    selectedPriceIdx === 0
+                      ? "Ex: Solo (ou Petit)"
+                      : selectedPriceIdx === 1
+                        ? "Ex: Duo (ou Moyen)"
+                        : "Ex: Familial (ou Grand)"
+                  }
+                  placeholderTextColor="#cbd5e1"
                   value={
                     selectedPriceIdx === 0
                       ? desc1

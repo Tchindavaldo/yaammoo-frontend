@@ -184,6 +184,38 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         </View>
       </View>
 
+      {/* Délai livraison + jours en avance sur une ligne */}
+      <View style={[styles.formRow, { marginTop: 16, gap: 10 }]}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.floatingLabel}>Délai livraison (minutes)</Text>
+          <Text style={styles.helperText}>
+            Temps limite pour commander avant le créneau (ex: 30 = bloqué 30 min avant)
+          </Text>
+          <TextInput
+            style={[styles.glassInput, { borderRadius: 20 }]}
+            value={orderLeadTime}
+            onChangeText={setOrderLeadTime}
+            keyboardType="numeric"
+            placeholder="ex: 30"
+            placeholderTextColor="#cbd5e1"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.floatingLabel}>Jours en avance</Text>
+          <Text style={styles.helperText}>
+            Nombre de jours réservables à l'avance (ex: 3 = aujourd'hui à après-demain)
+          </Text>
+          <TextInput
+            style={[styles.glassInput, { borderRadius: 20 }]}
+            value={advanceDays}
+            onChangeText={setAdvanceDays}
+            keyboardType="numeric"
+            placeholder="ex: 3"
+            placeholderTextColor="#cbd5e1"
+          />
+        </View>
+      </View>
+
       {/* Localisation (villes) + acces aux zones de livraison sur une ligne */}
       <View style={[styles.formRow, { marginTop: 16, gap: 10 }]}>
         <View style={[styles.inputGroup, { flex: 1, marginTop: 0 }]}>
@@ -251,40 +283,6 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               <Ionicons name="eye-outline" size={20} color="#334155" />
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
-
-      {/* Délai livraison + jours en avance sur une ligne */}
-      <View style={[styles.formRow, { marginTop: 16, gap: 10 }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Délai livraison (minutes)</Text>
-          <Text style={styles.helperText}>
-            Les clients ne pourront plus commander X minutes avant l'heure de
-            livraison
-          </Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={orderLeadTime}
-            onChangeText={setOrderLeadTime}
-            keyboardType="numeric"
-            placeholder="ex: 30"
-            placeholderTextColor="#cbd5e1"
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Jours en avance</Text>
-          <Text style={styles.helperText}>
-            Nombre de jours à l'avance qu'un client peut commander (ex: 3 =
-            aujourd'hui, demain, après-demain)
-          </Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={advanceDays}
-            onChangeText={setAdvanceDays}
-            keyboardType="numeric"
-            placeholder="ex: 3"
-            placeholderTextColor="#cbd5e1"
-          />
         </View>
       </View>
 

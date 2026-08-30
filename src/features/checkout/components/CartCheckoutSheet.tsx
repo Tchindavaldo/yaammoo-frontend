@@ -241,8 +241,14 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
               orderLeadTime: data.orderLeadTime,
               advanceDays: data.advanceDays,
               deliveryOffer,
+              // Retrait boutique autorisé ? (/all d'abord, sinon /:id)
+              pickupAllowed: ctxFastFood?.pickupAllowed ?? data?.pickupAllowed,
             } as any)
-          : ({ ...menu, deliveryOffer } as any),
+          : ({
+              ...menu,
+              deliveryOffer,
+              pickupAllowed: ctxFastFood?.pickupAllowed ?? data?.pickupAllowed,
+            } as any),
       );
 
     const cached = getCachedFastFood(ffId);
@@ -259,6 +265,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
   const advanceDays = (menuWithDeliveryHours as any)?.advanceDays;
   const deliveryOffer = (menuWithDeliveryHours as any)?.deliveryOffer || null;
+  // Retrait boutique autorisé ? (fusion /all + /:id dans l'effet ci-dessus)
+  const pickupAllowed = (menuWithDeliveryHours as any)?.pickupAllowed;
 
   const handleConfirm = () => {
     const order = createOrder();
@@ -370,6 +378,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
                     availableHours={rawHours}
                     deliveryOffer={deliveryOffer}
+                    pickupAllowed={pickupAllowed}
                   />
                 )}
               </ScrollView>

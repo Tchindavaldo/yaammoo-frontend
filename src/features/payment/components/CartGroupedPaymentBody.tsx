@@ -27,6 +27,8 @@ interface CartGroupedPaymentBodyProps {
   onNetworkChange: (network: "orange" | "mtn") => void;
   /** Paiement parti : le choix du reseau est verrouille. */
   isBusy: boolean;
+  /** Retrait boutique autorisé (GET /fastfood/all) — gate la card « Sur place ». */
+  pickupAllowed?: boolean;
   /**
    * PAGE affichee (1 a 5). Le sheet a une hauteur reduite : la livraison
    * groupee ne tient plus sur un seul ecran, elle se parcourt en cinq temps.
@@ -63,6 +65,7 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
   network,
   onNetworkChange,
   isBusy,
+  pickupAllowed,
   step,
 }) => (
   <ScrollView
@@ -98,6 +101,7 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
       network={network}
       onNetworkChange={onNetworkChange}
       isBusy={isBusy}
+      pickupAllowed={pickupAllowed}
       section={
         step === 1
           ? "group"

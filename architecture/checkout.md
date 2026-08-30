@@ -76,6 +76,11 @@ yaammoo/src/features/checkout/
   de livraison reste toujours envoyé dans `delivery.prix` (le livreur doit être payé).
 
 **Règles métier** :
+- Défaut `delivery = Livraison(statut: true, type: 'standard')` : l'onglet
+  Livraison arrive avec **« Heure » présélectionné** — lieu, contact et créneau
+  restent à compléter. « Aucune » (retrait boutique) = choix EXPLICITE du user,
+  jamais l'état initial. À l'édition d'une cmd existante, la livraison sauvegardée
+  prime (sinon `type: 'aucune'`).
 - Si `menu.stock` n'est pas un `number` → pas de blocage stock
 - Si `menu.stock < quantity` → message immédiat, pas d'appel API
 - `delivery.type === 'aucune'` → `delivery.statut = false`, aucun champ requis
@@ -119,6 +124,12 @@ yaammoo/src/features/checkout/
 [ aucuneBanner ]
   └── storefront icon + "Vous passerez en boutique récupérer votre commande"
 ```
+
+> **Gate `pickupAllowed`** : la card « Aucun » de la grille Select Type (= retrait
+> en boutique) reste affichée, **non grisée, juste non cliquable** quand
+> `pickupAllowed === false` (champ du backend, `GET /fastfood/all`), avec le
+> sous-texte « Retrait **boutique** indisponible ». Absent/`undefined` = card
+> active (rétrocompatible).
 
 **Cartes colorées** (orange `#ec4913`) quand remplies.
 
@@ -294,9 +305,9 @@ rebénéficier, le user resaisit un code → nouvelle vérification.
 4. Clique "Buy" → `validateStock()` → `validateDelivery()` → `POST /order` avec `status: pending`
 
 **Note** : Les heures de livraison (`deliveryHours`, `orderLeadTime`, `advanceDays`,
-`deliveryOffer`) sont déjà attachées au menu par `DesignRouter` depuis `GET /fastfood/all`.
-`CheckoutSheet` recopie simplement `menu` dans `menuWithDeliveryHours` (**aucun refetch**
-`GET /fastfood/:id` / `GET /menu/:id`).
+`deliveryOffer`, `pickupAllowed`) sont déjà attachées au menu par `DesignRouter`
+depuis `GET /fastfood/all`. `CheckoutSheet` recopie simplement `menu` dans
+`menuWithDeliveryHours` (**aucun refetch** `GET /fastfood/:id` / `GET /menu/:id`).
 
 ---
 

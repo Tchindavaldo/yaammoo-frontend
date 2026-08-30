@@ -228,7 +228,10 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
      séparées » (→ retour au panier, chaque tableau de zone gardant son propre
      bouton « commander »). Le compte de livraisons distinctes est
      `groups.length`, `fastFoodName` vient de `useGroupedDeliveryData` ;
-  2. **type de livraison** (`section: "type"`) — Express / À l'heure / Sur place ;
+  2. **type de livraison** (`section: "type"`) — Express / À l'heure / Sur place.
+     La card **Sur place** (page 1 « À la boutique » comme page 2) est **non
+     cliquable** avec le sous-texte « Retrait indisponible » quand
+     `pickupAllowed === false` (porté par `useGroupedDeliveryData`, sans grisé) ;
   3. **informations** (`section: "infos"`) — lieu, zone express ou créneau,
      contact. **Plus de tuile « Note vocale »** : l'enregistrement se fait
      directement dans l'overlay du lieu (voir ci-dessous) ;

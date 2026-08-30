@@ -224,6 +224,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
   const advanceDays = (menuWithDeliveryHours as any)?.advanceDays;
   const deliveryOffer = (menuWithDeliveryHours as any)?.deliveryOffer || null;
+  // Retrait boutique autorisé ? (porté par le menu depuis GET /fastfood/all)
+  const pickupAllowed = (menuWithDeliveryHours as any)?.pickupAllowed;
 
   const handleConfirm = () => {
     const order = createOrder();
@@ -335,6 +337,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
                     availableHours={rawHours}
                     deliveryOffer={deliveryOffer}
+                    pickupAllowed={pickupAllowed}
                   />
                 )}
               </ScrollView>

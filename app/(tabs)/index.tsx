@@ -36,6 +36,15 @@ import { useNotifications } from "@/src/features/notifications/hooks/useNotifica
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useNavigation, useRouter } from "expo-router";
 
+/**
+ * Item 0 de la liste : la banniere. Objet constant (jamais recree) pour que la
+ * memoisation de `listData` et les cles de la FlatList restent stables.
+ */
+const BANNER_ITEM = { __banner: true as const, id: "__banner__" };
+
+/** Vrai pour l'item banniere, faux pour une boutique. */
+const isBannerItem = (item: any) => item?.__banner === true;
+
 const CATEGORIES = [
   { name: "All", icon: "grid-outline" },
   { name: "Fast Food", icon: "fast-food-outline" },
@@ -99,6 +108,7 @@ export default function HomeScreen() {
   // `tabPress` remonte au screen, qui est le seul a tenir la ref.
   const listRef = useRef<FlatList>(null);
   const navigation = useNavigation();
+
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Position courante : garde-fou contre une troncature hors du haut de liste. */
   const atTopRef = useRef(true);
@@ -187,22 +197,32 @@ export default function HomeScreen() {
     ].filter(Boolean) as string[];
   }, [banners, fastFoods]);
 
-  const listHeader = useMemo(
-    () => (
-      <HeroBanner
-        banners={banners}
-        onBonusPress={handleBannerPress}
-        loading={loading}
-      />
-    ),
-    [banners, handleBannerPress, loading],
+  // ⚠️ La banniere est un ITEM de la liste, plus un `ListHeaderComponent`.
+  //
+  // En header, elle vivait HORS de la virtualisation : toujours montee, et
+  // ignoree de la fenetre de rendu. Deux regimes qui ne se coordonnaient pas —
+  // `initialNumToRender` comptait des boutiques sans jamais compter les ~235 px
+  // qu'elle occupe, si bien que la fenetre initiale s'arretait toujours trop
+  // haut et qu'il restait une cellule a monter au premier geste.
+  //
+  // En item 0, la banniere entre dans la meme fenetre que les boutiques : la
+  // liste connait enfin la hauteur reelle de son contenu et dimensionne son
+  // rendu initial en consequence.
+  const listData = useMemo(
+    () => [BANNER_ITEM, ...fastFoods],
+    [fastFoods],
   );
 
-  // Pied de liste, trois états :
+  // Pied de liste, quatre états :
   //  - chargement de la page suivante → indicateur ;
+  //  - aucune boutique → message vide ;
   //  - catalogue épuisé → message de fin, pour que le bas de liste ne se
   //    termine pas sur un blanc qui laisse croire que ça charge encore ;
   //  - sinon rien (évite un espace vide pendant le défilement normal).
+  //
+  // ⚠️ Le message « aucune boutique » est ICI et non dans `ListEmptyComponent` :
+  // la banniere occupe l'item 0, la liste n'est donc JAMAIS vide et React Native
+  // ne rendrait plus jamais ce composant.
   const listFooter = useMemo(() => {
     if (loadingMore && hasMore) {
       return (
@@ -211,8 +231,22 @@ export default function HomeScreen() {
         </View>
       );
     }
-    // `fastFoods.length > 0` : sur une liste vide, c'est `ListEmptyComponent`
-    // qui parle — deux messages se contrediraient.
+    if (fastFoods.length === 0 && !loading) {
+      return (
+        <View style={styles.centered}>
+          <Ionicons
+            name="search-outline"
+            size={60}
+            color={Theme.colors.gray[200]}
+          />
+          <Text style={styles.emptyText}>
+            {searchQuery
+              ? `Aucun restaurant trouvé pour "${searchQuery}"`
+              : "Aucun restaurant disponible pour le moment"}
+          </Text>
+        </View>
+      );
+    }
     if (!hasMore && !loading && fastFoods.length > 0) {
       return (
         <View style={styles.footerEnd}>
@@ -223,7 +257,7 @@ export default function HomeScreen() {
       );
     }
     return null;
-  }, [loadingMore, hasMore, loading, fastFoods.length]);
+  }, [loadingMore, hasMore, loading, fastFoods.length, searchQuery]);
 
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
@@ -256,14 +290,28 @@ export default function HomeScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item, index }: { item: any; index: number }) => (
-      <DesignRouter
-        fastFood={item}
-        onMenuClick={onMenuClickStable}
-        index={index}
-      />
-    ),
-    [onMenuClickStable],
+    ({ item, index }: { item: any; index: number }) => {
+      if (isBannerItem(item)) {
+        return (
+          <HeroBanner
+            banners={banners}
+            onBonusPress={handleBannerPress}
+            loading={loading}
+          />
+        );
+      }
+      // ⚠️ `index - 1` : la banniere occupe la position 0, `designIndex` et la
+      // regle « pas de provider pour la premiere boutique » (DesignRouter)
+      // raisonnent en rang de BOUTIQUE, pas en rang de ligne.
+      return (
+        <DesignRouter
+          fastFood={item}
+          onMenuClick={onMenuClickStable}
+          index={index - 1}
+        />
+      );
+    },
+    [onMenuClickStable, banners, handleBannerPress, loading],
   );
 
   // ⚠️ `index` en secours produisait une cle DEPENDANTE DE LA POSITION : a
@@ -385,8 +433,7 @@ export default function HomeScreen() {
         <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
           <FlatList
             ref={listRef}
-            data={fastFoods}
-            ListHeaderComponent={listHeader}
+            data={listData}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
             onScroll={handleScroll}
@@ -413,9 +460,12 @@ export default function HomeScreen() {
             // rendu montait la bannière ET dix boutiques (header + rangée de
             // menus chacune). Le squelette de la bannière n'était peint qu'à la
             // fin de cette passe — d'où son apparition en retard alors que les
-            // cartes, elles, étaient déjà là. On ne rend que ce qui tient à
-            // l'écran ; le reste suit à la passe suivante.
-            initialNumToRender={2}
+            // cartes, elles, étaient déjà là.
+            //
+            // ⚠️ Ce compte inclut désormais la BANNIÈRE (item 0) : à 3, on rend
+            // la bannière plus deux boutiques, soit exactement ce que couvrait
+            // l'ancien `2` en header.
+            initialNumToRender={3}
             maxToRenderPerBatch={3}
             // ⚠️ NE PAS elargir `windowSize` pour supprimer le cycle
             // UNMOUNT/MOUNT #3..#6 vu en bas de liste : teste a 11 (avec
@@ -436,20 +486,6 @@ export default function HomeScreen() {
             // voit l'espace vide, le loader, puis les nouvelles boutiques.
             onEndReachedThreshold={0.1}
             ListFooterComponent={listFooter}
-            ListEmptyComponent={
-              <View style={styles.centered}>
-                <Ionicons
-                  name="search-outline"
-                  size={60}
-                  color={Theme.colors.gray[200]}
-                />
-                <Text style={styles.emptyText}>
-                  {searchQuery
-                    ? `Aucun restaurant trouvé pour "${searchQuery}"`
-                    : "Aucun restaurant disponible pour le moment"}
-                </Text>
-              </View>
-            }
           />
         </View>
       </ShopRevealProvider>

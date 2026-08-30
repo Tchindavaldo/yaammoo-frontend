@@ -6,6 +6,7 @@ import {
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LogBox, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
@@ -234,6 +235,10 @@ function AppContent() {
 
 function RootLayout() {
   return (
+    // ⚠️ OBLIGATOIRE des qu'un composant de `react-native-gesture-handler` est
+    // utilise (carrousel de la banniere) : sans cette racine, ses gestes sont
+    // silencieusement inertes sur Android.
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <AuthProvider>
       <OrderProvider>
         <NotificationProvider>
@@ -258,6 +263,7 @@ function RootLayout() {
         </NotificationProvider>
       </OrderProvider>
     </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 

@@ -1,23 +1,34 @@
-import { Theme } from '@/src/theme';
-import { AppBanner } from '@/src/types';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-import { CardSkeleton } from '@/src/components/CardSkeleton';
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, FlatList, StyleSheet, Text, TouchableOpacity, View, ViewToken } from 'react-native';
-import { REVEAL_MS, useShopReveal } from '../context/ShopRevealContext';
+import { CardSkeleton } from "@/src/components/CardSkeleton";
+import { Theme } from "@/src/theme";
+import { AppBanner } from "@/src/types";
+import { Image } from "expo-image";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+// ⚠️ `ScrollView` de gesture-handler, PAS celle de react-native. La ScrollView
+// RN passe par le systeme de responder JS historique, qui s'arbitre mal avec la
+// liste verticale parente : le geste part sur la banniere, l'enfant prend le
+// responder, et la liste ne defile qu'apres la negociation — la pause au scroll
+// en haut du home. Gesture-handler negocie en NATIF, la main est rendue tout de
+// suite. Meme API, changement d'import uniquement.
+import { REVEAL_MS, useShopReveal } from "../context/ShopRevealContext";
+import { useBannerLoop } from "../hooks/useBannerLoop";
 
-const { width } = Dimensions.get('window');
-/**
- * Nombre de repetitions de la liste pour simuler une boucle infinie.
- *
- * ⚠️ Etait a 50 : avec 3 bannieres, cela faisait 150 items et un
- * `initialScrollIndex` a 75. La FlatList devait se positionner la avant de
- * peindre quoi que ce soit — d'ou un blanc visible avant meme l'apparition du
- * squelette, alors que les cartes, elles, etaient instantanees. 10 repetitions
- * suffisent largement a ne jamais atteindre le bord en usage reel.
- */
-const LOOP_MULTIPLIER = 10;
+const { width } = Dimensions.get("window");
 
 interface Props {
   /** Bannières publicitaires reçues via GET /fastfood/all (actives). */
@@ -43,11 +54,19 @@ interface Props {
  * réponse que les boutiques.
  */
 /**
- * Defilement automatique du carrousel. Desactive : le scroll auto reprenait la
- * main pendant la lecture d'une banniere. Repasser a `true` pour le retablir
- * (toute la mecanique autoplay/pause reste en place).
+ * ⚠️ PUCES DE PAGINATION DESACTIVEES — pause au scroll du home.
+ *
+ * Leur simple PRESENCE ramene la pause, quelle que soit leur implementation.
+ * Ont ete testees et ecartees : puces pilotees par `useState`, puis par
+ * `scrollX` sur le driver natif, avec interpolation de couleur, puis de largeur,
+ * puis d'opacite seule, et avec `overflow: 'hidden'` sur leur rangee. Toutes
+ * ramenent la pause ; les retirer la supprime.
+ *
+ * Ce n'est donc ni leur animation ni un re-rendu, mais leur presence ou leur
+ * positionnement — cause non identifiee a ce jour. Repasser a `true` pour les
+ * reafficher (tout le code reste en place).
  */
-const AUTOPLAY_ENABLED = false;
+const DOTS_ENABLED = true;
 
 /** Mettre a `true` pour figer le squelette et inspecter son rendu. */
 const FORCE_SKELETON = false;
@@ -95,9 +114,9 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
     [bannerReveal],
   );
 
-  // L'image effectivement visible au premier rendu : le carrousel demarre au
-  // milieu de la boucle, ce qui retombe toujours sur `banners[0]`. C'est elle
-  // que le groupe attend — pas une banniere hors ecran.
+  // L'image effectivement visible au premier rendu : le carrousel demarre sur
+  // la vraie premiere banniere (juste apres le clone de queue), donc toujours
+  // `banners[0]`. C'est elle que le groupe attend — pas une diapo hors ecran.
   const firstUri = banners?.[0]?.imageUrl;
   // Inscription pendant le rendu : les effets tournent apres la fermeture de la
   // fenetre d'inscription du provider.
@@ -141,89 +160,162 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
     const timer = setTimeout(() => setSkeletonGone(true), REVEAL_MS + 60);
     return () => clearTimeout(timer);
   }, [group?.ready]);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const currentIndexRef = useRef(0);
+  // Mecanique du carrousel (diapos + clones, teleport, autoplay, puces) :
+  // voir `useBannerLoop`, qui porte tout l'historique de la boucle infinie.
+  const {
+    slides,
+    scrollRef,
+    scrollX,
+    hasCarousel,
+    handleLayout,
+    handleScrollBeginDrag,
+    handleMomentumEnd,
+  } = useBannerLoop(banners);
 
-  const hasCarousel = Array.isArray(banners) && banners.length > 0;
+  // Memoise : l'evenement est branche sur le graphe animé NATIF, le recreer a
+  // chaque rendu le detacherait puis le rattacherait.
+  const onScrollEvent = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+        useNativeDriver: true,
+      }),
+    [scrollX],
+  );
 
-  // Répétition des bannières pour créer l'effet de boucle infinie
-  const extendedBanners = useMemo(() => {
-    if (!banners || banners.length <= 1) return banners || [];
-    const list: (AppBanner & { uniqueId: string })[] = [];
-    for (let i = 0; i < LOOP_MULTIPLIER; i++) {
-      banners.forEach((b, idx) => {
-        list.push({ ...b, uniqueId: `${b.id}_${i}_${idx}` });
+  // Puces animees depuis `scrollX`, sans aucun etat React.
+  //
+  // ⚠️ Une puce s'active sur DEUX positions quand la boucle est active : la
+  // banniere `i` est rendue par la diapo reelle `i + 1`, mais aussi par un clone
+  // (la premiere reapparait en queue, la derniere en tete). Sans ce second point
+  // d'ancrage, les puces s'eteindraient toutes en arrivant sur un clone.
+  const dotViews = useMemo(() => {
+    const n = banners.length;
+    if (n <= 1) return null;
+    const looped = slides.length === n + 2;
+    return banners.map((b, i) => {
+      // Position(s) de diapo qui affichent la banniere `i`.
+      const anchors = looped
+        ? [i + 1, i === 0 ? n + 1 : i === n - 1 ? 0 : -1]
+        : [i];
+      const points = anchors.filter((a) => a >= 0).sort((x, y) => x - y);
+
+      // Rampe : largeur/couleur pleines sur chaque ancre, valeur de repos
+      // ailleurs. `inputRange` doit rester STRICTEMENT croissant.
+      const inputRange: number[] = [];
+      const opacityRange: number[] = [];
+      points.forEach((p) => {
+        [
+          [p - 1, 0],
+          [p, 1],
+          [p + 1, 0],
+        ].forEach(([pos, o]) => {
+          const x = pos * width;
+          if (inputRange.length && x <= inputRange[inputRange.length - 1])
+            return;
+          inputRange.push(x);
+          opacityRange.push(o);
+        });
       });
-    }
-    return list;
-  }, [banners]);
 
-  const initialIndex = useMemo(() => {
-    if (!banners || banners.length <= 1) return 0;
-    return Math.floor(LOOP_MULTIPLIER / 2) * banners.length;
-  }, [banners]);
+      // ⚠️ NI largeur NI couleur : ces deux proprietes ne sont PAS prises en
+      // charge par le driver natif. Les animer forcerait `scrollX` a repasser
+      // par le thread JS a chaque frame — c'est ce qui ramenait la pause au
+      // scroll du home. Seule l'OPACITE est native : la puce active est un
+      // calque superpose qu'on fait apparaitre, la puce grise reste dessous.
+      return (
+        <View key={b.id} style={styles.dotSlot}>
+          <View style={styles.dot} />
+          <Animated.View
+            style={[
+              styles.dotActiveOverlay,
+              {
+                opacity: scrollX.interpolate({
+                  inputRange,
+                  outputRange: opacityRange,
+                  extrapolate: "clamp",
+                }),
+              },
+            ]}
+          />
+        </View>
+      );
+    });
+  }, [banners, slides.length, scrollX]);
 
-  useEffect(() => {
-    if (initialIndex > 0) {
-      currentIndexRef.current = initialIndex;
-    }
-  }, [initialIndex]);
+  // Diapos memoisees : les interpolations sont branchees sur le graphe animé
+  // NATIF, les recreer a chaque rendu detacherait puis rattacherait autant de
+  // noeuds natifs. Les puces (`activeIndex`) ne sont volontairement PAS dans
+  // les dependances : elles changent a chaque page, les images non.
+  const slideViews = useMemo(
+    () =>
+      slides.map((item, index) => {
+        const inputRange = [
+          (index - 1) * width,
+          index * width,
+          (index + 1) * width,
+        ];
+        // TEST TEMPORAIRE : sans animation, la diapo garde sa geometrie mais
+        // n'accroche aucun noeud anime natif. Voir CAROUSEL_ANIM_ENABLED.
+        // ⚠️ Sous `PagerView`, `scrollX` n'est alimente par rien : la vue native
+        // n'emet pas d'evenement de scroll continu. Les interpolations
+        // resteraient donc figees a leur valeur de depart (echelle 0.4), ce qui
+        // reduirait toutes les diapos. On les neutralise dans ce mode.
+        // ⚠️ La ScrollView est desormais NUE (pas de `onScroll`) : `scrollX`
+        // n'est alimente par rien, les interpolations resteraient figees a
+        // l'echelle 0.4. Animation neutralisee tant que c'est le cas.
+        const animStyle = true
+          ? {
+              transform: [
+                {
+                  scale: scrollX.interpolate({
+                    inputRange,
+                    outputRange: [0.4, 1, 0.4],
+                    extrapolate: "clamp",
+                  }),
+                },
+              ],
+              opacity: scrollX.interpolate({
+                inputRange,
+                outputRange: [0.8, 1, 0.8],
+                extrapolate: "clamp",
+              }),
+            }
+          : null;
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const startAutoplay = useCallback(() => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      const nextIndex = currentIndexRef.current + 1;
-      currentIndexRef.current = nextIndex;
-      flatListRef.current?.scrollToOffset({
-        offset: nextIndex * width,
-        animated: true,
-      });
-    }, 3500);
-  }, []);
-
-  // Initialisation de l'autoplay au montage
-  useEffect(() => {
-    if (!AUTOPLAY_ENABLED || !hasCarousel || banners.length <= 1) return;
-
-    startAutoplay();
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
-    };
-  }, [hasCarousel, banners.length, startAutoplay]);
-
-  // Pause de 20s lors d'un slide manuel de l'utilisateur
-  const handleScrollBeginDrag = useCallback(() => {
-    if (!AUTOPLAY_ENABLED) return;
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (pauseTimeoutRef.current) {
-      clearTimeout(pauseTimeoutRef.current);
-    }
-    pauseTimeoutRef.current = setTimeout(() => {
-      startAutoplay();
-    }, 20000);
-  }, [startAutoplay]);
-
-  const onViewableItemsChanged = useCallback(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      const first = viewableItems?.[0];
-      if (first?.index != null) {
-        currentIndexRef.current = first.index;
-        if (banners.length > 0) {
-          setActiveIndex(first.index % banners.length);
-        }
-      }
-    },
-    [banners.length],
+        return (
+          // ⚠️ Sous `PagerView`, chaque enfant EST une page : il doit la remplir
+          // (`flex: 1`), la largeur fixe des diapos de la ScrollView ne suffit
+          // pas a lui donner sa hauteur.
+          <View key={item.slideKey} style={styles.bannerItemContainer}>
+            <Animated.View style={[styles.animatedWrapper, animStyle]}>
+              <TouchableOpacity
+                style={styles.bannerWrapper}
+                activeOpacity={0.9}
+                disabled={item.type !== "bonus"}
+                onPress={() => item.type === "bonus" && onBonusPress(item)}
+              >
+                <Animated.View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    FORCE_SKELETON ? { opacity: 0 } : { opacity: bannerReveal },
+                  ]}
+                >
+                  <BannerImage
+                    uri={item.imageUrl}
+                    onReady={() => markLoaded(item.imageUrl)}
+                  />
+                </Animated.View>
+                {item.title ? (
+                  <View style={styles.overlay}>
+                    <Text style={styles.bannerTitle}>{item.title}</Text>
+                  </View>
+                ) : null}
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
+        );
+      }),
+    [slides, scrollX, bannerReveal, onBonusPress, markLoaded],
   );
 
   // ⚠️ Chargement en cours et aucune banniere encore recue : on affiche le
@@ -259,12 +351,13 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* ⚠️ Voile monte HORS de la FlatList du carrousel, et rendu avant elle.
-          Le squelette vivait dans les items : il attendait donc que la liste se
-          positionne sur `initialScrollIndex` avant d'etre peint — c'est ce qui
-          le faisait arriver en retard alors que les cartes etaient deja la. Ici
-          c'est une simple `View` en absolu : elle est peinte des la premiere
-          passe, quel que soit l'etat de la liste dessous. */}
+      {/* ⚠️ Voile monte HORS du carrousel, et rendu avant lui. Le squelette
+          vivait dans les diapos : il attendait donc que le carrousel se
+          positionne avant d'etre peint — c'est ce qui le faisait arriver en
+          retard alors que les cartes etaient deja la. Ici c'est une simple
+          `View` en absolu : elle est peinte des la premiere passe, quel que
+          soit l'etat du carrousel dessous. Elle couvre aussi le repositionnement
+          initial de `handleLayout`, qui devient donc invisible. */}
       {(FORCE_SKELETON || !skeletonGone) && (
         <Animated.View
           style={[
@@ -273,7 +366,7 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
           ]}
           pointerEvents="none"
         >
-          <View style={[styles.bannerItemContainer, { height: '100%' }]}>
+          <View style={[styles.bannerItemContainer, { height: "100%" }]}>
             <View style={styles.bannerWrapper}>
               {/* Le fondu de sortie n'est plus gere par `CardSkeleton` : il
                   suit ici l'inverse exact du fondu d'entree de l'image. */}
@@ -282,85 +375,52 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
           </View>
         </Animated.View>
       )}
-      <Animated.FlatList
-        ref={flatListRef as any}
-        data={extendedBanners as any}
-        keyExtractor={(item: any) => item.uniqueId || item.id}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        initialScrollIndex={initialIndex > 0 ? initialIndex : undefined}
-        onScrollBeginDrag={handleScrollBeginDrag}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
-        getItemLayout={(_, index) => ({
-          length: width,
-          offset: width * index,
-          index,
-        })}
-        renderItem={({ item, index }) => {
-          const inputRange = [
-            (index - 1) * width,
-            index * width,
-            (index + 1) * width,
-          ];
-
-          const scale = scrollX.interpolate({
-            inputRange,
-            outputRange: [0.40, 1, 0.40],
-            extrapolate: 'clamp',
-          });
-
-          const opacity = scrollX.interpolate({
-            inputRange,
-            outputRange: [0.8, 1, 0.8],
-            extrapolate: 'clamp',
-          });
-
-          return (
-            <View style={styles.bannerItemContainer}>
-              <Animated.View style={[styles.animatedWrapper, { transform: [{ scale }], opacity }]}>
-                <TouchableOpacity
-                  style={styles.bannerWrapper}
-                  activeOpacity={0.9}
-                  disabled={item.type !== 'bonus'}
-                  onPress={() => item.type === 'bonus' && onBonusPress(item)}
-                >
-                  <Animated.View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      FORCE_SKELETON ? { opacity: 0 } : { opacity: bannerReveal },
-                    ]}
-                  >
-                    <BannerImage
-                      uri={item.imageUrl}
-                      onReady={() => markLoaded(item.imageUrl)}
-                    />
-                  </Animated.View>
-                  {item.title ? (
-                    <View style={styles.overlay}>
-                      <Text style={styles.bannerTitle}>{item.title}</Text>
-                    </View>
-                  ) : null}
-                </TouchableOpacity>
-              </Animated.View>
-            </View>
-          );
-        }}
-      />
+      {/* ⚠️ `ScrollView` et non `FlatList` : a N + 2 diapos il n'y a rien a
+          virtualiser, et cela retire du header (jamais virtualise par la liste
+          du home) toute la mecanique `VirtualizedList` — fenetre de rendu,
+          viewabilite, cascade de montage. Voir `useBannerLoop`. */}
+      {
+        <Animated.ScrollView
+          ref={scrollRef as any}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onLayout={handleLayout}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onMomentumScrollEnd={handleMomentumEnd}
+          onScroll={onScrollEvent}
+          scrollEventThrottle={16}
+        >
+          {slideViews}
+        </Animated.ScrollView>
+      }
       {/* Les puces suivent l'image sur la MEME valeur : elles ne peuvent plus
           apparaitre a cote d'une banniere encore en squelette. */}
-      {banners.length > 1 && (
+      {/* ⚠️ Les puces sont pilotees par `scrollX` sur le driver NATIF, JAMAIS par
+          un `useState`.
+
+          C'ETAIT LA CAUSE DE LA PAUSE AU SCROLL DU HOME. Elles lisaient un
+          `activeIndex` d'etat, mis a jour a chaque changement de page. Or tout
+          `setState` ici re-rend `HeroBanner`, donc les N + 2 diapos et leurs
+          interpolations : ~130 ms de blocage JS, tombant precisement au
+          chargement et au retour en haut, la ou la position du carrousel est
+          reevaluee. Les sondes le montraient — `[BANNER] rendu` juste avant
+          chaque `[JS] blocage`.
+
+          Ici chaque puce interpole sa propre largeur et sa couleur depuis la
+          MEME valeur animee que les diapos. L'etat vit dans le graphe natif :
+          aucun rendu React, quel que soit le nombre de pages parcourues. */}
+      {DOTS_ENABLED && banners.length > 1 && (
         <View style={styles.dotsRow}>
           {!skeletonGone && (
             <Animated.View
               pointerEvents="none"
-              style={[styles.dotsLayer, { opacity: skeletonOpacity }]}
+              style={[
+                styles.dotsLayer,
+                StyleSheet.absoluteFillObject,
+                { justifyContent: "center" },
+                { opacity: skeletonOpacity },
+              ]}
             >
               <View style={styles.dotSkeleton}>
                 <CardSkeleton radius={4} />
@@ -373,12 +433,7 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
               FORCE_SKELETON ? { opacity: 0 } : { opacity: bannerReveal },
             ]}
           >
-            {banners.map((b, i) => (
-              <View
-                key={b.id}
-                style={[styles.dot, i === activeIndex && styles.dotActive]}
-              />
-            ))}
+            {dotViews}
           </Animated.View>
         </View>
       )}
@@ -396,9 +451,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 10,
   },
+  // ⚠️ Hauteur EXPLICITE : `PagerView` est une vue native, elle ne se dimensionne
+  // pas sur son contenu comme une `ScrollView`. Doit valoir la hauteur d'une
+  // diapo (`animatedWrapper`), sinon la banniere ne s'affiche pas.
+  pager: {
+    width,
+    height: 210,
+  },
   // Superpose au carrousel, a la meme geometrie que ses items.
   carouselOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -410,22 +472,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   animatedWrapper: {
-    width: '100%',
+    width: "100%",
     height: 210,
   },
   bannerWrapper: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 24,
-    overflow: 'hidden',
+    overflow: "hidden",
     // Fond neutre : l'orange de marque restait visible pendant tout le
     // telechargement de la banniere. Le skeleton couvre desormais l'attente.
-    backgroundColor: '#eef1f5',
+    backgroundColor: "#eef1f5",
   },
   backgroundImage: {
     ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   overlay: {
     flex: 1,
@@ -433,41 +495,71 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   bannerTitle: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 16,
     left: 16,
     right: 16,
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 16,
-    fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.35)',
+    fontWeight: "700",
+    textShadowColor: "rgba(0,0,0,0.35)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
   // Hauteur fixe : les deux couches de puces (squelette et reelles) sont
   // superposees le temps du fondu croise, la ligne ne doit pas bouger.
+  // ⚠️ Hauteur fixe ET `overflow: 'hidden'`. Les deux couches de puces
+  // (squelette et reelles) se superposent en absolu le temps du fondu croise :
+  // sans cette borne, un enfant absolu deborde de son parent de 7 px de haut, et
+  // la cellule banniere doit etre remesuree par la FlatList — ce qui invalide
+  // ses metriques de virtualisation au moment meme ou la fenetre de rendu est
+  // reevaluee (chargement, retour en haut). C'etait la pause au scroll du home.
+  // Pastille sombre arrondie posee EN BAS DE LA BANNIERE (dans le carrousel),
+  // et non plus sous lui. Hauteur fixe + `overflow: 'hidden'` conserves : les
+  // deux couches de puces se superposent en absolu pendant le fondu croise.
   dotsRow: {
-    height: 7,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
+    position: "absolute",
+    bottom: -25,
+    alignSelf: "center",
+    height: 18,
+    paddingHorizontal: 6,
+    borderRadius: 9,
+    // backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    zIndex: 10,
   },
   dotsLayer: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   dot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: '#d8d2ce',
+    backgroundColor: "#d8d2ce",
     marginHorizontal: 3,
   },
   dotActive: {
     backgroundColor: Theme.colors.primary,
     width: 18,
+  },
+  // ⚠️ Emplacement de LARGEUR FIXE (celle de la puce active) : la puce grise et
+  // le calque actif s'y superposent. Animer la largeur ferait repasser `scrollX`
+  // par le thread JS — le driver natif ne gere que l'opacite et les transforms.
+  dotSlot: {
+    width: 12,
+    height: 7,
+    marginHorizontal: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dotActiveOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 4,
+    backgroundColor: Theme.colors.primary,
   },
   // Une seule puce, a la largeur de la puce active : le nombre de bannieres
   // n'est pas encore connu au moment du squelette.
@@ -475,7 +567,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 7,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginHorizontal: 3,
   },
 });

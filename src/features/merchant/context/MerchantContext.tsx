@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { merchantService } from '../services/merchantService';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Commande, Menu, Transaction } from '@/src/types';
+import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 
 interface MerchantContextType {
   orders: Commande[];
@@ -65,6 +66,15 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (showLoading) setLoading(false);
     }
   }, [fastFoodId, userId]);
+
+  // Changement de compte : commandes, menus et transactions de l'ancienne
+  // boutique sont vides immediatement (gestion menu / commandes boutique).
+  useResetOnUserChange(userId, () => {
+    setOrders([]);
+    setMenus([]);
+    setTransactions([]);
+    setError(null);
+  });
 
   useEffect(() => {
     fetchData();

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { walletService } from '../services/walletService';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Transaction } from '@/src/types';
+import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 
 interface WalletContextType {
   transactions: Transaction[];
@@ -37,6 +38,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (showLoading) setLoading(false);
     }
   }, [userId]);
+
+  // Changement de compte : le portefeuille du compte precedent est vide.
+  useResetOnUserChange(userId, () => {
+    setTransactions([]);
+    setError(null);
+  });
 
   useEffect(() => {
     fetchData();

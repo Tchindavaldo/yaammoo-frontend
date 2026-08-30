@@ -9,6 +9,7 @@ import React, {
 import { driverService } from "../services/driverService";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Commande } from "@/src/types";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 
 /** Event socket sur une demande de livraison (création / décision / retrait). */
 export type ApplicationEvent =
@@ -73,6 +74,12 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
     },
     [driverId],
   );
+
+  // Changement de compte : les livraisons deleguees a l'ancien livreur sont vides.
+  useResetOnUserChange(userData?.uid, () => {
+    setOrders([]);
+    setError(null);
+  });
 
   useEffect(() => {
     fetchData();

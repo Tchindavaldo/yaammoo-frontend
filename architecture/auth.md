@@ -231,6 +231,27 @@ démonte `settings` (comme une transition de login). Le modal de déconnexion es
 en `animationType="none"` : sinon Android joue son fondu de fermeture et révèle
 « settings nu » avant la transition de navigation vers `(auth)`.
 
+## Reset des données au changement de compte (OBLIGATOIRE)
+
+`src/hooks/useResetOnUserChange.ts` — vide l'état d'un contexte dès que l'uid
+change (login, logout, bascule de compte), avant tout refetch.
+
+Branché dans : `OrderContext`, `MerchantContext`, `MerchantWalletContext`,
+`WalletContext`, `DriverContext`, `NotificationContext`.
+
+> ⚠️ Sans lui, les données du compte précédent restaient affichées : chaque
+> `fetchData` sort tôt quand l'uid devient `undefined` (déconnexion), donc le
+> state n'était jamais remplacé, et le compte suivant voyait l'ancien panier /
+> les anciennes commandes boutique / l'ancien menu jusqu'à l'arrivée de la
+> réponse réseau.
+>
+> Cas particulier des notifications : la clé storage `notifications_cache`
+> **n'est pas indexée par compte**. Le reset la supprime (`storage.remove`) et
+> remet `hasFreshDataRef` / `pendingReadIdsRef` à zéro — sinon l'hydratation au
+> montage ramène les notifications de l'autre compte.
+
+**Tout nouveau contexte porteur de données liées au compte DOIT appeler ce hook.**
+
 ## Suppression de compte
 
 `confirmDelete()` (`settings.tsx`) appelle `AuthContext.deleteAccount()` qui fait

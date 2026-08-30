@@ -1,5 +1,6 @@
 import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { auth } from "@/src/services/firebase";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import axios from "axios";
@@ -452,6 +453,17 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     cursorRef.current = null;
     void fetchPage(undefined, undefined);
   }, [fetchPage, user?.uid]);
+
+  // Changement de compte : on repart de zero. La liste porte les
+  // `deliveryOffer` du compte precedent (le backend les resout depuis le
+  // Bearer), donc on la vide et le refetch ci-dessus la recharge — loader
+  // compris, comme un premier chargement.
+  useResetOnUserChange(user?.uid, () => {
+    setFastFoods([]);
+    setBanners([]);
+    setError(null);
+    setLoading(true);
+  });
 
   // Recherche serveur, debouncée.
   //

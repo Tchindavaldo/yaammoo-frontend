@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { storage } from "../../../utils/storage";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 
 export interface Notification {
   id: string;
@@ -158,6 +159,17 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       if (!quiet) setLoading(false);
     }
   }, [userData, flushReadQueue, persistCache]);
+
+  // Changement de compte : le state ET le cache storage sont purges. Le cache
+  // `notifications_cache` n'est pas indexe par compte : sans purge, le compte
+  // suivant s'hydrate avec les notifications du precedent au montage.
+  useResetOnUserChange(userData?.uid, () => {
+    hasFreshDataRef.current = false;
+    pendingReadIdsRef.current = new Set();
+    setNotifications([]);
+    setError(null);
+    storage.remove(CACHE_KEY).catch(() => {});
+  });
 
   // Premier chargement après login (silencieux). Plus de refresh auto sur socket/push.
   const didInitialFetchRef = useRef(false);

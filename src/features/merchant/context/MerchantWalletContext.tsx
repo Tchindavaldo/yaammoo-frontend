@@ -12,6 +12,7 @@ import {
   WalletDayStat,
 } from "../services/walletStatsService";
 import { useAuth } from "../../auth/context/AuthContext";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import moment from "moment";
 
 /** Payload normalisé d'un event wallet (wallet.credited / wallet.withdrawal). */
@@ -73,6 +74,11 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
       if (showLoading) setLoading(false);
     }
   }, [userData]);
+
+  // Changement de compte : les stats du portefeuille precedent sont vides.
+  useResetOnUserChange(userData?.uid, () => {
+    setStats(null);
+  });
 
   useEffect(() => {
     refresh();

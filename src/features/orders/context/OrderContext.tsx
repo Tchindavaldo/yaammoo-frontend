@@ -4,6 +4,7 @@ import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Commande } from "@/src/types";
 import { sanitizeOrder } from "../utils/sanitizeOrder";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 
 interface OrderContextType {
   orders: Commande[];
@@ -59,6 +60,14 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (!quiet) setLoading(false);
     }
   }, [userData]);
+
+  // Changement de compte / deconnexion : on vide AVANT tout refetch. Sinon les
+  // commandes de l'ancien compte restent affichees, le fetch sortant tot tant
+  // qu'il n'y a pas d'uid.
+  useResetOnUserChange(userData?.uid, () => {
+    setOrders([]);
+    setError(null);
+  });
 
   useEffect(() => {
     if (userData) {

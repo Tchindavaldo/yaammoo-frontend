@@ -4,10 +4,10 @@ Audit de tous les points de requête de l'app : s'assurer que chaque appel rése
 affiche un message clair à l'utilisateur en cas de succès ET d'erreur.
 Actuellement uniquement des `Alert.alert()` génériques — passer aux Toast.
 
-- [ ] Création commande — success/erreur
-- [ ] Mise à jour statut commande — feedback
-- [ ] Erreurs réseau globales — Toast "Vérifiez votre connexion"
-- [ ] Erreurs serveur 500 — Toast "Erreur serveur, réessayez"
+[ ] Création commande — success/erreur
+[ ] Mise à jour statut commande — feedback
+[ ] Erreurs réseau globales — Toast "Vérifiez votre connexion"
+[ ] Erreurs serveur 500 — Toast "Erreur serveur, réessayez"
 
 ## Mapping codes d'erreur Backend
 

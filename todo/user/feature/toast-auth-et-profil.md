@@ -6,19 +6,19 @@ Actuellement uniquement des `Alert.alert()` génériques — passer aux Toast.
 
 ## Auth (app/(auth)/)
 
-- [ ] Email login — success : Toast "Connecté avec succès"
-- [ ] Email login — erreur Firebase : mapper les codes (`auth/wrong-password` → "Mot de passe incorrect", etc.)
-- [ ] Google login — success : Toast "Connecté avec succès"
-- [ ] Google login — erreur : messages spécifiques par code d'erreur
-- [ ] Inscription — success/erreur : feedback clair
+[ ] Email login — success : Toast "Connecté avec succès"
+[ ] Email login — erreur Firebase : mapper les codes (`auth/wrong-password` → "Mot de passe incorrect", etc.)
+[ ] Google login — success : Toast "Connecté avec succès"
+[ ] Google login — erreur : messages spécifiques par code d'erreur
+[ ] Inscription — success/erreur : feedback clair
 
 ## Profil utilisateur (src/features/auth/services/userFirestore.ts)
 
-- [ ] `getUser()` — erreur 404 : Toast "Utilisateur non trouvé"
-- [ ] `createUser()` — success : Toast "Profil créé"
-- [ ] `createUser()` — erreur : Toast avec message
-- [ ] `updateUser()` — success : Toast "Profil mis à jour"
-- [ ] `updateUser()` — erreur : Toast avec message
+[ ] `getUser()` — erreur 404 : Toast "Utilisateur non trouvé"
+[ ] `createUser()` — success : Toast "Profil créé"
+[ ] `createUser()` — erreur : Toast avec message
+[ ] `updateUser()` — success : Toast "Profil mis à jour"
+[ ] `updateUser()` — erreur : Toast avec message
 
 ## Mapping codes d'erreur Firebase
 

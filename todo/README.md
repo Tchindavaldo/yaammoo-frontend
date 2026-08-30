@@ -14,5 +14,5 @@ Types de sous-dossiers :
 - `ui-new/` — nouvelle UI à créer
 - `ui-update/` — UI existante à ajuster
 
-Un fichier = une tâche, au format d'origine (`[ ]` + sous-puces). Les tâches
-terminées sont archivées dans `_done.md`.
+Un fichier = une tâche, au format `[ ]` (à faire) / `[x]` (fait). Les tâches faites
+restent dans leur fichier, cochées (pas de `_done.md`).

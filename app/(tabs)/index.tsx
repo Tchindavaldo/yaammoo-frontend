@@ -42,6 +42,12 @@ import { useNavigation, useRouter } from "expo-router";
  */
 const BANNER_ITEM = { __banner: true as const, id: "__banner__" };
 
+/**
+ * Hauteur du loader de pagination (`styles.footerLoader`). Volontairement
+ * genereuse : le loader doit se remarquer meme en scroll rapide.
+ */
+const FOOTER_LOADER_HEIGHT = 48;
+
 /** Vrai pour l'item banniere, faux pour une boutique. */
 const isBannerItem = (item: any) => item?.__banner === true;
 
@@ -120,10 +126,39 @@ export default function HomeScreen() {
   // la liste. Et toujours derriere la garde « on est bien en haut ».
   /** Derniere position connue, pour deduire le SENS du scroll. */
   const lastOffsetRef = useRef(0);
+  /**
+   * Bas de liste atteint. Combine a `loadingMore`, il fige le scroll le temps
+   * du chargement de la page suivante (voir `scrollEnabled`).
+   *
+   * Le ref double l'etat pour ne declencher un rendu qu'aux TRANSITIONS : le
+   * comparer dans `handleScroll` evite un `setState` a chaque frame de scroll.
+   */
+  const atBottomRef = useRef(false);
+  const [atBottom, setAtBottom] = useState(false);
   const handleScroll = useCallback(
     (e: any) => {
       const y = e.nativeEvent.contentOffset.y;
       atTopRef.current = y <= 4;
+
+      // Bas de liste reellement atteint : c'est la condition qui autorise le
+      // gel du scroll pendant le chargement (voir `scrollEnabled`). On la
+      // calcule ici plutot que dans `onEndReached`, qui se declenche AVANT le
+      // bas (`onEndReachedThreshold`) et figerait la liste en plein defilement.
+      //
+      // ⚠️ `setState` UNIQUEMENT au changement de valeur. Le home se re-rend a
+      // chaque agitation de contexte et ses cellules sont lourdes (voir
+      // « references stables » dans architecture/restaurants.md) : appeler le
+      // setter a chaque frame de scroll reconstruirait les cellules visibles en
+      // plein geste. Le ref porte la valeur courante, l'etat ne bouge qu'aux
+      // deux transitions qui interessent le rendu.
+      const { contentSize, layoutMeasurement } = e.nativeEvent;
+      const distanceToEnd = contentSize.height - layoutMeasurement.height - y;
+      const nextAtBottom = distanceToEnd <= 8;
+      if (nextAtBottom !== atBottomRef.current) {
+        atBottomRef.current = nextAtBottom;
+        setAtBottom(nextAtBottom);
+      }
+
       // Remontee franche : meme raison que sur le tap Home, une page suivante
       // encore en vol monterait ses cellules pendant que l'utilisateur defile
       // vers le haut, et bloquerait le thread JS en plein geste. Le seuil evite
@@ -142,6 +177,17 @@ export default function HomeScreen() {
   const handleMomentumEnd = useCallback(() => {
     if (atTopRef.current) resetToFirstPage();
   }, [resetToFirstPage]);
+
+  // ⚠️ Liberation du gel des l'arrivee de la page. Sans cet effet, `atBottom`
+  // resterait a `true` : la liste vient de s'allonger, on n'est donc plus en
+  // bas, mais AUCUN `onScroll` ne repart pour le signaler — le scroll etait
+  // desactive, donc immobile. La liste resterait figee definitivement.
+  useEffect(() => {
+    if (!loadingMore) {
+      atBottomRef.current = false;
+      setAtBottom(false);
+    }
+  }, [loadingMore]);
   useEffect(() => {
     // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
     // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
@@ -485,6 +531,24 @@ export default function HomeScreen() {
             // A 0.1, la page ne part qu'une fois le bas reellement atteint : on
             // voit l'espace vide, le loader, puis les nouvelles boutiques.
             onEndReachedThreshold={0.1}
+            // ⚠️ SCROLL FIGE une fois le bas atteint, tant que la page suivante
+            // charge. On ne bride pas le rebond (ni `bounces`, ni
+            // `contentInset` negatif, ni reclampage depuis `onScroll`) : ces
+            // trois pistes ont ete testees et laissaient toutes le defilement
+            // continuer, le reclampage JS produisant en plus un saut visuel au
+            // contact du bas (a `scrollEventThrottle={64}`, le doigt a deja
+            // tire bien au-dela quand JS reagit).
+            //
+            // Ici la liste est simplement rendue non defilante le temps du
+            // chargement : plus aucun mouvement possible vers le bas, le loader
+            // reste ou il est. Le geste en cours s'arrete net, ce qui est
+            // exactement l'effet voulu.
+            //
+            // La condition porte `atBottom` : figer des le depart de la requete
+            // bloquerait aussi un chargement declenche AVANT le bas
+            // (`onEndReachedThreshold`), alors que l'utilisateur defile encore
+            // normalement au milieu de la liste.
+            scrollEnabled={!(loadingMore && hasMore && atBottom)}
             ListFooterComponent={listFooter}
           />
         </View>
@@ -531,7 +595,8 @@ const styles = StyleSheet.create({
   // qu'on le voie — on avait l'impression que les boutiques apparaissaient
   // sans chargement.
   footerLoader: {
-    height: 48,
+    // Meme valeur que le `contentInset` negatif qui coupe le rebond du bas.
+    height: FOOTER_LOADER_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
   },

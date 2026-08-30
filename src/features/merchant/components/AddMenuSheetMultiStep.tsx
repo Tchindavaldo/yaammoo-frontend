@@ -628,10 +628,10 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                   ]}
                   placeholder={
                     selectedPriceIdx === 0
-                      ? "Ex: Solo (1 personne)"
+                      ? "Ex: 1 Burger + 1 Frites + 1 Boisson"
                       : selectedPriceIdx === 1
-                        ? "Ex: Duo (2 personnes)"
-                        : "Ex: Familial (4 personnes)"
+                        ? "Ex: 2 Burgers + 2 Frites + 2 Boissons"
+                        : "Ex: Seau de 8 pièces + frites"
                   }
                   placeholderTextColor="#cbd5e1"
                   value={

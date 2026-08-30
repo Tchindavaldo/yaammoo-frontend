@@ -20,6 +20,8 @@ interface SettingGridSwitchProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
   tone?: SettingTileTone;
+  /** Icone, libelle et Switch sur la meme ligne (tuile pleine largeur). */
+  inline?: boolean;
 }
 
 export const SettingGridSwitch: React.FC<SettingGridSwitchProps> = ({
@@ -28,8 +30,30 @@ export const SettingGridSwitch: React.FC<SettingGridSwitchProps> = ({
   value,
   onValueChange,
   tone = 'neutral',
+  inline = false,
 }) => {
   const { icon: iconColor, bg } = TONES[tone];
+
+  const control = (
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: Theme.colors.gray[200], true: Theme.colors.primary + '60' }}
+      thumbColor={value ? Theme.colors.primary : Theme.colors.gray[400]}
+    />
+  );
+
+  if (inline) {
+    return (
+      <View style={[styles.tile, styles.tileInline]}>
+        <View style={[styles.iconContainer, { backgroundColor: bg }]}>
+          <Ionicons name={icon as any} size={20} color={iconColor} />
+        </View>
+        <Text style={[styles.label, styles.labelInline]}>{title}</Text>
+        {control}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.tile}>
@@ -37,12 +61,7 @@ export const SettingGridSwitch: React.FC<SettingGridSwitchProps> = ({
         <View style={[styles.iconContainer, { backgroundColor: bg }]}>
           <Ionicons name={icon as any} size={20} color={iconColor} />
         </View>
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
-          trackColor={{ false: Theme.colors.gray[200], true: Theme.colors.primary + '60' }}
-          thumbColor={value ? Theme.colors.primary : Theme.colors.gray[400]}
-        />
+        {control}
       </View>
       <Text style={styles.label}>{title}</Text>
     </View>
@@ -52,14 +71,22 @@ export const SettingGridSwitch: React.FC<SettingGridSwitchProps> = ({
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F2F2F7',
+    borderColor: '#ECECF0',
     borderRadius: 18,
     paddingHorizontal: 13,
     paddingTop: 13,
     paddingBottom: 14,
     gap: 9,
+  },
+  tileInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  labelInline: {
+    flex: 1,
   },
   topRow: {
     flexDirection: 'row',

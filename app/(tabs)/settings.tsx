@@ -503,30 +503,33 @@ export default function SettingsScreen() {
 
         {/* Préférences */}
         <SectionHeader title="Préférences" />
-        <SettingGrid>
+        {/* 1 colonne : une tuile par ligne, icone et libelle cote a cote. */}
+        <SettingGrid columns={1}>
           <SettingGridSwitch
             icon="notifications-outline"
             title="Notifications"
-            tone="info"
+            tone="accent"
             value={notifEnabled}
             onValueChange={handleNotifToggle}
           />
           <SettingGridSwitch
             icon="moon-outline"
             title="Mode sombre"
+            tone="accent"
             value={darkMode}
             onValueChange={setDarkMode}
           />
           <SettingGridItem
             icon="language-outline"
             title="Langue"
+            tone="accent"
             hint="Français"
             onPress={() => handleComingSoon("Langue")}
           />
         </SettingGrid>
 
-        {/* Aide & Legal */}
-        <SectionHeader title="Aide & Légal" />
+        {/* Aide */}
+        <SectionHeader title="Aide" />
         <SettingGrid>
           <SettingGridItem
             icon="help-circle-outline"
@@ -544,6 +547,17 @@ export default function SettingsScreen() {
             onPress={() => handleComingSoon("Faire une suggestion")}
           />
           <SettingGridItem
+            icon="call-outline"
+            title="Contactez-nous"
+            tone="accent"
+            onPress={() => setSupportChatVisible(true)}
+          />
+        </SettingGrid>
+
+        {/* Legal */}
+        <SectionHeader title="Légal" />
+        <SettingGrid>
+          <SettingGridItem
             icon="document-text-outline"
             title="Politique & Conditions"
             onPress={() => handleComingSoon("Politique & Conditions")}
@@ -552,12 +566,6 @@ export default function SettingsScreen() {
             icon="lock-closed-outline"
             title="Confidentialité"
             onPress={() => handleComingSoon("Confidentialité")}
-          />
-          <SettingGridItem
-            icon="call-outline"
-            title="Contactez-nous"
-            tone="accent"
-            onPress={() => setSupportChatVisible(true)}
           />
         </SettingGrid>
 

@@ -135,7 +135,13 @@ src/features/
 │       ├── BonusCarousel.tsx            # Carrousel des cartes bonus
 │       └── ...                          # BonusCard, BonusClaimRow, BonusPagerInfo, BonusGalleryCard…
 │
-└── menu/ restaurants/ profile/
+├── profile/                             # Écran Settings — cf. settings-grille.md
+│   └── components/
+│       ├── SettingGrid.tsx              # Grille d'une section (colonnes déduites du nb d'items)
+│       ├── SettingGridItem.tsx          # Tuile pressable (icône + libellé + hint)
+│       └── SettingGridSwitch.tsx        # Tuile portant un Switch (mode inline pleine largeur)
+│
+└── menu/ restaurants/
 ```
 
 > Le socket n'est pas une feature avec Context/Provider : c'est un singleton

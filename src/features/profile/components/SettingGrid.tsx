@@ -60,6 +60,11 @@ export const SettingGrid: React.FC<SettingGridProps> = ({ children, columns }) =
 const styles = StyleSheet.create({
   grid: {
     marginBottom: 22,
+    // Bloc gris par section : les tuiles blanches ressortent dessus et la
+    // separation entre sections se lit d'un coup d'oeil.
+    backgroundColor: '#F2F2F7',
+    borderRadius: 22,
+    padding: 10,
   },
   row: {
     flexDirection: 'row',

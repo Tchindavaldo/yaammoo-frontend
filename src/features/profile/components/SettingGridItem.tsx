@@ -69,9 +69,9 @@ export const SettingGridItem: React.FC<SettingGridItemProps> = ({
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#F2F2F7',
+    borderColor: '#ECECF0',
     borderRadius: 18,
     paddingHorizontal: 13,
     paddingTop: 13,

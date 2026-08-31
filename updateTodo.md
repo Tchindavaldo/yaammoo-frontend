@@ -1,4 +1,0 @@
-# Redirection
-
-Le contenu a ete eclate dans `todo/<categorie>/<type>/`.
-Voir `todo/README.md` et l'historique git pour le contenu d'origine.

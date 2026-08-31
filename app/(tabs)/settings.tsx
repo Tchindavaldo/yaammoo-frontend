@@ -31,7 +31,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import * as Notifications from "expo-notifications";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { signOut } from "firebase/auth";
 import React, { useEffect, useState } from "react";
 import {
@@ -218,6 +218,30 @@ export default function SettingsScreen() {
       setUserBonusVisible(true);
     }
   }, [section]);
+
+  // Tap sur l'onglet Parametres : on revient TOUJOURS a la page Parametres nue,
+  // quelle que soit la sous-page (modal) ouverte par-dessus.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("tabPress" as any, () => {
+      setEditBoutiqueVisible(false);
+      setMenuManageVisible(false);
+      setWalletManageVisible(false);
+      setUserOrdersVisible(false);
+      setUserWalletVisible(false);
+      setUserBonusVisible(false);
+      setSupportChatVisible(false);
+      setMerchantSupportVisible(false);
+      setDriverApplyVisible(false);
+      setDriverOrdersVisible(false);
+      setDriverManageVisible(false);
+      setDriverMyAppsVisible(false);
+      setDeleteVisible(false);
+      setLogoutVisible(false);
+      // Sans ca, le param de deep-link encore present rouvrirait le modal.
+      if (section) router.setParams({ section: undefined });
+    });
+    return unsubscribe;
+  }, [navigation, section]);
 
   // Ouvre le modal custom de confirmation de déconnexion.
   const handleLogout = () => setLogoutVisible(true);

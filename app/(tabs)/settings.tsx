@@ -427,13 +427,6 @@ export default function SettingsScreen() {
             title="Sécurité"
             onPress={() => handleComingSoon("Sécurité")}
           />
-          {!appleReviewMode && (
-            <SettingGridItem
-              icon="card-outline"
-              title="Paiement"
-              onPress={() => handleComingSoon("Paiement")}
-            />
-          )}
           <SettingGridItem
             icon="gift-outline"
             title="Bonus"

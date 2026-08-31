@@ -19,15 +19,19 @@ const USE_VARIABLE_BACKGROUNDS = false; // Set to true to enable variable backgr
 /** Mettre a `true` pour figer le squelette et inspecter son rendu. */
 const FORCE_SKELETON = false;
 
-/** TEMPORAIRE — `false` masque tout le contenu de la carte variant 5 pour ne
- *  laisser voir que son image de fond. */
-const V5_SHOW_CONTENT = false;
+/** `false` masque tout le contenu de la carte variant 5 pour ne laisser voir
+ *  que son image de fond. */
+const V5_SHOW_CONTENT = true;
 
-/** TEMPORAIRE — idem pour la carte variant 4. */
-const V4_SHOW_CONTENT = false;
+/** Idem pour la carte variant 4. */
+const V4_SHOW_CONTENT = true;
 
-/** TEMPORAIRE — idem pour la carte variant 6. */
-const V6_SHOW_CONTENT = false;
+/** Idem pour la carte variant 6. */
+const V6_SHOW_CONTENT = true;
+
+/** `false` retire les posters en fond des variants 4, 5 et 6 : chaque carte
+ *  retrouve sa couleur de fond d'origine. Remettre `true` pour les rejouer. */
+const SHOW_POSTER_BACKGROUND = false;
 
 /** TEMPORAIRE — `false` masque les bandes blur du bas (variants 4 et 5). */
 const SHOW_BOTTOM_BAR = true;
@@ -41,6 +45,8 @@ const V5_BACKGROUNDS = [
 
 /** Fonds du variant 4 : un poster different par menu, en boucle sur l'index. */
 const V4_BACKGROUNDS = [
+  require('@/assets/images/background/eat-or-pass-poster.jpg'),
+  require('@/assets/images/background/lamb-pulao-poster.jpg'),
   require('@/assets/images/background/spicy-biryani-poster.jpg'),
   require('@/assets/images/background/pisang-goreng-poster.jpg'),
   require('@/assets/images/background/sushi-bar-poster.jpg'),
@@ -331,12 +337,14 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
     return (
       <TouchableOpacity style={[styles.v4Card, { backgroundColor: bgColor }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Image de fond plein cadre */}
+        {SHOW_POSTER_BACKGROUND && (
         <Image
           source={V4_BACKGROUNDS[index % V4_BACKGROUNDS.length]}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
         />
+        )}
 
         {/* TEMPORAIRE — contenu masque pour ne voir que l'image de fond.
             Remettre `V4_SHOW_CONTENT` a true pour le retablir. */}
@@ -442,12 +450,14 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
         />
 
         {/* Image de fond plein cadre */}
+        {SHOW_POSTER_BACKGROUND && (
         <Image
           source={V5_BACKGROUNDS[index % V5_BACKGROUNDS.length]}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
         />
+        )}
 
         {/* TEMPORAIRE — contenu masque pour ne voir que l'image de fond.
             Remettre `V5_SHOW_CONTENT` a true pour le retablir. */}
@@ -569,12 +579,14 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
     return (
       <TouchableOpacity style={[styles.v6Card, { backgroundColor: bg }, isLast && { marginRight: 0 }]} onPress={onPress} activeOpacity={0.9}>
         {/* Image de fond plein cadre */}
+        {SHOW_POSTER_BACKGROUND && (
         <Image
           source={V6_BACKGROUND}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
           cachePolicy="memory-disk"
         />
+        )}
 
         {/* TEMPORAIRE — contenu masque pour ne voir que l'image de fond.
             Remettre `V6_SHOW_CONTENT` a true pour le retablir. */}

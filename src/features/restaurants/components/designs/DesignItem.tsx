@@ -1,15 +1,14 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform, Animated, Easing } from 'react-native';
-import { Image } from 'expo-image';
-import { CardSkeleton } from '@/src/components/CardSkeleton';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Text as SvgText } from 'react-native-svg';
-import { Theme } from '@/src/theme';
+import { CardSkeleton } from '@/src/components/CardSkeleton';
 import { Menu } from '@/src/types';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
+import { Animated, Dimensions, Easing, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Svg, { Circle, Text as SvgText } from 'react-native-svg';
+import { REVEAL_MS, useShopReveal } from '../../context/ShopRevealContext';
 import { useNextDeliveryTime } from '../../utils/deliveryUtils';
-import { useShopReveal, REVEAL_MS } from '../../context/ShopRevealContext';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const V1_COLORS = ['#e8440a', '#6c5ce7', '#00b894', '#e67e22', '#e67e22', '#e67e22', '#2d3436', '#00b894'];
@@ -21,17 +20,17 @@ const FORCE_SKELETON = false;
 
 /** `false` masque tout le contenu de la carte variant 5 pour ne laisser voir
  *  que son image de fond. */
-const V5_SHOW_CONTENT = true;
+const V5_SHOW_CONTENT = false;
 
 /** Idem pour la carte variant 4. */
-const V4_SHOW_CONTENT = true;
+const V4_SHOW_CONTENT = false;
 
 /** Idem pour la carte variant 6. */
-const V6_SHOW_CONTENT = true;
+const V6_SHOW_CONTENT = false;
 
 /** `false` retire les posters en fond des variants 4, 5 et 6 : chaque carte
  *  retrouve sa couleur de fond d'origine. Remettre `true` pour les rejouer. */
-const SHOW_POSTER_BACKGROUND = false;
+const SHOW_POSTER_BACKGROUND = true;
 
 /** TEMPORAIRE — `false` masque les bandes blur du bas (variants 4 et 5). */
 const SHOW_BOTTOM_BAR = true;

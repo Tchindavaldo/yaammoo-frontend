@@ -270,8 +270,10 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.8,
-      allowsEditing: true,
-      aspect: [1, 1],
+      // Premiere image : aucun recadrage, on garde le cadrage d'origine.
+      // Images secondaires : recadrage carre impose.
+      allowsEditing: index !== 0,
+      ...(index !== 0 ? { aspect: [1, 1] as [number, number] } : {}),
     });
 
     if (!result.canceled && result.assets[0]) {

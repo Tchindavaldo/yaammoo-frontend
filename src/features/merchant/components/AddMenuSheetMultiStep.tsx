@@ -268,12 +268,15 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       return;
     }
 
-    // Formats par emplacement : photos 1 et 2 carrées, photo 3 verticale (portrait 3:4).
+    // Formats par emplacement : photo 1 sans recadrage (cadrage d'origine garde),
+    // photo 2 carree, photo 3 verticale (portrait 3:4).
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.8,
-      allowsEditing: true,
-      aspect: index === 2 ? [3, 4] : [1, 1],
+      allowsEditing: index !== 0,
+      ...(index !== 0
+        ? { aspect: (index === 2 ? [3, 4] : [1, 1]) as [number, number] }
+        : {}),
     });
 
     if (!result.canceled && result.assets[0]) {

@@ -14,7 +14,22 @@ import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
 import { useCallback, useEffect, useState } from "react";
 import { AppState } from "react-native";
-import { Video as VideoCompressor, getVideoMetaData } from "react-native-compressor";
+// `react-native-compressor` est un module NATIF : sur Expo Go il n'est pas lié et
+// un import statique fait planter le chargement du module (donc toute la route
+// settings). On le charge donc paresseusement ; absent, on envoie la video telle
+// quelle sans compression.
+type CompressorModule = typeof import("react-native-compressor");
+let compressorModule: CompressorModule | null | undefined;
+function getCompressor(): CompressorModule | null {
+  if (compressorModule === undefined) {
+    try {
+      compressorModule = require("react-native-compressor") as CompressorModule;
+    } catch {
+      compressorModule = null;
+    }
+  }
+  return compressorModule;
+}
 import type { Bonus } from "../types/bonus.types";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
@@ -185,15 +200,17 @@ export const useBonusFlyer = (
         // alors le fichier. Taille inconnue = on ne compresse pas plutôt que de
         // compresser à l'aveugle.
         let uri = asset.uri;
+        const compressor = getCompressor();
         let bytes = asset.fileSize;
-        if (typeof bytes !== "number") {
-          bytes = await getVideoMetaData(asset.uri)
+        if (typeof bytes !== "number" && compressor) {
+          bytes = await compressor
+            .getVideoMetaData(asset.uri)
             .then((m) => m.size)
             .catch(() => undefined);
         }
 
-        if (typeof bytes === "number" && bytes > COMPRESS_THRESHOLD_MB * MB) {
-          uri = await VideoCompressor.compress(
+        if (compressor && typeof bytes === "number" && bytes > COMPRESS_THRESHOLD_MB * MB) {
+          uri = await compressor.Video.compress(
             asset.uri,
             {
               compressionMethod: "auto",

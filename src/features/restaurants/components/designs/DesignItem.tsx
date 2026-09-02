@@ -85,6 +85,12 @@ interface DesignItemProps {
  * 7 variantes d'un seul coup, au lieu de repeter la logique a chaque retour.
  */
 /**
+ * Affichage du statut de disponibilite sur la ligne du nom du plat.
+ * Masque temporairement : passer a `true` pour le reactiver, sans autre modif.
+ */
+const SHOW_AVAILABILITY = true;
+
+/**
  * Bloc d'infos rendu SOUS la carte, hors de celle-ci : nom du menu, livraison
  * (montant barre + offert), note et votes, statut de disponibilite.
  */
@@ -100,11 +106,17 @@ const ItemMeta: React.FC<{ menu: Menu; variant: number; width: number; marginRig
     <View style={[styles.metaBlock, { width, marginRight }]}>
       <View style={styles.metaTitleRow}>
         <Text style={styles.metaTitle} numberOfLines={1}>{menu.titre}</Text>
-        <View style={{ flex: 1 }} />
-        <View style={[styles.metaDot, { backgroundColor: available ? '#00b894' : '#d63031' }]} />
-        <Text style={[styles.metaText, { color: available ? '#00b894' : '#d63031' }]}>
-          {available ? 'Disponible' : 'Indisponible'}
-        </Text>
+        {/* Statut de disponibilite masque temporairement.
+            Pour le reafficher : SHOW_AVAILABILITY = true (en tete de fichier). */}
+        {SHOW_AVAILABILITY ? (
+          <>
+            <View style={{ flex: 1 }} />
+            <View style={[styles.metaDot, { backgroundColor: available ? '#00b894' : '#d63031' }]} />
+            <Text style={[styles.metaText, { color: available ? '#00b894' : '#d63031' }]}>
+              {available ? 'Disponible' : 'Indisponible'}
+            </Text>
+          </>
+        ) : null}
       </View>
 
       <View style={styles.metaRow}>

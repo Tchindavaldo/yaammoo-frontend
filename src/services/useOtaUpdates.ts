@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import * as Updates from "expo-updates";
 
+import { isSplashHidden } from "@/src/hooks/useHideSplash";
+
 /**
  * Mises a jour OTA (expo-updates).
  *
@@ -9,9 +11,17 @@ import * as Updates from "expo-updates";
  * ne l'applique qu'au lancement SUIVANT : l'utilisateur reste une session
  * entiere sur l'ancien code. On force donc l'application des qu'elle est prete.
  *
- * ⚠️ Ne fait rien en developpement (`Updates.isEmbeddedLaunch` est faux et il
- * n'y a aucun canal) : `__DEV__` court-circuite tout, sinon chaque rechargement
- * Metro declencherait une requete inutile.
+ * ⚠️ On ne redemarre JAMAIS une app deja peinte. Un `reloadAsync` apres le
+ * splash rejoue tout le boot A NU (le splash natif est deja consomme) :
+ * l'utilisateur voyait l'app se relancer, puis le get-started de `(auth)`
+ * apparaitre avant la home, le temps que l'auth se re-resolve. Deux cas
+ * seulement :
+ *   - splash encore affiche → reload immediat, invisible pour l'utilisateur ;
+ *   - app deja visible      → la mise a jour reste telechargee et s'appliquera
+ *                             au prochain lancement.
+ *
+ * ⚠️ Ne fait rien en developpement : `__DEV__` court-circuite tout, sinon chaque
+ * rechargement Metro declencherait une requete inutile.
  */
 
 /** Delai minimal entre deux verifications, pour ne pas interroger a chaque retour au premier plan. */
@@ -21,12 +31,14 @@ export function useOtaUpdates() {
   const lastCheckRef = useRef(0);
   /** Une mise a jour est deja en cours de recuperation : ne pas en lancer une seconde. */
   const busyRef = useRef(false);
+  /** Mise a jour deja telechargee : elle attend le prochain lancement, inutile de re-verifier. */
+  const pendingRef = useRef(false);
 
   useEffect(() => {
     if (__DEV__) return;
 
     const check = async () => {
-      if (busyRef.current) return;
+      if (busyRef.current || pendingRef.current) return;
       const now = Date.now();
       if (now - lastCheckRef.current < CHECK_INTERVAL_MS) return;
       lastCheckRef.current = now;
@@ -35,9 +47,10 @@ export function useOtaUpdates() {
         const { isAvailable } = await Updates.checkForUpdateAsync();
         if (!isAvailable) return;
         await Updates.fetchUpdateAsync();
-        // ⚠️ `reloadAsync` redemarre le bundle JS : tout etat non persiste est
-        // perdu. Acceptable ICI parce qu'on ne l'appelle qu'au retour au
-        // premier plan ou au boot, jamais pendant que l'utilisateur agit.
+        pendingRef.current = true;
+        // Le splash a pu etre leve pendant le telechargement : on re-teste ICI,
+        // juste avant de redemarrer, pas au debut du check.
+        if (isSplashHidden()) return;
         await Updates.reloadAsync();
       } catch {
         // Reseau indisponible ou canal absent : l'app continue sur le bundle

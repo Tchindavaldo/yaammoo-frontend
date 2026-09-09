@@ -1,0 +1,40 @@
+# Publication d'une mise a jour OTA (expo-updates) depuis GitHub, pas depuis le
+# poste de dev : le bundle (~90 Mo de `dist`) est construit et uploade par le
+# runner. La connexion locale ne transporte plus que le push git.
+#
+# Prerequis : secret `EXPO_TOKEN` dans Settings > Secrets and variables >
+# Actions (jeton cree sur expo.dev > Account Settings > Access Tokens).
+name: EAS Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Canal EAS cible
+        type: choice
+        options: [production, preview, development]
+        default: production
+      message:
+        description: Message de la mise a jour
+        type: string
+        required: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - run: eas update --channel "${{ inputs.channel }}" --message "${{ inputs.message }}" --non-interactive

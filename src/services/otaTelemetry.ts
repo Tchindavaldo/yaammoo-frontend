@@ -43,6 +43,39 @@ export function tagCurrentUpdate() {
   );
 }
 
+/** Periode du heartbeat pendant le telechargement. */
+const HEARTBEAT_MS = 5 * 1000;
+
+/**
+ * Signale, pendant toute la duree du fetch, qu'un telechargement est en cours.
+ *
+ * ⚠️ C'est le SEUL suivi possible : `fetchUpdateAsync` n'expose ni octets
+ * transferes ni callback, donc « X Mo sur Y » n'existe pas. On remonte le temps
+ * ecoule — ce qui suffit a repondre a la vraie question : le telechargement
+ * avance-t-il, et jusqu'ou est-il alle avant que l'utilisateur quitte l'app
+ * (auquel cas le dernier heartbeat reste le point le plus loin atteint).
+ *
+ * Retourne la fonction d'arret, a appeler dans un `finally`.
+ */
+export function startFetchHeartbeat(): () => void {
+  const startedAt = Date.now();
+
+  const timer = setInterval(() => {
+    const elapsed = Math.round((Date.now() - startedAt) / 1000);
+    Sentry.captureMessage(`OTA telechargement en cours (${elapsed}s)`, {
+      level: "info",
+      tags: { "ota.event": "downloading" },
+      extra: {
+        elapsedSeconds: elapsed,
+        channel: Updates.channel ?? "none",
+        runtimeVersion: Updates.runtimeVersion ?? "unknown",
+      },
+    });
+  }, HEARTBEAT_MS);
+
+  return () => clearInterval(timer);
+}
+
 type FetchOutcome = "applied" | "deferred" | "failed";
 
 /**

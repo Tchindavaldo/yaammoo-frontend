@@ -23,6 +23,24 @@ export function tagCurrentUpdate() {
   Sentry.setTag("ota.runtimeVersion", Updates.runtimeVersion ?? "unknown");
   // `isEmbeddedLaunch` vrai = bundle du store, aucune OTA appliquee.
   Sentry.setTag("ota.embedded", String(Updates.isEmbeddedLaunch));
+
+  // Un evenement par lancement : c'est LUI qui repond a « cet appareil a-t-il
+  // recu ma derniere update ? ». Sans lui, un appareil reste invisible tant
+  // qu'aucune mise a jour n'est disponible — exactement le cas qu'on veut
+  // observer. Groupe par updateId, donc une issue par version livree.
+  Sentry.captureMessage(
+    `OTA boot ${Updates.isEmbeddedLaunch ? "embedded" : "updated"}`,
+    {
+      level: "info",
+      tags: { "ota.event": "boot" },
+      extra: {
+        updateId: Updates.updateId ?? "embedded",
+        channel: Updates.channel ?? "none",
+        runtimeVersion: Updates.runtimeVersion ?? "unknown",
+        createdAt: Updates.createdAt?.toISOString() ?? "unknown",
+      },
+    },
+  );
 }
 
 type FetchOutcome = "applied" | "deferred" | "failed";
@@ -37,6 +55,8 @@ export function trackUpdateFetch(
   durationMs: number,
   error?: unknown,
 ) {
+  const seconds = Math.round(durationMs) / 1000;
+
   Sentry.addBreadcrumb({
     category: "ota",
     level: outcome === "failed" ? "warning" : "info",
@@ -46,5 +66,22 @@ export function trackUpdateFetch(
 
   if (outcome === "failed" && error) {
     Sentry.captureException(error, { tags: { "ota.outcome": outcome } });
+    return;
   }
+
+  // Evenement explicite : les tags et breadcrumbs seuls ne creent AUCUNE entree
+  // dans Sentry (ils se contentent d'enrichir un evenement existant), et les
+  // produits Logs / Tracing ne sont pas actives sur le projet. Un message
+  // capture apparait dans Issues, seule vue disponible — c'est ce qui rend
+  // l'adoption d'une update reellement observable.
+  Sentry.captureMessage(`OTA ${outcome}`, {
+    level: "info",
+    tags: { "ota.outcome": outcome },
+    extra: {
+      durationSeconds: seconds,
+      updateId: Updates.updateId ?? "embedded",
+      channel: Updates.channel ?? "none",
+      runtimeVersion: Updates.runtimeVersion ?? "unknown",
+    },
+  });
 }

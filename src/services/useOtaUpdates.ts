@@ -3,7 +3,11 @@ import { AppState, type AppStateStatus } from "react-native";
 import * as Updates from "expo-updates";
 
 import { isSplashHidden } from "@/src/hooks/useHideSplash";
-import { tagCurrentUpdate, trackUpdateFetch } from "@/src/services/otaTelemetry";
+import {
+  startFetchHeartbeat,
+  tagCurrentUpdate,
+  trackUpdateFetch,
+} from "@/src/services/otaTelemetry";
 
 /**
  * Mises a jour OTA (expo-updates).
@@ -57,7 +61,15 @@ export function useOtaUpdates() {
       try {
         const { isAvailable } = await Updates.checkForUpdateAsync();
         if (!isAvailable) return;
-        await Updates.fetchUpdateAsync();
+        // Heartbeat pendant le SEUL fetch : le check est immediat, lui n'a rien
+        // a signaler. Si l'utilisateur quitte l'app en cours de route, le
+        // dernier battement recu indique jusqu'ou le telechargement etait alle.
+        const stopHeartbeat = startFetchHeartbeat();
+        try {
+          await Updates.fetchUpdateAsync();
+        } finally {
+          stopHeartbeat();
+        }
         pendingRef.current = true;
         // Le splash a pu etre leve pendant le telechargement : on re-teste ICI,
         // juste avant de redemarrer, pas au debut du check.

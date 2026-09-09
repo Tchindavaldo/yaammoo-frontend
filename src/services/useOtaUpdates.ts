@@ -3,6 +3,7 @@ import { AppState, type AppStateStatus } from "react-native";
 import * as Updates from "expo-updates";
 
 import { isSplashHidden } from "@/src/hooks/useHideSplash";
+import { tagCurrentUpdate, trackUpdateFetch } from "@/src/services/otaTelemetry";
 
 /**
  * Mises a jour OTA (expo-updates).
@@ -24,8 +25,13 @@ import { isSplashHidden } from "@/src/hooks/useHideSplash";
  * rechargement Metro declencherait une requete inutile.
  */
 
-/** Delai minimal entre deux verifications, pour ne pas interroger a chaque retour au premier plan. */
-const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+/**
+ * Delai minimal entre deux verifications, pour ne pas interroger le serveur a
+ * CHAQUE retour au premier plan (repondre a un SMS et revenir en declencherait
+ * une). Ne freine jamais un telechargement en cours : `fetchUpdateAsync` va
+ * jusqu'au bout et reprend ou il s'etait arrete a la tentative suivante.
+ */
+const CHECK_INTERVAL_MS = 60 * 1000;
 
 export function useOtaUpdates() {
   const lastCheckRef = useRef(0);
@@ -37,12 +43,17 @@ export function useOtaUpdates() {
   useEffect(() => {
     if (__DEV__) return;
 
+    // Identifie l'update sur laquelle tourne CET appareil : c'est la seule
+    // facon de savoir qui a recu quoi, aucune commande EAS ne le dit.
+    tagCurrentUpdate();
+
     const check = async () => {
       if (busyRef.current || pendingRef.current) return;
       const now = Date.now();
       if (now - lastCheckRef.current < CHECK_INTERVAL_MS) return;
       lastCheckRef.current = now;
       busyRef.current = true;
+      const startedAt = Date.now();
       try {
         const { isAvailable } = await Updates.checkForUpdateAsync();
         if (!isAvailable) return;
@@ -50,11 +61,16 @@ export function useOtaUpdates() {
         pendingRef.current = true;
         // Le splash a pu etre leve pendant le telechargement : on re-teste ICI,
         // juste avant de redemarrer, pas au debut du check.
-        if (isSplashHidden()) return;
+        if (isSplashHidden()) {
+          trackUpdateFetch("deferred", Date.now() - startedAt);
+          return;
+        }
+        trackUpdateFetch("applied", Date.now() - startedAt);
         await Updates.reloadAsync();
-      } catch {
+      } catch (error) {
         // Reseau indisponible ou canal absent : l'app continue sur le bundle
         // embarque. Une mise a jour ratee ne doit jamais bloquer le demarrage.
+        trackUpdateFetch("failed", Date.now() - startedAt, error);
       } finally {
         busyRef.current = false;
       }

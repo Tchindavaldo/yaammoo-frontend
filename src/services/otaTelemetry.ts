@@ -16,8 +16,26 @@ import { Sentry } from "@/src/services/sentry";
  * disponible cote client.
  */
 
+/**
+ * Message de la publication, depose dans `expo.extra.otaMessage` par
+ * `scripts/stamp-update-message.mjs` juste avant `eas update`.
+ *
+ * ⚠️ C'est le SEUL moyen de relier un evenement a une publication : ni le
+ * message ni l'identifiant de groupe (celui d'`eas update:list`) ne sont
+ * exposes au runtime — `updateId` seul ne se rapproche d'aucune sortie CLI.
+ */
+function updateMessage(): string {
+  // `Manifest` est une union (nouveau format / format classique) dont une seule
+  // branche porte `extra` : on passe par un acces indexe plutot que d'affiner
+  // le type, la forme etant garantie par le script de publication.
+  const extra = (Updates.manifest as Record<string, unknown> | undefined)
+    ?.extra as { otaMessage?: string } | undefined;
+  return extra?.otaMessage ?? "inconnu";
+}
+
 /** Update actuellement executee, posee comme tags Sentry sur TOUS les evenements. */
 export function tagCurrentUpdate() {
+  Sentry.setTag("ota.message", updateMessage());
   Sentry.setTag("ota.updateId", Updates.updateId ?? "embedded");
   Sentry.setTag("ota.channel", Updates.channel ?? "none");
   Sentry.setTag("ota.runtimeVersion", Updates.runtimeVersion ?? "unknown");
@@ -32,6 +50,7 @@ export function tagCurrentUpdate() {
   captureOtaEvent(`OTA boot ${kind}`, ["ota", "boot", kind], {
     tags: { "ota.event": "boot" },
     extra: {
+      message: updateMessage(),
       updateId: Updates.updateId ?? "embedded",
       channel: Updates.channel ?? "none",
       runtimeVersion: Updates.runtimeVersion ?? "unknown",

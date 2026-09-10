@@ -40,4 +40,8 @@ jobs:
 
       - run: npm ci
 
+      # Inscrit le message dans le manifeste : sans cela, l'app ne peut pas
+      # savoir de quelle publication elle provient (cf. le script).
+      - run: node scripts/stamp-update-message.mjs "${{ inputs.message }}"
+
       - run: eas update --channel "${{ inputs.channel }}" --message "${{ inputs.message }}" --non-interactive

@@ -63,7 +63,19 @@ function captureOtaEvent(
 }
 
 /** Periode du heartbeat pendant le telechargement. */
-const HEARTBEAT_MS = 5 * 1000;
+const HEARTBEAT_MS = 15 * 1000;
+
+/**
+ * Nombre maximal de battements par telechargement.
+ *
+ * ⚠️ Plafond OBLIGATOIRE : un fetch de 142 s (mesure reelle, 6,2 Mo sur reseau
+ * lent) emettrait sinon des dizaines d'evenements PAR utilisateur ET par
+ * publication — des milliers a l'echelle du parc, pour un quota Sentry vite
+ * epuise. Trois battements couvrent les 45 premieres secondes : au-dela on sait
+ * deja que le telechargement traine, et l'evenement de fin porte la duree
+ * exacte.
+ */
+const HEARTBEAT_MAX = 3;
 
 /**
  * Signale, pendant toute la duree du fetch, qu'un telechargement est en cours.
@@ -79,7 +91,14 @@ const HEARTBEAT_MS = 5 * 1000;
 export function startFetchHeartbeat(): () => void {
   const startedAt = Date.now();
 
+  let beats = 0;
+
   const timer = setInterval(() => {
+    if (beats >= HEARTBEAT_MAX) {
+      clearInterval(timer);
+      return;
+    }
+    beats += 1;
     const elapsed = Math.round((Date.now() - startedAt) / 1000);
     // Fingerprint SANS le temps ecoule : sinon chaque battement creerait une
     // issue distincte. Tous les battements se regroupent, le detail de chaque

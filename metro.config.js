@@ -13,6 +13,20 @@ const config = getSentryExpoConfig(__dirname, getDefaultConfig(__dirname));
 // saturer la memoire de Node (« JavaScript heap out of memory » a 2 Go) et tuer
 // le serveur. Chaque rebundle coupait aussi le socket, d'ou les `connect_error`
 // en rafale.
-config.resolver.blockList = [/\/dist\/.*/];
+// ⚠️ Ancre sur __dirname : un motif large comme `/\/dist\/.*/` bloquerait aussi
+// `node_modules/react-native-web/dist/`, et le bundle web echouerait aussitot.
+const projectRoot = __dirname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Artefacts de build, scannes par Metro alors qu'aucun n'entre dans un bundle :
+// `android/app/build` pese a lui seul 1,6 Go (Gradle), et `dist/` jusqu'a 89 Mo
+// apres un `eas update`. Les tenir hors du crible est ce qui evite la
+// saturation memoire de Node (« heap out of memory » a 2 Go) et les rebundles
+// en rafale qui tuaient le serveur de dev.
+config.resolver.blockList = [
+  new RegExp(`^${projectRoot}/dist/.*`),
+  new RegExp(`^${projectRoot}/android/(app/)?build/.*`),
+  new RegExp(`^${projectRoot}/android/\\.gradle/.*`),
+  new RegExp(`^${projectRoot}/ios/(build|Pods)/.*`),
+];
 
 module.exports = config;

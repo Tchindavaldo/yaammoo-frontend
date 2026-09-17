@@ -75,7 +75,7 @@ export const useSocketEvents = () => {
     upsertTransactionFromSocket: upsertClientTransaction,
   } = useWallet();
   const {
-    refresh: refreshFastFoods,
+    refreshLoadedSilently: refreshFastFoodsSilently,
     upsertMenuFromSocket: upsertGlobalMenu,
     removeMenuFromSocket: removeGlobalMenu,
     upsertFastFoodFromSocket: upsertGlobalFastFood,
@@ -120,7 +120,12 @@ export const useSocketEvents = () => {
       //
       // ⚠️ Le prix est le cas critique : le backend recalcule le total a la
       // commande, donc un prix perime cote client fait echouer le paiement.
-      refreshFastFoods();
+      //
+      // ⚠️ PAS `refresh()` : celui-la repart de la premiere page, allume le
+      // loader plein ecran et tronque la liste — l'utilisateur qui revient dans
+      // l'app perdrait sa position de scroll. Ici on remplace chaque boutique
+      // par sa version fraiche, a la meme place et sans rien afficher.
+      void refreshFastFoodsSilently();
     };
 
     const handleConnect = () => {

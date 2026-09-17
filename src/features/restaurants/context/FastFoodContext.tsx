@@ -60,6 +60,12 @@ interface FastFoodContextType {
   setSelectedCategory: (category: string) => void;
   refresh: () => Promise<void>;
   /**
+   * Met a jour les boutiques deja chargees sans loader ni troncature : la
+   * position de scroll est preservee. Pour le catch-up socket, pas pour un geste
+   * utilisateur (celui-la passe par `refresh`).
+   */
+  refreshLoadedSilently: () => Promise<void>;
+  /**
    * Tronque la liste a la premiere page, sans requete. Appele au retour en haut
    * du home pour ne pas garder des dizaines de cellules en memoire.
    */
@@ -340,6 +346,56 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // consommateurs comme ici) et peut relancer des requetes.
   const searchRef = useRef("");
   searchRef.current = searchQuery;
+
+  /**
+   * Rafraichit SILENCIEUSEMENT les boutiques deja chargees, sans toucher ni au
+   * loader, ni au curseur, ni a l'ordre de la liste.
+   *
+   * ⚠️ Volontairement distinct de `refresh()` : celui-ci repart de la premiere
+   * page, ce qui allume le loader plein ecran et TRONQUE la liste — l'utilisateur
+   * revenant dans l'app perdrait sa position de scroll et verrait un ecran de
+   * chargement sur une liste deja affichee.
+   *
+   * Ici on remplace chaque boutique par sa version fraiche, a la meme position.
+   * Une boutique absente de la reponse est CONSERVEE : elle appartient peut-etre
+   * a une page au-dela de `limit`, et la retirer la ferait disparaitre de l'ecran.
+   *
+   * Appele par le catch-up socket (retour au premier plan, reconnexion) : les
+   * events du catalogue sont des broadcasts globaux que le backend ne rejoue
+   * jamais, donc prix et menus modifies pendant l'absence seraient perdus.
+   */
+  const refreshLoadedSilently = useCallback(async () => {
+    const loadedCount = fastFoodsLenRef.current;
+    if (loadedCount === 0) return;
+
+    try {
+      const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+      const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
+        headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+        // Une seule requete couvre toutes les pages chargees : `PAGE_SIZE` vaut
+        // 3, donc rejouer page par page en ferait une par tranche de 3.
+        // Plafonne a 50 par le backend.
+        params: { limit: Math.min(loadedCount, 50) },
+      });
+
+      const raw: any[] = response.data?.data ?? [];
+      if (raw.length === 0) return;
+
+      const fresh = new Map(raw.filter((it) => it?.id).map((it) => [it.id, it]));
+
+      setFastFoods((prev) =>
+        prev.map((ff, index) => {
+          const updated = fresh.get(ff.id);
+          // `designIndex` suit la POSITION dans la liste, pas la boutique : on
+          // le recalcule ici, sinon une boutique gardee changerait d'apparence.
+          return updated ? normalizeFastFood(updated, index % 6) : ff;
+        }),
+      );
+    } catch {
+      // Rattrapage silencieux : un echec ne doit ni afficher d'erreur, ni
+      // remplacer les donnees en place. Le prochain retour reessaiera.
+    }
+  }, []);
 
   /** Recharge depuis le début (pull-to-refresh). */
   const refresh = useCallback(async () => {
@@ -649,6 +705,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       selectedCategory,
       setSelectedCategory,
       refresh,
+      refreshLoadedSilently,
       resetToFirstPage,
       notifyUserScroll,
       cancelPendingLoadMore,
@@ -672,6 +729,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       handleSearchChange,
       selectedCategory,
       refresh,
+      refreshLoadedSilently,
       resetToFirstPage,
       notifyUserScroll,
       cancelPendingLoadMore,

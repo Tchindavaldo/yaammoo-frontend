@@ -108,7 +108,7 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |
 | `refresh()` | Repart de la première page (pull-to-refresh). |
-| `refreshLoadedSilently()` | ⚠️ Met à jour les boutiques **déjà chargées** sans loader ni troncature — position de scroll préservée. Appelé par le catch-up socket, jamais par un geste utilisateur. Une seule requête (`limit = min(chargées, 50)`) ; une boutique absente de la réponse est conservée. `designIndex` est recalculé à la position, sinon une boutique changerait d'apparence. Détail : [socket-events-client.md](./socket-events-client.md). |
+| `refreshLoadedSilently()` | ⚠️ Met à jour les boutiques **déjà chargées** sans loader ni troncature — position de scroll préservée. Appelé par le catch-up socket, jamais par un geste utilisateur. Enchaîne les pages par curseur jusqu'à couvrir tout ce qui est affiché — ⚠️ `limit` est plafonné à 50 par le backend, qui rabote **silencieusement** : une seule requête laisserait les boutiques au-delà du 50e avec leurs anciens prix. Une boutique absente de la réponse est conservée. `designIndex` est recalculé à la position, sinon une boutique changerait d'apparence. Détail : [socket-events-client.md](./socket-events-client.md). |
 | `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
 | `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |
 | `cancelPendingLoadMore()` | Invalide une page en vol **sans tronquer**. Appelé au début d'une remontée. |

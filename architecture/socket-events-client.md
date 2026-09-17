@@ -25,10 +25,13 @@
 > loader plein écran et tronque la liste — l'utilisateur qui revient dans l'app
 > perdrait sa position de scroll et verrait un écran de chargement sur une liste
 > déjà affichée. `refreshLoadedSilently()` remplace chaque boutique par sa
-> version fraîche **à la même position**, en une seule requête
-> (`limit = min(chargées, 50)`, `PAGE_SIZE` valant 3). Une boutique absente de
-> la réponse est **conservée** : elle peut appartenir à une page au-delà de la
-> limite, et la retirer la ferait disparaître de l'écran.
+> version fraîche **à la même position**. Il enchaîne les pages par curseur
+> jusqu'à couvrir tout ce qui est affiché : `limit` est plafonné à **50** par le
+> backend, qui rabote silencieusement, donc une requête unique laisserait les
+> boutiques au-delà du 50e avec leurs anciens prix. Avec `PAGE_SIZE = 3`, ce
+> plafond ramène un catalogue de 100 boutiques à 2 allers-retours au lieu de 34.
+> Une boutique absente de la réponse est **conservée** : la retirer la ferait
+> disparaître de l'écran.
 
 > ⚠️ `refreshBonuses` est indispensable au **deep-link depuis une notification push** : ouvrir l'app depuis la notif reconnecte le socket *après* l'event. Le rejeu ne couvre pas tout — `bonus.activation_changed` n'est pas fiabilisé, et `withAck` ignore un `__eventId` déjà vu dans la même session (app en arrière-plan puis rouverte). Sans ce refresh, la page bonus affiche l'état d'avant la notification.
 

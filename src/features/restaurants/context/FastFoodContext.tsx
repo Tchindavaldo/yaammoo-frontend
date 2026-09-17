@@ -28,6 +28,13 @@ import React, {
  */
 const PAGE_SIZE = 3;
 
+/**
+ * Plafond de `limit` IMPOSE par le backend (`GET /fastFood/all`). Demander plus
+ * n'echoue pas : le serveur rabote silencieusement, d'ou des boutiques non
+ * rafraichies sans le moindre signal. Voir `architecture/restaurants.md`.
+ */
+const MAX_SERVER_LIMIT = 50;
+
 /** Délai avant qu'une frappe dans la recherche parte au serveur. */
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -370,18 +377,38 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
 
     try {
       const idToken = await auth.currentUser?.getIdToken().catch(() => null);
-      const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
-        headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
-        // Une seule requete couvre toutes les pages chargees : `PAGE_SIZE` vaut
-        // 3, donc rejouer page par page en ferait une par tranche de 3.
-        // Plafonne a 50 par le backend.
-        params: { limit: Math.min(loadedCount, 50) },
-      });
+      const headers = idToken
+        ? { Authorization: `Bearer ${idToken}` }
+        : undefined;
 
-      const raw: any[] = response.data?.data ?? [];
-      if (raw.length === 0) return;
+      // ⚠️ Le backend PLAFONNE `limit` a 50. Une seule requete laisserait donc
+      // les boutiques au-dela du 50e avec leurs anciens prix — silencieusement.
+      // On enchaine les pages par curseur jusqu'a couvrir tout ce qui est
+      // affiche. `PAGE_SIZE` vaut 3 : sans ce plafond de 50 par requete, un
+      // catalogue de 100 boutiques demanderait 34 allers-retours au lieu de 2.
+      const fresh = new Map<string, any>();
+      let cursor: string | null = null;
 
-      const fresh = new Map(raw.filter((it) => it?.id).map((it) => [it.id, it]));
+      while (fresh.size < loadedCount) {
+        const response: any = await axios.get(`${Config.apiUrl}/fastFood/all`, {
+          headers,
+          params: {
+            limit: Math.min(loadedCount - fresh.size, MAX_SERVER_LIMIT),
+            ...(cursor ? { cursor } : {}),
+          },
+        });
+
+        const raw: any[] = response.data?.data ?? [];
+        for (const item of raw) {
+          if (item?.id) fresh.set(item.id, item);
+        }
+
+        cursor = response.data?.nextCursor ?? null;
+        // Fin de catalogue, ou page vide : insister bouclerait a l'infini.
+        if (!cursor || raw.length === 0) break;
+      }
+
+      if (fresh.size === 0) return;
 
       setFastFoods((prev) =>
         prev.map((ff, index) => {

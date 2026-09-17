@@ -22,6 +22,7 @@ import React, {
   useState,
 } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -179,7 +180,15 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   bottomOffset = 0,
   initialStatus = "pending",
 }) => {
-  const { pending, active, finished, delivered, refresh } = useOrders();
+  const {
+    pending,
+    active,
+    finished,
+    delivered,
+    refresh,
+    // ⚠️ Renommé : `refreshing` est déjà pris ci-dessous par le pull-to-refresh.
+    refreshing: ordersRefreshing,
+  } = useOrders();
   const { fastFoods } = useFastFoods();
   const tabBarHeight = useTabBarHeight();
 
@@ -555,11 +564,29 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         />
       </View>
 
-      {/* FlatList virtualisée */}
+      {/* FlatList virtualisée
+          ⚠️ `data` est vidée pendant un rafraîchissement de RETOUR dans l'app :
+          les statuts affichés sont alors périmés, et les laisser visibles sans
+          aucun signe laissait croire qu'ils étaient à jour. Le pull-to-refresh
+          (`refreshing`) est exclu — il a déjà son indicateur natif, et vider la
+          liste sous le doigt masquerait le geste. */}
       <FlatList
-        data={flatItems}
+        data={ordersRefreshing && !refreshing ? [] : flatItems}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        ListEmptyComponent={
+          ordersRefreshing && !refreshing ? (
+            <View style={styles.refreshingBlock}>
+              <ActivityIndicator
+                size="large"
+                color={Theme.colors.primary}
+              />
+              <Text style={styles.refreshingText}>
+                Mise à jour des commandes...
+              </Text>
+            </View>
+          ) : null
+        }
         contentContainerStyle={{
           paddingTop: topOffset + trackingHeaderHeight,
           // Réserve la navbar + la barre de filtres du bas.
@@ -678,6 +705,18 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
 // Styles
 // ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
+  // Bloc affiché à la place de la liste pendant un rafraîchissement de retour
+  // dans l'app. Centré verticalement sur la zone libre sous l'en-tête.
+  refreshingBlock: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 80,
+    gap: 12,
+  },
+  refreshingText: {
+    color: Theme.colors.gray[400],
+    fontSize: 14,
+  },
   // Barre de filtres du bas : chips de statut + bouton du bottom sheet.
   bottomBar: {
     position: "absolute",

@@ -73,6 +73,10 @@
     <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Yaammoo enregistre dans vos photos les images que vous exportez.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Yaammoo utilise Face ID pour protéger l'accès à votre portefeuille.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

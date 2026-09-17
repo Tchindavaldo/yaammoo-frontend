@@ -24,6 +24,15 @@ Le handler traite trois cas :
 | Lien vivant | `socket.connected` | re-`join_user` (rejeu des events non acquittés) + `catchUp()` |
 | Lien **zombie** | aucun paquet Engine.IO en 4 s (`PING_TIMEOUT_MS`) | `disconnect()` + `connect()` pour forcer un vrai `connect` |
 
+> **Telemetrie Sentry** (`src/services/socketTelemetry.ts`) : chaque transition
+> remonte un evenement (`Socket connect` / `disconnect` avec sa raison /
+> `foreground-dead` / `foreground-alive` / `foreground-skipped` /
+> `zombie-recycled`). Sans elle, impossible de savoir lequel des cas s'est
+> produit quand un utilisateur ne voit pas ses events au retour dans l'app.
+> ⚠️ `foreground-skipped` est le cas a surveiller : la garde anti-rafale ne
+> distingue pas deux bascules rapides d'un vrai reveil, donc revenir moins de
+> 10 s apres une sortie saute le rattrapage ET le re-join.
+
 > ⚠️ Le cas zombie est **décisif pendant un paiement** : le flux USSD impose à l'utilisateur de quitter l'app, donc `payment.settled` tombe presque toujours en arrière-plan. Une socket vue à tort comme connectée n'entend pas l'event et n'en déclenche pas le rejeu — l'overlay tournerait alors que le paiement a abouti. La sonde écoute le ping/pong natif du moteur (`socket.io.engine`), sans dépendre d'un handler applicatif côté serveur.
 
 ---

@@ -105,10 +105,28 @@ export const useSocketEvents = () => {
      * `bonus.activation_changed` n'en fait pas partie, et `withAck` ignore un
      * `__eventId` déjà mémorisé dans la session.
      */
+    /**
+     * Vrai quand `handleAppState` vient de recharger les commandes AVEC le
+     * loader. Le `catchUp` qui suit 500 ms plus tard les rechargerait une
+     * seconde fois pour rien — deux requetes pour la meme donnee, a l'instant
+     * precis ou le thread JS reprend les animations du reveil.
+     */
+    let ordersJustRefreshed = false;
+
     const catchUp = () => {
       refreshNotifications(true);
-      refreshOrders(true);
-      refreshMerchant(false);
+      // ⚠️ SILENCIEUX ici, contrairement au retour au premier plan. `catchUp`
+      // part aussi sur le `connect` initial et sur chaque reconnexion : un
+      // loader s'y afficherait au lancement de l'app et a chaque hoquet reseau,
+      // sur des listes deja peintes. Le loader visible est reserve au geste
+      // qu'est le retour dans l'app (voir `handleAppState`), ou l'utilisateur
+      // attend de voir ses statuts se mettre a jour.
+      if (ordersJustRefreshed) {
+        ordersJustRefreshed = false;
+      } else {
+        refreshOrders(true);
+        refreshMerchant(false);
+      }
       refreshDriver(false);
       refreshBonuses(true);
       // Catalogue public (home, boutique, checkout). Ses events sont des
@@ -175,6 +193,20 @@ export const useSocketEvents = () => {
 
     const handleAppState = (state: AppStateStatus) => {
       if (state !== "active") return;
+
+      // ⚠️ AVANT toute logique socket, et AVEC le loader. Les listes de
+      // commandes (client et marchand) sont ce que l'utilisateur regarde en
+      // rouvrant l'app : attendre la reconnexion, puis le `connect`, puis le
+      // catch-up differe, lui laissait des statuts perimes plusieurs secondes
+      // sans aucun signe que quelque chose se rafraichissait. Le loader dit que
+      // la mise a jour est en cours ; il part des la premiere frame.
+      //
+      // Les deux conventions sont INVERSEES, ce n'est pas une faute de frappe :
+      // `refreshOrders(quiet)` cote client, `refreshMerchant(showLoading)` cote
+      // marchand. Ces deux appels affichent donc bien le loader.
+      refreshOrders(false);
+      refreshMerchant(true);
+      ordersJustRefreshed = true;
 
       if (!socket.connected) {
         trackSocket("foreground-dead");

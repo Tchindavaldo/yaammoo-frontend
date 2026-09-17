@@ -49,6 +49,19 @@
 > rattrapage manqué coûte un paiement invisible. **Ne pas réintroduire de
 > cooldown.**
 
+> ⚠️ **Les commandes sont rechargées AVANT toute logique socket, et AVEC le
+> loader.** C'est ce que l'utilisateur regarde en rouvrant l'app : attendre la
+> reconnexion, puis le `connect`, puis le `catchUp` différé de 500 ms lui
+> laissait des statuts périmés plusieurs secondes, sans aucun signe qu'un
+> rafraîchissement était en cours. Le loader part dès la première frame.
+> Un drapeau (`ordersJustRefreshed`) empêche le `catchUp` qui suit de refaire
+> les mêmes requêtes.
+>
+> ⚠️ Les deux conventions sont **inversées** : `refreshOrders(quiet)` côté
+> client, `refreshMerchant(showLoading)` côté marchand. `refreshOrders(false)` et
+> `refreshMerchant(true)` affichent donc tous deux le loader — ce n'est pas une
+> faute de frappe.
+
 Le handler traite trois cas :
 
 | Cas | Détection | Traitement |

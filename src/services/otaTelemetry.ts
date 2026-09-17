@@ -66,6 +66,10 @@ export function tagCurrentUpdate() {
  * le nom de la fonction emettrice (`tagCurrentUpdate`, `trackUpdateFetch`) :
  * illisible dans le feed. Le fingerprint force le regroupement sur nos propres
  * cles, et le message devient le titre.
+ *
+ * ⚠️ `setTransactionName` est OBLIGATOIRE avec le fingerprint : prive du
+ * groupement par stack trace, Sentry n'a plus de fonction a nommer et titre
+ * l'issue « anonymous ». La transaction fournit ce titre.
  */
 function captureOtaEvent(
   message: string,
@@ -75,6 +79,7 @@ function captureOtaEvent(
   Sentry.withScope((scope) => {
     scope.setLevel("info");
     scope.setFingerprint(fingerprint);
+    scope.setTransactionName(message);
     Object.entries(options.tags).forEach(([k, v]) => scope.setTag(k, v));
     Object.entries(options.extra).forEach(([k, v]) => scope.setExtra(k, v));
     Sentry.captureMessage(message);

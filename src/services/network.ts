@@ -21,16 +21,51 @@ import NetInfo from "@react-native-community/netinfo";
  */
 let reachable: boolean | null = null;
 
+/** Abonnes prevenus au RETOUR du reseau (pas a chaque changement d'etat). */
+const restoreListeners = new Set<() => void>();
+
+/**
+ * S'abonner au retour de la connexion.
+ *
+ * ⚠️ Sans cela, l'utilisateur reste bloque sur l'ecran d'erreur jusqu'a ce qu'il
+ * tape lui-meme « Reessayer », alors que le reseau est revenu depuis longtemps.
+ * Le socket, lui, se reconnecte seul (socket.io) et son `connect` declenche le
+ * catch-up : seul le HTTP a besoin de ce signal.
+ *
+ * Retourne la fonction de desabonnement.
+ */
+export function onNetworkRestored(listener: () => void): () => void {
+  restoreListeners.add(listener);
+  return () => restoreListeners.delete(listener);
+}
+
 /** Demarre l'ecoute. Appele une seule fois au boot, depuis `setupHttp`. */
 export function startNetworkWatch() {
   NetInfo.addEventListener((state) => {
     // `isInternetReachable` vaut `null` tant que la sonde n'a pas abouti : on ne
     // le traduit pas en « hors ligne », sinon on bloquerait les requetes pendant
     // la fenetre de determination.
-    reachable =
+    const next =
       state.isInternetReachable === null
         ? null
         : Boolean(state.isConnected && state.isInternetReachable);
+
+    // On ne notifie QUE la transition hors-ligne → en ligne. NetInfo emet a
+    // chaque changement d'interface (WiFi ↔ 4G, changement de reseau) ; relancer
+    // les requetes a chacun d'eux les multiplierait sans raison.
+    const restored = reachable === false && next === true;
+    reachable = next;
+
+    if (restored) {
+      restoreListeners.forEach((listener) => {
+        try {
+          listener();
+        } catch {
+          // Un abonne qui echoue ne doit pas empecher les suivants d'etre
+          // prevenus : c'est le seul signal qu'ils recevront.
+        }
+      });
+    }
   });
 }
 

@@ -2,6 +2,7 @@ import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { auth } from "@/src/services/firebase";
+import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import axios from "axios";
 import React, {
@@ -195,6 +196,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const [appleReviewMode, setAppleReviewMode] = useState(false);
   const [banners, setBanners] = useState<AppBanner[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Double l'etat : le callback de retour reseau est pose UNE fois et lirait
+  // sinon un `error` fige par la closure.
+  const errorRef = useRef<string | null>(null);
+  errorRef.current = error;
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
@@ -467,6 +472,20 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     cursorRef.current = null;
     void fetchPage(undefined, undefined);
   }, [fetchPage, user?.uid, authLoading]);
+
+  // Retour du reseau : on recharge SEULEMENT si l'ecran d'erreur est affiche.
+  // Sans cela l'utilisateur reste bloque dessus jusqu'a taper « Reessayer », le
+  // reseau fut-il revenu depuis longtemps. La garde sur `error` evite de
+  // rafraichir une liste deja remplie a chaque bascule WiFi / 4G.
+  useEffect(
+    () =>
+      onNetworkRestored(() => {
+        if (!errorRef.current) return;
+        cursorRef.current = null;
+        void fetchPage(undefined, undefined);
+      }),
+    [fetchPage],
+  );
 
   // Changement de compte : on repart de zero. La liste porte les
   // `deliveryOffer` du compte precedent (le backend les resout depuis le

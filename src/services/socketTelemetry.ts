@@ -17,7 +17,6 @@ type SocketEvent =
   | "disconnect"
   | "foreground-dead"
   | "foreground-alive"
-  | "foreground-skipped"
   | "zombie-recycled";
 
 export function trackSocket(
@@ -26,12 +25,24 @@ export function trackSocket(
 ) {
   Sentry.withScope((scope) => {
     scope.setLevel("info");
-    // Sans fingerprint, Sentry groupe par stack trace et titre l'issue avec le
-    // nom de la fonction emettrice ; sans transaction, il la titre « anonymous ».
+    // Regroupe sur nos propres cles plutot que sur la stack trace.
     scope.setFingerprint(["socket", event]);
     scope.setTransactionName(`Socket ${event}`);
     scope.setTag("socket.event", event);
     Object.entries(extra).forEach(([k, v]) => scope.setExtra(k, v));
+
+    // ⚠️ Retire la stack trace de CET evenement uniquement. `attachStacktrace`
+    // est actif globalement (indispensable aux vraies erreurs), mais tant qu'une
+    // stack est presente Sentry titre l'issue d'apres elle — d'ou les
+    // « anonymous » illisibles dans le feed. Sans stack, le titre devient le
+    // message. `setTransactionName` ne suffit pas : il ne renseigne que le
+    // champ Culprit.
+    scope.addEventProcessor((sentryEvent) => {
+      delete sentryEvent.exception;
+      delete sentryEvent.threads;
+      return sentryEvent;
+    });
+
     Sentry.captureMessage(`Socket ${event}`);
   });
 }

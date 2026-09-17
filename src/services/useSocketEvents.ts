@@ -143,11 +143,15 @@ export const useSocketEvents = () => {
      *  3. lien « zombie » (vu connecté, en réalité coupé) → détecté par le ping
      *     ci-dessous, qui force alors une vraie reconnexion.
      */
-    // Garde anti-rafale : basculer rapidement entre deux apps émet plusieurs
-    // `active` d'affilée, chacun déclenchant 5 requêtes. On espace les
-    // rattrapages sans jamais bloquer celui qui suit une vraie mise en veille.
-    let lastCatchUp = 0;
-    const CATCH_UP_COOLDOWN_MS = 10_000;
+    // ⚠️ AUCUNE garde de temps sur le retour au premier plan. Un cooldown de
+    // 10 s a été essayé et RETIRÉ : la télémétrie Sentry a montré des retours
+    // entièrement ignorés (`foreground-skipped`) quelques secondes après une
+    // reconnexion, alors que l'OS avait pu tuer le lien entre-temps. Les events
+    // tombés pendant ces allers-retours n'étaient ni reçus, ni rattrapés.
+    //
+    // Un rattrapage de trop ne coûte que 5 requêtes silencieuses ; un rattrapage
+    // manqué coûte un paiement ou une commande invisible. On traite donc CHAQUE
+    // retour, sans condition.
     /** Au-delà, on considère le lien mort même s'il se dit connecté. */
     const PING_TIMEOUT_MS = 4_000;
     /** Délai laissé à l'UI pour reprendre ses animations avant le rattrapage. */
@@ -156,19 +160,6 @@ export const useSocketEvents = () => {
 
     const handleAppState = (state: AppStateStatus) => {
       if (state !== "active") return;
-      const now = Date.now();
-      if (now - lastCatchUp < CATCH_UP_COOLDOWN_MS) {
-        // Suspect n°1 du silence au retour : la garde anti-rafale ne distingue
-        // pas deux bascules rapides d'un vrai reveil. Revenir moins de 10 s
-        // apres une sortie saute donc le rattrapage ET le re-join, alors que
-        // l'OS a pu couper le lien entre-temps.
-        trackSocket("foreground-skipped", {
-          sinceLastCatchUpMs: now - lastCatchUp,
-          connected: socket.connected,
-        });
-        return;
-      }
-      lastCatchUp = now;
 
       if (!socket.connected) {
         trackSocket("foreground-dead");

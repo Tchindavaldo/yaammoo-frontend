@@ -2,12 +2,6 @@ import axios, { AxiosError } from "axios";
 import { APP_BUILD, APP_PLATFORM, APP_VERSION } from "./version";
 import { isOnline, startNetworkWatch } from "@/src/services/network";
 
-/**
- * Delai maximal d'une requete. Genereux : mesure reelle a 44 ko/s sur le reseau
- * de test, un upload d'image legitime doit avoir le temps d'aboutir.
- */
-const HTTP_TIMEOUT_MS = 20000;
-
 /** Code porte par l'erreur hors-ligne, pour que l'UI la distingue d'un 500. */
 export const OFFLINE_CODE = "ERR_OFFLINE";
 export const OFFLINE_MESSAGE = "Pas de connexion Internet";
@@ -31,12 +25,6 @@ export const OFFLINE_MESSAGE = "Pas de connexion Internet";
 export function setupHttp() {
   startNetworkWatch();
 
-  // Filet de securite : sans `timeout`, axios attend INDEFINIMENT. Sur un lien
-  // ouvert mais muet (portail captif, box sans ligne), la requete ne revient
-  // jamais et le loader tourne sans fin. La coupure hors-ligne ci-dessous est
-  // immediate ; ce delai ne couvre que le reseau qui repond trop lentement.
-  axios.defaults.timeout = HTTP_TIMEOUT_MS;
-
   // Couche 1 : defaults globaux.
   axios.defaults.headers.common["x-app-version"] = APP_VERSION;
   axios.defaults.headers.common["x-platform"] = APP_PLATFORM;
@@ -47,10 +35,17 @@ export function setupHttp() {
   // Couche 2 : interceptor filet de sécurité.
   axios.interceptors.request.use((config) => {
     // Coupure IMMEDIATE quand l'appareil sait qu'aucune requete ne peut aboutir.
-    // Sans elle, on paierait `HTTP_TIMEOUT_MS` d'attente pour un echec certain,
-    // alors que NetInfo connait deja la reponse : l'erreur arrive instantanement
-    // et l'ecran peut afficher « pas de connexion » au lieu d'un loader fige.
+    //
+    // ⚠️ AUCUN `timeout` axios n'est pose, volontairement : un delai fixe coupe
+    // aussi les requetes lentes mais legitimes. `POST /transaction` (paiement
+    // MobileWallet, qui attend l'operateur) depassait 20 s et la commande
+    // echouait en ECONNABORTED alors que le reseau fonctionnait. La detection
+    // doit venir de l'etat reel du lien, jamais d'un chronometre.
     if (!isOnline()) {
+      // Trace le rejet : c'est le seul moyen de distinguer une vraie coupure
+      // d'un faux negatif de la sonde NetInfo, qui rejetterait alors des
+      // requetes parfaitement valides.
+      console.log(`[net] REJET hors-ligne → ${config.method} ${config.url}`);
       return Promise.reject(new AxiosError(OFFLINE_MESSAGE, OFFLINE_CODE, config));
     }
 
@@ -66,6 +61,20 @@ export function setupHttp() {
     }
     return config;
   });
+
+  // Trace les echecs sans reponse serveur (coupure, DNS, abandon) : sans ce log
+  // l'UI affiche « network error » sans qu'on sache d'ou il vient.
+  axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (!error.response) {
+        console.log(
+          `[net] ECHEC code=${error.code} msg=${error.message} url=${error.config?.url}`,
+        );
+      }
+      return Promise.reject(error);
+    },
+  );
 
   if (__DEV__) {
     console.log(

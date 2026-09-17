@@ -82,6 +82,17 @@ function captureOtaEvent(
     scope.setTransactionName(message);
     Object.entries(options.tags).forEach(([k, v]) => scope.setTag(k, v));
     Object.entries(options.extra).forEach(([k, v]) => scope.setExtra(k, v));
+
+    // ⚠️ Tant qu'une stack trace est presente, Sentry titre l'issue d'apres elle
+    // (« anonymous », ou le nom de la fonction emettrice) et le message est
+    // relegue au champ Culprit. On la retire pour CET evenement seulement ;
+    // `attachStacktrace` reste actif globalement pour les vraies erreurs.
+    scope.addEventProcessor((sentryEvent) => {
+      delete sentryEvent.exception;
+      delete sentryEvent.threads;
+      return sentryEvent;
+    });
+
     Sentry.captureMessage(message);
   });
 }

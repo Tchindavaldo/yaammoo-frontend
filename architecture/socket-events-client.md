@@ -14,7 +14,17 @@
 
 - **Catch-up sur retour au premier plan (`AppState`)** : le `connect` seul ne suffit pas. L'OS (iOS surtout) gèle le JS en arrière-plan et peut couper la websocket **sans que socket.io s'en aperçoive** — au réveil la socket paraît vivante, aucun `connect` ne part, donc aucun rattrapage. Le listener `AppState` rejoue donc `catchUp()` au passage en `active` (ou force `socket.connect()` si le lien est mort, le `connect` qui suit s'en chargeant).
 
-> C'est le cas concret des **identifiants reçus app en arrière-plan** : sans ce listener, taper la notification ramène l'app au premier plan mais la récompense n'apparaît pas. Une garde de 10 s (`CATCH_UP_COOLDOWN_MS`) évite la rafale de requêtes quand on bascule rapidement entre deux applications.
+> C'est le cas concret des **identifiants reçus app en arrière-plan** : sans ce listener, taper la notification ramène l'app au premier plan mais la récompense n'apparaît pas.
+
+> ⚠️ **Aucune garde de temps sur le retour au premier plan.** Une garde de 10 s
+> (`CATCH_UP_COOLDOWN_MS`) a existé puis a été **retirée** : la télémétrie Sentry
+> a montré des retours entièrement ignorés quelques secondes après une
+> reconnexion (`disconnect` → `foreground-dead` → `connect` → deux
+> `foreground-skipped` à 4 s et 3 s d'intervalle), alors que l'OS avait pu tuer
+> le lien entre-temps. Les events tombés pendant ces allers-retours n'étaient ni
+> reçus, ni rattrapés. Un rattrapage de trop coûte 5 requêtes silencieuses ; un
+> rattrapage manqué coûte un paiement invisible. **Ne pas réintroduire de
+> cooldown.**
 
 Le handler traite trois cas :
 
@@ -26,12 +36,15 @@ Le handler traite trois cas :
 
 > **Telemetrie Sentry** (`src/services/socketTelemetry.ts`) : chaque transition
 > remonte un evenement (`Socket connect` / `disconnect` avec sa raison /
-> `foreground-dead` / `foreground-alive` / `foreground-skipped` /
-> `zombie-recycled`). Sans elle, impossible de savoir lequel des cas s'est
-> produit quand un utilisateur ne voit pas ses events au retour dans l'app.
-> ⚠️ `foreground-skipped` est le cas a surveiller : la garde anti-rafale ne
-> distingue pas deux bascules rapides d'un vrai reveil, donc revenir moins de
-> 10 s apres une sortie saute le rattrapage ET le re-join.
+> `foreground-dead` / `foreground-alive` / `zombie-recycled`). Sans elle,
+> impossible de savoir lequel des cas s'est produit quand un utilisateur ne voit
+> pas ses events au retour dans l'app — c'est elle qui a identifie le cooldown
+> comme cause du silence.
+>
+> ⚠️ Ces evenements **retirent leur stack trace** (`addEventProcessor`) : tant
+> qu'une stack est presente, Sentry titre l'issue d'apres elle (« anonymous ») et
+> releguee le message au champ Culprit. `setTransactionName` seul ne corrige pas
+> le titre.
 
 > ⚠️ Le cas zombie est **décisif pendant un paiement** : le flux USSD impose à l'utilisateur de quitter l'app, donc `payment.settled` tombe presque toujours en arrière-plan. Une socket vue à tort comme connectée n'entend pas l'event et n'en déclenche pas le rejeu — l'overlay tournerait alors que le paiement a abouti. La sonde écoute le ping/pong natif du moteur (`socket.io.engine`), sans dépendre d'un handler applicatif côté serveur.
 

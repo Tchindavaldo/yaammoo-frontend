@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { socketService } from "./socket";
 import { withAck } from "./socketAck";
+import { trackSocket } from "./socketTelemetry";
 import { useAuth } from "../features/auth/context/AuthContext";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useOrders } from "../features/orders/hooks/useOrders";
@@ -113,10 +114,19 @@ export const useSocketEvents = () => {
     };
 
     const handleConnect = () => {
+      trackSocket("connect");
       socket.emit("join_user", userData?.uid);
       catchUp();
     };
 
+    // Mesure la coupure : sa raison dit si l'OS a tue le lien en arriere-plan
+    // (`transport close`) ou si le serveur a ferme — deux causes tres
+    // differentes du silence constate au retour dans l'app.
+    const handleDisconnect = (reason: string) => {
+      trackSocket("disconnect", { reason });
+    };
+
+    socket.on("disconnect", handleDisconnect);
     socket.on("connect", handleConnect);
     if (socket.connected) handleConnect();
     else socket.connect();
@@ -147,13 +157,26 @@ export const useSocketEvents = () => {
     const handleAppState = (state: AppStateStatus) => {
       if (state !== "active") return;
       const now = Date.now();
-      if (now - lastCatchUp < CATCH_UP_COOLDOWN_MS) return;
+      if (now - lastCatchUp < CATCH_UP_COOLDOWN_MS) {
+        // Suspect n°1 du silence au retour : la garde anti-rafale ne distingue
+        // pas deux bascules rapides d'un vrai reveil. Revenir moins de 10 s
+        // apres une sortie saute donc le rattrapage ET le re-join, alors que
+        // l'OS a pu couper le lien entre-temps.
+        trackSocket("foreground-skipped", {
+          sinceLastCatchUpMs: now - lastCatchUp,
+          connected: socket.connected,
+        });
+        return;
+      }
       lastCatchUp = now;
 
       if (!socket.connected) {
+        trackSocket("foreground-dead");
         socket.connect();
         return;
       }
+
+      trackSocket("foreground-alive");
 
       // Socket vue comme vivante — mais après une mise en veille l'OS a pu tuer
       // le lien sans que socket.io le sache (« zombie ») : les events émis
@@ -191,6 +214,7 @@ export const useSocketEvents = () => {
       setTimeout(() => {
         engine.off?.("packet", onPacket);
         if (!alive && socket.connected) {
+          trackSocket("zombie-recycled");
           socket.disconnect();
           socket.connect();
         }
@@ -485,6 +509,7 @@ export const useSocketEvents = () => {
       if (catchUpTimer) clearTimeout(catchUpTimer);
       appStateSub.remove();
       socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
       socket.off("newUserOrder");
       socket.off("userOrderUpdated");
       socket.off("userOrdersUpdated");

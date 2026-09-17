@@ -7,21 +7,24 @@ const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 const config = getSentryExpoConfig(__dirname, getDefaultConfig(__dirname));
 
 // ⚠️ Metro ne lit PAS `.gitignore` : il surveille tout le dossier du projet.
-// `dist/` (89 Mo de bundles exportes par `eas update`) etait donc scanne, et le
-// moindre changement dedans relancait un bundle. En dev web, Metro rebundlait
-// ainsi toutes les 3 a 6 secondes sans qu'aucun fichier source ne change, jusqu'a
-// saturer la memoire de Node (« JavaScript heap out of memory » a 2 Go) et tuer
-// le serveur. Chaque rebundle coupait aussi le socket, d'ou les `connect_error`
-// en rafale.
+// `dist/` (89 Mo de bundles exportes par `eas update`) et `android/app/build`
+// (1,6 Go de Gradle) sont donc scannes a la resolution alors qu'aucun n'entre
+// dans un bundle. Les exclure allege le crible et la memoire de Node.
+//
+// ⚠️ Ce `blockList` ne corrige PAS le rebundle en boucle : il filtre la
+// RESOLUTION de modules, pas la surveillance de fichiers — un fichier bloque ici
+// reste watche. La boucle « rebundle toutes les 3 a 6 s sans qu'aucun fichier ne
+// change » venait d'ailleurs : la sonde de connectivite de NetInfo tapait
+// l'origine de la page, donc Metro lui-meme, et chaque ping relancait un bundle.
+// Corrige en pointant la sonde vers le backend (voir src/services/network.ts).
 // ⚠️ Ancre sur __dirname : un motif large comme `/\/dist\/.*/` bloquerait aussi
 // `node_modules/react-native-web/dist/`, et le bundle web echouerait aussitot.
 const projectRoot = __dirname.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Artefacts de build, scannes par Metro alors qu'aucun n'entre dans un bundle :
-// `android/app/build` pese a lui seul 1,6 Go (Gradle), et `dist/` jusqu'a 89 Mo
-// apres un `eas update`. Les tenir hors du crible est ce qui evite la
-// saturation memoire de Node (« heap out of memory » a 2 Go) et les rebundles
-// en rafale qui tuaient le serveur de dev.
+// Artefacts de build, scannes a la resolution alors qu'aucun n'entre dans un
+// bundle : `android/app/build` pese a lui seul 1,6 Go (Gradle), et `dist/`
+// jusqu'a 89 Mo apres un `eas update`. Les tenir hors du crible reduit la
+// pression memoire de Node (« heap out of memory » a 2 Go).
 config.resolver.blockList = [
   new RegExp(`^${projectRoot}/dist/.*`),
   new RegExp(`^${projectRoot}/android/(app/)?build/.*`),

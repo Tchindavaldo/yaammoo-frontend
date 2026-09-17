@@ -1,4 +1,5 @@
 import NetInfo from "@react-native-community/netinfo";
+import { Config } from "../api/config";
 
 /**
  * Etat reel de la connectivite.
@@ -39,8 +40,34 @@ export function onNetworkRestored(listener: () => void): () => void {
   return () => restoreListeners.delete(listener);
 }
 
+/**
+ * Adresse sondee pour trancher `isInternetReachable`.
+ *
+ * ⚠️ Sans cette configuration, NetInfo sonde l'origine de la page — en dev web,
+ * c'est Metro lui-meme (`localhost:8081`). Chaque sonde traversait alors le
+ * middleware de dev, qui relancait un bundle ; le bundle faisait echouer la
+ * sonde suivante, NetInfo basculait `reachable` false → true, `onNetworkRestored`
+ * relancait l'app, et le cycle repartait. D'ou le rebundle infini, les
+ * rechargements de page en rafale et les `Socket connected` a repetition.
+ *
+ * On pointe donc la sonde vers le backend, qui n'a rien a voir avec le serveur
+ * de dev. `/settings/app-version` est public (pas d'auth) et repond ~166 o.
+ */
+const REACHABILITY_URL = `${Config.apiUrl}/settings/app-version`;
+
 /** Demarre l'ecoute. Appele une seule fois au boot, depuis `setupHttp`. */
 export function startNetworkWatch() {
+  NetInfo.configure({
+    reachabilityUrl: REACHABILITY_URL,
+    // La sonde ne lit pas le corps : le code HTTP suffit a trancher.
+    reachabilityTest: async (response) => response.status === 200,
+    // Intervalles volontairement larges : la sonde est un filet de securite,
+    // les vrais changements d'interface arrivent par evenement systeme.
+    reachabilityLongTimeout: 60 * 1000,
+    reachabilityShortTimeout: 5 * 1000,
+    reachabilityRequestTimeout: 15 * 1000,
+  });
+
   NetInfo.addEventListener((state) => {
     // `isInternetReachable` vaut `null` tant que la sonde n'a pas abouti : on ne
     // le traduit pas en « hors ligne », sinon on bloquerait les requetes pendant

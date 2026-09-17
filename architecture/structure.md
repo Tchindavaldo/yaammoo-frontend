@@ -166,6 +166,9 @@ src/
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
     ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp
+    │                           # Sonde pointée sur le backend (/settings/app-version) :
+    │                           # par défaut NetInfo interroge l'origine de la page, donc
+    │                           # Metro en dev web, ce qui relançait un bundle à chaque ping
     ├── otaTelemetry.ts         # Suivi des mises à jour OTA → Sentry
     └── useOtaUpdates.ts        # Mises a jour OTA expo-updates (voir http-versioning.md)
 ```

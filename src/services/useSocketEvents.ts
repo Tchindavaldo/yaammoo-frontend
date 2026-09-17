@@ -111,6 +111,16 @@ export const useSocketEvents = () => {
       refreshMerchant(false);
       refreshDriver(false);
       refreshBonuses(true);
+      // Catalogue public (home, boutique, checkout). Ses events sont des
+      // broadcasts globaux (`io.emit`), donc le backend ne les persiste pas et
+      // ne les rejoue pas au `join_user` : `fastfoodUpdated` (nom, photo,
+      // horaires), `globalMenuUpdated` (prix, plat), `newGlobalMenu`,
+      // `globalMenuDeleted` et `newFastfood` etaient perdus des que l'app
+      // passait en arriere-plan.
+      //
+      // ⚠️ Le prix est le cas critique : le backend recalcule le total a la
+      // commande, donc un prix perime cote client fait echouer le paiement.
+      refreshFastFoods();
     };
 
     const handleConnect = () => {

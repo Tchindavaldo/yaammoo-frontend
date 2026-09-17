@@ -28,6 +28,7 @@ import { orderGroupKey } from "../utils/orderGroupKey";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
 import { MerchantFilterSheet } from "./MerchantFilterSheet";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
+import { MerchantOrderSkeleton } from "./MerchantOrderSkeleton";
 import { OtherDatesNotice } from "./OtherDatesNotice";
 
 // Hauteur de la barre de filtres fixée au-dessus de la navbar.
@@ -789,7 +790,17 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             />
           }
         >
-          {dateFilteredOrders.length === 0 ? (
+          {/* ⚠️ Rafraîchissement en cours (retour dans l'app) : on montre le
+              squelette AVANT le test de liste vide. Sinon l'écran « Aucune
+              commande terminée » s'affichait pendant le chargement, ce qui est
+              faux — les commandes existent, elles arrivent. */}
+          {loading ? (
+            <>
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+            </>
+          ) : dateFilteredOrders.length === 0 ? (
             /* Rien de terminé sur la date affichée : on le dit, puis les cartes
                annoncent ce qui existe sur les autres jours (passé / futur). */
             <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>
@@ -988,7 +999,16 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         >
           {/* Liste principale (aujourd'hui par défaut, ou date choisie dans le
               bottom sheet de filtres — y compris une date passée). */}
-          {dateFilteredOrders.length === 0 ? (
+          {/* ⚠️ Même raison que la liste « terminées » : le squelette passe
+              AVANT le test de liste vide, sinon un « aucune commande » s'affiche
+              pendant le rafraîchissement alors qu'elles arrivent. */}
+          {loading ? (
+            <>
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+            </>
+          ) : dateFilteredOrders.length === 0 ? (
             /* Liste vide : le message centré dit ce qui manque sur la date
                affichée, les cartes disent ce qui existe sur les autres jours. */
             <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>

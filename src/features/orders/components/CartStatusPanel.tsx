@@ -2,6 +2,7 @@ import { orderGroupKey } from "@/src/features/merchant/utils/orderGroupKey";
 import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
 import { ClientFilterSheet } from "./ClientFilterSheet";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
+import { ClientOrderSkeleton } from "@/src/features/orders/components/ClientOrderSkeleton";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
 import {
   OrderTrackingHeader,
@@ -22,7 +23,6 @@ import React, {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -576,14 +576,13 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         keyExtractor={keyExtractor}
         ListEmptyComponent={
           ordersRefreshing && !refreshing ? (
+            // Skeleton plutot qu'un spinner : il reprend la forme des cartes
+            // qu'il remplace, donc la page ne se vide pas et rien ne saute
+            // quand les vraies commandes arrivent.
             <View style={styles.refreshingBlock}>
-              <ActivityIndicator
-                size="large"
-                color={Theme.colors.primary}
-              />
-              <Text style={styles.refreshingText}>
-                Mise à jour des commandes...
-              </Text>
+              <ClientOrderSkeleton />
+              <ClientOrderSkeleton />
+              <ClientOrderSkeleton />
             </View>
           ) : null
         }
@@ -708,14 +707,7 @@ const styles = StyleSheet.create({
   // Bloc affiché à la place de la liste pendant un rafraîchissement de retour
   // dans l'app. Centré verticalement sur la zone libre sous l'en-tête.
   refreshingBlock: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 80,
     gap: 12,
-  },
-  refreshingText: {
-    color: Theme.colors.gray[400],
-    fontSize: 14,
   },
   // Barre de filtres du bas : chips de statut + bouton du bottom sheet.
   bottomBar: {

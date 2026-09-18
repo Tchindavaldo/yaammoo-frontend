@@ -13,6 +13,7 @@ import { storage } from "@/src/utils/storage";
 import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
 import { Config } from "@/src/api/config";
+import { sinceBoot } from "@/src/utils/bootClock";
 
 interface AuthContextType {
   user: User | null;
@@ -57,7 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     profileRefreshed.current = true;
 
     try {
-      console.log("🔵 [AuthContext] Refresh profil depuis l'API (home)...");
+      console.log(`[boot t=${sinceBoot()}s] refresh profil (home)`);
       const apiData = await userFirestore.getUser(firebaseUser);
       if (apiData) {
         console.log("✅ [AuthContext] Profil rafraîchi depuis l'API");

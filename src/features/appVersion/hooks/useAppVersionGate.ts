@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Config } from "@/src/api/config";
+import { sinceBoot } from "@/src/utils/bootClock";
 
 export interface AppVersionGate {
   clientVersion: string;
@@ -33,7 +34,7 @@ export function useAppVersionGate() {
       setGate(null);
     } finally {
       console.log(
-        `[boot] /settings/app-version en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
+        `[boot t=${sinceBoot()}s] /settings/app-version en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
       );
       setChecked(true);
     }

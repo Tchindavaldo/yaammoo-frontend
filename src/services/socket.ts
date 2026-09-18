@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { Config } from '../api/config';
+import { sinceBoot } from '../utils/bootClock';
 
 class SocketService {
     private socket: Socket;
@@ -41,7 +42,7 @@ class SocketService {
                 ? Date.now() - this.connectStartedAt
                 : null;
             console.log(
-                `✅ Socket connected ${this.socket.id} ${transport}` +
+                `[boot t=${sinceBoot()}s] socket connecte ${transport}` +
                 (ms !== null ? ` en ${(ms / 1000).toFixed(2)}s` : ''),
             );
         });

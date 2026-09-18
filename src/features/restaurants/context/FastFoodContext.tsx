@@ -2,6 +2,7 @@ import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { getOptionalIdToken } from "@/src/services/idToken";
+import { sinceBoot } from "@/src/utils/bootClock";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import axios from "axios";
@@ -371,7 +372,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // demarrage, la seule requete dont l'affichage depend vraiment.
       if (isFirstPage && !hasLoadedOnce) {
         console.log(
-          `[boot] /fastFood/all en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
+          `[boot t=${sinceBoot()}s] /fastFood/all en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
         );
       }
 

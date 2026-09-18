@@ -185,16 +185,11 @@ export default function HomeScreen() {
     [notifyUserScroll, cancelPendingLoadMore],
   );
 
-  const handleMomentumEnd = useCallback((e: any) => {
-    // FIX : `atTopRef` ment — un `onScroll` à y≈0 se glisse pendant le scroll
-    // vers le bas (mesuré : MOMENTUM atTop=true en bas de liste → RESET →
-    // DEMONTAGE en boucle). L'evenement de fin de momentum porte l'offset REEL
-    // de l'arret : c'est lui qui decide, le ref n'est que le repli.
-    const liveY = e?.nativeEvent?.contentOffset?.y;
-    const atTop = typeof liveY === "number" ? liveY <= 4 : atTopRef.current;
-    console.log(`[ROW] MOMENTUM atTop=${atTopRef.current} liveY=${liveY}`);
-    if (atTop) resetToFirstPage();
-  }, [resetToFirstPage]);
+  const handleMomentumEnd = useCallback(() => {
+    // Ne RIEN faire : le reset au momentum detruit les cellules et cause la
+    // pause au scroll suivant. Le reset ne se fait plus QUE sur tap explicite
+    // sur l'onglet Home (voir listener `tabPress` ligne ~225).
+  }, []);
 
   // ⚠️ Liberation du gel des l'arrivee de la page. Sans cet effet, `atBottom`
   // resterait a `true` : la liste vient de s'allonger, on n'est donc plus en

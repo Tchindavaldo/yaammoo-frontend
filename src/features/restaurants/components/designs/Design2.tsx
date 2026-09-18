@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, StyleSheet } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { FastFood, Menu } from '@/src/types';
 import { MerchantHeader } from '../MerchantHeader';
 import { DesignItem } from './DesignItem';
@@ -13,6 +14,35 @@ interface DesignProps {
 
 export const Design2: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
   useRowCommitProbe(2, fastFood.menu?.length ?? 0, (fastFood as any)?.id);
+
+  const menus = useMemo(() => fastFood.menu ?? [], [fastFood.menu]);
+  const menuCount = menus.length;
+
+  const renderItem = useCallback(({ item, index }: { item: Menu; index: number }) => (
+    <DesignItem
+      menu={item}
+      variant={2}
+      merchantName={fastFood.nom}
+      onPress={() => onMenuClick(item)}
+      index={index}
+      isLast={index === menuCount - 1}
+      deliveryHours={(fastFood as any)?.deliveryHours}
+      orderLeadTime={(fastFood as any)?.orderLeadTime}
+      stock={(item as any)?.stock ?? 0}
+    />
+  ), [fastFood.nom, onMenuClick, fastFood.deliveryHours, fastFood.orderLeadTime, menuCount]);
+
+  const keyExtractor = useCallback((item: Menu) => item.id ?? String(Math.random()), []);
+
+  const getItemLayout = useCallback(
+    (data: Menu[], index: number) => ({
+      length: 228,
+      offset: 228 * index,
+      index,
+    }),
+    [],
+  );
+
   return (
     <View style={styles.container}>
       <MerchantHeader
@@ -22,24 +52,15 @@ export const Design2: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         syncWithImage={fastFood.menu?.[0]?.image}
       />
       <View style={styles.scrollWrapper}>
-        <ScrollView
+        <FlashList
+          data={menus}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemLayout={getItemLayout}
           horizontal
           showsHorizontalScrollIndicator={false}
-        >
-          {fastFood.menu?.map((menu, index) => (
-            <DesignItem
-              key={index}
-              menu={menu}
-              variant={2}
-              merchantName={fastFood.nom}
-              onPress={() => onMenuClick(menu)}
-              isLast={index === fastFood.menu!.length - 1}
-              deliveryHours={(fastFood as any)?.deliveryHours}
-              orderLeadTime={(fastFood as any)?.orderLeadTime}
-              stock={(menu as any)?.stock ?? 0}
-            />
-          ))}
-        </ScrollView>
+          estimatedItemSize={228}
+        />
       </View>
     </View>
   );

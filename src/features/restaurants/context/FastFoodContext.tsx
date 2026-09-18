@@ -28,7 +28,7 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 3;
 
 /**
  * Plafond de `limit` IMPOSE par le backend (`GET /fastFood/all`). Demander plus

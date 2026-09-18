@@ -2,6 +2,7 @@ import { orderGroupKey } from "@/src/features/merchant/utils/orderGroupKey";
 import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
 import { ClientFilterSheet } from "./ClientFilterSheet";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
+import { ClientOrderSkeleton } from "@/src/features/orders/components/ClientOrderSkeleton";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
 import {
   OrderTrackingHeader,
@@ -179,7 +180,15 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   bottomOffset = 0,
   initialStatus = "pending",
 }) => {
-  const { pending, active, finished, delivered, refresh } = useOrders();
+  const {
+    pending,
+    active,
+    finished,
+    delivered,
+    refresh,
+    // ⚠️ Renommé : `refreshing` est déjà pris ci-dessous par le pull-to-refresh.
+    refreshing: ordersRefreshing,
+  } = useOrders();
   const { fastFoods } = useFastFoods();
   const tabBarHeight = useTabBarHeight();
 
@@ -555,11 +564,28 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         />
       </View>
 
-      {/* FlatList virtualisée */}
+      {/* FlatList virtualisée
+          ⚠️ `data` est vidée pendant un rafraîchissement de RETOUR dans l'app :
+          les statuts affichés sont alors périmés, et les laisser visibles sans
+          aucun signe laissait croire qu'ils étaient à jour. Le pull-to-refresh
+          (`refreshing`) est exclu — il a déjà son indicateur natif, et vider la
+          liste sous le doigt masquerait le geste. */}
       <FlatList
-        data={flatItems}
+        data={ordersRefreshing && !refreshing ? [] : flatItems}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        ListEmptyComponent={
+          ordersRefreshing && !refreshing ? (
+            // Skeleton plutot qu'un spinner : il reprend la forme des cartes
+            // qu'il remplace, donc la page ne se vide pas et rien ne saute
+            // quand les vraies commandes arrivent.
+            <View style={styles.refreshingBlock}>
+              <ClientOrderSkeleton />
+              <ClientOrderSkeleton />
+              <ClientOrderSkeleton />
+            </View>
+          ) : null
+        }
         contentContainerStyle={{
           paddingTop: topOffset + trackingHeaderHeight,
           // Réserve la navbar + la barre de filtres du bas.
@@ -678,6 +704,11 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
 // Styles
 // ---------------------------------------------------------------------------
 const styles = StyleSheet.create({
+  // Bloc affiché à la place de la liste pendant un rafraîchissement de retour
+  // dans l'app. Centré verticalement sur la zone libre sous l'en-tête.
+  refreshingBlock: {
+    gap: 12,
+  },
   // Barre de filtres du bas : chips de statut + bouton du bottom sheet.
   bottomBar: {
     position: "absolute",

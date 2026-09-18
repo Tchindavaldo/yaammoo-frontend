@@ -9,6 +9,12 @@ import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 interface OrderContextType {
   orders: Commande[];
   loading: boolean;
+  /**
+   * Un refetch des commandes est en cours (retour dans l'app, pull-to-refresh).
+   * ⚠️ Distinct de `loading`, que levent AUSSI `addOrder` et `buyOrders` : s'y
+   * fier pour masquer l'ecran le ferait clignoter pendant un ajout au panier.
+   */
+  refreshing: boolean;
   error: string | null;
   refresh: (quiet?: boolean) => Promise<void>;
   addOrder: (orderData: any) => Promise<{ success: boolean; message?: string }>;
@@ -41,10 +47,25 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Rafraichissement declenche par le RETOUR dans l'app, distinct de `loading`.
+   *
+   * ⚠️ `loading` est aussi leve par `addOrder` et `buyOrders` : s'en servir pour
+   * afficher le skeleton plein ecran masquerait toute la page pendant un ajout
+   * au panier ou un achat. Il faut donc un etat propre a ce cas.
+   */
+  const [refreshing, setRefreshing] = useState(false);
+
   const fetchOrders = useCallback(async (quiet = false) => {
     if (!userData) return;
     try {
-      if (!quiet) setLoading(true);
+      if (!quiet) {
+        setLoading(true);
+        // Signale un rafraichissement des commandes, par opposition a un
+        // `addOrder` / `buyOrders` qui levent aussi `loading` : l'ecran peut
+        // ainsi afficher son skeleton SANS le faire pendant un ajout au panier.
+        setRefreshing(true);
+      }
       setError(null);
       const response = await axios.get(
         `${Config.apiUrl}/order/user/all/${userData?.uid}`,
@@ -57,7 +78,10 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       console.error("Error fetching orders:", err);
       if (!quiet) setError("Erreur réseau");
     } finally {
-      if (!quiet) setLoading(false);
+      if (!quiet) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [userData]);
 
@@ -252,6 +276,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const value = {
     orders,
     loading,
+    refreshing,
     error,
     refresh: fetchOrders,
     addOrder,

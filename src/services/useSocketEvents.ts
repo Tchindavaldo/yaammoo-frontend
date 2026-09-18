@@ -3,6 +3,10 @@ import { AppState, type AppStateStatus } from "react-native";
 import { socketService } from "./socket";
 import { withAck } from "./socketAck";
 import { trackSocket } from "./socketTelemetry";
+import {
+  reportSocketConnected,
+  reportSocketDisconnected,
+} from "./network";
 import { useAuth } from "../features/auth/context/AuthContext";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useOrders } from "../features/orders/hooks/useOrders";
@@ -148,6 +152,9 @@ export const useSocketEvents = () => {
 
     const handleConnect = () => {
       trackSocket("connect");
+      // Le socket tient : il devient le capteur de connectivite et la sonde
+      // periodique s'arrete (voir `network.ts`).
+      reportSocketConnected();
       socket.emit("join_user", userData?.uid);
       catchUp();
     };
@@ -157,6 +164,10 @@ export const useSocketEvents = () => {
     // differentes du silence constate au retour dans l'app.
     const handleDisconnect = (reason: string) => {
       trackSocket("disconnect", { reason });
+      // On ne conclut pas a une coupure reseau : un backend en panne ferme le
+      // socket alors qu'Internet marche. La sonde tranche, puis verifie toutes
+      // les 2 s si le lien revient.
+      reportSocketDisconnected();
     };
 
     socket.on("disconnect", handleDisconnect);

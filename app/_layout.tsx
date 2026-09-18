@@ -30,6 +30,7 @@ import { useNotificationSetup } from "@/src/features/notifications/hooks/useNoti
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
+import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { initSentry, wrapWithSentry } from "@/src/services/sentry";
 import { setupHttp } from "@/src/api/setupHttp";
 import { prefetchBonusBackground } from "@/src/features/bonus/components/BonusPageBackground";
@@ -252,6 +253,9 @@ function RootLayout() {
                       <AuthGateProvider>
                         <AppVersionProvider>
                           <AppContent />
+                          {/* Hors de <AppContent> : le bandeau doit rester
+                              visible quel que soit l'ecran affiche. */}
+                          <OfflineBanner />
                         </AppVersionProvider>
                       </AuthGateProvider>
                     </BonusProvider>

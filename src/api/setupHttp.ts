@@ -1,6 +1,10 @@
 import axios, { AxiosError } from "axios";
 import { APP_BUILD, APP_PLATFORM, APP_VERSION } from "./version";
-import { isOnline, startNetworkWatch } from "@/src/services/network";
+import {
+  isOnline,
+  reportNetworkFailure,
+  startNetworkWatch,
+} from "@/src/services/network";
 
 /** Code porte par l'erreur hors-ligne, pour que l'UI la distingue d'un 500. */
 export const OFFLINE_CODE = "ERR_OFFLINE";
@@ -67,10 +71,14 @@ export function setupHttp() {
   axios.interceptors.response.use(
     (response) => response,
     (error) => {
-      if (!error.response) {
+      if (!error.response && error.code !== OFFLINE_CODE) {
         console.log(
           `[net] ECHEC code=${error.code} msg=${error.message} url=${error.config?.url}`,
         );
+        // Aucune reponse serveur = le lien ne porte pas. On bascule hors-ligne
+        // immediatement, sans attendre la sonde periodique : les requetes
+        // suivantes sont alors rejetees d'entree au lieu de rester pendantes.
+        reportNetworkFailure();
       }
       return Promise.reject(error);
     },

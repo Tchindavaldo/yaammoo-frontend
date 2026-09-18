@@ -218,8 +218,6 @@ export function startNetworkWatch() {
 
     // Seuls les CHANGEMENTS sont traces : l'etat est reevalue en continu, le
     // logger a chaque fois noyait les lignes utiles.
-    if (changed) console.log(`[net] ${state.type} → ${next}`);
-
     reachable = next;
 
     if (changed) emitState();
@@ -310,11 +308,6 @@ function settle(next: boolean) {
     failures = 0;
   }
 
-  // Seuls les CHANGEMENTS sont tracés : une sonde qui confirme l'état toutes
-  // les 5 s noyait les logs utiles sous des dizaines de lignes identiques.
-  if (next !== reachable) {
-    console.log(`[net] ${reachable} → ${next}`);
-  }
 
   // Verdict ferme. La cadence serree ne sert qu'a LEVER un doute : une fois
   // qu'on sait qu'on est en ligne, la sonde redevient un filet, que le socket

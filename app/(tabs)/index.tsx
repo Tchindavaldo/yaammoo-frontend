@@ -524,15 +524,27 @@ export default function HomeScreen() {
             // l'ancien `2` en header.
             initialNumToRender={3}
             maxToRenderPerBatch={3}
-            // ⚠️ NE PAS elargir `windowSize` pour supprimer le cycle
-            // UNMOUNT/MOUNT #3..#6 vu en bas de liste : teste a 11 (avec
-            // `removeClippedSubviews` et `updateCellsBatchingPeriod`), aucun
-            // effet — cycle identique, blocages JS toujours a 145-160 ms. Ce
-            // cycle ne vient PAS de la virtualisation mais de
-            // `resetToFirstPage()`, qui tronque volontairement la liste a la
-            // premiere page au retour en haut ; les pages suivantes sont ensuite
-            // rechargees au scroll. C'est le comportement voulu.
-            windowSize={5}
+            // `windowSize` compte des HAUTEURS D'ECRAN, pas des boutiques : a 15,
+            // ~7 ecrans sont gardes montes de part et d'autre du viewport. Il n'y
+            // a donc aucun seuil periodique « toutes les N boutiques ».
+            //
+            // Elargi de 5 a 15 apres mesure (`debug/home-scroll-frein`, sonde
+            // `[ROW]`). A 5, les rangees sortaient de la fenetre et etaient
+            // detruites puis recreees au retour : 63-90 ms de commit natif
+            // repayes a chaque passage, soit 4 a 5 frames perdues — invisible a
+            // l'oeil, nettement senti sous le doigt. A 15, chaque boutique ne
+            // monte plus qu'UNE fois sur un aller-retour courant.
+            //
+            // ⚠️ Le commentaire precedent affirmait « NE PAS elargir, teste a 11,
+            // aucun effet ». La mesure le CONTREDIT : a 15 les remontages
+            // disparaissent. L'ancien essai concluait sur le cycle en bas de
+            // liste, qui lui vient bien de `resetToFirstPage()` (troncature
+            // volontaire au retour en haut) — deux phenomenes distincts qui
+            // avaient ete confondus.
+            //
+            // Contrepartie assumee : plus de cellules montees = plus de memoire.
+            // A surveiller sur appareil modeste avec un gros catalogue.
+            windowSize={15}
             onEndReached={loadMore}
             // ⚠️ 0.5 declenchait la requete une demi-hauteur d'ecran AVANT le bas.
             // En scroll lent la reponse revenait avant qu'on y arrive : les

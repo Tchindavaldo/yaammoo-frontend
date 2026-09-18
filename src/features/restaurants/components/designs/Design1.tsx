@@ -4,6 +4,7 @@ import { FastFood, Menu } from '@/src/types';
 import { MerchantHeader } from '../MerchantHeader';
 import { DesignItem } from './DesignItem';
 import { Theme } from '@/src/theme';
+import { useRowCommitProbe } from '../../utils/useRowCommitProbe';
 
 interface DesignProps {
   fastFood: FastFood;
@@ -11,6 +12,7 @@ interface DesignProps {
 }
 
 export const Design1: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
+  useRowCommitProbe(1, fastFood.menu?.length ?? 0, (fastFood as any)?.id);
   return (
     <View style={styles.container}>
       <MerchantHeader

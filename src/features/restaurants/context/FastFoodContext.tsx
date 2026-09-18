@@ -1,11 +1,11 @@
 import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
-import { getOptionalIdToken } from "@/src/services/idToken";
-import { sinceBoot } from "@/src/utils/bootClock";
 import { trackBootStep } from "@/src/services/bootTelemetry";
+import { getOptionalIdToken } from "@/src/services/idToken";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
+import { sinceBoot } from "@/src/utils/bootClock";
 import axios from "axios";
 import React, {
   createContext,
@@ -28,7 +28,7 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 5;
 
 /**
  * Plafond de `limit` IMPOSE par le backend (`GET /fastFood/all`). Demander plus

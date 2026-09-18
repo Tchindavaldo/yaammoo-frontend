@@ -12,8 +12,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import {
-  FlatList,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -123,7 +123,7 @@ export default function HomeScreen() {
   // ⚠️ Gere ICI et pas dans `(tabs)/_layout.tsx` : ce layout est partage par
   // tous les onglets, et il n'a pas acces a la liste de cet ecran. L'evenement
   // `tabPress` remonte au screen, qui est le seul a tenir la ref.
-  const listRef = useRef<FlatList>(null);
+  const listRef = useRef<FlashListRef<any>>(null);
   const navigation = useNavigation();
 
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -379,6 +379,38 @@ export default function HomeScreen() {
     [],
   );
 
+  /**
+   * Type de cellule, pour le RECYCLAGE (FlashList).
+   *
+   * C'est la piece maitresse de la migration : FlashList ne detruit plus une
+   * rangee qui sort de l'ecran, elle REUTILISE son instance native pour la
+   * rangee qui entre. Le commit natif de 63-90 ms — la micro-pause ressentie au
+   * doigt, mesuree par la sonde `[ROW]` — n'est alors paye qu'UNE fois par type,
+   * quelle que soit la distance parcourue ou le nombre de boutiques.
+   *
+   * ⚠️ Une vue ne peut etre recyclee que vers une cellule de MEME structure. Les
+   * 7 variantes de `DesignRouter` n'ont ni la meme hauteur (190 a 280 px) ni le
+   * meme arbre de vues : les melanger ferait recycler une carte vers un gabarit
+   * incompatible, ce qui annule le gain et provoque des sauts de layout. On rend
+   * donc le type explicite — la banniere d'un cote, chaque variante de l'autre.
+   *
+   * ⚠️ On type par COMPOSANT, pas par `designIndex`. La table de `DesignRouter`
+   * (`[Design7, Design4, Design6, Design7, Design4, Design5]`) contient des
+   * DOUBLONS : les index 0 et 3 rendent tous deux `Design7`. Typer sur l'index
+   * nu creerait deux pools de recyclage distincts pour des vues identiques — le
+   * gain serait perdu sur la moitie des rangees.
+   *
+   * ⚠️ Cette table doit rester synchronisee avec celle de `DesignRouter`. Elle y
+   * est definie localement ; l'extraire dans un module partage serait plus sur,
+   * a faire si elle bouge encore.
+   */
+  const getItemType = useCallback((item: any) => {
+    if (isBannerItem(item)) return "banner";
+    const DESIGN_BY_INDEX = [7, 4, 6, 7, 4, 5];
+    const i = (item?.designIndex ?? 0) % DESIGN_BY_INDEX.length;
+    return `shop-d${DESIGN_BY_INDEX[i]}`;
+  }, []);
+
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
   };
@@ -488,11 +520,19 @@ export default function HomeScreen() {
           latence a l'arrivee sur le home. */}
       <ShopRevealProvider expect={firstScreenUris}>
         <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
-          <FlatList
+          {/* ⚠️ FlashList, pas FlatList : elle RECYCLE les vues natives au lieu
+              de les detruire en sortie d'ecran et d'en recreer en entree. C'est
+              ce qui supprime definitivement la micro-pause au scroll (63-90 ms
+              de commit natif repayes a chaque remontage, cf. sonde `[ROW]` et
+              `architecture/restaurants.md`). Le recyclage est pilote par
+              `getItemType` : sans lui, une rangee serait reutilisee vers une
+              variante de hauteur differente. */}
+          <FlashList
             ref={listRef}
             data={listData}
             renderItem={renderItem}
             keyExtractor={keyExtractor}
+            getItemType={getItemType}
             onScroll={handleScroll}
             scrollEventThrottle={64}
             onMomentumScrollEnd={handleMomentumEnd}
@@ -511,40 +551,20 @@ export default function HomeScreen() {
                 colors={[Theme.colors.primary]}
               />
             }
-            // Pagination : la page suivante part avant d'atteindre le bas, pour
-            // que les boutiques soient là quand l'utilisateur y arrive.
-            // ⚠️ Par défaut `initialNumToRender` vaut 10 : la première passe de
-            // rendu montait la bannière ET dix boutiques (header + rangée de
-            // menus chacune). Le squelette de la bannière n'était peint qu'à la
-            // fin de cette passe — d'où son apparition en retard alors que les
-            // cartes, elles, étaient déjà là.
+            // ⚠️ `initialNumToRender`, `maxToRenderPerBatch` et `windowSize` ont
+            // ete RETIRES : ce sont des reglages propres a FlatList, ignores par
+            // FlashList, qui dimensionne sa fenetre elle-meme a partir des tailles
+            // reellement mesurees.
             //
-            // ⚠️ Ce compte inclut désormais la BANNIÈRE (item 0) : à 3, on rend
-            // la bannière plus deux boutiques, soit exactement ce que couvrait
-            // l'ancien `2` en header.
-            initialNumToRender={3}
-            maxToRenderPerBatch={3}
-            // `windowSize` compte des HAUTEURS D'ECRAN, pas des boutiques : a 15,
-            // ~7 ecrans sont gardes montes de part et d'autre du viewport. Il n'y
-            // a donc aucun seuil periodique « toutes les N boutiques ».
+            // Ils reglaient un probleme que le recyclage supprime a la racine :
+            // a `windowSize={5}` les rangees sortant de l'ecran etaient detruites
+            // puis recreees au retour (63-90 ms de commit natif repayes a chaque
+            // passage, cf. sonde `[ROW]`). Elargir a 15 ne faisait que repousser
+            // le seuil au prix de la memoire. FlashList, elle, REUTILISE la vue :
+            // le cout n'est plus paye qu'une fois par type de cellule.
             //
-            // Elargi de 5 a 15 apres mesure (`debug/home-scroll-frein`, sonde
-            // `[ROW]`). A 5, les rangees sortaient de la fenetre et etaient
-            // detruites puis recreees au retour : 63-90 ms de commit natif
-            // repayes a chaque passage, soit 4 a 5 frames perdues — invisible a
-            // l'oeil, nettement senti sous le doigt. A 15, chaque boutique ne
-            // monte plus qu'UNE fois sur un aller-retour courant.
-            //
-            // ⚠️ Le commentaire precedent affirmait « NE PAS elargir, teste a 11,
-            // aucun effet ». La mesure le CONTREDIT : a 15 les remontages
-            // disparaissent. L'ancien essai concluait sur le cycle en bas de
-            // liste, qui lui vient bien de `resetToFirstPage()` (troncature
-            // volontaire au retour en haut) — deux phenomenes distincts qui
-            // avaient ete confondus.
-            //
-            // Contrepartie assumee : plus de cellules montees = plus de memoire.
-            // A surveiller sur appareil modeste avec un gros catalogue.
-            windowSize={15}
+            // ⚠️ Ne pas les reintroduire en pensant « regler » un souci de scroll :
+            // sur FlashList ils n'ont aucun effet.
             onEndReached={loadMore}
             // ⚠️ 0.5 declenchait la requete une demi-hauteur d'ecran AVANT le bas.
             // En scroll lent la reponse revenait avant qu'on y arrive : les

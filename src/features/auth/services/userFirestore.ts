@@ -8,7 +8,6 @@ export const userFirestore = {
    */
   async getUser(firebaseUser: any): Promise<Users | null> {
     try {
-      console.log("🔍 [getUser] Fetching user with UID:", firebaseUser.uid);
       const idToken = await firebaseUser.getIdToken();
       const response = await axios.get(`${Config.apiUrl}/user/${firebaseUser.uid}`, {
         headers: {
@@ -19,11 +18,6 @@ export const userFirestore = {
 
       const rawData = response.data.data;
       if (!rawData) return null;
-
-      console.log(
-        "📦 [getUser] Raw backend response:",
-        JSON.stringify(response.data, null, 2),
-      );
 
       // Si le backend renvoie des données plates, on reconstruit la structure attendue par le frontend
       if (!rawData.infos) {
@@ -57,7 +51,6 @@ export const userFirestore = {
       // entre ces deux champs). Le front se base sur driverId pour les requêtes
       // et sur isDriver pour l'affichage des items dans Settings.
       rawData.isDriver = !!rawData.driverId;
-      console.log("📦 [getUser] final isDriver =", rawData.isDriver, "driverId =", rawData.driverId);
       return rawData;
     } catch (error: any) {
       if (error?.response?.status !== 404) {

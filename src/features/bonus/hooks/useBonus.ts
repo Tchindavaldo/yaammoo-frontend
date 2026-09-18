@@ -10,6 +10,7 @@ import axios from "axios";
 import { Config } from "@/src/api/config";
 import { auth } from "@/src/services/firebase";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import type {
   Bonus,
   BonusCriteria,
@@ -116,11 +117,21 @@ export const useBonus = () => {
   }, []);
 
   useEffect(() => {
-    if (userData) fetchBonuses();
-    // Pas d'utilisateur (déconnecté / session expirée) : aucun fetch ne partira,
-    // il faut donc lever `loading` nous-mêmes, sinon le squelette tourne à vide.
-    else setLoading(false);
-  }, [userData, fetchBonuses]);
+    // ⚠️ Le fetch ne part PLUS au montage : la sheet bonus s'ouvre depuis
+    // Settings, et cette requete partait pourtant sous le splash, pour un ecran
+    // que la plupart des utilisateurs n'ouvrent jamais. C'est `ensureLoaded()`,
+    // appele a l'ouverture de la sheet, qui la declenche.
+    //
+    // `refreshBonuses` (catch-up socket) reste inchange : il appelle
+    // `fetchBonuses` directement, et n'a d'effet utile que si la sheet a deja
+    // ete ouverte une fois.
+    if (!userData) setLoading(false);
+  }, [userData]);
+
+  const { ensureLoaded } = useLazyFetch(
+    () => fetchBonuses() as Promise<void>,
+    !!userData,
+  );
 
   /**
    * Applique le solde recalculé par le backend : une map { bonusId → stats }
@@ -390,5 +401,7 @@ export const useBonus = () => {
     /** Injection depuis l'event socket `bonus.stats_updated`. */
     applyBonusStats,
     refresh: fetchBonuses,
+    /** Declenche le premier chargement. A appeler a l'ouverture de la sheet. */
+    ensureLoaded,
   };
 };

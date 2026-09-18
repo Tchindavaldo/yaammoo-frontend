@@ -2,6 +2,8 @@ import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { getOptionalIdToken } from "@/src/services/idToken";
+import { sinceBoot } from "@/src/utils/bootClock";
+import { trackBootStep } from "@/src/services/bootTelemetry";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import axios from "axios";
@@ -290,6 +292,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     const myRun = isFirstPage ? ++runIdRef.current : runIdRef.current;
     /** Seule une recherche a un résultat à protéger d'une réponse tardive. */
     const guarded = !!q;
+    const startedAt = Date.now();
     try {
       if (isFirstPage) setLoading(true);
       else setLoadingMore(true);
@@ -366,6 +369,16 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error fetching fast foods:", err);
       setError("Connection internet indisponible, vérifiez votre réseau");
     } finally {
+      // Mesure du chargement qui LEVE LE SPLASH : c'est le chemin critique du
+      // demarrage, la seule requete dont l'affichage depend vraiment.
+      if (isFirstPage && !hasLoadedOnce) {
+        const elapsed = Date.now() - startedAt;
+        console.log(
+          `[boot t=${sinceBoot()}s] /fastFood/all en ${(elapsed / 1000).toFixed(2)}s`,
+        );
+        trackBootStep("catalogue", elapsed);
+      }
+
       // `hasLoadedOnce` pilote la revelation de (tabs) : une reponse recue,
       // quelle qu'elle soit, prouve que le chargement a eu lieu.
       setHasLoadedOnce(true);

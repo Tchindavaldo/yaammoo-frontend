@@ -210,19 +210,14 @@ export function startNetworkWatch() {
 
     if (next !== null) settled = true;
 
-    // Trace systematique : `isInternetReachable` s'est revele renvoyer `false`
-    // alors que le reseau fonctionnait (sonde Android/iOS mise en defaut par un
-    // DNS lent ou un reseau qui filtre la requete de test). Sans ce log on ne
-    // peut pas distinguer une vraie coupure d'un faux negatif.
-    console.log(
-      `[net] type=${state.type} connected=${state.isConnected} reachable=${state.isInternetReachable} → ${next}`,
-    );
-
     // On ne notifie QUE la transition hors-ligne → en ligne. NetInfo emet a
     // chaque changement d'interface (WiFi ↔ 4G, changement de reseau) ; relancer
     // les requetes a chacun d'eux les multiplierait sans raison.
     const restored = reachable === false && next === true;
     const changed = reachable !== next;
+
+    // Seuls les CHANGEMENTS sont traces : l'etat est reevalue en continu, le
+    // logger a chaque fois noyait les lignes utiles.
     reachable = next;
 
     if (changed) emitState();
@@ -306,9 +301,6 @@ function settle(next: boolean) {
   if (!next && reachable !== false) {
     failures += 1;
     if (failures < FAILURES_BEFORE_OFFLINE) {
-      console.log(
-        `[net] sonde en echec ${failures}/${FAILURES_BEFORE_OFFLINE}, on attend confirmation`,
-      );
       settled = true;
       return;
     }
@@ -316,9 +308,6 @@ function settle(next: boolean) {
     failures = 0;
   }
 
-  console.log(
-    `[net] sonde → ${next} (etat=${reachable}, cadence=${probeMs}ms)`,
-  );
 
   // Verdict ferme. La cadence serree ne sert qu'a LEVER un doute : une fois
   // qu'on sait qu'on est en ligne, la sonde redevient un filet, que le socket

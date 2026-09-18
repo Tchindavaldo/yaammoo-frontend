@@ -62,9 +62,21 @@ const CATEGORIES = [
 
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
-  const { user, userData } = useAuth();
+  const { user, userData, ensureProfileRefreshed } = useAuth();
   const { requireAuth } = useAuthGate();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, ensureLoaded: ensureNotificationsLoaded } =
+    useNotifications();
+  const { addOrder, ensureLoaded: ensureOrdersLoaded } = useOrders();
+
+  // Tout ce qui n'est pas indispensable a l'affichage part d'ICI, une fois
+  // l'app a l'ecran : sous le splash, seules `/fastFood/all` et
+  // `/settings/app-version` ont le droit de partir. Les badges panier et
+  // notifications tiennent sur leur cache en attendant ces reponses.
+  useEffect(() => {
+    void ensureProfileRefreshed();
+    ensureNotificationsLoaded();
+    ensureOrdersLoaded();
+  }, [ensureProfileRefreshed, ensureNotificationsLoaded, ensureOrdersLoaded]);
   const router = useRouter();
   const {
     fastFoods,
@@ -83,7 +95,6 @@ export default function HomeScreen() {
     selectedCategory,
     setSelectedCategory,
   } = useFastFoods();
-  const { addOrder } = useOrders();
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
   const HEADER_HEIGHT = 100 + insets.top;

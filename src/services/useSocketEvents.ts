@@ -173,7 +173,7 @@ export const useSocketEvents = () => {
     socket.on("disconnect", handleDisconnect);
     socket.on("connect", handleConnect);
     if (socket.connected) handleConnect();
-    else socket.connect();
+    else socketService.connect();
 
     /**
      * Retour au premier plan. L'OS (iOS surtout) gèle le JS en arrière-plan et

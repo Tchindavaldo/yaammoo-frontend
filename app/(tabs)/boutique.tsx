@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -21,7 +21,13 @@ import { Toast } from '@/src/components/Toast';
 export default function BoutiqueScreen() {
   const { userData, loading: authLoading } = useAuth();
   const { isSignedIn } = useAuthGate();
-  const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder } = useMerchant();
+  const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder, ensureLoaded } = useMerchant();
+
+  // Les donnees marchand ne se chargent plus au boot : c'est cette page qui les
+  // demande, a son ouverture.
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [headerHeight, setHeaderHeight] = useState(70);
 

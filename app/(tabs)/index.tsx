@@ -118,6 +118,10 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
+  // TEST: mettre `false` pour desactiver le reset au tap onglet Home
+  // (mesure scroll sans troncature). Remettre `true` avant merge : UX voulue.
+  const TAP_HOME_RESET_ENABLED = true;
+
   // Retour en haut quand on retape l'onglet Home alors qu'on y est deja.
   //
   // ⚠️ Gere ICI et pas dans `(tabs)/_layout.tsx` : ce layout est partage par
@@ -223,9 +227,11 @@ export default function HomeScreen() {
       // `onEndReached` → `loadMore` recharge → on retronque… boucle de
       // pagination infinie a ~120 ms le tour. On ne tronque donc QUE si on est
       // reellement revenu en haut.
-      resetTimerRef.current = setTimeout(() => {
-        if (atTopRef.current) resetToFirstPage();
-      }, 450);
+      if (TAP_HOME_RESET_ENABLED) {
+        resetTimerRef.current = setTimeout(() => {
+          if (atTopRef.current) resetToFirstPage();
+        }, 450);
+      }
     });
     return () => {
       unsubscribe();
@@ -426,7 +432,7 @@ export default function HomeScreen() {
    */
   const getItemType = useCallback((item: any) => {
     if (isBannerItem(item)) return "banner";
-    const DESIGN_BY_INDEX = [7, 4, 6, 7, 4, 5];
+    const DESIGN_BY_INDEX = [7, 4, 6, 7, 4, 5, 5];
     const i = (item?.designIndex ?? 0) % DESIGN_BY_INDEX.length;
     return `shop-d${DESIGN_BY_INDEX[i]}`;
   }, []);

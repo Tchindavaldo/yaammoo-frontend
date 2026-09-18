@@ -123,20 +123,23 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
     return fill;
   });
 
+  // `animating` : le squelette reste monte apres la revelation (structure
+  // invariante, cf. plus bas), mais sa boucle de respiration tourne sur le
+  // thread JS. On la coupe des qu'il est invisible.
   const skeletonRow = (
     <>
       <View style={styles.left}>
         <View style={styles.avatarContainer}>
-          <CardSkeleton radius={16} />
+          <CardSkeleton radius={16} animating={!skeletonGone} />
         </View>
         <View style={styles.nameSkeleton}>
-          <CardSkeleton radius={6} />
+          <CardSkeleton radius={6} animating={!skeletonGone} />
         </View>
       </View>
       {/* Un bloc unique a la place des 5 etoiles : le squelette suggere la
           zone, il n'a pas a en mimer le detail. */}
       <View style={styles.ratingSkeleton}>
-        <CardSkeleton radius={6} />
+        <CardSkeleton radius={6} animating={!skeletonGone} />
       </View>
     </>
   );
@@ -189,8 +192,12 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
       </Animated.View>
       {/* Fondu de sortie sur la MEME valeur que l'entree du contenu : les deux
           se croisent exactement, sans trou ni chevauchement visible. */}
-      {!skeletonGone ? (
-        <Animated.View
+      {/* ⚠️ TOUJOURS MONTE — meme raison que dans `DesignItem` : `skeletonGone`
+          est un etat local, et le mettre dans une condition de rendu fait
+          dependre la FORME de l'arbre d'un etat. Sur une vue recyclee
+          (FlashList), le cycle se rejouait et remontait le squelette a chaque
+          reutilisation. On ne joue plus que sur l'opacite. */}
+      <Animated.View
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
@@ -205,7 +212,6 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
         >
           {skeletonRow}
         </Animated.View>
-      ) : null}
       {witnesses}
     </View>
   );

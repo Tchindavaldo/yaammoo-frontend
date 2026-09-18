@@ -591,7 +591,14 @@ export default function HomeScreen() {
             // bloquerait aussi un chargement declenche AVANT le bas
             // (`onEndReachedThreshold`), alors que l'utilisateur defile encore
             // normalement au milieu de la liste.
-            scrollEnabled={!(loadingMore && hasMore && atBottom)}
+            // ⚠️ TEST EN COURS (debug du recyclage) : `scrollEnabled` etait
+            // pilote par `!(loadingMore && hasMore && atBottom)`. Ces trois
+            // valeurs changent PENDANT le scroll ; sur FlashList, modifier
+            // `scrollEnabled` reconstruit la liste et demonte toutes les
+            // cellules d'un coup — exactement le motif vu dans les logs
+            // (DEMONTAGE groupe de tous les ids, pas au fil du scroll).
+            // Fige a `true` le temps de confirmer la cause.
+            scrollEnabled
             ListFooterComponent={listFooter}
           />
         </View>

@@ -65,10 +65,19 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   // rajoute de la latence a l'arrivee sur le home. Ici la boutique 0 n'attend
   // que ce qu'elle attendait deja ; seule la banniere patiente un peu plus, le
   // temps de sortir en meme temps qu'elle.
-  if (listIndex === 0) return design;
-
-  // Plus bas dans la liste : un provider PAR boutique, independant du reste.
-  return <ShopRevealProvider>{design}</ShopRevealProvider>;
+  //
+  // ⚠️ STRUCTURE INVARIANTE — ne pas revenir a un `if (listIndex === 0) return
+  // design;` suivi d'un provider dans l'autre cas. L'arbre dependait alors de la
+  // POSITION : provider absent en tete, present ailleurs. Sous une liste qui
+  // recycle (FlashList), une cellule change de position au cours de sa vie ; la
+  // forme de l'arbre changeait avec elle et React demontait tout pour le
+  // remonter — `REMONTAGE` a 150-165 ms en plein scroll, mesure par la sonde
+  // `[ROW]`. Le provider est donc TOUJOURS monte ; seul son mode varie.
+  return (
+    <ShopRevealProvider passthrough={listIndex === 0}>
+      {design}
+    </ShopRevealProvider>
+  );
 };
 
 /**

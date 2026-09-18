@@ -40,6 +40,16 @@ interface CardSkeletonProps {
   fadeOut?: boolean;
   /** Appelé une fois le fondu de sortie terminé. */
   onFadedOut?: () => void;
+  /**
+   * `false` coupe la boucle de respiration sans demonter le composant.
+   *
+   * ⚠️ Cette boucle interpole une COULEUR, donc `useNativeDriver: false` : elle
+   * tourne sur le thread JS. Sous une liste qui recycle, les squelettes restent
+   * montes en permanence (voir `DesignItem`) — les laisser respirer sous des
+   * cartes opaques ferait tourner autant de boucles JS inutiles, precisement
+   * pendant le scroll.
+   */
+  animating?: boolean;
 }
 
 export const CardSkeleton: React.FC<CardSkeletonProps> = ({
@@ -49,12 +59,18 @@ export const CardSkeleton: React.FC<CardSkeletonProps> = ({
   highlight = "#f4f7fa",
   fadeOut = false,
   onFadedOut,
+  animating = true,
 }) => {
   const fade = useRef(new Animated.Value(0)).current;
   /** Opacité du voile : 1 pendant le chargement, 0 une fois l'image prête. */
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // Squelette invisible (contenu deja revele) : rien a animer. La boucle
+    // tourne sur le thread JS, la laisser tourner pour rien coute cher des que
+    // plusieurs squelettes restent montes — cf. `animating`.
+    if (!animating) return;
+
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(fade, {
@@ -74,7 +90,7 @@ export const CardSkeleton: React.FC<CardSkeletonProps> = ({
     );
     loop.start();
     return () => loop.stop();
-  }, [fade]);
+  }, [fade, animating]);
 
   // Fondu de sortie : sans lui le voile disparaissait d'un coup au demontage,
   // la bascule squelette -> image etait brusque.

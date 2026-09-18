@@ -88,7 +88,22 @@ export const ShopRevealProvider: React.FC<{
    * suffit alors.
    */
   expect?: (string | null | undefined)[];
-}> = ({ children, expect }) => {
+  /**
+   * `true` : le provider ne cree PAS de groupe et laisse ses enfants lire celui
+   * du dessus (la home, partage avec la banniere).
+   *
+   * ⚠️ Pourquoi un drapeau plutot qu'un `return children` chez l'appelant : sous
+   * une liste qui RECYCLE (FlashList), une cellule change de position au cours
+   * de sa vie. Si la structure de l'arbre depend de cette position — provider
+   * present ici, absent la — React ne peut plus reutiliser l'arbre et demonte
+   * tout pour le remonter. C'est exactement ce que mesurait la sonde `[ROW]` :
+   * des `REMONTAGE` a 150-165 ms en plein scroll.
+   *
+   * L'arbre doit donc rester IDENTIQUE a toutes les positions. Le provider est
+   * toujours monte ; c'est seulement son comportement qui change.
+   */
+  passthrough?: boolean;
+}> = ({ children, expect, passthrough }) => {
   const pendingRef = React.useRef<Set<string>>(new Set());
   const knownRef = React.useRef<Set<string>>(new Set());
 
@@ -137,13 +152,18 @@ export const ShopRevealProvider: React.FC<{
   }, [finish]);
 
   React.useEffect(() => {
+    // En `passthrough`, ce provider ne pilote aucun groupe : ni scellement ni
+    // garde-fou a armer. Laisser tourner son timer de 8 s ferait travailler un
+    // etat que personne ne lit.
+    if (passthrough) return;
+
     // Fin du rendu initial : toutes les cartes de la rangee se sont inscrites.
     sealedRef.current = true;
     evaluate();
 
     const timer = setTimeout(finish, MAX_WAIT_MS);
     return () => clearTimeout(timer);
-  }, [evaluate, finish]);
+  }, [evaluate, finish, passthrough]);
 
   const register = React.useCallback((uri: string) => {
     if (readyRef.current) return;
@@ -160,10 +180,19 @@ export const ShopRevealProvider: React.FC<{
     [evaluate],
   );
 
-  const value = React.useMemo(
+  // Groupe du dessus, relaye tel quel en `passthrough`. Le hook est appele
+  // inconditionnellement : l'ordre des hooks ne doit pas dependre du drapeau.
+  const parent = React.useContext(ShopRevealContext);
+
+  const own = React.useMemo(
     () => ({ ready, revealAnim, register, resolve }),
     [ready, revealAnim, register, resolve],
   );
+
+  // En `passthrough`, on republie la valeur du parent : les enfants rejoignent
+  // SON groupe, exactement comme si ce provider n'existait pas — mais sans
+  // changer la forme de l'arbre, ce qui laisse le recyclage reutiliser la vue.
+  const value = passthrough ? parent : own;
 
   return (
     <ShopRevealContext.Provider value={value}>

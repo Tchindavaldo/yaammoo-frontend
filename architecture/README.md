@@ -30,6 +30,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |
 | [home-banners.md](./home-banners.md) | Bannière pub du home — carrousel dynamique, images via `/fastfood/all`, fallback statique |
 | [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement** |
+| [home-scroll-pause.md](./home-scroll-pause.md) | ⚠️ **EN COURS** — micro-pause au scroll du home : mesures, sonde `[ROW]`, `windowSize={15}` (fonctionne, OTA) et tentative FlashList (non résolue) |
 | [settings-grille.md](./settings-grille.md) | Écran Settings — grille de tuiles par section (SettingGrid / SettingGridItem / SettingGridSwitch), teintes, sections |
 
 ---

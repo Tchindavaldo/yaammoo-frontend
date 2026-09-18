@@ -12,6 +12,12 @@
 import { useLayoutEffect, useRef } from "react";
 import { recordRowCommit, ROW_PROBE_ENABLED } from "./rowProbe";
 
+/**
+ * Compteur global de montages, tous composants confondus. Sert a dater les
+ * evenements les uns par rapport aux autres dans le log.
+ */
+let seq = 0;
+
 export const useRowCommitProbe = (
   variant: number,
   menus: number,
@@ -32,4 +38,19 @@ export const useRowCommitProbe = (
     doneRef.current = true;
     recordRowCommit(variant, menus, Date.now() - startRef.current, shopId);
   }, [variant, menus, shopId]);
+
+  // DEMONTAGE — la mesure qui tranche.
+  //
+  // Un recyclage reussi ne demonte RIEN : la vue est conservee et seules ses
+  // donnees changent. Si ce log apparait pendant le scroll, la cellule est bien
+  // detruite, et le `REMONTAGE` qui suit est un vrai remontage — pas un simple
+  // re-rendu. C'est la preuve directe que le recyclage ne prend pas.
+  useLayoutEffect(() => {
+    if (!ROW_PROBE_ENABLED) return;
+    const id = shopId ?? "?";
+    const n = ++seq;
+    return () => {
+      console.log(`[ROW] DEMONTAGE variant=${variant} id=${id} (#${n})`);
+    };
+  }, [variant, shopId]);
 };

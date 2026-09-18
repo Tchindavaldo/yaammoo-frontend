@@ -806,8 +806,17 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
           marginRight={isLast ? 0 : skel.gap}
         />
       </Animated.View>
-      {!skeletonGone ? (
-        <Animated.View
+      {/* ⚠️ TOUJOURS MONTE, jamais derriere un `{!skeletonGone ? … : null}`.
+          `skeletonGone` est un etat local qui repasse a false puis a true : sur
+          une vue RECYCLEE (FlashList), ce cycle se rejouait entierement et
+          remontait le squelette a chaque reutilisation — un montage/demontage
+          complet la ou le recyclage ne devrait que changer les donnees. C'est le
+          meme defaut que la structure conditionnelle corrigee dans
+          `DesignRouter` : la FORME de l'arbre ne doit dependre d'aucun etat.
+          Le squelette reste donc en place et ne joue plus que sur son opacite,
+          deja pilotee par `revealAnim`. Cout : une vue de plus par carte, mais
+          elle est entierement transparente et sans interaction. */}
+      <Animated.View
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
@@ -841,9 +850,11 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
               onError={markResolved}
             />
           ) : null}
-          <CardSkeleton radius={skel.radius} />
+          {/* L'animation de respiration tourne en boucle : une fois le fondu
+              termine, le squelette est invisible et n'a plus a s'animer sous une
+              carte opaque. On coupe l'animation SANS demonter la vue. */}
+          <CardSkeleton radius={skel.radius} animating={!skeletonGone} />
         </Animated.View>
-      ) : null}
     </View>
   );
 };

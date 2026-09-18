@@ -436,8 +436,13 @@ ont été **retirées** une fois la mesure faite. Résultats sur appareil réel
 - Le coût **décroît dans un même lot** (109 → 72 → 48), reproductible à
   l'identique sur iOS et Android : le premier montage paie un amorçage amorti
   par les suivants.
-- **Aucun lien avec le nombre de menus** : 1 menu = 81 ms, 5 menus = 50 ms.
-  Limiter les cartes rendues par `menu.map()` ne servirait à rien.
+- ~~**Aucun lien avec le nombre de menus** : 1 menu = 81 ms, 5 menus = 50 ms.~~
+  ⚠️ **DÉMENTI par une mesure ultérieure** — voir
+  [home-scroll-pause.md](./home-scroll-pause.md). Cette conclusion ne vaut que
+  pour de petites boutiques, où le coût d'amorçage domine. À 10-13 menus le coût
+  croît bien avec le nombre de menus (67 ms à 3 menus, 392 ms à 10), car les
+  rangées sont des `ScrollView` + `.map()` sans virtualisation horizontale :
+  tous les menus montent, y compris hors écran à droite.
 - Un blocage JS de ~150 ms par page, pendant que le loader est affiché.
   Acceptable — pas d'optimisation retenue.
 

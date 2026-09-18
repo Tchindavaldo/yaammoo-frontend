@@ -1,6 +1,11 @@
 import axios, { AxiosError } from "axios";
 import { APP_BUILD, APP_PLATFORM, APP_VERSION } from "./version";
-import { isOnline, startNetworkWatch } from "@/src/services/network";
+import {
+  isOnline,
+  reportNetworkFailure,
+  startNetworkWatch,
+  trackInFlight,
+} from "@/src/services/network";
 
 /** Code porte par l'erreur hors-ligne, pour que l'UI la distingue d'un 500. */
 export const OFFLINE_CODE = "ERR_OFFLINE";
@@ -49,6 +54,16 @@ export function setupHttp() {
       return Promise.reject(new AxiosError(OFFLINE_MESSAGE, OFFLINE_CODE, config));
     }
 
+    // Rend la requete annulable : si la coupure est constatee pendant son vol,
+    // `network.ts` l'avorte au lieu de la laisser pendante (aucun timeout axios
+    // ne viendrait la terminer). Sans cela le splash pouvait rester fige.
+    if (!config.signal) {
+      const { signal, done } = trackInFlight();
+      config.signal = signal;
+      // Nettoyage dans les deux issues, via les interceptors de reponse.
+      (config as any).__netDone = done;
+    }
+
     config.headers = config.headers ?? {};
     if (!config.headers["x-app-version"]) {
       config.headers["x-app-version"] = APP_VERSION;
@@ -65,12 +80,20 @@ export function setupHttp() {
   // Trace les echecs sans reponse serveur (coupure, DNS, abandon) : sans ce log
   // l'UI affiche « network error » sans qu'on sache d'ou il vient.
   axios.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      (response.config as any)?.__netDone?.();
+      return response;
+    },
     (error) => {
-      if (!error.response) {
+      (error.config as any)?.__netDone?.();
+      if (!error.response && error.code !== OFFLINE_CODE) {
         console.log(
           `[net] ECHEC code=${error.code} msg=${error.message} url=${error.config?.url}`,
         );
+        // Aucune reponse serveur = le lien ne porte pas. On bascule hors-ligne
+        // immediatement, sans attendre la sonde periodique : les requetes
+        // suivantes sont alors rejetees d'entree au lieu de rester pendantes.
+        reportNetworkFailure();
       }
       return Promise.reject(error);
     },

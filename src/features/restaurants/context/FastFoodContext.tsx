@@ -1,7 +1,7 @@
 import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
-import { auth } from "@/src/services/firebase";
+import { getOptionalIdToken } from "@/src/services/idToken";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import axios from "axios";
@@ -34,6 +34,16 @@ const PAGE_SIZE = 3;
  * rafraichies sans le moindre signal. Voir `architecture/restaurants.md`.
  */
 const MAX_SERVER_LIMIT = 50;
+
+/**
+ * Delai au-dela duquel on entre dans la home sans le catalogue.
+ *
+ * `/fastFood/all` repond en ~1,5 s de façon stable (mesure : 5 appels
+ * consecutifs, machine Fly.io maintenue eveillee). 12 s laissent donc huit fois
+ * la marge : seul un vrai blocage declenche le garde-fou, jamais une reponse
+ * simplement lente.
+ */
+const BOOT_GIVE_UP_MS = 12000;
 
 /** Délai avant qu'une frappe dans la recherche parte au serveur. */
 const SEARCH_DEBOUNCE_MS = 350;
@@ -183,6 +193,31 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  /**
+   * Garde-fou du splash : on entre dans la home au bout de `BOOT_GIVE_UP_MS`,
+   * meme si le catalogue n'a pas repondu.
+   *
+   * ⚠️ `hasLoadedOnce` pilote la revelation de (tabs) et ne passait a `true`
+   * qu'au `finally` du premier fetch. Or cette requete peut ne JAMAIS revenir :
+   * aucun timeout axios (volontaire, cf. `setupHttp`), et le backend est
+   * heberge sur Fly.io, qui endort les machines — un demarrage a froid de
+   * `/fastFood/all` a ete mesure a 15-20 s, contre 1,3 s a chaud. L'app restait
+   * bloquee sur le splash pendant tout ce temps, et indefiniment si la reponse
+   * ne venait pas.
+   *
+   * Mieux vaut la home avec son message d'erreur — l'utilisateur voit l'app,
+   * peut naviguer, et la reponse tardive remplit la liste quand elle arrive.
+   */
+  useEffect(() => {
+    if (hasLoadedOnce) return;
+    const t = setTimeout(() => {
+      console.log("[boot] catalogue sans reponse, on entre dans la home");
+      setError("Connection internet indisponible, vérifiez votre réseau");
+      setHasLoadedOnce(true);
+    }, BOOT_GIVE_UP_MS);
+    return () => clearTimeout(t);
+  }, [hasLoadedOnce]);
   /** Curseur de la page suivante. `null` = fin de liste atteinte. */
   const cursorRef = useRef<string | null>(null);
   /**
@@ -266,7 +301,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // dès qu'un user est connecté, pour que ses bonus livraison ARMÉS soient
       // résolus. Visiteur anonyme (ou token indisponible) : appel sans header,
       // la route continue de répondre normalement.
-      const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+      const idToken = await getOptionalIdToken();
       const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
         params: {
@@ -376,7 +411,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     if (loadedCount === 0) return;
 
     try {
-      const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+      const idToken = await getOptionalIdToken();
       const headers = idToken
         ? { Authorization: `Bearer ${idToken}` }
         : undefined;

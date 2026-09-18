@@ -3,12 +3,17 @@ import { walletService } from '../services/walletService';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Transaction } from '@/src/types';
 import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
+import { useLazyFetch } from '@/src/hooks/useLazyFetch';
 
 interface WalletContextType {
   transactions: Transaction[];
   loading: boolean;
   error: string | null;
   refresh: (showLoading?: boolean) => Promise<void>;
+  /** Declenche le premier chargement. A appeler au montage de l'ecran. */
+  ensureLoaded: () => void;
+  /** `false` tant que la donnee n'a jamais ete chargee → afficher un squelette. */
+  loaded: boolean;
   /** newTransaction → upsert d'une transaction depuis le payload socket (pas de refetch). */
   upsertTransactionFromSocket: (transaction: any) => void;
 }
@@ -39,18 +44,25 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [userId]);
 
+  // Premier chargement DIFFERE : la page portefeuille appelle `ensureLoaded()`
+  // a son montage. Fetcher ici partait sous le splash, pour un ecran que
+  // beaucoup d'utilisateurs n'ouvrent jamais.
+  const { ensureLoaded, loaded, reset } = useLazyFetch(fetchData, !!userId);
+
   // Changement de compte : le portefeuille du compte precedent est vide.
   useResetOnUserChange(userId, () => {
     setTransactions([]);
     setError(null);
+    reset();
   });
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const upsertTransactionFromSocket = useCallback((transaction: any) => {
     if (!transaction?.id) return;
+    // ⚠️ Rien n'a encore ete charge : inserer ici donnerait une liste d'UNE
+    // transaction, que l'ecran afficherait comme si c'etait tout l'historique.
+    // L'event est sans danger a ignorer — l'ouverture de l'ecran declenche
+    // `ensureLoaded()`, qui ramene l'historique complet, celle-ci comprise.
+    if (!loaded) return;
     setTransactions((prev) => {
       const idx = prev.findIndex((t) => t.id === transaction.id);
       if (idx >= 0) {
@@ -60,7 +72,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       return [transaction, ...prev];
     });
-  }, []);
+  }, [loaded]);
 
   return (
     <WalletContext.Provider
@@ -69,6 +81,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         loading,
         error,
         refresh: fetchData,
+        ensureLoaded,
+        loaded,
         upsertTransactionFromSocket,
       }}
     >

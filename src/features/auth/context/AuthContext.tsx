@@ -15,6 +15,14 @@ interface AuthContextType {
   deleteAccount: () => Promise<void>;
 }
 
+/**
+ * Retard du refresh de profil quand un cache frais est deja affiche.
+ *
+ * Laisse passer d'abord les deux requetes qui conditionnent l'affichage
+ * (`/fastFood/all`, `/settings/app-version`). Le profil, lui, est deja a l'ecran.
+ */
+const PROFILE_REFRESH_DELAY_MS = 3000;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -50,6 +58,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // 2. REFRESH EN ARRIÈRE-PLAN : tenter de récupérer la version fraîche.
         //    Ne bloque pas l'UI si on a déjà affiché le cache.
+        //
+        // ⚠️ DIFFÉRÉ quand le cache est frais : cet appel partait sous le splash
+        // alors que le profil affiché était déjà le bon, et retardait les deux
+        // seules requêtes qui conditionnent l'affichage (`/fastFood/all`,
+        // `/settings/app-version`). Sans cache, en revanche, on attend l'API —
+        // c'est elle qui débloque l'app.
+        if (hasFreshCache) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, PROFILE_REFRESH_DELAY_MS),
+          );
+        }
+
         try {
           console.log("🔵 [AuthContext] Refresh profil depuis l'API...");
           const apiData = await userFirestore.getUser(firebaseUser);

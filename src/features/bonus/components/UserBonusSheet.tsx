@@ -64,8 +64,16 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   } | null>(null);
   const carouselRef = useRef<BonusCarouselHandle>(null);
 
-  const { bonuses, loading, error, claims, claimBonus, arming, armBonus } =
-    useBonusContext();
+  const {
+    bonuses,
+    loading,
+    error,
+    claims,
+    claimBonus,
+    arming,
+    armBonus,
+    ensureLoaded,
+  } = useBonusContext();
 
   // Suivi du scroll horizontal du carousel (transition couleur des cartes).
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -82,6 +90,9 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   const lastGalleryX = useRef(0);
   useEffect(() => {
     if (visible) {
+      // Les bonus ne se chargent plus au boot : c'est l'ouverture de la sheet
+      // qui declenche le premier fetch.
+      ensureLoaded();
       scrollX.setValue(0);
       setIndex(0);
       // Le miroir hors-React suit, sinon il resterait sur l'index de la session
@@ -90,7 +101,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
       lastGalleryX.current = 0;
       setOpenKey((k) => k + 1);
     }
-  }, [visible, scrollX]);
+  }, [visible, scrollX, ensureLoaded]);
 
   /**
    * Progression d'ouverture (0 = fermé, 1 = ouvert) : pilote À LA FOIS l'opacité

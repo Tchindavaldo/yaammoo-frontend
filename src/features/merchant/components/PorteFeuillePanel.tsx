@@ -45,7 +45,18 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   const [barHeight, setBarHeight] = useState(0);
 
   // Stats portefeuille : source de vérité globale (patchée par les events socket).
-  const { stats, loading, refresh: refreshStats } = useMerchantWallet();
+  const {
+    stats,
+    loading,
+    refresh: refreshStats,
+    ensureLoaded,
+  } = useMerchantWallet();
+
+  // Les stats ne se chargent plus au boot : cet ecran les demande a son
+  // ouverture.
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
 
   const refreshAll = useCallback(() => {
     refreshStats();

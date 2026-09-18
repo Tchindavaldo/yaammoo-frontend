@@ -27,7 +27,13 @@ interface WalletPanelProps {
 
 export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOffset = 0 }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
-  const { transactions, loading, refresh } = useWallet();
+  const { transactions, loading, refresh, ensureLoaded } = useWallet();
+
+  // Le portefeuille ne se charge plus au boot : c'est cet ecran qui le demande,
+  // a son ouverture.
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
 
   const totalAmount = transactions
     .filter((t) => t.type === 'credit')

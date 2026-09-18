@@ -13,6 +13,7 @@ import {
 } from "../services/walletStatsService";
 import { useAuth } from "../../auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
+import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import moment from "moment";
 
 /** Payload normalisé d'un event wallet (wallet.credited / wallet.withdrawal). */
@@ -39,6 +40,10 @@ interface MerchantWalletContextType {
   stats: WalletStats | null;
   loading: boolean;
   refresh: (showLoading?: boolean) => Promise<void>;
+  /** Declenche le premier chargement. A appeler au montage de l'ecran. */
+  ensureLoaded: () => void;
+  /** `false` tant que la donnee n'a jamais ete chargee. */
+  loaded: boolean;
   /** Patch local du store à partir d'un event de gain (wallet.credited). */
   applyEvent: (e: WalletEvent) => void;
   /** Traite un event de retrait : patche le solde + notifie l'UI en cours. */
@@ -75,14 +80,16 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, [userData]);
 
+  // Premier chargement DIFFERE : le portefeuille marchand le demande a son
+  // ouverture. Un event socket arrivant avant cela est couvert par `applyEvent`,
+  // qui refetch en silence quand `stats` est encore null.
+  const { ensureLoaded, loaded, reset } = useLazyFetch(refresh, !!userData);
+
   // Changement de compte : les stats du portefeuille precedent sont vides.
   useResetOnUserChange(userData?.uid, () => {
     setStats(null);
+    reset();
   });
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
 
   // Patch local : met à jour balance, totals et la ligne du jour concerné.
   const applyEvent = useCallback((e: WalletEvent) => {
@@ -164,6 +171,8 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
         stats,
         loading,
         refresh,
+        ensureLoaded,
+        loaded,
         applyEvent,
         handleWithdrawalEvent,
         registerWithdrawalHandler,

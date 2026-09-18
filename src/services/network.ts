@@ -1,5 +1,4 @@
 import NetInfo from "@react-native-community/netinfo";
-import { Config } from "../api/config";
 
 /**
  * Etat reel de la connectivite.
@@ -36,8 +35,56 @@ let reachable: boolean | null = null;
  */
 let settled = false;
 
+/**
+ * Dernier type d'interface vu (`wifi`, `cellular`, `none`…).
+ *
+ * ⚠️ Sert a reperer une BASCULE d'interface : le verdict rendu sur le WiFi ne
+ * vaut rien pour les donnees mobiles qui prennent le relais, et inversement.
+ */
+let lastType: string | null = null;
+
+
 /** Abonnes prevenus au RETOUR du reseau (pas a chaque changement d'etat). */
 const restoreListeners = new Set<() => void>();
+
+/**
+ * Requetes actuellement en vol, avec leur moyen d'annulation.
+ *
+ * ⚠️ Sans cela, une requete partie AVANT que la coupure soit connue restait
+ * pendante pour toujours : aucun timeout axios (volontaire, cf. `setupHttp`) et
+ * plus aucun paquet ne revient. Le premier fetch du catalogue etant celui qui
+ * leve le splash, l'app restait figee dessus indefiniment au demarrage sans
+ * connexion. Des que la coupure est constatee, on les avorte pour que leur
+ * `catch`/`finally` s'execute enfin.
+ */
+const inFlight = new Set<AbortController>();
+
+/** Enregistre une requete en vol. Retourne son signal d'annulation. */
+export function trackInFlight(): {
+  signal: AbortSignal;
+  done: () => void;
+} {
+  const controller = new AbortController();
+  inFlight.add(controller);
+  return {
+    signal: controller.signal,
+    done: () => inFlight.delete(controller),
+  };
+}
+
+/** Avorte tout ce qui est en vol : plus rien ne peut aboutir. */
+function abortInFlight() {
+  if (inFlight.size === 0) return;
+  console.log(`[net] abandon de ${inFlight.size} requete(s) en vol`);
+  inFlight.forEach((controller) => {
+    try {
+      controller.abort();
+    } catch {
+      // Un abort qui echoue ne doit pas empecher les suivants.
+    }
+  });
+  inFlight.clear();
+}
 
 /**
  * Abonnes prevenus a CHAQUE changement d'etat, dans les deux sens.
@@ -68,6 +115,9 @@ export function onNetworkStateChange(
 /** Diffuse l'etat courant aux abonnes d'affichage. */
 function emitState() {
   const online = reachable !== false;
+  // Hors ligne : rien de ce qui est parti ne peut aboutir. On l'avorte pour que
+  // les loaders s'eteignent au lieu de tourner sans fin.
+  if (!online) abortInFlight();
   stateListeners.forEach((listener) => {
     try {
       listener(online);
@@ -93,26 +143,37 @@ export function onNetworkRestored(listener: () => void): () => void {
 }
 
 /**
- * Adresse sondee pour trancher `isInternetReachable`.
+ * Cible des sondes : l'endpoint de detection de portail captif de Cloudflare.
+ * Reponse 204, sans corps, servie par un CDN mondial.
  *
- * ⚠️ Sans cette configuration, NetInfo sonde l'origine de la page — en dev web,
- * c'est Metro lui-meme (`localhost:8081`). Chaque sonde traversait alors le
- * middleware de dev, qui relancait un bundle ; le bundle faisait echouer la
- * sonde suivante, NetInfo basculait `reachable` false → true, `onNetworkRestored`
- * relancait l'app, et le cycle repartait. D'ou le rebundle infini, les
- * rechargements de page en rafale et les `Socket connected` a repetition.
+ * Mesure comparative depuis le reseau de dev (3 tirs chacun) : Cloudflare
+ * 0,43-0,49 s · gstatic 0,53-0,55 s · captive.apple 1,0-1,1 s ·
+ * apple.com/library/test 1,2-3,5 s. Cloudflare est le plus rapide ET le plus
+ * regulier — la regularite compte autant que la vitesse, puisqu'un seuil fixe
+ * tranche sur ce delai.
  *
- * On pointe donc la sonde vers le backend, qui n'a rien a voir avec le serveur
- * de dev. `/settings/app-version` est public (pas d'auth) et repond ~166 o.
+ * ⚠️ On ne sonde PAS le backend yaammoo. Il est heberge sur Fly.io, qui endort
+ * les machines : un demarrage a froid prend plusieurs secondes et la sonde
+ * concluait « pas de reseau » alors que la connexion etait parfaite — elle
+ * avortait alors toutes les requetes du boot. Et un backend en panne aurait
+ * affiche « pas de connexion » a des utilisateurs parfaitement connectes.
+ * La question posee ici est « Internet repond-il ? », pas « mon serveur
+ * repond-il ? ».
+ *
+ * ⚠️ Il faut aussi une adresse EXPLICITE pour NetInfo : par defaut il sonde
+ * l'origine de la page — en dev web, Metro lui-meme (`localhost:8081`). Chaque
+ * sonde relancait alors un bundle, qui faisait echouer la suivante, d'ou un
+ * rebundle infini et des reconnexions socket en rafale.
  */
-const REACHABILITY_URL = `${Config.apiUrl}/settings/app-version`;
+const PROBE_URL = "https://cp.cloudflare.com/generate_204";
 
 /** Demarre l'ecoute. Appele une seule fois au boot, depuis `setupHttp`. */
 export function startNetworkWatch() {
   NetInfo.configure({
-    reachabilityUrl: REACHABILITY_URL,
+    reachabilityUrl: PROBE_URL,
     // La sonde ne lit pas le corps : le code HTTP suffit a trancher.
-    reachabilityTest: async (response) => response.status === 200,
+    // `generate_204` repond 204, pas 200.
+    reachabilityTest: async (response) => response.status === 204,
     // Intervalles volontairement larges : la sonde est un filet de securite,
     // les vrais changements d'interface arrivent par evenement systeme.
     reachabilityLongTimeout: 60 * 1000,
@@ -121,15 +182,28 @@ export function startNetworkWatch() {
   });
 
   NetInfo.addEventListener((state) => {
+    // ⚠️ Un CHANGEMENT d'interface invalide le verdict precedent : passer du
+    // WiFi (qui marchait) aux donnees mobiles (sans forfait) heritait de l'etat
+    // « en ligne » et ne detectait jamais la coupure. L'ancienne interface ne
+    // dit rien de la nouvelle, il faut re-sonder.
+    const switched = state.type !== lastType;
+    lastType = state.type;
+
     // `isConnected === false` est un fait materiel (aucune interface active) :
     // il tranche sans attendre la sonde.
     let next: boolean | null;
     if (state.isConnected === false) {
       next = false;
     } else if (state.isInternetReachable === null) {
-      // Sonde non aboutie : on garde le dernier etat certain plutot que de
-      // repasser en « indetermine », qui vaudrait feu vert.
-      next = settled ? reachable : null;
+      // Sonde non aboutie. Sur un changement d'interface on ne conserve PAS
+      // l'ancien verdict : il portait sur un autre lien.
+      next = switched ? null : settled ? reachable : null;
+      if (switched) {
+        settled = false;
+        // Cadence serree jusqu'a ce que la nouvelle interface soit tranchee.
+        startProbeLoop(PROBE_FAST_MS);
+        probe();
+      }
     } else {
       next = Boolean(state.isConnected && state.isInternetReachable);
     }
@@ -182,48 +256,95 @@ export function startNetworkWatch() {
  * restait invisible jusqu'a sa prochaine action. L'etat doit etre connu A TOUT
  * INSTANT pour qu'un bandeau puisse s'afficher de lui-meme.
  */
+/** Une seule sonde a la fois : a 2 s d'intervalle elles se chevaucheraient. */
+let probing = false;
+
+/** Echecs de sonde consecutifs, remis a zero des qu'une reussit. */
+let failures = 0;
+
+/** Nombre d'echecs consecutifs exiges avant de declarer la coupure. */
+const FAILURES_BEFORE_OFFLINE = 2;
+
 function probe() {
-  void NetInfo.refresh()
-    .then((state) => {
-      // `refresh()` force une vraie requete sortante et attend son verdict :
-      // c'est ce qui distingue « interface active » de « trafic qui passe ».
-      const next =
-        state.isConnected === false
-          ? false
-          : state.isInternetReachable === null
-            ? settled
-              ? reachable
-              : null
-            : Boolean(state.isConnected && state.isInternetReachable);
+  if (probing) return;
+  probing = true;
 
-      console.log(
-        `[net] sonde type=${state.type} connected=${state.isConnected} reachable=${state.isInternetReachable} → ${next} (etat=${reachable}, cadence=${probeMs}ms)`,
-      );
+  // ⚠️ On ne passe PAS par `NetInfo.refresh()` : sa sonde rendait
+  // `isInternetReachable: null` indefiniment (constate en boucle dans les logs),
+  // donc aucun verdict n'etait jamais rendu et `isOnline()` laissait partir des
+  // requetes qui restaient pendantes — splash fige alors que le reseau marchait.
+  // Une requete faite ici est tranchee par nous, dans un delai que l'on maitrise.
+  const controller = new AbortController();
+  const killer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
 
-      if (next === null || next === reachable) return;
-
-      const restored = reachable === false && next === true;
-      reachable = next;
-      settled = true;
-      emitState();
-
-      if (restored) {
-        restoreListeners.forEach((listener) => {
-          try {
-            listener();
-          } catch {
-            // Un abonne qui echoue ne doit pas priver les suivants du signal.
-          }
-        });
-      }
-    })
-    .catch(() => {
-      // Un echec de sonde EST l'information : le reseau ne passe pas.
-      if (reachable === false) return;
-      reachable = false;
-      settled = true;
-      emitState();
+  void fetch(PROBE_URL, {
+    method: "GET",
+    signal: controller.signal,
+    // Le cache masquerait une coupure en rejouant une reponse deja recue.
+    cache: "no-store",
+  })
+    .then((response) => settle(response.ok))
+    .catch(() => settle(false))
+    .finally(() => {
+      clearTimeout(killer);
+      probing = false;
     });
+}
+
+/**
+ * Applique un verdict FERME rendu par la sonde.
+ *
+ * Separe de `probe()` pour que l'echec (`catch`) et le succes suivent exactement
+ * le meme chemin d'etat.
+ */
+function settle(next: boolean) {
+  // ⚠️ Une bascule hors-ligne exige DEUX echecs consecutifs. Sur un seul, une
+  // sonde malchanceuse (DNS lent, reveil de radio, requete perdue) suffisait a
+  // declarer la coupure et a avorter toutes les requetes du boot, alors que la
+  // connexion etait parfaite. Le retour en ligne, lui, est applique tout de
+  // suite : rien a perdre a croire une bonne nouvelle verifiee.
+  if (!next && reachable !== false) {
+    failures += 1;
+    if (failures < FAILURES_BEFORE_OFFLINE) {
+      console.log(
+        `[net] sonde en echec ${failures}/${FAILURES_BEFORE_OFFLINE}, on attend confirmation`,
+      );
+      settled = true;
+      return;
+    }
+  } else {
+    failures = 0;
+  }
+
+  console.log(
+    `[net] sonde → ${next} (etat=${reachable}, cadence=${probeMs}ms)`,
+  );
+
+  // Verdict ferme. La cadence serree ne sert qu'a LEVER un doute : une fois
+  // qu'on sait qu'on est en ligne, la sonde redevient un filet, que le socket
+  // soit connecte ou non.
+  //
+  // ⚠️ Conditionner ce relachement au seul socket laissait la sonde a 2 s
+  // indefiniment quand le backend etait injoignable (socket en `connect_error`
+  // en boucle) alors que le reseau, lui, repondait parfaitement.
+  settled = true;
+  if (next) startProbeLoop(PROBE_IDLE_MS);
+
+  if (next === reachable) return;
+
+  const restored = reachable === false && next === true;
+  reachable = next;
+  emitState();
+
+  if (restored) {
+    restoreListeners.forEach((listener) => {
+      try {
+        listener();
+      } catch {
+        // Un abonne qui echoue ne doit pas priver les suivants du signal.
+      }
+    });
+  }
 }
 
 /** Handle de la boucle, pour ne jamais en demarrer deux. */
@@ -234,6 +355,19 @@ let probeTimer: ReturnType<typeof setInterval> | null = null;
  * connexion socket, et apres une coupure.
  */
 const PROBE_FAST_MS = 2 * 1000;
+
+/**
+ * Delai au-dela duquel la sonde conclut « ca ne passe pas ».
+ *
+ * ⚠️ Ce n'est PAS un timeout applicatif : il ne coupe aucune requete de l'app
+ * (aucune n'en porte, cf. `setupHttp`). Il ne borne que la sonde elle-meme, qui
+ * doit bien trancher a un moment — sans quoi elle reste sans verdict, ce qui
+ * etait exactement le bug precedent.
+ *
+ * 3 s = ~6x le temps de reponse mesure de la cible (~0,5 s). Large pour absorber
+ * un reveil de radio ou un DNS lent, court pour que le verdict tombe vite.
+ */
+const PROBE_TIMEOUT_MS = 3 * 1000;
 
 /**
  * Cadence de filet, socket connecte.

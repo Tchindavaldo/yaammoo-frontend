@@ -39,7 +39,8 @@ export interface WithdrawalEvent {
 interface MerchantWalletContextType {
   stats: WalletStats | null;
   loading: boolean;
-  refresh: (showLoading?: boolean) => Promise<void>;
+  /** Renvoie `false` en cas d'echec (voir `useLazyFetch`). */
+  refresh: (showLoading?: boolean) => Promise<void | boolean>;
   /** Declenche le premier chargement. A appeler au montage de l'ecran. */
   ensureLoaded: () => void;
   /** `false` tant que la donnee n'a jamais ete chargee. */
@@ -68,13 +69,18 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
   // Utilisé quand un event socket arrive alors que stats===null : on rattrape la
   // donnée sans faire clignoter le loader natif de la liste.
   const refresh = useCallback(async (showLoading = true) => {
-    if (!userData) return;
+    // Rien n'a ete charge : `false` pour que la demande reste rearmee.
+    if (!userData) return false;
     if (showLoading) setLoading(true);
     try {
       const data = await walletStatsService.getStats("month");
       setStats(data);
+      return true;
     } catch (err) {
       console.error("Wallet stats error:", err);
+      // `false` rearme `useLazyFetch` : revenir sur l'ecran relancera le
+      // chargement au lieu de rester bloque sur l'erreur.
+      return false;
     } finally {
       if (showLoading) setLoading(false);
     }

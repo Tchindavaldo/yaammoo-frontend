@@ -22,6 +22,9 @@ export function useAppVersionGate() {
   const [checked, setChecked] = useState(false);
 
   const check = useCallback(async () => {
+    // Mesure : avec `/fastFood/all`, c'est l'une des deux seules requetes
+    // autorisees sous le splash.
+    const startedAt = Date.now();
     try {
       const { data } = await axios.get(`${Config.apiUrl}/settings/app-version`);
       setGate(data?.data ?? null);
@@ -29,6 +32,9 @@ export function useAppVersionGate() {
       console.error("[appVersion] vérification impossible :", error);
       setGate(null);
     } finally {
+      console.log(
+        `[boot] /settings/app-version en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
+      );
       setChecked(true);
     }
   }, []);

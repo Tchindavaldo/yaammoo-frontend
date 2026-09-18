@@ -9,7 +9,8 @@ interface WalletContextType {
   transactions: Transaction[];
   loading: boolean;
   error: string | null;
-  refresh: (showLoading?: boolean) => Promise<void>;
+  /** Renvoie `false` en cas d'echec (voir `useLazyFetch`). */
+  refresh: (showLoading?: boolean) => Promise<void | boolean>;
   /** Declenche le premier chargement. A appeler au montage de l'ecran. */
   ensureLoaded: () => void;
   /** `false` tant que la donnee n'a jamais ete chargee → afficher un squelette. */
@@ -29,16 +30,21 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const userId = userData?.uid;
 
   const fetchData = useCallback(async (showLoading = true) => {
-    if (!userId) return;
+    // Rien n'a ete charge : `false` pour que la demande reste rearmee.
+    if (!userId) return false;
 
     if (showLoading) setLoading(true);
     setError(null);
     try {
       const data = await walletService.getTransactions(userId);
       setTransactions(data);
+      return true;
     } catch (err) {
       console.error('Wallet fetch error:', err);
       setError('Erreur lors du chargement du portefeuille');
+      // `false` rearme `useLazyFetch` : revenir sur l'ecran relancera le
+      // chargement au lieu de rester bloque sur l'erreur.
+      return false;
     } finally {
       if (showLoading) setLoading(false);
     }

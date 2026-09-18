@@ -23,7 +23,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * les composants d'interface).
  */
 export function useLazyFetch(
-  fetcher: (showLoading?: boolean) => Promise<void>,
+  /**
+   * Le chargement. Renvoyer `false` signale un ECHEC : la demande est alors
+   * rearmee, et revenir sur l'ecran relance le chargement. Ne rien renvoyer vaut
+   * succes.
+   */
+  fetcher: (showLoading?: boolean) => Promise<void | boolean>,
   /**
    * Le fetch peut-il aboutir ? Typiquement `!!userId` : les `fetchData` des
    * contextes sortent sur `if (!userId) return` sans rien charger.
@@ -57,7 +62,26 @@ export function useLazyFetch(
   const run = useCallback(() => {
     started.current = true;
     pending.current = false;
-    void fetcherRef.current().finally(() => setLoaded(true));
+
+    const settle = (ok: boolean) => {
+      // ⚠️ ECHEC : on REARME. Sans cela, un premier chargement rate (reseau
+      // coupe au demarrage, backend momentanement injoignable) condamnait
+      // l'ecran pour toute la session — `started` restait vrai, donc revenir
+      // sur la page ne relancait rien, et l'utilisateur n'avait plus que le
+      // pull-to-refresh pour s'en sortir.
+      if (ok) setLoaded(true);
+      else started.current = false;
+    };
+
+    void fetcherRef
+      .current()
+      // ⚠️ Les `fetchData` des contextes attrapent leurs propres erreurs et
+      // resolvent normalement : l'absence d'exception ne prouve RIEN. Un
+      // fetcher qui renvoie explicitement `false` signale son echec ; celui qui
+      // ne renvoie rien (`undefined`) est considere comme ayant abouti, pour
+      // rester compatible avec les `fetchData` existants.
+      .then((ok) => settle(ok !== false))
+      .catch(() => settle(false));
   }, []);
 
   const ensureLoaded = useCallback(() => {

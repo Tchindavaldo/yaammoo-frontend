@@ -290,6 +290,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     const myRun = isFirstPage ? ++runIdRef.current : runIdRef.current;
     /** Seule une recherche a un résultat à protéger d'une réponse tardive. */
     const guarded = !!q;
+    const startedAt = Date.now();
     try {
       if (isFirstPage) setLoading(true);
       else setLoadingMore(true);
@@ -366,6 +367,14 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error fetching fast foods:", err);
       setError("Connection internet indisponible, vérifiez votre réseau");
     } finally {
+      // Mesure du chargement qui LEVE LE SPLASH : c'est le chemin critique du
+      // demarrage, la seule requete dont l'affichage depend vraiment.
+      if (isFirstPage && !hasLoadedOnce) {
+        console.log(
+          `[boot] /fastFood/all en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
+        );
+      }
+
       // `hasLoadedOnce` pilote la revelation de (tabs) : une reponse recue,
       // quelle qu'elle soit, prouve que le chargement a eu lieu.
       setHasLoadedOnce(true);

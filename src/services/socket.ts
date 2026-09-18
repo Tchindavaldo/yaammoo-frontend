@@ -4,6 +4,8 @@ import { Config } from '../api/config';
 class SocketService {
     private socket: Socket;
     private paymentHandler: ((data: any) => void) | null = null;
+    /** Horodatage du dernier `connect()`, pour mesurer la duree d'etablissement. */
+    private connectStartedAt: number | null = null;
 
     constructor() {
         this.socket = io(Config.apiUrl, {
@@ -13,6 +15,13 @@ class SocketService {
             // retente le meme transport en boucle et n'emet que des
             // `connect_error`, alors qu'une premiere connexion avait reussi.
             transports: ['websocket', 'polling'],
+            // ⚠️ Pas de connexion a l'import du module : celui-ci est evalue
+            // sous le splash, ou seules la version et le catalogue ont le droit
+            // de partir. La poignee de main socket.io s'y ajoutait, et ses
+            // `connect_error` (20 s de timeout par defaut) polluaient le
+            // demarrage. `useSocketEvents` appelle `connect()` une fois l'app
+            // montee.
+            autoConnect: false,
             // Le repli ne sert a rien si le client ne retente jamais l'upgrade.
             upgrade: true,
             // Reconnexion espacee au lieu d'une rafale : sans plafond, les
@@ -28,7 +37,13 @@ class SocketService {
         this.socket.on('connect', () => {
             // Le transport reellement retenu : `websocket` ou repli `polling`.
             const transport = (this.socket as any).io?.engine?.transport?.name;
-            console.log('✅ Socket connected', this.socket.id, transport);
+            const ms = this.connectStartedAt
+                ? Date.now() - this.connectStartedAt
+                : null;
+            console.log(
+                `✅ Socket connected ${this.socket.id} ${transport}` +
+                (ms !== null ? ` en ${(ms / 1000).toFixed(2)}s` : ''),
+            );
         });
         // `disconnect` porte la RAISON de la chute, que `connect_error` n'a pas.
         // Sans lui on ne voyait que les echecs de reconnexion, jamais la cause.
@@ -36,7 +51,19 @@ class SocketService {
             console.log('⚠️ Socket disconnect:', reason);
         });
         this.socket.on('connect_error', (err) => {
-            console.log('❌ Socket connect_error:', err?.message);
+            const ms = this.connectStartedAt
+                ? Date.now() - this.connectStartedAt
+                : null;
+            console.log(
+                `❌ Socket connect_error: ${err?.message}` +
+                (ms !== null ? ` apres ${(ms / 1000).toFixed(2)}s` : ''),
+            );
+        });
+
+        // `connect()` peut venir d'ici (useSocketEvents) comme de la
+        // reconnexion automatique : on horodate les deux via le manager.
+        (this.socket as any).io?.on?.('reconnect_attempt', () => {
+            this.connectStartedAt = Date.now();
         });
 
         // Verdict de paiement Mobile Money — écouté ici (socket vivant de l'app)
@@ -54,6 +81,16 @@ class SocketService {
 
     public getSocket() {
         return this.socket;
+    }
+
+    /**
+     * Ouvre la connexion en horodatant le depart, pour que le `connect` (ou le
+     * `connect_error`) puisse dire en combien de temps le backend a repondu.
+     */
+    public connect() {
+        if (this.socket.connected) return;
+        this.connectStartedAt = Date.now();
+        this.socket.connect();
     }
 
     public registerPaymentHandler(handler: (data: any) => void) {

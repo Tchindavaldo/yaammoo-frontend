@@ -23,7 +23,8 @@ interface OrderContextType {
   /** Declenche le premier chargement. Appele par le home. */
   ensureLoaded: () => void;
   error: string | null;
-  refresh: (quiet?: boolean) => Promise<void>;
+  /** Renvoie `false` en cas d'echec (voir `useLazyFetch`). */
+  refresh: (quiet?: boolean) => Promise<void | boolean>;
   addOrder: (orderData: any) => Promise<{ success: boolean; message?: string }>;
   deleteOrder: (id: string) => Promise<boolean>;
   updateQuantity: (id: string, newQty: number) => Promise<boolean>;
@@ -96,7 +97,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   const fetchOrders = useCallback(async (quiet = false) => {
-    if (!userData) return;
+    // Rien n'a ete charge : `false` pour que la demande reste rearmee.
+    if (!userData) return false;
     try {
       if (!quiet) {
         setLoading(true);
@@ -115,9 +117,13 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setOrders(response.data.data);
         void persistCache(response.data.data);
       }
+      return true;
     } catch (err: any) {
       console.error("Error fetching orders:", err);
       if (!quiet) setError("Erreur réseau");
+      // `false` rearme `useLazyFetch` : le prochain passage sur une page de
+      // commandes relancera le chargement au lieu de rester sur l'erreur.
+      return false;
     } finally {
       if (!quiet) {
         setLoading(false);

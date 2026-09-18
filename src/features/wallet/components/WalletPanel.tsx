@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import { WalletTransactionItem } from '@/src/features/wallet/components/WalletTransactionItem';
 import { useWallet } from '@/src/features/wallet/context/WalletContext';
+import { WalletTransactionSkeleton } from '@/src/features/wallet/components/WalletTransactionSkeleton';
 
 type FilterType = 'all' | 'credit' | 'debit' | 'transfer';
 
@@ -27,7 +28,7 @@ interface WalletPanelProps {
 
 export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOffset = 0 }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
-  const { transactions, loading, refresh, ensureLoaded } = useWallet();
+  const { transactions, loading, refresh, ensureLoaded, loaded } = useWallet();
 
   // Le portefeuille ne se charge plus au boot : c'est cet ecran qui le demande,
   // a son ouverture.
@@ -110,12 +111,22 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
         data={filteredTransactions}
         renderItem={({ item }) => <WalletTransactionItem transaction={item} />}
         keyExtractor={(item) => item.id}
-        refreshing={loading}
+        // ⚠️ `loaded &&` : le premier chargement affiche le squelette, pas la
+        // roue du pull-to-refresh, qui ne doit apparaitre que sur un geste.
+        refreshing={loaded && loading}
         onRefresh={refresh}
         progressViewOffset={topOffset}
         scrollIndicatorInsets={{ top: topOffset }}
         contentContainerStyle={[styles.listContent, { paddingTop: topOffset + 10 }]}
         ListEmptyComponent={
+          !loaded ? (
+            <>
+              <WalletTransactionSkeleton />
+              <WalletTransactionSkeleton />
+              <WalletTransactionSkeleton />
+              <WalletTransactionSkeleton />
+            </>
+          ) : (
           <View style={styles.emptyState}>
             <Ionicons name="receipt-outline" size={60} color={Theme.colors.gray[200]} />
             <Text style={styles.emptyTitle}>Pas de transaction</Text>
@@ -126,6 +137,7 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
               <Text style={styles.emptyBtnText}>Passer une commande</Text>
             </TouchableOpacity>
           </View>
+          )
         }
       />
     </View>

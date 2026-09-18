@@ -1,4 +1,5 @@
 import { WalletDayStatItem } from "@/src/features/merchant/components/WalletDayStatItem";
+import { WalletDayStatSkeleton } from "@/src/features/merchant/components/WalletDayStatSkeleton";
 import { WithdrawOverlay } from "@/src/features/merchant/components/WithdrawOverlay";
 import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useWithdraw";
 import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
@@ -50,6 +51,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     loading,
     refresh: refreshStats,
     ensureLoaded,
+    loaded,
   } = useMerchantWallet();
 
   // Les stats ne se chargent plus au boot : cet ecran les demande a son
@@ -219,12 +221,22 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         data={series}
         renderItem={({ item }) => <WalletDayStatItem stat={item} />}
         keyExtractor={(item) => item.period}
-        refreshing={loading}
+        // ⚠️ `loaded &&` : le premier chargement affiche le squelette, pas la
+        // roue du pull-to-refresh, qui ne doit apparaitre que sur un geste.
+        refreshing={loaded && loading}
         onRefresh={refreshAll}
         progressViewOffset={listTopPad}
         scrollIndicatorInsets={{ top: listTopPad }}
         contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + Theme.spacing.sm }]}
         ListEmptyComponent={
+          !loaded ? (
+            <>
+              <WalletDayStatSkeleton />
+              <WalletDayStatSkeleton />
+              <WalletDayStatSkeleton />
+              <WalletDayStatSkeleton />
+            </>
+          ) : (
           <View style={styles.emptyState}>
             <Ionicons
               name="receipt-outline"
@@ -244,6 +256,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
               <Text style={styles.emptyBtnText}>Passer une commande</Text>
             </TouchableOpacity>
           </View>
+          )
         }
       />
 

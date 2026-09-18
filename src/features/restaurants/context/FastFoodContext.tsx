@@ -31,6 +31,13 @@ import React, {
 const PAGE_SIZE = 5;
 
 /**
+ * TEST [ROW] — `false` = `resetToFirstPage()` ne tronque plus (mesure du scroll
+ * sans destruction). Remettre `true` avant tout merge : sans troncature la
+ * liste garde toutes ses pages en memoire.
+ */
+const RESET_ENABLED = true;
+
+/**
  * Plafond de `limit` IMPOSE par le backend (`GET /fastFood/all`). Demander plus
  * n'echoue pas : le serveur rabote silencieusement, d'ou des boutiques non
  * rafraichies sans le moindre signal. Voir `architecture/restaurants.md`.
@@ -294,6 +301,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     const guarded = !!q;
     const startedAt = Date.now();
     try {
+      // SONDE [ROW] : un fetch premiere page hors boot = remplacement brutal
+      // de la liste (meme effet qu'une troncature). A retirer avec la sonde.
+      if (isFirstPage) console.log(`[ROW] FETCH-P1 q=${q ?? ""}`);
       if (isFirstPage) setLoading(true);
       else setLoadingMore(true);
       setError(null);
@@ -532,6 +542,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    * declencher un rendu pour rien reintroduirait le probleme qu'on corrige.
    */
   const resetToFirstPage = useCallback(() => {
+    if (!RESET_ENABLED) return;
     // ⚠️ Les effets de bord sont ICI, PAS dans l'updater de `setFastFoods`.
     // Un updater n'est pas garanti execute une seule fois : React le rejoue
     // (StrictMode, rendu concurrent, re-rendu declenche par un contexte
@@ -539,6 +550,11 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     // une simple notification entrante les reposait apres coup et gelait la
     // pagination. Ne pas les y remettre.
     if (fastFoodsLenRef.current <= PAGE_SIZE) return;
+
+    // SONDE [ROW] : qui tronque pendant le scroll ? A retirer avec la sonde.
+    console.log(
+      `[ROW] RESET-TRONCATURE len=${fastFoodsLenRef.current} seq=${resetSeqRef.current + 1}`,
+    );
 
     // Verrou leve au premier scroll reel (`notifyUserScroll`) : seule la
     // demande automatique nee de la troncature est refusee.

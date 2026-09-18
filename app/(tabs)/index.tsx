@@ -185,8 +185,15 @@ export default function HomeScreen() {
     [notifyUserScroll, cancelPendingLoadMore],
   );
 
-  const handleMomentumEnd = useCallback(() => {
-    if (atTopRef.current) resetToFirstPage();
+  const handleMomentumEnd = useCallback((e: any) => {
+    // FIX : `atTopRef` ment — un `onScroll` à y≈0 se glisse pendant le scroll
+    // vers le bas (mesuré : MOMENTUM atTop=true en bas de liste → RESET →
+    // DEMONTAGE en boucle). L'evenement de fin de momentum porte l'offset REEL
+    // de l'arret : c'est lui qui decide, le ref n'est que le repli.
+    const liveY = e?.nativeEvent?.contentOffset?.y;
+    const atTop = typeof liveY === "number" ? liveY <= 4 : atTopRef.current;
+    console.log(`[ROW] MOMENTUM atTop=${atTopRef.current} liveY=${liveY}`);
+    if (atTop) resetToFirstPage();
   }, [resetToFirstPage]);
 
   // ⚠️ Liberation du gel des l'arrivee de la page. Sans cet effet, `atBottom`
@@ -265,10 +272,28 @@ export default function HomeScreen() {
   // En item 0, la banniere entre dans la meme fenetre que les boutiques : la
   // liste connait enfin la hauteur reelle de son contenu et dimensionne son
   // rendu initial en consequence.
-  const listData = useMemo(
-    () => [BANNER_ITEM, ...fastFoods],
-    [fastFoods],
-  );
+  const listData = useMemo(() => {
+    const data = [BANNER_ITEM, ...fastFoods];
+    // SONDE : chaque recompute = les donnees ont change de reference. Si les
+    // vagues REBIND/DEMONTAGE coincident avec ces lignes SANS scroll, le
+    // coupable est le churn de donnees (socket/pagination), pas la liste.
+    console.log(
+      `[ROW] DATACHG n=${data.length} head=${data
+        .slice(0, 4)
+        .map((d: any) => String(d?.id ?? "?").slice(0, 4))
+        .join(",")}`,
+    );
+    // SONDE : cles dupliquees = React ne distingue plus les cellules et
+    // demonte/remonte au hasard a chaque mise a jour (pagination qui chevauche,
+    // troncature + re-append). A retirer avec la sonde [ROW].
+    const ids = data.map((d: any) => d?.id);
+    if (new Set(ids).size !== ids.length) {
+      console.log(
+        `[ROW] DOUBLONS listData: ${data.length} items, ${new Set(ids).size} uniques`,
+      );
+    }
+    return data;
+  }, [fastFoods]);
 
   // Pied de liste, quatre états :
   //  - chargement de la page suivante → indicateur ;

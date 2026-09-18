@@ -29,6 +29,9 @@ export const useRowCommitProbe = (
   if (ROW_PROBE_ENABLED) startRef.current = Date.now();
 
   const doneRef = useRef(false);
+  // Numero d'instance (pose par l'effet `[]`) pour relier chaque REBIND a sa
+  // cellule dans les logs.
+  const seqRef = useRef(0);
 
   useLayoutEffect(() => {
     if (!ROW_PROBE_ENABLED || doneRef.current) return;
@@ -39,18 +42,26 @@ export const useRowCommitProbe = (
     recordRowCommit(variant, menus, Date.now() - startRef.current, shopId);
   }, [variant, menus, shopId]);
 
-  // DEMONTAGE — la mesure qui tranche.
-  //
-  // Un recyclage reussi ne demonte RIEN : la vue est conservee et seules ses
-  // donnees changent. Si ce log apparait pendant le scroll, la cellule est bien
-  // detruite, et le `REMONTAGE` qui suit est un vrai remontage — pas un simple
-  // re-rendu. C'est la preuve directe que le recyclage ne prend pas.
+  // Cycle de vie REEL de l'instance : montage/demontage veritable uniquement.
+  // Un recyclage reussi (meme instance reutilisee pour une autre boutique) ne
+  // passe PAS par ici — voir REBIND ci-dessous.
   useLayoutEffect(() => {
     if (!ROW_PROBE_ENABLED) return;
     const id = shopId ?? "?";
     const n = ++seq;
+    seqRef.current = n;
+    console.log(`[ROW] MONTAGE-CELL variant=${variant} id=${id} (#${n})`);
     return () => {
       console.log(`[ROW] DEMONTAGE variant=${variant} id=${id} (#${n})`);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Rebinding : la cellule est recyclee vers une autre boutique, sans
+  // destruction. Des REBIND sans DEMONTAGE groupe = le recyclage marche.
+  useLayoutEffect(() => {
+    if (!ROW_PROBE_ENABLED) return;
+    console.log(
+      `[ROW] REBIND (#${seqRef.current}) variant=${variant} id=${shopId ?? "?"}`,
+    );
   }, [variant, shopId]);
 };

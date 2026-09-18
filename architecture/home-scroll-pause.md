@@ -122,9 +122,34 @@ que le squelette est invisible libere du thread pendant le scroll.
 
 ### Le symptome qui reste, et l'indice principal
 
-Les `DEMONTAGE` arrivent **GROUPES** — tous les ids en bloc, avec des numeros de
-sequence qui se suivent (#9, #8, #6, #7 puis #16, #15, #13, #14) — et **non au
+Les `DEMONTAGE` arrivent **GROUPES** — tous les ids en bloc — et **non au
 fil du scroll**.
+
+> Correction 2026-09-18 (branche `debug/home-flashlist-demontage`) : le `#n` du
+> log etait assigne au MONTAGE mais imprime au DEMONTAGE — son ordre ne prouve
+> rien. La sonde distingue desormais `MONTAGE-CELL`/`DEMONTAGE` (cycle reel,
+> deps `[]`) de `REBIND` (recyclage vers une autre boutique). Relire les logs
+> avec cette grille avant de conclure.
+>
+> Correction 2026-09-18 soir : `liveY=0` prouve que les resets sont légitimes
+> (retour en haut). Boucle fixée : `handleMomentumEnd` lit `contentOffset.y` réel.
+> 
+> Etat final (branche `debug/home-flashlist-demontage`) :
+> - **Scroll vers le bas** (loadMore) : pause ~40-110 ms = 1er montage des nouvelles
+>   cellules (inévitable — pas de cellules à recycler tant qu'elles n'ont pas existé).
+> - **Scroll vers le haut** (reset) : destruction sans coût perçu, puis remontage
+>   des 5 cellules page 1 si l'utilisateur redescend.
+> - **Scroll continu** (REBIND) : 0 ms, le recyclage FlashList MARCHE.
+> 
+> La micro-pause « ultrafine » ressentie est le 1er commit des nouvelles cellules.
+> Elle a chuté de 63-90 ms (FlatList + windowSize=5) à ~40 ms (FlashList) — plus de
+> recyclage = plus de pause *périodique*. L'indice critique reste : aucune
+> destruction groupée pendant le scroll (seuls REBIND).
+> 
+> **Livrable** : `debug/home-scroll-frein` (windowSize=15, FlatList) est OTA-fluide.
+> `feature/home-flashlist` recycle mais n'apporte pas de gain visible supérieur —
+> le goulot est le montage initial des cellules (`ScrollView` + 10-13 menus, pas de
+> virtualisation horizontale). Gain réel = traiter les rangees horizontales.
 
 **Une destruction groupee n'est pas de la virtualisation : c'est la liste
 entiere qui se reconstruit.** C'est la piste a suivre.

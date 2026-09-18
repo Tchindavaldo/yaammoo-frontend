@@ -58,6 +58,9 @@ interface CartDeliverySegmentStepProps {
   onNetworkChange?: (network: "orange" | "mtn") => void;
   /** Paiement parti : le reseau ne se change plus. */
   isBusy?: boolean;
+  /** Retrait boutique autorisé (GET /fastfood/all). `false` = card « Sur place »
+   * non cliquable, sous-texte « Retrait indisponible ». */
+  pickupAllowed?: boolean;
 }
 
 /**
@@ -90,8 +93,9 @@ export const CartDeliverySegmentStep: React.FC<
   step,
   stepCount = 4,
   network,
-  onNetworkChange,
   isBusy,
+  pickupAllowed,
+  onNetworkChange,
 }) => {
   const type = (delivery.type || "express") as GroupedDeliveryType;
   const show = (s: "group" | "type" | "infos" | "montants" | "recap") =>
@@ -253,11 +257,14 @@ export const CartDeliverySegmentStep: React.FC<
     sub: string;
     active: boolean;
     onPress: () => void;
+    /** Card affichée mais non cliquable (retrait boutique désactivé). */
+    disabled?: boolean;
   }) => (
     <TouchableOpacity
       key={c.key}
       style={[styles.choiceCard, c.active && styles.cardActive]}
       onPress={c.onPress}
+      disabled={c.disabled}
       activeOpacity={0.85}
     >
       <View style={styles.choiceDot}>
@@ -314,8 +321,14 @@ export const CartDeliverySegmentStep: React.FC<
                 key: "pickup",
                 icon: "briefcase-outline" as const,
                 title: "À la boutique",
-                sub: "Sans frais",
+                // Retrait désactivé par le marchand : card visible, NON
+                // cliquable (pas de grisée), le sous-texte l'explique.
+                sub:
+                  pickupAllowed === false
+                    ? "Retrait indisponible"
+                    : "Sans frais",
                 active: type === "aucune",
+                disabled: pickupAllowed === false,
                 onPress: () =>
                   setDelivery({ ...delivery, statut: false, type: "aucune" }),
               },
@@ -339,8 +352,12 @@ export const CartDeliverySegmentStep: React.FC<
                 key: s.key,
                 icon: s.icon,
                 title: s.label,
-                sub: s.sub,
+                sub:
+                  s.key === "aucune" && pickupAllowed === false
+                    ? "Retrait indisponible"
+                    : s.sub,
                 active: type === s.key,
+                disabled: s.key === "aucune" && pickupAllowed === false,
                 onPress: () =>
                   setDelivery({
                     ...delivery,

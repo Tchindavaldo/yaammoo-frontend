@@ -28,6 +28,7 @@ import { orderGroupKey } from "../utils/orderGroupKey";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
 import { MerchantFilterSheet } from "./MerchantFilterSheet";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
+import { MerchantOrderSkeleton } from "./MerchantOrderSkeleton";
 import { OtherDatesNotice } from "./OtherDatesNotice";
 
 // Hauteur de la barre de filtres fixée au-dessus de la navbar.
@@ -74,6 +75,27 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   onStatusChange,
   topOffset = 0,
 }) => {
+  /**
+   * Vrai uniquement quand le rafraichissement vient du GESTE de l'utilisateur.
+   *
+   * ⚠️ `loading` ne distingue pas le pull-to-refresh du rattrapage declenche par
+   * le retour dans l'app : s'en servir seul affichait la roue native ET le
+   * squelette en meme temps. On marque donc le geste ici, et chaque indicateur
+   * ne se montre que dans son cas.
+   */
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+
+  const handlePullRefresh = useCallback(() => {
+    setPullRefreshing(true);
+    onRefresh();
+  }, [onRefresh]);
+
+  // Le parent ne dit pas quand sa requete se termine : on suit `loading`, qui
+  // retombe a la fin du refetch.
+  useEffect(() => {
+    if (!loading) setPullRefreshing(false);
+  }, [loading]);
+
   // Hauteur réelle de la navbar : la barre de filtres se colle juste dessus.
   const tabBarHeight = useTabBarHeight();
   const { height: windowHeight } = useWindowDimensions();
@@ -783,13 +805,25 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           scrollIndicatorInsets={{ top: listTopPad }}
           refreshControl={
             <RefreshControl
-              refreshing={loading}
-              onRefresh={onRefresh}
+              refreshing={pullRefreshing}
+              onRefresh={handlePullRefresh}
               progressViewOffset={listTopPad}
             />
           }
         >
-          {dateFilteredOrders.length === 0 ? (
+          {/* ⚠️ Rafraîchissement en cours (retour dans l'app) : on montre le
+              squelette AVANT le test de liste vide. Sinon l'écran « Aucune
+              commande terminée » s'affichait pendant le chargement, ce qui est
+              faux — les commandes existent, elles arrivent.
+              `!pullRefreshing` : le geste a déjà sa roue native, le squelette
+              par-dessus masquerait la liste que l'utilisateur tire. */}
+          {loading && !pullRefreshing ? (
+            <>
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+            </>
+          ) : dateFilteredOrders.length === 0 ? (
             /* Rien de terminé sur la date affichée : on le dit, puis les cartes
                annoncent ce qui existe sur les autres jours (passé / futur). */
             <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>
@@ -980,15 +1014,25 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           onMomentumScrollEnd={onScrollSettled}
           refreshControl={
             <RefreshControl
-              refreshing={loading}
-              onRefresh={onRefresh}
+              refreshing={pullRefreshing}
+              onRefresh={handlePullRefresh}
               progressViewOffset={listTopPad}
             />
           }
         >
           {/* Liste principale (aujourd'hui par défaut, ou date choisie dans le
               bottom sheet de filtres — y compris une date passée). */}
-          {dateFilteredOrders.length === 0 ? (
+          {/* ⚠️ Même raison que la liste « terminées » : le squelette passe
+              AVANT le test de liste vide, sinon un « aucune commande » s'affiche
+              pendant le rafraîchissement alors qu'elles arrivent.
+              `!pullRefreshing` : le geste a déjà sa roue native. */}
+          {loading && !pullRefreshing ? (
+            <>
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+            </>
+          ) : dateFilteredOrders.length === 0 ? (
             /* Liste vide : le message centré dit ce qui manque sur la date
                affichée, les cartes disent ce qui existe sur les autres jours. */
             <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>
@@ -1035,8 +1079,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           {/* Rappel de fin de liste : des commandes existent sur d'AUTRES dates
               (jours précédents non traités, jours à venir, ou les deux). Un tap
               ouvre le sheet pour choisir la date. Liste vide → le message
-              centré porte déjà l'info, pas de doublon. */}
-          {dateFilteredOrders.length > 0 && (
+              centré porte déjà l'info, pas de doublon. Masqué aussi pendant le
+              squelette : les commandes affichées sont périmées, ce rappel le
+              serait autant. */}
+          {!(loading && !pullRefreshing) && dateFilteredOrders.length > 0 && (
             <OtherDatesNotice
               pastCount={untreatedCounts.past}
               futureCount={untreatedCounts.future}

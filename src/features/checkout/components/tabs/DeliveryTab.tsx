@@ -14,6 +14,9 @@ interface DeliveryTabProps {
   onOpenVoiceNote?: () => void;
   availableHours?: any[];
   deliveryOffer?: DeliveryOffer | null;
+  /** Retrait boutique autorisé (GET /fastfood/all). `false` = masquer la card
+   * « Aucun » (le user ne peut PAS venir prendre la cmd en boutique). */
+  pickupAllowed?: boolean;
 }
 
 export const DeliveryTab: React.FC<DeliveryTabProps> = ({
@@ -26,6 +29,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   onOpenVoiceNote,
   availableHours,
   deliveryOffer,
+  pickupAllowed,
 }) => {
   const isLocationFilled = !!delivery.address;
   const isPeriodFilled = !!delivery.hour;
@@ -398,18 +402,22 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   >
                     {selectedHour
                       ? `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
-                      : "Choisir un créneau"}
+                      : "Choisir un créneau de livraison"}
                   </Text>
                 </>
               )}
             </View>
           </TouchableOpacity>
 
+          {/* Card « Aucun » = retrait en boutique. Quand le marchand a désactivé
+            le pickup (pickupAllowed === false), elle reste affichée, NON grisée,
+            juste non cliquable, avec le sous-texte qui l'explique. */}
           <TouchableOpacity
             style={[
               styles.deliveryTypeBtn,
               delivery.type === "aucune" && styles.deliveryTypeActive,
             ]}
+            disabled={pickupAllowed === false}
             onPress={() =>
               setDelivery({ ...delivery, statut: false, type: "aucune" })
             }
@@ -429,7 +437,9 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   delivery.type === "aucune" && { color: "#ec4913" },
                 ]}
               >
-                No rush
+                {pickupAllowed === false
+                  ? "Retrait boutique indisponible"
+                  : "No rush"}
               </Text>
             </View>
           </TouchableOpacity>

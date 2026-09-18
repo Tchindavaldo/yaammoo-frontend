@@ -172,8 +172,8 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
   };
 
   const handleCreate = async () => {
-    if (!name || !number) {
-      showToast("Veuillez remplir les champs obligatoires", "error");
+    if (!name.trim()) {
+      showToast("Le champ \"Nom Boutique\" n'est pas rempli", "error");
       return;
     }
 

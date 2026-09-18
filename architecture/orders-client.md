@@ -62,6 +62,7 @@ yaammoo/src/features/orders/
 | `delivered` | `Commande[]` | Livrées |
 | `stats` | objet | Comptages et montants par statut |
 | `loading` | boolean | Chargement en cours |
+| `refreshing` | boolean | ⚠️ Un **refetch des commandes** est en cours (retour dans l'app, pull-to-refresh). Distinct de `loading`, que lèvent AUSSI `addOrder` et `buyOrders` : s'y fier pour masquer l'écran le ferait clignoter pendant un ajout au panier. C'est lui qui déclenche le skeleton plein écran de `cart.tsx` au retour au premier plan — le pull-to-refresh en est exclu, ayant déjà son indicateur natif. |
 | `error` | string\|null | Erreur réseau |
 
 **Actions exposées** :

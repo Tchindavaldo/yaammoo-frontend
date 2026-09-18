@@ -28,7 +28,11 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     });
     return qtys;
   });
-  const [delivery, setDelivery] = useState<Livraison>(new Livraison(false, 0));
+  // Défaut = livrée À L'HEURE (créneau à choisir), pas « aucune » : le retrait
+  // en boutique est un choix explicite du user, pas l'état initial.
+  const [delivery, setDelivery] = useState<Livraison>(
+    new Livraison(true, 0, "standard"),
+  );
   const [paymentPhone, setPaymentPhone] = useState('');
   const [lastOrderId, setLastOrderId] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(!initialOrder);
@@ -93,7 +97,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     setSelectedPackaging([]);
     setSelectedDrinks([]);
     setDrinkQuantities({});
-    setDelivery(new Livraison(false, 0));
+    setDelivery(new Livraison(true, 0, "standard"));
     setPaymentPhone('');
     setPaymentState('network_select');
     setLastOrderId(null);

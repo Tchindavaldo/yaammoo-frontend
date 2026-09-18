@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Config } from "@/src/api/config";
+import { sinceBoot } from "@/src/utils/bootClock";
+import { trackBootStep } from "@/src/services/bootTelemetry";
 
 export interface AppVersionGate {
   clientVersion: string;
@@ -22,6 +24,9 @@ export function useAppVersionGate() {
   const [checked, setChecked] = useState(false);
 
   const check = useCallback(async () => {
+    // Mesure : avec `/fastFood/all`, c'est l'une des deux seules requetes
+    // autorisees sous le splash.
+    const startedAt = Date.now();
     try {
       const { data } = await axios.get(`${Config.apiUrl}/settings/app-version`);
       setGate(data?.data ?? null);
@@ -29,6 +34,11 @@ export function useAppVersionGate() {
       console.error("[appVersion] vérification impossible :", error);
       setGate(null);
     } finally {
+      const elapsed = Date.now() - startedAt;
+      console.log(
+        `[boot t=${sinceBoot()}s] /settings/app-version en ${(elapsed / 1000).toFixed(2)}s`,
+      );
+      trackBootStep("appVersion", elapsed);
       setChecked(true);
     }
   }, []);

@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import axios from "axios";
 import { auth } from "@/src/services/firebase";
@@ -6,6 +13,7 @@ import { storage } from "@/src/utils/storage";
 import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
 import { Config } from "@/src/api/config";
+import { sinceBoot } from "@/src/utils/bootClock";
 
 interface AuthContextType {
   user: User | null;
@@ -13,6 +21,11 @@ interface AuthContextType {
   loading: boolean;
   setUserData: (data: Users | null) => void;
   deleteAccount: () => Promise<void>;
+  /**
+   * Rafraichit le profil depuis l'API, une fois par session. Appele par le home :
+   * sous le splash, le profil en cache suffit.
+   */
+  ensureProfileRefreshed: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,6 +36,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<Users | null>(null);
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Le profil a-t-il deja ete rafraichi depuis l'API dans cette session ?
+   * Evite qu'un remontage du home ne relance la requete.
+   */
+  const profileRefreshed = useRef(false);
+
+  /**
+   * Rafraichit le profil depuis l'API, une seule fois par session.
+   *
+   * ⚠️ Appele par le HOME, pas au boot : sous le splash, seules `/fastFood/all`
+   * et `/settings/app-version` ont le droit de partir. Quand un cache est
+   * present, le profil affiche est deja le bon — verifier qu'il a change peut
+   * attendre que l'app soit a l'ecran.
+   */
+  const ensureProfileRefreshed = useCallback(async () => {
+    if (profileRefreshed.current) return;
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    profileRefreshed.current = true;
+
+    try {
+      console.log(`[boot t=${sinceBoot()}s] refresh profil (home)`);
+      const apiData = await userFirestore.getUser(firebaseUser);
+      if (apiData) {
+        console.log("✅ [AuthContext] Profil rafraîchi depuis l'API");
+        setUserData(apiData);
+        await storage.set("user_data", apiData);
+      }
+    } catch (error) {
+      console.error("❌ [AuthContext] Refresh profil échoué:", error);
+      // Hors-ligne : on garde le cache deja affiche (rien a faire).
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -50,6 +97,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // 2. REFRESH EN ARRIÈRE-PLAN : tenter de récupérer la version fraîche.
         //    Ne bloque pas l'UI si on a déjà affiché le cache.
+        //
+        // ⚠️ Cache frais : on ne rafraîchit PAS ici. Sous le splash, seules
+        // `/fastFood/all` et `/settings/app-version` ont le droit de partir —
+        // le profil affiché est déjà le bon. Le rafraîchissement est déclenché
+        // par le home, via `ensureProfileRefreshed()`.
+        // Sans cache, en revanche, on attend l'API : c'est elle qui débloque
+        // l'app.
+        if (hasFreshCache) {
+          setLoading(false);
+          // Deja rafraichi ? Non — mais c'est le home qui le demandera.
+          return;
+        }
+
+        // Pas de cache : le profil vient d'etre charge depuis l'API, le home
+        // n'a rien a redemander.
+        profileRefreshed.current = true;
+
         try {
           console.log("🔵 [AuthContext] Refresh profil depuis l'API...");
           const apiData = await userFirestore.getUser(firebaseUser);
@@ -76,6 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         );
         setUserData(null);
         await storage.remove("user_data");
+        // Prochaine connexion : le home devra redemander le profil.
+        profileRefreshed.current = false;
         setLoading(false);
       }
       console.log("🔵 [AuthContext] Loading terminé");
@@ -135,7 +201,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <AuthContext.Provider
-      value={{ user, userData, loading, setUserData: handleUpdateUserData, deleteAccount }}
+      value={{
+        user,
+        userData,
+        loading,
+        setUserData: handleUpdateUserData,
+        deleteAccount,
+        ensureProfileRefreshed,
+      }}
     >
       {children}
     </AuthContext.Provider>

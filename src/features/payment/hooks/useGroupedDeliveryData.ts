@@ -79,5 +79,7 @@ export const useGroupedDeliveryData = (fastFoodId?: string) => {
     orderLeadTime: ffData?.orderLeadTime || 0,
     advanceDays: ffData?.advanceDays as number | undefined,
     deliveryOffer: listedFf?.deliveryOffer ?? null,
+    /** Retrait boutique autorisé ? (/all d'abord, sinon cache /:id). */
+    pickupAllowed: listedFf?.pickupAllowed ?? ffData?.pickupAllowed,
   };
 };

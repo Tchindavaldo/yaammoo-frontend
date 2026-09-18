@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { storage } from "../../../utils/storage";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 
 export interface Notification {
   id: string;
@@ -27,6 +28,8 @@ interface NotificationContextType {
   refresh: (quiet?: boolean) => Promise<void>;
   markAsRead: (id: string, idGroup?: string) => Promise<void>;
   addFromSocket: (notif: Notification) => void;
+  /** Declenche le premier chargement. Appele par le home. */
+  ensureLoaded: () => void;
   isRead: (notif: Notification) => boolean;
 }
 
@@ -159,18 +162,34 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   }, [userData, flushReadQueue, persistCache]);
 
-  // Premier chargement après login (silencieux). Plus de refresh auto sur socket/push.
+  // Changement de compte : le state ET le cache storage sont purges. Le cache
+  // `notifications_cache` n'est pas indexe par compte : sans purge, le compte
+  // suivant s'hydrate avec les notifications du precedent au montage.
+  useResetOnUserChange(userData?.uid, () => {
+    hasFreshDataRef.current = false;
+    pendingReadIdsRef.current = new Set();
+    setNotifications([]);
+    setError(null);
+    storage.remove(CACHE_KEY).catch(() => {});
+  });
+
+  // Premier chargement (silencieux) déclenché par le HOME, plus au montage :
+  // sous le splash, seules `/fastFood/all` et `/settings/app-version` ont le
+  // droit de partir. Le badge tient sur le cache hydraté plus haut en attendant.
+  //
+  // Conditionné à `uid` : `userData` peut arriver incomplet, et consommer le
+  // flag trop tôt empêcherait définitivement le premier chargement.
   const didInitialFetchRef = useRef(false);
+  const ensureLoaded = useCallback(() => {
+    if (!userData?.uid || didInitialFetchRef.current) return;
+    didInitialFetchRef.current = true;
+    fetchNotifications(true);
+  }, [userData, fetchNotifications]);
+
   useEffect(() => {
-    // Conditionné à `uid` : `userData` peut arriver incomplet, et consommer le
-    // flag trop tôt empêcherait définitivement le premier chargement.
-    if (userData?.uid && !didInitialFetchRef.current) {
-      didInitialFetchRef.current = true;
-      fetchNotifications(true);
-    }
     // Déconnexion : on réarme pour que la prochaine connexion refetch.
     if (!userData?.uid) didInitialFetchRef.current = false;
-  }, [userData, fetchNotifications]);
+  }, [userData]);
 
   const markAsRead = useCallback(async (id: string, idGroup?: string) => {
     if (!userData) return;
@@ -258,6 +277,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     refresh: fetchNotifications,
     markAsRead,
     addFromSocket,
+    ensureLoaded,
     isRead,
   };
 

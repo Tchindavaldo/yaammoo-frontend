@@ -2,7 +2,7 @@
   "expo": {
     "name": "yaammoo",
     "slug": "yaammoo",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "yaammoo",
@@ -12,7 +12,7 @@
       "url": "https://u.expo.dev/24675cd4-f658-43d1-9bfc-0ce0ff16a007",
       "fallbackToCacheTimeout": 0
     },
-    "runtimeVersion": "1.0.6",
+    "runtimeVersion": "1.0.7",
     "extra": {
       "eas": {
         "projectId": "24675cd4-f658-43d1-9bfc-0ce0ff16a007"
@@ -34,7 +34,11 @@
         ],
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.",
-        "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus."
+        "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus.",
+        "NSPhotoLibraryAddUsageDescription": "Yaammoo enregistre dans vos photos les images que vous exportez.",
+        "NSCameraUsageDescription": "Yaammoo utilise l'appareil photo pour photographier vos plats et votre boutique.",
+        "NSMicrophoneUsageDescription": "Yaammoo utilise le micro pour vos notes vocales destinées aux livreurs.",
+        "NSFaceIDUsageDescription": "Yaammoo utilise Face ID pour protéger l'accès à votre portefeuille."
       }
     },
     "android": {
@@ -47,7 +51,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.rauval.yaammoo",
-      "versionCode": 15,
+      "versionCode": 17,
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
@@ -60,6 +64,16 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.rauval.yaammoo.** { *; }\n-keep class expo.modules.** { *; }\n-keepclassmembers class * { @com.facebook.proguard.annotations.DoNotStrip *; @com.facebook.common.internal.DoNotStrip *; }\n-keep class io.sentry.** { *; }\n-keep class com.google.android.gms.** { *; }\n-dontwarn com.google.android.gms.**"
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",

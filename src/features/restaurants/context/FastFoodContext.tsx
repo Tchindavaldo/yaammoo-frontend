@@ -1,6 +1,10 @@
 import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { auth } from "@/src/services/firebase";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
+import { getOptionalIdToken } from "@/src/services/idToken";
+import { sinceBoot } from "@/src/utils/bootClock";
+import { trackBootStep } from "@/src/services/bootTelemetry";
+import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import axios from "axios";
 import React, {
@@ -25,6 +29,23 @@ import React, {
  *
  */
 const PAGE_SIZE = 10;
+
+/**
+ * Plafond de `limit` IMPOSE par le backend (`GET /fastFood/all`). Demander plus
+ * n'echoue pas : le serveur rabote silencieusement, d'ou des boutiques non
+ * rafraichies sans le moindre signal. Voir `architecture/restaurants.md`.
+ */
+const MAX_SERVER_LIMIT = 50;
+
+/**
+ * Delai au-dela duquel on entre dans la home sans le catalogue.
+ *
+ * `/fastFood/all` repond en ~1,5 s de façon stable (mesure : 5 appels
+ * consecutifs, machine Fly.io maintenue eveillee). 12 s laissent donc huit fois
+ * la marge : seul un vrai blocage declenche le garde-fou, jamais une reponse
+ * simplement lente.
+ */
+const BOOT_GIVE_UP_MS = 12000;
 
 /** Délai avant qu'une frappe dans la recherche parte au serveur. */
 const SEARCH_DEBOUNCE_MS = 350;
@@ -57,6 +78,12 @@ interface FastFoodContextType {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   refresh: () => Promise<void>;
+  /**
+   * Met a jour les boutiques deja chargees sans loader ni troncature : la
+   * position de scroll est preservee. Pour le catch-up socket, pas pour un geste
+   * utilisateur (celui-la passe par `refresh`).
+   */
+  refreshLoadedSilently: () => Promise<void>;
   /**
    * Tronque la liste a la premiere page, sans requete. Appele au retour en haut
    * du home pour ne pas garder des dizaines de cellules en memoire.
@@ -152,7 +179,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   // `user` (Firebase User) plutôt que `userData` : c'est lui qui porte le token,
   // et il devient disponible dès la restauration de session.
-  const { user } = useAuth();
+  // `loading` : Firebase n'a pas encore tranche sur la session. Tant qu'il est
+  // vrai, `user` peut etre `null` alors qu'une session existe — d'ou la garde
+  // du premier fetch plus bas (suppression du double appel au boot).
+  const { user, loading: authLoading } = useAuth();
   const [fastFoods, setFastFoods] = useState<FastFood[]>([]);
   /**
    * Longueur courante de `fastFoods`, lisible HORS d'un updater.
@@ -165,6 +195,31 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  /**
+   * Garde-fou du splash : on entre dans la home au bout de `BOOT_GIVE_UP_MS`,
+   * meme si le catalogue n'a pas repondu.
+   *
+   * ⚠️ `hasLoadedOnce` pilote la revelation de (tabs) et ne passait a `true`
+   * qu'au `finally` du premier fetch. Or cette requete peut ne JAMAIS revenir :
+   * aucun timeout axios (volontaire, cf. `setupHttp`), et le backend est
+   * heberge sur Fly.io, qui endort les machines — un demarrage a froid de
+   * `/fastFood/all` a ete mesure a 15-20 s, contre 1,3 s a chaud. L'app restait
+   * bloquee sur le splash pendant tout ce temps, et indefiniment si la reponse
+   * ne venait pas.
+   *
+   * Mieux vaut la home avec son message d'erreur — l'utilisateur voit l'app,
+   * peut naviguer, et la reponse tardive remplit la liste quand elle arrive.
+   */
+  useEffect(() => {
+    if (hasLoadedOnce) return;
+    const t = setTimeout(() => {
+      console.log("[boot] catalogue sans reponse, on entre dans la home");
+      setError("Connection internet indisponible, vérifiez votre réseau");
+      setHasLoadedOnce(true);
+    }, BOOT_GIVE_UP_MS);
+    return () => clearTimeout(t);
+  }, [hasLoadedOnce]);
   /** Curseur de la page suivante. `null` = fin de liste atteinte. */
   const cursorRef = useRef<string | null>(null);
   /**
@@ -191,6 +246,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const [appleReviewMode, setAppleReviewMode] = useState(false);
   const [banners, setBanners] = useState<AppBanner[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Double l'etat : le callback de retour reseau est pose UNE fois et lirait
+  // sinon un `error` fige par la closure.
+  const errorRef = useRef<string | null>(null);
+  errorRef.current = error;
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
 
@@ -233,6 +292,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     const myRun = isFirstPage ? ++runIdRef.current : runIdRef.current;
     /** Seule une recherche a un résultat à protéger d'une réponse tardive. */
     const guarded = !!q;
+    const startedAt = Date.now();
     try {
       if (isFirstPage) setLoading(true);
       else setLoadingMore(true);
@@ -244,7 +304,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // dès qu'un user est connecté, pour que ses bonus livraison ARMÉS soient
       // résolus. Visiteur anonyme (ou token indisponible) : appel sans header,
       // la route continue de répondre normalement.
-      const idToken = await auth.currentUser?.getIdToken().catch(() => null);
+      const idToken = await getOptionalIdToken();
       const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
         params: {
@@ -309,6 +369,16 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error("Error fetching fast foods:", err);
       setError("Connection internet indisponible, vérifiez votre réseau");
     } finally {
+      // Mesure du chargement qui LEVE LE SPLASH : c'est le chemin critique du
+      // demarrage, la seule requete dont l'affichage depend vraiment.
+      if (isFirstPage && !hasLoadedOnce) {
+        const elapsed = Date.now() - startedAt;
+        console.log(
+          `[boot t=${sinceBoot()}s] /fastFood/all en ${(elapsed / 1000).toFixed(2)}s`,
+        );
+        trackBootStep("catalogue", elapsed);
+      }
+
       // `hasLoadedOnce` pilote la revelation de (tabs) : une reponse recue,
       // quelle qu'elle soit, prouve que le chargement a eu lieu.
       setHasLoadedOnce(true);
@@ -331,6 +401,76 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // consommateurs comme ici) et peut relancer des requetes.
   const searchRef = useRef("");
   searchRef.current = searchQuery;
+
+  /**
+   * Rafraichit SILENCIEUSEMENT les boutiques deja chargees, sans toucher ni au
+   * loader, ni au curseur, ni a l'ordre de la liste.
+   *
+   * ⚠️ Volontairement distinct de `refresh()` : celui-ci repart de la premiere
+   * page, ce qui allume le loader plein ecran et TRONQUE la liste — l'utilisateur
+   * revenant dans l'app perdrait sa position de scroll et verrait un ecran de
+   * chargement sur une liste deja affichee.
+   *
+   * Ici on remplace chaque boutique par sa version fraiche, a la meme position.
+   * Une boutique absente de la reponse est CONSERVEE : elle appartient peut-etre
+   * a une page au-dela de `limit`, et la retirer la ferait disparaitre de l'ecran.
+   *
+   * Appele par le catch-up socket (retour au premier plan, reconnexion) : les
+   * events du catalogue sont des broadcasts globaux que le backend ne rejoue
+   * jamais, donc prix et menus modifies pendant l'absence seraient perdus.
+   */
+  const refreshLoadedSilently = useCallback(async () => {
+    const loadedCount = fastFoodsLenRef.current;
+    if (loadedCount === 0) return;
+
+    try {
+      const idToken = await getOptionalIdToken();
+      const headers = idToken
+        ? { Authorization: `Bearer ${idToken}` }
+        : undefined;
+
+      // ⚠️ Le backend PLAFONNE `limit` a 50. Une seule requete laisserait donc
+      // les boutiques au-dela du 50e avec leurs anciens prix — silencieusement.
+      // On enchaine les pages par curseur jusqu'a couvrir tout ce qui est
+      // affiche. `PAGE_SIZE` vaut 3 : sans ce plafond de 50 par requete, un
+      // catalogue de 100 boutiques demanderait 34 allers-retours au lieu de 2.
+      const fresh = new Map<string, any>();
+      let cursor: string | null = null;
+
+      while (fresh.size < loadedCount) {
+        const response: any = await axios.get(`${Config.apiUrl}/fastFood/all`, {
+          headers,
+          params: {
+            limit: Math.min(loadedCount - fresh.size, MAX_SERVER_LIMIT),
+            ...(cursor ? { cursor } : {}),
+          },
+        });
+
+        const raw: any[] = response.data?.data ?? [];
+        for (const item of raw) {
+          if (item?.id) fresh.set(item.id, item);
+        }
+
+        cursor = response.data?.nextCursor ?? null;
+        // Fin de catalogue, ou page vide : insister bouclerait a l'infini.
+        if (!cursor || raw.length === 0) break;
+      }
+
+      if (fresh.size === 0) return;
+
+      setFastFoods((prev) =>
+        prev.map((ff, index) => {
+          const updated = fresh.get(ff.id);
+          // `designIndex` suit la POSITION dans la liste, pas la boutique : on
+          // le recalcule ici, sinon une boutique gardee changerait d'apparence.
+          return updated ? normalizeFastFood(updated, index % 6) : ff;
+        }),
+      );
+    } catch {
+      // Rattrapage silencieux : un echec ne doit ni afficher d'erreur, ni
+      // remplacer les donnees en place. Le prochain retour reessaiera.
+    }
+  }, []);
 
   /** Recharge depuis le début (pull-to-refresh). */
   const refresh = useCallback(async () => {
@@ -444,14 +584,50 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     setLoadingMore(false);
   }, []);
 
-  // Refetch à CHAQUE changement d'identité (y compris `null` → user au boot :
-  // la restauration de session Firebase est asynchrone et se termine APRÈS le
-  // montage). Sans ce second passage, le premier appel partirait sans Bearer et
-  // la home resterait sur des `deliveryOffer: null` jusqu'au prochain reload.
+  // Refetch à CHAQUE changement d'identité — mais JAMAIS avant que Firebase
+  // ait tranché.
+  //
+  // ⚠️ `authLoading` est la garde qui supprime le DOUBLE appel du boot. La
+  // restauration de session Firebase est asynchrone : sans elle, `user` vaut
+  // `null` au montage, un premier `/fastFood/all` partait SANS Bearer (donc
+  // `deliveryOffer: null` partout, resultat inutilisable), puis la session
+  // arrivait et un SECOND appel repartait avec le token. Deux fois la meme
+  // page, dont la premiere jetee — visible dans les logs backend en paires
+  // « AUCUN Bearer envoye » suivi de « token OK ».
+  //
+  // On attend donc la resolution : un seul appel part, deja authentifie. Le
+  // refetch sur changement d'uid (login, logout, bascule de compte) reste
+  // assure par `user?.uid` dans les dependances.
   useEffect(() => {
+    if (authLoading) return;
     cursorRef.current = null;
     void fetchPage(undefined, undefined);
-  }, [fetchPage, user?.uid]);
+  }, [fetchPage, user?.uid, authLoading]);
+
+  // Retour du reseau : on recharge SEULEMENT si l'ecran d'erreur est affiche.
+  // Sans cela l'utilisateur reste bloque dessus jusqu'a taper « Reessayer », le
+  // reseau fut-il revenu depuis longtemps. La garde sur `error` evite de
+  // rafraichir une liste deja remplie a chaque bascule WiFi / 4G.
+  useEffect(
+    () =>
+      onNetworkRestored(() => {
+        if (!errorRef.current) return;
+        cursorRef.current = null;
+        void fetchPage(undefined, undefined);
+      }),
+    [fetchPage],
+  );
+
+  // Changement de compte : on repart de zero. La liste porte les
+  // `deliveryOffer` du compte precedent (le backend les resout depuis le
+  // Bearer), donc on la vide et le refetch ci-dessus la recharge — loader
+  // compris, comme un premier chargement.
+  useResetOnUserChange(user?.uid, () => {
+    setFastFoods([]);
+    setBanners([]);
+    setError(null);
+    setLoading(true);
+  });
 
   // Recherche serveur, debouncée.
   //
@@ -604,6 +780,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       selectedCategory,
       setSelectedCategory,
       refresh,
+      refreshLoadedSilently,
       resetToFirstPage,
       notifyUserScroll,
       cancelPendingLoadMore,
@@ -627,6 +804,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       handleSearchChange,
       selectedCategory,
       refresh,
+      refreshLoadedSilently,
       resetToFirstPage,
       notifyUserScroll,
       cancelPendingLoadMore,

@@ -4,7 +4,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { Image as RNImage, StyleSheet, View } from "react-native";
 
 /**
  * Fond de la page bonus, en pleine page derrière tout le contenu :
@@ -28,11 +28,23 @@ export const BACKGROUND = require("../../../../assets/images/purre-avocat-tomate
  * première ouverture peint une frame vide le temps que le bitmap soit décodé.
  * Appelé une fois au démarrage de l'app (voir app/_layout.tsx).
  */
-export const prefetchBonusBackground = () =>
-  Image.prefetch(BACKGROUND, { cachePolicy: "memory-disk" }).catch(() => {
+export const prefetchBonusBackground = () => {
+  // Rien à précharger tant que le fond image n'est pas activé.
+  if (!USE_IMAGE_BG) return Promise.resolve();
+
+  // ⚠️ `Image.prefetch` attend une URL en string, pas le retour d'un `require`.
+  // En lui passant `BACKGROUND` directement, l'objet était concaténé en
+  // « [object Object] » et l'app demandait `GET /[object Object]` à chaque
+  // démarrage — un 404 silencieux, avale par le `.catch` ci-dessous, et donc
+  // aucun préchargement réel. `resolveSource` rend l'URI que l'API attend.
+  const uri = RNImage.resolveAssetSource(BACKGROUND)?.uri;
+  if (!uri) return Promise.resolve();
+
+  return Image.prefetch(uri, { cachePolicy: "memory-disk" }).catch(() => {
     // Préchargement raté : la page s'affichera simplement avec le délai de
     // décodage habituel, ce n'est pas une erreur bloquante.
   });
+};
 
 /**
  * Facteur d'agrandissement de l'image. L'asset est un plat centré entouré de

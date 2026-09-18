@@ -36,6 +36,8 @@ type PaymentState =
 interface CheckoutPaymentTopOverlayProps {
   visible: boolean;
   menu: Menu | null;
+  // Description du prix sélectionné (optionPrix1/2/3), cf. DetailTab > productDesc.
+  priceDescription?: string;
   menuPrice: number;
   extrasPrice: number;
   drinksPrice: number;
@@ -54,8 +56,11 @@ interface CheckoutPaymentTopOverlayProps {
 /* casser).                                                            */
 /* ------------------------------------------------------------------ */
 
-// Header menu : photo + titre + description (cf. DetailTab > productHeader).
-const MenuHeader: React.FC<{ menu: Menu }> = ({ menu }) => {
+// Header menu : photo + titre + description du prix (cf. DetailTab > productHeader).
+const MenuHeader: React.FC<{ menu: Menu; description?: string }> = ({
+  menu,
+  description,
+}) => {
   const image =
     menu.images && menu.images.length > 0 ? menu.images[0] : menu.image;
   return (
@@ -65,9 +70,11 @@ const MenuHeader: React.FC<{ menu: Menu }> = ({ menu }) => {
         <Text style={styles.menuTitle} numberOfLines={1}>
           {menu.titre}
         </Text>
-        <Text style={styles.menuDesc} numberOfLines={2}>
-          Produit de qualité supérieure préparé avec soin par nos chefs Yaammoo.
-        </Text>
+        {!!description && (
+          <Text style={styles.menuDesc} numberOfLines={2}>
+            {description}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -163,6 +170,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
 > = ({
   visible,
   menu,
+  priceDescription,
   menuPrice,
   extrasPrice,
   drinksPrice,
@@ -246,7 +254,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
         />
 
         <View style={styles.content}>
-          <MenuHeader menu={menu} />
+          <MenuHeader menu={menu} description={priceDescription} />
 
           <PriceRecap
             menuPrice={menuPrice}

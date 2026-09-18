@@ -38,6 +38,9 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
       orderLeadTime: ff.orderLeadTime,
       advanceDays: ff.advanceDays,
       deliveryOffer: ff.deliveryOffer ?? null,
+      // Retrait boutique autorisé ou non (GET /fastfood/all) : gate la card
+      // « Aucun » de l'onglet Livraison du checkout.
+      pickupAllowed: ff.pickupAllowed,
     } as Menu);
   };
 

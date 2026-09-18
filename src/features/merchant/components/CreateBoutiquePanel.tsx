@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Platform, KeyboardAvoidingView } from "react-native";
+import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
@@ -114,10 +114,10 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
         onHeightChange={s.setHeaderHeight}
       />
 
-      <KeyboardAvoidingView
-        style={[{ flex: 1, paddingTop: s.headerHeight }]}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      {/* Pas de KeyboardAvoidingView : il remonterait aussi le bouton de
+          validation fixe en bas. Le ScrollView interne (keyboardShouldPersistTaps)
+          suffit a gerer la saisie sous le clavier. */}
+      <View style={[{ flex: 1, paddingTop: s.headerHeight }]}>
         {/* Conteneur borne en hauteur (pas de ScrollView ici) : la page gere son
             propre scroll interne, ce qui permet a la carte des adresses de
             s'etendre sans deborder sous la tab bar. */}
@@ -128,6 +128,7 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
           ]}
         >
           <BoutiqueInfoPage
+            keyboardOffset={s.headerHeight}
             image={s.image}
             pickImage={s.pickImage}
             name={s.name}
@@ -157,7 +158,7 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
             onSubmit={s.handleCreate}
           />
         </View>
-      </KeyboardAvoidingView>
+      </View>
 
       <ZoneListSheet
         visible={showZoneList}

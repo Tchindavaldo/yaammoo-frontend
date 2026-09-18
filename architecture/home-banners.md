@@ -17,7 +17,8 @@ state `banners: AppBanner[]` (défaut `[]` si absent). Il est exposé via
 |---|---|
 | `src/types/index.ts` | `interface AppBanner { id, title, imageUrl, type: 'bonus'\|'none', targetId, active, sortOrder }` |
 | `src/features/restaurants/context/FastFoodContext.tsx` | state `banners` + lecture depuis `/fastfood/all` |
-| `src/features/restaurants/components/HeroBanner.tsx` | rendu carrousel (FlatList horizontal paginé + dots) |
+| `src/features/restaurants/components/HeroBanner.tsx` | rendu carrousel (`Animated.ScrollView` horizontale paginée + puces) |
+| `src/features/restaurants/hooks/useBannerLoop.ts` | mécanique de la boucle infinie : diapos + clones, téléport, autoplay, `scrollX` |
 | `app/(tabs)/index.tsx` | passe `banners` + `handleBannerPress` au `HeroBanner` |
 
 ## Comportement au clic
@@ -27,22 +28,53 @@ state `banners: AppBanner[]` (défaut `[]` si absent). Il est exposé via
   Le `targetId` du banner correspond à l'id du bonus, mis en avant dans la sheet.
 - `type='none'` → aucun action (`TouchableOpacity` désactivé).
 
-## Fallback
+## Absence de bannière
 
-S'il n'y a **aucune** bannière active (`length === 0`), `HeroBanner` retombe sur
-l'ancienne bannière **statique** embarquée (`banner-shawamar.webp` + code FIRST50)
-pour ne jamais laisser le home vide.
+Il n'y a **plus** de bannière statique de secours. Elle était locale, donc peinte
+instantanément, et s'insérait avant les vraies bannières — d'où un clignotement à
+chaque ouverture du home. Aujourd'hui :
+
+- chargement en cours et aucune bannière reçue → **squelette** ;
+- aucune bannière du tout → `HeroBanner` ne rend **rien**, l'échec de chargement
+  étant traité par la home (écran d'erreur centré).
+
+## Puces de pagination
+
+Réactivées (`DOTS_ENABLED = true`). Elles sont posées **dans** le carrousel, en
+bas de la bannière : pastille sombre arrondie (`rgba(0,0,0,0.85)`, `borderRadius`)
+centrée en `position: absolute`, au lieu d'une rangée sous le carrousel.
+
+Contraintes à ne pas casser :
+
+- Elles sont pilotées par `scrollX` sur le **driver natif**, jamais par un
+  `useState` : tout `setState` ici re-rend les N + 2 diapos et leurs
+  interpolations, ce qui provoquait la pause au scroll du home.
+- Seule l'**opacité** est animée (largeur et couleur ne sont pas gérées par le
+  driver natif) : la puce active est un calque superposé sur un emplacement de
+  largeur fixe (`dotSlot`).
+- Une puce s'active sur **deux** positions quand la boucle est active (la diapo
+  réelle et son clone).
+- La pastille garde `height` fixe + `overflow: 'hidden'` : les couches squelette
+  et réelle se superposent pendant le fondu croisé et ne doivent pas déborder.
+
+⚠️ Historique : la simple présence des puces a longtemps ramené une pause au
+scroll du home (cause jamais identifiée). Repasser `DOTS_ENABLED` à `false` si
+elle réapparaît.
 
 ## Perfs & structure
 
 - `HeroBanner` est `memo`isé ; `handleBannerPress` est `useCallback` stable en
   fonction de `router` ; `listHeader` est un `useMemo([banners, handleBannerPress])`.
 - **Rendu Carrousel & Animation** :
-  - `Animated.FlatList` gère le scroll horizontal et la pagination natif (`pagingEnabled`).
+  - `Animated.ScrollView` (et non `FlatList`) gère le scroll horizontal et la
+    pagination native (`pagingEnabled`). À N + 2 diapos il n'y a rien à
+    virtualiser, et cela retire du header toute la mécanique `VirtualizedList`
+    (fenêtre de rendu, viewabilité, cascade de montage).
   - Espacement horizontal personnalisé entre les cartes (`bannerItemContainer` avec `paddingHorizontal`).
   - Animation au scroll : interpolation natif de `scrollX` pour effectuer un zoom (`scale: 0.90 -> 1.0 -> 0.90`) et ajuster l'opacité (`opacity: 0.8 -> 1.0 -> 0.8`) des bannières au défilement.
 - **Boucle Infinie & Autoplay** :
-  - **Loop infini** (`extendedBanners`) : multiplication virtuelle du tableau de bannières pour un défilement infini sans fin de liste.
+  - **Loop infini** (`useBannerLoop`) : N + 2 diapos (un clone de queue en tête,
+    un clone de tête en queue) et un téléport silencieux aux extrémités.
   - **Autoplay** : défilement automatique toutes les 3.5 secondes.
   - **Pause sur slide manuel** (`onScrollBeginDrag`) : lorsqu'un utilisateur effectue un slide manuel, l'autoplay s'interrompt pendant 20 secondes avant de reprendre automatiquement.
 - R16 : le carrousel est rendu **dans** `HeroBanner` (pas de composant carrousel

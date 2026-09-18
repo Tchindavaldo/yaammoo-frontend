@@ -135,7 +135,13 @@ src/features/
 │       ├── BonusCarousel.tsx            # Carrousel des cartes bonus
 │       └── ...                          # BonusCard, BonusClaimRow, BonusPagerInfo, BonusGalleryCard…
 │
-└── menu/ restaurants/ profile/
+├── profile/                             # Écran Settings — cf. settings-grille.md
+│   └── components/
+│       ├── SettingGrid.tsx              # Grille d'une section (colonnes déduites du nb d'items)
+│       ├── SettingGridItem.tsx          # Tuile pressable (icône + libellé + hint)
+│       └── SettingGridSwitch.tsx        # Tuile portant un Switch (mode inline pleine largeur)
+│
+└── menu/ restaurants/
 ```
 
 > Le socket n'est pas une feature avec Context/Provider : c'est un singleton
@@ -158,8 +164,26 @@ src/
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
+    ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
+    ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp
+    │                           # Sonde pointée sur le backend (/settings/app-version) :
+    │                           # par défaut NetInfo interroge l'origine de la page, donc
+    │                           # Metro en dev web, ce qui relançait un bundle à chaque ping
+    ├── otaTelemetry.ts         # Suivi des mises à jour OTA → Sentry
     └── useOtaUpdates.ts        # Mises a jour OTA expo-updates (voir http-versioning.md)
 ```
+
+## ⚠️ Projet non-CNG : `app.json` n'est PAS la source de vérité native
+
+`ios/` et `android/` existent dans le dépôt, donc EAS Build **ignore** les champs
+`plugins`, `ios`, `android`, `orientation`, `icon`, `scheme` et
+`userInterfaceStyle` d'`app.json` : les dossiers natifs font foi.
+
+Conséquence pratique : une permission ajoutée dans `app.json > ios.infoPlist`
+**n'atteindra jamais le build**. Il faut l'écrire dans `ios/yaammoo/Info.plist`.
+On garde les deux alignés pour le jour où le projet repasserait en prebuild, mais
+c'est le `.plist` qui compte. Vérifier avec `npx expo-doctor`, qui signale
+l'écart.
 
 ## Ordre des providers (app/_layout.tsx)
 

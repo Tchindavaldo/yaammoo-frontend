@@ -2,6 +2,11 @@ import { useEffect } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import { socketService } from "./socket";
 import { withAck } from "./socketAck";
+import { trackSocket } from "./socketTelemetry";
+import {
+  reportSocketConnected,
+  reportSocketDisconnected,
+} from "./network";
 import { useAuth } from "../features/auth/context/AuthContext";
 import { useNotifications } from "../features/notifications/hooks/useNotifications";
 import { useOrders } from "../features/orders/hooks/useOrders";
@@ -74,7 +79,7 @@ export const useSocketEvents = () => {
     upsertTransactionFromSocket: upsertClientTransaction,
   } = useWallet();
   const {
-    refresh: refreshFastFoods,
+    refreshLoadedSilently: refreshFastFoodsSilently,
     upsertMenuFromSocket: upsertGlobalMenu,
     removeMenuFromSocket: removeGlobalMenu,
     upsertFastFoodFromSocket: upsertGlobalFastFood,
@@ -104,22 +109,71 @@ export const useSocketEvents = () => {
      * `bonus.activation_changed` n'en fait pas partie, et `withAck` ignore un
      * `__eventId` déjà mémorisé dans la session.
      */
+    /**
+     * Vrai quand `handleAppState` vient de recharger les commandes AVEC le
+     * loader. Le `catchUp` qui suit 500 ms plus tard les rechargerait une
+     * seconde fois pour rien — deux requetes pour la meme donnee, a l'instant
+     * precis ou le thread JS reprend les animations du reveil.
+     */
+    let ordersJustRefreshed = false;
+
     const catchUp = () => {
       refreshNotifications(true);
-      refreshOrders(true);
-      refreshMerchant(false);
+      // ⚠️ SILENCIEUX ici, contrairement au retour au premier plan. `catchUp`
+      // part aussi sur le `connect` initial et sur chaque reconnexion : un
+      // loader s'y afficherait au lancement de l'app et a chaque hoquet reseau,
+      // sur des listes deja peintes. Le loader visible est reserve au geste
+      // qu'est le retour dans l'app (voir `handleAppState`), ou l'utilisateur
+      // attend de voir ses statuts se mettre a jour.
+      if (ordersJustRefreshed) {
+        ordersJustRefreshed = false;
+      } else {
+        refreshOrders(true);
+        refreshMerchant(false);
+      }
       refreshDriver(false);
       refreshBonuses(true);
+      // Catalogue public (home, boutique, checkout). Ses events sont des
+      // broadcasts globaux (`io.emit`), donc le backend ne les persiste pas et
+      // ne les rejoue pas au `join_user` : `fastfoodUpdated` (nom, photo,
+      // horaires), `globalMenuUpdated` (prix, plat), `newGlobalMenu`,
+      // `globalMenuDeleted` et `newFastfood` etaient perdus des que l'app
+      // passait en arriere-plan.
+      //
+      // ⚠️ Le prix est le cas critique : le backend recalcule le total a la
+      // commande, donc un prix perime cote client fait echouer le paiement.
+      //
+      // ⚠️ PAS `refresh()` : celui-la repart de la premiere page, allume le
+      // loader plein ecran et tronque la liste — l'utilisateur qui revient dans
+      // l'app perdrait sa position de scroll. Ici on remplace chaque boutique
+      // par sa version fraiche, a la meme place et sans rien afficher.
+      void refreshFastFoodsSilently();
     };
 
     const handleConnect = () => {
+      trackSocket("connect");
+      // Le socket tient : il devient le capteur de connectivite et la sonde
+      // periodique s'arrete (voir `network.ts`).
+      reportSocketConnected();
       socket.emit("join_user", userData?.uid);
       catchUp();
     };
 
+    // Mesure la coupure : sa raison dit si l'OS a tue le lien en arriere-plan
+    // (`transport close`) ou si le serveur a ferme — deux causes tres
+    // differentes du silence constate au retour dans l'app.
+    const handleDisconnect = (reason: string) => {
+      trackSocket("disconnect", { reason });
+      // On ne conclut pas a une coupure reseau : un backend en panne ferme le
+      // socket alors qu'Internet marche. La sonde tranche, puis verifie toutes
+      // les 2 s si le lien revient.
+      reportSocketDisconnected();
+    };
+
+    socket.on("disconnect", handleDisconnect);
     socket.on("connect", handleConnect);
     if (socket.connected) handleConnect();
-    else socket.connect();
+    else socketService.connect();
 
     /**
      * Retour au premier plan. L'OS (iOS surtout) gèle le JS en arrière-plan et
@@ -133,11 +187,15 @@ export const useSocketEvents = () => {
      *  3. lien « zombie » (vu connecté, en réalité coupé) → détecté par le ping
      *     ci-dessous, qui force alors une vraie reconnexion.
      */
-    // Garde anti-rafale : basculer rapidement entre deux apps émet plusieurs
-    // `active` d'affilée, chacun déclenchant 5 requêtes. On espace les
-    // rattrapages sans jamais bloquer celui qui suit une vraie mise en veille.
-    let lastCatchUp = 0;
-    const CATCH_UP_COOLDOWN_MS = 10_000;
+    // ⚠️ AUCUNE garde de temps sur le retour au premier plan. Un cooldown de
+    // 10 s a été essayé et RETIRÉ : la télémétrie Sentry a montré des retours
+    // entièrement ignorés (`foreground-skipped`) quelques secondes après une
+    // reconnexion, alors que l'OS avait pu tuer le lien entre-temps. Les events
+    // tombés pendant ces allers-retours n'étaient ni reçus, ni rattrapés.
+    //
+    // Un rattrapage de trop ne coûte que 5 requêtes silencieuses ; un rattrapage
+    // manqué coûte un paiement ou une commande invisible. On traite donc CHAQUE
+    // retour, sans condition.
     /** Au-delà, on considère le lien mort même s'il se dit connecté. */
     const PING_TIMEOUT_MS = 4_000;
     /** Délai laissé à l'UI pour reprendre ses animations avant le rattrapage. */
@@ -146,14 +204,28 @@ export const useSocketEvents = () => {
 
     const handleAppState = (state: AppStateStatus) => {
       if (state !== "active") return;
-      const now = Date.now();
-      if (now - lastCatchUp < CATCH_UP_COOLDOWN_MS) return;
-      lastCatchUp = now;
+
+      // ⚠️ AVANT toute logique socket, et AVEC le loader. Les listes de
+      // commandes (client et marchand) sont ce que l'utilisateur regarde en
+      // rouvrant l'app : attendre la reconnexion, puis le `connect`, puis le
+      // catch-up differe, lui laissait des statuts perimes plusieurs secondes
+      // sans aucun signe que quelque chose se rafraichissait. Le loader dit que
+      // la mise a jour est en cours ; il part des la premiere frame.
+      //
+      // Les deux conventions sont INVERSEES, ce n'est pas une faute de frappe :
+      // `refreshOrders(quiet)` cote client, `refreshMerchant(showLoading)` cote
+      // marchand. Ces deux appels affichent donc bien le loader.
+      refreshOrders(false);
+      refreshMerchant(true);
+      ordersJustRefreshed = true;
 
       if (!socket.connected) {
+        trackSocket("foreground-dead");
         socket.connect();
         return;
       }
+
+      trackSocket("foreground-alive");
 
       // Socket vue comme vivante — mais après une mise en veille l'OS a pu tuer
       // le lien sans que socket.io le sache (« zombie ») : les events émis
@@ -191,6 +263,7 @@ export const useSocketEvents = () => {
       setTimeout(() => {
         engine.off?.("packet", onPacket);
         if (!alive && socket.connected) {
+          trackSocket("zombie-recycled");
           socket.disconnect();
           socket.connect();
         }
@@ -485,6 +558,7 @@ export const useSocketEvents = () => {
       if (catchUpTimer) clearTimeout(catchUpTimer);
       appStateSub.remove();
       socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
       socket.off("newUserOrder");
       socket.off("userOrderUpdated");
       socket.off("userOrdersUpdated");

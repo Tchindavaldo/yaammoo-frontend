@@ -15,6 +15,7 @@ src/features/restaurants/
 ├── context/FastFoodContext.tsx     # État + fetch paginé + injection socket
 ├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique (+ revealAnim)
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
+├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
 ├── utils/deliveryUtils.ts
 └── components/
     ├── DesignRouter.tsx            # Aiguille vers Design1..7 + ShopRevealProvider
@@ -107,6 +108,7 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |
 | `refresh()` | Repart de la première page (pull-to-refresh). |
+| `refreshLoadedSilently()` | ⚠️ Met à jour les boutiques **déjà chargées** sans loader ni troncature — position de scroll préservée. Appelé par le catch-up socket, jamais par un geste utilisateur. Enchaîne les pages par curseur jusqu'à couvrir tout ce qui est affiché — ⚠️ `limit` est plafonné à 50 par le backend, qui rabote **silencieusement** : une seule requête laisserait les boutiques au-delà du 50e avec leurs anciens prix. Une boutique absente de la réponse est conservée. `designIndex` est recalculé à la position, sinon une boutique changerait d'apparence. Détail : [socket-events-client.md](./socket-events-client.md). |
 | `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
 | `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |
 | `cancelPendingLoadMore()` | Invalide une page en vol **sans tronquer**. Appelé au début d'une remontée. |
@@ -365,6 +367,29 @@ Deux déclencheurs, même effet : remontée puis **troncature à la première pa
 
 Le pied de liste et `onEndReached` ont été **testés et mis hors de cause** dans
 la boucle mount/unmount de la dernière cellule.
+
+## Bas de liste — scroll figé pendant le chargement (`debug/home-bottom-overscroll`)
+
+Arrivé en bas avec le loader de pagination visible, on pouvait continuer à tirer
+vers le bas : le loader remontait et découvrait un blanc qui se lisait comme une
+fin de liste. La liste est donc rendue **non défilante** (`scrollEnabled={false}`)
+tant que la page suivante charge.
+
+- **`atBottom` se calcule dans `onScroll`**, pas dans `onEndReached` : celui-ci
+  se déclenche AVANT le bas (`onEndReachedThreshold`) et figerait la liste en
+  plein défilement.
+- **`atBottomRef` double l'état** : le `setState` n'est appelé qu'aux deux
+  transitions, jamais à chaque frame — les cellules du home sont lourdes (voir
+  « références stables » ci-dessous) et un setter par frame les reconstruirait
+  en plein geste.
+- **Le gel est libéré dès l'arrivée de la page** : la liste s'est allongée, on
+  n'est plus en bas.
+- `FOOTER_LOADER_HEIGHT` (48) est volontairement généreuse : le loader doit se
+  remarquer même en scroll rapide.
+
+> ⚠️ **Pistes écartées, ne pas les refaire.** `bounces={false}` / `contentInset`
+> négatif : le défilement continuait. Reclamper depuis `onScroll` en JS : saut
+> visuel au contact du bas, le doigt ayant déjà tiré au-delà quand JS réagit.
 
 ## Performance de la liste — références stables (OBLIGATOIRE)
 

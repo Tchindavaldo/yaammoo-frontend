@@ -1,195 +1,95 @@
-<!DOCTYPE html>
-<html lang="fr">
+<!doctype html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Yaammoo — Livraison locale au Cameroun</title>
-  <meta name="description" content="Commandez vos repas et produits préférés, livrés rapidement à votre porte. Simple, rapide, fiable." />
+  <title>Property Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: #fff;
-      color: #1a1a1a;
-      line-height: 1.6;
-    }
-
-    /* NAV */
-    nav {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 40px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .logo { font-size: 1.4rem; font-weight: 800; color: #FF5A1F; letter-spacing: -0.5px; }
-    nav a { color: #444; text-decoration: none; font-size: 0.9rem; margin-left: 28px; }
-    nav a:hover { color: #FF5A1F; }
-
-    /* HERO */
-    .hero {
-      background: linear-gradient(135deg, #FF5A1F 0%, #ff8c42 100%);
-      color: #fff;
-      text-align: center;
-      padding: 80px 20px 90px;
-    }
-    .hero h1 {
-      font-size: clamp(2rem, 5vw, 3.2rem);
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 16px;
-    }
-    .hero p {
-      font-size: 1.15rem;
-      max-width: 540px;
-      margin: 0 auto 32px;
-      opacity: 0.9;
-    }
-    .badge-row { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
-    .badge {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: #1a1a1a; color: #fff;
-      border-radius: 10px; padding: 12px 22px;
-      font-size: 0.9rem; font-weight: 600;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-    .badge:hover { background: #333; }
-    .badge .store-name { font-size: 1rem; font-weight: 700; }
-
-    /* HOW */
-    .section { max-width: 1000px; margin: 60px auto; padding: 0 24px; }
-    .section h2 { font-size: 1.7rem; font-weight: 800; text-align: center; margin-bottom: 40px; }
-    .steps { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
-    .step {
-      flex: 1; min-width: 200px; max-width: 220px;
-      text-align: center;
-    }
-    .step .num {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: #FF5A1F; color: #fff;
-      font-size: 1.2rem; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 12px;
-    }
-    .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-    .step p { font-size: 0.9rem; color: #555; }
-
-    /* FEATURES */
-    .features-bg { background: #f9f9f9; padding: 60px 24px; }
-    .features { max-width: 1000px; margin: 0 auto; }
-    .features h2 { font-size: 1.7rem; font-weight: 800; text-align: center; margin-bottom: 40px; }
-    .feat-grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
-    .feat {
-      flex: 1; min-width: 220px; max-width: 280px;
-      background: #fff; border-radius: 12px;
-      padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-      text-align: center;
-    }
-    .feat .icon { font-size: 2rem; margin-bottom: 10px; }
-    .feat h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
-    .feat p { font-size: 0.88rem; color: #555; }
-
-    /* FOOTER */
-    footer {
-      background: #1a1a1a; color: #aaa;
-      text-align: center; padding: 32px 20px;
-      font-size: 0.85rem;
-    }
-    footer a { color: #FF5A1F; text-decoration: none; margin: 0 10px; }
-    footer a:hover { text-decoration: underline; }
-    footer .copy { margin-top: 10px; font-size: 0.78rem; color: #666; }
+    :root { --ink:#262235; --muted:#9c99a3; --line:#eeeaf0; --cream:#f5ecdf; --pink:#ff8285; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-width:1080px; background:#fff; color:var(--ink); font-family:Manrope,Arial,sans-serif; font-size:13px; }
+    button { border:0; font:inherit; cursor:pointer; }
+    .app { display:grid; grid-template-columns:382px 1fr; min-height:100vh; }
+    .sidebar { border-right:1px solid var(--line); padding:17px 14px 26px 25px; background:#fff; }
+    .filters { display:flex; gap:8px; margin-bottom:24px; }
+    .filter { padding:9px 13px; background:#fff; color:#77737e; border:1px solid #f2eff1; border-radius:13px; box-shadow:0 2px 9px rgba(49,34,42,.03); font-size:12px; }
+    .filter i { margin-left:8px; font-size:9px; }
+    .results-head { display:flex; justify-content:space-between; align-items:center; margin:0 6px 12px 0; color:#78737f; font-size:12px; }
+    .results-head strong { color:#79747f; font-size:12px; }
+    .property-list { display:grid; gap:10px; }
+    .property { display:grid; grid-template-columns:116px 1fr; gap:9px; min-height:102px; padding:10px; border:1px solid #f1edf0; border-radius:17px; background:#fff; box-shadow:0 2px 7px rgba(44,31,41,.025); cursor:pointer; transition:.18s; }
+    .property:hover,.property.active { transform:translateY(-1px); border-color:#e5dedc; box-shadow:0 8px 20px rgba(47,32,38,.08); }
+    .property.active { background:#fdfaf9; }
+    .property img { width:116px; height:82px; border-radius:12px; object-fit:cover; }
+    .unit { color:#88828e; font-size:10px; line-height:15px; }
+    .unit h3 { margin:0; color:var(--ink); font-size:12px; line-height:17px; font-weight:800; }
+    .unit .meta { margin-top:4px; white-space:nowrap; font-size:10px; }
+    .row { display:flex; justify-content:space-between; align-items:end; }
+    .price { color:#37313b; font-size:12px; font-weight:800; }
+    .heart { color:#ff9294; font-size:16px; align-self:start; }
+    main { overflow:hidden; padding:16px 28px 0; }
+    .gallery { display:grid; grid-template-columns:minmax(460px,1fr) 110px; gap:10px; height:276px; }
+    .hero-photo { position:relative; overflow:hidden; border-radius:18px; }
+    .hero-photo img { width:100%; height:100%; object-fit:cover; object-position:center; }
+    .photo-count { position:absolute; top:13px; right:16px; padding:7px 9px; border-radius:11px; background:rgba(250,245,239,.88); color:#746e69; font-size:10px; }
+    .thumbs { display:grid; grid-template-rows:repeat(3,1fr); gap:10px; }
+    .thumbs img { width:100%; height:100%; object-fit:cover; border-radius:15px; }
+    .title-row { display:flex; justify-content:space-between; align-items:center; padding:16px 0 13px; border-bottom:1px solid #f1eef0; }
+    .title-row h1 { margin:0 0 3px; font-size:16px; letter-spacing:-.55px; }
+    .address { color:#aaa5af; font-size:11px; }
+    .address i { margin-right:5px; }
+    .tour { padding:9px 15px; border:1px solid #f0ecf0; background:#fff; color:#5b5664; border-radius:18px; font-size:11px; }
+    .facts { display:grid; grid-template-columns:repeat(4,1fr); padding:17px 0; border-bottom:1px solid #f2eef1; }
+    .fact { display:flex; align-items:center; gap:9px; }
+    .fact .icon { width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:#f5f5f5; color:#686371; font-size:12px; }
+    .fact span { display:block; color:#9d98a2; font-size:10px; }
+    .fact b { font-size:12px; }
+    .details { padding:17px 0 19px; max-width:620px; }
+    .details-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:13px; font-weight:800; }
+    .details p { margin:0; color:#a5a0aa; font-size:11px; line-height:18px; }
+    .details a { color:#625d67; font-weight:700; text-decoration:none; }
+    .bottom { display:grid; grid-template-columns:minmax(330px,1.1fr) minmax(260px,.82fr); gap:16px; }
+    .token-card { position:relative; min-height:170px; overflow:hidden; border-radius:16px; padding:24px 19px; background:var(--cream); }
+    .token-card:after { content:""; position:absolute; width:220px; height:220px; right:-55px; bottom:-140px; border:1px solid rgba(177,143,104,.2); transform:rotate(-11deg); box-shadow:0 0 0 36px transparent,0 0 0 37px rgba(177,143,104,.16),0 0 0 74px transparent,0 0 0 75px rgba(177,143,104,.12); }
+    .token-card h2 { margin:0 0 6px; font-size:15px; }
+    .token-card p { margin:0; font-size:11px; color:#736d6c; }
+    .progress { position:absolute; left:19px; right:19px; bottom:25px; z-index:1; }
+    .bar { height:3px; border-radius:4px; background:#e4d7c7; }
+    .bar span { display:block; width:67%; height:100%; border-radius:4px; background:#ffa37e; position:relative; }
+    .bar span:after { content:""; position:absolute; right:-3px; top:-3px; width:7px; height:7px; border-radius:50%; border:2px solid #ff9d7d; background:#f5ecdf; }
+    .progress-info { display:flex; justify-content:space-between; margin-top:9px; color:#716a69; font-size:10px; }
+    .chart-card { position:relative; min-height:170px; overflow:hidden; border-radius:22px 0 0 0; padding:17px 22px; background:#fff; box-shadow:-2px -4px 16px rgba(58,45,51,.035); }
+    .chart-card h2 { margin:0; font-size:16px; transform:rotate(-7deg); transform-origin:left; }
+    .curve { position:absolute; top:58px; left:15px; width:250px; height:65px; border-top:2px solid #ffd5cb; border-radius:50%; transform:rotate(-4deg); }
+    .curve:after { content:""; position:absolute; left:125px; top:12px; width:125px; height:32px; border-top:2px solid #f7ad94; border-radius:50%; transform:rotate(16deg); }
+    .months { position:absolute; left:23px; right:22px; bottom:37px; display:flex; justify-content:space-between; color:#99939d; font-size:11px; transform:rotate(-8deg); }
+    .buy { position:absolute; bottom:-7px; right:-4px; width:143px; height:59px; border-radius:28px 0 0 0; background:#211c38; color:#fff; font-size:14px; }
+    @media (max-width:900px) { body { min-width:0; } .app { grid-template-columns:1fr; } .sidebar { display:none; } main { padding:16px; } .gallery { grid-template-columns:1fr 86px; height:240px; } .bottom { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
-
-<!-- NAV -->
-<nav>
-  <span class="logo">Yaammoo</span>
-  <div>
-    <a href="https://yaammoo.rauval.com/support">Support</a>
-    <a href="https://yaammoo.rauval.com/privacy">Confidentialité</a>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="filters"><button class="filter">Up to $90k <i class="fa-solid fa-chevron-down"></i></button><button class="filter">Amenities <i class="fa-solid fa-chevron-down"></i></button><button class="filter">Type <i class="fa-solid fa-chevron-down"></i></button><button class="filter">More <i class="fa-solid fa-chevron-down"></i></button></div>
+      <div class="results-head"><strong>More than 1k house available</strong><span>Last added <i class="fa-solid fa-chevron-down"></i></span></div>
+      <section class="property-list" id="propertyList"></section>
+    </aside>
+    <main>
+      <section class="gallery"><div class="hero-photo"><img id="mainImage" src="https://images.unsplash.com/photo-1572120360610-d971b9d7767c?auto=format&fit=crop&w=1200&q=85" alt="Serenity Heights" /><span class="photo-count">2 / 11</span></div><div class="thumbs"><img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=400&q=80" alt="Living room" /><img src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=400&q=80" alt="Interior" /><img src="https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=400&q=80" alt="Dining room" /></div></section>
+      <section class="title-row"><div><h1 id="propertyTitle">Serenity Heights</h1><div class="address"><i class="fa-solid fa-location-dot"></i>414 E, Clarkstreet, Vermillion</div></div><button class="tour">Book a tour</button></section>
+      <section class="facts"><div class="fact"><div class="icon"><i class="fa-solid fa-bed"></i></div><div><span>Bedroom</span><b>3</b></div></div><div class="fact"><div class="icon"><i class="fa-solid fa-bath"></i></div><div><span>Bathroom</span><b>3</b></div></div><div class="fact"><div class="icon"><i class="fa-solid fa-ruler-combined"></i></div><div><span>Area</span><b>656 m²</b></div></div><div class="fact"><div class="icon"><i class="fa-solid fa-square-parking"></i></div><div><span>Parking</span><b>7</b></div></div></section>
+      <section class="details"><div class="details-header">Property details <i class="fa-solid fa-chevron-down"></i></div><p>This spacious and modern rental property is located in a desirable neighbourhood, offering a comfortable and convenient living space. The exterior <a href="#">See More</a></p></section>
+      <section class="bottom"><article class="token-card"><h2>Price Per Token</h2><p>Starting from <b>$50.00</b></p><div class="progress"><div class="bar"><span></span></div><div class="progress-info"><b>244</b> tokens left <b>88%</b></div></div></article><article class="chart-card"><h2>Stats</h2><div class="curve"></div><div class="months"><span>Jan</span><span>Feb</span><span>Mar</span></div><button class="buy">Buy</button></article></section>
+    </main>
   </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <h1>Livraison locale,<br/>livrée à votre porte</h1>
-  <p>Commandez vos repas et produits préférés auprès des restaurants et boutiques de votre quartier. Simple, rapide, fiable.</p>
-  <div class="badge-row">
-    <a class="badge" href="https://apps.apple.com/app/yaammoo/id6783684604">
-      <span>🍎</span>
-      <div>
-        <div style="font-size:0.7rem;opacity:0.8">Télécharger sur l'</div>
-        <div class="store-name">App Store</div>
-      </div>
-    </a>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section class="section">
-  <h2>Comment ça marche ?</h2>
-  <div class="steps">
-    <div class="step">
-      <div class="num">1</div>
-      <h3>Choisissez</h3>
-      <p>Parcourez les restaurants et boutiques près de vous et ajoutez vos articles au panier.</p>
-    </div>
-    <div class="step">
-      <div class="num">2</div>
-      <h3>Commandez</h3>
-      <p>Validez votre commande en quelques secondes. Un livreur est immédiatement notifié.</p>
-    </div>
-    <div class="step">
-      <div class="num">3</div>
-      <h3>Suivez</h3>
-      <p>Recevez des notifications en temps réel jusqu'à la livraison à votre adresse.</p>
-    </div>
-    <div class="step">
-      <div class="num">4</div>
-      <h3>Payez</h3>
-      <p>Réglez à la livraison, en espèces. Aucune carte bancaire requise.</p>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<div class="features-bg">
-  <div class="features">
-    <h2>Pourquoi Yaammoo ?</h2>
-    <div class="feat-grid">
-      <div class="feat">
-        <div class="icon">⚡️</div>
-        <h3>Livraison rapide</h3>
-        <p>Nos livreurs locaux connaissent le terrain pour vous livrer au plus vite.</p>
-      </div>
-      <div class="feat">
-        <div class="icon">📍</div>
-        <h3>Commerces de proximité</h3>
-        <p>Soutenez les restaurants et boutiques de votre quartier.</p>
-      </div>
-      <div class="feat">
-        <div class="icon">🔔</div>
-        <h3>Suivi en temps réel</h3>
-        <p>Soyez notifié à chaque étape de votre commande.</p>
-      </div>
-      <div class="feat">
-        <div class="icon">💵</div>
-        <h3>Paiement à la livraison</h3>
-        <p>Payez en espèces à la réception. Zéro inscription bancaire.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- FOOTER -->
-<footer>
-  <div>
-    <a href="https://yaammoo.rauval.com/privacy">Politique de confidentialité</a>
-    <a href="https://yaammoo.rauval.com/support">Support</a>
-    <a href="https://yaammoo.rauval.com/accessibility">Accessibilité</a>
-  </div>
-  <div class="copy">&copy; 2025 Yaammoo. Tous droits réservés.</div>
-</footer>
-
+  <script>
+    const homes=[['Entire apartment in Center','Sunset Paradise','1 bedroom · 2 Guests · 1 bath','240 m²','$75,000.00','https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=80'],['Willowcrest Apartments','Serenity Heights','3 bedroom · 5 Guests · 3 bath','656 m²','$95,000.00','https://images.unsplash.com/photo-1572120360610-d971b9d7767c?auto=format&fit=crop&w=400&q=80'],['Cedarwood Manor','Tranquil Oaks','2 bedroom · 4 Guests · 2 bath','120 m²','$45,880.00','https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=400&q=80'],['Sunflower Gardens','Enchanted Gardens','3 bedroom · 6 Guests · 3 bath','550 m²','$91,080.00','https://images.unsplash.com/photo-1487958449943-2429e8be8625?auto=format&fit=crop&w=400&q=80'],['Lakeview Apartments','The Haven Residences','1 bedroom · 2 Guests · 1 bath','240 m²','$98,500.00','https://images.unsplash.com/photo-1511818966892-d7d671e672a2?auto=format&fit=crop&w=400&q=80']];
+    const list=document.getElementById('propertyList'); homes.forEach((h,i)=>list.insertAdjacentHTML('beforeend',`<article class="property ${i===1?'active':''}" data-index="${i}"><img src="${h[5]}" alt="${h[1]}"><div class="unit"><div class="row"><span>${h[0]}</span><i class="fa-regular fa-heart heart"></i></div><h3>${h[1]}</h3><div class="meta">${h[2]}</div><div class="row"><span class="meta"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${h[3]}</span><b class="price">${h[4]}</b></div></div></article>`));
+    list.addEventListener('click',e=>{const card=e.target.closest('.property');if(!card)return;document.querySelectorAll('.property').forEach(x=>x.classList.remove('active'));card.classList.add('active');const h=homes[card.dataset.index];document.getElementById('propertyTitle').textContent=h[1];document.getElementById('mainImage').src=h[5].replace('w=400','w=1200');});
+  </script>
 </body>
 </html>

@@ -41,6 +41,8 @@ interface BoutiqueInfoPageProps {
   setPickupAllowed: (v: boolean) => void;
   loading: boolean;
   onSubmit: () => void;
+  /** Hauteur du header au-dessus (TabHeader), pour caler le KeyboardAvoidingView. */
+  keyboardOffset?: number;
 }
 
 /** Formulaire boutique : infos generales (scroll + bouton de validation fixe). */
@@ -72,12 +74,14 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   setPickupAllowed,
   loading,
   onSubmit,
+  keyboardOffset = 0,
 }) => (
   <View style={{ flex: 1 }}>
+    {/* Pas de KeyboardAvoidingView : sa hauteur animee ferait bouger le
+        space-between ci-dessous. Le ScrollView natif (keyboardShouldPersistTaps)
+        suffit a scroller manuellement vers un input cache par le clavier. */}
     <ScrollView
       style={{ flex: 1 }}
-      // flexGrow + space-between : sur grand ecran, l'espace libre est reparti
-      // entre les lignes plutot que laisse en bloc au-dessus du bouton.
       contentContainerStyle={{
         paddingBottom: 16,
         flexGrow: 1,
@@ -92,7 +96,6 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           flexDirection: "row",
           alignItems: "center",
           gap: 12,
-          marginBottom: 14,
         }}
       >
         <TouchableOpacity onPress={pickImage} style={styles.avatarCircle}>
@@ -115,7 +118,9 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       </View>
 
       {/* Heures ouverture/fermeture sur une ligne */}
-      <View style={[styles.formRow, { marginTop: 10, gap: 6 }]}>
+      <View
+        style={[styles.formRow, { marginTop: 16, gap: 6 }]}
+      >
         <View style={{ flex: 1 }}>
           <Text style={styles.floatingLabel}>Ouverture</Text>
           <TouchableOpacity
@@ -137,7 +142,9 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       </View>
 
       {/* Numéros de contact sur une ligne */}
-      <View style={[styles.formRow, { marginTop: 15, gap: 6 }]}>
+      <View
+        style={[styles.formRow, { marginTop: 16, gap: 6 }]}
+      >
         <View style={{ flex: 1 }}>
           <Text style={styles.floatingLabel}>OM</Text>
           <TextInput
@@ -173,8 +180,44 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         </View>
       </View>
 
+      {/* Délai livraison + jours en avance sur une ligne */}
+      <View
+        style={[styles.formRow, { marginTop: 16, gap: 10 }]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={styles.floatingLabel}>Délai livraison (minutes)</Text>
+          <Text style={styles.helperText}>
+            Temps limite pour commander avant le créneau (ex: 30 = bloqué 30 min avant)
+          </Text>
+          <TextInput
+            style={[styles.glassInput, { borderRadius: 20 }]}
+            value={orderLeadTime}
+            onChangeText={setOrderLeadTime}
+            keyboardType="numeric"
+            placeholder="ex: 30"
+            placeholderTextColor="#cbd5e1"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.floatingLabel}>Jours en avance</Text>
+          <Text style={styles.helperText}>
+            Nombre de jours réservables à l'avance (ex: 3 = aujourd'hui à après-demain)
+          </Text>
+          <TextInput
+            style={[styles.glassInput, { borderRadius: 20 }]}
+            value={advanceDays}
+            onChangeText={setAdvanceDays}
+            keyboardType="numeric"
+            placeholder="ex: 3"
+            placeholderTextColor="#cbd5e1"
+          />
+        </View>
+      </View>
+
       {/* Localisation (villes) + acces aux zones de livraison sur une ligne */}
-      <View style={[styles.formRow, { marginTop: 15, gap: 10 }]}>
+      <View
+        style={[styles.formRow, { marginTop: 16, gap: 10 }]}
+      >
         <View style={[styles.inputGroup, { flex: 1, marginTop: 0 }]}>
           <Text style={styles.floatingLabel}>
             Localisation
@@ -243,47 +286,13 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         </View>
       </View>
 
-      {/* Délai livraison + jours en avance sur une ligne */}
-      <View style={[styles.formRow, { marginTop: 15, gap: 10 }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Délai livraison (minutes)</Text>
-          <Text style={styles.helperText}>
-            Les clients ne pourront plus commander X minutes avant l'heure de
-            livraison
-          </Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={orderLeadTime}
-            onChangeText={setOrderLeadTime}
-            keyboardType="numeric"
-            placeholder="ex: 30"
-            placeholderTextColor="#cbd5e1"
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Jours en avance</Text>
-          <Text style={styles.helperText}>
-            Nombre de jours à l'avance qu'un client peut commander (ex: 3 =
-            aujourd'hui, demain, après-demain)
-          </Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={advanceDays}
-            onChangeText={setAdvanceDays}
-            keyboardType="numeric"
-            placeholder="ex: 3"
-            placeholderTextColor="#cbd5e1"
-          />
-        </View>
-      </View>
-
       {/* Récupération à la boutique (déplacé depuis la page 2) */}
       <View
         style={{
           backgroundColor: "#f8fafc",
           borderRadius: 14,
           padding: 14,
-          marginTop: 15,
+          marginTop: 16,
           borderWidth: 1,
           borderColor: "#e2e8f0",
         }}
@@ -325,6 +334,8 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
 
     {/* Bouton de validation fixe en bas */}
     <TouchableOpacity
+      // styles.updateBtn a marginTop: 28 ; on l'ecrase pour un espacement
+      // regulier avec les autres lignes du formulaire (16).
       style={[styles.updateBtn, { marginTop: 16 }]}
       onPress={onSubmit}
       disabled={loading}

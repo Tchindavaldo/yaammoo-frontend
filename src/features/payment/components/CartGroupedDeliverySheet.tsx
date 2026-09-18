@@ -449,7 +449,7 @@ export const CartGroupedDeliverySheet: React.FC<
 
   // Donnees de livraison de la boutique de reference (creneaux, offre), mises
   // en cache pour ne pas repartir de `null` a chaque ouverture.
-  const { rawHours, orderLeadTime, advanceDays, deliveryOffer } =
+  const { rawHours, orderLeadTime, advanceDays, deliveryOffer, pickupAllowed } =
     useGroupedDeliveryData(fastFoodId);
 
   // Des zones express existent-elles (nouveau format `deliveryHours`) ? Sans
@@ -570,6 +570,7 @@ export const CartGroupedDeliverySheet: React.FC<
             network={network}
             onNetworkChange={onNetworkChange}
             isBusy={isBusy}
+            pickupAllowed={pickupAllowed}
             step={step}
           />
 

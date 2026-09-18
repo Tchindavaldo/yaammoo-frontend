@@ -33,6 +33,13 @@ export const DetailTab: React.FC<DetailTabProps> = ({
     ? menuPrice + extrasPrice + drinksPrice
     : menuPrice + extrasPrice + drinksPrice + deliveryPrice;
   const images = menu.images && menu.images.length > 0 ? menu.images : [menu.image];
+  // Description affichée = celle du PRIX sélectionné. optionPrix1/2/3 sont les
+  // miroirs aplatis de prices[].description (normalizeMenu côté home, mapping
+  // du panier). Rien ne s'affiche si la description du prix est absente.
+  const priceDescription =
+    [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
+      selectedPriceIndex - 1
+    ] || "";
 
   return (
     <View style={styles.detailContainer}>
@@ -41,10 +48,11 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         <ImageSlider images={images} />
         <View style={styles.headerInfo}>
           <Text style={[styles.productTitle, styles.textDark]}>{menu.titre}</Text>
-          <Text style={[styles.productDesc, styles.textGrayDark]} numberOfLines={3}>
-            {/* Note: In a real app, this should come from menu.description if available */}
-            Produit de qualité supérieure préparé avec soin par nos chefs Yaammoo.
-          </Text>
+          {!!priceDescription && (
+            <Text style={[styles.productDesc, styles.textGrayDark]} numberOfLines={3}>
+              {priceDescription}
+            </Text>
+          )}
         </View>
       </View>
 

@@ -58,6 +58,8 @@ if (
 export default function OrdersScreen() {
   const {
     loading,
+    // Renommé : `refreshing` est déjà pris par le pull-to-refresh local.
+    refreshing: ordersRefreshing,
     orders,
     pendingToBuy,
     refresh,
@@ -655,7 +657,24 @@ export default function OrdersScreen() {
   // Chargement initial / refetch forcé : on affiche un loader qui réplique la
   // structure des CartOrderCard (skeleton), sous le TabHeader, pour éviter le
   // saut visuel du spinner plein écran.
-  if ((loading && orders.length === 0) || forceLoading) {
+  //
+  // ⚠️ `refreshing` couvre le RETOUR dans l'app : la garde `orders.length === 0`
+  // réservait le skeleton au tout premier chargement, donc au retour la liste
+  // était déjà remplie et le rafraîchissement se faisait sans le moindre signe —
+  // l'utilisateur restait devant des statuts périmés sans savoir qu'ils
+  // changeaient.
+  //
+  // ⚠️ Surtout PAS `loading` seul : `addOrder` et `buyOrders` le lèvent aussi,
+  // et toute la page clignoterait pendant un ajout au panier. Les catch-up
+  // socket, eux, passent en mode silencieux et n'affichent rien.
+  //
+  // ⚠️ `!refreshing` exclut le pull-to-refresh : il a déjà son propre indicateur
+  // natif, et le skeleton s'afficherait par-dessus, masquant le geste en cours.
+  if (
+    (loading && orders.length === 0) ||
+    (ordersRefreshing && !refreshing) ||
+    forceLoading
+  ) {
     return (
       <View style={styles.container}>
         <TabHeader

@@ -8,13 +8,59 @@
 - **Handlers globaux** : `src/services/useSocketEvents.ts` — hook monté dans `_layout.tsx` qui abonne le client aux events et dispatch vers les contexts (OrderContext, NotificationContext, MerchantContext, MerchantWalletContext, WalletContext, FastFoodContext).
 - **Principe : injection directe du payload (pas de refetch).** Chaque event porte sa donnée complète (`data: order`, `menu`, `data: transaction`, `notification`, …). Le handler l'injecte dans le contexte via une méthode `upsert*FromSocket` / `remove*FromSocket` / `addFromSocket`. Aucun appel HTTP n'est déclenché par un event individuel.
 - **Room** : dès que `AuthContext.userData.uid` est dispo, le client `emit('join_user', uid)` → rejoint sa room `userId` (côté backend).
-- **Catch-up sur `connect` (seul refresh restant)** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)`, `refreshDriver(false)` et `refreshBonuses(true)` en mode silencieux pour rattraper les events **fire-and-forget** manqués hors-ligne. Les events **fiabilisés** sont, eux, rejoués par le backend (replay + `__eventId` + ACK) — voir plus bas.
+- **Catch-up sur `connect` (seul refresh restant)** : à chaque (re)connexion, le handler émet `join_user` puis appelle `refreshNotifications(true)`, `refreshOrders(true)`, `refreshMerchant(false)`, `refreshDriver(false)`, `refreshBonuses(true)` et `refreshLoadedSilently()` en mode silencieux pour rattraper les events **fire-and-forget** manqués hors-ligne. Les events **fiabilisés** sont, eux, rejoués par le backend (replay + `__eventId` + ACK) — voir plus bas.
+
+> ⚠️ `refreshLoadedSilently` couvre le **catalogue public** (home, boutique, checkout).
+> Ses events sont des broadcasts globaux (`io.emit`) : le backend ne les persiste
+> pas et ne les rejoue donc **jamais** au `join_user`. Sans ce refresh,
+> `fastfoodUpdated` (nom, photo, horaires), `globalMenuUpdated` (prix, plat),
+> `newGlobalMenu`, `globalMenuDeleted` et `newFastfood` étaient perdus dès que
+> l'app passait en arrière-plan. Le prix est le cas critique : le backend
+> recalcule le total à la commande, donc un prix périmé côté client fait échouer
+> le paiement. Un rechargement HTTP couvre les cinq events d'un coup — les
+> fiabiliser côté backend coûterait un stockage par utilisateur pour le même
+> résultat.
+>
+> ⚠️ **Surtout pas `refresh()`** : il repart de la première page, allume le
+> loader plein écran et tronque la liste — l'utilisateur qui revient dans l'app
+> perdrait sa position de scroll et verrait un écran de chargement sur une liste
+> déjà affichée. `refreshLoadedSilently()` remplace chaque boutique par sa
+> version fraîche **à la même position**. Il enchaîne les pages par curseur
+> jusqu'à couvrir tout ce qui est affiché : `limit` est plafonné à **50** par le
+> backend, qui rabote silencieusement, donc une requête unique laisserait les
+> boutiques au-delà du 50e avec leurs anciens prix. Avec `PAGE_SIZE = 3`, ce
+> plafond ramène un catalogue de 100 boutiques à 2 allers-retours au lieu de 34.
+> Une boutique absente de la réponse est **conservée** : la retirer la ferait
+> disparaître de l'écran.
 
 > ⚠️ `refreshBonuses` est indispensable au **deep-link depuis une notification push** : ouvrir l'app depuis la notif reconnecte le socket *après* l'event. Le rejeu ne couvre pas tout — `bonus.activation_changed` n'est pas fiabilisé, et `withAck` ignore un `__eventId` déjà vu dans la même session (app en arrière-plan puis rouverte). Sans ce refresh, la page bonus affiche l'état d'avant la notification.
 
 - **Catch-up sur retour au premier plan (`AppState`)** : le `connect` seul ne suffit pas. L'OS (iOS surtout) gèle le JS en arrière-plan et peut couper la websocket **sans que socket.io s'en aperçoive** — au réveil la socket paraît vivante, aucun `connect` ne part, donc aucun rattrapage. Le listener `AppState` rejoue donc `catchUp()` au passage en `active` (ou force `socket.connect()` si le lien est mort, le `connect` qui suit s'en chargeant).
 
-> C'est le cas concret des **identifiants reçus app en arrière-plan** : sans ce listener, taper la notification ramène l'app au premier plan mais la récompense n'apparaît pas. Une garde de 10 s (`CATCH_UP_COOLDOWN_MS`) évite la rafale de requêtes quand on bascule rapidement entre deux applications.
+> C'est le cas concret des **identifiants reçus app en arrière-plan** : sans ce listener, taper la notification ramène l'app au premier plan mais la récompense n'apparaît pas.
+
+> ⚠️ **Aucune garde de temps sur le retour au premier plan.** Une garde de 10 s
+> (`CATCH_UP_COOLDOWN_MS`) a existé puis a été **retirée** : la télémétrie Sentry
+> a montré des retours entièrement ignorés quelques secondes après une
+> reconnexion (`disconnect` → `foreground-dead` → `connect` → deux
+> `foreground-skipped` à 4 s et 3 s d'intervalle), alors que l'OS avait pu tuer
+> le lien entre-temps. Les events tombés pendant ces allers-retours n'étaient ni
+> reçus, ni rattrapés. Un rattrapage de trop coûte 5 requêtes silencieuses ; un
+> rattrapage manqué coûte un paiement invisible. **Ne pas réintroduire de
+> cooldown.**
+
+> ⚠️ **Les commandes sont rechargées AVANT toute logique socket, et AVEC le
+> loader.** C'est ce que l'utilisateur regarde en rouvrant l'app : attendre la
+> reconnexion, puis le `connect`, puis le `catchUp` différé de 500 ms lui
+> laissait des statuts périmés plusieurs secondes, sans aucun signe qu'un
+> rafraîchissement était en cours. Le loader part dès la première frame.
+> Un drapeau (`ordersJustRefreshed`) empêche le `catchUp` qui suit de refaire
+> les mêmes requêtes.
+>
+> ⚠️ Les deux conventions sont **inversées** : `refreshOrders(quiet)` côté
+> client, `refreshMerchant(showLoading)` côté marchand. `refreshOrders(false)` et
+> `refreshMerchant(true)` affichent donc tous deux le loader — ce n'est pas une
+> faute de frappe.
 
 Le handler traite trois cas :
 
@@ -23,6 +69,18 @@ Le handler traite trois cas :
 | Lien mort, connu comme tel | `!socket.connected` | `connect()` — son handler fait le catch-up |
 | Lien vivant | `socket.connected` | re-`join_user` (rejeu des events non acquittés) + `catchUp()` |
 | Lien **zombie** | aucun paquet Engine.IO en 4 s (`PING_TIMEOUT_MS`) | `disconnect()` + `connect()` pour forcer un vrai `connect` |
+
+> **Telemetrie Sentry** (`src/services/socketTelemetry.ts`) : chaque transition
+> remonte un evenement (`Socket connect` / `disconnect` avec sa raison /
+> `foreground-dead` / `foreground-alive` / `zombie-recycled`). Sans elle,
+> impossible de savoir lequel des cas s'est produit quand un utilisateur ne voit
+> pas ses events au retour dans l'app — c'est elle qui a identifie le cooldown
+> comme cause du silence.
+>
+> ⚠️ Ces evenements **retirent leur stack trace** (`addEventProcessor`) : tant
+> qu'une stack est presente, Sentry titre l'issue d'apres elle (« anonymous ») et
+> releguee le message au champ Culprit. `setTransactionName` seul ne corrige pas
+> le titre.
 
 > ⚠️ Le cas zombie est **décisif pendant un paiement** : le flux USSD impose à l'utilisateur de quitter l'app, donc `payment.settled` tombe presque toujours en arrière-plan. Une socket vue à tort comme connectée n'entend pas l'event et n'en déclenche pas le rejeu — l'overlay tournerait alors que le paiement a abouti. La sonde écoute le ping/pong natif du moteur (`socket.io.engine`), sans dépendre d'un handler applicatif côté serveur.
 

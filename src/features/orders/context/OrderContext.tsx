@@ -1,15 +1,30 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from "react";
+import { storage } from "@/src/utils/storage";
 import axios from "axios";
 import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Commande } from "@/src/types";
 import { sanitizeOrder } from "../utils/sanitizeOrder";
+import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
+import { useLazyFetch } from "@/src/hooks/useLazyFetch";
+
+/** Cache des commandes, pour un badge panier juste des la premiere frame. */
+const ORDERS_CACHE_KEY = "orders_cache";
 
 interface OrderContextType {
   orders: Commande[];
   loading: boolean;
+  /**
+   * Un refetch des commandes est en cours (retour dans l'app, pull-to-refresh).
+   * ⚠️ Distinct de `loading`, que levent AUSSI `addOrder` et `buyOrders` : s'y
+   * fier pour masquer l'ecran le ferait clignoter pendant un ajout au panier.
+   */
+  refreshing: boolean;
+  /** Declenche le premier chargement. Appele par le home. */
+  ensureLoaded: () => void;
   error: string | null;
-  refresh: (quiet?: boolean) => Promise<void>;
+  /** Renvoie `false` en cas d'echec (voir `useLazyFetch`). */
+  refresh: (quiet?: boolean) => Promise<void | boolean>;
   addOrder: (orderData: any) => Promise<{ success: boolean; message?: string }>;
   deleteOrder: (id: string) => Promise<boolean>;
   updateQuantity: (id: string, newQty: number) => Promise<boolean>;
@@ -40,31 +55,103 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchOrders = useCallback(async (quiet = false) => {
-    if (!userData) return;
+  /**
+   * Rafraichissement declenche par le RETOUR dans l'app, distinct de `loading`.
+   *
+   * ⚠️ `loading` est aussi leve par `addOrder` et `buyOrders` : s'en servir pour
+   * afficher le skeleton plein ecran masquerait toute la page pendant un ajout
+   * au panier ou un achat. Il faut donc un etat propre a ce cas.
+   */
+  const [refreshing, setRefreshing] = useState(false);
+
+  /**
+   * Une donnee FRAICHE (serveur ou socket) est deja arrivee : l'hydratation
+   * storage, asynchrone, ne doit plus ecraser le state — sinon la liste
+   * s'affiche puis disparait, remplacee par un cache perime.
+   */
+  const hasFreshDataRef = useRef(false);
+
+  /**
+   * Hydratation depuis le cache au montage, pour un affichage instantane.
+   *
+   * ⚠️ Sans elle, le badge du panier affichait 0 au demarrage puis sautait a sa
+   * vraie valeur a l'arrivee de la reponse. Le fetch ayant ete deplace du splash
+   * vers le home, ce trou serait devenu visible a chaque lancement.
+   */
+  useEffect(() => {
+    (async () => {
+      const cached = await storage.get(ORDERS_CACHE_KEY);
+      if (!hasFreshDataRef.current && Array.isArray(cached) && cached.length > 0) {
+        setOrders(cached);
+      }
+    })();
+  }, []);
+
+  const persistCache = useCallback(async (list: Commande[]) => {
     try {
-      if (!quiet) setLoading(true);
+      await storage.set(ORDERS_CACHE_KEY, list);
+    } catch {
+      // Un cache non ecrit n'est pas une erreur a remonter : la prochaine
+      // reponse serveur fait foi.
+    }
+  }, []);
+
+  const fetchOrders = useCallback(async (quiet = false) => {
+    // Rien n'a ete charge : `false` pour que la demande reste rearmee.
+    if (!userData) return false;
+    try {
+      if (!quiet) {
+        setLoading(true);
+        // Signale un rafraichissement des commandes, par opposition a un
+        // `addOrder` / `buyOrders` qui levent aussi `loading` : l'ecran peut
+        // ainsi afficher son skeleton SANS le faire pendant un ajout au panier.
+        setRefreshing(true);
+      }
       setError(null);
       const response = await axios.get(
         `${Config.apiUrl}/order/user/all/${userData?.uid}`,
         { headers: { "ngrok-skip-browser-warning": "true" } }
       );
       if (response.data && response.data.data) {
+        hasFreshDataRef.current = true;
         setOrders(response.data.data);
+        void persistCache(response.data.data);
       }
+      return true;
     } catch (err: any) {
       console.error("Error fetching orders:", err);
       if (!quiet) setError("Erreur réseau");
+      // `false` rearme `useLazyFetch` : le prochain passage sur une page de
+      // commandes relancera le chargement au lieu de rester sur l'erreur.
+      return false;
     } finally {
-      if (!quiet) setLoading(false);
+      if (!quiet) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, [userData]);
+  }, [userData, persistCache]);
 
-  useEffect(() => {
-    if (userData) {
-      fetchOrders(true); // Quiet initial load
-    }
-  }, [userData, fetchOrders]);
+  // Changement de compte / deconnexion : on vide AVANT tout refetch. Sinon les
+  // commandes de l'ancien compte restent affichees, le fetch sortant tot tant
+  // qu'il n'y a pas d'uid.
+  //
+  // ⚠️ Le cache n'est pas indexe par compte : sans purge, le compte suivant
+  // s'hydraterait avec les commandes du precedent au montage.
+  useResetOnUserChange(userData?.uid, () => {
+    hasFreshDataRef.current = false;
+    setOrders([]);
+    setError(null);
+    storage.remove(ORDERS_CACHE_KEY).catch(() => {});
+  });
+
+  // Premier chargement DIFFERE, declenche par le HOME : sous le splash, seules
+  // `/fastFood/all` et `/settings/app-version` ont le droit de partir. Le badge
+  // du panier tient sur le cache en attendant.
+  const { ensureLoaded } = useLazyFetch(
+    () => fetchOrders(true),
+    !!userData,
+  );
 
   const addOrder = async (orderData: any): Promise<{ success: boolean; message?: string }> => {
     try {
@@ -243,8 +330,10 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const value = {
     orders,
     loading,
+    refreshing,
     error,
     refresh: fetchOrders,
+    ensureLoaded,
     addOrder,
     deleteOrder,
     updateQuantity,

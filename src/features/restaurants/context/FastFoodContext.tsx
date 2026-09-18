@@ -3,6 +3,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { getOptionalIdToken } from "@/src/services/idToken";
 import { sinceBoot } from "@/src/utils/bootClock";
+import { trackBootStep } from "@/src/services/bootTelemetry";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import axios from "axios";
@@ -371,9 +372,11 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // Mesure du chargement qui LEVE LE SPLASH : c'est le chemin critique du
       // demarrage, la seule requete dont l'affichage depend vraiment.
       if (isFirstPage && !hasLoadedOnce) {
+        const elapsed = Date.now() - startedAt;
         console.log(
-          `[boot t=${sinceBoot()}s] /fastFood/all en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
+          `[boot t=${sinceBoot()}s] /fastFood/all en ${(elapsed / 1000).toFixed(2)}s`,
         );
+        trackBootStep("catalogue", elapsed);
       }
 
       // `hasLoadedOnce` pilote la revelation de (tabs) : une reponse recue,

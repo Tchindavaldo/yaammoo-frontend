@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Config } from "@/src/api/config";
 import { sinceBoot } from "@/src/utils/bootClock";
+import { trackBootStep } from "@/src/services/bootTelemetry";
 
 export interface AppVersionGate {
   clientVersion: string;
@@ -33,9 +34,11 @@ export function useAppVersionGate() {
       console.error("[appVersion] vérification impossible :", error);
       setGate(null);
     } finally {
+      const elapsed = Date.now() - startedAt;
       console.log(
-        `[boot t=${sinceBoot()}s] /settings/app-version en ${((Date.now() - startedAt) / 1000).toFixed(2)}s`,
+        `[boot t=${sinceBoot()}s] /settings/app-version en ${(elapsed / 1000).toFixed(2)}s`,
       );
+      trackBootStep("appVersion", elapsed);
       setChecked(true);
     }
   }, []);

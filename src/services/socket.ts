@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { Config } from '../api/config';
 import { sinceBoot } from '../utils/bootClock';
+import { trackBootStep } from './bootTelemetry';
 
 class SocketService {
     private socket: Socket;
@@ -45,6 +46,7 @@ class SocketService {
                 `[boot t=${sinceBoot()}s] socket connecte ${transport}` +
                 (ms !== null ? ` en ${(ms / 1000).toFixed(2)}s` : ''),
             );
+            if (ms !== null) trackBootStep('socket', ms);
         });
         // `disconnect` porte la RAISON de la chute, que `connect_error` n'a pas.
         // Sans lui on ne voyait que les echecs de reconnexion, jamais la cause.

@@ -28,7 +28,7 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 3;
 
 /**
  * TEST [ROW] — `false` = `resetToFirstPage()` ne tronque plus (mesure du scroll
@@ -362,16 +362,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
           );
           setFastFoods(data);
         } else {
-          setFastFoods((prev) => {
-            // Dédup par id : un `newFastfood` reçu par socket pendant le
-            // chargement peut déjà avoir inséré une boutique de cette page.
-            const known = new Set(prev.map((ff) => ff.id));
-            const added = raw
-              .filter((item) => item?.id && !known.has(item.id))
-              .map((item, i) => normalizeFastFood(item, (prev.length + i) % 6));
-            if (added.length === 0) return prev;
-            return [...prev, ...added];
-          });
+          // Insertion ETALEE : une rangee par frame au lieu de la page d'un
+          // coup. 3 rangees ≈ 90 ms d'un bloc (pause visible) ; une par frame
+          // passe inapercue, sans jamais stopper le geste.
+          const base = fastFoodsLenRef.current + staggerQueueRef.current.length;
+          const batch = raw
+            .filter((item) => item?.id)
+            .map((item, i) => normalizeFastFood(item, (base + i) % 6));
+          staggerQueueRef.current.push(...batch);
+          pumpStaggeredAppend();
         }
       }
     } catch (err: any) {
@@ -603,6 +602,29 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const cancelPendingLoadMore = useCallback(() => {
     resetSeqRef.current += 1;
     setLoadingMore(false);
+  }, []);
+
+  /**
+   * File d'insertion etalee : les pages suivantes s'ajoutent une rangee par
+   * frame (`pumpStaggeredAppend`), jamais la page d'un coup. Une seule pompe
+   * tourne a la fois pour preserver l'ordre des pages.
+   */
+  const staggerQueueRef = useRef<any[]>([]);
+  const staggerPumpOnRef = useRef(false);
+  const pumpStaggeredAppend = useCallback(() => {
+    const item = staggerQueueRef.current.shift();
+    if (!item) {
+      staggerPumpOnRef.current = false;
+      return;
+    }
+    staggerPumpOnRef.current = true;
+    setFastFoods((prev) => {
+      // Dédup par id : un `newFastfood` reçu par socket pendant le
+      // chargement peut déjà avoir inséré une boutique de cette page.
+      if (prev.some((ff) => ff.id === item.id)) return prev;
+      return [...prev, item];
+    });
+    requestAnimationFrame(pumpStaggeredAppend);
   }, []);
 
   // Refetch à CHAQUE changement d'identité — mais JAMAIS avant que Firebase

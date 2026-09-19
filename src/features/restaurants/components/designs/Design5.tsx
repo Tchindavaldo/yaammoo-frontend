@@ -16,7 +16,7 @@ interface DesignProps {
 }
 
 const LIMIT_MENUS_ENABLED = true;
-const MAX_VISIBLE_MENUS = 5;
+const MAX_VISIBLE_MENUS = 1;
 
 export const Design5: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
   useRowCommitProbe(5, fastFood.menu?.length ?? 0, (fastFood as any)?.id);

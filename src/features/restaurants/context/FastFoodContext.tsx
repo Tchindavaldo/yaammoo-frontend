@@ -28,7 +28,7 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 5;
 
 /**
  * TEST [ROW] — `false` = `resetToFirstPage()` ne tronque plus (mesure du scroll
@@ -514,7 +514,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const loadMore = useCallback(() => {
     // Une recherche affiche ses propres résultats pagines ; on continue de
     // paginer dedans avec le meme `q`, sinon on melangerait deux listes.
-    if (loadingMore || loading || !cursorRef.current) return;
+    if (loadingMore || loading || !cursorRef.current) {
+      console.log(
+        `[ROW] LOADMORE-SKIP loadingMore=${loadingMore} loading=${loading} cursor=${cursorRef.current ? "ok" : "null"}`,
+      );
+      return;
+    }
 
     // ⚠️ Verrou de troncature : on refuse UNIQUEMENT le rebond automatique.
     //

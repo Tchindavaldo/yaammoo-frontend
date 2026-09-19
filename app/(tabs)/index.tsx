@@ -14,6 +14,7 @@ import React, {
 } from "react";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import {
+  Animated,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -120,6 +121,21 @@ export default function HomeScreen() {
     type: "success" | "error";
   } | null>(null);
 
+  // Loader bas INDEPENDANT : monte une seule fois, apparait/disparait en
+  // fade sans jamais toucher au contenu de la liste (ni `ListFooterComponent`
+  // qui re-layoute, ni `scrollEnabled` qui reconstruit). `pointerEvents none` :
+  // il ne bloque ni scroll ni taps. Visible seulement pendant un fetch avec
+  // une suite (`hasMore`) ; la fin de catalogue garde son message en liste.
+  const showBottomLoader = loadingMore && hasMore;
+  const loaderOpacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(loaderOpacity, {
+      toValue: showBottomLoader ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [showBottomLoader, loaderOpacity]);
+
   const onManualRefresh = async () => {
     setRefreshing(true);
     await refresh();
@@ -160,6 +176,10 @@ export default function HomeScreen() {
    */
   const atBottomRef = useRef(false);
   const [atBottom, setAtBottom] = useState(false);
+  // Re-armement : apres un fetch, le rebond au bas redeclenche la transition
+  // sans geste (double fetch, double loader). On n'autorise le fetch suivant
+  // qu'apres etre remonte de 200 px : le rebond (±40 px) ne re-arme jamais.
+  const fetchArmedRef = useRef(true);
   const handleScroll = useCallback(
     (e: any) => {
       const y = e.nativeEvent.contentOffset.y;
@@ -179,13 +199,15 @@ export default function HomeScreen() {
       const { contentSize, layoutMeasurement } = e.nativeEvent;
       const distanceToEnd = contentSize.height - layoutMeasurement.height - y;
       const nextAtBottom = distanceToEnd <= 0;
+      if (distanceToEnd > 200) fetchArmedRef.current = true;
       if (nextAtBottom !== atBottomRef.current) {
         atBottomRef.current = nextAtBottom;
         setAtBottom(nextAtBottom);
-        // ⚠️ Le fetch ne part QU'ICI, au bas reel, jamais en avance : le
-        // loader est visible et le scroll se fige. `loadMore` garde le reste
-        // (pas de curseur = fini, deja en vol = ignore).
-        if (nextAtBottom) {
+        // ⚠️ Le fetch ne part QU'ICI, au bas reel, jamais en avance, et une
+        // seule fois par arrivee (re-arme apres 200 px) : le loader est
+        // visible. `loadMore` garde le reste (fini, deja en vol = ignore).
+        if (nextAtBottom && fetchArmedRef.current) {
+          fetchArmedRef.current = false;
           console.log(`[ROW] AT-BOTTOM fetch distance=${distanceToEnd.toFixed(1)}`);
           loadMoreRef.current();
         }
@@ -307,25 +329,10 @@ export default function HomeScreen() {
     return data;
   }, [fastFoods]);
 
-  // Pied de liste, quatre états :
-  //  - chargement de la page suivante → indicateur ;
-  //  - aucune boutique → message vide ;
-  //  - catalogue épuisé → message de fin, pour que le bas de liste ne se
-  //    termine pas sur un blanc qui laisse croire que ça charge encore ;
-  //  - sinon rien (évite un espace vide pendant le défilement normal).
-  //
-  // ⚠️ Le message « aucune boutique » est ICI et non dans `ListEmptyComponent` :
-  // la banniere occupe l'item 0, la liste n'est donc JAMAIS vide et React Native
-  // ne rendrait plus jamais ce composant.
+  // Pied de liste : le loader de pagination vit HORS de la liste (overlay
+  // fixe au-dessus de la navbar, en fade) pour ne jamais toucher au contenu :
+  // ici seulement les etats stables (vide, fin de catalogue).
   const listFooter = useMemo(() => {
-    if (loadingMore && hasMore) {
-      console.log(`[ROW] LOADER-SHOW`);
-      return (
-        <View style={styles.footerLoader}>
-          <ActivityIndicator size="small" color={Theme.colors.primary} />
-        </View>
-      );
-    }
     if (fastFoods.length === 0 && !loading) {
       return (
         <View style={styles.centered}>
@@ -352,7 +359,7 @@ export default function HomeScreen() {
       );
     }
     return null;
-  }, [loadingMore, hasMore, loading, fastFoods.length, searchQuery]);
+  }, [hasMore, loading, fastFoods.length, searchQuery]);
 
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
@@ -577,7 +584,9 @@ export default function HomeScreen() {
             contentContainerStyle={[
               styles.listContent,
               {
-                paddingBottom: tabBarHeight + 20,
+                // Marge large : le loader independant flotte au-dessus de la
+                // navbar, il ne doit coller ni la masquer la derniere rangee.
+                paddingBottom: tabBarHeight + 90,
                 paddingHorizontal: Theme.design.horizontalPadding,
               },
             ]}
@@ -607,8 +616,9 @@ export default function HomeScreen() {
             // termine avant l'arrivee, ni loader ni gel visibles. Le fetch est
             // declenche par la transition `atBottom` dans `handleScroll`.
             onEndReached={undefined}
-            // Pre-rendu ~1 ecran en avance : les rangees suivantes se montent
-            // hors ecran, leur commit (20-35 ms) ne se voit plus au scroll.
+            // Pre-rendu modere : les rangees proches se montent en avance, mais
+            // une page ajoutee pendant qu'on lit le haut ne se monte pas (pas
+            // de pause d'insertion). 3200 montait tout, y compris hors regard.
             drawDistance={800}
             // ⚠️ SCROLL FIGE une fois le bas atteint, tant que la page suivante
             // charge. On ne bride pas le rebond (ni `bounces`, ni
@@ -627,12 +637,21 @@ export default function HomeScreen() {
             // bloquerait aussi un chargement declenche AVANT le bas
             // (`onEndReachedThreshold`), alors que l'utilisateur defile encore
             // normalement au milieu de la liste.
-            // Fige a `!(loadingMore && hasMore && atBottom)` comme sur le main :
-            // une fois le bas atteint, plus aucun mouvement vers le bas tant
-            // que la page suivante charge, le loader reste visible.
-            scrollEnabled={!(loadingMore && hasMore && atBottom)}
+            // Pas de gel : figer `scrollEnabled` reconstruit la liste et c'est
+            // cet arret qui faisait la pause. Le scroll reste libre, le loader
+            // independant signale le chargement.
+            scrollEnabled
             ListFooterComponent={listFooter}
           />
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.bottomLoader,
+              { bottom: tabBarHeight + 28, opacity: loaderOpacity },
+            ]}
+          >
+            <ActivityIndicator size="large" color={Theme.colors.primary} />
+          </Animated.View>
         </View>
       </ShopRevealProvider>
       <CheckoutSheet
@@ -681,6 +700,13 @@ const styles = StyleSheet.create({
     height: FOOTER_LOADER_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
+  },
+  // Loader bas INDEPENDANT : fixe au-dessus de la navbar, monte une fois,
+  // visible seulement en fade pendant un fetch avec suite. Sans fond ni
+  // bordure, juste l'indicateur en grand.
+  bottomLoader: {
+    position: "absolute",
+    alignSelf: "center",
   },
   footerEnd: {
     paddingVertical: 24,

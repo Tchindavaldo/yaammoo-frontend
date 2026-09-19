@@ -1,11 +1,11 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { FastFood, Menu } from '@/src/types';
-import { MerchantHeader } from '../MerchantHeader';
-import { DesignItem } from './DesignItem';
-import { Theme } from '@/src/theme';
-import { useRowCommitProbe } from '../../utils/useRowCommitProbe';
+import { Theme } from "@/src/theme";
+import { FastFood, Menu } from "@/src/types";
+import { FlashList } from "@shopify/flash-list";
+import React, { useCallback, useMemo } from "react";
+import { StyleSheet, View } from "react-native";
+import { useRowCommitProbe } from "../../utils/useRowCommitProbe";
+import { MerchantHeader } from "../MerchantHeader";
+import { DesignItem } from "./DesignItem";
 
 interface DesignProps {
   fastFood: FastFood;
@@ -26,21 +26,33 @@ export const Design4: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
   );
   const visibleCount = visibleMenus.length;
 
-  const renderItem = useCallback(({ item, index }: { item: Menu; index: number }) => (
-    <DesignItem
-      menu={item}
-      variant={4}
-      merchantName={fastFood.nom}
-      onPress={() => onMenuClick(item)}
-      index={index}
-      isLast={index === visibleCount - 1}
-      deliveryHours={(fastFood as any)?.deliveryHours}
-      orderLeadTime={(fastFood as any)?.orderLeadTime}
-      stock={(item as any)?.stock ?? 0}
-    />
-  ), [fastFood.nom, onMenuClick, fastFood.deliveryHours, fastFood.orderLeadTime, visibleCount]);
+  const renderItem = useCallback(
+    ({ item, index }: { item: Menu; index: number }) => (
+      <DesignItem
+        menu={item}
+        variant={4}
+        merchantName={fastFood.nom}
+        onPress={() => onMenuClick(item)}
+        index={index}
+        isLast={index === visibleCount - 1}
+        deliveryHours={(fastFood as any)?.deliveryHours}
+        orderLeadTime={(fastFood as any)?.orderLeadTime}
+        stock={(item as any)?.stock ?? 0}
+      />
+    ),
+    [
+      fastFood.nom,
+      onMenuClick,
+      fastFood.deliveryHours,
+      fastFood.orderLeadTime,
+      visibleCount,
+    ],
+  );
 
-  const keyExtractor = useCallback((item: Menu) => item.id ?? String(Math.random()), []);
+  const keyExtractor = useCallback(
+    (item: Menu) => item.id ?? String(Math.random()),
+    [],
+  );
 
   const getItemLayout = useCallback(
     (data: Menu[], index: number) => ({
@@ -80,7 +92,7 @@ const styles = StyleSheet.create({
     marginBottom: Theme.design.marginBottom,
   },
   scrollWrapper: {
-    width: '100%',
-    overflow: 'hidden',
-  }
+    width: "100%",
+    overflow: "hidden",
+  },
 });

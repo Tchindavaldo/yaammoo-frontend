@@ -43,6 +43,14 @@ import { useNavigation, useRouter } from "expo-router";
 const BANNER_ITEM = { __banner: true as const, id: "__banner__" };
 
 /**
+ * Menus affiches du premier ecran : aligne sur `LIMIT_MENUS_ENABLED` /
+ * `MAX_VISIBLE_MENUS` des designs. Le groupe du premier ecran n'attend que
+ * des images montees : les menus caches ne se resolvant jamais, les attendre
+ * bloquerait la revelation (puis le voile anti-scroll) jusqu'au garde-fou.
+ */
+const FIRST_SCREEN_MENUS = 5;
+
+/**
  * Hauteur du loader de pagination (`styles.footerLoader`). Volontairement
  * genereuse : le loader doit se remarquer meme en scroll rapide.
  */
@@ -128,6 +136,10 @@ export default function HomeScreen() {
   // tous les onglets, et il n'a pas acces a la liste de cet ecran. L'evenement
   // `tabPress` remonte au screen, qui est le seul a tenir la ref.
   const listRef = useRef<FlashListRef<any>>(null);
+  // Ref stable vers `loadMore` pour le declenchement depuis `handleScroll`
+  // sans recreer le handler (et sans reconstruire la liste).
+  const loadMoreRef = useRef(loadMore);
+  loadMoreRef.current = loadMore;
   const navigation = useNavigation();
 
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -139,8 +151,6 @@ export default function HomeScreen() {
   // ⚠️ Declenchee a l'arret du scroll (`onMomentumScrollEnd`), jamais pendant
   // (`onScroll`) : retirer des cellules sous un doigt qui defile ferait sauter
   // la liste. Et toujours derriere la garde « on est bien en haut ».
-  /** Derniere position connue, pour deduire le SENS du scroll. */
-  const lastOffsetRef = useRef(0);
   /**
    * Bas de liste atteint. Combine a `loadingMore`, il fige le scroll le temps
    * du chargement de la page suivante (voir `scrollEnabled`).
@@ -168,25 +178,26 @@ export default function HomeScreen() {
       // deux transitions qui interessent le rendu.
       const { contentSize, layoutMeasurement } = e.nativeEvent;
       const distanceToEnd = contentSize.height - layoutMeasurement.height - y;
-      const nextAtBottom = distanceToEnd <= 8;
+      const nextAtBottom = distanceToEnd <= 0;
       if (nextAtBottom !== atBottomRef.current) {
         atBottomRef.current = nextAtBottom;
         setAtBottom(nextAtBottom);
+        // ⚠️ Le fetch ne part QU'ICI, au bas reel, jamais en avance : le
+        // loader est visible et le scroll se fige. `loadMore` garde le reste
+        // (pas de curseur = fini, deja en vol = ignore).
+        if (nextAtBottom) {
+          console.log(`[ROW] AT-BOTTOM fetch distance=${distanceToEnd.toFixed(1)}`);
+          loadMoreRef.current();
+        }
       }
 
-      // Remontee franche : meme raison que sur le tap Home, une page suivante
-      // encore en vol monterait ses cellules pendant que l'utilisateur defile
-      // vers le haut, et bloquerait le thread JS en plein geste. Le seuil evite
-      // de declencher sur le tremblement d'un doigt pose.
-      if (lastOffsetRef.current - y > 24) cancelPendingLoadMore();
-      lastOffsetRef.current = y;
       // Un scroll reel leve le verrou pose par la troncature : sans ce signal,
       // le contexte ne peut pas distinguer le rebond automatique de
       // `onEndReached` (la liste raccourcit, sa fin remonte sous le viewport)
       // d'une descente voulue par l'utilisateur.
       notifyUserScroll();
     },
-    [notifyUserScroll, cancelPendingLoadMore],
+    [notifyUserScroll],
   );
 
   const handleMomentumEnd = useCallback(() => {
@@ -258,7 +269,7 @@ export default function HomeScreen() {
     return [
       banners?.[0]?.imageUrl,
       first?.image,
-      ...((first?.menu ?? []).map((m: any) => m?.image) as string[]),
+      ...((first?.menu ?? []).slice(0, FIRST_SCREEN_MENUS).map((m: any) => m?.image) as string[]),
     ].filter(Boolean) as string[];
   }, [banners, fastFoods]);
 
@@ -308,6 +319,7 @@ export default function HomeScreen() {
   // ne rendrait plus jamais ce composant.
   const listFooter = useMemo(() => {
     if (loadingMore && hasMore) {
+      console.log(`[ROW] LOADER-SHOW`);
       return (
         <View style={styles.footerLoader}>
           <ActivityIndicator size="small" color={Theme.colors.primary} />
@@ -591,15 +603,13 @@ export default function HomeScreen() {
             //
             // ⚠️ Ne pas les reintroduire en pensant « regler » un souci de scroll :
             // sur FlashList ils n'ont aucun effet.
-            onEndReached={loadMore}
-            // ⚠️ 0.5 declenchait la requete une demi-hauteur d'ecran AVANT le bas.
-            // En scroll lent la reponse revenait avant qu'on y arrive : les
-            // boutiques etaient deja la, le loader n'apparaissait jamais. En
-            // scroll rapide on doublait la requete et on le voyait. Comportement
-            // inverse de celui voulu — le loader doit se voir a TOUTE vitesse.
-            // A 0.1, la page ne part qu'une fois le bas reellement atteint : on
-            // voit l'espace vide, le loader, puis les nouvelles boutiques.
-            onEndReachedThreshold={0.1}
+            // ⚠️ Pas de `onEndReached` : il partait en avance (seuil 0.1), fetch
+            // termine avant l'arrivee, ni loader ni gel visibles. Le fetch est
+            // declenche par la transition `atBottom` dans `handleScroll`.
+            onEndReached={undefined}
+            // Pre-rendu ~1 ecran en avance : les rangees suivantes se montent
+            // hors ecran, leur commit (20-35 ms) ne se voit plus au scroll.
+            drawDistance={800}
             // ⚠️ SCROLL FIGE une fois le bas atteint, tant que la page suivante
             // charge. On ne bride pas le rebond (ni `bounces`, ni
             // `contentInset` negatif, ni reclampage depuis `onScroll`) : ces
@@ -617,14 +627,10 @@ export default function HomeScreen() {
             // bloquerait aussi un chargement declenche AVANT le bas
             // (`onEndReachedThreshold`), alors que l'utilisateur defile encore
             // normalement au milieu de la liste.
-            // ⚠️ TEST EN COURS (debug du recyclage) : `scrollEnabled` etait
-            // pilote par `!(loadingMore && hasMore && atBottom)`. Ces trois
-            // valeurs changent PENDANT le scroll ; sur FlashList, modifier
-            // `scrollEnabled` reconstruit la liste et demonte toutes les
-            // cellules d'un coup — exactement le motif vu dans les logs
-            // (DEMONTAGE groupe de tous les ids, pas au fil du scroll).
-            // Fige a `true` le temps de confirmer la cause.
-            scrollEnabled
+            // Fige a `!(loadingMore && hasMore && atBottom)` comme sur le main :
+            // une fois le bas atteint, plus aucun mouvement vers le bas tant
+            // que la page suivante charge, le loader reste visible.
+            scrollEnabled={!(loadingMore && hasMore && atBottom)}
             ListFooterComponent={listFooter}
           />
         </View>

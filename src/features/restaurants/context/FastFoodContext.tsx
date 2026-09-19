@@ -28,14 +28,14 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 3;
 
 /**
  * TEST [ROW] — `false` = `resetToFirstPage()` ne tronque plus (mesure du scroll
  * sans destruction). Remettre `true` avant tout merge : sans troncature la
  * liste garde toutes ses pages en memoire.
  */
-const RESET_ENABLED = true;
+const RESET_ENABLED = false;
 
 /**
  * Plafond de `limit` IMPOSE par le backend (`GET /fastFood/all`). Demander plus

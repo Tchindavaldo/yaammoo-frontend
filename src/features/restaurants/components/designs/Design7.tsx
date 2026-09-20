@@ -12,7 +12,7 @@ interface DesignProps {
   onMenuClick: (menu: Menu) => void;
 }
 
-const LIMIT_MENUS_ENABLED = true;
+const LIMIT_MENUS_ENABLED = false;
 const MAX_VISIBLE_MENUS = 3;
 
 export const Design7: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
@@ -66,7 +66,8 @@ export const Design7: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
   return (
     <View style={styles.container}>
       <MerchantHeader
-        name={fastFood.nom}
+        name="7"
+        // name={fastFood.nom}
         image={fastFood.image}
         rating={fastFood.stats?.rating}
         syncWithImage={fastFood.menu?.[0]?.image}

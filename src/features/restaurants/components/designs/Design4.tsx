@@ -12,7 +12,7 @@ interface DesignProps {
   onMenuClick: (menu: Menu) => void;
 }
 
-const LIMIT_MENUS_ENABLED = true;
+const LIMIT_MENUS_ENABLED = false;
 const MAX_VISIBLE_MENUS = 3;
 
 export const Design4: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {

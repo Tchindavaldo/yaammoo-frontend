@@ -31,6 +31,19 @@ import React, {
 const PAGE_SIZE = 3;
 
 /**
+ * Delai avant d'inserer une page en attente (HOLD) au retour en bas : le
+ * loader reste visible 1 s, puis les donnees s'affichent a sa disparition.
+ */
+const HOLD_REVEAL_DELAY_MS = 1000;
+
+/**
+ * Securite du verrou d'insertion (`insertLock`) : si le layout ne confirme
+ * jamais l'insertion (ex. page entierement dedupee, aucun rendu), le scroll
+ * se libere seul au lieu de rester fige.
+ */
+const INSERT_LOCK_SAFETY_MS = 2000;
+
+/**
  * TEST [ROW] — `false` = `resetToFirstPage()` ne tronque plus (mesure du scroll
  * sans destruction). Remettre `true` avant tout merge : sans troncature la
  * liste garde toutes ses pages en memoire.
@@ -119,6 +132,12 @@ interface FastFoodContextType {
    * Libere le verrou de page en attente. Voir `notifyPageLaidOut`.
    */
   notifyPageLaidOut: () => void;
+  /**
+   * Vrai pendant l'insertion d'une page suivante (montage + layout des
+   * nouvelles rangees). L'ecran fige le scroll vertical tant qu'il est vrai :
+   * on ne scrolle jamais sur des cellules en cours de montage.
+   */
+  insertLock: boolean;
   // ── Injection directe depuis les payloads socket (pas de refetch) ──
   /** newGlobalMenu / globalMenuUpdated → upsert d'un menu dans son fastfood. */
   upsertMenuFromSocket: (menu: any) => void;
@@ -223,6 +242,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     pumpLenRef.current = fastFoods.length;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [insertLock, setInsertLock] = useState(false);
+  // Securite : libere `insertLock` si le layout ne confirme jamais
+  // l'insertion (page entierement dedupee → aucun rendu, aucun layout).
+  const insertLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   /**
@@ -674,6 +697,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     staggerPumpOnRef.current = false;
     pumpHoldLoggedRef.current = false;
     pendingCursorRef.current = undefined;
+    if (holdRevealTimerRef.current) {
+      clearTimeout(holdRevealTimerRef.current);
+      holdRevealTimerRef.current = null;
+    }
+    if (insertLockTimerRef.current) {
+      clearTimeout(insertLockTimerRef.current);
+      insertLockTimerRef.current = null;
+    }
+    setInsertLock(false);
     pendingPageRef.current = false;
     // ⚠️ Le loader de pagination s'eteint ICI, sans attendre la reponse en vol.
     // Sinon il restait anime en bas d'une liste qu'on vient de tronquer, alors
@@ -718,6 +750,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     staggerPumpOnRef.current = false;
     pumpHoldLoggedRef.current = false;
     pendingCursorRef.current = undefined;
+    if (holdRevealTimerRef.current) {
+      clearTimeout(holdRevealTimerRef.current);
+      holdRevealTimerRef.current = null;
+    }
+    if (insertLockTimerRef.current) {
+      clearTimeout(insertLockTimerRef.current);
+      insertLockTimerRef.current = null;
+    }
+    setInsertLock(false);
     pendingPageRef.current = false;
     setLoadingMore(false);
   }, []);
@@ -741,6 +782,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const listAtBottomRef = useRef(false);
   // Sonde : n'afficher `PUMP-HOLD` qu'une fois par attente, pas a chaque frame.
   const pumpHoldLoggedRef = useRef(false);
+  // Insertion differee d'une page en HOLD au retour en bas (voir
+  // `setListAtBottom`). Annulee si l'utilisateur remonte avant la fin.
+  const holdRevealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pumpStaggeredAppend = useCallback(() => {
     // Une seule pompe a la fois : une page arrivant pendant qu'une pompe
     // tourne est prise en charge par celle-ci, jamais en double.
@@ -772,6 +816,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     pumpHoldLoggedRef.current = false;
     console.log(`[ROW] PUMP-APPEND page de ${batch.length} D'UN COUP`);
+    // Verrou : le scroll vertical est fige jusqu'au layout des nouvelles
+    // rangees (`notifyPageLaidOut`) — jamais de scroll sur un montage en
+    // cours. Pose AVANT le `setFastFoods` pour couvrir aussi le commit.
+    setInsertLock(true);
+    if (insertLockTimerRef.current) clearTimeout(insertLockTimerRef.current);
+    insertLockTimerRef.current = setTimeout(() => {
+      insertLockTimerRef.current = null;
+      setInsertLock(false);
+    }, INSERT_LOCK_SAFETY_MS);
     setFastFoods((prev) => {
       // Dédup par id : un `newFastfood` reçu par socket pendant le
       // chargement peut déjà avoir inséré une boutique de cette page.
@@ -782,36 +835,64 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     });
   }, []);
 
-  // Retour au bas strict : relance l'insertion d'une page en attente.
+  // Retour au bas strict : relance l'insertion d'une page en attente, après
+  // `HOLD_REVEAL_DELAY_MS` (loader visible 1 s, donnees ensuite).
   const setListAtBottom = useCallback(
     (atBottom: boolean) => {
       listAtBottomRef.current = atBottom;
+      // Remontee avant la fin du delai : on annule la revelation, la page
+      // reste en attente et ne s'inserera jamais hors du bas.
+      if (!atBottom) {
+        if (holdRevealTimerRef.current) {
+          clearTimeout(holdRevealTimerRef.current);
+          holdRevealTimerRef.current = null;
+        }
+        return;
+      }
       if (
         atBottom &&
         staggerQueueRef.current.length > 0 &&
-        !staggerPumpOnRef.current
+        !staggerPumpOnRef.current &&
+        !holdRevealTimerRef.current
       ) {
-        // Le loader s'etait peut-etre eteint pendant la longue attente (securite
-        // 20 s, voir `loadMore`) : il se rallume pour l'insertion.
+        // Le loader se rallume pour l'insertion differee.
         setLoadingMore(true);
-        pumpStaggeredAppend();
+        holdRevealTimerRef.current = setTimeout(() => {
+          holdRevealTimerRef.current = null;
+          pumpStaggeredAppend();
+        }, HOLD_REVEAL_DELAY_MS);
       }
     },
     [pumpStaggeredAppend],
   );
 
+  // Timers en vol au demontage : ne pas inserer sur un contexte mort.
+  useEffect(
+    () => () => {
+      if (holdRevealTimerRef.current) clearTimeout(holdRevealTimerRef.current);
+      if (insertLockTimerRef.current) clearTimeout(insertLockTimerRef.current);
+    },
+    [],
+  );
+
   /**
    * Le contenu de la liste a GRANDI (nouvelles rangees commitees et mesurees).
-   * Libere le verrou `pendingPageRef` ET eteint le loader : le bas est
-   * desormais le vrai bas de la nouvelle page, le fetch suivant y est
-   * autorise. Sans cela, un `AT-BOTTOM` mesure sur l'ancien contenu (avant le
-   * commit) partait chercher la page N+1 depuis le bas de la page N-1.
+   * Libere le verrou `pendingPageRef`, le verrou de scroll (`insertLock`) ET
+   * eteint le loader : le bas est desormais le vrai bas de la nouvelle page,
+   * le fetch suivant y est autorise. Sans cela, un `AT-BOTTOM` mesure sur
+   * l'ancien contenu (avant le commit) partait chercher la page N+1 depuis le
+   * bas de la page N-1.
    */
   const notifyPageLaidOut = useCallback(() => {
     if (pendingPageRef.current) {
       pendingPageRef.current = false;
       console.log(`[ROW] LAYOUT-OK verrou page libere`);
     }
+    if (insertLockTimerRef.current) {
+      clearTimeout(insertLockTimerRef.current);
+      insertLockTimerRef.current = null;
+    }
+    setInsertLock(false);
     setLoadingMore(false);
   }, []);
 
@@ -1017,6 +1098,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       cancelPendingLoadMore,
       setListAtBottom,
       notifyPageLaidOut,
+      insertLock,
       upsertMenuFromSocket,
       removeMenuFromSocket,
       upsertFastFoodFromSocket,
@@ -1043,6 +1125,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       cancelPendingLoadMore,
       setListAtBottom,
       notifyPageLaidOut,
+      insertLock,
       upsertMenuFromSocket,
       removeMenuFromSocket,
       upsertFastFoodFromSocket,

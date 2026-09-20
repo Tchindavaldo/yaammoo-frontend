@@ -104,6 +104,7 @@ export default function HomeScreen() {
     cancelPendingLoadMore,
     setListAtBottom,
     notifyPageLaidOut,
+    insertLock,
     banners,
     searchQuery,
     setSearchQuery,
@@ -693,10 +694,10 @@ export default function HomeScreen() {
             // bloquerait aussi un chargement declenche AVANT le bas
             // (`onEndReachedThreshold`), alors que l'utilisateur defile encore
             // normalement au milieu de la liste.
-            // Pas de gel : figer `scrollEnabled` reconstruit la liste et c'est
-            // cet arret qui faisait la pause. Le scroll reste libre, le loader
-            // independant signale le chargement.
-            scrollEnabled
+            // Verrou d'insertion : scroll fige pendant le montage + layout des
+            // nouvelles rangees, libere par `notifyPageLaidOut` (ou securite
+            // 2 s). Jamais de scroll sur des cellules en cours de montage.
+            scrollEnabled={!insertLock}
             ListFooterComponent={listFooter}
           />
           <Animated.View

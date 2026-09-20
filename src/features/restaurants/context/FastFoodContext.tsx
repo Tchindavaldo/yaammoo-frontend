@@ -394,9 +394,16 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const next = response.data?.nextCursor ?? null;
-      cursorRef.current = next;
-      if (isFirstPage) firstPageCursorRef.current = next;
-      setHasMore(!!next);
+      if (isFirstPage) {
+        cursorRef.current = next;
+        firstPageCursorRef.current = next;
+        setHasMore(!!next);
+      } else {
+        // Page suivante : curseur + `hasMore` appliques a l'INSERTION reelle
+        // (`pumpStaggeredAppend`), pas ici. Sinon un HOLD afficherait la fin
+        // de catalogue avant que la page en attente soit inseree.
+        pendingCursorRef.current = next;
+      }
 
       if (response.data && response.data.data) {
         const raw: any[] = response.data.data;
@@ -422,10 +429,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
             .map((item, i) => normalizeFastFood(item, (base + i) % 6));
           pumpLenRef.current += batch.length;
           staggerQueueRef.current.push(...batch);
-          // Page vide : rien ne s'insera, on libere le fetch suivant (le
-          // curseur `null` le bloquera de toute facon le plus souvent) et on
-          // eteint le loader (aucun layout a attendre).
+          // Page vide : rien ne s'insera, on applique le curseur tout de suite
+          // puis on libere le fetch suivant et on eteint le loader (aucun
+          // layout a attendre).
           if (batch.length === 0) {
+            if (pendingCursorRef.current !== undefined) {
+              cursorRef.current = pendingCursorRef.current;
+              setHasMore(!!pendingCursorRef.current);
+              pendingCursorRef.current = undefined;
+            }
             pendingPageRef.current = false;
             setLoadingMore(false);
           }
@@ -661,6 +673,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     staggerQueueRef.current = [];
     staggerPumpOnRef.current = false;
     pumpHoldLoggedRef.current = false;
+    pendingCursorRef.current = undefined;
     pendingPageRef.current = false;
     // ⚠️ Le loader de pagination s'eteint ICI, sans attendre la reponse en vol.
     // Sinon il restait anime en bas d'une liste qu'on vient de tronquer, alors
@@ -704,6 +717,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     staggerQueueRef.current = [];
     staggerPumpOnRef.current = false;
     pumpHoldLoggedRef.current = false;
+    pendingCursorRef.current = undefined;
     pendingPageRef.current = false;
     setLoadingMore(false);
   }, []);
@@ -748,6 +762,14 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     staggerQueueRef.current = [];
     staggerPumpOnRef.current = false;
     if (batch.length === 0) return;
+    // Insertion reelle : le curseur de cette page prend effet ici seulement.
+    // Pendant un HOLD, `hasMore` gardait donc l'ancienne valeur et le loader
+    // restait affichable jusqu'au retour en bas.
+    if (pendingCursorRef.current !== undefined) {
+      cursorRef.current = pendingCursorRef.current;
+      setHasMore(!!pendingCursorRef.current);
+      pendingCursorRef.current = undefined;
+    }
     pumpHoldLoggedRef.current = false;
     console.log(`[ROW] PUMP-APPEND page de ${batch.length} D'UN COUP`);
     setFastFoods((prev) => {

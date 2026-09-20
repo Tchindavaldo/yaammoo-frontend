@@ -168,12 +168,24 @@ const ItemMeta: React.FC<{
             {SHOW_AVAILABILITY ? (
               <>
                 <View style={{ flex: 1 }} />
-                <Text style={[styles.metaText, { color: "#000" }]}>
-                  {(menu as any)?.stock ?? 0}{" "}
-                  {variant === 4 || variant === 5
-                    ? "disponible"
-                    : "plats disponibles"}
-                </Text>
+                {variant === 4 ? (
+                  <>
+                    <Ionicons name="star" size={12} color="#f5a623" />
+                    <Text style={[styles.metaText, { color: "#000" }]}>
+                      {rating}
+                    </Text>
+                  </>
+                ) : (
+                  <Text
+                    style={[
+                      styles.metaText,
+                      { color: "#000", fontSize: variant === 6 ? 13 : 11 },
+                    ]}
+                  >
+                    {(menu as any)?.stock ?? 0}
+                    {variant !== 5 ? " plats disponibles" : null}
+                  </Text>
+                )}
               </>
             ) : null}
           </>
@@ -181,16 +193,24 @@ const ItemMeta: React.FC<{
       </View>
 
       <View style={styles.metaRow}>
-        <Ionicons name="bicycle-outline" size={12} color="#666" />
-        <Text style={styles.metaText}>Livraison</Text>
-        <Text style={styles.metaStrike}>30min</Text>
-        <Text style={[styles.metaFree, { color: "#000" }]}>offert</Text>
+        <Text style={styles.metaText}>Livraison en</Text>
+        <Text
+          style={[
+            styles.metaStrike,
+            { color: "#e8440a", textDecorationLine: "none" },
+          ]}
+        >
+          30min
+        </Text>
+        <Text style={[styles.metaFree, { color: "#e8440a" }]}>gratuit</Text>
         <View style={{ flex: 1 }} />
         {/* Le variant 7 n'affiche pas de note. */}
-        {variant !== 7 ? (
+        {variant !== 7 && variant !== 4 ? (
           <Ionicons name="star" size={12} color="#f5a623" />
         ) : null}
-        {variant !== 7 ? <Text style={styles.metaText}>{rating}</Text> : null}
+        {variant !== 7 && variant !== 4 ? (
+          <Text style={styles.metaText}>{rating}</Text>
+        ) : null}
         {/* La carte du variant 5 est plus etroite : le nombre d'avis deborde. */}
         {variant !== 5 && variant !== 7 ? (
           <Text style={styles.metaMuted}>({votes} avis)</Text>
@@ -237,7 +257,8 @@ const StockDeliveryBar: React.FC<{
   deliveryTime: string;
   stock: number;
   hideStock?: boolean;
-}> = ({ accent, deliveryTime, stock, hideStock = false }) => (
+  stockLabel?: string;
+}> = ({ accent, deliveryTime, stock, hideStock = false, stockLabel = "disponible" }) => (
   <BlurView
     disableAndroidBlur
     intensity={60}
@@ -248,11 +269,15 @@ const StockDeliveryBar: React.FC<{
       {!hideStock && (
         <View style={styles.v4StockLeftSection}>
         <View style={styles.v4StockInfo}>
-          <Text style={styles.v4StockCount}>
-            <Text style={{ color: "#e8440a", fontWeight: "900" }}>
-              {stock}
-            </Text>
-            <Text style={{ color: "#000000ff" }}> En stock</Text>
+          <Text
+            style={[styles.v4StockCount, { color: "#e8440a", flexShrink: 0 }]}
+          >
+            {stock}
+          </Text>
+          <Text
+            style={[styles.v4StockCount, { color: "#000000ff", flexShrink: 0 }]}
+          >
+            {stockLabel}
           </Text>
         </View>
         <View style={styles.v4ProgressTrack}>
@@ -288,12 +313,14 @@ const CardBottom: React.FC<{
   withBackground?: boolean;
   /** true = sans la partie stock (variante 5 en blur2). */
   hideStock?: boolean;
+  stockLabel?: string;
 }> = ({
   accent,
   deliveryTime,
   stock,
   withBackground = true,
   hideStock = false,
+  stockLabel = "disponible",
 }) => {
   // Mode "blur2" : ancienne barre stock + livraison, sauf le 7 qui garde
   // sa propre zone.
@@ -314,6 +341,7 @@ const CardBottom: React.FC<{
         deliveryTime={deliveryTime}
         stock={stock}
         hideStock={hideStock}
+        stockLabel={stockLabel}
       />
     );
   }
@@ -710,7 +738,11 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
 
         {/* Bas : meme barre que le variant 5 */}
         {SHOW_BOTTOM_BAR && (
-          <CardBottom accent={accent} deliveryTime={deliveryTime} stock={stock} />
+          <CardBottom
+            accent={accent}
+            deliveryTime={deliveryTime}
+            stock={stock}
+          />
         )}
         {/* Prix top-gauche — chip blanc, contenu v4 masque (V4_SHOW_CONTENT) */}
         <View
@@ -873,21 +905,11 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           </>
         )}
 
-        {/* Prix + stock en chips blur en haut — comme le variant 7 */}
+        {/* Prix en chip blur en haut */}
         <View style={[styles.v7TopChips, styles.v5TopChips]}>
-          <View style={[styles.v7PricePill, { backgroundColor: accent }]}>
+          <View style={[styles.v7PricePill, { backgroundColor: accent }]}> 
             <Text style={styles.v7PriceText}>{price}</Text>
           </View>
-          <BlurView
-            disableAndroidBlur
-            intensity={80}
-            tint="dark"
-            style={styles.v7StockChip}
-            fallbackStyle={styles.blurFallbackDark}
-          >
-            <Text style={styles.v7StockNumber}>{stock}</Text>
-            <Text style={styles.v7StockLabel}>DISPO</Text>
-          </BlurView>
         </View>
 
         {/* Bas v5 d'origine (restaure) : uniquement la prochaine livraison */}
@@ -1064,7 +1086,12 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
         )}
         {/* Bas : meme barre que le variant 5 */}
         {SHOW_BOTTOM_BAR && (
-          <CardBottom accent={accent} deliveryTime={deliveryTime} stock={stock} />
+          <CardBottom
+            accent={accent}
+            deliveryTime={deliveryTime}
+            stock={stock}
+            stockLabel="plats disponibles"
+          />
         )}
         {/* Prix top-gauche — chip blanc, contenu v6 masque (V6_SHOW_CONTENT) */}
         <View
@@ -2240,7 +2267,7 @@ const styles = StyleSheet.create({
   },
 
   // Bloc d'infos sous la carte (hors de la carte).
-  metaBlock: { paddingTop: 8, paddingLeft: 6, gap: 3 },
+  metaBlock: { paddingTop: 8, paddingLeft: 4, gap: 3 },
   metaTitleRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   metaTitle: { fontSize: 13, fontWeight: "900", color: "#111", flexShrink: 1 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 4 },

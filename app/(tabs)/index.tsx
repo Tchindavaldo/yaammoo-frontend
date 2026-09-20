@@ -57,6 +57,10 @@ const FIRST_SCREEN_MENUS = 5;
  */
 const FOOTER_LOADER_HEIGHT = 48;
 
+/** Distance d'apparition du loader : visible AVANT le bas strict, donc
+ *  toujours en premier par rapport aux elements nouvellement charges. */
+const LOADER_VISIBLE_DISTANCE = 120;
+
 /** Vrai pour l'item banniere, faux pour une boutique. */
 const isBannerItem = (item: any) => item?.__banner === true;
 
@@ -127,8 +131,9 @@ export default function HomeScreen() {
   // fade sans jamais toucher au contenu de la liste (ni `ListFooterComponent`
   // qui re-layoute, ni `scrollEnabled` qui reconstruit). `pointerEvents none` :
   // il ne bloque ni scroll ni taps. Visible seulement pendant un fetch avec
-  // une suite (`hasMore`) ET au bas strict (`atBottom`, defini plus bas) : en
-  // remontant, `atBottom` repasse a false et le loader se cache.
+  // une suite (`hasMore`) ET dans la zone basse (`loaderVisible`, marge
+  // `LOADER_VISIBLE_DISTANCE`) : en remontant, il se cache ; en approchant du
+  // bas, il apparait toujours en premier devant les elements charges.
   // `showBottomLoader` est donc calcule APRES `atBottom`, plus bas.
   const loaderOpacity = useRef(new Animated.Value(0)).current;
 
@@ -190,6 +195,11 @@ export default function HomeScreen() {
    */
   const atBottomRef = useRef(false);
   const [atBottom, setAtBottom] = useState(false);
+  // Visibilite du loader : meme mecanisme de transition que `atBottom`, mais
+  // avec une marge (`LOADER_VISIBLE_DISTANCE`). Le loader apparait donc avant
+  // le bas strict, toujours en premier devant les elements charges.
+  const loaderVisibleRef = useRef(false);
+  const [loaderVisible, setLoaderVisible] = useState(false);
   // Re-armement : apres un fetch, le rebond au bas redeclenche la transition
   // sans geste (double fetch, double loader). On n'autorise le fetch suivant
   // qu'apres etre remonte de 200 px : le rebond (±40 px) ne re-arme jamais.
@@ -213,6 +223,11 @@ export default function HomeScreen() {
       const { contentSize, layoutMeasurement } = e.nativeEvent;
       const distanceToEnd = contentSize.height - layoutMeasurement.height - y;
       const nextAtBottom = distanceToEnd <= 0;
+      const nextLoaderVisible = distanceToEnd <= LOADER_VISIBLE_DISTANCE;
+      if (nextLoaderVisible !== loaderVisibleRef.current) {
+        loaderVisibleRef.current = nextLoaderVisible;
+        setLoaderVisible(nextLoaderVisible);
+      }
       // Bas STRICT (10 px) pour l'INSERTION : une page arrivee pendant que
       // l'utilisateur est remonte attend son retour, elle ne s'insere jamais
       // sous ses yeux. Ecriture ref uniquement, aucun rendu.
@@ -256,15 +271,23 @@ export default function HomeScreen() {
     if (!loadingMore) {
       atBottomRef.current = false;
       setAtBottom(false);
+      loaderVisibleRef.current = false;
+      setLoaderVisible(false);
     }
   }, [loadingMore]);
-  const showBottomLoader = loadingMore && hasMore && atBottom;
+  const showBottomLoader = loadingMore && hasMore && loaderVisible;
   useEffect(() => {
-    Animated.timing(loaderOpacity, {
-      toValue: showBottomLoader ? 1 : 0,
-      duration: 180,
-      useNativeDriver: true,
-    }).start();
+    if (showBottomLoader) {
+      Animated.timing(loaderOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Disparition directe, sans fondu de sortie.
+      loaderOpacity.stopAnimation();
+      loaderOpacity.setValue(0);
+    }
   }, [showBottomLoader, loaderOpacity]);
   useEffect(() => {
     // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
@@ -616,7 +639,7 @@ export default function HomeScreen() {
               {
                 // Marge large : le loader independant flotte au-dessus de la
                 // navbar, il ne doit coller ni la masquer la derniere rangee.
-                paddingBottom: tabBarHeight + 90,
+                paddingBottom: tabBarHeight + 60,
                 paddingHorizontal: Theme.design.horizontalPadding,
               },
             ]}
@@ -680,7 +703,7 @@ export default function HomeScreen() {
             pointerEvents="none"
             style={[
               styles.bottomLoader,
-              { bottom: tabBarHeight + 28, opacity: loaderOpacity },
+              { bottom: tabBarHeight + 5, opacity: loaderOpacity },
             ]}
           >
             <ActivityIndicator size="large" color={Theme.colors.primary} />

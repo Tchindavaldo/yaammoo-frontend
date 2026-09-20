@@ -219,7 +219,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const pumpLenRef = useRef(0);
   // Rattrapage vers le haut uniquement (insertion socket en tete) : vers le
   // bas, ce sont le reset et la premiere page qui fixent la valeur.
-  if (fastFoods.length > pumpLenRef.current) pumpLenRef.current = fastFoods.length;
+  if (fastFoods.length > pumpLenRef.current)
+    pumpLenRef.current = fastFoods.length;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -255,6 +256,14 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    * `resetToFirstPage()` puisse repartir exactement de la fin de cette page.
    */
   const firstPageCursorRef = useRef<string | null>(null);
+  /**
+   * Curseur de la page suivante EN ATTENTE d'insertion. Applique dans
+   * `pumpStaggeredAppend` au moment de l'insertion reelle, pas a l'arrivee
+   * reseau : sinon, pendant un HOLD (utilisateur remonte), `hasMore` bascule
+   * deja et la liste affiche « fin » + cache le loader alors que la derniere
+   * page n'est pas encore inseree.
+   */
+  const pendingCursorRef = useRef<string | null | undefined>(undefined);
   /**
    * Numero de troncature, incremente a chaque `resetToFirstPage()`. Compare a
    * l'arrivee d'une page suivante : un `loadMore` parti AVANT le reset a une
@@ -420,7 +429,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
             pendingPageRef.current = false;
             setLoadingMore(false);
           }
-          console.log(`[ROW] PAGE-ARRIVEE +${batch.length} (file=${staggerQueueRef.current.length})`);
+          console.log(
+            `[ROW] PAGE-ARRIVEE +${batch.length} (file=${staggerQueueRef.current.length})`,
+          );
           pumpStaggeredAppend();
         }
       }
@@ -727,7 +738,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       staggerPumpOnRef.current = false;
       if (!pumpHoldLoggedRef.current) {
         pumpHoldLoggedRef.current = true;
-        console.log(`[ROW] PUMP-HOLD en attente du bas (${staggerQueueRef.current.length} en file)`);
+        console.log(
+          `[ROW] PUMP-HOLD en attente du bas (${staggerQueueRef.current.length} en file)`,
+        );
       }
       return;
     }
@@ -748,15 +761,22 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // Retour au bas strict : relance l'insertion d'une page en attente.
-  const setListAtBottom = useCallback((atBottom: boolean) => {
-    listAtBottomRef.current = atBottom;
-    if (atBottom && staggerQueueRef.current.length > 0 && !staggerPumpOnRef.current) {
-      // Le loader s'etait peut-etre eteint pendant la longue attente (securite
-      // 20 s, voir `loadMore`) : il se rallume pour l'insertion.
-      setLoadingMore(true);
-      pumpStaggeredAppend();
-    }
-  }, [pumpStaggeredAppend]);
+  const setListAtBottom = useCallback(
+    (atBottom: boolean) => {
+      listAtBottomRef.current = atBottom;
+      if (
+        atBottom &&
+        staggerQueueRef.current.length > 0 &&
+        !staggerPumpOnRef.current
+      ) {
+        // Le loader s'etait peut-etre eteint pendant la longue attente (securite
+        // 20 s, voir `loadMore`) : il se rallume pour l'insertion.
+        setLoadingMore(true);
+        pumpStaggeredAppend();
+      }
+    },
+    [pumpStaggeredAppend],
+  );
 
   /**
    * Le contenu de la liste a GRANDI (nouvelles rangees commitees et mesurees).

@@ -69,7 +69,8 @@ export const Design6: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
   return (
     <View style={styles.container}>
       <MerchantHeader
-        name={fastFood.nom}
+        name="6"
+        // name={fastFood.nom}
         image={fastFood.image}
         rating={fastFood.stats?.rating}
         syncWithImage={fastFood.menu?.[0]?.image}

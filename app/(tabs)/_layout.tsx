@@ -19,7 +19,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   // Hauteur de base de la navbar + safe area bottom
-  const TAB_BAR_BASE_HEIGHT = 58;
+  const TAB_BAR_BASE_HEIGHT = 64;
   /**
    * Part de la safe area basse REELLEMENT reservee — ratio partage avec
    * `useTabBarHeight`, dont dependent tous les ecrans (Android en prend plus,
@@ -32,10 +32,15 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: "rgba(236,73,19,1.00)",
-        tabBarInactiveTintColor: "gray",
+        tabBarInactiveTintColor: "#000000",
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
         tabBarButton: HapticTab,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+          marginTop: 2,
+        },
         tabBarBackground: () => (
           <BlurView
             tint="light"
@@ -73,6 +78,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          tabBarLabel: "Accueil",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               size={focused ? 22 : 20}
@@ -85,6 +91,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="cart"
         options={{
+          tabBarLabel: "Panier",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               size={focused ? 22 : 20}
@@ -97,6 +104,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="boutique"
         options={{
+          tabBarLabel: "Boutique",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               size={focused ? 22 : 20}
@@ -118,6 +126,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="notifications"
         options={{
+          tabBarLabel: "Notifications",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               size={focused ? 22 : 20}
@@ -130,6 +139,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
+          tabBarLabel: "Profil",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               size={focused ? 22 : 20}

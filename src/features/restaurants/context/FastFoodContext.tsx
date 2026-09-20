@@ -107,6 +107,18 @@ interface FastFoodContextType {
    * thread JS pendant l'animation de scroll.
    */
   cancelPendingLoadMore: () => void;
+  /**
+   * Signale que la liste est STRICTEMENT en bas (a 10 px pres). Tant que ce
+   * n'est pas le cas, une page arrivee RESTE EN ATTENTE : rien ne s'insere
+   * sous un utilisateur remonte lire le haut. L'insertion reprend des son
+   * retour au bas. Voir `pumpStaggeredAppend`.
+   */
+  setListAtBottom: (atBottom: boolean) => void;
+  /**
+   * Signale que le contenu a grandi (commit + layout des nouvelles rangees).
+   * Libere le verrou de page en attente. Voir `notifyPageLaidOut`.
+   */
+  notifyPageLaidOut: () => void;
   // ── Injection directe depuis les payloads socket (pas de refetch) ──
   /** newGlobalMenu / globalMenuUpdated → upsert d'un menu dans son fastfood. */
   upsertMenuFromSocket: (menu: any) => void;
@@ -199,6 +211,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    */
   const fastFoodsLenRef = useRef(0);
   fastFoodsLenRef.current = fastFoods.length;
+  // Longueur SYNCHRONE (valeur + file d'attente) : `fastFoodsLenRef` ne suit
+  // que les rendus valides, donc un scroll rapide l'observe perime (fetch n=3
+  // vu a `len=3` alors que la page 2 etait deja inseree) et les `designIndex`
+  // de la page suivante se decalait. Ici on compte au moment meme ou on
+  // empile, sans attendre le rendu.
+  const pumpLenRef = useRef(0);
+  // Rattrapage vers le haut uniquement (insertion socket en tete) : vers le
+  // bas, ce sont le reset et la premiere page qui fixent la valeur.
+  if (fastFoods.length > pumpLenRef.current) pumpLenRef.current = fastFoods.length;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
@@ -242,6 +263,20 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    * fois : toute reponse anterieure au dernier reset est ecartee.
    */
   const resetSeqRef = useRef(0);
+  // Compteur de pages demandees (1 = premiere page du boot) : prouve dans les
+  // logs que chaque page suivante est fetchee UNE PAR UNE au bas de la
+  // precedente, jamais toutes d'un coup depuis le bas de la page 1.
+  const pageFetchRef = useRef(1);
+  // Verrou "page en attente" : `true` entre le depart du fetch et l'insertion
+  // de sa page (ou son echec). Un retour au bas de la page PRECEDENTE pendant
+  // ce temps ne refetch PAS : chaque bas de page ne fait qu'UN fetch, et la
+  // page N+1 ne part qu'une fois la page N inseree.
+  //
+  // ⚠️ Libere par le LAYOUT (`notifyPageLaidOut`), pas par l'insertion : le
+  // `setFastFoods` de la pompe ne commite qu'apres, et un `AT-BOTTOM` mesure
+  // sur l'ancien contenu partirait sinon chercher la page N+1 depuis le bas
+  // de la page N-1.
+  const pendingPageRef = useRef(false);
   const [hasMore, setHasMore] = useState(false);
   /**
    * Numéro de la requête en cours. Une réponse dont le numéro n'est plus le
@@ -357,19 +392,35 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       if (response.data && response.data.data) {
         const raw: any[] = response.data.data;
         if (isFirstPage) {
+          pageFetchRef.current = 1;
           const data = raw.map((item, index) =>
             normalizeFastFood(item, index % 6),
           );
+          pumpLenRef.current = data.length;
           setFastFoods(data);
         } else {
-          // Insertion ETALEE : une rangee par frame au lieu de la page d'un
-          // coup. 3 rangees ≈ 90 ms d'un bloc (pause visible) ; une par frame
-          // passe inapercue, sans jamais stopper le geste.
-          const base = fastFoodsLenRef.current + staggerQueueRef.current.length;
+          // La page s'insere ENTIERE D'UN COUP, mais seulement au bas strict
+          // (voir `pumpStaggeredAppend`) : jamais en plein defilement, jamais
+          // rangee par rangee.
+          //
+          // ⚠️ `pumpLenRef`, pas `fastFoodsLenRef` : celui-ci ne suit que les
+          // rendus valides, perime des qu'on scrolle vite (page N inseree mais
+          // pas encore commitee quand la N+1 calcule sa base). On compte au
+          // moment ou on empile : la base reste exacte meme en fling.
+          const base = pumpLenRef.current + staggerQueueRef.current.length;
           const batch = raw
             .filter((item) => item?.id)
             .map((item, i) => normalizeFastFood(item, (base + i) % 6));
+          pumpLenRef.current += batch.length;
           staggerQueueRef.current.push(...batch);
+          // Page vide : rien ne s'insera, on libere le fetch suivant (le
+          // curseur `null` le bloquera de toute facon le plus souvent) et on
+          // eteint le loader (aucun layout a attendre).
+          if (batch.length === 0) {
+            pendingPageRef.current = false;
+            setLoadingMore(false);
+          }
+          console.log(`[ROW] PAGE-ARRIVEE +${batch.length} (file=${staggerQueueRef.current.length})`);
           pumpStaggeredAppend();
         }
       }
@@ -377,6 +428,13 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       if (guarded && myRun !== runIdRef.current) return;
       console.error("Error fetching fast foods:", err);
       setError("Connection internet indisponible, vérifiez votre réseau");
+      // Echec d'une page suivante : rien ne s'insera, le prochain bas
+      // pourra reessayer au lieu de rester verrouille. Le loader s'eteint
+      // tout de suite (aucun layout a attendre).
+      if (!isFirstPage) {
+        pendingPageRef.current = false;
+        if (myReset === resetSeqRef.current) setLoadingMore(false);
+      }
     } finally {
       // Mesure du chargement qui LEVE LE SPLASH : c'est le chemin critique du
       // demarrage, la seule requete dont l'affichage depend vraiment.
@@ -399,8 +457,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // plus a `loadingMore` : le reset l'a deja eteint pour faire disparaitre
       // le loader tout de suite, et un `loadMore` legitime a pu repartir
       // depuis. L'eteindre ici masquerait CE chargement-la.
+      //
+      // ⚠️ Le loader d'une page suivante ne s'eteint PAS a la reponse : il
+      // reste visible pendant l'attente (HOLD) et l'insertion, jusqu'au layout
+      // (`notifyPageLaidOut`). Sinon l'utilisateur ne verrait rien entre la
+      // fin du fetch et l'apparition des cartes.
       if (isFirstPage) setLoading(false);
-      else if (myReset === resetSeqRef.current) setLoadingMore(false);
     }
   }, []);
 
@@ -531,6 +593,23 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     // par le scroll qui leve justement le verrou.
     if (resetLockRef.current) return;
 
+    // Page precedente pas encore inseree (en vol OU en HOLD hors du bas) : on
+    // ne consomme pas le curseur suivant. Le retour au bas relancera
+    // l'insertion via `setListAtBottom`, et le fetch suivant ne partira qu'au
+    // NOUVEAU bas, une fois cette page en place.
+    if (pendingPageRef.current) {
+      console.log(`[ROW] LOADMORE-SKIP page precedente pas inseree`);
+      return;
+    }
+
+    // Preuve de pagination UNE PAR UNE : n = page demandee, len = boutiques
+    // deja affichees (donc bas de la page n-1). Si le bas de la page 1
+    // fetchait tout, on verrait n grimper sans nouveau `AT-BOTTOM`.
+    pageFetchRef.current += 1;
+    pendingPageRef.current = true;
+    console.log(
+      `[ROW] FETCH-PAGE n=${pageFetchRef.current} len=${fastFoodsLenRef.current}`,
+    );
     runLoadMore();
   }, [loading, loadingMore, runLoadMore]);
 
@@ -566,6 +645,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     // Invalide toute page suivante encore en vol : sa reponse ne sera ni
     // concatenee ni autorisee a ecrire le curseur (voir `fetchPage`).
     resetSeqRef.current += 1;
+    // Une page en attente (HOLD) ne doit pas ressusciter apres la troncature :
+    // la file est videe, la pagination repartira du curseur remis plus bas.
+    staggerQueueRef.current = [];
+    staggerPumpOnRef.current = false;
+    pumpHoldLoggedRef.current = false;
+    pendingPageRef.current = false;
     // ⚠️ Le loader de pagination s'eteint ICI, sans attendre la reponse en vol.
     // Sinon il restait anime en bas d'une liste qu'on vient de tronquer, alors
     // que l'utilisateur est remonte en haut et que plus rien ne sera ajoute.
@@ -574,6 +659,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     // `loadMore` rechargerait des boutiques deja affichees.
     cursorRef.current = firstPageCursorRef.current;
     setHasMore(!!firstPageCursorRef.current);
+    // La base des designs repart de la liste conservee.
+    pumpLenRef.current = PAGE_SIZE;
     setFastFoods((prev) =>
       prev.length <= PAGE_SIZE ? prev : prev.slice(0, PAGE_SIZE),
     );
@@ -601,30 +688,89 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    */
   const cancelPendingLoadMore = useCallback(() => {
     resetSeqRef.current += 1;
+    // Comme pour le reset : pas de page en attente qui surgirait pendant la
+    // remontee.
+    staggerQueueRef.current = [];
+    staggerPumpOnRef.current = false;
+    pumpHoldLoggedRef.current = false;
+    pendingPageRef.current = false;
     setLoadingMore(false);
   }, []);
 
   /**
-   * File d'insertion etalee : les pages suivantes s'ajoutent une rangee par
-   * frame (`pumpStaggeredAppend`), jamais la page d'un coup. Une seule pompe
-   * tourne a la fois pour preserver l'ordre des pages.
+   * File d'insertion : les pages suivantes s'ajoutent LA PAGE ENTIERE D'UN
+   * COUP, en un seul rendu, jamais rangee par rangee. Une seule pompe tourne
+   * a la fois pour preserver l'ordre des pages.
+   *
+   * ⚠️ JAMAIS d'insertion hors du bas strict : si l'utilisateur est remonte
+   * entre le fetch et l'arrivee, la page attend (pompe arretee, `HOLD`) et ne
+   * s'insere qu'a son retour au bas (`setListAtBottom(true)` relance).
+   *
+   * ⚠️ Le fetch reste UNE PAGE par arrivee au bas (voir `loadMore`) : on
+   * n'insere d'un coup que la page qui vient d'arriver, jamais tout le
+   * catalogue.
    */
   const staggerQueueRef = useRef<any[]>([]);
   const staggerPumpOnRef = useRef(false);
+  // Vrai = liste strictement en bas (pose par l'ecran, a 10 px pres).
+  const listAtBottomRef = useRef(false);
+  // Sonde : n'afficher `PUMP-HOLD` qu'une fois par attente, pas a chaque frame.
+  const pumpHoldLoggedRef = useRef(false);
   const pumpStaggeredAppend = useCallback(() => {
-    const item = staggerQueueRef.current.shift();
-    if (!item) {
+    // Une seule pompe a la fois : une page arrivant pendant qu'une pompe
+    // tourne est prise en charge par celle-ci, jamais en double.
+    if (staggerPumpOnRef.current) return;
+    staggerPumpOnRef.current = true;
+    // Pas en bas : on ARRETE la pompe sans consommer, la page attend. Le
+    // retour au bas relance via `setListAtBottom`.
+    if (!listAtBottomRef.current) {
       staggerPumpOnRef.current = false;
+      if (!pumpHoldLoggedRef.current) {
+        pumpHoldLoggedRef.current = true;
+        console.log(`[ROW] PUMP-HOLD en attente du bas (${staggerQueueRef.current.length} en file)`);
+      }
       return;
     }
-    staggerPumpOnRef.current = true;
+    const batch = staggerQueueRef.current;
+    staggerQueueRef.current = [];
+    staggerPumpOnRef.current = false;
+    if (batch.length === 0) return;
+    pumpHoldLoggedRef.current = false;
+    console.log(`[ROW] PUMP-APPEND page de ${batch.length} D'UN COUP`);
     setFastFoods((prev) => {
       // Dédup par id : un `newFastfood` reçu par socket pendant le
       // chargement peut déjà avoir inséré une boutique de cette page.
-      if (prev.some((ff) => ff.id === item.id)) return prev;
-      return [...prev, item];
+      const known = new Set(prev.map((ff) => ff.id));
+      const added = batch.filter((item) => item?.id && !known.has(item.id));
+      if (added.length === 0) return prev;
+      return [...prev, ...added];
     });
-    requestAnimationFrame(pumpStaggeredAppend);
+  }, []);
+
+  // Retour au bas strict : relance l'insertion d'une page en attente.
+  const setListAtBottom = useCallback((atBottom: boolean) => {
+    listAtBottomRef.current = atBottom;
+    if (atBottom && staggerQueueRef.current.length > 0 && !staggerPumpOnRef.current) {
+      // Le loader s'etait peut-etre eteint pendant la longue attente (securite
+      // 20 s, voir `loadMore`) : il se rallume pour l'insertion.
+      setLoadingMore(true);
+      pumpStaggeredAppend();
+    }
+  }, [pumpStaggeredAppend]);
+
+  /**
+   * Le contenu de la liste a GRANDI (nouvelles rangees commitees et mesurees).
+   * Libere le verrou `pendingPageRef` ET eteint le loader : le bas est
+   * desormais le vrai bas de la nouvelle page, le fetch suivant y est
+   * autorise. Sans cela, un `AT-BOTTOM` mesure sur l'ancien contenu (avant le
+   * commit) partait chercher la page N+1 depuis le bas de la page N-1.
+   */
+  const notifyPageLaidOut = useCallback(() => {
+    if (pendingPageRef.current) {
+      pendingPageRef.current = false;
+      console.log(`[ROW] LAYOUT-OK verrou page libere`);
+    }
+    setLoadingMore(false);
   }, []);
 
   // Refetch à CHAQUE changement d'identité — mais JAMAIS avant que Firebase
@@ -827,6 +973,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       resetToFirstPage,
       notifyUserScroll,
       cancelPendingLoadMore,
+      setListAtBottom,
+      notifyPageLaidOut,
       upsertMenuFromSocket,
       removeMenuFromSocket,
       upsertFastFoodFromSocket,
@@ -851,6 +999,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       resetToFirstPage,
       notifyUserScroll,
       cancelPendingLoadMore,
+      setListAtBottom,
+      notifyPageLaidOut,
       upsertMenuFromSocket,
       removeMenuFromSocket,
       upsertFastFoodFromSocket,

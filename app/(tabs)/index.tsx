@@ -5,6 +5,7 @@ import { RestaurantHeader } from "@/src/features/restaurants/components/Restaura
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import React, {
   useCallback,
   useEffect,
@@ -12,7 +13,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import {
   Animated,
   RefreshControl,
@@ -98,6 +98,8 @@ export default function HomeScreen() {
     resetToFirstPage,
     notifyUserScroll,
     cancelPendingLoadMore,
+    setListAtBottom,
+    notifyPageLaidOut,
     banners,
     searchQuery,
     setSearchQuery,
@@ -125,16 +127,10 @@ export default function HomeScreen() {
   // fade sans jamais toucher au contenu de la liste (ni `ListFooterComponent`
   // qui re-layoute, ni `scrollEnabled` qui reconstruit). `pointerEvents none` :
   // il ne bloque ni scroll ni taps. Visible seulement pendant un fetch avec
-  // une suite (`hasMore`) ; la fin de catalogue garde son message en liste.
-  const showBottomLoader = loadingMore && hasMore;
+  // une suite (`hasMore`) ET au bas strict (`atBottom`, defini plus bas) : en
+  // remontant, `atBottom` repasse a false et le loader se cache.
+  // `showBottomLoader` est donc calcule APRES `atBottom`, plus bas.
   const loaderOpacity = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(loaderOpacity, {
-      toValue: showBottomLoader ? 1 : 0,
-      duration: 180,
-      useNativeDriver: true,
-    }).start();
-  }, [showBottomLoader, loaderOpacity]);
 
   const onManualRefresh = async () => {
     setRefreshing(true);
@@ -156,6 +152,24 @@ export default function HomeScreen() {
   // sans recreer le handler (et sans reconstruire la liste).
   const loadMoreRef = useRef(loadMore);
   loadMoreRef.current = loadMore;
+  // Ref stable vers `setListAtBottom`, meme raison que `loadMoreRef`.
+  const setListAtBottomRef = useRef(setListAtBottom);
+  setListAtBottomRef.current = setListAtBottom;
+  // Hauteur max deja vue : une croissance prouve que la page inseree est
+  // commitee et mesuree, ce qui libere le verrou de page en attente.
+  const contentHeightRef = useRef(0);
+  const notifyPageLaidOutRef = useRef(notifyPageLaidOut);
+  notifyPageLaidOutRef.current = notifyPageLaidOut;
+  const handleContentSizeChange = useCallback((_w: number, h: number) => {
+    // ⚠️ Suivi dans LES DEUX SENS : apres un pull-to-refresh la liste repart
+    // de zero, donc elle ne redepassera JAMAIS l'ancien max — sans le suivi
+    // vers le bas, aucune croissance ne serait detectee et le verrou de page
+    // resterait bloque (plus de loader ni de fetch sur la page 2).
+    if (h === contentHeightRef.current) return;
+    const grew = h > contentHeightRef.current;
+    contentHeightRef.current = h;
+    if (grew) notifyPageLaidOutRef.current();
+  }, []);
   const navigation = useNavigation();
 
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -199,6 +213,10 @@ export default function HomeScreen() {
       const { contentSize, layoutMeasurement } = e.nativeEvent;
       const distanceToEnd = contentSize.height - layoutMeasurement.height - y;
       const nextAtBottom = distanceToEnd <= 0;
+      // Bas STRICT (10 px) pour l'INSERTION : une page arrivee pendant que
+      // l'utilisateur est remonte attend son retour, elle ne s'insere jamais
+      // sous ses yeux. Ecriture ref uniquement, aucun rendu.
+      setListAtBottomRef.current(distanceToEnd <= 10);
       if (distanceToEnd > 200) fetchArmedRef.current = true;
       if (nextAtBottom !== atBottomRef.current) {
         atBottomRef.current = nextAtBottom;
@@ -208,7 +226,9 @@ export default function HomeScreen() {
         // visible. `loadMore` garde le reste (fini, deja en vol = ignore).
         if (nextAtBottom && fetchArmedRef.current) {
           fetchArmedRef.current = false;
-          console.log(`[ROW] AT-BOTTOM fetch distance=${distanceToEnd.toFixed(1)}`);
+          console.log(
+            `[ROW] AT-BOTTOM fetch distance=${distanceToEnd.toFixed(1)}`,
+          );
           loadMoreRef.current();
         }
       }
@@ -238,6 +258,14 @@ export default function HomeScreen() {
       setAtBottom(false);
     }
   }, [loadingMore]);
+  const showBottomLoader = loadingMore && hasMore && atBottom;
+  useEffect(() => {
+    Animated.timing(loaderOpacity, {
+      toValue: showBottomLoader ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [showBottomLoader, loaderOpacity]);
   useEffect(() => {
     // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
     // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
@@ -291,7 +319,9 @@ export default function HomeScreen() {
     return [
       banners?.[0]?.imageUrl,
       first?.image,
-      ...((first?.menu ?? []).slice(0, FIRST_SCREEN_MENUS).map((m: any) => m?.image) as string[]),
+      ...((first?.menu ?? [])
+        .slice(0, FIRST_SCREEN_MENUS)
+        .map((m: any) => m?.image) as string[]),
     ].filter(Boolean) as string[];
   }, [banners, fastFoods]);
 
@@ -616,6 +646,9 @@ export default function HomeScreen() {
             // termine avant l'arrivee, ni loader ni gel visibles. Le fetch est
             // declenche par la transition `atBottom` dans `handleScroll`.
             onEndReached={undefined}
+            // Libere le verrou de page quand le contenu GRANDIT vraiment
+            // (commit + layout), pas a l'insertion logique.
+            onContentSizeChange={handleContentSizeChange}
             // Pre-rendu modere : les rangees proches se montent en avance, mais
             // une page ajoutee pendant qu'on lit le haut ne se monte pas (pas
             // de pause d'insertion). 3200 montait tout, y compris hors regard.

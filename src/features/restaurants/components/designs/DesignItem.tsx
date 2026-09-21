@@ -270,7 +270,7 @@ const StockDeliveryBar: React.FC<{
         <View style={styles.v4StockLeftSection}>
         <View style={styles.v4StockInfo}>
           <Text
-            style={[styles.v4StockCount, { color: "#e8440a", flexShrink: 0 }]}
+            style={[styles.v4StockCount, { color: "#000", flexShrink: 0 }]}
           >
             {stock}
           </Text>
@@ -288,8 +288,8 @@ const StockDeliveryBar: React.FC<{
         </View>
       )}
       <View style={styles.v4DeliveryStrip}>
-        <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
-          <Ionicons name="flash" size={10} color="white" />
+        <View style={[styles.v5DeliveryIcon, { backgroundColor: "#fff" }]}>
+          <Ionicons name="flash" size={10} color="#000" />
         </View>
         <View>
           <Text style={[styles.v5DeliveryLabel, { fontSize: 10 }]}>
@@ -513,7 +513,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-              backgroundColor: "#e8440a",
+            backgroundColor: "#e8440a",
               position: "absolute",
               top: 4,
               left: 6,
@@ -585,7 +585,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-              backgroundColor: "#e8440a",
+            backgroundColor: "#e8440a",
               position: "absolute",
               top: 6,
               left: 6,
@@ -749,7 +749,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-              backgroundColor: "#e8440a",
+            backgroundColor: "#e8440a",
               position: "absolute",
               top: 14,
               left: 14,
@@ -920,8 +920,8 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
             tint="light"
             style={styles.v5BottomBar}
           >
-            <View style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}>
-              <Ionicons name="flash" size={10} color="white" />
+        <View style={[styles.v5DeliveryIcon, { backgroundColor: "#fff" }]}>
+          <Ionicons name="flash" size={10} color="#000" />
             </View>
             <View>
               <Text style={[styles.v5DeliveryLabel, { fontSize: 10 }]}>
@@ -1098,7 +1098,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-              backgroundColor: "#e8440a",
+            backgroundColor: "#e8440a",
               position: "absolute",
               top: 12,
               left: 12,
@@ -1424,7 +1424,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   v1BadgeTime: {
-    backgroundColor: "#e8440a",
+            backgroundColor: "#fff",
     position: "absolute",
     top: 50,
     right: 0,
@@ -1909,7 +1909,7 @@ const styles = StyleSheet.create({
   },
   v4ProgressFill: {
     height: "100%",
-    backgroundColor: "#e8440a",
+    backgroundColor: "#000",
     borderRadius: 2,
   },
 

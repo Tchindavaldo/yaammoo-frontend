@@ -69,7 +69,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       <View style={styles.toolbar1}>
         <View style={styles.colLocation}>
           <TouchableOpacity style={styles.chipLocalisation}>
-            <Ionicons name="location-sharp" size={12} color="white" />
+            <Ionicons name="location-sharp" size={12} color="#fff" />
             <Text style={styles.localisationLabel}>{location}</Text>
           </TouchableOpacity>
         </View>
@@ -80,7 +80,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
             onPress={onCartPress}
             activeOpacity={0.8}
           >
-            <Ionicons name="cart" size={16} color={Theme.colors.primary} />
+            <Ionicons name="cart" size={16} color="#111" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -88,7 +88,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
             onPress={onOrdersPress}
             activeOpacity={0.8}
           >
-            <Ionicons name="receipt" size={16} color={Theme.colors.primary} />
+            <Ionicons name="receipt" size={16} color="#111" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -99,7 +99,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
             <Ionicons
               name="notifications"
               size={16}
-              color={Theme.colors.primary}
+              color="#111"
             />
             {unreadCount > 0 && (
               <View style={styles.badge}>
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#fff",
   },
   // Sans flou natif (Android < 12), fond opaque pour masquer le contenu dessous.
   containerOpaque: {
@@ -194,16 +194,18 @@ const styles = StyleSheet.create({
     width: 33,
     height: 33,
     borderRadius: 16.5,
-    backgroundColor: "rgba(236,73,19,0.12)",
+    backgroundColor: "#f5f5f5",
     alignItems: "center",
     justifyContent: "center",
   },
   imgProfile: {
-    height: 33,
-    width: 33,
-    borderRadius: 16.5,
+    height: 35,
+    width: 35,
+    borderRadius: 17.5,
     overflow: "hidden",
     backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   avatarImg: {
     width: "100%",
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
   avatarInitial: {
     width: "100%",
     height: "100%",
-    backgroundColor: "rgba(236,73,19,0.12)",
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -229,14 +231,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(236,73,19,1.00)",
-    paddingHorizontal: 14,
-    borderRadius: 25,
+    paddingHorizontal: 12,
+    borderRadius: 18,
     height: 33, // Pour forcer la cohérence de taille avec l'avatar
   },
   localisationLabel: {
-    color: "white",
+    color: "#fff",
     fontSize: 12,
-    fontWeight: "300",
+    fontWeight: "600",
     marginLeft: 4,
   },
   colNotification: {
@@ -290,8 +292,9 @@ const styles = StyleSheet.create({
   },
   catChipActive: {
     backgroundColor: "white",
-    borderWidth: 0.5,
-    borderColor: "rgba(236,73,19,1.00)",
+    borderBottomWidth: 2,
+    borderBottomColor: "rgba(236,73,19,1.00)",
+    borderRadius: 0,
   },
   catLabel: {
     fontSize: 11,

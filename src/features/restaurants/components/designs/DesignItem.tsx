@@ -431,7 +431,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             {/* Prix top-gauche */}
             <View
-              style={[styles.v7PricePill, { backgroundColor: "#e8440a" }]}
+              style={[styles.v7PricePill, { backgroundColor: "#fff" }]}
             >
               <Text style={styles.v7PriceText}>{price}</Text>
             </View>
@@ -513,7 +513,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-            backgroundColor: "#e8440a",
+            backgroundColor: "#fff",
               position: "absolute",
               top: 4,
               left: 6,
@@ -585,7 +585,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-            backgroundColor: "#e8440a",
+            backgroundColor: "#fff",
               position: "absolute",
               top: 6,
               left: 6,
@@ -749,7 +749,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-            backgroundColor: "#e8440a",
+            backgroundColor: "#fff",
               position: "absolute",
               top: 14,
               left: 14,
@@ -907,7 +907,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
 
         {/* Prix en chip blur en haut */}
         <View style={[styles.v7TopChips, styles.v5TopChips]}>
-          <View style={[styles.v7PricePill, { backgroundColor: accent }]}> 
+          <View style={[styles.v7PricePill, { backgroundColor: "#fff" }]}> 
             <Text style={styles.v7PriceText}>{price}</Text>
           </View>
         </View>
@@ -1098,7 +1098,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           style={[
             styles.v7PricePill,
             {
-            backgroundColor: "#e8440a",
+            backgroundColor: "#fff",
               position: "absolute",
               top: 12,
               left: 12,
@@ -1157,7 +1157,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
         {/* Top chips: Prix seul (chip stock retire) */}
         <View style={styles.v7TopChips}>
           {/* Prix */}
-          <View style={[styles.v7PricePill, { backgroundColor: "#e8440a" }]}>
+          <View style={[styles.v7PricePill, { backgroundColor: "#fff" }]}> 
             <Text style={styles.v7PriceText}>{price}</Text>
           </View>
         </View>
@@ -2229,7 +2229,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  v7PriceText: { color: "white", fontSize: 12, fontWeight: "900" },
+  v7PriceText: { color: "#000", fontSize: 12, fontWeight: "900" },
   v7BottomZone: {
     position: "absolute",
     bottom: 0,

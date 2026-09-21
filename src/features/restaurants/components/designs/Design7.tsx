@@ -70,6 +70,8 @@ export const Design7: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         name={fastFood.nom}
         image={fastFood.image}
         rating={fastFood.stats?.rating}
+        orderCount={(fastFood as any)?.stats?.orders ?? 0}
+        reviewCount={(fastFood as any)?.stats?.votes ?? 0}
         syncWithImage={fastFood.menu?.[0]?.image}
       />
       <View style={styles.scrollWrapper}>

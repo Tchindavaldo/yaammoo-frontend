@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 3,
   },
   dotActive: {
-    backgroundColor: "#000",
+    backgroundColor: Theme.colors.primary,
     width: 18,
   },
   // ⚠️ Emplacement de LARGEUR FIXE (celle de la puce active) : la puce grise et
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
   dotActiveOverlay: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 4,
-    backgroundColor: "#000",
+    backgroundColor: Theme.colors.primary,
   },
   // Une seule puce, a la largeur de la puce active : le nombre de bannieres
   // n'est pas encore connu au moment du squelette.

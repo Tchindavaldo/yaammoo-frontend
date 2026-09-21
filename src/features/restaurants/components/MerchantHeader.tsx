@@ -10,6 +10,8 @@ interface MerchantHeaderProps {
   name: string;
   image?: string;
   rating?: number;
+  orderCount?: number;
+  reviewCount?: number;
   /**
    * URL de la PREMIERE image de menu de la boutique. Le squelette du header
    * reste affiche jusqu'a ce qu'elle soit prete.
@@ -29,6 +31,8 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   name,
   image,
   rating = 4.5,
+  orderCount = 0,
+  reviewCount = 0,
   syncWithImage,
   isOpen = true,
 }) => {
@@ -173,21 +177,33 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
             <View style={styles.statusRow}>
               <View style={[styles.statusDot, { backgroundColor: isOpen ? '#00b894' : '#d63031' }]} />
-              <Text style={[styles.statusText, { color: isOpen ? '#00b894' : '#d63031' }]}>
+              <Text style={[styles.statusText, { color: isOpen ? '#000' : '#d63031' }]}> 
                 {isOpen ? 'Ouvert' : 'Fermé'}
               </Text>
             </View>
           </View>
         </View>
-        <View style={styles.ratingContainer}>
+        <View style={styles.ratingBlock}>
+          <View style={styles.ratingMetaRow}>
+            <View style={styles.statChip}>
+              <Ionicons name="receipt-outline" size={11} color="#000" />
+              <Text style={styles.ratingMeta}>{orderCount}</Text>
+            </View>
+            <View style={styles.statChip}>
+              <Ionicons name="people-outline" size={11} color="#000" />
+              <Text style={styles.ratingMeta}>{reviewCount}</Text>
+            </View>
+          </View>
+          <View style={styles.ratingContainer}>
           {stars.map((fill, i) => (
             <View key={i} style={styles.starWrapper}>
-              <Ionicons name="star" size={14} color="#000" />
+              <Ionicons name="star" size={14} color="#e8440a" />
               <View style={[styles.starFill, { width: `${fill * 100}%` }]}>
-              <Ionicons name="star" size={14} color="#000" />
+                <Ionicons name="star" size={14} color="#e8440a" />
               </View>
             </View>
           ))}
+          </View>
         </View>
       </Animated.View>
       {/* Fondu de sortie sur la MEME valeur que l'entree du contenu : les deux
@@ -279,6 +295,23 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: '800',
+    color: '#000',
+  },
+  ratingBlock: { alignItems: 'flex-end', gap: 3 },
+  ratingMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  statChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: '#f2f2f2',
+  },
+  ratingMeta: {
+    fontSize: 10,
+    color: '#555',
+    fontWeight: '700',
   },
   ratingContainer: {
     flexDirection: 'row',

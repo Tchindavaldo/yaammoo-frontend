@@ -176,8 +176,8 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
           <View>
             <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
             <View style={styles.statusRow}>
-              <View style={[styles.statusDot, { backgroundColor: isOpen ? '#00b894' : '#d63031' }]} />
-              <Text style={[styles.statusText, { color: isOpen ? '#000' : '#d63031' }]}> 
+              <View style={[styles.statusDot, { backgroundColor: '#d63031' }]} />
+              <Text style={[styles.statusText, { color: '#d63031' }]}> 
                 {isOpen ? 'Ouvert' : 'Fermé'}
               </Text>
             </View>

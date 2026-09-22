@@ -104,6 +104,7 @@ interface DesignItemProps {
   isLast?: boolean;
   deliveryHours?: string[];
   orderLeadTime?: number;
+  index?: number;
   stock?: number;
 }
 
@@ -137,6 +138,7 @@ const ItemMeta: React.FC<{
   marginRight,
   deliveryHours = [],
   orderLeadTime = 0,
+  index = 0,
 }) => {
   const available =
     menu.disponibilite === "available" || menu.disponibilite === "Disponible";
@@ -174,6 +176,7 @@ const ItemMeta: React.FC<{
                     <Text style={[styles.metaText, { color: "#000" }]}>
                       {rating}
                     </Text>
+                    <Text style={styles.metaMuted}>({votes} avis)</Text>
                   </>
                 ) : (
                   <Text
@@ -192,9 +195,30 @@ const ItemMeta: React.FC<{
         )}
       </View>
 
+      {variant === 4 ? (
+        <View style={[styles.metaRow, { justifyContent: "space-between" }]}>
+          <Text style={styles.metaText}>
+            Livraison{" "}
+            <Text style={{ color: "#e8440a", fontWeight: "900" }}>
+              {index % 3 === 0 ? "gratuite" : index % 3 === 1 ? "300F" : "1000F"}
+            </Text>
+          </Text>
+          <Text style={styles.v4TimeText}>
+            Livré en <Text style={styles.v4TimeValue}>15min</Text>
+          </Text>
+        </View>
+      ) : (
       <View style={styles.metaRow}>
-        <Text style={styles.metaText}>Livraison </Text>
-        <Text style={[styles.metaFree, { color: "#e8440a" }]}>offerte 30min</Text>
+        {variant === 5 || variant === 7 ? (
+          <Text style={styles.metaText}>
+            Livré en <Text style={{ color: "#e8440a", fontWeight: "900" }}>30min</Text>
+          </Text>
+        ) : (
+          <>
+            <Text style={styles.metaText}>Livraison </Text>
+            <Text style={[styles.metaFree, { color: "#e8440a" }]}>offerte 30min</Text>
+          </>
+        )}
         <View style={{ flex: 1 }} />
         {/* Le variant 7 n'affiche pas de note. */}
         {variant !== 7 && variant !== 4 ? (
@@ -208,6 +232,7 @@ const ItemMeta: React.FC<{
           <Text style={styles.metaMuted}>({votes} avis)</Text>
         ) : null}
       </View>
+      )}
     </View>
   );
 };
@@ -250,6 +275,7 @@ const StockDeliveryBar: React.FC<{
   stock: number;
   hideStock?: boolean;
   stockLabel?: string;
+  deliveryFeeLabel?: string;
 }> = ({ accent, deliveryTime, stock, hideStock = false, stockLabel = "disponible" }) => (
   <BlurView
     disableAndroidBlur
@@ -297,6 +323,15 @@ const StockDeliveryBar: React.FC<{
     </View>
   </BlurView>
 );
+const DeliveryFeePill: React.FC<{ label: string; accent: string }> = ({
+  label,
+  accent,
+}) => (
+  <View style={styles.deliveryFeePill}>
+    <Text style={[styles.deliveryFeePillText, { color: "#000" }]}>{label}</Text>
+  </View>
+);
+
 const CardBottom: React.FC<{
   accent: string;
   deliveryTime: string;
@@ -313,6 +348,7 @@ const CardBottom: React.FC<{
   withBackground = true,
   hideStock = false,
   stockLabel = "disponible",
+  deliveryFeeLabel = "gratuit",
 }) => {
   // Mode "blur2" : ancienne barre stock + livraison, sauf le 7 qui garde
   // sa propre zone.
@@ -323,7 +359,10 @@ const CardBottom: React.FC<{
           <View style={styles.v7LiveRow}>
             <Text style={styles.v7LiveMeta}>Prochaine</Text>
           </View>
-          <Text style={styles.v7LiveHour}>livraison · {deliveryTime}</Text>
+          <View style={styles.v7DeliveryRow}>
+            <Text style={styles.v7LiveHour}>livraison · {deliveryTime}</Text>
+            <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
+          </View>
         </View>
       );
     }
@@ -347,7 +386,10 @@ const CardBottom: React.FC<{
           <View style={styles.v7LiveRow}>
             <Text style={styles.v7LiveMeta}>Prochaine</Text>
           </View>
-          <Text style={styles.v7LiveHour}>livraison · {deliveryTime}</Text>
+          <View style={styles.v7DeliveryRow}>
+            <Text style={styles.v7LiveHour}>livraison · {deliveryTime}</Text>
+            <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
+          </View>
         </View>
       );
     }
@@ -368,6 +410,7 @@ const CardBottom: React.FC<{
           <Text style={[styles.v7LiveHour, { color: "#000" }]}>
             livraison · <Text style={{ color: accent }}>{deliveryTime}</Text>
           </Text>
+          <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
         </View>
       </View>
     );
@@ -392,6 +435,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
     menu.disponibilite === "available" || menu.disponibilite === "Disponible";
   const price = `${menu.prix1} F`;
   const deliveryTime = useNextDeliveryTime(deliveryHours, orderLeadTime);
+  const deliveryFeeLabel = index % 3 === 0 ? "gratuit" : index % 3 === 1 ? "300F" : "1000F";
 
   // --- DESIGN 1: SPECIAL OFFERS (Ex-D3) ---
   if (variant === 1) {
@@ -884,7 +928,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
               <View>
                 <Text style={styles.v5DeliveryLabel}>Prochaine</Text>
                 <Text style={[styles.v5DeliveryTime, { color: accent }]}> 
-                  Livraison {deliveryTime}
+                  Livraison {deliveryTime} · {deliveryFeeLabel}
                 </Text>
               </View>
               {/* <View style={styles.v5DeliveryPulse} /> */}
@@ -922,7 +966,10 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
               <Text
                 style={[styles.v5DeliveryTime, { color: "black", fontSize: 11 }]}
               >
-                Livraison {deliveryTime}
+                <View style={styles.v5DeliveryFeeRow}>
+                  <Text style={[styles.v5DeliveryTime, { color: "black", fontSize: 11 }]}>Livraison {deliveryTime}</Text>
+                  <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
+                </View>
               </Text>
             </View>
           </BlurView>
@@ -1160,6 +1207,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
           deliveryTime={deliveryTime}
           stock={stock}
           withBackground={false}
+          deliveryFeeLabel={index % 3 === 0 ? "gratuit" : index % 3 === 1 ? "300F" : "1000F"}
         />
       </TouchableOpacity>
     );
@@ -1264,6 +1312,7 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
           marginRight={isLast ? 0 : skel.gap}
           deliveryHours={props.deliveryHours}
           orderLeadTime={props.orderLeadTime}
+          index={props.index}
         />
       </Animated.View>
       {/* ⚠️ TOUJOURS MONTE, jamais derriere un `{!skeletonGone ? … : null}`.
@@ -1746,7 +1795,7 @@ const styles = StyleSheet.create({
   },
   v3LiveLabel: {
     fontSize: 9,
-    fontWeight: "700",
+    fontWeight: "900",
     color: "rgba(0, 0, 0, 1)",
     textTransform: "uppercase",
     textAlign: "center",
@@ -2250,6 +2299,18 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.7)",
   },
   v7LiveHour: { fontSize: 11, fontWeight: "900", marginTop: 1, color: "white" },
+  v7DeliveryRow: { flexDirection: "row", alignItems: "center", gap: 4, flexWrap: "nowrap" },
+  deliveryFeePill: {
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  deliveryFeePillText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  v5DeliveryFeeRow: { flexDirection: "row", alignItems: "center", gap: 5 },
 
   defaultContainer: {
     padding: 20,
@@ -2273,4 +2334,6 @@ const styles = StyleSheet.create({
   },
   metaFree: { fontSize: 11, fontWeight: "900", color: "#00b894" },
   metaDot: { width: 6, height: 6, borderRadius: 3 },
+  v4TimeText: { fontSize: 11, fontWeight: "600", color: "#8a8a8a" },
+  v4TimeValue: { fontSize: 13, fontWeight: "900", color: "#111" },
 });

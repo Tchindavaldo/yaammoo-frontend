@@ -34,9 +34,11 @@ Les tâches se font dans l'ordre, une par une : mesurer avant et après chacune.
     - `firstScreenUris` : dépendre de `fastFoods[0]` seulement, pas de toute la liste
 
 [ ] 6. UX d'insertion
-    - le gel du scroll (`insertLock`) au bas strict est ressenti comme un arrêt
-    - tester une insertion anticipée (~1 écran avant le bas, défilement lent)
-    - réévaluer `HOLD_REVEAL_DELAY_MS` (1 s de loader artificiel)
+    - GARDER l'insertion au bas strict (HOLD) : une page insérée pendant que
+      l'utilisateur défile (ex. remonté pendant le fetch) = pause ressentie.
+      Ne JAMAIS insérer en avance ou en plein geste.
+    - une fois 2, 3 et 5 faits, réévaluer `HOLD_REVEAL_DELAY_MS` (1 s de loader)
+      et la durée du gel `insertLock`
 
 [ ] 7. Nettoyage avant merge
     - `RESET_ENABLED = true` (FastFoodContext) : sinon la liste n'est jamais tronquée

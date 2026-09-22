@@ -7,6 +7,13 @@ import { Design4 } from './designs/Design4';
 import { Design5 } from './designs/Design5';
 import { Design7 } from './designs/Design7';
 import { ShopRevealProvider } from '../context/ShopRevealContext';
+import { DesignNumber, designNumberFor } from '../utils/designCycle';
+
+const DESIGN_COMPONENTS: Record<DesignNumber, typeof Design7> = {
+  7: Design7,
+  4: Design4,
+  5: Design5,
+};
 
 interface DesignRouterProps {
   fastFood: FastFood;
@@ -43,15 +50,11 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
     } as Menu);
   };
 
-  // Mapping avec cycle : boucle sur les designs actifs
-  // 0 → Design7, 1 → Design4, 2 → Design5, puis le cycle recommence.
-  // À partir de 7, cela recommence (7 → Design7, 8 → Design4, etc.)
+  // Cycle des designs : table UNIQUE dans `utils/designCycle.ts`, partagee avec
+  // `getItemType` du home (pools de recyclage). Ne pas la redupliquer ici.
   //
-  // ⚠️ On selectionne le COMPOSANT, on n'instancie pas les 6 variantes. Le
-  // tableau d'elements JSX d'avant en construisait six a chaque rendu pour n'en
-  // afficher qu'une.
-  const DESIGNS = [Design7, Design4, Design5];
-  const Design = DESIGNS[index % DESIGNS.length];
+  // ⚠️ On selectionne le COMPOSANT, on n'instancie pas toutes les variantes.
+  const Design = DESIGN_COMPONENTS[designNumberFor(index)];
 
   const design = <Design fastFood={fastFood} onMenuClick={handleMenuClick} />;
 

@@ -17,13 +17,20 @@ src/features/restaurants/
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
 ├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
 ├── utils/deliveryUtils.ts
+├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
 └── components/
-    ├── DesignRouter.tsx            # Aiguille vers Design1..7 + ShopRevealProvider
+    ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
     └── designs/
-        ├── DesignItem.tsx          # Enveloppe (squelette + fondu) + DesignItemCard (7 variantes)
+        ├── DesignItem.tsx          # Enveloppe seule : squelette + fondu + ItemMeta
+        ├── item/
+        │   ├── config.ts           # Flags, fonds, SKELETON_SIZES, types de props
+        │   ├── DesignItemCard.tsx  # Valeurs dérivées (prix, livraison) + aiguillage vers la variante
+        │   ├── parts/              # ItemMeta (infos sous la carte), CardBottom (barres basses)
+        │   ├── styles/sharedStyles.ts  # Styles partagés entre variantes
+        │   └── variants/           # CardV1V2V3 · CardV4V7 · CardV5V6 (rendu + styles propres)
         └── Design1..7.tsx          # Rangées horizontales par boutique
 ```
 

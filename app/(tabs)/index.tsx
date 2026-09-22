@@ -28,6 +28,7 @@ import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet"
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
 import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
 import { ShopRevealProvider } from "@/src/features/restaurants/context/ShopRevealContext";
+import { designNumberFor } from "@/src/features/restaurants/utils/designCycle";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -493,21 +494,14 @@ export default function HomeScreen() {
    * incompatible, ce qui annule le gain et provoque des sauts de layout. On rend
    * donc le type explicite — la banniere d'un cote, chaque variante de l'autre.
    *
-   * ⚠️ On type par COMPOSANT, pas par `designIndex`. La table de `DesignRouter`
-   * (`[Design7, Design4, Design6, Design7, Design4, Design5]`) contient des
-   * DOUBLONS : les index 0 et 3 rendent tous deux `Design7`. Typer sur l'index
-   * nu creerait deux pools de recyclage distincts pour des vues identiques — le
-   * gain serait perdu sur la moitie des rangees.
-   *
-   * ⚠️ Cette table doit rester synchronisee avec celle de `DesignRouter`. Elle y
-   * est definie localement ; l'extraire dans un module partage serait plus sur,
-   * a faire si elle bouge encore.
+   * ⚠️ On type par COMPOSANT, pas par `designIndex` : plusieurs index rendent
+   * le meme design, typer sur l'index nu creerait des pools distincts pour des
+   * vues identiques. La table vient de `designCycle.ts`, la MEME que celle de
+   * `DesignRouter` — ne jamais la redupliquer ici (elles avaient diverge).
    */
   const getItemType = useCallback((item: any) => {
     if (isBannerItem(item)) return "banner";
-    const DESIGN_BY_INDEX = [7, 4, 6, 7, 4, 5, 5];
-    const i = (item?.designIndex ?? 0) % DESIGN_BY_INDEX.length;
-    return `shop-d${DESIGN_BY_INDEX[i]}`;
+    return `shop-d${designNumberFor(item?.designIndex)}`;
   }, []);
 
   const showToast = (message: string, type: "success" | "error") => {

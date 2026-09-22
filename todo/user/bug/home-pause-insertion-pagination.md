@@ -11,7 +11,8 @@ Les tâches se font dans l'ordre, une par une : mesurer avant et après chacune.
       (`handleScroll`, `listData`, `loadMore`) pendant la mesure
 
 [ ] 2. Alléger le coût de montage d'une rangée (levier principal)
-    - `DesignItem.tsx` fait 2276 lignes : le découper (R4, plafond 500)
+    - [x] `DesignItem.tsx` fait 2276 lignes : le découper (R4, plafond 500)
+          → `designs/item/` (config, parts, styles, variants), aucun fichier > 500
     - réduire les `BlurView` par carte
     - squelette toujours monté sous chaque carte = arbre natif doublé :
       le démonter après le fondu ou l'alléger
@@ -22,7 +23,8 @@ Les tâches se font dans l'ordre, une par une : mesurer avant et après chacune.
     - retirer `estimatedItemSize` / `getItemLayout` (ignorés en FlashList v2)
     - `keyExtractor` : ne jamais retomber sur `Math.random()`
 
-[ ] 4. Corriger `getItemType` (app/(tabs)/index.tsx)
+[x] 4. Corriger `getItemType` (app/(tabs)/index.tsx)
+    → table unique `utils/designCycle.ts` partagée avec `DesignRouter`
     - table `[7,4,6,7,4,5,5] % 7` désynchronisée de `DesignRouter` (`[7,4,5] % 3`)
     - Design5 éclaté en deux groupes de recyclage
     - idéalement : extraire la table dans un module partagé

@@ -193,16 +193,8 @@ const ItemMeta: React.FC<{
       </View>
 
       <View style={styles.metaRow}>
-        <Text style={styles.metaText}>Livraison en</Text>
-        <Text
-          style={[
-            styles.metaStrike,
-            { color: "#e8440a", textDecorationLine: "none" },
-          ]}
-        >
-          30min
-        </Text>
-        <Text style={[styles.metaFree, { color: "#e8440a" }]}>gratuit</Text>
+        <Text style={styles.metaText}>Livraison </Text>
+        <Text style={[styles.metaFree, { color: "#e8440a" }]}>offerte 30min</Text>
         <View style={{ flex: 1 }} />
         {/* Le variant 7 n'affiche pas de note. */}
         {variant !== 7 && variant !== 4 ? (
@@ -241,7 +233,7 @@ const DeliveryBottomBar: React.FC<{
     {/* Icone retiree en mode blur : textes seuls. */}
     <View>
       <Text style={[styles.v5DeliveryLabel, { fontSize: 10 }]}>Prochaine</Text>
-      <Text style={[styles.v5DeliveryTime, { color: "black", fontSize: 11 }]}>
+      <Text style={[styles.v5DeliveryTime, { color: "black", fontSize: 11 }]}> 
         Livraison {deliveryTime}
       </Text>
     </View>
@@ -289,7 +281,7 @@ const StockDeliveryBar: React.FC<{
       )}
       <View style={styles.v4DeliveryStrip}>
         <View style={[styles.v5DeliveryIcon, { backgroundColor: "#fff" }]}>
-          <Ionicons name="flash" size={10} color="#000" />
+          <Ionicons name="flash" size={10} color={accent} />
         </View>
         <View>
           <Text style={[styles.v5DeliveryLabel, { fontSize: 10 }]}>
@@ -374,7 +366,7 @@ const CardBottom: React.FC<{
         >
           <Text style={[styles.v7LiveMeta, { color: "#000" }]}>Prochaine</Text>
           <Text style={[styles.v7LiveHour, { color: "#000" }]}>
-            livraison · {deliveryTime}
+            livraison · <Text style={{ color: accent }}>{deliveryTime}</Text>
           </Text>
         </View>
       </View>
@@ -882,16 +874,16 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
             {/* Livraison — bande glass en bas */}
             <View style={styles.v5DeliveryStrip}>
               <View
-                style={[styles.v5DeliveryIcon, { backgroundColor: accent }]}
+                style={[styles.v5DeliveryIcon, { backgroundColor: "#fff" }]}
               >
-                <Ionicons name="flash" size={10} color="white" />
+                <Ionicons name="flash" size={10} color={accent} />
               </View>
               {/* <View style={{ flex: 1 }}> 
             <Text style={[styles.v5DeliveryTime, { color: accent }]}>En Stiock</Text>
           </View> */}
               <View>
                 <Text style={styles.v5DeliveryLabel}>Prochaine</Text>
-                <Text style={[styles.v5DeliveryTime, { color: accent }]}>
+                <Text style={[styles.v5DeliveryTime, { color: accent }]}> 
                   Livraison {deliveryTime}
                 </Text>
               </View>
@@ -921,7 +913,7 @@ const DesignItemCard: React.FC<DesignItemProps> = ({
             style={styles.v5BottomBar}
           >
         <View style={[styles.v5DeliveryIcon, { backgroundColor: "#fff" }]}>
-          <Ionicons name="flash" size={10} color="#000" />
+          <Ionicons name="flash" size={10} color={accent} />
             </View>
             <View>
               <Text style={[styles.v5DeliveryLabel, { fontSize: 10 }]}>
@@ -1909,7 +1901,7 @@ const styles = StyleSheet.create({
   },
   v4ProgressFill: {
     height: "100%",
-    backgroundColor: "#000",
+    backgroundColor: "#e8440a",
     borderRadius: 2,
   },
 

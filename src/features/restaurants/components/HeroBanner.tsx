@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     // marginHorizontal: -Theme.design.horizontalPadding,
     marginHorizontal: -Theme.design.horizontalPadding,
     marginTop: 4,
-    marginBottom: 10,
+    marginBottom: 30,
   },
   // ⚠️ Hauteur EXPLICITE : `PagerView` est une vue native, elle ne se dimensionne
   // pas sur son contenu comme une `ScrollView`. Doit valoir la hauteur d'une

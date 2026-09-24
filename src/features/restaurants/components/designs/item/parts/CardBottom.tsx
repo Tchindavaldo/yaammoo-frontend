@@ -5,12 +5,15 @@ import { Text, View } from "react-native";
 import { CARD_BOTTOM_STYLE } from "../config";
 import { sharedStyles as styles } from "../styles/sharedStyles";
 
-/** Pastille des frais de livraison (« gratuit », « 300F »…). */
+/** Pastille des frais de livraison (« gratuit », « 300F »…) : fond accent, texte blanc gras. */
 export const DeliveryFeePill: React.FC<{ label: string; accent: string }> = ({
   label,
+  accent,
 }) => (
-  <View style={styles.deliveryFeePill}>
-    <Text style={[styles.deliveryFeePillText, { color: "#000" }]}>{label}</Text>
+  <View style={[styles.deliveryFeePill, { backgroundColor: accent }]}>
+    <Text style={[styles.deliveryFeePillText, { color: "#fff", fontWeight: "800" }]}>
+      {label}
+    </Text>
   </View>
 );
 

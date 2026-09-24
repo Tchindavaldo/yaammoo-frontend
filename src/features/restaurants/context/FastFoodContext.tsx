@@ -563,6 +563,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
           },
         });
 
+        // Au login invite → connecte, c'est ce rafraichissement qui remplace le
+        // fetch premiere page : le flag review doit suivre le compte connecte.
+        if (!cursor) setAppleReviewMode(response.data?.appleReviewMode === true);
+
         const raw: any[] = response.data?.data ?? [];
         for (const item of raw) {
           if (item?.id) fresh.set(item.id, item);
@@ -910,11 +914,26 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // On attend donc la resolution : un seul appel part, deja authentifie. Le
   // refetch sur changement d'uid (login, logout, bascule de compte) reste
   // assure par `user?.uid` dans les dependances.
+  //
+  // ⚠️ Invite → connecte (login via la sheet d'auth, home deja affichee) : on
+  // NE recharge PAS la premiere page. Ce rechargement vidait la liste et
+  // allumait le loader plein ecran — la home « clignotait » en page blanche au
+  // login. On rafraichit les boutiques deja chargees SUR PLACE (le Bearer
+  // resout les `deliveryOffer` du compte), sans loader ni perte de scroll.
+  // `null` = aucun fetch encore fait ; `undefined` = dernier fetch en invite.
+  const fetchedUidRef = useRef<string | null | undefined>(null);
   useEffect(() => {
     if (authLoading) return;
+    const uid = user?.uid;
+    const prevUid = fetchedUidRef.current;
+    fetchedUidRef.current = uid;
+    if (prevUid === undefined && uid && fastFoodsLenRef.current > 0) {
+      void refreshLoadedSilently();
+      return;
+    }
     cursorRef.current = null;
     void fetchPage(undefined, undefined);
-  }, [fetchPage, user?.uid, authLoading]);
+  }, [fetchPage, refreshLoadedSilently, user?.uid, authLoading]);
 
   // Retour du reseau : on recharge SEULEMENT si l'ecran d'erreur est affiche.
   // Sans cela l'utilisateur reste bloque dessus jusqu'a taper « Reessayer », le
@@ -934,7 +953,13 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // `deliveryOffer` du compte precedent (le backend les resout depuis le
   // Bearer), donc on la vide et le refetch ci-dessus la recharge — loader
   // compris, comme un premier chargement.
+  // Sauf invite → connecte : la liste invite ne porte aucune offre de compte,
+  // elle est rafraichie sur place (voir l'effet d'identite ci-dessus).
+  const resetUidRef = useRef(user?.uid);
   useResetOnUserChange(user?.uid, () => {
+    const wasGuest = !resetUidRef.current;
+    resetUidRef.current = user?.uid;
+    if (wasGuest && fastFoodsLenRef.current > 0) return;
     setFastFoods([]);
     setBanners([]);
     setError(null);

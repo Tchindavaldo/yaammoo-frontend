@@ -33,7 +33,7 @@ src/features/restaurants/
         │   └── variants/           # CardV1V2V3 · CardV4V7 · CardV5 · CardV6 (rendu + styles propres)
         │                           # ANDROID, V4 et V5 : barre basse d'origine en `dark` (aucun fond blanc,
         │                           # textes blancs) sur une ombre interne noire (DarkBottomShade, boxShadow
-        │                           # inset, pas de degrade) ; chip prix sombre
+        │                           # inset, pas de degrade) ; chip prix inchange (blanc)
         └── Design1..7.tsx          # Rangées horizontales par boutique
 ```
 
@@ -128,6 +128,16 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 | `upsert*FromSocket` · `applyDeliveryOffer` · `clearDeliveryOfferForBonus` | Injection socket, sans refetch. |
 
 ### Garde-fous
+
+- **Login invité → connecté : pas de rechargement.** ⚠️ Le passage `uid`
+  `undefined → uid` (login via la sheet d'auth, home déjà affichée) ne vide
+  plus la liste et ne relance plus la première page : ça allumait le loader
+  plein écran → page blanche brève au login. `useResetOnUserChange` est ignoré
+  dans ce cas et l'effet d'identité (`fetchedUidRef`) appelle
+  `refreshLoadedSilently()` : les boutiques affichées sont mises à jour sur
+  place (`deliveryOffer` du compte, `appleReviewMode`), scroll conservé.
+  Logout et changement de compte gardent le reset complet (offres du compte
+  précédent à effacer). Liste vide au login (écran d'erreur) → fetch normal.
 
 - **`runIdRef`** : une réponse dont le numéro n'est plus le dernier est ignorée.
   Sans ça, une recherche lente écraserait une frappe plus récente.

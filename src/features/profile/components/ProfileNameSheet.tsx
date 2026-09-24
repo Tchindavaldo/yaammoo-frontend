@@ -19,6 +19,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { useProfileNameSheet } from "../hooks/useProfileNameSheet";
 import { MissingName } from "../utils/missingName";
 import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
 
 const ACCENT = "#e8440a";
 /** Marge entre la carte et le bas de l'ecran (ou le haut du clavier). */
@@ -33,11 +34,7 @@ const CARD_GAP_KEYBOARD = 12;
 const KEYBOARD_ANIM_MS = 220;
 const KEYBOARD_LEAD = 0.75;
 const KEYBOARD_EASING = Easing.out(Easing.quad);
-const TITLES: Record<MissingName, string> = {
-  prenom: "Il manque ton prénom",
-  nom: "Il manque ton nom",
-  both: "Il manque ton nom",
-};
+const TITLE = "Complétez vos informations";
 
 /**
  * Carte flottante du home qui demande le prenom et/ou le nom manquant.
@@ -51,6 +48,7 @@ const TITLES: Record<MissingName, string> = {
 export function ProfileNameSheet() {
   const { visible, missing, saving, error, dismiss, submit } =
     useProfileNameSheet();
+  const { userData } = useAuth();
   const insets = useSafeAreaInsets();
   // iOS : le home indicator n'a pas besoin de tout l'inset (meme ratio que la
   // tab bar) ; Android garde l'inset complet (barre de navigation).
@@ -76,6 +74,10 @@ export function ProfileNameSheet() {
   useEffect(() => {
     if (visible && missing) {
       setVariant(missing);
+      // Toujours les deux champs : celui deja connu est pre-rempli.
+      const infos = userData?.infos;
+      setPrenom(missing === "nom" ? (infos?.prenom || "").trim() : "");
+      setNom(missing === "prenom" ? (infos?.nom || "").trim() : "");
       setMounted(true);
       // Les listeners clavier tournent meme sheet fermee : un clavier ouvert
       // ailleurs (recherche du home) laissait `lift` decale et la carte
@@ -197,21 +199,16 @@ export function ProfileNameSheet() {
 
   if (!mounted) return null;
 
-  const askPrenom = variant !== "nom";
-  const askNom = variant !== "prenom";
-  const canSubmit =
-    !saving && (!askPrenom || !!prenom.trim()) && (!askNom || !!nom.trim());
+  const askPrenom = true;
+  const askNom = true;
+  const canSubmit = !saving && !!prenom.trim() && !!nom.trim();
 
   const onSubmit = () => {
     if (!canSubmit) return;
-    submit({
-      ...(askPrenom && { prenom }),
-      ...(askNom && { nom }),
-    });
+    submit({ prenom, nom });
   };
 
-  const inputStyle =
-    variant === "both" ? [styles.input, styles.inputHalf] : styles.input;
+  const inputStyle = [styles.input, styles.inputHalf];
 
   return (
     <Animated.View
@@ -243,7 +240,7 @@ export function ProfileNameSheet() {
             <Ionicons name="person-outline" size={24} color={ACCENT} />
           </View>
           <View style={styles.headerText}>
-            <Text style={styles.title}>{TITLES[variant]}</Text>
+            <Text style={styles.title}>{TITLE}</Text>
             <Text style={styles.subtitle}>
               Pour que le restaurant et le livreur t&apos;identifient.
             </Text>

@@ -17,8 +17,9 @@ pas. Design : variantes A/B/C (carte compacte, un champ + bouton flèche).
 - Source : `userData` d'`AuthContext` (cache AsyncStorage au boot, puis API).
 - ⚠️ `userFirestore.getUser()` remplit un `nom` vide par `"Utilisateur"` ou le
   préfixe de l'email : ces deux valeurs comptent comme **nom manquant**.
-- Variante : prénom seul manquant → champ Prénom ; nom seul → champ Nom ;
-  les deux → deux champs côte à côte.
+- Toujours les **deux champs** (Prénom + Nom) côte à côte, titre
+  « Complétez vos informations ». Le champ déjà connu est pré-rempli, le
+  manquant reste vide ; validation = les deux non vides, les deux envoyés.
 
 ## Quand elle s'affiche
 

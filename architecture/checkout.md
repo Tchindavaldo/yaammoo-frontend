@@ -34,7 +34,9 @@ yaammoo/src/features/checkout/
 │   │   ├── ImageSlider.tsx             # Slider d'images du menu
 │   │   └── DeliveryValidateRow.tsx     # Ligne bas des overlays Période/Express : code bonus + détails zone + VALIDER
 │   └── tabs/
-│       ├── DetailTab.tsx               # Onglet détail menu (image, prix, quantité) — PANIER
+│       ├── DetailTab.tsx               # Ancien onglet détail (image, prix, quantité) — PLUS BRANCHÉ
+│       ├── CartDetailTab.tsx           # Copie PANIER (R16) de HomeDetailTab + HomeDetailHero : même design « recap photo » → cart-detail-hero/
+│       ├── cart-detail-hero/           # CartRecapBody + cartRecapTiles (CartHeroImages, CartBanner, CartTile) — copies R16 ; constantes/types pures partagées avec detail-hero/
 │       ├── HomeDetailTab.tsx           # Copie HOME (R16) : calcule le recap, rend HomeDetailHero (V1 par defaut)
 │       ├── HomeDetailHero.tsx          # Section image + tailles + recap, hauteur FIXE SECTION_HEIGHT (footer immobile) → detail-hero/
 │       ├── detail-hero/                # heroShared (SECTION_HEIGHT, RecapCell, slider, points) + recapTiles/RecapBody (design « recap photo » derive de MenuRecapDesign1 : photo plein fond, bandeau nom + Total, pastilles des seules tailles definies, tuiles sans bordure, Boisson/Extras/Livraison ouvrent leur onglet via `onOpenTab`) + HeroV1

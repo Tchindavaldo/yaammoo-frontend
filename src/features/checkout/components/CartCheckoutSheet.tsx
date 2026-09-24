@@ -28,7 +28,7 @@ import {
 import { TabChip } from "./shared/TabChip";
 
 // Tabs
-import { DetailTab } from "./tabs/DetailTab";
+import { CartDetailTab } from "./tabs/CartDetailTab";
 import { ExtrasTab } from "./tabs/ExtrasTab";
 import { DrinksTab } from "./tabs/DrinksTab";
 import { DeliveryTab } from "./tabs/DeliveryTab";
@@ -337,7 +337,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 showsVerticalScrollIndicator={false}
               >
                 {activeTab === "detail" && (
-                  <DetailTab
+                  <CartDetailTab
+                    onOpenTab={setActiveTab}
                     menu={menu}
                     selectedPriceIndex={selectedPriceIndex}
                     setSelectedPriceIndex={setSelectedPriceIndex}

@@ -154,4 +154,4 @@ Constante `CAMEROON_CITIES` (30 villes) utilisée dans les deux panneaux pour le
 | `src/features/checkout/components/CartCheckoutSheet.tsx` | Passe les données + advanceDays |
 | `src/features/checkout/components/tabs/DeliveryTab.tsx` | Affiche le prix sélectionné dynamiquement |
 | `src/features/restaurants/utils/deliveryUtils.ts` | `getNextDeliveryTime` (heure du prochain créneau, supporte les deux formats ; retombe sur le 1er créneau = demain quand tous ceux du jour sont passés) + `useNextDeliveryTime` (version réactive : recalcule chaque minute et au retour foreground pour ne pas rester figée) |
-| `src/features/restaurants/components/designs/DesignItem.tsx` | Affiche l'heure de prochaine livraison sur les plats du home via `useNextDeliveryTime` |
+| `src/features/restaurants/components/designs/item/DesignItemCard.tsx` | Affiche l'heure de prochaine livraison sur les plats du home via `useNextDeliveryTime` |

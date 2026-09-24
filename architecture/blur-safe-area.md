@@ -56,7 +56,7 @@ toute liste qui scrolle sous un header ou une tab bar.
 ```
 
 Posé aujourd'hui sur les **10 blurs des cartes du home**
-(`restaurants/components/designs/DesignItem.tsx`), seul écran où le crash a été
+(`restaurants/components/designs/item/` : variantes + `parts/CardBottom.tsx`), seul écran où le crash a été
 reproduit. Le header et la tab bar gardent leur flou pour l'instant — à basculer
 si le crash y réapparaît.
 

@@ -141,7 +141,7 @@ const TextSlide = ({
   const status = statusOf(bonus);
   // Portion pleine de la jauge DE CE bonus, fixe : sa position dans la pile
   // (0 → 100% sur le dernier), plus d'interpolation continue sur scrollX.
-  const gaugeWidth =
+  const gaugeWidth: `${number}%` =
     total > 1 ? `${Math.round((position / (total - 1)) * 100)}%` : "100%";
 
   return (

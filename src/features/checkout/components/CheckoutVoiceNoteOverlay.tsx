@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
-import { Audio } from 'expo-av';
+import { Audio } from '@/src/services/audio';
 import { useSheetInsets } from '../hooks/useSheetInsets';
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   // Repli Android < 12 (pas de flou natif).
   blurFallbackOpaque: { backgroundColor: "#ffffff", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   keyboardWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     // Android ordonne les touches par ELEVATION, pas par zIndex : sans elle le
     // sheet (elevation 20) recoit le geste a la place de l'overlay.

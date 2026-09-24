@@ -574,12 +574,12 @@ const styles = StyleSheet.create({
   },
   // ── Overlay commentaire : même structure que CheckoutContactOverlay ──
   keyboardWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
   },
   blurOverlay: {
     // Plein écran, rendu via l'opacity (fondu) quand le clavier est ouvert.
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   commentContainer: {
     position: "absolute",

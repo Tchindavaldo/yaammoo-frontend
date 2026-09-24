@@ -359,13 +359,13 @@ const styles = StyleSheet.create({
     height: "57%",
     backgroundColor: "black",
   },
-  cardOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 10 },
+  cardOverlay: { ...StyleSheet.absoluteFill, zIndex: 10 },
   darkMask: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.67)",
   },
   cardGrid: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 5000,
     backgroundColor: "transparent",
   },

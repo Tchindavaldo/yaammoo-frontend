@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { Audio } from '@/src/services/audio';
 import MapComponent from '@/src/components/MapComponent';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: '#E5E7EB',
   },
   mapLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(255,255,255,0.85)',
     alignItems: 'center', justifyContent: 'center', gap: 8,
   },

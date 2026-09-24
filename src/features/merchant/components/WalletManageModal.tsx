@@ -51,7 +51,7 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
     backgroundColor: "transparent",
   },

@@ -8,7 +8,7 @@ export const TAB_BAR_HEIGHT = 60;
 
 export const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
     // Transparent : laisse le settings transparaître DERRIÈRE le header (effet blur).
     // Le fond blanc est posé sur la zone de contenu uniquement (cardGrid).

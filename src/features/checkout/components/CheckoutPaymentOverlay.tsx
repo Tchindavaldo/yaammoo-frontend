@@ -260,8 +260,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
             <BlurView
               intensity={80}
               tint="dark"
-              // Pas de `experimentalBlurMethod` force : `AppBlurView` choisit le
-              // chemin sur selon la version d'Android (RenderScript crashe < 12).
+              // Android : `AppBlurView` rend `fallbackStyle` (pas de flou natif).
               pointerEvents="none"
               fallbackStyle={styles.blurFallbackDark}
               style={StyleSheet.absoluteFill}
@@ -379,7 +378,7 @@ const styles = StyleSheet.create({
   // porte du texte clair.
   blurFallbackDark: { backgroundColor: "rgba(17, 17, 17, 0.92)" },
   keyboardWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     // Android ordonne les touches par ELEVATION, pas par zIndex : sans elle le
     // sheet (elevation 20) recoit le geste a la place de l'overlay.

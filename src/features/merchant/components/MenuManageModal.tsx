@@ -59,7 +59,7 @@ export const MenuManageModal: React.FC<MenuManageModalProps> = ({ visible, onClo
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
     backgroundColor: "transparent",
   },

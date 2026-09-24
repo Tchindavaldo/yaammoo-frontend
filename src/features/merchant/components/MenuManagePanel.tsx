@@ -402,7 +402,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
       />
 
       {confirmModalVisible && (
-        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
           <View style={styles.cfnOverlay} />
           <Animated.View
             style={[
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
 
   // STYLES BOTTOM CARD MODAL
   cfnOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.5)",
     zIndex: 100400,
   },

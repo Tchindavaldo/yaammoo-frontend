@@ -7,7 +7,7 @@ import { StyleSheet } from "react-native";
  */
 export const zoneListStyles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(15,23,42,0.4)",
   },
   sheet: {

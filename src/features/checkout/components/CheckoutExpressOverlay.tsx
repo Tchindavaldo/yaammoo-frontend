@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   // Repli Android < 12 (pas de flou natif).
   blurFallbackOpaque: { backgroundColor: "#ffffff", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   keyboardWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     // Android ordonne les touches par ELEVATION, pas par zIndex : sans elle le
     // sheet (elevation 20) recoit le geste a la place de l'overlay.

@@ -35,7 +35,7 @@ export const SHEET_HEIGHT = 270;
 
 export const styles = StyleSheet.create({
   scrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.4)",
   },
   sheet: {
@@ -178,5 +178,5 @@ export const styles = StyleSheet.create({
   // Emplacement plein ecran : la capsule s'y ancre elle-meme par son `bottom`
   // (elle est en `position: absolute`), et peut donc remonter par-dessus le
   // sheet a l'ouverture du clavier sans etre rognee.
-  capsuleSlot: { ...StyleSheet.absoluteFillObject },
+  capsuleSlot: { ...StyleSheet.absoluteFill },
 });

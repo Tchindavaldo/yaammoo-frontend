@@ -402,16 +402,13 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
         pointerEvents="none"
         style={[styles.veil, { opacity: veilOpacity, height: VEIL_HEIGHT }]}
       >
-        {/* ⚠️ `expo-blur` DIRECT, et non `AppBlurView` : celui-ci coupe le flou
-            natif sous Android 12 (le chemin RenderScript crashe quand une
-            LISTE defile derriere). Ici rien ne defile — la capsule est
-            statique — on garde donc un vrai flou sur toutes les versions
-            d'Android au lieu d'un aplat noir. */}
+        {/* `expo-blur` DIRECT, et non `AppBlurView` : sur Android, le voile
+            teinte d'expo-blur (SDK 57, aucune `BlurTargetView`) vaut mieux
+            qu'un aplat. iOS floute normalement. */}
         <BlurView
           intensity={65}
           tint="dark"
           style={StyleSheet.absoluteFill}
-          experimentalBlurMethod="dimezisBlurView"
         />
         {/* Teinte posee SUR le flou : l'intensite seule ne noircit pas assez. */}
         <View pointerEvents="none" style={styles.veilTint} />
@@ -443,7 +440,6 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
               intensity={80}
               tint="dark"
               style={StyleSheet.absoluteFill}
-              experimentalBlurMethod="dimezisBlurView"
             />
 
             <View style={styles.inputRow}>
@@ -602,7 +598,7 @@ const styles = StyleSheet.create({
    * floutee restait en bas de la sheet.
    */
   slot: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     bottom: -AUTH_SHEET_PADDING_BOTTOM,
   },
   capsule: {
@@ -700,7 +696,7 @@ const styles = StyleSheet.create({
   },
   /** Teinte sombre posee sur le flou, qui seul ne noircit pas assez. */
   veilTint: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.3)",
   },
 });

@@ -54,7 +54,7 @@ export const SupportComposer: React.FC<Props> = ({
 
 const styles = StyleSheet.create({
   inputWrap: { flex: 1 },
-  blocker: StyleSheet.absoluteFillObject,
+  blocker: StyleSheet.absoluteFill,
   wrap: {
     flexDirection: "row",
     alignItems: "flex-end",

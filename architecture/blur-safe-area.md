@@ -45,11 +45,23 @@ toute liste qui scrolle sous un header ou une tab bar.
 
 ### Comportement
 
+> ⚠️ **SDK 57 : plus aucun flou natif sur Android.** `expo-blur` 57 ne floute
+> sur Android que le contenu enveloppé dans un `<BlurTargetView>` passé via
+> `blurTarget` ; sans cible il retombe en voile et logue un avertissement.
+> L'app ne déclare aucune cible : `isNativeBlurAvailable` vaut donc `false`
+> sur **tout** Android, qui suit le chemin « sans flou » (View opacifiée par
+> `fallbackStyle`) jadis réservé à Android < 12. `experimentalBlurMethod` est
+> déprécié (remplacé par `blurMethod`) et n'est plus passé nulle part.
+> Rétablir un vrai flou = poser un `BlurTargetView` autour du contenu à flouter,
+> le `BlurView` étant HORS de la cible — à valider sur appareil vu le crash
+> décrit plus haut.
+
 - **iOS** : flou natif (`UIVisualEffectView`), rien à configurer.
-- **Android 12+** : `dimezisBlurView` activé automatiquement.
-- **Android < 12** : flou désactivé, rendu en voile teinté.
-- **`disableAndroidBlur`** : coupe le flou sur Android **toutes versions
-  confondues**. À poser sur tout BlurView placé devant une liste qui défile.
+- **Android (toutes versions)** : pas de flou, `View` opacifiée par
+  `fallbackStyle`. Les deux usages directs d'`expo-blur` (sheet d'auth,
+  capsule de saisie) rendent le voile teinté d'expo-blur.
+- **`disableAndroidBlur`** : historique (coupait le flou quand il existait).
+  Toujours accepté, sans effet supplémentaire aujourd'hui.
 
 ```tsx
 <BlurView disableAndroidBlur fallbackStyle={styles.opaque} … />

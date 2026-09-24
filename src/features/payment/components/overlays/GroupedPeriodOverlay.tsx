@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
   },
   keyboardWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     // Android ordonne les touches par ELEVATION, pas par zIndex. Le sheet porte
     // `elevation: 20` : sans une elevation superieure ici, c'est lui qui recoit

@@ -197,12 +197,12 @@ const styles = StyleSheet.create({
   el: { flex: 1 },
   cardBack: { flex: 1, width: width, height: height },
   cardBlack: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.57)",
     zIndex: 10,
   },
   cardGrid: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 5000,
     backgroundColor: "transparent",
     display: "flex",

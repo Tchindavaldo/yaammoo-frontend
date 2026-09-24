@@ -49,7 +49,11 @@ Documentation d'architecture de l'app mobile (client + marchand).
 
 ## Stack frontend
 
-- **Framework** : React Native + Expo Router
+- **Framework** : Expo SDK 57 (React Native 0.86, React 19.2, New Architecture seule) + Expo Router 57
+  - Expo Router n'embarque plus React Navigation : importer depuis `expo-router/react-navigation` / `expo-router/js-tabs`, jamais `@react-navigation/*`
+  - `StyleSheet.absoluteFillObject` n'existe plus (RN 0.86) : `StyleSheet.absoluteFill`
+  - Audio : `expo-audio` (`expo-av` retiré du SDK) — adaptateur `src/services/audio` pour les notes vocales
+  - `ios/` régénéré par `expo prebuild` (vidé par défaut) : les retouches Xcode Cloud vivent dans `plugins/withXcodeCloud.js`
 - **State** : Contexts React (Auth, Order, Notification, Socket)
 - **Storage** : AsyncStorage
 - **Push** : Hybride — `@react-native-firebase/messaging` (dev/prod build) + `expo-notifications` (Expo Go)

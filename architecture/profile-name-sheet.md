@@ -47,7 +47,7 @@ Validation : `PUT /user/:uid` (`userFirestore.updateUser`) puis
 
 ## Clavier
 
-- `edgeToEdgeEnabled` : la fenêtre n'est pas redimensionnée, la carte monte
+- Edge-to-edge (obligatoire depuis le SDK 55) : la fenêtre n'est pas redimensionnée, la carte monte
   par `translateY` (`lift`).
 - Montée : `out quad`, 75 % de la durée du clavier → la carte garde de l'avance
   et n'est jamais chevauchée. Android n'a que `keyboardDidShow` (en retard) :

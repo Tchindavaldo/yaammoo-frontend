@@ -169,6 +169,7 @@ src/
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
     ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp
+    ├── audio/                  # `Audio` : API expo-av reproduite sur expo-audio (notes vocales, SDK 57)
     │                           # Sonde pointée sur le backend (/settings/app-version) :
     │                           # par défaut NetInfo interroge l'origine de la page, donc
     │                           # Metro en dev web, ce qui relançait un bundle à chaque ping

@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   },
 
   backdropDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(20,20,20,0.25)",
   },
   sheetBody: { flex: 1 },

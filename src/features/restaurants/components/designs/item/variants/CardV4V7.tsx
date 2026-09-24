@@ -279,5 +279,5 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  v7BgImg: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  v7BgImg: { ...StyleSheet.absoluteFill, width: "100%", height: "100%" },
 });

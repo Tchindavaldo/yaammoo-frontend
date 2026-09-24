@@ -1,6 +1,6 @@
 import { Commande, FastFood } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { Audio } from "@/src/services/audio";
 import { Image } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -1076,7 +1076,7 @@ function Waveform({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.4)",
   },
   sheet: {
@@ -1249,7 +1249,7 @@ const styles = StyleSheet.create({
     color: "#6B7280",
   },
   mapLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(255,255,255,0.85)",
     alignItems: "center",
     justifyContent: "center",

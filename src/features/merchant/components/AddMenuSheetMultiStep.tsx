@@ -1231,7 +1231,7 @@ const styles = StyleSheet.create({
   },
   // Voile sombre par-dessus le flou.
   overlayDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.35)",
   },
   // Conteneur de la sheet : hauteur fixe en px (identique sur tous les écrans).

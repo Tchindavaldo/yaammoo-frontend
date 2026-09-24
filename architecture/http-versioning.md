@@ -108,7 +108,13 @@ nouveau binaire et ne peuvent pas etre poussees en OTA.
 | `eas.json` → `channel` par profil | `production` / `preview` / `development`. |
 | `src/services/useOtaUpdates.ts` | Verifie, telecharge et **applique** la mise a jour. |
 
-Publier : `eas update --branch production --message "..."`.
+Publier : `eas update --branch production --environment production --message "..."`.
+⚠️ Depuis le SDK 55, `--environment` est **obligatoire**. Le SDK 56 active aussi
+par defaut le diff de bytecode Hermes (`EXUpdatesEnableBsdiffPatchSupport`).
+
+> **SDK 57 → runtimeVersion 1.1.0.** La migration change le natif (RN 0.86) :
+> les apps 1.0.x ne recoivent PLUS les updates publies en 1.1.0. Nouveau build
+> store obligatoire (iOS Xcode Cloud + Android EAS).
 
 ### iOS buildé par Xcode Cloud — configuration NATIVE obligatoire
 
@@ -130,12 +136,23 @@ pour le runtimeVersion. Les deux chaines cessent ainsi de se disputer le fichier
 `EXUpdatesRuntimeVersion` a chaque build : sans cela le binaire embarquerait un
 runtimeVersion perime, et ne recevrait plus aucun update.
 
+> ⚠️ **SDK 57 : `expo prebuild` VIDE `ios/` par defaut.** Toutes les retouches
+> Xcode Cloud sont donc portees par `plugins/withXcodeCloud.js`, reappliquees a
+> chaque prebuild : Podfile (`libdav1d` precompile, deployment target aligne
+> pour Xcode 27), copie de `scripts/xcode-cloud/ci_post_clone.sh` (SOURCE a
+> modifier) dans `ios/ci_scripts/`, versions `$(MARKETING_VERSION)` /
+> `$(CURRENT_PROJECT_VERSION)` dans Info.plist, `SENTRY_ALLOW_FAILURE` dans
+> `ios/.xcode.env`. Regenerer : `npx expo prebuild --platform ios --clean
+> --no-install` puis restaurer `ios/yaammoo.xcworkspace` et
+> `ios/yaammoo/PrivacyInfo.xcprivacy` (`git checkout`). Scene support iOS 27
+> active via `expo-build-properties` → `ios.enableSceneSupport`.
+
 > Android passe par EAS, qui pose le canal automatiquement — rien a maintenir de
 > ce cote.
 
 #### runtimeVersion : valeur manuelle (et non policy)
 
-`app.json` porte une **valeur en dur** (`"runtimeVersion": "1.0.6"`) la ou une
+`app.json` porte une **valeur en dur** (`"runtimeVersion": "1.1.0"`) la ou une
 policy `"appVersion"` serait plus automatique. Raison : les dossiers natifs
 existent sur le disque, donc Expo considere le projet en **workflow bare**, ou
 les policies ne sont pas supportees — `expo start` s'arretait sur

@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   absoluteLoader: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     justifyContent: "center",
     alignItems: "center",
     zIndex: 100,

@@ -1,6 +1,6 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { Audio } from "@/src/services/audio";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   // Android < 12 : pas de flou natif -> voile opaque, sinon on voit au travers.
   blurFallbackLight: { backgroundColor: "rgba(255, 255, 255, 0.97)" },
   keyboardWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     // Android ordonne les touches par ELEVATION, pas par zIndex (sheet = 20).
     elevation: 30,

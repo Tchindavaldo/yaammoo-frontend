@@ -2,7 +2,7 @@
 // react-native-maps is not supported on web, so we replace MapView with a static placeholder
 import { Commande } from "@/src/types";
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
+import { Audio } from '@/src/services/audio';
 import * as Linking from 'expo-linking';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -573,7 +573,7 @@ function Waveform({ active, progress = 0 }: { active?: boolean; progress?: numbe
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {

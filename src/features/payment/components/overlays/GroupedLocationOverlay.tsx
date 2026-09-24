@@ -1,7 +1,7 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Loader } from "@/src/components/Loader";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { Audio } from "@/src/services/audio";
 import * as Location from "expo-location";
 import React from "react";
 import {
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   // Android < 12 : pas de flou natif -> fond opaque pour rester lisible.
   blurFallbackLight: { backgroundColor: "#ffffff" },
   keyboardWrapper: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     // Android ordonne les touches par ELEVATION, pas par zIndex (sheet = 20).
     elevation: 30,
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   locatingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",

@@ -97,7 +97,7 @@ plus de memoire, a surveiller sur appareil modeste.
 ## Ce qui NE FONCTIONNE PAS — FlashList (branche `feature/home-flashlist`)
 
 Objectif : supprimer la pause **par construction** en reutilisant les vues au
-lieu de les detruire. `@shopify/flash-list` 2.0.2, `newArchEnabled: true`.
+lieu de les detruire. `@shopify/flash-list` 2.0.2, New Architecture (seule supportee depuis le SDK 55).
 
 **Resultat : PIRE qu'avec FlatList.** La sonde `DEMONTAGE` prouve que les
 cellules sont bel et bien detruites — le recyclage ne prend pas.

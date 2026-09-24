@@ -50,6 +50,10 @@
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+      <string>comgooglemaps</string>
+    </array>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>LSRequiresIPhoneOS</key>
@@ -61,8 +65,16 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSBonjourServices</key>
+    <array>
+      <string>_expo._tcp</string>
+    </array>
     <key>NSCameraUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your camera</string>
+    <string>Yaammoo utilise l'appareil photo pour photographier vos plats et votre boutique.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string>Yaammoo utilise Face ID pour protéger l'accès à votre portefeuille.</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Expo Dev Launcher uses the local network to discover and connect to development servers running on your computer.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSLocationAlwaysUsageDescription</key>
@@ -70,19 +82,36 @@
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus.</string>
+    <string>Yaammoo utilise le micro pour vos notes vocales destinées aux livreurs.</string>
+    <key>NSMotionUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to detect your current motion activity</string>
     <key>NSPhotoLibraryAddUsageDescription</key>
     <string>Yaammoo enregistre dans vos photos les images que vous exportez.</string>
-    <key>NSFaceIDUsageDescription</key>
-    <string>Yaammoo utilise Face ID pour protéger l'accès à votre portefeuille.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
-    <key>RCTNewArchEnabled</key>
-    <true/>
+    <key>RCTMetroPort</key>
+    <string>$(RCT_METRO_PORT)</string>
+    <key>UIApplicationSceneManifest</key>
+    <dict>
+      <key>UIApplicationSupportsMultipleScenes</key>
+      <false/>
+      <key>UISceneConfigurations</key>
+      <dict>
+        <key>UIWindowSceneSessionRoleApplication</key>
+        <array>
+          <dict>
+            <key>UISceneConfigurationName</key>
+            <string>Default Configuration</string>
+            <key>UISceneDelegateClassName</key>
+            <string>EXExpoAppSceneDelegate</string>
+          </dict>
+        </array>
+      </dict>
+    </dict>
     <key>UIBackgroundModes</key>
     <array>
       <string>remote-notification</string>

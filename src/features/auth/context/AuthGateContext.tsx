@@ -1,6 +1,6 @@
-// ⚠️ `expo-blur` en direct, PAS `AppBlurView` : ce dernier coupe le flou sous
-// Android 12 pour eviter un crash lie au scroll. Ici rien ne defile derriere la
-// sheet, donc on veut le flou sur toutes les versions.
+// ⚠️ `expo-blur` en direct, PAS `AppBlurView` : sur Android celui-ci rend un
+// aplat ; ici on prefere le voile teinte d'expo-blur (pas de vrai flou Android
+// en SDK 57 sans `BlurTargetView`, voir AppBlurView).
 import { BlurView } from "expo-blur";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -110,15 +110,13 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           pointerEvents="auto"
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={close}>
-            {/* Flou + voile sombre, sur les deux OS. `dimezisBlurView` est
-                force meme sous Android 12 : le crash que `AppBlurView` evite
-                vient du redessin d'une liste qui defile, et rien ne scrolle
-                derriere cette sheet. */}
+            {/* Flou + voile sombre. iOS floute ; Android (SDK 57, aucune
+                `BlurTargetView`) rend le voile teinte d'expo-blur, que
+                `backdropDim` assombrit. */}
             <BlurView
               intensity={30}
               tint="light"
               style={StyleSheet.absoluteFill}
-              experimentalBlurMethod="dimezisBlurView"
             />
             <View style={styles.backdropDim} />
           </Pressable>
@@ -150,7 +148,7 @@ export function useAuthGate(): AuthGateValue {
 
 const styles = StyleSheet.create({
   backdropDim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(20,20,20,0.25)",
   },
   sheetBody: { flex: 1 },

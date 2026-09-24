@@ -80,7 +80,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
         <View style={{ flex: 1, justifyContent: "flex-end" }}>
           <Animated.View
             style={{
-              ...StyleSheet.absoluteFillObject,
+              ...StyleSheet.absoluteFill,
               backgroundColor: "rgba(15,23,42,0.4)",
               opacity: backdropOpacity,
             }}

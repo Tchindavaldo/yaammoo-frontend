@@ -2,7 +2,7 @@ import "@/src/services/webTitleFix";
 import {
   DefaultTheme,
   ThemeProvider,
-} from "@react-navigation/native";
+} from "expo-router/react-navigation";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LogBox, Platform } from "react-native";

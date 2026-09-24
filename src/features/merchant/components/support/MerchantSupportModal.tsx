@@ -150,7 +150,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFillObject, zIndex: 2000 },
+  overlay: { ...StyleSheet.absoluteFill, zIndex: 2000 },
   contentBg: {
     position: "absolute",
     left: 0,

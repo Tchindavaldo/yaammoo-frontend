@@ -447,7 +447,7 @@ export const CartGroupedDetailCapsule: React.FC<
 
 const styles = StyleSheet.create({
   /** Calque plein ecran qui porte le voile et la capsule. */
-  slot: { ...StyleSheet.absoluteFillObject },
+  slot: { ...StyleSheet.absoluteFill },
   capsule: {
     position: "absolute",
     left: "2%",
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   inputRowHidden: { opacity: 0 },
   /** Message pose PAR-DESSUS la ligne de saisie masquee, centre dans la pilule. */
   overlayText: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     // Gouttiere : le texte ne colle pas aux bords arrondis de la pilule.
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   veilFallback: { backgroundColor: "rgba(0,0,0,0.72)" },
   /** Teinte sombre posee sur le flou, qui seul ne noircit pas assez. */
   veilTint: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.3)",
   },
 });

@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
   // Les deux etapes sont montees SIMULTANEMENT et superposees : le passage de
   // l'une a l'autre n'est qu'un fondu croise d'opacite, sans montage a chaud
   // (qui faisait apparaitre l'etape 2 en cours de peinture).
-  bodyLayer: { ...StyleSheet.absoluteFillObject, flexDirection: "column" },
+  bodyLayer: { ...StyleSheet.absoluteFill, flexDirection: "column" },
   // Le calque de paiement laisse en bas la place de la capsule, posee par-dessus
   // (les deux autres etapes n'en ont pas et vont jusqu'au bas du sheet).
   payLayer: { paddingBottom: CAPSULE_SPACE + CAPSULE_BOTTOM_OFFSET },
@@ -137,7 +137,7 @@ export const styles = StyleSheet.create({
   keyboardVeilFallback: { backgroundColor: "rgba(0,0,0,0.72)" },
   /** Teinte sombre posee sur le flou, qui seul ne noircit pas assez. */
   keyboardVeilTint: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.3)",
   },
   /** Bouton rond de validation, cale dans la capsule. */

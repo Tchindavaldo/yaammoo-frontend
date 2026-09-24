@@ -3,18 +3,20 @@ import React from "react";
 import { Platform, StyleProp, View, ViewStyle } from "react-native";
 
 /**
- * Android 12 (API 31) : seuil à partir duquel `expo-blur` floute via `RenderEffect`.
- * En dessous il retombe sur `RenderScriptBlur`, qui redessine tout l'arbre de vues
- * dans un canvas logiciel et crashe au scroll
- * (`IndexOutOfBoundsException` dans `ViewGroup.getAndVerifyPreorderedView`,
- * la liste d'enfants pré-ordonnée étant partagée entre les passes de dessin).
+ * `true` quand la plateforme floute vraiment : iOS uniquement.
+ *
+ * ⚠️ SDK 57 (`expo-blur` 57) : sur Android, un `BlurView` ne floute plus que ce
+ * qui est enveloppe dans un `<BlurTargetView>` passe via `blurTarget`. Sans
+ * cible, il retombe en voile semi-transparent ET logue un avertissement a
+ * chaque montage. L'app ne declare aucune cible : tous les Android suivent donc
+ * le chemin « sans flou » (View opacifiee par `fallbackStyle`), celui
+ * qu'utilisait deja Android < 12 — rendu connu et teste.
+ *
+ * Retablir un vrai flou Android = poser un `BlurTargetView` autour du contenu
+ * a flouter, le `BlurView` etant HORS de cette cible. A tester sur appareil :
+ * l'ancien chemin `dimezisBlurView` crashait des qu'une liste defilait derriere.
  */
-const ANDROID_RENDER_EFFECT_API = 31;
-
-/** `true` quand la plateforme sait vraiment flouter (iOS, ou Android 12+). */
-export const isNativeBlurAvailable =
-  Platform.OS !== "android" ||
-  Number(Platform.Version) >= ANDROID_RENDER_EFFECT_API;
+export const isNativeBlurAvailable = Platform.OS !== "android";
 
 interface AppBlurViewProps extends BlurViewProps {
   /**
@@ -43,15 +45,13 @@ interface AppBlurViewProps extends BlurViewProps {
  *
  * iOS : flou natif via UIVisualEffectView, rien à configurer.
  *
- * Android : `expo-blur` ne floute que si `experimentalBlurMethod="dimezisBlurView"`
- * est passé. On l'active automatiquement à partir d'Android 12 (chemin RenderEffect,
- * accéléré et stable) et on le laisse désactivé en dessous, où l'implémentation
- * RenderScript fait crasher l'app dès qu'une liste scrolle derrière le flou.
- * Sous Android 12, le rendu retombe sur un voile teinté, à opacifier via
- * `fallbackStyle` quand le contenu derrière doit rester illisible.
+ * Android : jamais de composant natif d'expo-blur (voir `isNativeBlurAvailable`).
+ * Le rendu est une `View` opacifiée par `fallbackStyle`, à fournir quand le
+ * contenu derrière doit rester illisible.
  */
 export const AppBlurView: React.FC<AppBlurViewProps> = ({
-  experimentalBlurMethod,
+  experimentalBlurMethod: _experimentalBlurMethod,
+  blurMethod: _blurMethod,
   fallbackStyle,
   disableAndroidBlur,
   style,
@@ -67,14 +67,14 @@ export const AppBlurView: React.FC<AppBlurViewProps> = ({
     return <View {...props} style={[style, fallbackStyle]} />;
   }
 
-  // Sans flou natif, on ne monte JAMAIS le composant natif d'expo-blur : même en
-  // mode "none" il instancie une vue RenderScript, qui crashe au scroll sous
-  // Android 12. On rend une View simple, opacifiée par `fallbackStyle` quand il
-  // est fourni (en mode "none" expo-blur écraserait cette couleur avec son voile).
+  // Sans flou natif (Android), on ne monte JAMAIS le composant natif
+  // d'expo-blur : on rend une View simple, opacifiée par `fallbackStyle` quand
+  // il est fourni (en mode "none" expo-blur écraserait cette couleur avec son
+  // voile).
   if (!isNativeBlurAvailable) {
     // `pointerEvents="none"` : un BlurView est un voile decoratif et ne capte
     // aucun geste. Une `View` de repli, elle, intercepte le drag — la liste
-    // rendue dessous devenait alors impossible a faire defiler sur Android < 12.
+    // rendue dessous devenait alors impossible a faire defiler.
     // L'appelant peut le forcer via `props` s'il a besoin de capter les touches.
     return (
       <View pointerEvents="none" {...props} style={[style, fallbackStyle]} />
@@ -88,14 +88,6 @@ export const AppBlurView: React.FC<AppBlurViewProps> = ({
       intensity={intensity}
       tint={tint}
       blurReductionFactor={blurReductionFactor}
-      experimentalBlurMethod={
-        experimentalBlurMethod ??
-        (Platform.OS === "android"
-          ? isNativeBlurAvailable
-            ? "dimezisBlurView"
-            : "none"
-          : undefined)
-      }
     />
   );
 };

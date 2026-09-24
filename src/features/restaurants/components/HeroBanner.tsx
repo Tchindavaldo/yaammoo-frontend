@@ -417,7 +417,7 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
               pointerEvents="none"
               style={[
                 styles.dotsLayer,
-                StyleSheet.absoluteFillObject,
+                StyleSheet.absoluteFill,
                 { justifyContent: "center" },
                 { opacity: skeletonOpacity },
               ]}
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#eef1f5",
   },
   backgroundImage: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
   },
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dotActiveOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 4,
     backgroundColor: Theme.colors.primary,
   },

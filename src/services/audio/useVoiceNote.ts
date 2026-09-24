@@ -66,10 +66,16 @@ export function useVoiceNotePlayer(uri: string | null | undefined) {
     (status.duration > 0 && status.currentTime >= status.duration);
 
   const play = useCallback(async () => {
-    // Fin de lecture atteinte : on repart du debut, comme avant.
-    if (finished) await player.seekTo(0);
+    if (!uri) return;
+    // iOS : sans ce mode, le bouton silencieux coupe la lecture (aucun son).
+    await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true });
+    // Source pas (ou mal) chargee au montage (URL distante lente, sheet
+    // ouverte avant l'arrivee de l'URI) : on la recharge au moment du tap,
+    // comme le faisait `Sound.createAsync` avant la migration.
+    if (!status.isLoaded) player.replace({ uri });
+    else if (finished) await player.seekTo(0);
     player.play();
-  }, [player, finished]);
+  }, [player, uri, status.isLoaded, finished]);
 
   const pause = useCallback(() => player.pause(), [player]);
 

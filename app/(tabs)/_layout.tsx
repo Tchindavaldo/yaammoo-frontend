@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameSheet";
 import { ProfileNameProvider } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,8 +33,16 @@ export default function TabLayout() {
 
   return (
     <ProfileNameProvider>
+      {/* Flou Android (SDK 57) : la tab bar floute l'ecran d'onglet ACTIF,
+          chaque ecran etant enveloppe dans sa propre cible (`screenLayout`). */}
+      <BlurScope>
       <View style={{ flex: 1 }}>
         <Tabs
+          screenLayout={({ navigation, children }) => (
+            <TabScreenBlurTarget navigation={navigation}>
+              {children}
+            </TabScreenBlurTarget>
+          )}
           screenOptions={{
             tabBarActiveTintColor: "rgba(236,73,19,1.00)",
             tabBarInactiveTintColor: "#000000",
@@ -157,6 +166,37 @@ export default function TabLayout() {
         {/* Au-dessus des onglets (tab bar comprise) : le flou couvre tout l'ecran. */}
         <ProfileNameSheet />
       </View>
+      </BlurScope>
     </ProfileNameProvider>
+  );
+}
+
+/**
+ * Cible du flou de la tab bar pour UN ecran d'onglet. Les onglets restent
+ * montes en arriere-plan : seule la cible de l'ecran focalise est active.
+ */
+function TabScreenBlurTarget({
+  navigation,
+  children,
+}: {
+  navigation: {
+    isFocused: () => boolean;
+    addListener: (event: "focus" | "blur", cb: () => void) => () => void;
+  };
+  children: React.ReactElement;
+}) {
+  const [focused, setFocused] = useState(() => navigation.isFocused());
+  useEffect(() => {
+    const offFocus = navigation.addListener("focus", () => setFocused(true));
+    const offBlur = navigation.addListener("blur", () => setFocused(false));
+    return () => {
+      offFocus();
+      offBlur();
+    };
+  }, [navigation]);
+  return (
+    <BlurTarget active={focused} style={{ flex: 1 }}>
+      {children}
+    </BlurTarget>
   );
 }

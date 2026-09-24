@@ -1,4 +1,5 @@
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { NotificationDetailSheet } from "@/src/features/notifications/components/NotificationDetailSheet";
@@ -92,6 +93,7 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.container}>
+      <BlurScope>
       {/* Header */}
       <TabHeader
         title="Notifications"
@@ -111,6 +113,8 @@ export default function NotificationsScreen() {
         }
       />
 
+      {/* Cible du flou du header (Android). */}
+      <BlurTarget style={styles.blurTarget}>
       <FlatList
         data={notifications}
         renderItem={({ item }) => (
@@ -140,6 +144,8 @@ export default function NotificationsScreen() {
           ) : null
         }
       />
+      </BlurTarget>
+      </BlurScope>
 
       <NotificationDetailSheet
         visible={detailVisible}
@@ -152,6 +158,7 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  blurTarget: { flex: 1 },
   container: {
     flex: 1,
     backgroundColor: "#fff",

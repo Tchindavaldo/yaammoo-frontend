@@ -3,6 +3,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
@@ -354,8 +355,11 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Flou Android (SDK 57) : la carte de confirmation floute la liste. */}
+      <BlurScope>
       {/* Liste filtrée (disponible / indisponible). L'ajout et la modification
           passent tous deux par le Modal en bas de ce composant. */}
+      <BlurTarget style={{ flex: 1 }}>
       <FlatList
           data={visibleMenus}
           keyExtractor={(item, i) => item._id || item.id || i.toString()}
@@ -389,6 +393,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
             </View>
           }
         />
+      </BlurTarget>
 
       {/* Modal d'AJOUT / MODIFICATION (bouton "Ajouter" ou crayon d'un item). */}
       <AddMenuSheetMultiStep
@@ -531,6 +536,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
 
       {/* Barre fixe (stats + chips) en blur, par-dessus la liste. */}
       {fixedBar}
+      </BlurScope>
     </View>
   );
 };

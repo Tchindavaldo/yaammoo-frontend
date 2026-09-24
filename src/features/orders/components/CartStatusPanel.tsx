@@ -15,6 +15,7 @@ import { Theme } from "@/src/theme";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import React, {
   useCallback,
   useEffect,
@@ -546,6 +547,9 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
 
   return (
     <View style={{ flex: 1 }}>
+      {/* Flou Android (SDK 57) : la barre de filtres du bas floute la liste
+          (`BlurTarget`). Les sheets restent hors de la zone. */}
+      <BlurScope>
       {/* Tracking header — position absolue */}
       <View
         style={{
@@ -570,6 +574,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           aucun signe laissait croire qu'ils étaient à jour. Le pull-to-refresh
           (`refreshing`) est exclu — il a déjà son indicateur natif, et vider la
           liste sous le doigt masquerait le geste. */}
+      <BlurTarget style={{ flex: 1 }}>
       <FlatList
         data={ordersRefreshing && !refreshing ? [] : flatItems}
         renderItem={renderItem}
@@ -606,6 +611,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         windowSize={7}
         initialNumToRender={12}
       />
+      </BlurTarget>
 
       {/* Barre de filtres en BAS (design partagé avec la page marchand). */}
       <View style={[styles.bottomBar, { bottom: tabBarHeight }]}>
@@ -640,6 +646,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           <Ionicons name="options-outline" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
+      </BlurScope>
 
       <ClientFilterSheet
         visible={filterOpen}

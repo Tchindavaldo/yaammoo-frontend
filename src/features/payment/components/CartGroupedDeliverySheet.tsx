@@ -1,4 +1,5 @@
 import { AppBlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Toast } from "@/src/components/Toast";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import { Livraison } from "@/src/types";
@@ -521,6 +522,9 @@ export const CartGroupedDeliverySheet: React.FC<
       animationType="none"
       statusBarTranslucent
     >
+      {/* Flou Android (SDK 57) : overlays, capsules et voile clavier floutent
+          le corps du sheet (`BlurTarget`). */}
+      <BlurScope>
       <Animated.View style={[sheetStyles.scrim, { opacity: anim }]}>
         {/* Paiement parti : le tap sur le voile ne ferme plus. */}
         <Pressable
@@ -552,7 +556,9 @@ export const CartGroupedDeliverySheet: React.FC<
             (groupage, type, informations, montants, puis paiement) ; la capsule
             de saisie est ancree hors du sheet, juste dessous — d'ou `payLayer`,
             qui lui reserve sa place en bas. */}
-        <View style={[styles.body, styles.payLayer]}>
+        <BlurTarget
+          style={[styles.body, styles.payLayer, { backgroundColor: C.sheet }]}
+        >
           <CartGroupedPaymentBody
             delivery={delivery}
             setDelivery={setDelivery}
@@ -634,7 +640,7 @@ export const CartGroupedDeliverySheet: React.FC<
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        </BlurTarget>
       </Animated.View>
 
       {/* Capsule flottante, rendue HORS du sheet pour remonter avec le clavier
@@ -782,6 +788,7 @@ export const CartGroupedDeliverySheet: React.FC<
           onHide={() => setLocalToast(null)}
         />
       )}
+      </BlurScope>
     </Modal>
   );
 };

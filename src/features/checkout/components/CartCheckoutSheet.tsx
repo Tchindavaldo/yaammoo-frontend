@@ -16,6 +16,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Menu } from "@/src/types";
 import { useCheckout } from "../hooks/useCheckout";
 import { styles } from "./CartCheckoutSheet.styles";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
+import { SHEET_BLUR_TARGET } from "./sheetBlurTarget";
 import axios from "axios";
 import { Config } from "@/src/api/config";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
@@ -277,6 +279,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     <>
       <Modal visible={modalMounted} transparent animationType="none">
         <View style={styles.overlay}>
+          {/* Flou Android (SDK 57) : les overlays floutent le contenu du
+              sheet (`BlurTarget`). */}
+          <BlurScope>
           {/* Voile noir animé en fade (séparé du contenu) */}
           <Animated.View
             style={[styles.backdrop, { opacity: backdropOpacity }]}
@@ -294,6 +299,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
               { transform: [{ translateY: sheetTranslate }] },
             ]}
           >
+            <BlurTarget style={SHEET_BLUR_TARGET}>
             <View style={{ flex: 1 }}>
               <View style={styles.tabsWrapper}>
                 <ScrollView
@@ -435,6 +441,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 setPaymentKey((prev) => prev + 1);
               }}
             />
+            </BlurTarget>
           </Animated.View>
 
           {isLocationPopupVisible && (
@@ -557,6 +564,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
               onHide={() => setPaymentError(null)}
             />
           )}
+          </BlurScope>
         </View>
       </Modal>
     </>

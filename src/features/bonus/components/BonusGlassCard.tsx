@@ -1,4 +1,5 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Image } from "expo-image";
 import React from "react";
 import { StyleSheet, View, type ViewProps } from "react-native";
@@ -85,21 +86,26 @@ export const BonusGlassCard: React.FC<BonusGlassCardProps> = ({
         style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
         pointerEvents="none"
       >
-        {/* Sous le blur : l'image donne de la matière à la carte. */}
+        {/* Sous le blur : l'image donne de la matière à la carte. Elle est la
+            cible du flou Android (SDK 57, `BlurTarget`). */}
+        <BlurScope>
         {image && (
-          <Image
-            source={imageUri ? { uri: imageUri } : BACKGROUND}
-            style={[StyleSheet.absoluteFill, { opacity: CARD_IMAGE_OPACITY }]}
-            contentFit="cover"
-            transition={0}
-            cachePolicy="memory-disk"
-          />
+          <BlurTarget style={StyleSheet.absoluteFill}>
+            <Image
+              source={imageUri ? { uri: imageUri } : BACKGROUND}
+              style={[StyleSheet.absoluteFill, { opacity: CARD_IMAGE_OPACITY }]}
+              contentFit="cover"
+              transition={0}
+              cachePolicy="memory-disk"
+            />
+          </BlurTarget>
         )}
         <BlurView
           intensity={GLASS_BLUR}
           tint="light"
           style={StyleSheet.absoluteFill}
         />
+        </BlurScope>
         <View
           style={[StyleSheet.absoluteFill, { backgroundColor: GLASS_TINT }]}
         />

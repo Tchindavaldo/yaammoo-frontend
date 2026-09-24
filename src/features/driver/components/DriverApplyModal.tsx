@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
@@ -144,6 +145,9 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
           </Text>
         )}
 
+        {/* Flou Android (SDK 57) : le voile du bouton floute la liste. */}
+        <BlurScope>
+        <BlurTarget style={{ flex: 1 }}>
         <FlatList
           data={data}
           keyExtractor={(item) => item.id}
@@ -177,6 +181,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
             )
           }
         />
+        </BlurTarget>
 
         {/* Blur derrière le bouton : les items qui scrollent dessous sont floutés. */}
         <BlurView
@@ -185,6 +190,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
           style={[styles.footerBlur, { height: bottomInset + 76 }]}
           pointerEvents="none"
         />
+        </BlurScope>
 
         <TouchableOpacity
           style={[

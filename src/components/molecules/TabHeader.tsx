@@ -1,7 +1,7 @@
 import { Theme } from "@/src/theme";
 import {
   AppBlurView as BlurView,
-  isNativeBlurAvailable,
+  useNativeBlurActive,
 } from "@/src/components/AppBlurView";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -35,12 +35,14 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
   onHeightChange,
 }) => {
   const insets = useSafeAreaInsets();
+  // Android : flou seulement si l'ecran pose une cible (`BlurTarget`).
+  const blurActive = useNativeBlurActive();
 
   return (
     <View
       style={[
         styles.header,
-        !isNativeBlurAvailable && styles.headerOpaque,
+        !blurActive && styles.headerOpaque,
         { paddingTop: insets.top },
       ]}
       onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}

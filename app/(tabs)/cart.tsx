@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Menu } from "@/src/types";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { CartOrderCard } from "@/src/features/orders/components/CartOrderCard";
 import { CartOrderSkeleton } from "@/src/features/orders/components/CartOrderSkeleton";
@@ -680,16 +681,18 @@ export default function OrdersScreen() {
   ) {
     return (
       <View style={styles.container}>
-        <TabHeader
-          title="Mon panier"
-          subtitle="Chargement..."
-          onHeightChange={setHeaderHeight}
-        />
-        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <CartOrderSkeleton key={i} />
-          ))}
-        </View>
+        <BlurScope>
+          <TabHeader
+            title="Mon panier"
+            subtitle="Chargement..."
+            onHeightChange={setHeaderHeight}
+          />
+          <BlurTarget style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <CartOrderSkeleton key={i} />
+            ))}
+          </BlurTarget>
+        </BlurScope>
       </View>
     );
   }
@@ -709,6 +712,10 @@ export default function OrdersScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Flou Android (SDK 57) : header, recap et capsule floutent la liste
+          (`BlurTarget`). Les sheets restent HORS de cette zone : leurs flous
+          ne doivent pas viser la liste. */}
+      <BlurScope>
       <TabHeader
         title="Mon panier"
         subtitle={headerSubtitle}
@@ -718,7 +725,7 @@ export default function OrdersScreen() {
 
       {/* Pas de paddingTop ici : le contenu s'étend SOUS le header pour que le
           BlurView du TabHeader floute la liste qui scrolle dessous. */}
-      <View style={{ flex: 1 }}>
+      <BlurTarget style={{ flex: 1 }}>
         {/* Filtre fastfood collé sous le header (position absolue), comme sur
             la page « État des commandes » : il ne scrolle pas avec la liste. */}
         <View
@@ -810,7 +817,7 @@ export default function OrdersScreen() {
             </View>
           }
         />
-      </View>
+      </BlurTarget>
 
       {/* Recap du panier, FIXE au-dessus de la navbar : la barre de chips du
           bas a ete remplacee par les 3 chips de filtre en tete de liste. */}
@@ -885,6 +892,7 @@ export default function OrdersScreen() {
           </TouchableOpacity>
         </Animated.View>
       )}
+      </BlurScope>
 
       {/* Sheet de LIVRAISON GROUPÉE — s'intercale AVANT le paiement quand
           « commander » porte sur plusieurs courses. Il porte SES DEUX ÉTAPES

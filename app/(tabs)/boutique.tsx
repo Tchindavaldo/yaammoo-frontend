@@ -10,6 +10,7 @@ import { GuestGate } from '@/src/features/auth/components/GuestGate';
 import { useMerchant } from '@/src/features/merchant/hooks/useMerchant';
 import { Theme } from '@/src/theme';
 import { TabHeader } from '@/src/components/molecules/TabHeader';
+import { BlurScope, BlurTarget } from '@/src/components/BlurTarget';
 import { HeaderPill } from '@/src/components/molecules/HeaderPill';
 import { OrderManagePanel } from '@/src/features/merchant/components/OrderManagePanel';
 import { NoBoutiquePanel } from '@/src/features/merchant/components/NoBoutiquePanel';
@@ -119,6 +120,7 @@ export default function BoutiqueScreen() {
 
   return (
     <View style={styles.container}>
+      <BlurScope>
       <TabHeader
         title="Boutique"
         subtitle={selectedDateLabel}
@@ -130,10 +132,12 @@ export default function BoutiqueScreen() {
         onHeightChange={setHeaderHeight}
       />
 
-      {/* Le contenu s'étend SOUS le header (blur). Le panel applique topOffset. */}
-      <View style={{ flex: 1 }}>
+      {/* Le contenu s'étend SOUS le header (blur). Le panel applique topOffset.
+          Cible du flou du header (Android). */}
+      <BlurTarget style={{ flex: 1 }}>
         {renderContent()}
-      </View>
+      </BlurTarget>
+      </BlurScope>
 
       {toast && (
         <Toast

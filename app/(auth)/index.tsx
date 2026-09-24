@@ -1,4 +1,5 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
 import {
   PlusJakartaSans_600SemiBold,
@@ -108,6 +109,10 @@ export default function WelcomeScreen() {
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.phone}>
+        {/* Flou Android (SDK 57) : le voile du sheet floute le decor
+            (`BlurTarget`, tous ses enfants sont en position absolue). */}
+        <BlurScope>
+        <BlurTarget style={StyleSheet.absoluteFill}>
         {/* Base gradient */}
         <LinearGradient
           colors={["#f7f5f4", "#f3eeec", "#f6e6dd"]}
@@ -286,6 +291,7 @@ export default function WelcomeScreen() {
           style={styles.rider}
           resizeMode="contain"
         />
+        </BlurTarget>
 
         {/* Bottom sheet backdrop */}
         {sheetOpen && (
@@ -321,6 +327,7 @@ export default function WelcomeScreen() {
             <AuthSheetContent />
           </View>
         </Animated.View>
+        </BlurScope>
       </View>
     </View>
   );

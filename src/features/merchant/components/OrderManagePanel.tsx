@@ -6,6 +6,7 @@ import { Theme } from "@/src/theme";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import React, {
   useCallback,
   useEffect,
@@ -794,6 +795,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
   return (
     <View style={styles.container}>
+      {/* Flou Android (SDK 57) : la barre de filtres floute la liste
+          (`BlurTarget`). Les sheets restent hors de la zone. */}
+      <BlurScope>
+      <BlurTarget style={styles.container}>
       {/* Conditional List Rendering */}
       {selectedStatus === "finish" ? (
         <ScrollView
@@ -1091,12 +1096,14 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           )}
         </ScrollView>
       )}
+      </BlurTarget>
 
       {/* Barre fixe (stats) en blur, par-dessus la liste. */}
       {fixedBar}
 
       {/* Barre de filtres en bas (chips statut + icône sheet). */}
       {filterBar}
+      </BlurScope>
 
       <MerchantFilterSheet
         visible={filterOpen}

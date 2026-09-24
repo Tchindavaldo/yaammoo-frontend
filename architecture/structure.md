@@ -170,6 +170,7 @@ src/
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
     ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp
     ├── audio/useVoiceNote.ts   # Notes vocales sur expo-audio : useVoiceNoteRecorder / useVoiceNotePlayer
+    │   (flou Android SDK 57 : src/components/BlurTarget.tsx — BlurScope / BlurTarget, cf. blur-safe-area.md)
     │                           # Sonde pointée sur le backend (/settings/app-version) :
     │                           # par défaut NetInfo interroge l'origine de la page, donc
     │                           # Metro en dev web, ce qui relançait un bundle à chaque ping

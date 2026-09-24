@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import React from "react";
 import {
   Animated,
@@ -402,9 +402,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
         pointerEvents="none"
         style={[styles.veil, { opacity: veilOpacity, height: VEIL_HEIGHT }]}
       >
-        {/* `expo-blur` DIRECT, et non `AppBlurView` : sur Android, le voile
-            teinte d'expo-blur (SDK 57, aucune `BlurTargetView`) vaut mieux
-            qu'un aplat. iOS floute normalement. */}
+        {/* Android : floute le formulaire (`BlurTarget` d'EmailAuthStep). */}
         <BlurView
           intensity={65}
           tint="dark"

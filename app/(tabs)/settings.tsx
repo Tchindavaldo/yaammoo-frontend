@@ -4,6 +4,7 @@ import {
   AppBlurView as BlurView,
   isNativeBlurAvailable,
 } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
@@ -368,6 +369,13 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Flou Android (SDK 57), deux niveaux :
+          - zone externe : les en-tetes des modales plein ecran (fond
+            transparent) floutent TOUT l'ecran Settings ;
+          - zone interne : la carte profil floute la liste qui defile dessous. */}
+      <BlurScope>
+      <BlurTarget style={styles.container}>
+      <BlurScope>
       {/* Header Profil Fixe et Flouté */}
       <BlurView
         intensity={80}
@@ -410,6 +418,7 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </BlurView>
 
+      <BlurTarget style={styles.content}>
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -622,6 +631,9 @@ export default function SettingsScreen() {
           </Text>
         </View>
       </ScrollView>
+      </BlurTarget>
+      </BlurScope>
+      </BlurTarget>
 
       {/* Edit Boutique Modal */}
       <EditBoutiquePanel
@@ -689,6 +701,7 @@ export default function SettingsScreen() {
         visible={driverManageVisible}
         onClose={() => setDriverManageVisible(false)}
       />
+      </BlurScope>
 
       {/* Modal Suppression de compte */}
       <Modal

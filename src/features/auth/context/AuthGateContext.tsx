@@ -1,7 +1,5 @@
-// ⚠️ `expo-blur` en direct, PAS `AppBlurView` : sur Android celui-ci rend un
-// aplat ; ici on prefere le voile teinte d'expo-blur (pas de vrai flou Android
-// en SDK 57 sans `BlurTargetView`, voir AppBlurView).
-import { BlurView } from "expo-blur";
+import { AppBlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
@@ -99,7 +97,11 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGateContext.Provider value={{ requireAuth, isSignedIn }}>
-      {children}
+      {/* Flou Android (SDK 57) : le voile de la sheet floute toute l'app,
+          enveloppee dans la cible (`BlurTarget`). Les flous DE l'app ne visent
+          pas cette cible (la lib l'interdit) : chaque ecran a la sienne. */}
+      <BlurScope>
+      <BlurTarget style={styles.appTarget}>{children}</BlurTarget>
 
       {open && (
         <Animated.View
@@ -110,10 +112,8 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           pointerEvents="auto"
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={close}>
-            {/* Flou + voile sombre. iOS floute ; Android (SDK 57, aucune
-                `BlurTargetView`) rend le voile teinte d'expo-blur, que
-                `backdropDim` assombrit. */}
-            <BlurView
+            {/* Flou + voile sombre, sur les deux OS. */}
+            <AppBlurView
               intensity={30}
               tint="light"
               style={StyleSheet.absoluteFill}
@@ -122,6 +122,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           </Pressable>
         </Animated.View>
       )}
+      </BlurScope>
 
       <Animated.View
         style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}
@@ -147,6 +148,7 @@ export function useAuthGate(): AuthGateValue {
 }
 
 const styles = StyleSheet.create({
+  appTarget: { flex: 1 },
   backdropDim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(20,20,20,0.25)",

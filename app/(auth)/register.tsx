@@ -14,6 +14,7 @@ import {
   ScrollView,
 } from "react-native";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -102,15 +103,20 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.el}>
-      {/* Fond split (Rouge/Noir) */}
-      <View style={styles.cardBack} />
-      <View style={styles.cardBack2} />
+      {/* Flou Android (SDK 57) : le fond split est la cible du voile. */}
+      <BlurScope>
+      <BlurTarget style={[StyleSheet.absoluteFill, { backgroundColor: "black" }]}>
+        {/* Fond split (Rouge/Noir) */}
+        <View style={styles.cardBack} />
+        <View style={styles.cardBack2} />
+      </BlurTarget>
 
       {/* card-black - EFFET BLUR INTENSE MULTI-COUCHE pour simuler 216px */}
       <View style={styles.cardOverlay}>
         <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.darkMask} />
       </View>
+      </BlurScope>
 
       <View style={styles.cardGrid}>
         <SafeAreaView style={{ flex: 1 }}>

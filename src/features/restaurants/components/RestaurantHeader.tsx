@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
   AppBlurView as BlurView,
-  isNativeBlurAvailable,
+  useNativeBlurActive,
 } from "@/src/components/AppBlurView";
 import { Image } from "expo-image";
 import React from "react";
@@ -51,6 +51,9 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   onOrdersPress,
 }) => {
   const insets = useSafeAreaInsets();
+  // Android : pas de cible de flou sur le home (la liste ne passe pas sous le
+  // header) -> fond opaque, visuellement identique.
+  const blurActive = useNativeBlurActive();
 
   return (
     <BlurView
@@ -61,7 +64,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       pointerEvents="auto"
       style={[
         styles.container,
-        !isNativeBlurAvailable && styles.containerOpaque,
+        !blurActive && styles.containerOpaque,
         { paddingTop: insets.top },
       ]}
     >

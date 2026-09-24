@@ -1,3 +1,4 @@
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { WalletDayStatItem } from "@/src/features/merchant/components/WalletDayStatItem";
 import { WalletDayStatSkeleton } from "@/src/features/merchant/components/WalletDayStatSkeleton";
 import { WithdrawOverlay } from "@/src/features/merchant/components/WithdrawOverlay";
@@ -216,7 +217,10 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         </View>
       )}
 
+      {/* Flou Android (SDK 57) : la capsule de retrait floute la liste. */}
+      <BlurScope>
       {/* Chiffre d'affaires par jour (une ligne par jour) */}
+      <BlurTarget style={{ flex: 1 }}>
       <FlatList
         data={series}
         renderItem={({ item }) => <WalletDayStatItem stat={item} />}
@@ -259,6 +263,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
           )
         }
       />
+      </BlurTarget>
 
       {/* Barre fixe (Solde + Retrait) calée sous le header de page. */}
       <View
@@ -307,6 +312,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
           bottom={Animated.add(keyboardHeight, isKeyboardVisible ? 5 : 92)}
         />
       )}
+      </BlurScope>
     </View>
   );
 };

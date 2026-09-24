@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  ImageBackground,
+  Image,
   Dimensions,
   SafeAreaView,
   KeyboardAvoidingView,
@@ -14,6 +14,7 @@ import {
   Alert,
 } from "react-native";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { usePhoneAuth } from "@/src/features/auth/hooks/usePhoneAuth";
@@ -82,11 +83,18 @@ export default function PhoneAuthScreen() {
 
   return (
     <View style={styles.el}>
-      <ImageBackground
-        source={require("@/assets/blur3.jpg")}
-        style={styles.cardBack}
-        resizeMode="cover"
-      >
+      {/* Flou Android (SDK 57) : l'image de fond est la cible du voile
+          (`BlurTarget`). Equivalent d'un `ImageBackground`, dont le flou
+          enfant ne pourrait pas viser l'image qui le contient. */}
+      <BlurScope>
+      <View style={styles.cardBack}>
+        <BlurTarget style={StyleSheet.absoluteFill}>
+          <Image
+            source={require("@/assets/blur3.jpg")}
+            style={StyleSheet.absoluteFill}
+            resizeMode="cover"
+          />
+        </BlurTarget>
         <View style={styles.cardBlack}>
           <BlurView
             intensity={70}
@@ -188,7 +196,8 @@ export default function PhoneAuthScreen() {
             </KeyboardAvoidingView>
           </SafeAreaView>
         </View>
-      </ImageBackground>
+      </View>
+      </BlurScope>
     </View>
   );
 }

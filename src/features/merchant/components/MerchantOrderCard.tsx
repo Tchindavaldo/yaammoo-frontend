@@ -2,6 +2,7 @@ import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Image } from "expo-image";
 import React, { useState } from "react";
 import {
@@ -394,6 +395,9 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
 
   return (
     <View style={styles.wrapper}>
+      {/* Flou Android (SDK 57) : le voile de mise a jour floute la carte. */}
+      <BlurScope>
+      <BlurTarget>
       <TouchableOpacity
         activeOpacity={0.85}
         onPress={() => {
@@ -473,6 +477,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           </View>
         </View>
       </TouchableOpacity>
+      </BlurTarget>
 
       {isUpdating && (
         <View style={styles.absoluteLoader}>
@@ -484,6 +489,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           <ActivityIndicator size="large" color="#ec4913" />
         </View>
       )}
+      </BlurScope>
 
       <MerchantOrderBottomSheet
         order={order}

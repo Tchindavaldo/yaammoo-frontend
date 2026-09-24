@@ -45,23 +45,41 @@ toute liste qui scrolle sous un header ou une tab bar.
 
 ### Comportement
 
-> ⚠️ **SDK 57 : plus aucun flou natif sur Android.** `expo-blur` 57 ne floute
-> sur Android que le contenu enveloppé dans un `<BlurTargetView>` passé via
-> `blurTarget` ; sans cible il retombe en voile et logue un avertissement.
-> L'app ne déclare aucune cible : `isNativeBlurAvailable` vaut donc `false`
-> sur **tout** Android, qui suit le chemin « sans flou » (View opacifiée par
-> `fallbackStyle`) jadis réservé à Android < 12. `experimentalBlurMethod` est
-> déprécié (remplacé par `blurMethod`) et n'est plus passé nulle part.
-> Rétablir un vrai flou = poser un `BlurTargetView` autour du contenu à flouter,
-> le `BlurView` étant HORS de la cible — à valider sur appareil vu le crash
-> décrit plus haut.
+> ⚠️ **SDK 57 : le flou Android exige une CIBLE.** `expo-blur` 57 ne floute
+> sur Android que le contenu enveloppé dans un `BlurTargetView` passé via
+> `blurTarget` ; sans cible il retombe en voile. La bibliothèque native
+> (`eightbitlab` v3) **interdit** qu'un flou soit DANS la cible qu'il floute :
+> contenu et flou doivent être frères. `experimentalBlurMethod` est déprécié
+> et n'est plus passé nulle part (`AppBlurView` pose
+> `blurMethod="dimezisBlurViewSdk31Plus"`).
+>
+> Mécanisme : [`src/components/BlurTarget.tsx`](../src/components/BlurTarget.tsx).
+>
+> ```tsx
+> <BlurScope>
+>   <BlurTarget style={…}>{contenu derrière le flou}</BlurTarget>  // remplace un View
+>   <Header />  // son AppBlurView floute la cible de la zone
+> </BlurScope>
+> ```
+>
+> - `BlurTarget` = drop-in d'un `View` (iOS/web : simple `View`, aucun effet).
+> - Un `AppBlurView` DANS un `BlurTarget` ne vise pas cette cible (contexte
+>   remis à null) : il lui faut son propre `BlurScope` imbriqué.
+> - Onglets : `(tabs)/_layout.tsx` enveloppe chaque écran (`screenLayout`) ;
+>   seule la cible de l'écran focalisé (`active`) est floutée par la tab bar.
+> - `useNativeBlurActive()` : `true` si un flou a réellement lieu à cet endroit
+>   — `TabHeader` et `RestaurantHeader` s'en servent pour opacifier leur fond.
+> - Pas de cible sur le home (la liste ne passe pas sous le header) ni dans les
+>   `Modal` RN (fenêtre séparée : rien à flouter derrière).
+> - Le voile de la sheet d'auth (`AuthGateContext`) floute toute l'app,
+>   enveloppée dans une cible : **perf du scroll home à vérifier sur appareil**.
 
 - **iOS** : flou natif (`UIVisualEffectView`), rien à configurer.
-- **Android (toutes versions)** : pas de flou, `View` opacifiée par
-  `fallbackStyle`. Les deux usages directs d'`expo-blur` (sheet d'auth,
-  capsule de saisie) rendent le voile teinté d'expo-blur.
-- **`disableAndroidBlur`** : historique (coupait le flou quand il existait).
-  Toujours accepté, sans effet supplémentaire aujourd'hui.
+- **Android 12+** : flou natif si une cible existe dans la zone, sinon `View`
+  opacifiée par `fallbackStyle`.
+- **Android < 12** : flou désactivé, rendu en `fallbackStyle`.
+- **`disableAndroidBlur`** : coupe le flou sur Android **toutes versions
+  confondues**. À poser sur tout BlurView placé devant une liste qui défile.
 
 ```tsx
 <BlurView disableAndroidBlur fallbackStyle={styles.opaque} … />

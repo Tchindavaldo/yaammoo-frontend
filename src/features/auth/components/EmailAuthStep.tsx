@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
 import { AuthFieldCapsule } from "./AuthFieldCapsule";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 
 /**
  * Connexion / inscription par email — DESIGN D'ORIGINE conserve.
@@ -177,8 +178,10 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
   };
 
   return (
-    <>
-      <View style={styles.content}>
+    <BlurScope>
+      {/* Flou Android (SDK 57) : le voile de la capsule floute le formulaire
+          (`BlurTarget`). */}
+      <BlurTarget style={styles.content}>
         {/* Titre et description propres a CETTE etape : le message d'accueil
             appartient a l'ecran des boutons sociaux, pas ici. */}
         <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
@@ -306,7 +309,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
             </TouchableOpacity>
           </View>
         )}
-      </View>
+      </BlurTarget>
 
       {/* Capsule rendue APRES le contenu : elle se pose par-dessus la sheet et
           monte avec le clavier sans etre rognee. */}
@@ -324,7 +327,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
         onChangePassword={setPassword}
         onClose={closeCapsule}
       />
-    </>
+    </BlurScope>
   );
 };
 

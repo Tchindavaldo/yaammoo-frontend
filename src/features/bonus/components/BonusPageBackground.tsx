@@ -1,4 +1,5 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 // `expo-image` (et non `Image` de react-native) : il garde l'asset en cache
 // mémoire, donc au 2e affichage de la page le fond est peint dès la 1re frame.
 import { Image } from "expo-image";
@@ -101,6 +102,9 @@ export const BonusPageBackground: React.FC<BonusPageBackgroundProps> = ({
           bords vides retombent en haut/bas et la pagination n'a rien à flouter.
           On l'agrandit donc au-delà du cadre (IMAGE_SCALE) pour que la matière
           couvre toute la hauteur, débordement rogné par le parent. */}
+      {/* Flou Android (SDK 57) : l'image est la cible (`BlurTarget`). */}
+      <BlurScope>
+      <BlurTarget style={StyleSheet.absoluteFill}>
       <Image
         source={BACKGROUND}
         style={styles.image}
@@ -111,11 +115,13 @@ export const BonusPageBackground: React.FC<BonusPageBackgroundProps> = ({
         transition={0}
         cachePolicy="memory-disk"
       />
+      </BlurTarget>
       <BlurView
         intensity={BLUR_INTENSITY}
         tint="light"
         style={StyleSheet.absoluteFill}
       />
+      </BlurScope>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: VEIL }]} />
       {/* Dégradé diagonal (haut-gauche → bas-droite), par-dessus le voile. */}
       <LinearGradient

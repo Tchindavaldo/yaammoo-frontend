@@ -6,6 +6,7 @@ import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { useDriver } from "@/src/features/driver/hooks/useDriver";
 import { Theme } from "@/src/theme";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { DatePill } from "@/src/components/molecules/DatePill";
 import {
   DriverOrderPanel,
@@ -99,6 +100,7 @@ export default function DriverScreen() {
 
   return (
     <View style={styles.container}>
+      <BlurScope>
       <TabHeader
         title="Livraisons"
         subtitle={selectedDateLabel}
@@ -113,7 +115,9 @@ export default function DriverScreen() {
         onHeightChange={setHeaderHeight}
       />
 
-      <View style={{ flex: 1 }}>{renderContent()}</View>
+      {/* Cible du flou du header (Android). */}
+      <BlurTarget style={{ flex: 1 }}>{renderContent()}</BlurTarget>
+      </BlurScope>
 
       {toast && (
         <Toast

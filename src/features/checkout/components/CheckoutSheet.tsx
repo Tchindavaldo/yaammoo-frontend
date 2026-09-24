@@ -39,6 +39,8 @@ import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
 import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
 import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
 import { extractPeriodDate } from "../utils/periodDate";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
+import { SHEET_BLUR_TARGET } from "./sheetBlurTarget";
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -236,6 +238,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     <>
       <Modal visible={modalMounted} transparent animationType="none">
         <View style={styles.overlay}>
+          {/* Flou Android (SDK 57) : les overlays floutent le contenu du
+              sheet (`BlurTarget`). */}
+          <BlurScope>
           {/* Voile noir animé en fade (séparé du contenu pour ne pas l'estomper) */}
           <Animated.View
             style={[styles.backdrop, { opacity: backdropOpacity }]}
@@ -253,6 +258,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
               { transform: [{ translateY: sheetTranslate }] },
             ]}
           >
+            <BlurTarget style={SHEET_BLUR_TARGET}>
             <View style={{ flex: 1 }}>
               <View style={styles.tabsWrapper}>
                 <ScrollView
@@ -385,6 +391,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 setPaymentKey((prev) => prev + 1);
               }}
             />
+            </BlurTarget>
           </Animated.View>
 
           {isLocationPopupVisible && (
@@ -507,6 +514,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
               onHide={() => setPaymentError(null)}
             />
           )}
+          </BlurScope>
         </View>
       </Modal>
     </>

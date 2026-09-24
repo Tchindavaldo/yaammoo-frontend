@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform
 import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSheetInsets } from '../hooks/useSheetInsets';
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -55,7 +55,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
     };
   }, []);
 
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
   const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup.

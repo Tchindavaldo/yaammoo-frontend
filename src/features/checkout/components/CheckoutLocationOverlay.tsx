@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
 import * as Location from 'expo-location';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSheetInsets } from '../hooks/useSheetInsets';
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -65,7 +65,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
   // ici écrasait le lieu choisi par la position courante du user. Le bouton
   // « position actuelle » reste disponible pour un rafraîchissement volontaire.
 
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
   const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup.

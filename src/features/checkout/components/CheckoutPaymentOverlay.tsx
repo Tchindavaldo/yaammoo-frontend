@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSheetInsets } from "../hooks/useSheetInsets";
 import { Loader } from "../../../components/Loader";
 import { AnimatedBorderGlow } from "./AnimatedBorderGlow";
 
@@ -59,7 +59,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
     paymentState === "network_select" ? "input" : paymentState,
   );
 
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
   // Fondu du contenu lors d'un changement d'étape (input → waiting → ussd_sent…).

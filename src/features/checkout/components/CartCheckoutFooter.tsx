@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSheetInsets } from "../hooks/useSheetInsets";
 import { Loader } from "../../../components/Loader";
 import { styles } from "./CartCheckoutSheet.styles";
 
@@ -28,7 +28,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
   isSaving,
 }) => {
   const busy = isLoading || isSaving;
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
 
   return (
     <View

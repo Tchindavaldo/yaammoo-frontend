@@ -122,6 +122,13 @@ Deux formes selon la structure du sheet :
 { paddingBottom: 28 + insets.bottom }
 ```
 
+> **Sheets de commande (home + panier) et leurs 7 overlays** : `insets` vient de
+> `checkout/hooks/useSheetInsets.ts`, pas de `useSafeAreaInsets`. Il ne garde
+> qu'une part de `insets.bottom`, réglée **séparément par OS** :
+> `SHEET_INSET_RATIO_IOS = 0.5` (l'inset complet laissait un grand vide sur
+> iPhone), `SHEET_INSET_RATIO_ANDROID = 1` (inchangé). Sheet et overlays doivent
+> tous passer par ce hook, sinon les overlays ne recouvrent plus le sheet.
+
 Sheets traités :
 
 | Sheet | Fichier |

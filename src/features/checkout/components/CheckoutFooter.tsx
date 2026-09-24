@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSheetInsets } from '../hooks/useSheetInsets';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './CheckoutSheet.styles';
 import { Loader } from '../../../components/Loader';
@@ -22,7 +22,7 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
   onBuy,
   isLoading,
 }) => {
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
 
   return (
     <View

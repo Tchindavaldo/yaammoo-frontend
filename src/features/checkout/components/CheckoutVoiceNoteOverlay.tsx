@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 're
 import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Audio } from 'expo-av';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSheetInsets } from '../hooks/useSheetInsets';
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -170,7 +170,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
     setStatus('idle');
   }
 
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
   const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup.

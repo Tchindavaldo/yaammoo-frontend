@@ -11,7 +11,7 @@ import {
   Dimensions,
   Easing,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSheetInsets } from "../hooks/useSheetInsets";
 import { Toast } from "../../../components/Toast";
 import { Ionicons } from "@expo/vector-icons";
 import { Menu } from "@/src/types";
@@ -69,7 +69,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
   // Animation d'ouverture/fermeture : seul le VOILE noir fait un fade, le sheet
   // (et son contenu) fait un slide-up net — jamais d'opacité sur le contenu.
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
   const SHEET_HEIGHT = 384;
   // Distance de sortie : un ECRAN, pas SHEET_HEIGHT. La hauteur reelle du sheet
   // depasse la constante (safe area + contenu qui deborde), donc translater de

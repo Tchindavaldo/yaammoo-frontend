@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSheetInsets } from "../hooks/useSheetInsets";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -183,7 +183,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
 }) => {
   const anim = React.useRef(new Animated.Value(0)).current; // 0 = caché, 1 = visible
   // Reste monté tant que l'animation de sortie n'est pas terminée.
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
   const [mounted, setMounted] = React.useState(visible);
 
   React.useEffect(() => {

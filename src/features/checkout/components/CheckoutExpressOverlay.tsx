@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSheetInsets } from "../hooks/useSheetInsets";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
@@ -58,7 +58,7 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
-  const insets = useSafeAreaInsets();
+  const insets = useSheetInsets();
   const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup,

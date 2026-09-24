@@ -114,6 +114,8 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           <Pressable style={StyleSheet.absoluteFill} onPress={close}>
             {/* Flou + voile sombre, sur les deux OS. */}
             <AppBlurView
+              // Rien ne defile derriere : flou force aussi sous Android 12.
+              forceAndroidBlur
               intensity={30}
               tint="light"
               style={StyleSheet.absoluteFill}

@@ -42,6 +42,12 @@ interface AppBlurViewProps extends BlurViewProps {
    * Android 16, au scroll du home). iOS n'est pas concerne.
    */
   disableAndroidBlur?: boolean;
+  /**
+   * `true` = flou aussi SOUS Android 12 (chemin RenderScript). Reserve aux
+   * flous devant un contenu qui ne defile pas (sheet d'auth, capsule de
+   * saisie) : c'est le defilement derriere qui faisait crasher ce chemin.
+   */
+  forceAndroidBlur?: boolean;
 }
 
 /**
@@ -59,6 +65,7 @@ export const AppBlurView: React.FC<AppBlurViewProps> = ({
   blurMethod: _blurMethod,
   fallbackStyle,
   disableAndroidBlur,
+  forceAndroidBlur,
   style,
   intensity,
   tint,
@@ -75,7 +82,7 @@ export const AppBlurView: React.FC<AppBlurViewProps> = ({
       return <View {...props} style={[style, fallbackStyle]} />;
     }
 
-    if (!isNativeBlurAvailable || !target) {
+    if ((!isNativeBlurAvailable && !forceAndroidBlur) || !target) {
       // `pointerEvents="none"` : un BlurView est un voile decoratif et ne
       // capte aucun geste. Une `View` de repli, elle, intercepte le drag — la
       // liste rendue dessous devenait alors impossible a faire defiler.
@@ -91,7 +98,9 @@ export const AppBlurView: React.FC<AppBlurViewProps> = ({
         intensity={intensity}
         tint={tint}
         blurReductionFactor={blurReductionFactor}
-        blurMethod="dimezisBlurViewSdk31Plus"
+        blurMethod={
+          forceAndroidBlur ? "dimezisBlurView" : "dimezisBlurViewSdk31Plus"
+        }
         blurTarget={target}
       />
     );

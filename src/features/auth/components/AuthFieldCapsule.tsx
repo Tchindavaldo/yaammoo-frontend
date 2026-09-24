@@ -404,6 +404,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
       >
         {/* Android : floute le formulaire (`BlurTarget` d'EmailAuthStep). */}
         <BlurView
+          forceAndroidBlur
           intensity={65}
           tint="dark"
           style={StyleSheet.absoluteFill}
@@ -435,6 +436,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
         >
           <View style={[styles.capsule, { bottom: capsuleBottom }]}>
             <BlurView
+              forceAndroidBlur
               intensity={80}
               tint="dark"
               style={StyleSheet.absoluteFill}

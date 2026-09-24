@@ -34,6 +34,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useNavigation, useRouter } from "expo-router";
@@ -78,6 +79,7 @@ export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
   const { user, userData, ensureProfileRefreshed } = useAuth();
   const { requireAuth } = useAuthGate();
+  const requireName = useRequireName();
   const { unreadCount, ensureLoaded: ensureNotificationsLoaded } =
     useNotifications();
   const { addOrder, ensureLoaded: ensureOrdersLoaded } = useOrders();
@@ -419,10 +421,13 @@ export default function HomeScreen() {
   const handleMenuClick = (menu: Menu) => {
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
     // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
-    requireAuth(() => {
-      setSelectedMenu(menu);
-      setCheckoutVisible(true);
-    });
+    // Nom / prenom manquant : la sheet dediee passe AVANT le checkout.
+    requireAuth(() =>
+      requireName(() => {
+        setSelectedMenu(menu);
+        setCheckoutVisible(true);
+      }),
+    );
   };
 
   // Le handler change a chaque rendu (il capture `requireAuth` et les setters),

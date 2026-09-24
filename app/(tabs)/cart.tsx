@@ -40,6 +40,7 @@ import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Toast } from "@/src/components/Toast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
@@ -70,6 +71,7 @@ export default function OrdersScreen() {
   } = useOrders();
   const { userData } = useAuth();
   const { isSignedIn } = useAuthGate();
+  const requireName = useRequireName();
 
   // Total panier (réactif) — calculé tôt pour alimenter le hook de paiement.
   // Les frais de livraison sont mutualisés : une seule livraison facturée par
@@ -361,9 +363,10 @@ export default function OrdersScreen() {
    */
   const startOrder = React.useCallback(
     (groups: ReturnType<typeof groupCartOrdersByZone>) => {
-      setGroupedDelivery(groups);
+      // Nom / prenom manquant : la sheet dediee passe AVANT la livraison.
+      requireName(() => setGroupedDelivery(groups));
     },
-    [],
+    [requireName],
   );
 
   // Après succès complet (success_created) : rafraîchir + revenir au repos.

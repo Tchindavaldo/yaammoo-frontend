@@ -117,18 +117,8 @@ export const CardV5: React.FC<CardVariantProps> = ({
 
       {/* Prix en chip en haut */}
       <View style={[shared.v7TopChips, styles.v5TopChips]}>
-        <View
-          style={[
-            shared.v7PricePill,
-            { backgroundColor: "#fff" },
-            IS_ANDROID && shared.darkPricePill,
-          ]}
-        >
-          <Text
-            style={[shared.v7PriceText, IS_ANDROID && shared.darkPriceText]}
-          >
-            {price}
-          </Text>
+        <View style={[shared.v7PricePill, { backgroundColor: "#fff" }]}>
+          <Text style={shared.v7PriceText}>{price}</Text>
         </View>
       </View>
 

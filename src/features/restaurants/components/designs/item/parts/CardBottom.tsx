@@ -27,7 +27,7 @@ export const DarkBottomShade: React.FC = () => (
     pointerEvents="none"
     style={[
       StyleSheet.absoluteFill,
-      { boxShadow: "inset 0px -70px 40px -30px rgba(0,0,0,0.55)" },
+      { boxShadow: "inset 0px -90px 50px -20px rgba(0,0,0,0.85)" },
     ]}
   />
 );

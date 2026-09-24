@@ -132,12 +132,9 @@ export const CardV4: React.FC<CardVariantProps> = ({
             zIndex: 50,
             elevation: 5,
           },
-          IS_ANDROID && shared.darkPricePill,
         ]}
       >
-        <Text style={[shared.v7PriceText, IS_ANDROID && shared.darkPriceText]}>
-          {price}
-        </Text>
+        <Text style={shared.v7PriceText}>{price}</Text>
       </View>
     </TouchableOpacity>
   );

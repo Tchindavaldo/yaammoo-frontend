@@ -81,7 +81,7 @@ const StockDeliveryBar: React.FC<{
           <View
             style={[
               styles.v5DeliveryIcon,
-              { backgroundColor: dark ? "transparent" : "#fff" },
+              { backgroundColor: "#fff" },
             ]}
           >
             <Ionicons name="flash" size={10} color={accent} />
@@ -225,7 +225,7 @@ export const V5BottomBar: React.FC<{
       <View
         style={[
           styles.v5DeliveryIcon,
-          { backgroundColor: dark ? "transparent" : "#fff" },
+          { backgroundColor: "#fff" },
         ]}
       >
         <Ionicons name="flash" size={10} color={accent} />

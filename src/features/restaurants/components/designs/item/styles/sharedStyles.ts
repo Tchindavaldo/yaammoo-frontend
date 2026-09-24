@@ -126,6 +126,12 @@ export const sharedStyles = StyleSheet.create({
   },
   v7PricePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   v7PriceText: { color: "#000", fontSize: 12, fontWeight: "900" },
+  // ANDROID, variants 4 et 5 : plus aucun fond blanc, chip prix sombre.
+  darkPricePill: { backgroundColor: "rgba(0,0,0,0.55)" },
+  darkPriceText: { color: "#fff" },
+  // Barres basses en `dark` (Android, variants 4 et 5) : fond retire.
+  darkNoBg: { backgroundColor: "transparent" },
+  darkTrack: { backgroundColor: "rgba(255,255,255,0.25)" },
   v7BottomZone: {
     position: "absolute",
     bottom: 0,

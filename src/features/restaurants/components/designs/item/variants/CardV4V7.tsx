@@ -1,7 +1,13 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   CARD_BOTTOM_STYLE,
   CardVariantProps,
@@ -10,8 +16,10 @@ import {
   V4_BACKGROUNDS,
   V4_SHOW_CONTENT,
 } from "../config";
-import { CardBottom } from "../parts/CardBottom";
+import { CardBottom, DarkBottomShade } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
+
+const IS_ANDROID = Platform.OS === "android";
 
 const V4_COLORS = [
   "#fdeded",
@@ -103,8 +111,15 @@ export const CardV4: React.FC<CardVariantProps> = ({
         </>
       )}
 
+      {/* ANDROID : ombre interne noire en bas, barre sans fond blanc. */}
+      {IS_ANDROID && <DarkBottomShade />}
       {SHOW_BOTTOM_BAR && (
-        <CardBottom accent={accent} deliveryTime={deliveryTime} stock={stock} />
+        <CardBottom
+          accent={accent}
+          deliveryTime={deliveryTime}
+          stock={stock}
+          dark={IS_ANDROID}
+        />
       )}
       <View
         style={[
@@ -117,9 +132,12 @@ export const CardV4: React.FC<CardVariantProps> = ({
             zIndex: 50,
             elevation: 5,
           },
+          IS_ANDROID && shared.darkPricePill,
         ]}
       >
-        <Text style={shared.v7PriceText}>{price}</Text>
+        <Text style={[shared.v7PriceText, IS_ANDROID && shared.darkPriceText]}>
+          {price}
+        </Text>
       </View>
     </TouchableOpacity>
   );

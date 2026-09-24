@@ -30,7 +30,10 @@ src/features/restaurants/
         │   ├── DesignItemCard.tsx  # Valeurs dérivées (prix, livraison) + aiguillage vers la variante
         │   ├── parts/              # ItemMeta (infos sous la carte), CardBottom (barres basses)
         │   ├── styles/sharedStyles.ts  # Styles partagés entre variantes
-        │   └── variants/           # CardV1V2V3 · CardV4V7 · CardV5V6 (rendu + styles propres)
+        │   └── variants/           # CardV1V2V3 · CardV4V7 · CardV5 · CardV6 (rendu + styles propres)
+        │                           # ANDROID, V4 et V5 : barre basse d'origine en `dark` (aucun fond blanc,
+        │                           # textes blancs) sur une ombre interne noire (DarkBottomShade, boxShadow
+        │                           # inset, pas de degrade) ; chip prix sombre
         └── Design1..7.tsx          # Rangées horizontales par boutique
 ```
 

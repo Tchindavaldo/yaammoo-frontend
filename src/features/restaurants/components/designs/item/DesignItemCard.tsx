@@ -5,7 +5,8 @@ import { CardVariantProps, DesignItemProps, deliveryFeeLabelFor } from "./config
 import { sharedStyles } from "./styles/sharedStyles";
 import { CardV1, CardV2, CardV3 } from "./variants/CardV1V2V3";
 import { CardV4, CardV7 } from "./variants/CardV4V7";
-import { CardV5, CardV6 } from "./variants/CardV5V6";
+import { CardV5 } from "./variants/CardV5";
+import { CardV6 } from "./variants/CardV6";
 
 const VARIANTS: Record<number, React.FC<CardVariantProps>> = {
   1: CardV1,

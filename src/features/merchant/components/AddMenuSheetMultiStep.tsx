@@ -343,6 +343,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       } else {
         formData.append("image", { uri, name: filename, type } as any);
       }
+      formData.append("folder", "menus");
 
       const response = await axios.post(
         `${Config.apiUrl}/image/upload`,

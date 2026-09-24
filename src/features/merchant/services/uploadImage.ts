@@ -7,7 +7,11 @@ import { Config } from "@/src/api/config";
  * publique. Utilisé pour la photo de la boutique (création + édition) et,
  * potentiellement, les images de menu. Lève en cas d'échec serveur.
  */
-export async function uploadImageToServer(uri: string): Promise<string> {
+export async function uploadImageToServer(
+  uri: string,
+  /** Dossier de rangement cote stockage (cf. backend `storageFolders.js`). */
+  folder: "shops" | "menus" = "shops",
+): Promise<string> {
   const formData = new FormData();
   const filename = uri.split("/").pop() || "image.jpg";
   const type = "image/jpeg";
@@ -19,6 +23,7 @@ export async function uploadImageToServer(uri: string): Promise<string> {
   } else {
     formData.append("image", { uri, name: filename, type } as any);
   }
+  formData.append("folder", folder);
 
   const response = await axios.post(`${Config.apiUrl}/image/upload`, formData, {
     headers: { "Content-Type": "multipart/form-data" },

@@ -170,6 +170,7 @@ src/
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
     ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp. Web : sonde en no-cors (Cloudflare sans CORS → faux « hors ligne »)
     ├── audio/useVoiceNote.ts   # Notes vocales sur expo-audio : useVoiceNoteRecorder / useVoiceNotePlayer
+    ├── audio/uploadVoiceNote.ts # Envoi de la note vocale (/image/upload, folder=voiceNotes) -> URL publique mise dans delivery.voiceNoteUri
     │   (flou Android SDK 57 : src/components/BlurTarget.tsx — BlurScope / BlurTarget, cf. blur-safe-area.md)
     │                           # Sonde pointée sur le backend (/settings/app-version) :
     │                           # par défaut NetInfo interroge l'origine de la page, donc

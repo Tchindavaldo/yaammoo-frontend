@@ -5,7 +5,9 @@ import {
   useVoiceNoteRecorder,
 } from "@/src/services/audio/useVoiceNote";
 import React, { useEffect, useRef, useState } from "react";
+import { uploadVoiceNote } from "@/src/services/audio/uploadVoiceNote";
 import {
+  Alert,
   Animated,
   StyleSheet,
   Text,
@@ -36,6 +38,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
   );
   const [timer, setTimer] = useState(0);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   // expo-audio : recorder et lecteur liberes par les hooks au demontage.
   const recorder = useVoiceNoteRecorder();
   const player = useVoiceNotePlayer(recordingUri);
@@ -260,12 +263,29 @@ export const GroupedVoiceNoteOverlay: React.FC<
 
                 <TouchableOpacity
                   style={styles.validateBtn}
-                  onPress={() => {
-                    if (onSave && recordingUri) onSave(recordingUri);
-                    closeWithFade();
+                  disabled={uploading}
+                  onPress={async () => {
+                    if (!recordingUri) return closeWithFade();
+                    // La commande porte l'URL en ligne, pas le fichier local.
+                    setUploading(true);
+                    try {
+                      const url = await uploadVoiceNote(recordingUri);
+                      onSave?.(url);
+                      closeWithFade();
+                    } catch (e) {
+                      console.log("Error uploading voice note", e);
+                      Alert.alert(
+                        "Note vocale",
+                        "Envoi impossible. Vérifiez votre connexion et réessayez.",
+                      );
+                    } finally {
+                      setUploading(false);
+                    }
                   }}
                 >
-                  <Text style={styles.validateBtnText}>Save Instruction</Text>
+                  <Text style={styles.validateBtnText}>
+                    {uploading ? "Envoi..." : "Save Instruction"}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}

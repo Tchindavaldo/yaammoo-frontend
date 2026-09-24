@@ -1,5 +1,6 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CARD_BOTTOM_STYLE } from "../config";
@@ -23,12 +24,12 @@ export const DeliveryFeePill: React.FC<{ label: string; accent: string }> = ({
  * `boxShadow` inset : new architecture requise (activee, RN 0.81).
  */
 export const DarkBottomShade: React.FC = () => (
-  <View
+  // Meme ombre basse que le variant 7 (bas de son LinearGradient).
+  <LinearGradient
     pointerEvents="none"
-    style={[
-      StyleSheet.absoluteFill,
-      { boxShadow: "inset 0px -90px 50px -20px rgba(0,0,0,0.85)" },
-    ]}
+    colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.5)", "rgba(0,0,0,0.95)"]}
+    locations={[0.35, 0.6, 1]}
+    style={StyleSheet.absoluteFill}
   />
 );
 

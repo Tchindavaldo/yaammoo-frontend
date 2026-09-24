@@ -1,6 +1,6 @@
 import { Commande, FastFood } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "@/src/services/audio";
+import { useVoiceNotePlayer } from "@/src/services/audio/useVoiceNote";
 import { Image } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -485,54 +485,20 @@ function LivraisonTab({
   order: Commande;
   boutiqueName: string;
 }) {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackProgress, setPlaybackProgress] = useState(0);
+  // expo-audio : lecteur libere par le hook au demontage.
+  const voice = useVoiceNotePlayer(order.delivery?.voiceNoteUri);
+  const isPlaying = voice.playing;
+  // En fin de lecture, la barre repart a zero (comme avant la migration).
+  const playbackProgress = voice.finished ? 0 : voice.progress;
 
   async function playSound() {
     if (!order.delivery?.voiceNoteUri) return;
     try {
-      if (sound) {
-        if (isPlaying) {
-          await sound.pauseAsync();
-          setIsPlaying(false);
-        } else {
-          await sound.playAsync();
-          setIsPlaying(true);
-        }
-        return;
-      }
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: order.delivery.voiceNoteUri },
-        { shouldPlay: true },
-      );
-      setSound(newSound);
-      setIsPlaying(true);
-
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          if (status.durationMillis) {
-            setPlaybackProgress(status.positionMillis / status.durationMillis);
-          }
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-            setPlaybackProgress(0);
-          }
-        }
-      });
+      await voice.toggle();
     } catch (error) {
       console.log(error);
     }
   }
-
-  useEffect(() => {
-    return sound
-      ? () => {
-          sound.unloadAsync();
-        }
-      : undefined;
-  }, [sound]);
 
   return (
     <>

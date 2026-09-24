@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
-import { Audio } from '@/src/services/audio';
+import { useVoiceNotePlayer, useVoiceNoteRecorder } from '@/src/services/audio/useVoiceNote';
 import { useSheetInsets } from '../hooks/useSheetInsets';
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -18,25 +18,22 @@ interface CheckoutVoiceNoteOverlayProps {
 type RecordingStatus = 'idle' | 'recording' | 'recorded' | 'playing';
 
 export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> = ({ onClose, onSave }) => {
-  const [status, setStatus] = useState<RecordingStatus>('idle');
+  // Phase de l'enregistrement ; « playing » est deduit du lecteur.
+  const [phase, setPhase] = useState<Exclude<RecordingStatus, 'playing'>>('idle');
   const [timer, setTimer] = useState(0);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [recordingUri, setRecordingUri] = useState<string | null>(null);
-  const [playbackProgress, setPlaybackProgress] = useState(0);
-  
+  // expo-audio : recorder et lecteur liberes par les hooks au demontage.
+  const recorder = useVoiceNoteRecorder();
+  const player = useVoiceNotePlayer(recordingUri);
+  const status: RecordingStatus =
+    phase === 'recorded' && player.playing ? 'playing' : phase;
+  const playbackProgress = player.progress;
+
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const timerInterval = useRef<any>(null);
 
   useEffect(() => {
     return () => {
-      // Cleanup: stop recording and unload sound on unmount
-      if (recording) {
-        recording.stopAndUnloadAsync();
-      }
-      if (sound) {
-        sound.unloadAsync();
-      }
       if (timerInterval.current) {
         clearInterval(timerInterval.current);
       }
@@ -73,23 +70,11 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
 
   async function startRecording() {
     try {
-      const { status: permissionStatus } = await Audio.requestPermissionsAsync();
-      if (permissionStatus !== 'granted') {
+      if (!(await recorder.start())) {
         alert('Permission to access microphone is required!');
         return;
       }
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-
-      setRecording(newRecording);
-      setStatus('recording');
+      setPhase('recording');
       setTimer(0);
     } catch (err) {
       console.error('Failed to start recording', err);
@@ -97,77 +82,29 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
   }
 
   async function stopRecording() {
-    if (!recording) return;
+    if (phase !== 'recording') return;
 
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
-      setRecordingUri(uri);
-      setRecording(null);
-      setStatus('recorded');
+      setRecordingUri(await recorder.stop());
+      setPhase('recorded');
     } catch (err) {
       console.error('Failed to stop recording', err);
     }
   }
 
-  async function playSound() {
-    if (!recordingUri) return;
-
+  async function togglePlay() {
     try {
-      if (sound) {
-        await sound.unloadAsync();
-      }
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: recordingUri },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate
-      );
-
-      setSound(newSound);
-      setStatus('playing');
+      await player.toggle();
     } catch (err) {
       console.error('Failed to play sound', err);
     }
   }
 
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status.isLoaded) {
-      if (status.didJustFinish) {
-        setStatus('recorded');
-        setPlaybackProgress(1);
-      } else {
-        setPlaybackProgress(status.positionMillis / status.durationMillis);
-      }
-    }
-  };
-
-  async function togglePlay() {
-    if (status === 'playing') {
-      await sound?.pauseAsync();
-      setStatus('recorded');
-    } else {
-      if (sound) {
-        if (playbackProgress >= 1) {
-          await sound.setPositionAsync(0);
-        }
-        await sound.playAsync();
-        setStatus('playing');
-      } else {
-        await playSound();
-      }
-    }
-  }
-
-  async function deleteRecording() {
-    if (sound) {
-      await sound.unloadAsync();
-      setSound(null);
-    }
+  function deleteRecording() {
+    player.pause();
     setRecordingUri(null);
     setTimer(0);
-    setPlaybackProgress(0);
-    setStatus('idle');
+    setPhase('idle');
   }
 
   const insets = useSheetInsets();

@@ -1,7 +1,7 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Loader } from "@/src/components/Loader";
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "@/src/services/audio";
+import { useVoiceNoteRecorder } from "@/src/services/audio/useVoiceNote";
 import * as Location from "expo-location";
 import React from "react";
 import {
@@ -54,33 +54,22 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
    * Enregistrement EN PLACE de la note vocale. Un appui demarre, le suivant
    * arrete et remonte l'URI ; un appui long sur une note existante l'efface.
    */
-  const [recording, setRecording] = React.useState<Audio.Recording | null>(
-    null,
-  );
+  const recorder = useVoiceNoteRecorder();
+  const [recording, setRecording] = React.useState(false);
 
   const toggleRecording = async () => {
     if (recording) {
       try {
-        await recording.stopAndUnloadAsync();
-        onVoiceNoteChange?.(recording.getURI());
+        onVoiceNoteChange?.(await recorder.stop());
       } catch (err) {
         console.error("Failed to stop recording", err);
       } finally {
-        setRecording(null);
+        setRecording(false);
       }
       return;
     }
     try {
-      const { status } = await Audio.requestPermissionsAsync();
-      if (status !== "granted") return;
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-      const { recording: rec } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
-      setRecording(rec);
+      if (await recorder.start()) setRecording(true);
     } catch (err) {
       console.error("Failed to start recording", err);
     }

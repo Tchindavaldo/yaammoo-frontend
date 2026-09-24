@@ -2,7 +2,7 @@
 // react-native-maps is not supported on web, so we replace MapView with a static placeholder
 import { Commande } from "@/src/types";
 import { Ionicons } from '@expo/vector-icons';
-import { Audio } from '@/src/services/audio';
+import { useVoiceNotePlayer } from '@/src/services/audio/useVoiceNote';
 import * as Linking from 'expo-linking';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -351,9 +351,11 @@ function WebMapPlaceholder({ addr, onPress }: { addr: string; onPress: () => voi
 }
 
 function LivraisonTab({ user }: { user: DeliveryUser }) {
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackProgress, setPlaybackProgress] = useState(0);
+  // expo-audio : lecteur libere par le hook au demontage.
+  const voice = useVoiceNotePlayer(user.voiceNoteUri);
+  const isPlaying = voice.playing;
+  // En fin de lecture, la barre repart a zero (comme avant la migration).
+  const playbackProgress = voice.finished ? 0 : voice.progress;
 
   const parseLocation = (addr: string) => {
     if (!addr) return null;
@@ -376,49 +378,11 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
   async function playSound() {
     if (!user.voiceNoteUri) return;
     try {
-      if (sound) {
-        if (isPlaying) {
-          await sound.pauseAsync();
-          setIsPlaying(false);
-        } else {
-          const status = await sound.getStatusAsync();
-          if (status.isLoaded && status.positionMillis >= (status.durationMillis || 0)) {
-            await sound.setPositionAsync(0);
-          }
-          await sound.playAsync();
-          setIsPlaying(true);
-        }
-        return;
-      }
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: user.voiceNoteUri },
-        { shouldPlay: true }
-      );
-      setSound(newSound);
-      setIsPlaying(true);
-
-      newSound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
-          if (status.durationMillis) {
-            setPlaybackProgress(status.positionMillis / status.durationMillis);
-          }
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-            setPlaybackProgress(0);
-          }
-        }
-      });
+      await voice.toggle();
     } catch (error) {
       console.log('Error playing sound', error);
     }
   }
-
-  useEffect(() => {
-    return sound
-      ? () => { sound.unloadAsync(); }
-      : undefined;
-  }, [sound]);
 
   return (
     <>

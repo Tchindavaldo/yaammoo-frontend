@@ -9,10 +9,18 @@ set -e
 # Init Homebrew
 eval "$(/usr/local/bin/brew shellenv 2>/dev/null || /opt/homebrew/bin/brew shellenv)"
 
-# Install Node if missing
-if ! command -v node >/dev/null 2>&1; then
+# Node : Expo SDK 57 / React Native 0.86 exigent Node >= 20.19.4. Un Node
+# preinstalle plus ancien sur l'image Xcode Cloud ferait echouer `npm install`
+# ou le bundle JS : on installe alors la version courante via Homebrew.
+node_ok() {
+  command -v node >/dev/null 2>&1 &&
+    node -e 'const [a,b,c]=process.versions.node.split(".").map(Number);process.exit(a>20||(a===20&&(b>19||(b===19&&c>=4)))?0:1)'
+}
+if ! node_ok; then
   brew install node
+  brew link --overwrite node
 fi
+echo "[ci] node $(node -v)"
 
 # Install CocoaPods if missing
 if ! command -v pod >/dev/null 2>&1; then

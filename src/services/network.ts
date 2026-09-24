@@ -1,4 +1,5 @@
 import NetInfo from "@react-native-community/netinfo";
+import { Platform } from "react-native";
 
 /**
  * Etat reel de la connectivite.
@@ -167,6 +168,16 @@ export function onNetworkRestored(listener: () => void): () => void {
  */
 const PROBE_URL = "https://cp.cloudflare.com/generate_204";
 
+/**
+ * ⚠️ WEB : `cp.cloudflare.com` n'envoie aucun en-tete CORS. Le navigateur
+ * rejette donc la sonde (« CORS error ») alors que le reseau marche, et l'app
+ * affichait « Pas de connexion Internet » a tort. Sur le web on sonde en
+ * `no-cors` : reponse opaque (statut illisible), mais la promesse n'est
+ * resolue QUE si le serveur a repondu — un vrai echec reseau la rejette.
+ * La sonde interne de NetInfo (qui lit le statut) y est coupee.
+ */
+const IS_WEB = Platform.OS === "web";
+
 /** Demarre l'ecoute. Appele une seule fois au boot, depuis `setupHttp`. */
 export function startNetworkWatch() {
   NetInfo.configure({
@@ -174,6 +185,8 @@ export function startNetworkWatch() {
     // La sonde ne lit pas le corps : le code HTTP suffit a trancher.
     // `generate_204` repond 204, pas 200.
     reachabilityTest: async (response) => response.status === 204,
+    // Web : statut illisible (CORS), cette sonde conclurait toujours « hors ligne ».
+    reachabilityShouldRun: () => !IS_WEB,
     // Intervalles volontairement larges : la sonde est un filet de securite,
     // les vrais changements d'interface arrivent par evenement systeme.
     reachabilityLongTimeout: 60 * 1000,
@@ -277,8 +290,10 @@ function probe() {
     signal: controller.signal,
     // Le cache masquerait une coupure en rejouant une reponse deja recue.
     cache: "no-store",
+    // Web : reponse opaque, resolue seulement si le serveur a repondu.
+    ...(IS_WEB && { mode: "no-cors" as const }),
   })
-    .then((response) => settle(response.ok))
+    .then((response) => settle(IS_WEB ? true : response.ok))
     .catch(() => settle(false))
     .finally(() => {
       clearTimeout(killer);

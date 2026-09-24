@@ -168,7 +168,7 @@ src/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
-    ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp
+    ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp. Web : sonde en no-cors (Cloudflare sans CORS → faux « hors ligne »)
     ├── audio/useVoiceNote.ts   # Notes vocales sur expo-audio : useVoiceNoteRecorder / useVoiceNotePlayer
     │   (flou Android SDK 57 : src/components/BlurTarget.tsx — BlurScope / BlurTarget, cf. blur-safe-area.md)
     │                           # Sonde pointée sur le backend (/settings/app-version) :

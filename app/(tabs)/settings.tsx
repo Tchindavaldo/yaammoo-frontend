@@ -104,7 +104,7 @@ export default function SettingsScreen() {
     // ne doit pas changer de hauteur d'un onglet a l'autre.
     const bottomInset = insets.bottom * TAB_BAR_INSET_RATIO;
     const base = {
-      height: 58 + bottomInset,
+      height: 64 + bottomInset,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       // MEME regle que `_layout.tsx` : sans flou natif (Android < 12), un fond

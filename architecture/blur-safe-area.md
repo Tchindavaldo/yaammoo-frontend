@@ -134,6 +134,7 @@ Sheets traités :
 | Détail notification | `notifications/components/NotificationDetailSheet.tsx` |
 | Ajout menu | `merchant/components/AddMenuSheet.tsx`, `AddMenuSheetMultiStep.tsx` |
 | Zone de livraison (+ time picker) | `merchant/components/edit-boutique/ZoneFormSheet.tsx` |
+| Nom / prénom manquant (home) | `profile/components/ProfileNameSheet.tsx` — carte flottante `bottom: 24 + insets.bottom`, montée au clavier par translation (`edgeToEdgeEnabled` ne redimensionne pas la fenêtre), rendue dans `app/(tabs)/_layout.tsx` au-dessus de la tab bar pour que le flou couvre tout l'écran (iOS seulement : `disableAndroidBlur`, voile noir sur Android toutes versions). Bas iOS : `8 + insets.bottom × TAB_BAR_INSET_RATIO` — cf. [profile-name-sheet.md](./profile-name-sheet.md) |
 
 Non concernés : les panneaux plein écran des settings (`MenuManageModal`,
 `WalletManageModal`, `UserOrdersModal`, `UserWalletModal`, `DriverManageModal`),

@@ -136,7 +136,10 @@ src/features/
 │       └── ...                          # BonusCard, BonusClaimRow, BonusPagerInfo, BonusGalleryCard…
 │
 ├── profile/                             # Écran Settings — cf. settings-grille.md
+│   ├── hooks/useProfileNameSheet.ts     # ProfileNameProvider + requireName() — cf. profile-name-sheet.md
+│   ├── utils/missingName.ts             # Détection prénom / nom manquant
 │   └── components/
+│       ├── ProfileNameSheet.tsx         # Carte « nom / prénom manquant » (home + avant commande)
 │       ├── SettingGrid.tsx              # Grille d'une section (colonnes déduites du nb d'items)
 │       ├── SettingGridItem.tsx          # Tuile pressable (icône + libellé + hint)
 │       └── SettingGridSwitch.tsx        # Tuile portant un Switch (mode inline pleine largeur)

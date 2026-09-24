@@ -101,6 +101,8 @@ export const sharedStyles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
+    // Android : sans clip, le fond blanc s'affichait carre.
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },

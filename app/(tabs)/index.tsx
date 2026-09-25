@@ -74,11 +74,33 @@ const FOOTER_LOADER_HEIGHT = 48;
 const LOADER_VISIBLE_DISTANCE = 120;
 
 /**
- * Distance du bas a laquelle part le fetch : a peu pres la hauteur des
- * fantomes de la page suivante (3 rangees), donc au moment ou le premier
- * squelette entre dans le champ de vision.
+ * Pages de fantomes tenues d'avance en bas de liste. A 1, les 3 fantomes
+ * ajoutes apres chaque remplissage tombaient DANS `drawDistance` : FlashList
+ * les montait aussitot, en plein scroll (legere pause). A 2, ils s'ajoutent
+ * une page plus bas, hors de la zone de pre-rendu : rien ne se monte a
+ * l'insertion, et quand on y arrive des cellules du haut sont recyclees.
  */
-const PLACEHOLDER_FETCH_DISTANCE = 900;
+const PLACEHOLDER_PAGES = 2;
+
+/** Hauteur moyenne d'une rangee boutique (variantes 190 a 280 px + marges). */
+const ROW_HEIGHT_ESTIMATE = 270;
+
+/**
+ * Distance du bas a laquelle part le fetch : quand le PREMIER fantome entre
+ * dans le champ de vision (les pages suivantes de fantomes sont sous lui).
+ */
+const PLACEHOLDER_FETCH_DISTANCE =
+  900 + (PLACEHOLDER_PAGES - 1) * PAGE_SIZE * ROW_HEIGHT_ESTIMATE;
+
+/**
+ * Pre-rendu elargi au demarrage, le temps de monter d'un coup toutes les
+ * rangees d'avance (vraies + fantomes) pendant que l'utilisateur regarde le
+ * premier ecran. Revenu a `DRAW_DISTANCE`, FlashList garde ces cellules en
+ * reserve de recyclage : plus aucun montage pendant le scroll.
+ */
+const DRAW_DISTANCE = 800;
+const WARMUP_DRAW_DISTANCE = 3200;
+const WARMUP_MS = 1500;
 
 /**
  * Calme exige avant de liberer le scroll (doigt leve depuis au moins ce
@@ -501,6 +523,16 @@ export default function HomeScreen() {
   // En item 0, la banniere entre dans la meme fenetre que les boutiques : la
   // liste connait enfin la hauteur reelle de son contenu et dimensionne son
   // rendu initial en consequence.
+  // Pre-rendu elargi jusqu'a `WARMUP_MS` apres la premiere page (voir
+  // `WARMUP_DRAW_DISTANCE`). Un seul changement d'etat, une seule fois.
+  const [warmup, setWarmup] = useState(true);
+  const hasFirstPage = fastFoods.length > 0;
+  useEffect(() => {
+    if (!hasFirstPage || !warmup) return;
+    const t = setTimeout(() => setWarmup(false), WARMUP_MS);
+    return () => clearTimeout(t);
+  }, [hasFirstPage, warmup]);
+
   const listData = useMemo(() => {
     // Fantomes de la page suivante, montes d'avance en squelette (voir
     // `utils/pagePlaceholders`) : a l'arrivee des donnees, FlashList les
@@ -511,7 +543,7 @@ export default function HomeScreen() {
       BANNER_ITEM,
       ...fastFoods,
       ...(withPlaceholders
-        ? makePlaceholders(fastFoods.length, PAGE_SIZE)
+        ? makePlaceholders(fastFoods.length, PAGE_SIZE * PLACEHOLDER_PAGES)
         : []),
     ];
     // SONDE : chaque recompute = les donnees ont change de reference. Si les
@@ -832,7 +864,7 @@ export default function HomeScreen() {
             // Pre-rendu modere : les rangees proches se montent en avance, mais
             // une page ajoutee pendant qu'on lit le haut ne se monte pas (pas
             // de pause d'insertion). 3200 montait tout, y compris hors regard.
-            drawDistance={800}
+            drawDistance={warmup ? WARMUP_DRAW_DISTANCE : DRAW_DISTANCE}
             // ⚠️ SCROLL FIGE une fois le bas atteint, tant que la page suivante
             // charge. On ne bride pas le rebond (ni `bounces`, ni
             // `contentInset` negatif, ni reclampage depuis `onScroll`) : ces

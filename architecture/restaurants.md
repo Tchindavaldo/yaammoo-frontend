@@ -421,7 +421,8 @@ tant que la page suivante charge.
   (`PAGE_SIZE` + de quoi remplir la zone d'échauffement de ~4000 px, calcul
   en pixels donc valable pour tout `PAGE_SIZE` ; moins de fantomes = réserve
   de cellules trop petite, montages en plein scroll au remplissage) sont ajoutées en fin de `listData` tant que
-  `hasMore`, repliées (hauteur 0) en fin de catalogue ; pré-rendu élargi
+  `hasMore`, retirées en fin de catalogue (repliées à hauteur 0, elles
+  tombaient toutes dans la zone de pré-rendu : 9 montages d'un coup) ; pré-rendu élargi
   1,5 s au démarrage (`WARMUP_DRAW_DISTANCE`) pour chauffer la réserve de
   cellules : même `designIndex` que la
   position qu'occupera la vraie boutique, donc même variante et même type de

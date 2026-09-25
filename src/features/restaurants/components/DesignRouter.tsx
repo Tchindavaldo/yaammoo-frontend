@@ -9,9 +9,7 @@ import { Design5 } from './designs/Design5';
 import { Design7 } from './designs/Design7';
 import { ShopRevealProvider } from '../context/ShopRevealContext';
 import { PageRevealReporter } from '../context/PageRevealGate';
-import { isCollapsedPlaceholder, isPlaceholder } from '../utils/pagePlaceholders';
-
-const COLLAPSED = { height: 0, overflow: 'hidden' as const };
+import { isPlaceholder } from '../utils/pagePlaceholders';
 import { DesignNumber, designNumberFor } from '../utils/designCycle';
 
 const DESIGN_COMPONENTS: Record<DesignNumber, typeof Design7> = {
@@ -102,13 +100,7 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
           bloque (JS responder) et plus aucun appui ne passait, navbar
           comprise. Vue TOUJOURS presente (arbre invariant), seul le mode
           change. */}
-      <View
-        pointerEvents={placeholder ? "none" : "auto"}
-        // Fantome replie (fin de catalogue) : cellule gardee, hauteur nulle.
-        style={isCollapsedPlaceholder(fastFood) ? COLLAPSED : undefined}
-      >
-        {design}
-      </View>
+      <View pointerEvents={placeholder ? "none" : "auto"}>{design}</View>
       {/* Signale la revelation au verrou de page du home (scroll fige tant
           que les boutiques inserees ne sont pas affichees). */}
       <PageRevealReporter id={fastFood.id} />

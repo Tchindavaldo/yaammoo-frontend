@@ -555,26 +555,23 @@ export default function HomeScreen() {
     return () => clearTimeout(t);
   }, [hasFirstPage, warmup]);
 
-  // Fin (exclue) des fantomes deja poses : en fin de catalogue, ceux qui
-  // restent sont REPLIES au lieu d'etre retires (voir `isCollapsedPlaceholder`),
-  // sans en creer de nouveaux.
-  const ghostEndRef = useRef(0);
   const listData = useMemo(() => {
     // Fantomes de la page suivante, montes d'avance en squelette (voir
     // `utils/pagePlaceholders`) : a l'arrivee des donnees, FlashList les
     // rebind au lieu de monter de nouvelles rangees — plus de pause.
-    const len = fastFoods.length;
-    let ghosts: any[] = [];
-    if (FILL_PLACEHOLDERS && !loading && len > 0) {
-      if (hasMore) {
-        const count = GHOST_COUNT;
-        ghosts = makePlaceholders(len, count);
-        ghostEndRef.current = len + count;
-      } else if (ghostEndRef.current > len) {
-        ghosts = makePlaceholders(len, ghostEndRef.current - len, true);
-      }
-    }
-    const data = [BANNER_ITEM, ...fastFoods, ...ghosts];
+    //
+    // ⚠️ Fin de catalogue : fantomes RETIRES, pas replies. Replies a hauteur
+    // 0, ils tombaient tous dans la zone de pre-rendu et FlashList leur
+    // montait une cellule chacun d'un coup (9 `MONTAGE-CELL`, 1,4 s de JS en
+    // dev a la derniere page). Retires, seules leurs cellules disparaissent,
+    // et les rangees du dessus gardent les leurs (`DRAW_DISTANCE` 1600).
+    const withGhosts =
+      FILL_PLACEHOLDERS && hasMore && !loading && fastFoods.length > 0;
+    const data = [
+      BANNER_ITEM,
+      ...fastFoods,
+      ...(withGhosts ? makePlaceholders(fastFoods.length, GHOST_COUNT) : []),
+    ];
     // SONDE : chaque recompute = les donnees ont change de reference. Si les
     // vagues REBIND/DEMONTAGE coincident avec ces lignes SANS scroll, le
     // coupable est le churn de donnees (socket/pagination), pas la liste.

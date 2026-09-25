@@ -35,7 +35,10 @@ import {
 } from "@/src/features/restaurants/context/PageRevealGate";
 import { designNumberFor } from "@/src/features/restaurants/utils/designCycle";
 import { makePlaceholders } from "@/src/features/restaurants/utils/pagePlaceholders";
-import { PAGE_SIZE } from "@/src/features/restaurants/context/FastFoodContext";
+import {
+  FILL_PLACEHOLDERS,
+  PAGE_SIZE,
+} from "@/src/features/restaurants/context/FastFoodContext";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -502,7 +505,8 @@ export default function HomeScreen() {
     // Fantomes de la page suivante, montes d'avance en squelette (voir
     // `utils/pagePlaceholders`) : a l'arrivee des donnees, FlashList les
     // rebind au lieu de monter de nouvelles rangees — plus de pause.
-    const withPlaceholders = hasMore && !loading && fastFoods.length > 0;
+    const withPlaceholders =
+      FILL_PLACEHOLDERS && hasMore && !loading && fastFoods.length > 0;
     const data = [
       BANNER_ITEM,
       ...fastFoods,

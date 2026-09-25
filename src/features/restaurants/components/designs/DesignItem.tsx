@@ -1,4 +1,4 @@
-import { CardSkeleton } from "@/src/components/CardSkeleton";
+import { ShopSkeleton } from "../ShopSkeleton";
 import { Image } from "expo-image";
 import React from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
@@ -128,7 +128,7 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
             onError={markResolved}
           />
         ) : null}
-        <CardSkeleton radius={skel.radius} animating={!skeletonGone} />
+        <ShopSkeleton radius={skel.radius} animating={!skeletonGone} />
       </Animated.View>
       {/* Squelette des DEUX LIGNES d'infos sous la carte (`ItemMeta` : nom,
           puis livraison). Memes marges que `metaBlock`, meme fondu inverse. */}
@@ -162,6 +162,6 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
     gap: 6,
   },
-  // Teinte de base de `CardSkeleton`, sans boucle (boucle = thread JS).
+  // Teinte de base de `ShopSkeleton`, statique.
   metaBar: { backgroundColor: "#e6eaef", borderRadius: 4 },
 });

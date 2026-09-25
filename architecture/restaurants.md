@@ -24,6 +24,7 @@ src/features/restaurants/
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
+    ├── ShopSkeleton.tsx            # Copie de CardSkeleton (R16), respiration sur driver NATIF (fantomes : JS-driven saturait le thread UI)
     └── designs/
         ├── DesignItem.tsx          # Enveloppe seule : squelette + fondu + ItemMeta
         ├── item/

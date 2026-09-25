@@ -38,7 +38,7 @@ export const PAGE_SIZE = 3;
  * scroll (`insertLock`) — deux protections qui n'existaient que contre le cout
  * du montage. `false` = retour au comportement precedent.
  */
-const FILL_PLACEHOLDERS = true;
+export const FILL_PLACEHOLDERS = true;
 
 /**
  * Delai avant d'inserer une page en attente (HOLD) au retour en bas : le

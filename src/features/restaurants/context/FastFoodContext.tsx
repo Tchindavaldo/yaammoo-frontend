@@ -850,6 +850,14 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
         insertLockTimerRef.current = null;
         setInsertLock(false);
       }, INSERT_LOCK_SAFETY_MS);
+    } else {
+      // Fin du chargement DANS LE MEME LOT que le remplissage : un seul rendu.
+      // Sinon `notifyPageLaidOut` (croissance du contenu, donc seulement quand
+      // de nouveaux fantomes s'ajoutent : page 2, pas la derniere) relancait
+      // un second rendu complet du home en plein scroll — la pause ressentie
+      // au remplissage de l'avant-derniere page, absente a la derniere.
+      pendingPageRef.current = false;
+      setLoadingMore(false);
     }
     setFastFoods((prev) => {
       // Dédup par id : un `newFastfood` reçu par socket pendant le

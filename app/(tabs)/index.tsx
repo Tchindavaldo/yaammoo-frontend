@@ -332,6 +332,9 @@ export default function HomeScreen() {
     const grew = h > contentHeightRef.current;
     contentHeightRef.current = h;
     if (!grew) return;
+    // Fantomes : fin de chargement deja posee au remplissage (meme lot, cf.
+    // `pumpStaggeredAppend`). Rien a liberer ici, et surtout aucun rendu.
+    if (FILL_PLACEHOLDERS) return;
     if (revealGate.isActive()) revealGate.laidOut();
     else notifyPageLaidOutRef.current();
   }, [revealGate]);

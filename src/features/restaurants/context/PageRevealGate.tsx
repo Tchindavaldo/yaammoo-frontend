@@ -54,9 +54,20 @@ export function usePageRevealGate(onRelease: () => void) {
     releaseTimerRef.current = null;
   };
 
+  // Premiere boutique de la page : celle qui apparait juste sous le loader,
+  // donc forcement dans le regard au bas de liste.
+  const firstIdRef = React.useRef<string | null>(null);
+
   const tryRelease = React.useCallback(() => {
     if (!laidOutRef.current || pendingRef.current.size > 0) return;
+    // ⚠️ Le contenu grandit AVANT que FlashList ne monte les nouvelles
+    // cellules : a cet instant rien n'est « en attente » et le verrou tombait
+    // sur des squelettes. On exige donc la revelation EFFECTIVE de la premiere
+    // boutique de la page (filet : `INSERT_LOCK_SAFETY_MS`).
+    const first = firstIdRef.current;
+    if (first && !revealedRef.current.has(first)) return;
     if (releaseTimerRef.current) return;
+    console.log(`[GATE] RELEASE dans ${REVEAL_MS} ms (premiere=${first})`);
     // Attendre la fin du fondu : liberer pendant le fondu laisserait le geste
     // demarrer sur des vues encore en composition.
     releaseTimerRef.current = setTimeout(() => {
@@ -73,13 +84,19 @@ export function usePageRevealGate(onRelease: () => void) {
         mountedRef.current.add(id);
         if (!pageIdsRef.current.has(id) || revealedRef.current.has(id)) return;
         pendingRef.current.add(id);
+        console.log(`[GATE] MOUNT ${id} (attente=${pendingRef.current.size})`);
       },
       unmounted: (id) => {
         mountedRef.current.delete(id);
       },
       revealed: (id) => {
+        if (revealedRef.current.has(id)) return;
         revealedRef.current.add(id);
-        if (pendingRef.current.delete(id)) tryRelease();
+        pendingRef.current.delete(id);
+        if (pageIdsRef.current.has(id)) {
+          console.log(`[GATE] REVEAL ${id} (attente=${pendingRef.current.size})`);
+          tryRelease();
+        }
       },
     }),
     [tryRelease],
@@ -89,12 +106,16 @@ export function usePageRevealGate(onRelease: () => void) {
   const startPage = React.useCallback((ids: string[]) => {
     clearTimer();
     pageIdsRef.current = new Set(ids);
+    firstIdRef.current = ids[0] ?? null;
     pendingRef.current = new Set(
       ids.filter(
         (id) => mountedRef.current.has(id) && !revealedRef.current.has(id),
       ),
     );
     laidOutRef.current = false;
+    console.log(
+      `[GATE] START page=${ids.length} deja-montees=${pendingRef.current.size}`,
+    );
   }, []);
 
   /** Vrai si une page attend sa revelation. */
@@ -103,12 +124,15 @@ export function usePageRevealGate(onRelease: () => void) {
   /** Contenu agrandi (squelettes poses) : liberation des que tout est revele. */
   const laidOut = React.useCallback(() => {
     laidOutRef.current = true;
+    console.log(`[GATE] LAIDOUT attente=${pendingRef.current.size}`);
     tryRelease();
   }, [tryRelease]);
 
   /** Verrou libere ailleurs (securite, reset) : oublier la page. */
   const reset = React.useCallback(() => {
+    if (pageIdsRef.current.size > 0) console.log(`[GATE] RESET (securite/reset)`);
     clearTimer();
+    firstIdRef.current = null;
     pageIdsRef.current = new Set();
     pendingRef.current = new Set();
     laidOutRef.current = false;

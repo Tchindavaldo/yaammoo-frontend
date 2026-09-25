@@ -9,7 +9,7 @@ public final class HomeListModule: Module {
     Name("HomeList")
 
     View(HomeListView.self) {
-      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange")
+      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics")
 
       Prop("rows") { (view: HomeListView, rows: [HLShopRecord]) in
         view.shops = rows.map(HLShop.init)

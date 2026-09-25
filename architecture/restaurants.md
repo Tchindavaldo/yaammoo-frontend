@@ -63,8 +63,17 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
     ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s, puces, squelette
+    ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs par geste (CADisplayLink)
     ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
 ```
+
+- **Sonde de fluidité (`onDiagnostics`)** : un rapport par geste de scroll
+  (images perdues, accrocs > 50 ms, pire image, coût de configuration des
+  rangées) et par arrivée de page (durée d'application). Côté JS
+  (`utils/nativeListDiagnostics.ts`) : log local `[NATIVE]`, fil d'Ariane
+  Sentry, message Sentry sur saccade et bilan tous les 10 gestes (débit borné),
+  plus « liste native active » au lancement. Sert en build TestFlight, où il
+  n'y a aucun terminal.
 
 - **Repli automatique** : `isHomeListAvailable` est faux sur Android et sur un
   dev client qui n'embarque pas le module ; le home garde alors sa FlashList.

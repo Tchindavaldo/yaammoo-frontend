@@ -25,6 +25,9 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   let onEndReached = EventDispatcher()
   let onRefresh = EventDispatcher()
   let onEdgeChange = EventDispatcher()
+  /** Rapports de fluidite (scroll, pages) : journalises cote JS + Sentry. */
+  let onDiagnostics = EventDispatcher()
+  private let perf = HLPerfMonitor()
 
   enum Section: Int { case banner, rows, footer }
   enum Item: Hashable {
@@ -72,6 +75,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     clipsToBounds = true
     backgroundColor = .white
     setupCollection()
+    perf.onReport = { [weak self] report in self?.onDiagnostics(report) }
   }
 
   private func setupCollection() {
@@ -113,7 +117,9 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     case .row(let position, let design):
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLShopCell.reuseId(design), for: indexPath) as! HLShopCell
       c.delegate = self
+      let t0 = CACurrentMediaTime()
       if position < rows.count { c.configure(rows[position], position: position) }
+      perf.recordConfigure(CACurrentMediaTime() - t0)
       return c
     case .footer:
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLFooterCell.reuseId, for: indexPath) as! HLFooterCell
@@ -172,7 +178,21 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     if old.indexOfItem(.footer) != nil { changed.append(.footer) }
     if !changed.isEmpty { snap.reconfigureItems(changed) }
 
+    let t0 = CACurrentMediaTime()
     dataSource.apply(snap, animatingDifferences: false)
+    // Sonde : cout d'une arrivee de page (remplissage des fantomes, ajout en
+    // queue), mesure pendant ou hors geste.
+    if next.count != previous.count || changed.contains(where: { if case .row = $0 { return true }; return false }) {
+      let applyMs = ((CACurrentMediaTime() - t0) * 10_000).rounded() / 10
+      onDiagnostics([
+        "kind": "apply",
+        "applyMs": applyMs,
+        "rowsBefore": previous.count,
+        "rowsAfter": next.count,
+        "reconfigured": changed.count,
+        "duringScroll": perf.isRunning,
+      ])
+    }
     DispatchQueue.main.async { [weak self] in self?.checkEndReached() }
   }
 
@@ -191,6 +211,19 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       onEdgeChange(["atTop": top, "nearBottom": near])
     }
     checkEndReached()
+  }
+
+  // Sonde de fluidite : un rapport par geste (doigt pose → fin de l'elan).
+  func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+    perf.begin()
+  }
+
+  func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    if !decelerate { perf.end(rows: rows.count, offset: scrollView.contentOffset.y) }
+  }
+
+  func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+    perf.end(rows: rows.count, offset: scrollView.contentOffset.y)
   }
 
   /**

@@ -67,6 +67,8 @@ export type HomeListViewProps = ViewProps & {
   onEndReached: (e: Event<Record<string, never>>) => void;
   onRefresh: (e: Event<Record<string, never>>) => void;
   onEdgeChange: (e: Event<{ atTop: boolean; nearBottom: boolean }>) => void;
+  /** Sonde de fluidite : `kind: "scroll"` (par geste) ou `"apply"` (par page). */
+  onDiagnostics: (e: Event<Record<string, any>>) => void;
 };
 
 export type HomeListHandle = {

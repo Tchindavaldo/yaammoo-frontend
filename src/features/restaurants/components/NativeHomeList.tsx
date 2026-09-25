@@ -13,6 +13,10 @@ import { PAGE_SIZE } from "../context/FastFoodContext";
 import { V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
 import { designNumberFor } from "../utils/designCycle";
 import { getNextDeliveryTime } from "../utils/deliveryUtils";
+import {
+  announceNativeList,
+  reportNativeDiagnostics,
+} from "../utils/nativeListDiagnostics";
 
 /**
  * Pont JS de la liste NATIVE du home (`modules/home-list`, iOS).
@@ -131,6 +135,7 @@ export const NativeHomeList: React.FC<Props> = ({
   // charge (le natif retombe sinon sur des SF Symbols).
   useEffect(() => {
     Ionicons.loadFont?.().catch(() => {});
+    announceNativeList();
   }, []);
 
   const rows = useMemo(
@@ -206,6 +211,7 @@ export const NativeHomeList: React.FC<Props> = ({
       onEndReached={() => onEndReached()}
       onRefresh={() => onRefresh()}
       onEdgeChange={(e) => onEdgeChange(e.nativeEvent.atTop, e.nativeEvent.nearBottom)}
+      onDiagnostics={(e) => reportNativeDiagnostics(e.nativeEvent)}
     />
   );
 };

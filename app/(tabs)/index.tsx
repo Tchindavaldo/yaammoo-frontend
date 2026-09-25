@@ -191,7 +191,12 @@ export default function HomeScreen() {
   }, [fastFoods, insertLock, revealGate]);
   // Verrou libere ailleurs (securite 8 s, reset) : la page est oubliee.
   useEffect(() => {
-    if (!insertLock) revealGate.reset();
+    if (insertLock) return;
+    // Securite 8 s du contexte : elle rend `insertLock` mais laisse
+    // `loadingMore` allume, qui tient `scrollLocked`. On libere donc tout ici,
+    // sinon la liste resterait figee.
+    if (revealGate.isActive()) notifyPageLaidOutRef.current();
+    revealGate.reset();
   }, [insertLock, revealGate]);
   const handleContentSizeChange = useCallback((_w: number, h: number) => {
     // ⚠️ Suivi dans LES DEUX SENS : apres un pull-to-refresh la liste repart
@@ -259,6 +264,9 @@ export default function HomeScreen() {
   // sans geste (double fetch, double loader). On n'autorise le fetch suivant
   // qu'apres etre remonte de 200 px : le rebond (±40 px) ne re-arme jamais.
   const fetchArmedRef = useRef(true);
+  // Vrai = le fetch en cours a ete declenche par l'arrivee en bas (et non par
+  // un refresh / une recherche) : il fige le scroll (voir `scrollLocked`).
+  const fetchFromBottomRef = useRef(false);
   const handleScroll = useCallback(
     (e: any) => {
       const y = e.nativeEvent.contentOffset.y;
@@ -298,6 +306,9 @@ export default function HomeScreen() {
           console.log(
             `[ROW] AT-BOTTOM fetch distance=${distanceToEnd.toFixed(1)}`,
           );
+          // Lu au rendu provoque par `loadingMore` : le verrou demarre avec le
+          // fetch (voir `scrollLocked`).
+          fetchFromBottomRef.current = true;
           loadMoreRef.current();
         }
       }
@@ -326,9 +337,29 @@ export default function HomeScreen() {
     if (!loadingMore) {
       atBottomRef.current = false;
       loaderVisibleRef.current = false;
+      fetchFromBottomRef.current = false;
     }
     syncLoader();
   }, [loadingMore, hasMore, syncLoader]);
+
+  // ⚠️ VERROU ABSOLU du bas de liste : de l'arrivee en bas (debut du fetch)
+  // jusqu'a la revelation complete de la page (`PageRevealGate`, qui eteint
+  // `loadingMore`). Avant, il ne demarrait qu'a l'insertion (`insertLock`) :
+  // pendant le fetch le scroll restait libre, et la page s'inserait sous un
+  // doigt en mouvement (squelettes + images pendant le geste = saccades).
+  const scrollLocked =
+    insertLock || (loadingMore && fetchFromBottomRef.current);
+  // Couper l'ELAN au moment du blocage : sur iOS, `scrollEnabled={false}`
+  // n'arrete pas une deceleration en cours, la liste continuait de glisser
+  // sous le verrou. Un repositionnement sans animation stoppe l'inertie net.
+  useLayoutEffect(() => {
+    // Uniquement quand le verrou part du FETCH (contenu pas encore agrandi) :
+    // parti de l'insertion, `scrollToEnd` sauterait par-dessus la nouvelle page.
+    if (scrollLocked && !insertLock) {
+      listRef.current?.scrollToEnd({ animated: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scrollLocked]);
   useEffect(() => {
     // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
     // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
@@ -733,7 +764,7 @@ export default function HomeScreen() {
             // Verrou d'insertion : scroll fige pendant le montage + layout des
             // nouvelles rangees, libere par `notifyPageLaidOut` (ou securite
             // 2 s). Jamais de scroll sur des cellules en cours de montage.
-            scrollEnabled={!insertLock}
+            scrollEnabled={!scrollLocked}
             ListFooterComponent={listFooter}
           />
           <Animated.View

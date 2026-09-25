@@ -98,7 +98,11 @@ const PLACEHOLDER_FETCH_DISTANCE =
  * premier ecran. Revenu a `DRAW_DISTANCE`, FlashList garde ces cellules en
  * reserve de recyclage : plus aucun montage pendant le scroll.
  */
-const DRAW_DISTANCE = 800;
+// 1600 et non 800 : a 800, en bas de la page 2 les rangees de la page 1
+// sortaient de la zone et leurs cellules partaient aux fantomes du bas ; en
+// remontant, chacune revenait par un rebind fantome -> vraie boutique
+// (squelette, images, fondu) : legere pause a chaque remontee.
+const DRAW_DISTANCE = 1600;
 const WARMUP_DRAW_DISTANCE = 3200;
 const WARMUP_MS = 1500;
 

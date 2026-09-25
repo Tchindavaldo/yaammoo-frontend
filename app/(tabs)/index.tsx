@@ -41,6 +41,8 @@ import {
 } from "@/src/features/restaurants/context/FastFoodContext";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
+import { NativeHomeList } from "@/src/features/restaurants/components/NativeHomeList";
+import { isHomeListAvailable, type HomeListHandle } from "@/modules/home-list";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
@@ -260,6 +262,9 @@ export default function HomeScreen() {
   // tous les onglets, et il n'a pas acces a la liste de cet ecran. L'evenement
   // `tabPress` remonte au screen, qui est le seul a tenir la ref.
   const listRef = useRef<FlashListRef<any>>(null);
+  // Liste NATIVE (iOS, `modules/home-list`) quand le build l'embarque ; sinon
+  // la FlashList ci-dessous reste en place, inchangee.
+  const nativeListRef = useRef<HomeListHandle>(null);
   // Ref stable vers `loadMore` pour le declenchement depuis `handleScroll`
   // sans recreer le handler (et sans reconstruire la liste).
   const loadMoreRef = useRef(loadMore);
@@ -489,6 +494,7 @@ export default function HomeScreen() {
       // qu'apres les 450 ms ci-dessous, quand le mal est fait.
       cancelPendingLoadMore();
       listRef.current?.scrollToOffset({ offset: 0, animated: true });
+      nativeListRef.current?.scrollToTop();
       // Troncature une fois la remontee terminee : moins de cellules en
       // memoire, la liste retrouve l'etat qu'elle avait apres le premier GET.
       //
@@ -840,6 +846,38 @@ export default function HomeScreen() {
               `architecture/restaurants.md`). Le recyclage est pilote par
               `getItemType` : sans lui, une rangee serait reutilisee vers une
               variante de hauteur differente. */}
+          {isHomeListAvailable ? (
+            <NativeHomeList
+              listRef={nativeListRef}
+              fastFoods={fastFoods}
+              banners={banners}
+              loading={loading}
+              hasMore={hasMore}
+              refreshing={refreshing}
+              bottomInset={tabBarHeight + 60}
+              sidePadding={Theme.design.horizontalPadding}
+              footerText={
+                fastFoods.length === 0 && !loading
+                  ? searchQuery
+                    ? `Aucun restaurant trouvé pour "${searchQuery}"`
+                    : "Aucun restaurant disponible pour le moment"
+                  : !hasMore && !loading && fastFoods.length > 0
+                    ? "Vous avez vu toutes les boutiques"
+                    : null
+              }
+              footerIsEmpty={fastFoods.length === 0 && !loading}
+              onRefresh={onManualRefresh}
+              onEndReached={() => loadMoreRef.current()}
+              onMenuPress={onMenuClickStable}
+              onBannerPress={handleBannerPress}
+              onEdgeChange={(top, near) => {
+                atTopRef.current = top;
+                loaderVisibleRef.current = near;
+                syncLoader();
+                notifyUserScroll();
+              }}
+            />
+          ) : (
           <FlashList
             ref={listRef}
             data={listData}
@@ -914,6 +952,7 @@ export default function HomeScreen() {
             scrollEnabled={!insertLock}
             ListFooterComponent={listFooter}
           />
+          )}
           <Animated.View
             pointerEvents="none"
             style={[

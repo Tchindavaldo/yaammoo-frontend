@@ -25,6 +25,7 @@ src/features/restaurants/
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
     ├── ShopSkeleton.tsx            # Copie de CardSkeleton (R16), respiration sur driver NATIF (fantomes : JS-driven saturait le thread UI)
+    ├── NativeHomeList.tsx          # Pont JS de la liste NATIVE iOS (modules/home-list) : donnees pre-calculees + evenements
     └── designs/
         ├── DesignItem.tsx          # Enveloppe seule : squelette + fondu + ItemMeta
         ├── item/
@@ -40,6 +41,46 @@ src/features/restaurants/
 ```
 
 Écran : [`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx).
+
+---
+
+## Liste NATIVE iOS (`feature/home-liste-native`, test)
+
+Réécriture de la liste du home en UIKit, pour sortir le défilement et le
+recyclage des lignes du JavaScript (sous FlashList, chaque réutilisation d'une
+rangée coûtait un rendu React complet de la boutique et de ses cartes).
+
+```
+modules/home-list/                  # Module Expo local (autolinking : ./modules)
+├── index.ts                        # requireNativeView('HomeList') + types ; isHomeListAvailable
+├── expo-module.config.json
+└── ios/
+    ├── HomeList.podspec            # ExpoModulesCore + SDWebImage (meme cache qu'expo-image)
+    ├── HomeListModule.swift        # Props, evenements, scrollToTop
+    ├── HomeListView.swift          # UICollectionView + diffable (identite = position + design), fetch, bords
+    ├── HLShopCell.swift            # Rangee : en-tete + cartes horizontales, revelation groupee (8 s max)
+    ├── HLMenuCardCell.swift        # Carte 7/4/5 + les 2 lignes SOUS la carte (ItemMeta) + squelettes
+    ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
+    ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
+    ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s, puces, squelette
+    ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
+```
+
+- **Repli automatique** : `isHomeListAvailable` est faux sur Android et sur un
+  dev client qui n'embarque pas le module ; le home garde alors sa FlashList.
+- **Aucune règle métier en Swift** : `NativeHomeList.tsx` envoie des lignes
+  déjà prêtes (prix formaté, heure de livraison recalculée chaque minute,
+  frais, images de secours résolues en URL). Le Swift ne fait qu'afficher.
+- **Fantômes** : `ghostCount` (= `PAGE_SIZE`) rangées squelettes en fin de
+  liste ; la vraie boutique du même rang reconfigure la même cellule. Le fetch
+  (`onEndReached`) part quand le premier fantôme est à `prefetchDistance` de
+  l'écran, re-armé à chaque page arrivée.
+- **Révélation** : même règle que `ShopRevealContext` (avatar + cartes
+  visibles attendus ensemble, fondu 220 ms, bannière avec la boutique 0) ;
+  boutique déjà vue ou images déjà en mémoire = affichage direct.
+- **Design** : toutes les cotes viennent des styles RN (`HLTheme.swift`) ;
+  un changement de design se fait des deux côtés tant que les deux listes
+  coexistent.
 
 ---
 

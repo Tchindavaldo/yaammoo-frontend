@@ -86,6 +86,7 @@ yaammoo/
 │   ├── components/           # Composants partagés (Toast, AppBlurView…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
 │   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)
 │
+├── modules/                  # Modules Expo locaux (autolinking) : home-list/ = liste native iOS du home (voir restaurants.md)
 ├── assets/                   # Images, fonts
 ├── architecture/             # Ce dossier
 └── app.json, package.json

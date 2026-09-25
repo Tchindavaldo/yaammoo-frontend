@@ -88,6 +88,11 @@ export function usePageRevealGate(onRelease: () => void) {
       },
       unmounted: (id) => {
         mountedRef.current.delete(id);
+        // ⚠️ Une revelation ne vaut que pour la cellule qui l'a faite. Gardee
+        // apres demontage (retour en haut = troncature), la meme page revenait
+        // avec ses ids encore « reveles » : le verrou tombait aussitot sur des
+        // squelettes (logs `START deja-montees=0` puis `RELEASE`).
+        revealedRef.current.delete(id);
       },
       revealed: (id) => {
         if (revealedRef.current.has(id)) return;

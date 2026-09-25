@@ -14,6 +14,7 @@ tournant, plus le carrousel de bannières.
 src/features/restaurants/
 ├── context/FastFoodContext.tsx     # État + fetch paginé + injection socket
 ├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique (+ revealAnim)
+├── context/PageRevealGate.tsx      # Scroll figé jusqu'à la révélation d'une page insérée
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
 ├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
 ├── utils/deliveryUtils.ts
@@ -404,6 +405,16 @@ tant que la page suivante charge.
   en plein geste.
 - **Le gel est libéré dès l'arrivée de la page** : la liste s'est allongée, on
   n'est plus en bas.
+- **Verrou tenu jusqu'à la RÉVÉLATION, pas aux squelettes**
+  (`context/PageRevealGate.tsx`). `insertLock` tombait au premier
+  `onContentSizeChange`, donc dès les squelettes posés : les images se
+  révélaient ensuite en plein geste (micro-pause). Désormais chaque boutique
+  montée de la page insérée signale sa révélation (`PageRevealReporter` dans
+  `DesignRouter`, lit `ShopRevealContext.ready`) ; le verrou et le loader tombent
+  quand toutes sont révélées, fondu (`REVEAL_MS`) compris. Boutiques non montées
+  (hors `drawDistance`) non attendues. Filet : `INSERT_LOCK_SAFETY_MS` porté à
+  8 s (= `MAX_WAIT_MS`). ⚠️ Les layout effects des cellules passent AVANT celui
+  de l'écran : le gate garde un set des cellules montées, relu par `startPage`.
 - `FOOTER_LOADER_HEIGHT` (48) est volontairement généreuse : le loader doit se
   remarquer même en scroll rapide.
 

@@ -9,6 +9,7 @@ import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -28,6 +29,10 @@ import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet"
 import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
 import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
 import { ShopRevealProvider } from "@/src/features/restaurants/context/ShopRevealContext";
+import {
+  PageRevealGateProvider,
+  usePageRevealGate,
+} from "@/src/features/restaurants/context/PageRevealGate";
 import { designNumberFor } from "@/src/features/restaurants/utils/designCycle";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
@@ -169,6 +174,25 @@ export default function HomeScreen() {
   const contentHeightRef = useRef(0);
   const notifyPageLaidOutRef = useRef(notifyPageLaidOut);
   notifyPageLaidOutRef.current = notifyPageLaidOut;
+  // Le verrou de page ne tombe plus aux squelettes mais a la REVELATION des
+  // boutiques inserees (voir `PageRevealGate`).
+  const revealGate = usePageRevealGate(() => notifyPageLaidOutRef.current());
+  const prevLenRef = useRef(fastFoods.length);
+  // Layout effect : la page est declaree avant le layout natif (donc avant
+  // `onContentSizeChange`).
+  useLayoutEffect(() => {
+    const prev = prevLenRef.current;
+    prevLenRef.current = fastFoods.length;
+    if (insertLock && fastFoods.length > prev && prev > 0) {
+      revealGate.startPage(
+        fastFoods.slice(prev).map((ff: any) => ff.id).filter(Boolean),
+      );
+    }
+  }, [fastFoods, insertLock, revealGate]);
+  // Verrou libere ailleurs (securite 8 s, reset) : la page est oubliee.
+  useEffect(() => {
+    if (!insertLock) revealGate.reset();
+  }, [insertLock, revealGate]);
   const handleContentSizeChange = useCallback((_w: number, h: number) => {
     // ⚠️ Suivi dans LES DEUX SENS : apres un pull-to-refresh la liste repart
     // de zero, donc elle ne redepassera JAMAIS l'ancien max — sans le suivi
@@ -177,8 +201,10 @@ export default function HomeScreen() {
     if (h === contentHeightRef.current) return;
     const grew = h > contentHeightRef.current;
     contentHeightRef.current = h;
-    if (grew) notifyPageLaidOutRef.current();
-  }, []);
+    if (!grew) return;
+    if (revealGate.isActive()) revealGate.laidOut();
+    else notifyPageLaidOutRef.current();
+  }, [revealGate]);
   const navigation = useNavigation();
 
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -617,6 +643,7 @@ export default function HomeScreen() {
           la boutique 0 derriere elles, et c'est ce qui avait rajoute de la
           latence a l'arrivee sur le home. */}
       <ShopRevealProvider expect={firstScreenUris}>
+       <PageRevealGateProvider value={revealGate.gate}>
         <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
           {/* ⚠️ FlashList, pas FlatList : elle RECYCLE les vues natives au lieu
               de les detruire en sortie d'ecran et d'en recreer en entree. C'est
@@ -709,6 +736,7 @@ export default function HomeScreen() {
             <ActivityIndicator size="large" color={Theme.colors.primary} />
           </Animated.View>
         </View>
+       </PageRevealGateProvider>
       </ShopRevealProvider>
       <CheckoutSheet
         key={selectedMenu?.id || "checkout"}

@@ -40,8 +40,12 @@ const HOLD_REVEAL_DELAY_MS = 1000;
  * Securite du verrou d'insertion (`insertLock`) : si le layout ne confirme
  * jamais l'insertion (ex. page entierement dedupee, aucun rendu), le scroll
  * se libere seul au lieu de rester fige.
+ *
+ * Le verrou tient desormais jusqu'a la REVELATION des images (voir
+ * `PageRevealGate`), d'ou une valeur alignee sur `MAX_WAIT_MS` de
+ * `ShopRevealContext` (8 s) : a 2 s, un reseau lent liberait avant les images.
  */
-const INSERT_LOCK_SAFETY_MS = 2000;
+const INSERT_LOCK_SAFETY_MS = 8000;
 
 /**
  * TEST [ROW] — `false` = `resetToFirstPage()` ne tronque plus (mesure du scroll

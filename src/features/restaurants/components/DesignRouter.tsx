@@ -7,6 +7,7 @@ import { Design4 } from './designs/Design4';
 import { Design5 } from './designs/Design5';
 import { Design7 } from './designs/Design7';
 import { ShopRevealProvider } from '../context/ShopRevealContext';
+import { PageRevealReporter } from '../context/PageRevealGate';
 import { DesignNumber, designNumberFor } from '../utils/designCycle';
 
 const DESIGN_COMPONENTS: Record<DesignNumber, typeof Design7> = {
@@ -78,6 +79,9 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   return (
     <ShopRevealProvider passthrough={listIndex === 0}>
       {design}
+      {/* Signale la revelation au verrou de page du home (scroll fige tant
+          que les boutiques inserees ne sont pas affichees). */}
+      <PageRevealReporter id={fastFood.id} />
     </ShopRevealProvider>
   );
 };

@@ -71,6 +71,10 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
 - **Aucune règle métier en Swift** : `NativeHomeList.tsx` envoie des lignes
   déjà prêtes (prix formaté, heure de livraison recalculée chaque minute,
   frais, images de secours résolues en URL). Le Swift ne fait qu'afficher.
+- **Aucun verrou de scroll** : ni `insertLock`, ni HOLD, ni `PageRevealGate`.
+  Remplir un fantôme ou ajouter des rangées hors écran ne coûte presque rien
+  en UIKit (reconfiguration d'une cellule existante), le défilement continue
+  pendant le chargement comme pendant l'insertion.
 - **Fantômes** : `ghostCount` (= `PAGE_SIZE`) rangées squelettes en fin de
   liste ; la vraie boutique du même rang reconfigure la même cellule. Le fetch
   (`onEndReached`) part quand le premier fantôme est à `prefetchDistance` de
@@ -432,6 +436,10 @@ Le pied de liste et `onEndReached` ont été **testés et mis hors de cause** da
 la boucle mount/unmount de la dernière cellule.
 
 ## Bas de liste — scroll figé pendant le chargement (`debug/home-bottom-overscroll`)
+
+> ⚠️ Section propre à la **FlashList** (Android, ou iOS sans le module
+> natif). La liste native iOS ne fige JAMAIS le scroll : voir « Liste NATIVE
+> iOS » plus haut.
 
 Arrivé en bas avec le loader de pagination visible, on pouvait continuer à tirer
 vers le bas : le loader remontait et découvrait un blanc qui se lisait comme une

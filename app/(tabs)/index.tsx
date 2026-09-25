@@ -68,6 +68,12 @@ const FOOTER_LOADER_HEIGHT = 48;
  *  toujours en premier par rapport aux elements nouvellement charges. */
 const LOADER_VISIBLE_DISTANCE = 120;
 
+/**
+ * Calme exige avant de liberer le scroll (doigt leve depuis au moins ce
+ * delai). Plus court qu'un intervalle entre deux glissements d'une rafale.
+ */
+const UNLOCK_QUIET_MS = 350;
+
 /** Vrai pour l'item banniere, faux pour une boutique. */
 const isBannerItem = (item: any) => item?.__banner === true;
 
@@ -176,7 +182,47 @@ export default function HomeScreen() {
   notifyPageLaidOutRef.current = notifyPageLaidOut;
   // Le verrou de page ne tombe plus aux squelettes mais a la REVELATION des
   // boutiques inserees (voir `PageRevealGate`).
-  const revealGate = usePageRevealGate(() => notifyPageLaidOutRef.current());
+  // --- Deblocage au CALME seulement ---
+  // Page revelee : le verrou ne tombe que si le doigt est leve ET qu'aucun
+  // geste n'a eu lieu depuis `UNLOCK_QUIET_MS`. Des glissements rapproches
+  // pendant le blocage sont donc ignores jusqu'au bout : liberer au milieu
+  // d'une rafale faisait partir un geste a moitie pris, a moitie bloque
+  // (sensation « il ne sait pas s'il doit scroller ou s'arreter »).
+  // Suivi par `onTouchStart/End` d'une View englobante : ils partent meme
+  // quand le scroll est desactive, sans capter le geste.
+  const touchingRef = useRef(false);
+  const lastTouchEndRef = useRef(0);
+  const quietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const releaseWhenQuiet = useCallback(() => {
+    if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
+    quietTimerRef.current = null;
+    const quietFor = Date.now() - lastTouchEndRef.current;
+    if (!touchingRef.current && quietFor >= UNLOCK_QUIET_MS) {
+      notifyPageLaidOutRef.current();
+      return;
+    }
+    console.log(
+      `[GATE] UNLOCK differe (${touchingRef.current ? "doigt pose" : `geste il y a ${quietFor} ms`})`,
+    );
+    quietTimerRef.current = setTimeout(
+      releaseWhenQuiet,
+      touchingRef.current ? 80 : UNLOCK_QUIET_MS - quietFor,
+    );
+  }, []);
+  useEffect(
+    () => () => {
+      if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
+    },
+    [],
+  );
+  const onListTouchStart = useCallback(() => {
+    touchingRef.current = true;
+  }, []);
+  const onListTouchEnd = useCallback(() => {
+    touchingRef.current = false;
+    lastTouchEndRef.current = Date.now();
+  }, []);
+  const revealGate = usePageRevealGate(releaseWhenQuiet);
   const prevLenRef = useRef(fastFoods.length);
   // Layout effect : la page est declaree avant le layout natif (donc avant
   // `onContentSizeChange`).
@@ -654,7 +700,12 @@ export default function HomeScreen() {
           latence a l'arrivee sur le home. */}
       <ShopRevealProvider expect={firstScreenUris}>
        <PageRevealGateProvider value={revealGate.gate}>
-        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
+        <View
+          style={{ flex: 1, paddingTop: HEADER_HEIGHT }}
+          onTouchStart={onListTouchStart}
+          onTouchEnd={onListTouchEnd}
+          onTouchCancel={onListTouchEnd}
+        >
           {/* ⚠️ FlashList, pas FlatList : elle RECYCLE les vues natives au lieu
               de les detruire en sortie d'ecran et d'en recreer en entree. C'est
               ce qui supprime definitivement la micro-pause au scroll (63-90 ms

@@ -87,23 +87,6 @@ const DRAW_DISTANCE = 1600;
 const ROW_HEIGHT_ESTIMATE = 270;
 
 /**
- * Fantomes tenus d'avance en bas de liste, calcules en PIXELS et non en
- * pages : la page suivante (`PAGE_SIZE`, remplie a l'arrivee des donnees)
- * PLUS assez de rangees pour couvrir `DRAW_DISTANCE`. Ainsi les fantomes
- * ajoutes apres chaque remplissage tombent toujours HORS de la zone de
- * pre-rendu : rien ne se monte a l'insertion, quel que soit `PAGE_SIZE`
- * (constate : trop peu d'avance = montage en plein scroll, legere pause).
- */
-const GHOST_COUNT = PAGE_SIZE + Math.ceil(DRAW_DISTANCE / ROW_HEIGHT_ESTIMATE);
-
-/**
- * Distance du bas a laquelle part le fetch : quand le PREMIER fantome entre
- * dans le champ de vision (tous les fantomes sont sous lui ; +90 = marge
- * basse de la liste).
- */
-const PLACEHOLDER_FETCH_DISTANCE = GHOST_COUNT * ROW_HEIGHT_ESTIMATE + 90;
-
-/**
  * Pre-rendu elargi au demarrage : monte d'un coup la reserve de cellules
  * qu'exige la zone de pre-rendu en regime (ecran + `DRAW_DISTANCE` de chaque
  * cote, ~4000 px), pendant que l'utilisateur regarde le premier ecran. Revenu
@@ -112,6 +95,31 @@ const PLACEHOLDER_FETCH_DISTANCE = GHOST_COUNT * ROW_HEIGHT_ESTIMATE + 90;
  */
 const WARMUP_DRAW_DISTANCE = 2 * DRAW_DISTANCE + 800;
 const WARMUP_MS = 1500;
+
+/**
+ * Fantomes tenus d'avance en bas de liste, calcules en PIXELS et non en
+ * pages : la page suivante (`PAGE_SIZE`, remplie a l'arrivee des donnees)
+ * PLUS assez de rangees pour remplir TOUTE la zone d'echauffement.
+ *
+ * ⚠️ Deux raisons, mesurees a la sonde `[ROW]` :
+ * - la reserve de cellules ne peut pas depasser le nombre de rangees
+ *   presentes a l'echauffement. Avec 9 fantomes, 13 cellules etaient
+ *   creees alors que la zone en regime en demande ~16 : les 3 fantomes
+ *   ajoutes au remplissage de la page 2 se MONTAIENT en plein scroll
+ *   (`MONTAGE-CELL __ph_12..14`, la pause ressentie), pas a la page 3 ;
+ * - les fantomes ajoutes apres chaque remplissage tombent ainsi loin hors
+ *   de la zone de pre-rendu. Valable quel que soit `PAGE_SIZE`.
+ */
+const GHOST_COUNT =
+  PAGE_SIZE + Math.ceil(WARMUP_DRAW_DISTANCE / ROW_HEIGHT_ESTIMATE);
+
+/**
+ * Distance du bas a laquelle part le fetch : quand le PREMIER fantome entre
+ * dans la zone de pre-rendu (tous les fantomes sont sous lui ; +90 = marge
+ * basse de la liste). Les donnees arrivent donc en general avant que ses
+ * squelettes soient a l'ecran.
+ */
+const PLACEHOLDER_FETCH_DISTANCE = GHOST_COUNT * ROW_HEIGHT_ESTIMATE + 90;
 
 /**
  * Calme exige avant de liberer le scroll (doigt leve depuis au moins ce

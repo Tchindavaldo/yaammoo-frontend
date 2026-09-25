@@ -418,8 +418,9 @@ tant que la page suivante charge.
   de l'écran : le gate garde un set des cellules montées, relu par `startPage`.
 - **Fantômes de la page suivante** (`utils/pagePlaceholders.ts`,
   `debug/home-squelettes-en-avance`). `GHOST_COUNT` boutiques fantômes
-  (`PAGE_SIZE` + de quoi couvrir `DRAW_DISTANCE` 1600, calcul en pixels donc
-  valable pour tout `PAGE_SIZE`) sont ajoutées en fin de `listData` tant que
+  (`PAGE_SIZE` + de quoi remplir la zone d'échauffement de ~4000 px, calcul
+  en pixels donc valable pour tout `PAGE_SIZE` ; moins de fantomes = réserve
+  de cellules trop petite, montages en plein scroll au remplissage) sont ajoutées en fin de `listData` tant que
   `hasMore`, repliées (hauteur 0) en fin de catalogue ; pré-rendu élargi
   1,5 s au démarrage (`WARMUP_DRAW_DISTANCE`) pour chauffer la réserve de
   cellules : même `designIndex` que la

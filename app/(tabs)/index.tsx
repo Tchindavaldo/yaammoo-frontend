@@ -74,42 +74,43 @@ const FOOTER_LOADER_HEIGHT = 48;
 const LOADER_VISIBLE_DISTANCE = 120;
 
 /**
- * Pages de fantomes tenues d'avance en bas de liste. A 1, les 3 fantomes
- * ajoutes apres chaque remplissage tombaient DANS `drawDistance` : FlashList
- * les montait aussitot, en plein scroll (legere pause). A 2, ils s'ajoutent
- * une page plus bas, hors de la zone de pre-rendu : rien ne se monte a
- * l'insertion, et quand on y arrive des cellules du haut sont recyclees.
+ * Zone de pre-rendu de FlashList autour de l'ecran.
+ *
+ * 1600 et non 800 : a 800, en bas de la page 2 les rangees de la page 1
+ * sortaient de la zone et leurs cellules partaient aux fantomes du bas ; en
+ * remontant, chacune revenait par un rebind fantome -> vraie boutique
+ * (squelette, images, fondu) : legere pause a chaque remontee.
  */
-// 3 et non 2 depuis `DRAW_DISTANCE` 1600 : a 2, les fantomes ajoutes apres le
-// remplissage de la page 2 tombaient a ~800 px, DANS la zone de pre-rendu, et
-// se montaient en plein scroll (legere pause, absente a la derniere page qui
-// n'ajoute pas de fantomes). A 3, ils s'ajoutent ~2400 px plus bas.
-const PLACEHOLDER_PAGES = 3;
+const DRAW_DISTANCE = 1600;
 
 /** Hauteur moyenne d'une rangee boutique (variantes 190 a 280 px + marges). */
 const ROW_HEIGHT_ESTIMATE = 270;
 
 /**
- * Distance du bas a laquelle part le fetch : quand le PREMIER fantome entre
- * dans le champ de vision (les pages suivantes de fantomes sont sous lui).
+ * Fantomes tenus d'avance en bas de liste, calcules en PIXELS et non en
+ * pages : la page suivante (`PAGE_SIZE`, remplie a l'arrivee des donnees)
+ * PLUS assez de rangees pour couvrir `DRAW_DISTANCE`. Ainsi les fantomes
+ * ajoutes apres chaque remplissage tombent toujours HORS de la zone de
+ * pre-rendu : rien ne se monte a l'insertion, quel que soit `PAGE_SIZE`
+ * (constate : trop peu d'avance = montage en plein scroll, legere pause).
  */
-const PLACEHOLDER_FETCH_DISTANCE =
-  900 + (PLACEHOLDER_PAGES - 1) * PAGE_SIZE * ROW_HEIGHT_ESTIMATE;
+const GHOST_COUNT = PAGE_SIZE + Math.ceil(DRAW_DISTANCE / ROW_HEIGHT_ESTIMATE);
 
 /**
- * Pre-rendu elargi au demarrage, le temps de monter d'un coup toutes les
- * rangees d'avance (vraies + fantomes) pendant que l'utilisateur regarde le
- * premier ecran. Revenu a `DRAW_DISTANCE`, FlashList garde ces cellules en
- * reserve de recyclage : plus aucun montage pendant le scroll.
+ * Distance du bas a laquelle part le fetch : quand le PREMIER fantome entre
+ * dans le champ de vision (tous les fantomes sont sous lui ; +90 = marge
+ * basse de la liste).
  */
-// 1600 et non 800 : a 800, en bas de la page 2 les rangees de la page 1
-// sortaient de la zone et leurs cellules partaient aux fantomes du bas ; en
-// remontant, chacune revenait par un rebind fantome -> vraie boutique
-// (squelette, images, fondu) : legere pause a chaque remontee.
-const DRAW_DISTANCE = 1600;
-// Couvre banniere + page 1 + 3 pages de fantomes (~3500 px) : la reserve
-// atteint d'emblee les ~14 cellules que demande la zone de 1600 px.
-const WARMUP_DRAW_DISTANCE = 4000;
+const PLACEHOLDER_FETCH_DISTANCE = GHOST_COUNT * ROW_HEIGHT_ESTIMATE + 90;
+
+/**
+ * Pre-rendu elargi au demarrage : monte d'un coup la reserve de cellules
+ * qu'exige la zone de pre-rendu en regime (ecran + `DRAW_DISTANCE` de chaque
+ * cote, ~4000 px), pendant que l'utilisateur regarde le premier ecran. Revenu
+ * a `DRAW_DISTANCE`, FlashList garde ces cellules en reserve de recyclage.
+ * Independant de `PAGE_SIZE` : c'est la zone, pas la page, qui fixe le besoin.
+ */
+const WARMUP_DRAW_DISTANCE = 2 * DRAW_DISTANCE + 800;
 const WARMUP_MS = 1500;
 
 /**
@@ -555,7 +556,7 @@ export default function HomeScreen() {
     let ghosts: any[] = [];
     if (FILL_PLACEHOLDERS && !loading && len > 0) {
       if (hasMore) {
-        const count = PAGE_SIZE * PLACEHOLDER_PAGES;
+        const count = GHOST_COUNT;
         ghosts = makePlaceholders(len, count);
         ghostEndRef.current = len + count;
       } else if (ghostEndRef.current > len) {

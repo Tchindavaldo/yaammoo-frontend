@@ -417,8 +417,12 @@ tant que la page suivante charge.
   8 s (= `MAX_WAIT_MS`). ⚠️ Les layout effects des cellules passent AVANT celui
   de l'écran : le gate garde un set des cellules montées, relu par `startPage`.
 - **Fantômes de la page suivante** (`utils/pagePlaceholders.ts`,
-  `debug/home-squelettes-en-avance`). `PAGE_SIZE` boutiques fantômes sont
-  ajoutées en fin de `listData` tant que `hasMore` : même `designIndex` que la
+  `debug/home-squelettes-en-avance`). `GHOST_COUNT` boutiques fantômes
+  (`PAGE_SIZE` + de quoi couvrir `DRAW_DISTANCE` 1600, calcul en pixels donc
+  valable pour tout `PAGE_SIZE`) sont ajoutées en fin de `listData` tant que
+  `hasMore`, repliées (hauteur 0) en fin de catalogue ; pré-rendu élargi
+  1,5 s au démarrage (`WARMUP_DRAW_DISTANCE`) pour chauffer la réserve de
+  cellules : même `designIndex` que la
   position qu'occupera la vraie boutique, donc même variante et même type de
   cellule. Elles sont montées d'avance en squelette (`ShopRevealProvider`
   `hold`). Le fetch part quand elles entrent dans le champ

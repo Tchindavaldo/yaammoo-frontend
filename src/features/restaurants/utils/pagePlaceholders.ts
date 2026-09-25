@@ -34,18 +34,29 @@ export const isPlaceholder = (item: any) => item?.__placeholder === true;
  */
 export const placeholderKey = (pos: number) => `${PREFIX}${pos}`;
 
-const cache = new Map<number, any>();
+/**
+ * Fantome REPLIE (hauteur 0) : fin de catalogue atteinte. On ne retire pas
+ * les fantomes restants de la liste : FlashList DETRUIRAIT leurs cellules
+ * (vu a la sonde : DEMONTAGE puis REMONTAGE des rangees du haut en remontant,
+ * petites pauses). Replies, ils gardent leur cellule en vie, invisibles.
+ */
+export const isCollapsedPlaceholder = (item: any) =>
+  item?.__collapsed === true;
+
+const cache = new Map<string, any>();
 
 /**
  * Fantome de la boutique au rang `pos` (rang de BOUTIQUE, banniere exclue).
  * ⚠️ Identite STABLE par rang (cache) : un objet neuf a chaque rendu casserait
  * le `memo` de `DesignRouter` et re-rendrait les fantomes pour rien.
  */
-const placeholderAt = (pos: number) => {
-  let ph = cache.get(pos);
+const placeholderAt = (pos: number, collapsed: boolean) => {
+  const cacheKey = `${pos}:${collapsed ? 1 : 0}`;
+  let ph = cache.get(cacheKey);
   if (!ph) {
     ph = {
       __placeholder: true,
+      __collapsed: collapsed,
       id: placeholderKey(pos),
       designIndex: pos % 6,
       nom: "",
@@ -58,11 +69,15 @@ const placeholderAt = (pos: number) => {
         image: null,
       })),
     };
-    cache.set(pos, ph);
+    cache.set(cacheKey, ph);
   }
   return ph;
 };
 
-/** Fantomes des rangs `start` a `start + count - 1`. */
-export const makePlaceholders = (start: number, count: number) =>
-  Array.from({ length: count }, (_, i) => placeholderAt(start + i));
+/** Fantomes des rangs `start` a `start + count - 1` (`collapsed` : replies). */
+export const makePlaceholders = (
+  start: number,
+  count: number,
+  collapsed = false,
+) =>
+  Array.from({ length: count }, (_, i) => placeholderAt(start + i, collapsed));

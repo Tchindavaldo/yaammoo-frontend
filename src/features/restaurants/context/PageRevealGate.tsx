@@ -33,6 +33,27 @@ const PageRevealGateContext = React.createContext<Gate | null>(null);
 
 export const PageRevealGateProvider = PageRevealGateContext.Provider;
 
+/**
+ * SONDE (a retirer apres mesure) : pendant 1,5 s apres la liberation, releve
+ * chaque frame JS de plus de 34 ms (= au moins 1 frame sautee a 60 Hz). Dit si
+ * la saccade ressentie au deblocage vient d'un blocage du thread JS.
+ */
+function probeFrames(t0: number) {
+  let last = Date.now();
+  const stalls: string[] = [];
+  const tick = () => {
+    const now = Date.now();
+    if (now - last > 34) stalls.push(`+${last - t0}ms:${now - last}ms`);
+    last = now;
+    if (now - t0 < 1500) requestAnimationFrame(tick);
+    else
+      console.log(
+        `[GATE] FRAMES apres unlock : ${stalls.length ? stalls.join(" ") : "aucun blocage"}`,
+      );
+  };
+  requestAnimationFrame(tick);
+}
+
 export function usePageRevealGate(onRelease: () => void) {
   const onReleaseRef = React.useRef(onRelease);
   onReleaseRef.current = onRelease;
@@ -57,6 +78,8 @@ export function usePageRevealGate(onRelease: () => void) {
   // Premiere boutique de la page : celle qui apparait juste sous le loader,
   // donc forcement dans le regard au bas de liste.
   const firstIdRef = React.useRef<string | null>(null);
+  // SONDE (a retirer apres mesure) : horodatage du debut du verrou.
+  const startAtRef = React.useRef(0);
 
   const tryRelease = React.useCallback(() => {
     if (!laidOutRef.current || pendingRef.current.size > 0) return;
@@ -74,7 +97,10 @@ export function usePageRevealGate(onRelease: () => void) {
       releaseTimerRef.current = null;
       pageIdsRef.current = new Set();
       laidOutRef.current = false;
+      const t0 = Date.now();
+      console.log(`[GATE] UNLOCK verrou tenu ${t0 - startAtRef.current} ms`);
       onReleaseRef.current();
+      probeFrames(t0);
     }, REVEAL_MS);
   }, []);
 
@@ -112,6 +138,7 @@ export function usePageRevealGate(onRelease: () => void) {
     clearTimer();
     pageIdsRef.current = new Set(ids);
     firstIdRef.current = ids[0] ?? null;
+    startAtRef.current = Date.now();
     pendingRef.current = new Set(
       ids.filter(
         (id) => mountedRef.current.has(id) && !revealedRef.current.has(id),

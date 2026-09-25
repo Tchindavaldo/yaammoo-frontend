@@ -143,7 +143,7 @@ export default function HomeScreen() {
   // une suite (`hasMore`) ET dans la zone basse (`loaderVisible`, marge
   // `LOADER_VISIBLE_DISTANCE`) : en remontant, il se cache ; en approchant du
   // bas, il apparait toujours en premier devant les elements charges.
-  // `showBottomLoader` est donc calcule APRES `atBottom`, plus bas.
+  // Pilote sans rendu React par `syncLoader`, plus bas.
   const loaderOpacity = useRef(new Animated.Value(0)).current;
 
   const onManualRefresh = async () => {
@@ -217,19 +217,44 @@ export default function HomeScreen() {
   // (`onScroll`) : retirer des cellules sous un doigt qui defile ferait sauter
   // la liste. Et toujours derriere la garde « on est bien en haut ».
   /**
-   * Bas de liste atteint. Combine a `loadingMore`, il fige le scroll le temps
-   * du chargement de la page suivante (voir `scrollEnabled`).
+   * Bas de liste atteint : declenche le fetch de la page suivante (transition
+   * dans `handleScroll`).
    *
-   * Le ref double l'etat pour ne declencher un rendu qu'aux TRANSITIONS : le
-   * comparer dans `handleScroll` evite un `setState` a chaque frame de scroll.
+   * ⚠️ REF SEULE, jamais d'etat. C'etait un `useState` que plus rien ne lisait
+   * au rendu : chaque arrivee en bas et chaque deblocage re-rendait le home
+   * pour rien. Mesure (sonde `[GATE] FRAMES`) : au deblocage du scroll, DEUX
+   * rendus consecutifs de 40-75 ms chacun, au moment exact ou le doigt
+   * reprend — la saccade ressentie.
    */
   const atBottomRef = useRef(false);
-  const [atBottom, setAtBottom] = useState(false);
   // Visibilite du loader : meme mecanisme de transition que `atBottom`, mais
   // avec une marge (`LOADER_VISIBLE_DISTANCE`). Le loader apparait donc avant
   // le bas strict, toujours en premier devant les elements charges.
+  // ⚠️ Ref aussi : le loader est une `Animated.Value` pilotee directement
+  // (`syncLoader`), sans passer par un rendu React.
   const loaderVisibleRef = useRef(false);
-  const [loaderVisible, setLoaderVisible] = useState(false);
+  const loadingMoreRef = useRef(loadingMore);
+  loadingMoreRef.current = loadingMore;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
+  const loaderShownRef = useRef(false);
+  const syncLoader = useCallback(() => {
+    const show =
+      loadingMoreRef.current && hasMoreRef.current && loaderVisibleRef.current;
+    if (show === loaderShownRef.current) return;
+    loaderShownRef.current = show;
+    if (show) {
+      Animated.timing(loaderOpacity, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Disparition directe, sans fondu de sortie.
+      loaderOpacity.stopAnimation();
+      loaderOpacity.setValue(0);
+    }
+  }, [loaderOpacity]);
   // Re-armement : apres un fetch, le rebond au bas redeclenche la transition
   // sans geste (double fetch, double loader). On n'autorise le fetch suivant
   // qu'apres etre remonte de 200 px : le rebond (±40 px) ne re-arme jamais.
@@ -256,7 +281,7 @@ export default function HomeScreen() {
       const nextLoaderVisible = distanceToEnd <= LOADER_VISIBLE_DISTANCE;
       if (nextLoaderVisible !== loaderVisibleRef.current) {
         loaderVisibleRef.current = nextLoaderVisible;
-        setLoaderVisible(nextLoaderVisible);
+        syncLoader();
       }
       // Bas STRICT (10 px) pour l'INSERTION : une page arrivee pendant que
       // l'utilisateur est remonte attend son retour, elle ne s'insere jamais
@@ -265,7 +290,6 @@ export default function HomeScreen() {
       if (distanceToEnd > 200) fetchArmedRef.current = true;
       if (nextAtBottom !== atBottomRef.current) {
         atBottomRef.current = nextAtBottom;
-        setAtBottom(nextAtBottom);
         // ⚠️ Le fetch ne part QU'ICI, au bas reel, jamais en avance, et une
         // seule fois par arrivee (re-arme apres 200 px) : le loader est
         // visible. `loadMore` garde le reste (fini, deja en vol = ignore).
@@ -284,7 +308,7 @@ export default function HomeScreen() {
       // d'une descente voulue par l'utilisateur.
       notifyUserScroll();
     },
-    [notifyUserScroll],
+    [notifyUserScroll, syncLoader],
   );
 
   const handleMomentumEnd = useCallback(() => {
@@ -297,28 +321,14 @@ export default function HomeScreen() {
   // resterait a `true` : la liste vient de s'allonger, on n'est donc plus en
   // bas, mais AUCUN `onScroll` ne repart pour le signaler — le scroll etait
   // desactive, donc immobile. La liste resterait figee definitivement.
+  // Aucun `setState` ici : refs + loader pilote directement (voir plus haut).
   useEffect(() => {
     if (!loadingMore) {
       atBottomRef.current = false;
-      setAtBottom(false);
       loaderVisibleRef.current = false;
-      setLoaderVisible(false);
     }
-  }, [loadingMore]);
-  const showBottomLoader = loadingMore && hasMore && loaderVisible;
-  useEffect(() => {
-    if (showBottomLoader) {
-      Animated.timing(loaderOpacity, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      // Disparition directe, sans fondu de sortie.
-      loaderOpacity.stopAnimation();
-      loaderOpacity.setValue(0);
-    }
-  }, [showBottomLoader, loaderOpacity]);
+    syncLoader();
+  }, [loadingMore, hasMore, syncLoader]);
   useEffect(() => {
     // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
     // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le

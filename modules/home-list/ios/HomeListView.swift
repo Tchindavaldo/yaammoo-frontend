@@ -162,7 +162,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     var snap = NSDiffableDataSourceSnapshot<Section, Item>()
     snap.appendSections([.banner, .rows, .footer])
     if !banners.isEmpty || bannerLoading { snap.appendItems([.banner], toSection: .banner) }
-    snap.appendItems(next.enumerated().map { .row(position: $0.offset, design: $0.element.design) },
+    snap.appendItems(next.enumerated().map { Item.row(position: $0.offset, design: $0.element.design) },
                      toSection: .rows)
     if footerText != nil { snap.appendItems([.footer], toSection: .footer) }
 

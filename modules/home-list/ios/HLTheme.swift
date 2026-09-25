@@ -4,7 +4,7 @@ import UIKit
  Constantes visuelles de la liste native du home.
 
  Chaque valeur est reprise TELLE QUELLE des styles React Native d'origine
- (`designs/item/*`, `MerchantHeader`, `HeroBanner`, `src/theme`) : le rendu
+ (dossier `designs/item`, `MerchantHeader`, `HeroBanner`, `src/theme`) : le rendu
  natif doit etre identique au pixel pres. Modifier ici = modifier le design.
  */
 enum HLColor {

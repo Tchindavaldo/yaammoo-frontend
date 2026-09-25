@@ -49,19 +49,19 @@ private func HLNextLabel() -> NSAttributedString {
 
 final class HLV7BottomZone: UIView {
   static let height: CGFloat = 42
-  private let next = UILabel()
+  private let nextLabel = UILabel()
   private let delivery = UILabel()
   private let fee = HLMakeFeePill()
 
   override init(frame: CGRect) {
     super.init(frame: frame)
     isUserInteractionEnabled = false
-    next.font = HLFont.w800(11)
-    next.textColor = UIColor(white: 1, alpha: 0.7)
-    next.text = "Prochaine"
+    nextLabel.font = HLFont.w800(11)
+    nextLabel.textColor = UIColor(white: 1, alpha: 0.7)
+    nextLabel.text = "Prochaine"
     delivery.font = HLFont.w900(11)
     delivery.textColor = .white
-    [next, delivery, fee].forEach(addSubview)
+    [nextLabel,delivery, fee].forEach(addSubview)
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) non supporte") }
@@ -75,7 +75,7 @@ final class HLV7BottomZone: UIView {
   override func layoutSubviews() {
     super.layoutSubviews()
     // paddingHorizontal 10, paddingBottom 10 ; rangee de 18 (pastille).
-    next.frame = CGRect(x: 10, y: 0, width: bounds.width - 20, height: 14)
+    nextLabel.frame = CGRect(x: 10, y: 0, width: bounds.width - 20, height: 14)
     let rowY: CGFloat = 14
     let dw = ceil(delivery.sizeThatFits(.zero).width)
     delivery.frame = CGRect(x: 10, y: rowY + 2.5, width: dw, height: 14)
@@ -94,7 +94,7 @@ final class HLStockDeliveryBar: UIView {
   private let fill = UIView()
   private let strip = UIView()
   private let badge = HLFlashBadge()
-  private let next = UILabel()
+  private let nextLabel = UILabel()
   private let delivery = UILabel()
   private var stockRatio: CGFloat = 0
 
@@ -110,10 +110,10 @@ final class HLStockDeliveryBar: UIView {
     track.addSubview(fill)
     strip.backgroundColor = UIColor(white: 0, alpha: 0.04)
     strip.layer.cornerRadius = 14
-    next.attributedText = HLNextLabel()
+    nextLabel.attributedText = HLNextLabel()
     delivery.font = HLFont.w800(11)
     delivery.textColor = .black
-    [badge, next, delivery].forEach(strip.addSubview)
+    [badge, nextLabel,delivery].forEach(strip.addSubview)
     [stockLabel, track, strip].forEach(blur.contentView.addSubview)
   }
 
@@ -134,12 +134,12 @@ final class HLStockDeliveryBar: UIView {
     super.layoutSubviews()
     blur.frame = bounds
     // paddingHorizontal 16, paddingVertical 10, gap 10.
-    let textW = max(ceil(next.sizeThatFits(.zero).width), ceil(delivery.sizeThatFits(.zero).width))
+    let textW = max(ceil(nextLabel.sizeThatFits(.zero).width), ceil(delivery.sizeThatFits(.zero).width))
     let stripW = 10 + 20 + 6 + textW + 10
     let stripH: CGFloat = 37
     strip.frame = CGRect(x: bounds.width - 16 - stripW, y: 10, width: stripW, height: stripH)
     badge.frame = CGRect(x: 10, y: (stripH - 20) / 2, width: 20, height: 20)
-    next.frame = CGRect(x: 36, y: 6, width: textW, height: 12)
+    nextLabel.frame = CGRect(x: 36, y: 6, width: textW, height: 12)
     delivery.frame = CGRect(x: 36, y: 18, width: textW, height: 13)
 
     let leftW = max(0, strip.frame.minX - 10 - 16)
@@ -157,7 +157,7 @@ final class HLV5BottomBar: UIView {
   static let height: CGFloat = 42
   private let blur = HLMakeBlurBar()
   private let badge = HLFlashBadge()
-  private let next = UILabel()
+  private let nextLabel = UILabel()
   private let delivery = UILabel()
   private let fee = HLMakeFeePill()
 
@@ -165,10 +165,10 @@ final class HLV5BottomBar: UIView {
     super.init(frame: frame)
     isUserInteractionEnabled = false
     addSubview(blur)
-    next.attributedText = HLNextLabel()
+    nextLabel.attributedText = HLNextLabel()
     delivery.font = HLFont.w800(11)
     delivery.textColor = .black
-    [badge, next, delivery, fee].forEach(blur.contentView.addSubview)
+    [badge, nextLabel,delivery, fee].forEach(blur.contentView.addSubview)
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) non supporte") }
@@ -186,7 +186,7 @@ final class HLV5BottomBar: UIView {
     // paddingHorizontal 12, paddingVertical 6, gap 8 ; colonne 12 + 18.
     badge.frame = CGRect(x: 12, y: (bounds.height - 20) / 2, width: 20, height: 20)
     let x: CGFloat = 12 + 20 + 8
-    next.frame = CGRect(x: x, y: 6, width: bounds.width - x - 12, height: 12)
+    nextLabel.frame = CGRect(x: x, y: 6, width: bounds.width - x - 12, height: 12)
     let dw = ceil(delivery.sizeThatFits(.zero).width)
     delivery.frame = CGRect(x: x, y: 18 + 2.5, width: dw, height: 13)
     let ps = fee.sizeThatFits(.zero)

@@ -80,7 +80,11 @@ const LOADER_VISIBLE_DISTANCE = 120;
  * une page plus bas, hors de la zone de pre-rendu : rien ne se monte a
  * l'insertion, et quand on y arrive des cellules du haut sont recyclees.
  */
-const PLACEHOLDER_PAGES = 2;
+// 3 et non 2 depuis `DRAW_DISTANCE` 1600 : a 2, les fantomes ajoutes apres le
+// remplissage de la page 2 tombaient a ~800 px, DANS la zone de pre-rendu, et
+// se montaient en plein scroll (legere pause, absente a la derniere page qui
+// n'ajoute pas de fantomes). A 3, ils s'ajoutent ~2400 px plus bas.
+const PLACEHOLDER_PAGES = 3;
 
 /** Hauteur moyenne d'une rangee boutique (variantes 190 a 280 px + marges). */
 const ROW_HEIGHT_ESTIMATE = 270;
@@ -103,7 +107,9 @@ const PLACEHOLDER_FETCH_DISTANCE =
 // remontant, chacune revenait par un rebind fantome -> vraie boutique
 // (squelette, images, fondu) : legere pause a chaque remontee.
 const DRAW_DISTANCE = 1600;
-const WARMUP_DRAW_DISTANCE = 3200;
+// Couvre banniere + page 1 + 3 pages de fantomes (~3500 px) : la reserve
+// atteint d'emblee les ~14 cellules que demande la zone de 1600 px.
+const WARMUP_DRAW_DISTANCE = 4000;
 const WARMUP_MS = 1500;
 
 /**

@@ -28,7 +28,16 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-const PAGE_SIZE = 3;
+export const PAGE_SIZE = 3;
+
+/**
+ * Insertion DANS les fantomes de la page suivante (`utils/pagePlaceholders`) :
+ * leurs cellules sont deja montees, l'insertion n'est plus qu'un rebind. On
+ * insere donc des l'arrivee, sans attendre le bas (HOLD) et sans figer le
+ * scroll (`insertLock`) — deux protections qui n'existaient que contre le cout
+ * du montage. `false` = retour au comportement precedent.
+ */
+const FILL_PLACEHOLDERS = true;
 
 /**
  * Delai avant d'inserer une page en attente (HOLD) au retour en bas : le
@@ -800,7 +809,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     staggerPumpOnRef.current = true;
     // Pas en bas : on ARRETE la pompe sans consommer, la page attend. Le
     // retour au bas relance via `setListAtBottom`.
-    if (!listAtBottomRef.current) {
+    // (`FILL_PLACEHOLDERS` : jamais d'attente, la page remplit ses fantomes.)
+    if (!listAtBottomRef.current && !FILL_PLACEHOLDERS) {
       staggerPumpOnRef.current = false;
       if (!pumpHoldLoggedRef.current) {
         pumpHoldLoggedRef.current = true;
@@ -827,12 +837,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     // Verrou : le scroll vertical est fige jusqu'au layout des nouvelles
     // rangees (`notifyPageLaidOut`) — jamais de scroll sur un montage en
     // cours. Pose AVANT le `setFastFoods` pour couvrir aussi le commit.
-    setInsertLock(true);
-    if (insertLockTimerRef.current) clearTimeout(insertLockTimerRef.current);
-    insertLockTimerRef.current = setTimeout(() => {
-      insertLockTimerRef.current = null;
-      setInsertLock(false);
-    }, INSERT_LOCK_SAFETY_MS);
+    // Sans objet en `FILL_PLACEHOLDERS` : rien ne se monte, tout se rebind.
+    if (!FILL_PLACEHOLDERS) {
+      setInsertLock(true);
+      if (insertLockTimerRef.current) clearTimeout(insertLockTimerRef.current);
+      insertLockTimerRef.current = setTimeout(() => {
+        insertLockTimerRef.current = null;
+        setInsertLock(false);
+      }, INSERT_LOCK_SAFETY_MS);
+    }
     setFastFoods((prev) => {
       // Dédup par id : un `newFastfood` reçu par socket pendant le
       // chargement peut déjà avoir inséré une boutique de cette page.

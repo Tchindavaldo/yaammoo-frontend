@@ -34,6 +34,8 @@ import {
   usePageRevealGate,
 } from "@/src/features/restaurants/context/PageRevealGate";
 import { designNumberFor } from "@/src/features/restaurants/utils/designCycle";
+import { makePlaceholders } from "@/src/features/restaurants/utils/pagePlaceholders";
+import { PAGE_SIZE } from "@/src/features/restaurants/context/FastFoodContext";
 import { AppBanner, Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -67,6 +69,13 @@ const FOOTER_LOADER_HEIGHT = 48;
 /** Distance d'apparition du loader : visible AVANT le bas strict, donc
  *  toujours en premier par rapport aux elements nouvellement charges. */
 const LOADER_VISIBLE_DISTANCE = 120;
+
+/**
+ * Distance du bas a laquelle part le fetch : a peu pres la hauteur des
+ * fantomes de la page suivante (3 rangees), donc au moment ou le premier
+ * squelette entre dans le champ de vision.
+ */
+const PLACEHOLDER_FETCH_DISTANCE = 900;
 
 /**
  * Calme exige avant de liberer le scroll (doigt leve depuis au moins ce
@@ -323,7 +332,10 @@ export default function HomeScreen() {
       // deux transitions qui interessent le rendu.
       const { contentSize, layoutMeasurement } = e.nativeEvent;
       const distanceToEnd = contentSize.height - layoutMeasurement.height - y;
-      const nextAtBottom = distanceToEnd <= 0;
+      // Le « bas » est desormais l'entree des FANTOMES dans le champ de vision
+      // (ils occupent la fin du contenu) : le fetch part des qu'on les voit,
+      // et ses donnees viennent remplir les squelettes deja en place.
+      const nextAtBottom = distanceToEnd <= PLACEHOLDER_FETCH_DISTANCE;
       const nextLoaderVisible = distanceToEnd <= LOADER_VISIBLE_DISTANCE;
       if (nextLoaderVisible !== loaderVisibleRef.current) {
         loaderVisibleRef.current = nextLoaderVisible;
@@ -333,7 +345,9 @@ export default function HomeScreen() {
       // l'utilisateur est remonte attend son retour, elle ne s'insere jamais
       // sous ses yeux. Ecriture ref uniquement, aucun rendu.
       setListAtBottomRef.current(distanceToEnd <= 10);
-      if (distanceToEnd > 200) fetchArmedRef.current = true;
+      if (distanceToEnd > PLACEHOLDER_FETCH_DISTANCE + 200) {
+        fetchArmedRef.current = true;
+      }
       if (nextAtBottom !== atBottomRef.current) {
         atBottomRef.current = nextAtBottom;
         // ⚠️ Le fetch ne part QU'ICI, au bas reel, jamais en avance, et une
@@ -446,7 +460,17 @@ export default function HomeScreen() {
   // liste connait enfin la hauteur reelle de son contenu et dimensionne son
   // rendu initial en consequence.
   const listData = useMemo(() => {
-    const data = [BANNER_ITEM, ...fastFoods];
+    // Fantomes de la page suivante, montes d'avance en squelette (voir
+    // `utils/pagePlaceholders`) : a l'arrivee des donnees, FlashList les
+    // rebind au lieu de monter de nouvelles rangees — plus de pause.
+    const withPlaceholders = hasMore && !loading && fastFoods.length > 0;
+    const data = [
+      BANNER_ITEM,
+      ...fastFoods,
+      ...(withPlaceholders
+        ? makePlaceholders(fastFoods.length, PAGE_SIZE)
+        : []),
+    ];
     // SONDE : chaque recompute = les donnees ont change de reference. Si les
     // vagues REBIND/DEMONTAGE coincident avec ces lignes SANS scroll, le
     // coupable est le churn de donnees (socket/pagination), pas la liste.
@@ -466,7 +490,7 @@ export default function HomeScreen() {
       );
     }
     return data;
-  }, [fastFoods]);
+  }, [fastFoods, hasMore, loading]);
 
   // Pied de liste : le loader de pagination vit HORS de la liste (overlay
   // fixe au-dessus de la navbar, en fade) pour ne jamais toucher au contenu :

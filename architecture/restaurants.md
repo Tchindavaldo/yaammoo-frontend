@@ -415,6 +415,17 @@ tant que la page suivante charge.
   (hors `drawDistance`) non attendues. Filet : `INSERT_LOCK_SAFETY_MS` porté à
   8 s (= `MAX_WAIT_MS`). ⚠️ Les layout effects des cellules passent AVANT celui
   de l'écran : le gate garde un set des cellules montées, relu par `startPage`.
+- **Fantômes de la page suivante** (`utils/pagePlaceholders.ts`,
+  `debug/home-squelettes-en-avance`). `PAGE_SIZE` boutiques fantômes sont
+  ajoutées en fin de `listData` tant que `hasMore` : même `designIndex` que la
+  position qu'occupera la vraie boutique, donc même variante et même type de
+  cellule. Elles sont montées d'avance en squelette (`ShopRevealProvider`
+  `hold`). Le fetch part quand elles entrent dans le champ
+  (`PLACEHOLDER_FETCH_DISTANCE`) ; à l'arrivée, FlashList **rebind** ces
+  cellules au lieu d'en monter : plus de montage à l'insertion, donc plus de
+  HOLD ni d'`insertLock` (`FILL_PLACEHOLDERS` dans le contexte, `false` = retour
+  à l'ancien flux). `resetKey` remet le groupe à zéro au passage fantôme ↔ réel
+  dans une cellule recyclée.
 - `FOOTER_LOADER_HEIGHT` (48) est volontairement généreuse : le loader doit se
   remarquer même en scroll rapide.
 

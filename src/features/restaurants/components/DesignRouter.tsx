@@ -8,6 +8,7 @@ import { Design5 } from './designs/Design5';
 import { Design7 } from './designs/Design7';
 import { ShopRevealProvider } from '../context/ShopRevealContext';
 import { PageRevealReporter } from '../context/PageRevealGate';
+import { isPlaceholder } from '../utils/pagePlaceholders';
 import { DesignNumber, designNumberFor } from '../utils/designCycle';
 
 const DESIGN_COMPONENTS: Record<DesignNumber, typeof Design7> = {
@@ -37,7 +38,11 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   // déjà présentes dans `GET /fastfood/all` (deliveryHours, orderLeadTime,
   // advanceDays, deliveryOffer). Évite un refetch `GET /fastfood/:id` côté
   // checkout (deliveryOffer n'y figure d'ailleurs PAS, seul le /all le porte).
+  const placeholder = isPlaceholder(fastFood);
+
   const handleMenuClick = (menu: Menu) => {
+    // Fantome : rien a commander.
+    if (placeholder) return;
     const ff = fastFood as any;
     onMenuClick({
       ...menu,
@@ -77,7 +82,14 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   // remonter — `REMONTAGE` a 150-165 ms en plein scroll, mesure par la sonde
   // `[ROW]`. Le provider est donc TOUJOURS monte ; seul son mode varie.
   return (
-    <ShopRevealProvider passthrough={listIndex === 0}>
+    <ShopRevealProvider
+      passthrough={listIndex === 0}
+      // Fantome de la page suivante : squelette tenu jusqu'a la vraie boutique.
+      hold={placeholder}
+      // Remise a zero seulement aux passages fantome <-> reel : entre deux
+      // vraies boutiques recyclees, comportement inchange.
+      resetKey={placeholder ? fastFood.id : "real"}
+    >
       {design}
       {/* Signale la revelation au verrou de page du home (scroll fige tant
           que les boutiques inserees ne sont pas affichees). */}

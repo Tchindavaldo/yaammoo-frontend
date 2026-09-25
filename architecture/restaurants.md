@@ -425,7 +425,13 @@ tant que la page suivante charge.
   cellules au lieu d'en monter : plus de montage à l'insertion, donc plus de
   HOLD ni d'`insertLock` (`FILL_PLACEHOLDERS` dans le contexte, `false` = retour
   à l'ancien flux). `resetKey` remet le groupe à zéro au passage fantôme ↔ réel
-  dans une cellule recyclée.
+  dans une cellule recyclée. **Clé de ligne commune** : la boutique insérée
+  reprend la clé du fantôme qu'elle remplace (`listKey = placeholderKey(rang)`,
+  lue en premier par `keyExtractor`) ; sans elle, FlashList déplaçait et
+  re-mesurait les cellules et la page se figeait. L'`id` backend reste la clé
+  de la page 1 et des boutiques insérées en tête par socket (une seule cellule
+  montée, rien ne se décale) ; les mises à jour socket de menus/boutiques se
+  font sur place et conservent `listKey`.
 - `FOOTER_LOADER_HEIGHT` (48) est volontairement généreuse : le loader doit se
   remarquer même en scroll rapide.
 

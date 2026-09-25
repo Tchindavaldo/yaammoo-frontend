@@ -6,6 +6,7 @@ import { getOptionalIdToken } from "@/src/services/idToken";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import { sinceBoot } from "@/src/utils/bootClock";
+import { placeholderKey } from "../utils/pagePlaceholders";
 import axios from "axios";
 import React, {
   createContext,
@@ -597,7 +598,11 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
           const updated = fresh.get(ff.id);
           // `designIndex` suit la POSITION dans la liste, pas la boutique : on
           // le recalcule ici, sinon une boutique gardee changerait d'apparence.
-          return updated ? normalizeFastFood(updated, index % 6) : ff;
+          // `listKey` conserve : la perdre changerait la cle de ligne et
+          // remonterait la cellule.
+          return updated
+            ? { ...normalizeFastFood(updated, index % 6), listKey: (ff as any).listKey }
+            : ff;
         }),
       );
     } catch {
@@ -852,7 +857,18 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       const known = new Set(prev.map((ff) => ff.id));
       const added = batch.filter((item) => item?.id && !known.has(item.id));
       if (added.length === 0) return prev;
-      return [...prev, ...added];
+      if (!FILL_PLACEHOLDERS) return [...prev, ...added];
+      // Chaque boutique reprend la cle de ligne ET le design du fantome qu'elle
+      // remplace (rang reel `prev.length + i`, exact meme apres une insertion
+      // socket en tete) : FlashList remplit la meme cellule, rien ne bouge.
+      return [
+        ...prev,
+        ...added.map((ff, i) => ({
+          ...ff,
+          designIndex: (prev.length + i) % 6,
+          listKey: placeholderKey(prev.length + i),
+        })),
+      ];
     });
   }, []);
 

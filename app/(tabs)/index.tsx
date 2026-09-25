@@ -586,7 +586,9 @@ export default function HomeScreen() {
   // l'insertion d'une boutique en tete (socket), toutes les cles se decalaient
   // et React remontait toute la liste. Prefixe explicite, jamais l'index nu.
   const keyExtractor = useCallback(
-    (item: any, index: number) => item.id ?? `idx-${index}`,
+    // `listKey` : cle du fantome remplace, reprise par la boutique qui le
+    // remplit (`utils/pagePlaceholders`). Sinon l'`id` backend.
+    (item: any, index: number) => item.listKey ?? item.id ?? `idx-${index}`,
     [],
   );
 

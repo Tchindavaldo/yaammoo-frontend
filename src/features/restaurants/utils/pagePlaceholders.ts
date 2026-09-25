@@ -22,6 +22,18 @@ const PREFIX = "__ph_";
 
 export const isPlaceholder = (item: any) => item?.__placeholder === true;
 
+/**
+ * Cle de LIGNE du rang `pos`, partagee par le fantome et par la vraie boutique
+ * qui le remplace (`listKey`, posee a l'insertion par `FastFoodContext`).
+ *
+ * ⚠️ Sans cle commune, FlashList voyait 3 items disparaitre et 3 autres
+ * apparaitre : cellules deplacees et re-mesurees au lieu d'etre remplies sur
+ * place — la page se figeait au remplissage. L'`id` backend reste dans les
+ * donnees (clics, commandes, images) ; seule la cle de ligne change.
+ * Page 1 et boutiques inserees en tete par socket gardent leur `id` comme cle.
+ */
+export const placeholderKey = (pos: number) => `${PREFIX}${pos}`;
+
 const cache = new Map<number, any>();
 
 /**
@@ -34,7 +46,7 @@ const placeholderAt = (pos: number) => {
   if (!ph) {
     ph = {
       __placeholder: true,
-      id: `${PREFIX}${pos}`,
+      id: placeholderKey(pos),
       designIndex: pos % 6,
       nom: "",
       image: null,

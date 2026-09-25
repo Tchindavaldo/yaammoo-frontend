@@ -108,6 +108,45 @@ export default function HomeScreen() {
   // l'app a l'ecran : sous le splash, seules `/fastFood/all` et
   // `/settings/app-version` ont le droit de partir. Les badges panier et
   // notifications tiennent sur leur cache en attendant ces reponses.
+  // SONDE [HB] (temporaire) : battement 1 s + rendus/s. Si [HB] s'arrete au
+  // gel, le thread JS est bloque ; s'il continue avec des rendus qui
+  // explosent, c'est une boucle de rendu ; s'il continue au calme, le gel est
+  // natif (UI).
+  const hb = ((globalThis as any).__hb ??= { home: 0, row: 0, ph: 0 });
+  hb.home++;
+  useEffect(() => {
+    // Frames JS lentes (> 34 ms) et la pire, par seconde : si le scroll rame
+    // avec `lentes=0`, la saccade est native (UI), pas JavaScript.
+    let slow = 0;
+    let worst = 0;
+    let prev = 0;
+    let raf = 0;
+    const tick = (ts: number) => {
+      if (prev) {
+        const dt = ts - prev;
+        if (dt > 34) slow++;
+        if (dt > worst) worst = dt;
+      }
+      prev = ts;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    const t = setInterval(() => {
+      if (slow || hb.home || hb.row || hb.ph)
+        console.log(
+          `[HB] lentes=${slow} pire=${worst.toFixed(0)}ms home=${hb.home} row=${hb.row} ph=${hb.ph}`,
+        );
+      slow = 0;
+      worst = 0;
+      hb.home = 0;
+      hb.row = 0;
+      hb.ph = 0;
+    }, 1000);
+    return () => {
+      clearInterval(t);
+      cancelAnimationFrame(raf);
+    };
+  }, [hb]);
   useEffect(() => {
     void ensureProfileRefreshed();
     ensureNotificationsLoaded();

@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { FastFood, Menu } from '@/src/types';
 import { Design1 } from './designs/Design1';
 import { Design2 } from './designs/Design2';
@@ -39,6 +40,9 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   // advanceDays, deliveryOffer). Évite un refetch `GET /fastfood/:id` côté
   // checkout (deliveryOffer n'y figure d'ailleurs PAS, seul le /all le porte).
   const placeholder = isPlaceholder(fastFood);
+  // SONDE [HB] (temporaire) : rendus de rangees par seconde.
+  const hb = (globalThis as any).__hb;
+  if (hb) placeholder ? hb.ph++ : hb.row++;
 
   const handleMenuClick = (menu: Menu) => {
     // Fantome : rien a commander.
@@ -90,7 +94,13 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
       // vraies boutiques recyclees, comportement inchange.
       resetKey={placeholder ? fastFood.id : "real"}
     >
-      {design}
+      {/* ⚠️ Fantome NON TOUCHABLE. Sinon un doigt pose sur une carte fantome
+          au moment du remplissage donnait le « responder » a une vue que le
+          rebind remplace : il n'etait jamais relache, le ScrollView restait
+          bloque (JS responder) et plus aucun appui ne passait, navbar
+          comprise. Vue TOUJOURS presente (arbre invariant), seul le mode
+          change. */}
+      <View pointerEvents={placeholder ? "none" : "auto"}>{design}</View>
       {/* Signale la revelation au verrou de page du home (scroll fige tant
           que les boutiques inserees ne sont pas affichees). */}
       <PageRevealReporter id={fastFood.id} />

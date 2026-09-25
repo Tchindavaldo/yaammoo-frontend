@@ -38,7 +38,7 @@ export function setupHttp() {
   }
 
   // Couche 2 : interceptor filet de sécurité.
-  axios.interceptors.request.use((config) => {
+  axios.interceptors.request.use(async (config) => {
     // Coupure IMMEDIATE quand l'appareil sait qu'aucune requete ne peut aboutir.
     //
     // ⚠️ AUCUN `timeout` axios n'est pose, volontairement : un delai fixe coupe
@@ -73,6 +73,21 @@ export function setupHttp() {
     }
     if (APP_BUILD && !config.headers["x-app-build"]) {
       config.headers["x-app-build"] = APP_BUILD;
+    }
+    // Bearer Firebase sur toute requete backend : les routes `/order` (et
+    // d'autres) l'exigent depuis la gestion des employes. Un appel qui pose
+    // deja son propre header garde le sien. `getIdToken` sert le cache et ne
+    // rafraichit qu'a l'expiration.
+    // Imports paresseux : `firebase` importe `config`, un import statique ici
+    // creait un cycle (Config indefini au chargement).
+    const { Config } = require("./config");
+    if (
+      !config.headers["Authorization"] &&
+      config.url?.startsWith(Config.apiUrl)
+    ) {
+      const { auth } = require("@/src/services/firebase");
+      const token = await auth.currentUser?.getIdToken().catch(() => null);
+      if (token) config.headers["Authorization"] = `Bearer ${token}`;
     }
     return config;
   });

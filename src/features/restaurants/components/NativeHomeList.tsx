@@ -53,12 +53,12 @@ const PREFETCH_DISTANCE = 1200;
 const CARD_BLUR_MODE: HomeListBlurMode = "baked";
 
 /**
- * Autoplay de la banniere retenu tant que la liste defile (doigt ou elan).
- * Suspect des micro-pauses du 1er scroll (banniere encore a l'ecran au passage
- * des premieres boutiques) ; basculable par OTA. Rapports : tag `bannerPause`,
- * evenements `banner` / `bannerHeld` dans `events`.
+ * Defilement auto de la banniere : COUPE, seul le doigt la fait defiler.
+ * Suspect des micro-pauses des premiers scrolls (banniere encore a l'ecran au
+ * passage des premieres boutiques) ; reactivable par OTA. Rapports : tag
+ * `bannerAutoplay`, evenement `banner` dans `events`.
  */
-const BANNER_PAUSE_ON_SCROLL = true;
+const BANNER_AUTOPLAY = false;
 
 const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
 
@@ -328,7 +328,7 @@ export const NativeHomeList: React.FC<Props> = ({
       icons={ICONS}
       fonts={FONTS}
       cardBlurMode={CARD_BLUR_MODE}
-      bannerPauseOnScroll={BANNER_PAUSE_ON_SCROLL}
+      bannerAutoplay={BANNER_AUTOPLAY}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}
       onEndReached={() => onEndReached()}

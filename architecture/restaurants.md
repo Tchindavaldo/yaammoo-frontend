@@ -75,7 +75,7 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
     ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
     ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
-    ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (retenu pendant le scroll), puces, squelette
+    ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
     ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
     ├── HLScreenProbe.swift         # Sonde ECRAN : pixel Metal, heure reelle d'affichage (`presentedTime`)
     ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
@@ -97,13 +97,13 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     (saut) et `motionAt`. Pour les 3 premiers gestes : `motion` (déplacement
     par image, pt), `fingerUpFrame` (début de l'élan) et `events`
     (`[ms, quoi, offsetY]` : `cfgN` rangée configurée, `revealN` fondu d'une
-    boutique, `applyN` pose de rangées, `banner` / `bannerHeld` autoplay,
-    `leftTop`). Mesure du build 59 : double micro-pause du 1er scroll
+    boutique, `applyN` pose de rangées, `banner` avance auto, `leftTop`). Mesure du build 59 : double micro-pause du 1er scroll
     ressentie, 25 premiers gestes à 0 image perdue ÉCRAN comme fil principal
     (flou `baked`) — ce n'est pas un accroc de rendu, d'où la sonde de
     mouvement.
-- **Bannière retenue pendant le scroll (`BANNER_PAUSE_ON_SCROLL`, OTA)** : pas
-  d'avance auto tant que la liste défile (doigt ou élan). Tag `bannerPause`.
+- **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
+  seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
+  false` dans `useBannerLoop`) : aucun défilement auto nulle part. Suspect des micro-pauses des premiers scrolls. Tag `bannerAutoplay`.
 - **Barres floutées v4/v5 (`CARD_BLUR_MODE`, OTA)** : `baked` (défaut) floute
   la photo de la carte UNE fois (64 px, CoreImage logiciel, hors fil de
   l'écran, cache par URL) et l'affiche comme une image calée sur la photo ;

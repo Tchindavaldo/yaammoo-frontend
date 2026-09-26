@@ -94,8 +94,8 @@ export type HomeListViewProps = ViewProps & {
   fonts: HomeListFonts;
   /** Barres floutees des cartes 4 et 5 : flou systeme ou photo floutee d'avance. */
   cardBlurMode: HomeListBlurMode;
-  /** Autoplay de la banniere retenu tant que la liste defile. */
-  bannerPauseOnScroll: boolean;
+  /** Defilement auto de la banniere (sinon seul le doigt la fait defiler). */
+  bannerAutoplay: boolean;
   onMenuPress: (e: Event<{ shopId: string; menuId: string }>) => void;
   onBannerPress: (e: Event<{ id: string }>) => void;
   onEndReached: (e: Event<Record<string, never>>) => void;

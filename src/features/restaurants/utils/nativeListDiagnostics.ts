@@ -13,13 +13,13 @@ import { Sentry } from "@/src/services/sentry";
  *   de mouvement image par image (`motion`, `fingerUpFrame`), les arrets /
  *   sauts detectes (`stalls`, `jumps`, `motionAt`) et la chronologie de ce qui
  *   a change a l'ecran (`events` : `cfgN`, `revealN`, `applyN`, `banner`,
- *   `bannerHeld`, `leftTop`) ;
+ *   `leftTop`) ;
  * - bilan tous les `SUMMARY_EVERY` gestes, fluides compris, pour pouvoir
  *   affirmer que ca ne saccade PAS.
  * Deux sondes par geste : `dropped`/`hitches`/`worstMs` (fil principal de
  * l'app) et `screen*` (ce qui arrive vraiment a l'ecran, serveur de rendu
  * compris). Tags `blur` = rendu des barres floutees (`live` | `baked`),
- * `bannerPause` = autoplay de la banniere retenu pendant le scroll.
+ * `bannerAutoplay` = defilement auto de la banniere actif ou coupe.
  * Debit borne (un message / `MIN_GAP_MS`, `MAX_MESSAGES` par lancement) : le
  * quota Sentry ne doit pas partir dans une sonde de test.
  */
@@ -86,7 +86,7 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
   if (r.kind === "scroll") {
     const tags = {
       blur: String(r.blur ?? "inconnu"),
-      bannerPause: String(r.bannerPause ?? "inconnu"),
+      bannerAutoplay: String(r.bannerAutoplay ?? "inconnu"),
     };
     summary.gestures += 1;
     summary.frames += r.frames ?? 0;

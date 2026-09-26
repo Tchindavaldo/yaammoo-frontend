@@ -5,30 +5,29 @@ protocol HLBannerCellDelegate: AnyObject {
   func bannerTapped(_ bannerId: String)
   /** Premiere image prete : le delegue la revele avec la premiere boutique. */
   func bannerIsReady(_ cell: HLBannerCell)
-  /** Tic d'autoplay : avance faite, ou retenue parce que la liste defile (sonde). */
-  func bannerAutoplay(_ cell: HLBannerCell, advanced: Bool)
+  /** Avance auto faite (sonde des premiers gestes). */
+  func bannerAutoplay(_ cell: HLBannerCell)
 }
 
 /**
  Banniere du home (`HeroBanner.tsx` + `useBannerLoop`) : carrousel pagine en
  boucle infinie (clones en tete et en queue), defilement auto toutes les
- 3,5 s (pause de 20 s apres un geste), diapos voisines reduites (echelle 0,4,
- opacite 0,8), puces sous la diapo, squelette jusqu'a la premiere image.
+ 3,5 s si active (pause de 20 s apres un geste), diapos voisines reduites
+ (echelle 0,4, opacite 0,8), puces sous la diapo, squelette jusqu'a la
+ premiere image.
  */
 final class HLBannerCell: UICollectionViewCell, UIScrollViewDelegate {
   static let reuseId = "banner"
   private static let autoplay: TimeInterval = 3.5
   private static let autoplayPause: TimeInterval = 20
   /**
-   Pas d'avance auto pendant que la LISTE defile (prop `bannerPauseOnScroll`,
-   OTA) : suspecte des micro-pauses du 1er scroll, la banniere etant encore a
-   l'ecran au passage des premieres boutiques.
+   Defilement auto (prop `bannerAutoplay`, OTA). Coupe : suspect des
+   micro-pauses des premiers scrolls, la banniere etant encore a l'ecran au
+   passage des premieres boutiques. Seul le doigt fait defiler.
    */
-  static var pauseOnListScroll = true
+  static var autoplayEnabled = false
 
   weak var delegate: HLBannerCellDelegate?
-  /** Doigt pose sur la liste ou elan en cours (pose par `HomeListView`). */
-  var listScrolling = false
   private let content = UIView()
   private let scroll = UIScrollView()
   private var wrappers: [UIView] = []
@@ -310,15 +309,12 @@ final class HLBannerCell: UICollectionViewCell, UIScrollViewDelegate {
 
   private func startAutoplay() {
     stopAutoplay()
-    guard banners.count > 1, window != nil else { return }
+    guard Self.autoplayEnabled, banners.count > 1, window != nil else { return }
     timer = Timer.scheduledTimer(withTimeInterval: Self.autoplay, repeats: true) { [weak self] _ in
-      guard let self = self, !self.scroll.isDragging, !self.scroll.isDecelerating,
+      guard let self = self, HLBannerCell.autoplayEnabled, !self.scroll.isDragging,
+            !self.scroll.isDecelerating,
             UIApplication.shared.applicationState == .active else { return }
-      if self.listScrolling && HLBannerCell.pauseOnListScroll {
-        self.delegate?.bannerAutoplay(self, advanced: false)
-        return
-      }
-      self.delegate?.bannerAutoplay(self, advanced: true)
+      self.delegate?.bannerAutoplay(self)
       // Part toujours d'une vraie diapo : une avance interrompue ne laisse
       // jamais le carrousel au-dela des clones.
       self.teleportIfOnClone()

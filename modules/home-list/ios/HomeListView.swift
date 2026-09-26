@@ -96,6 +96,12 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       r["bakes"] = HLBlurBar.bakes
       r["bakeMaxMs"] = HLBlurBar.bakeMaxMs
       r["bannerAutoplay"] = HLBannerCell.autoplayEnabled
+      // Diagnostic des entrees de rangees : variante du lancement, cellules
+      // creees depuis le lancement, hauteur visible (situer les rangees).
+      r["cellDiag"] = HLCellDiag.variant.rawValue
+      r["rowCells"] = HLShopCell.created
+      r["cardCells"] = HLMenuCardCell.created
+      r["viewH"] = Int(self?.collection.bounds.height ?? 0)
       self?.onDiagnostics(r)
     }
     DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
@@ -143,10 +149,12 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     case .row(let position, let design):
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLShopCell.reuseId(design), for: indexPath) as! HLShopCell
       c.delegate = self
+      let fresh = c.configures == 0
       let t0 = CACurrentMediaTime()
       if position < rows.count { c.configure(rows[position], position: position) }
       perf.recordConfigure(CACurrentMediaTime() - t0)
-      perf.mark("cfg\(position)")
+      // `n` : cellule neuve (sinon une cellule reutilisee).
+      perf.mark("cfg\(position)\(fresh ? "n" : "")")
       return c
     case .footer:
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLFooterCell.reuseId, for: indexPath) as! HLFooterCell
@@ -304,6 +312,22 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
 
   private func endGesture(_ scrollView: UIScrollView) {
     perf.end(rows: rows.count, offset: scrollView.contentOffset.y)
+  }
+
+  // Sonde : entree a l'ecran d'une rangee (`in<rang>d<design>`, `n` = premier
+  // affichage de cette cellule) et sortie (`out<rang>`). Le prechargement
+  // configure les rangees en avance : seule l'entree dit quand elles s'affichent.
+  func collectionView(_ cv: UICollectionView, willDisplay cell: UICollectionViewCell,
+                      forItemAt indexPath: IndexPath) {
+    guard let c = cell as? HLShopCell else { return }
+    perf.mark("in\(c.position)d\(c.design)\(c.displays == 0 ? "n" : "")")
+    c.displays += 1
+  }
+
+  func collectionView(_ cv: UICollectionView, didEndDisplaying cell: UICollectionViewCell,
+                      forItemAt indexPath: IndexPath) {
+    guard let c = cell as? HLShopCell else { return }
+    perf.mark("out\(c.position)")
   }
 
   /**

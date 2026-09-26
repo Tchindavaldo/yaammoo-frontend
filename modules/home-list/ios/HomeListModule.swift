@@ -64,6 +64,12 @@ public final class HomeListModule: Module {
         HLBannerCell.autoplayEnabled = on
       }
 
+      // Diagnostic TEMPORAIRE des entrees de rangees (cf. `HLCellDiag`). Recu
+      // au montage, avant la creation des cellules.
+      Prop("cellDiag") { (_: HomeListView, mode: String) in
+        HLCellDiag.configure(mode)
+      }
+
       OnViewDidUpdateProps { (view: HomeListView) in
         view.applyProps()
       }

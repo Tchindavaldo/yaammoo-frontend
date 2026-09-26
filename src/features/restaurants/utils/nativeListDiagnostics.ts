@@ -13,14 +13,16 @@ import { Sentry } from "@/src/services/sentry";
  *   s'y lit (un geste isole ne declenche pas de bilan). Ils portent le profil
  *   de mouvement image par image (`motion`, `fingerUpFrame`), les arrets /
  *   sauts detectes (`stalls`, `jumps`, `motionAt`) et la chronologie de ce qui
- *   a change a l'ecran (`events` : `cfgN`, `revealN`, `applyN`, `banner`,
- *   `leftTop`) ;
+ *   a change a l'ecran (`events` : `cfgN` (+`n` cellule neuve), `inNdD`
+ *   (+`n` premier affichage) / `outN` entree / sortie d'ecran, `revealN`,
+ *   `applyN`, `banner`, `leftTop`) ;
  * - bilan tous les `SUMMARY_EVERY` gestes, fluides compris, pour pouvoir
  *   affirmer que ca ne saccade PAS.
  * Deux sondes par geste : `dropped`/`hitches`/`worstMs` (fil principal de
  * l'app) et `screen*` (ce qui arrive vraiment a l'ecran, serveur de rendu
  * compris). Tags `blur` = rendu des barres floutees (`live` | `baked`),
- * `bannerAutoplay` = defilement auto de la banniere actif ou coupe.
+ * `bannerAutoplay` = defilement auto de la banniere actif ou coupe,
+ * `cellDiag` = famille d'elements retiree des boutiques ce lancement.
  * Debit borne (un message / `MIN_GAP_MS`, `MAX_MESSAGES` par lancement) : le
  * quota Sentry ne doit pas partir dans une sonde de test.
  *
@@ -131,6 +133,7 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
     const tags = {
       blur: String(r.blur ?? "inconnu"),
       bannerAutoplay: String(r.bannerAutoplay ?? "inconnu"),
+      cellDiag: String(r.cellDiag ?? "inconnu"),
     };
     summary.gestures += 1;
     summary.frames += r.frames ?? 0;

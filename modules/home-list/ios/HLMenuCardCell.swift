@@ -11,6 +11,8 @@ import UIKit
  */
 final class HLMenuCardCell: UICollectionViewCell {
   static func reuseId(_ design: Int) -> String { "menu-card-\(design)" }
+  /** Sonde : cartes creees depuis le lancement (une neuve = calques neufs a l'ecran). */
+  private(set) static var created = 0
 
   private(set) var design = 0
   private var size = HLLayout.card(7)
@@ -43,6 +45,7 @@ final class HLMenuCardCell: UICollectionViewCell {
 
   override init(frame: CGRect) {
     super.init(frame: frame)
+    HLMenuCardCell.created += 1
     contentView.addSubview(content)
     contentView.addSubview(skeletons)
     skeletons.isUserInteractionEnabled = false
@@ -101,6 +104,7 @@ final class HLMenuCardCell: UICollectionViewCell {
     let skel = HLSkeletonView(radius: size.radius)
     skeletons.insertSubview(skel, at: 0)
     cardSkeleton = skel
+    HLCellDiag.apply(contentView)
   }
 
   /**

@@ -83,6 +83,19 @@ export type HomeListRowsUpdate = {
  */
 export type HomeListBlurMode = "live" | "baked";
 
+/**
+ * `off` : design intact. `rotate` : une famille d'elements des boutiques
+ * retiree a tour de role, une variante par lancement. Sinon, une variante fixe.
+ */
+export type HomeListCellDiag =
+  | "off"
+  | "rotate"
+  | "base"
+  | "noclip"
+  | "notext"
+  | "nophoto"
+  | "nofx";
+
 export type HomeListViewProps = ViewProps & {
   banners: HomeListBanner[];
   bannerLoading: boolean;
@@ -96,6 +109,8 @@ export type HomeListViewProps = ViewProps & {
   cardBlurMode: HomeListBlurMode;
   /** Defilement auto de la banniere (sinon seul le doigt la fait defiler). */
   bannerAutoplay: boolean;
+  /** Diagnostic TEMPORAIRE des entrees de rangees (TestFlight seulement). */
+  cellDiag: HomeListCellDiag;
   onMenuPress: (e: Event<{ shopId: string; menuId: string }>) => void;
   onBannerPress: (e: Event<{ id: string }>) => void;
   onEndReached: (e: Event<Record<string, never>>) => void;

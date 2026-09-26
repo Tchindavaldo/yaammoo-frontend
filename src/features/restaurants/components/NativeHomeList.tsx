@@ -2,6 +2,7 @@ import {
   HomeListView,
   type HomeListBanner,
   type HomeListBlurMode,
+  type HomeListCellDiag,
   type HomeListFonts,
   type HomeListHandle,
   type HomeListIcons,
@@ -59,6 +60,15 @@ const CARD_BLUR_MODE: HomeListBlurMode = "baked";
  * `bannerAutoplay`, evenement `banner` dans `events`.
  */
 const BANNER_AUTOPLAY = false;
+
+/**
+ * Diagnostic TEMPORAIRE : une image perdue a l'ecran quand une nouvelle rangee
+ * du haut entre pour la premiere fois (scrolls 2-3). `rotate` retire une
+ * famille d'elements des boutiques a chaque lancement (coins, textes, photos,
+ * effets) pour trouver laquelle coute ; tag Sentry `cellDiag`. TestFlight
+ * seulement (natif). Remettre `"off"` par OTA une fois la cause trouvee.
+ */
+const CELL_DIAG: HomeListCellDiag = "rotate";
 
 const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
 
@@ -329,6 +339,7 @@ export const NativeHomeList: React.FC<Props> = ({
       fonts={FONTS}
       cardBlurMode={CARD_BLUR_MODE}
       bannerAutoplay={BANNER_AUTOPLAY}
+      cellDiag={CELL_DIAG}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}
       onEndReached={() => onEndReached()}

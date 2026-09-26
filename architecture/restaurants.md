@@ -78,6 +78,7 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
     ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
     ├── HLScreenProbe.swift         # Sonde ECRAN : pixel Metal, heure reelle d'affichage (`presentedTime`)
+    ├── HLCellDiag.swift            # Diagnostic TEMPORAIRE : une famille d'elements retiree par lancement (`cellDiag`)
     ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
 ```
 
@@ -96,8 +97,12 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   - **Mouvement** : `stalls` (image immobile en plein mouvement), `jumps`
     (saut) et `motionAt`. Pour les 3 premiers gestes : `motion` (déplacement
     par image, pt), `fingerUpFrame` (début de l'élan) et `events`
-    (`[ms, quoi, offsetY]` : `cfgN` rangée configurée, `revealN` fondu d'une
-    boutique, `applyN` pose de rangées, `banner` avance auto, `leftTop`). Mesure du build 59 : double micro-pause du 1er scroll
+    (`[ms, quoi, offsetY]` : `cfgN` rangée configurée (`n` = cellule neuve),
+    `inNdD` / `outN` entrée / sortie d'écran de la rangée N de design D (`n` =
+    premier affichage de la cellule), `revealN` fondu d'une
+    boutique, `applyN` pose de rangées, `banner` avance auto, `leftTop`).
+    Rapport : `rowCells` / `cardCells` (cellules créées depuis le lancement),
+    `viewH`, `cellDiag`. Mesure du build 59 : double micro-pause du 1er scroll
     ressentie, 25 premiers gestes à 0 image perdue ÉCRAN comme fil principal
     (flou `baked`) — ce n'est pas un accroc de rendu, d'où la sonde de
     mouvement.
@@ -106,7 +111,17 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     le scroll. Le bilan liste `dropGestures` (gestes ayant perdu une image
     écran). Build 60 : 1er scroll à 0 perte sur 8 lancements (bannière
     coupée) ; 5 des 10 scrolls 2-3 perdaient UNE image écran, 0,5 à 1,3 s
-    après un envoi de la sonde.
+    après un envoi de la sonde. Envois retenus (OTA) : même taux, ce n'était
+    pas la sonde.
+  - **Pertes à l'entrée des rangées du haut** : UNE image écran (fil
+    principal fluide) quand une nouvelle rangée entre par le bas pour la
+    première fois (pertes vers 587 / 885 / 1239 / 1533 pt, écarts = hauteur
+    d'une rangée), plus rien une fois les cellules réutilisées.
+    **`cellDiag` (`CELL_DIAG`, OTA, TestFlight seulement, `HLCellDiag`)** :
+    `rotate` retire une famille d'éléments par lancement (`noclip` coins non
+    découpés, `notext`, `nophoto`, `nofx` dégradés + fond des barres
+    floutées, `base` intact) ; la variante sans perte désigne le coupable.
+    Remettre `"off"` par OTA ensuite.
 - **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
   seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
   false` dans `useBannerLoop`) : aucun défilement auto nulle part. Cause de la

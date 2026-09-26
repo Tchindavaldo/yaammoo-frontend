@@ -23,14 +23,19 @@ protocol HLShopCellDelegate: AnyObject {
 final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UICollectionViewDelegate,
   UICollectionViewDataSourcePrefetching {
   static func reuseId(_ design: Int) -> String { "shop-row-\(design)" }
+  /** Sonde : rangees creees depuis le lancement. */
+  private(set) static var created = 0
 
   weak var delegate: HLShopCellDelegate?
   let header = HLMerchantHeaderView()
   private var menus: UICollectionView!
-  private var design = 0
+  private(set) var design = 0
   private(set) var content: HLRowContent?
   private(set) var position = 0
   private(set) var revealed = false
+  /** Sonde : 0 = cellule neuve, jamais configuree / jamais affichee. */
+  private(set) var configures = 0
+  var displays = 0
   private var generation = 0
   private var pending = Set<String>()
   private var ops: [SDWebImageCombinedOperation] = []
@@ -38,6 +43,7 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
 
   override init(frame: CGRect) {
     super.init(frame: frame)
+    HLShopCell.created += 1
     contentView.backgroundColor = .white
     contentView.addSubview(header)
   }
@@ -71,12 +77,14 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
     cv.register(HLMenuCardCell.self, forCellWithReuseIdentifier: HLMenuCardCell.reuseId(d))
     contentView.addSubview(cv)
     menus = cv
+    HLCellDiag.apply(header)
   }
 
   // MARK: Configuration
 
   func configure(_ c: HLRowContent, position pos: Int) {
     build(c.design)
+    configures += 1
     generation += 1
     cancelLoads()
     content = c

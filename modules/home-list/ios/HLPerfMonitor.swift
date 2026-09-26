@@ -28,7 +28,8 @@ final class HLPerfMonitor: NSObject {
   /** Gestes dont on envoie le profil complet (`motion`, `events`). */
   private static let detailedGestures = 3
   private static let maxMotion = 240
-  private static let maxEvents = 24
+  /** Entrees / sorties de rangees comprises (`inN`, `outN`). */
+  private static let maxEvents = 40
   /** Deplacement par image (points), dans l'ordre. */
   private var deltas: [CGFloat] = []
   private var lastOffset: CGFloat?

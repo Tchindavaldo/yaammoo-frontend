@@ -113,6 +113,7 @@ final class HLStockDeliveryBar: UIView {
     nextLabel.attributedText = HLNextLabel()
     delivery.font = HLFont.w800(11)
     delivery.textColor = .black
+    stockLabel.lineBreakMode = .byClipping
     [badge, nextLabel,delivery].forEach(strip.addSubview)
     [stockLabel, track, strip].forEach(blur.contentView.addSubview)
   }
@@ -147,7 +148,10 @@ final class HLStockDeliveryBar: UIView {
     let leftW = max(0, strip.frame.minX - 10 - 16)
     let leftH: CGFloat = 16 + 6 + 4
     let leftY = 10 + (stripH - leftH) / 2
-    stockLabel.frame = CGRect(x: 16, y: leftY, width: leftW, height: 16)
+    // Comme l'original (`flexShrink: 0`) : le texte n'est jamais tronque, il
+    // deborde de sa colonne si besoin (« 0 disponible », pas « 0 disponi... »).
+    let stockW = max(leftW, ceil(stockLabel.sizeThatFits(.zero).width))
+    stockLabel.frame = CGRect(x: 16, y: leftY, width: stockW, height: 16)
     track.frame = CGRect(x: 16, y: leftY + 22, width: leftW, height: 4)
     fill.frame = CGRect(x: 0, y: 0, width: leftW * stockRatio, height: 4)
   }

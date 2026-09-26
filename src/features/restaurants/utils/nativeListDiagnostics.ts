@@ -20,11 +20,21 @@ const SUMMARY_EVERY = 10;
 let sent = 0;
 let lastSentAt = 0;
 let announced = false;
-const summary = { gestures: 0, frames: 0, dropped: 0, hitches: 0, worstMs: 0 };
+// `rows` : rangees chargees au dernier geste, pour savoir jusqu'ou le bilan va.
+const summary = { gestures: 0, frames: 0, dropped: 0, hitches: 0, worstMs: 0, rows: 0 };
 
-const send = (message: string, level: "info" | "warning", extra: Record<string, unknown>) => {
+/**
+ * `always` : ignore l'ecart minimal (pas le plafond). Le bilan en a besoin,
+ * sinon une page lente signalee juste avant l'avalait sans trace.
+ */
+const send = (
+  message: string,
+  level: "info" | "warning",
+  extra: Record<string, unknown>,
+  always = false,
+) => {
   const now = Date.now();
-  if (sent >= MAX_MESSAGES || now - lastSentAt < MIN_GAP_MS) return;
+  if (sent >= MAX_MESSAGES || (!always && now - lastSentAt < MIN_GAP_MS)) return;
   sent += 1;
   lastSentAt = now;
   Sentry.captureMessage(message, {
@@ -55,11 +65,12 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
     summary.dropped += r.dropped ?? 0;
     summary.hitches += r.hitches ?? 0;
     summary.worstMs = Math.max(summary.worstMs, r.worstMs ?? 0);
+    summary.rows = r.rows ?? summary.rows;
     if ((r.hitches ?? 0) > 0 || (r.dropped ?? 0) >= 3) {
       send("home-list: saccade pendant le scroll", "warning", r);
     }
     if (summary.gestures % SUMMARY_EVERY === 0) {
-      send(`home-list: bilan ${SUMMARY_EVERY} gestes`, "info", { ...summary });
+      send(`home-list: bilan ${SUMMARY_EVERY} gestes`, "info", { ...summary }, true);
       Object.assign(summary, { gestures: 0, frames: 0, dropped: 0, hitches: 0, worstMs: 0 });
     }
   } else if (r.kind === "apply" && (r.applyMs ?? 0) + (r.patchMs ?? 0) > 8) {

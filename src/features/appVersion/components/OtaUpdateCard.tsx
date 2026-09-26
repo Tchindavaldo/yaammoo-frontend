@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
+import React,{ useCallback, useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -48,26 +49,24 @@ const APPLIED_DELAY_MS = 700;
 /** Marge laterale du trait de decompte, a l'interieur de la carte. */
 const TRACK_INSET = 18;
 
+/**
+ * Apercu en developpement (Expo Go, Metro) : les OTA n'y existent pas, la carte
+ * s'y affiche donc d'office. « Mise a jour prete » au lancement, puis
+ * « Application a jour » a sa fermeture. Sans effet en build (`__DEV__` faux).
+ */
+const DEV_PREVIEW = true;
+
 export const OtaUpdateCard = () => {
   const insets = useSafeAreaInsets();
   const [kind, setKind] = useState<Kind | null>(null);
   const [barWidth, setBarWidth] = useState(0);
   const enter = useRef(new Animated.Value(0)).current;
   const countdown = useRef(new Animated.Value(1)).current;
-
-  const hide = useCallback(() => {
-    Animated.timing(enter, {
-      toValue: 0,
-      duration: 200,
-      easing: Easing.in(Easing.quad),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) setKind(null);
-    });
-  }, [enter]);
+  const kindRef = useRef<Kind | null>(null);
 
   const show = useCallback(
     (next: Kind) => {
+      kindRef.current = next;
       setKind(next);
       enter.setValue(0);
       Animated.spring(enter, {
@@ -81,10 +80,30 @@ export const OtaUpdateCard = () => {
     [enter],
   );
 
+  const hide = useCallback(() => {
+    const closing = kindRef.current;
+    Animated.timing(enter, {
+      toValue: 0,
+      duration: 200,
+      easing: Easing.in(Easing.quad),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      setKind(null);
+      if (__DEV__ && DEV_PREVIEW && closing === "downloaded") {
+        setTimeout(() => show("applied"), 400);
+      }
+    });
+  }, [enter, show]);
+
   // Mise a jour appliquee : verifiee une fois au lancement, annoncee une fois
   // l'app visible. Telechargement : a tout moment de la session.
   useEffect(() => {
-    if (__DEV__) return;
+    if (__DEV__) {
+      if (!DEV_PREVIEW) return;
+      const t = setTimeout(() => show("downloaded"), 1500);
+      return () => clearTimeout(t);
+    }
     let cancelled = false;
     let delay: ReturnType<typeof setTimeout> | undefined;
     let unsubSplash = () => {};
@@ -127,7 +146,7 @@ export const OtaUpdateCard = () => {
   const c = CONTENT[kind];
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrapper, { top: insets.top + 8 }]}>
+    <View pointerEvents="box-none" style={[styles.wrapper, { top: insets.top + 2 }]}>
       <Animated.View
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"
@@ -143,6 +162,17 @@ export const OtaUpdateCard = () => {
         ]}
         onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
       >
+        {/* Blanc dominant, teinte seulement sur le tiers droit : a gauche, la
+            pastille porte deja la couleur. Rogne par son propre calque, pour
+            ne pas couper l'ombre de la carte. */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={["#ffffff", "#ffffff", `${c.tint}1f`]}
+          locations={[0, 0.6, 1]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.gradient}
+        />
         <View style={[styles.badge, { backgroundColor: `${c.tint}14` }]}>
           <View style={[styles.badgeDot, { backgroundColor: c.tint }]}>
             <Ionicons name={c.icon} size={15} color="#fff" />
@@ -193,8 +223,9 @@ export const OtaUpdateCard = () => {
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    left: 16,
-    right: 16,
+    // Assez large pour masquer les boutons du header derriere.
+    left: 8,
+    right: 8,
     // Au-dessus des ecrans et des sheets, comme `OfflineBanner`.
     zIndex: 9999,
     elevation: 14,
@@ -203,20 +234,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingLeft: 14,
     paddingRight: 12,
-    borderRadius: 20,
+    borderRadius: 22,
     backgroundColor: "#ffffff",
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(0,0,0,0.06)",
-    // ⚠️ Pas d'`overflow: hidden` ici : sur iOS il couperait l'ombre. Seul le
-    // trait de decompte est rogne, par son propre conteneur.
+    borderColor: "rgba(0,0,0,0.08)",
+    // ⚠️ Pas d'`overflow: hidden` ici : sur iOS il couperait l'ombre. Seuls le
+    // degrade et le trait de decompte sont rognes, par leur propre calque.
+    // Ombre plus marquee : la carte doit se detacher d'un header blanc.
     shadowColor: "#0b0b0f",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 14,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 18,
+  },
+  gradient: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: 22,
+    overflow: "hidden",
   },
   badge: {
     width: 42,

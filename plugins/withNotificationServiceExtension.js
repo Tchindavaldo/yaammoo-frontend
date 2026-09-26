@@ -5,7 +5,9 @@ const path = require("path");
 /**
  * Cible iOS « Notification Service Extension » : telecharge l'image d'une
  * notification push (`imageUrl`, `mutable-content: 1`) et l'attache avant
- * l'affichage. Sans elle, iOS n'affiche que le texte.
+ * l'affichage. Sans elle, iOS n'affiche que le texte. Push d'une boutique
+ * (`senderName`, `senderImageUrl`) : notification de communication, logo en
+ * avatar (capacite + `NSUserActivityTypes` declares dans app.json).
  *
  * ⚠️ Pourquoi un plugin : `ios/` est versionne mais `expo prebuild` le VIDE et
  * le regenere (SDK 57). Une cible ajoutee a la main dans Xcode disparaitrait au

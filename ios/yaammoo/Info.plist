@@ -91,6 +91,7 @@
     <string>Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus.</string>
     <key>NSUserActivityTypes</key>
     <array>
+      <string>INSendMessageIntent</string>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
     </array>
     <key>RCTMetroPort</key>

@@ -1,0 +1,33 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!--
+      Recepteur des evenements d'expo-notifications. expo-notifications envoie
+      chaque evenement au PREMIER recepteur de l'action, par priorite : le sien
+      est a -1, celui-ci passe devant. Il ne change que la presentation.
+    -->
+    <receiver
+      android:name="com.rauval.yaammoo.notificationstyle.ConversationNotificationsService"
+      android:enabled="true"
+      android:exported="false">
+      <intent-filter android:priority="10">
+        <action android:name="expo.modules.notifications.NOTIFICATION_EVENT" />
+      </intent-filter>
+    </receiver>
+
+    <!--
+      Photo d'une notification conversation : l'interface systeme la lit par
+      cette URI (autorisation accordee par Android a la publication). Classe
+      dediee : deux <provider> FileProvider de meme nom entrent en conflit a la
+      fusion des manifestes.
+    -->
+    <provider
+      android:name="com.rauval.yaammoo.notificationstyle.NotificationImageProvider"
+      android:authorities="${applicationId}.notificationstyle"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/notification_style_paths" />
+    </provider>
+  </application>
+</manifest>

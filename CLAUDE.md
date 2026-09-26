@@ -3,8 +3,8 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **16 règles numérotées R1 → R16.** Toute nouvelle règle ajoutée à ce fichier
-> DOIT recevoir le numéro suivant (R16, R17, …) et le total ci-dessus doit être
+> **17 règles numérotées R1 → R17.** Toute nouvelle règle ajoutée à ce fichier
+> DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
 ## R1 — Style de réponse (OBLIGATOIRE)
@@ -57,7 +57,7 @@ contrat d'API ».
 >
 > **Accusé obligatoire** : la toute première réponse de la session doit commencer
 > par la ligne fournie par le hook, seule sur sa ligne :
-> `✅ CLAUDE.md lu en entier (N l., 16 règles R1→R16) + architecture/README.md (M l.)`
+> `✅ CLAUDE.md lu en entier (N l., 17 règles R1→R17) + architecture/README.md (M l.)`
 > Absence de cette ligne = hook non déclenché : le signaler et le réparer.
 
 Lis **`architecture/README.md`** (à la racine) avant de travailler : il donne une vision
@@ -262,3 +262,17 @@ la feature courante, puis on l'adapte librement. On n'ajoute pas de prop
   `extractPeriodDate`…) restent partagés : ils n'ont pas de rendu à faire
   diverger.
 - Un fichier dupliqué reste soumis à R4 : s'il dépasse 500 lignes, le découper.
+
+## R17 — Builds et tests : TOUJOURS demander avant (OBLIGATOIRE)
+
+**Aucun build ni test lancé sans l'accord explicite de l'utilisateur**, donné
+dans le message en cours. Demander d'abord, attendre la réponse.
+
+- **Jamais de compilation Android en local** (`./gradlew`, `expo run:android`,
+  `expo prebuild` suivi d'un build…) : trop long, et la machine n'a ni le temps
+  ni les ressources. Un build Android passe par **EAS** (profil dev), et
+  seulement après accord.
+- Même règle pour tout build iOS, test automatisé ou commande lourde
+  (installation de dépendances de build, téléchargement Gradle…).
+- Sans build possible, vérifier par relecture du code et le dire en 1 phrase
+  dans le compte rendu.

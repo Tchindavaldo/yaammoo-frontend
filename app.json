@@ -36,10 +36,16 @@
       "bundleIdentifier": "com.rauval.yaammoo",
       "googleServicesFile": "./GoogleService-Info.plist",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.developer.usernotifications.communication": true
+      },
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification",
           "location"
+        ],
+        "NSUserActivityTypes": [
+          "INSendMessageIntent"
         ],
         "LSApplicationQueriesSchemes": [
           "comgooglemaps"

@@ -12,10 +12,29 @@ l'interface, elle doit donc être définie au chargement du bundle.
 plugins/
 ├── withXcodeCloud.js                    # Podfile, ci_scripts, versions (Xcode Cloud)
 ├── withModularHeadersFix.js
-├── withNotificationServiceExtension.js  # Cible iOS NotificationService (image des push)
+├── withNotificationServiceExtension.js  # Cible iOS NotificationService (image des push, logo de boutique en avatar)
 └── notification-service/                # SOURCES de l'extension, copiées dans ios/NotificationService/
     ├── NotificationService.swift
     └── NotificationService-Info.plist
+```
+
+## modules/notification-style/ — module Expo local, Android seul
+
+Notifications d'une boutique en conversation (logo en avatar, pastille de
+l'app). Détail : [notifications.md](./notifications.md).
+
+```
+modules/notification-style/
+├── expo-module.config.json              # platforms: android (autolinking, pas de JS)
+└── android/
+    ├── build.gradle
+    └── src/main/
+        ├── AndroidManifest.xml          # Récepteur NOTIFICATION_EVENT prioritaire + FileProvider
+        ├── res/xml/notification_style_paths.xml
+        └── java/com/rauval/yaammoo/notificationstyle/
+            ├── ConversationNotificationsService.kt  # NotificationsService d'Expo + PresentationDelegate
+            ├── ConversationStyle.kt                 # MessagingStyle + raccourci de conversation
+            └── NotificationImages.kt                # Téléchargement, avatar rond, photo partagée
 ```
 
 ## app/ — Expo Router

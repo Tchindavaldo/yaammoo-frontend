@@ -96,7 +96,9 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   la porte commune bannière + première boutique reste fermée tant que la liste
   charge. Sans ça, la bannière sortait seule, avant les boutiques.
 - **Réglages ajustables par OTA** : `PAGE_SIZE` (FastFoodContext) et
-  `PREFETCH_DISTANCE` (NativeHomeList) sont du JS.
+  `PREFETCH_DISTANCE` (NativeHomeList) sont du JS. Idem pour `ICON_ROLES`
+  (rôle lu par le Swift -> nom Ionicons) et `FONTS` (nom PostScript par
+  graisse, `null` = police système) : le Swift ne fixe ni icône ni police.
 - **Aucun verrou de scroll** : ni `insertLock`, ni HOLD, ni `PageRevealGate`.
   Remplir un fantôme ou ajouter des rangées hors écran ne coûte presque rien
   en UIKit (reconfiguration d'une cellule existante), le défilement continue

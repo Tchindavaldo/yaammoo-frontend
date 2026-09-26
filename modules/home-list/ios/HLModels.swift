@@ -67,6 +67,14 @@ struct HLIconsRecord: Record {
   @Field var glyphs: [String: String] = [:]
 }
 
+/** Polices par graisse (noms PostScript), `nil` = police systeme. */
+struct HLFontsRecord: Record {
+  @Field var w600: String? = nil
+  @Field var w700: String? = nil
+  @Field var w800: String? = nil
+  @Field var w900: String? = nil
+}
+
 // MARK: - Modeles internes (comparables, pour ne reconfigurer que le necessaire)
 
 struct HLMenu: Equatable {

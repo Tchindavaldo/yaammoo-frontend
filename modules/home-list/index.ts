@@ -47,6 +47,17 @@ export type HomeListIcons = {
   glyphs: Record<string, string>;
 };
 
+/**
+ * Polices du texte par graisse (nom PostScript d'une police deja chargee par
+ * l'app, ex. via expo-font). `null` = police systeme. Changeable par OTA.
+ */
+export type HomeListFonts = {
+  w600: string | null;
+  w700: string | null;
+  w800: string | null;
+  w900: string | null;
+};
+
 type Event<T> = { nativeEvent: T };
 
 /**
@@ -74,6 +85,7 @@ export type HomeListViewProps = ViewProps & {
   sidePadding: number;
   refreshing: boolean;
   icons: HomeListIcons;
+  fonts: HomeListFonts;
   onMenuPress: (e: Event<{ shopId: string; menuId: string }>) => void;
   onBannerPress: (e: Event<{ id: string }>) => void;
   onEndReached: (e: Event<Record<string, never>>) => void;

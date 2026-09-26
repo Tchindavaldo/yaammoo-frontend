@@ -1,6 +1,7 @@
 import {
   HomeListView,
   type HomeListBanner,
+  type HomeListFonts,
   type HomeListHandle,
   type HomeListIcons,
   type HomeListNativeHandle,
@@ -50,14 +51,32 @@ const FALLBACK_V4 = V4_BACKGROUNDS.map(uri);
 const FALLBACK_V5 = V5_BACKGROUNDS.map(uri);
 const AVATAR_FALLBACK = uri(require("@/assets/blur3.jpg"));
 
-const ICON_NAMES = ["flash", "star", "receipt-outline", "people-outline"] as const;
+/**
+ * Icones de la liste native : role (cle lue par le Swift) -> nom Ionicons.
+ * Changer le nom a droite change l'icone affichee, par OTA, sans build.
+ */
+const ICON_ROLES: Record<string, keyof typeof Ionicons.glyphMap> = {
+  flash: "flash",
+  star: "star",
+  "receipt-outline": "receipt-outline",
+  "people-outline": "people-outline",
+};
 
 const ICONS: HomeListIcons = {
   fontFamily: Ionicons.getFontFamily?.() ?? null,
   glyphs: Object.fromEntries(
-    ICON_NAMES.map((n) => [n, String.fromCodePoint(Ionicons.glyphMap[n] as number)]),
+    Object.entries(ICON_ROLES).map(([role, name]) => [
+      role,
+      String.fromCodePoint(Ionicons.glyphMap[name] as number),
+    ]),
   ),
 };
+
+/**
+ * Polices du texte de la liste native, par graisse : nom PostScript d'une
+ * police deja chargee (expo-font), `null` = police systeme. Changeable par OTA.
+ */
+const FONTS: HomeListFonts = { w600: null, w700: null, w800: null, w900: null };
 
 /** Frais de la ligne sous la carte du variant 4 (`ItemMeta`). */
 const metaFeeLabelFor = (i: number) =>
@@ -290,6 +309,7 @@ export const NativeHomeList: React.FC<Props> = ({
       sidePadding={sidePadding}
       refreshing={refreshing}
       icons={ICONS}
+      fonts={FONTS}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}
       onEndReached={() => onEndReached()}

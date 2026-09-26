@@ -45,6 +45,13 @@ public final class HomeListModule: Module {
         HLIcons.glyphs = icons.glyphs
       }
 
+      // Polices venues du JS (changeables par OTA). Recues au montage, avant
+      // la creation des cellules.
+      Prop("fonts") { (_: HomeListView, fonts: HLFontsRecord) in
+        HLFont.names = [.semibold: fonts.w600, .bold: fonts.w700,
+                        .heavy: fonts.w800, .black: fonts.w900]
+      }
+
       OnViewDidUpdateProps { (view: HomeListView) in
         view.applyProps()
       }

@@ -56,10 +56,18 @@ enum HLColor {
 
 /** Graisses RN → UIKit : 900 black, 800 heavy, 700/bold bold, 600 semibold. */
 enum HLFont {
-  static func w900(_ size: CGFloat) -> UIFont { .systemFont(ofSize: size, weight: .black) }
-  static func w800(_ size: CGFloat) -> UIFont { .systemFont(ofSize: size, weight: .heavy) }
-  static func w700(_ size: CGFloat) -> UIFont { .systemFont(ofSize: size, weight: .bold) }
-  static func w600(_ size: CGFloat) -> UIFont { .systemFont(ofSize: size, weight: .semibold) }
+  /** Renseigne par la prop `fonts` : nom PostScript par graisse, sinon systeme. */
+  static var names: [UIFont.Weight: String?] = [:]
+
+  private static func font(_ size: CGFloat, _ weight: UIFont.Weight) -> UIFont {
+    if let name = names[weight] ?? nil, let f = UIFont(name: name, size: size) { return f }
+    return .systemFont(ofSize: size, weight: weight)
+  }
+
+  static func w900(_ size: CGFloat) -> UIFont { font(size, .black) }
+  static func w800(_ size: CGFloat) -> UIFont { font(size, .heavy) }
+  static func w700(_ size: CGFloat) -> UIFont { font(size, .bold) }
+  static func w600(_ size: CGFloat) -> UIFont { font(size, .semibold) }
 }
 
 /** Gabarit d'une carte menu, par variante de design (cf. `SKELETON_SIZES`). */

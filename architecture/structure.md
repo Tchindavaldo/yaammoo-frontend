@@ -177,6 +177,10 @@ src/
     │                           # Metro en dev web, ce qui relançait un bundle à chaque ping
     ├── otaTelemetry.ts         # Suivi des mises à jour OTA → Sentry
     └── useOtaUpdates.ts        # Mises a jour OTA expo-updates (voir http-versioning.md)
+                                #   Carte « Mise a jour prete / Application a jour » :
+                                #   features/appVersion/components/OtaUpdateCard.tsx (montee a la
+                                #   racine, comme OfflineBanner) + services/otaNotice.ts (signaux,
+                                #   derniere update executee en AsyncStorage)
 ```
 
 ## ⚠️ Projet non-CNG : `app.json` n'est PAS la source de vérité native

@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { AppState, type AppStateStatus } from "react-native";
 import * as Updates from "expo-updates";
 
+import { notifyUpdateDownloaded } from "@/src/features/appVersion/services/otaNotice";
 import { isSplashHidden } from "@/src/hooks/useHideSplash";
 import {
   startFetchHeartbeat,
@@ -75,6 +76,9 @@ export function useOtaUpdates() {
         // juste avant de redemarrer, pas au debut du check.
         if (isSplashHidden()) {
           trackUpdateFetch("deferred", Date.now() - startedAt);
+          // Carte « Mise a jour prete » : l'utilisateur sait qu'il doit
+          // relancer l'app pour en profiter.
+          notifyUpdateDownloaded();
           return;
         }
         trackUpdateFetch("applied", Date.now() - startedAt);

@@ -1,3 +1,4 @@
+import { isBonusPagerAvailable } from "@/modules/bonus-pager";
 import { Toast } from "@/src/components/Toast";
 import { Theme } from "@/src/theme";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -29,6 +30,7 @@ import { BonusPageBackground, USE_IMAGE_BG } from "./BonusPageBackground";
 import { BonusPagerInfo } from "./BonusPagerInfo";
 import { BonusEmptyState, BonusSkeleton } from "./BonusStates";
 import { GALLERY_STEP } from "./gallery.constants";
+import { NativeBonusPager } from "./NativeBonusPager";
 
 interface UserBonusSheetProps {
   visible: boolean;
@@ -311,6 +313,20 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 subtitle="Passe des commandes : tes fastfoods proposeront bientôt des récompenses."
               />
             </View>
+          ) : isBonusPagerAvailable ? (
+            // iOS : défilement ET pied de page natifs, synchronisés dans le
+            // même appel que le scroll (voir `NativeBonusPager`).
+            <View style={styles.carouselZone}>
+              <NativeBonusPager
+                key={openKey}
+                bonuses={bonuses}
+                claims={claims}
+                onClaim={handleClaim}
+                onActivate={handleActivate}
+                arming={arming}
+                onBlocked={handleBlocked}
+              />
+            </View>
           ) : (
             <View style={styles.carouselZone}>
               <BonusCarousel
@@ -333,7 +349,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
           {/* Carte de pagination EN BAS : ligne de pagination seule (galerie +
               panneau héro). La ligne de réclamation vit désormais DANS
               BonusCard, en haut — elle slide donc avec le carrousel. */}
-          {hasBonuses && bonuses.length > 1 && (
+          {hasBonuses && bonuses.length > 1 && !isBonusPagerAvailable && (
             <BonusGlassCard
               style={[styles.pagCard, styles.pagCardOutlined]}
               radius={20}

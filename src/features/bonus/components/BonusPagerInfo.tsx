@@ -2,41 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { computeEligibility } from "../hooks/useBonusEligibility";
 import type { Bonus } from "../types/bonus.types";
+// Fonctions pures partagées avec le pied de page natif (`NativeBonusPager`).
+import { remainingUses, statusOf } from "../utils/bonusPagerItem";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
-
-/**
- * Libellé + couleur d'un bonus, en fonction PURE (pas un hook) : `TextSlide`
- * est rendu dans une boucle `.map`, où `useBonusStatus` (hook) est interdit.
- * Reprend exactement la même dérivation que `useBonusStatus` — dupliquée ici
- * plutôt que d'ajouter une variante au hook partagé (R16) — mais s'appuie sur
- * la même fonction pure `computeEligibility` pour ne pas diverger du calcul
- * d'éligibilité réel.
- */
-const statusOf = (bonus: Bonus) => {
-  const d = getBonusDescriptor(bonus.type);
-  const p = computeEligibility(bonus);
-  const reqStatus = bonus.requestStatus ?? "none";
-  const isInactive = bonus.active === false;
-  const isRedeemed = bonus.redeemed === true;
-  const isPending = reqStatus === "pending";
-  const isApproved = reqStatus === "approved";
-  const isEligible =
-    !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
-  const label = isInactive
-    ? "Inactif"
-    : isRedeemed
-      ? "Utilisé"
-      : isApproved
-        ? "Validé"
-        : isPending
-          ? "En attente"
-          : isEligible
-            ? "Éligible"
-            : "Non éligible";
-  return { label, color: d.color };
-};
 
 interface BonusPagerInfoProps {
   bonuses: Bonus[];
@@ -46,13 +15,6 @@ interface BonusPagerInfoProps {
 }
 
 const PANEL_W = 168;
-
-/** Utilisations restantes si un plafond est défini, sinon null. */
-const remainingUses = (bonus?: Bonus): number | null => {
-  if (!bonus || typeof bonus.usageLimit !== "number") return null;
-  const used = bonus.usageCount ?? 0;
-  return bonus.remainingUses ?? Math.max(0, bonus.usageLimit - used);
-};
 
 /**
  * Colonne droite de la carte de pagination — bloc « héro » du bonus courant.

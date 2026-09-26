@@ -101,10 +101,14 @@ L'architecture doit rester **propre, moderne, modulaire**. Règles non négociab
 > Elle n'a rien à voir avec l'organisation des dossiers/features dans le code.
 > Quand on dit "isoler un travail", on parle de **l'isoler sur sa propre branche Git**.
 
-**Règle d'or : tout travail de changement — moyen ou important — doit se faire sur
-une NOUVELLE branche Git créée AVANT de toucher au code.** Ne jamais coder
-directement sur `main`. Avant la moindre modification non triviale, créer la branche
-avec le bon préfixe, puis travailler dessus.
+**Règle d'or : ne jamais coder directement sur `main`.** Sur `main`, créer la
+branche avec le bon préfixe AVANT de toucher au code, puis travailler dessus.
+
+**Déjà sur une branche de travail (`feature/…`, `debug/…`) : on CONTINUE dessus.**
+Le travail suivant se fait sur la branche courante — ne jamais repartir de
+`main` pour créer une nouvelle branche. Une nouvelle branche ne se crée que si
+l'utilisateur le demande, et alors DEPUIS la branche courante, sauf s'il dit
+explicitement « depuis main ».
 
 Sont concernés (liste non exhaustive) : nouvelle feature, refacto, ajout/duplication
 de composant, modification d'un flux, correction de bug. Seules les retouches
@@ -119,11 +123,11 @@ Toujours préfixer les branches selon leur nature :
 - `backup/<sujet>` — sauvegarde d'un état (ne pas y travailler).
 
 Règles de création :
-- **Tout travail de debug** commence sur une branche `debug/`, créée depuis la
+- **Branche de debug** (sur `main`, ou demandée) : `debug/`, créée depuis la
   branche d'où vient le problème (pas depuis `main`).
-- **Tout travail de feature / changement moyen ou important** commence sur une
-  branche `feature/`, créée depuis `main` (sauf indication contraire).
-- Une branche = un sujet. Ne pas mélanger plusieurs travaux sur la même branche.
+- **Tout travail de feature / changement moyen ou important** part de `main`
+  UNIQUEMENT si on est sur `main` ; sinon il continue sur la branche courante
+  (voir la règle d'or).
 
 ## R6 — État & Contextes (OBLIGATOIRE)
 

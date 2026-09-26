@@ -70,6 +70,43 @@ Quatre garde-fous, à ne pas défaire :
 > (`CATCH_UP_DELAY_MS`, `useSocketEvents.ts`) : lancé immédiatement, il volait
 > les premières frames et l'animation décrochait puis rattrapait d'un coup.
 
+### Carrousel NATIF iOS (`modules/bonus-pager`, `NativeBonusPager`)
+
+Sur iOS (`isBonusPagerAvailable`), le carrousel React et la carte de
+pagination sont remplacés par UNE vue native qui possède le défilement ET le
+pied de page. Android et un dev client sans le module gardent le rendu React
+ci-dessus (carrousel + `scrollX`).
+
+```
+modules/bonus-pager/
+├── index.ts                  # requireNativeView('BonusPager'), BonusPagerItem, isBonusPagerAvailable
+└── ios/
+    ├── BonusPagerModule.swift  # Props : items, footerHeight, textColor, iconFontFamily
+    ├── BonusPagerView.swift    # UIScrollView pagine ; cartes React montees dans sa piste
+    ├── BPFooterView.swift      # Carte du bas : galerie (gauche) + panneau heros (droite)
+    ├── BPFooterParts.swift     # BPIconView (Ionicons), BPGalleryCard, BPHeroSlide
+    └── BPModels.swift          # Record JS → BPItem, couleurs, melange de couleurs
+```
+
+- **Hybride** : les `BonusCard` restent React (enfants de la vue, montés dans
+  la piste du `UIScrollView` via `mountChildComponentView`, une page par
+  bonus, `collapsable={false}`). Le pied de page est en UIKit et recalé dans
+  `scrollViewDidScroll`, avec la position fractionnaire du scroll : même
+  image que le défilement, aucun aller-retour JS. React ne fait rien pendant
+  le geste.
+- **Aucune règle métier en Swift** : `utils/bonusPagerItem.ts` (`toPagerItem`)
+  envoie des items déjà prêts (statut via `statusOf`, reste, glyphe Ionicons,
+  couleur). `statusOf` / `remainingUses` y sont partagés avec `BonusPagerInfo`
+  (fonctions pures, R16).
+- **Toucher** : au début d'un glissement, le gestionnaire de toucher de React
+  est coupé puis relancé → « annulé » envoyé au bouton de carte sous le doigt
+  (le ScrollView RN obtient ça côté JS, pas un scroll natif).
+- Tap sur une mini-carte → `setContentOffset` animé : le pied de page suit
+  l'animation image par image, sans verrou anti-flash (`jumpTarget` inutile).
+- ⚠️ Toute évolution du design du pied de page se fait des DEUX côtés
+  (`BonusGalleryCard` / `BonusPagerInfo` et `BPFooterParts.swift`) tant que les
+  deux rendus coexistent.
+
 ### Pull-to-refresh
 `UserBonusSheet` englobe le carrousel dans un `ScrollView` **vertical**
 (`refreshControl={pullControl}`) : le carrousel étant horizontal, il ne peut pas
@@ -101,8 +138,11 @@ src/features/bonus/
 │   ├── useCampaignPhase.ts       # Phase de campagne status_view (dates → titre/desc/action)
 │   ├── useBonusStatus.ts         # Statut affichable (libellé + couleur + drapeaux) — partagé ClaimRow/PagerInfo
 │   └── useOrderPeriodStats.ts    # Stats commandes/dépenses jour · semaine · mois (commandes payées)
+├── utils/
+│   └── bonusPagerItem.ts         # statusOf / remainingUses (purs) + toPagerItem (items du pied de page natif)
 └── components/
     ├── UserBonusSheet.tsx        # Coquille : BOTTOM SHEET (hauteur fixe 400) — carrousel + carte de pagination bas
+    ├── NativeBonusPager.tsx      # iOS : carrousel + pied de page NATIFS (modules/bonus-pager), BonusCard en pages
     ├── BonusCarousel.tsx         # Carrousel centré (forwardRef goTo, onIndexChange, peek voisins) — remplit la hauteur ; relaie onActivate/arming/onBlocked à CardComponent
     ├── BonusPagerInfo.tsx        # Colonne droite pagination — panneau « héro », rendu en PISTE carrousel (n° géant, icône+émetteur+reste, nom, statut, jauge)
     ├── BonusGalleryCard.tsx      # Mini-carte de la galerie de pagination : fond + barre de progression interpolés sur scrollX (sans bordure)

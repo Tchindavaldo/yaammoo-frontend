@@ -29,7 +29,7 @@ import React, {
  * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
  *
  */
-export const PAGE_SIZE = 6;
+export const PAGE_SIZE = 10;
 
 /**
  * Insertion DANS les fantomes de la page suivante (`utils/pagePlaceholders`) :

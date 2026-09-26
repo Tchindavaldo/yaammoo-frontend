@@ -121,7 +121,9 @@ final class HLStockDeliveryBar: UIView {
 
   func configure(stock: Int, deliveryTime: String) {
     stockLabel.attributedText = HLText([
-      HLRun("\(stock)", HLFont.w700(13), .black, kern: 5),
+      // `gap: 5` entre le nombre et « disponible » : crenage sur le DERNIER
+      // chiffre seulement (un `kern` sur tout le nombre ecartait « 3 9 »).
+      HLKerned(HLRun("\(stock)", HLFont.w700(13), .black), 5),
       HLRun("disponible", HLFont.w700(13), .black),
     ])
     stockRatio = min(max(CGFloat(stock) / 100, 0), 1)

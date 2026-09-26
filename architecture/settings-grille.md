@@ -9,13 +9,33 @@ une **grille de tuiles par section**, séparées visuellement.
 
 | Fichier | Rôle |
 |---|---|
-| `app/(tabs)/settings.tsx` | Écran : `SectionHeader` + une `SettingGrid` par section |
+| `app/(tabs)/settings.tsx` | Écran : carte profil + `SectionHeader` + une `SettingGrid` par section + montage des sous-pages |
 | `src/features/profile/components/SettingGrid.tsx` | Bloc gris arrondi d'une section, dispose les tuiles en lignes |
 | `src/features/profile/components/SettingGridItem.tsx` | Tuile pressable : pastille d'icône, libellé, `hint` optionnel |
 | `src/features/profile/components/SettingGridSwitch.tsx` | Tuile portant un `Switch` (Notifications, Mode sombre) |
+| `src/features/profile/components/SettingsProfileCard.tsx` | En-tête fixe flouté : avatar, nom, contact, badge Marchand, bouton d'édition |
+| `src/features/profile/components/DeleteAccountModal.tsx` | Modal « Supprimer mon compte » : saisie `SUPPRIMER`, loader, erreur inline |
+| `src/features/profile/components/LogoutModal.tsx` | Modal de confirmation de déconnexion (+ `push-token/remove` best-effort) |
+| `src/features/profile/hooks/useSettingsSubScreens.ts` | Visibilité des sous-pages (`visible` / `open` / `close`), deep-link `?section=`, reset au tap onglet et à la déconnexion |
+| `src/features/profile/hooks/useNotificationSwitch.ts` | Switch Notifications : permission OS + token du device synced en BD, relu au focus |
+| `src/features/profile/hooks/useSettingsTabBarStyle.ts` | Ombre de la tab bar atténuée tant que la sheet Bonus est ouverte |
 
 > R16 : `SettingGridItem` est une **copie dédiée** de `SettingItem`, qui reste
-> inchangé pour les autres écrans.
+> inchangé pour les autres écrans. Les deux modals de confirmation ont chacun
+> leurs styles (aucun style partagé entre eux).
+
+## Sous-pages
+
+`useSettingsSubScreens` porte un état unique `Record<SettingsSubScreen, boolean>`
+(Boutique, menu, portefeuilles, commandes, bonus, support, livraison,
+suppression, déconnexion) :
+
+- **Deep-link** `?section=` : `pending` / `active` / `finished` → commandes ·
+  `drivers` → Livreurs · `my-applications` → Mes demandes · `bonus` → Bonus.
+  Chaque nouvelle valeur est traitée une seule fois (ajustement pendant le rendu).
+- **Tap sur l'onglet** : tout est refermé et le param `section` est effacé.
+- **Déconnexion** : les modals logout / suppression sont refermés ; leur loader
+  et leur saisie vivent dans le modal, démonté par l'early-return `GuestGate`.
 
 ## Disposition
 

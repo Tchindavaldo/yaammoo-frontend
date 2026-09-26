@@ -85,7 +85,21 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     clipsToBounds = true
     backgroundColor = .white
     setupCollection()
-    perf.onReport = { [weak self] report in self?.onDiagnostics(report) }
+    // Pixel de la sonde ecran, au-dessus de la liste (coin haut gauche, marge blanche).
+    layer.addSublayer(perf.screen.layer)
+    perf.offsetProvider = { [weak self] in self?.collection.contentOffset.y ?? 0 }
+    perf.onReport = { [weak self] report in
+      var r = report
+      // Rendu des barres floutees + cout du flou d'avance : de quoi comparer
+      // `live` et `baked` rapport par rapport.
+      r["blur"] = HLBlurBar.mode.rawValue
+      r["bakes"] = HLBlurBar.bakes
+      r["bakeMaxMs"] = HLBlurBar.bakeMaxMs
+      self?.onDiagnostics(r)
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+      self?.perf.screen.warmUp()
+    }
   }
 
   private func setupCollection() {

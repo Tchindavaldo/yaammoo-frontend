@@ -77,6 +77,12 @@ export type HomeListRowsUpdate = {
   loading: boolean;
 };
 
+/**
+ * `live` : flou systeme recalcule a chaque image par iOS.
+ * `baked` : photo de la carte floutee une fois, affichee comme une image.
+ */
+export type HomeListBlurMode = "live" | "baked";
+
 export type HomeListViewProps = ViewProps & {
   banners: HomeListBanner[];
   bannerLoading: boolean;
@@ -86,6 +92,8 @@ export type HomeListViewProps = ViewProps & {
   refreshing: boolean;
   icons: HomeListIcons;
   fonts: HomeListFonts;
+  /** Barres floutees des cartes 4 et 5 : flou systeme ou photo floutee d'avance. */
+  cardBlurMode: HomeListBlurMode;
   onMenuPress: (e: Event<{ shopId: string; menuId: string }>) => void;
   onBannerPress: (e: Event<{ id: string }>) => void;
   onEndReached: (e: Event<Record<string, never>>) => void;

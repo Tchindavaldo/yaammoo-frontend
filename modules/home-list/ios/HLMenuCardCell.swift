@@ -27,6 +27,9 @@ final class HLMenuCardCell: UICollectionViewCell {
   private var v7Bottom: HLV7BottomZone?
   private var v4Bar: HLStockDeliveryBar?
   private var v5Bar: HLV5BottomBar?
+  private var blurBar: HLBlurBar? { v4Bar?.blur ?? v5Bar?.blur }
+  /** URL de la photo affichee : ignore le chargement d'une photo remplacee depuis. */
+  private var photoKey: String?
 
   // ItemMeta : deux lignes, chacune a gauche + a droite.
   private let titleLabel = UILabel()
@@ -109,12 +112,20 @@ final class HLMenuCardCell: UICollectionViewCell {
     guard let m = menu else {
       image.sd_cancelCurrentImageLoad()
       image.image = nil
+      photoKey = nil
+      blurBar?.setPhoto(nil, key: nil)
       [titleLabel, titleRight, lineLeft, lineRight].forEach { $0.attributedText = nil }
       price.label.text = nil
       setRevealed(false)
       return
     }
-    HLImage.set(image, m.image, size: CGSize(width: size.width, height: size.height))
+    let key = m.image
+    photoKey = key
+    HLImage.set(image, key, size: CGSize(width: size.width, height: size.height)) { [weak self] in
+      // La barre floutee (cartes 4 et 5) reprend la photo une fois chargee.
+      guard let self = self, self.photoKey == key else { return }
+      self.blurBar?.setPhoto(self.image.image, key: key)
+    }
     price.label.text = m.price
     v7Bottom?.configure(deliveryTime: deliveryTime, feeLabel: m.feeLabel)
     v4Bar?.configure(stock: m.stock, deliveryTime: deliveryTime)
@@ -200,6 +211,9 @@ final class HLMenuCardCell: UICollectionViewCell {
     v7Bottom?.frame = CGRect(x: 0, y: h - HLV7BottomZone.height, width: w, height: HLV7BottomZone.height)
     v4Bar?.frame = CGRect(x: 0, y: h - HLStockDeliveryBar.height, width: w, height: HLStockDeliveryBar.height)
     v5Bar?.frame = CGRect(x: 0, y: h - HLV5BottomBar.height, width: w, height: HLV5BottomBar.height)
+    // Photo floutee calee sur la photo de la carte (repere de la barre).
+    v4Bar?.blur.photoFrame = CGRect(x: 0, y: HLStockDeliveryBar.height - h, width: w, height: h)
+    v5Bar?.blur.photoFrame = CGRect(x: 0, y: HLV5BottomBar.height - h, width: w, height: h)
 
     // ItemMeta : paddingTop 8, paddingLeft 4, gap 3 ; lignes de 16.
     let metaX: CGFloat = 4

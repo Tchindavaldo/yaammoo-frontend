@@ -52,6 +52,12 @@ public final class HomeListModule: Module {
                         .heavy: fonts.w800, .black: fonts.w900]
       }
 
+      // Rendu des barres floutees des cartes 4 et 5 (`live` | `baked`, cf.
+      // `HLBlurBar`). Recu au montage, avant la creation des cellules.
+      Prop("cardBlurMode") { (_: HomeListView, mode: String) in
+        HLBlurBar.mode = HLBlurBar.Mode(rawValue: mode) ?? .baked
+      }
+
       OnViewDidUpdateProps { (view: HomeListView) in
         view.applyProps()
       }

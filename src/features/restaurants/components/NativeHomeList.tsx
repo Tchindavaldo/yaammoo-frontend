@@ -1,6 +1,7 @@
 import {
   HomeListView,
   type HomeListBanner,
+  type HomeListBlurMode,
   type HomeListFonts,
   type HomeListHandle,
   type HomeListIcons,
@@ -42,6 +43,14 @@ import {
  * ajustable par OTA, comme `PAGE_SIZE`.
  */
 const PREFETCH_DISTANCE = 1200;
+
+/**
+ * Barres floutees des cartes 4 et 5. `"baked"` : photo floutee une fois,
+ * affichee comme une image (aucun flou a l'ecran). `"live"` : flou systeme,
+ * recalcule par iOS a chaque image. Basculable par OTA pour comparer sur le
+ * meme telephone : le rapport Sentry « premier geste » (`screenDropped`) tranche.
+ */
+const CARD_BLUR_MODE: HomeListBlurMode = "baked";
 
 const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
 
@@ -310,6 +319,7 @@ export const NativeHomeList: React.FC<Props> = ({
       refreshing={refreshing}
       icons={ICONS}
       fonts={FONTS}
+      cardBlurMode={CARD_BLUR_MODE}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}
       onEndReached={() => onEndReached()}

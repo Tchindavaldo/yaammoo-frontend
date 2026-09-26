@@ -74,8 +74,10 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLMenuCardCell.swift        # Carte 7/4/5 + les 2 lignes SOUS la carte (ItemMeta) + squelettes
     ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
     ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
+    ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s, puces, squelette
-    ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs par geste (CADisplayLink)
+    ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs par geste (CADisplayLink, fil principal)
+    ├── HLScreenProbe.swift         # Sonde ECRAN : pixel Metal, heure reelle d'affichage (`presentedTime`)
     ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
 ```
 
@@ -84,8 +86,19 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   rangées) et par arrivée de page (durée d'application). Côté JS
   (`utils/nativeListDiagnostics.ts`) : log local `[NATIVE]`, fil d'Ariane
   Sentry, message Sentry sur saccade et bilan tous les 10 gestes (débit borné),
-  plus « liste native active » au lancement. Sert en build TestFlight, où il
-  n'y a aucun terminal.
+  plus « liste native active » et « premier geste » à chaque lancement. Sert en
+  build TestFlight, où il n'y a aucun terminal.
+  - ⚠️ `dropped`/`hitches`/`worstMs` ne voient que le fil principal : une image
+    composée en retard par le serveur de rendu d'iOS (flou...) leur échappe
+    (cas mesuré : double micro-pause du 1er scroll, 0 image perdue côté app).
+    Les champs `screen*` (`HLScreenProbe`) mesurent l'affichage réel ;
+    `screenDrops` = `[ms, écart ms, offsetY]` des premières pertes.
+- **Barres floutées v4/v5 (`CARD_BLUR_MODE`, OTA)** : `baked` (défaut) floute
+  la photo de la carte UNE fois (64 px, CoreImage logiciel, hors fil de
+  l'écran, cache par URL) et l'affiche comme une image calée sur la photo ;
+  `live` = `UIVisualEffectView`, recalculé par iOS à chaque image, suspect de
+  la double micro-pause du 1er scroll (la 2e boutique, design 4, est la
+  première à en porter). Rapports : tag `blur`, `bakes`, `bakeMaxMs`.
 
 - **Repli automatique** : `isHomeListAvailable` est faux sur Android et sur un
   dev client qui n'embarque pas le module ; le home garde alors sa FlashList.

@@ -172,22 +172,6 @@ func HLRun(_ text: String, _ font: UIFont, _ color: UIColor, kern: CGFloat = 0) 
   return NSAttributedString(string: text, attributes: attrs)
 }
 
-// MARK: - Barre floutee (bas des cartes 4 et 5)
-
-/**
- `BlurView intensity=60 tint=light` + voile `rgba(255,255,255,0.55)`. Materiau
- systeme fixe plutot qu'un `UIViewPropertyAnimator` en pause (technique
- d'expo-blur) : ces animateurs se perdent au recyclage des cellules et au
- passage en arriere-plan. Le voile blanc a 55 % domine de toute facon le rendu.
- */
-func HLMakeBlurBar() -> UIVisualEffectView {
-  let v = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterialLight))
-  v.isUserInteractionEnabled = false
-  v.clipsToBounds = true
-  v.contentView.backgroundColor = UIColor(white: 1, alpha: 0.55)
-  return v
-}
-
 // MARK: - Images
 
 /**

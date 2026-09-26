@@ -6,6 +6,7 @@ import UIKit
  - variant 7 : « Prochaine » + « livraison · HH:MM » + pastille frais, sans fond ;
  - variant 4 : barre floutee « N disponible » + progression / livraison ;
  - variant 5 : barre floutee livraison + pastille frais.
+ Flou des variants 4 et 5 : `HLBlurBar` (systeme ou photo floutee d'avance).
  Chaque vue connait sa hauteur (`height`) : la carte la pose en bas.
  */
 
@@ -88,7 +89,7 @@ final class HLV7BottomZone: UIView {
 
 final class HLStockDeliveryBar: UIView {
   static let height: CGFloat = 57
-  private let blur = HLMakeBlurBar()
+  let blur = HLBlurBar()
   private let stockLabel = UILabel()
   private let track = UIView()
   private let fill = UIView()
@@ -161,7 +162,7 @@ final class HLStockDeliveryBar: UIView {
 
 final class HLV5BottomBar: UIView {
   static let height: CGFloat = 42
-  private let blur = HLMakeBlurBar()
+  let blur = HLBlurBar()
   private let badge = HLFlashBadge()
   private let nextLabel = UILabel()
   private let delivery = UILabel()

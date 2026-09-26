@@ -166,16 +166,21 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
                      toSection: .rows)
     if footerText != nil { snap.appendItems([.footer], toSection: .footer) }
 
-    // Reconfigurer SEULEMENT ce qui a change et existait deja (fantome rempli,
-    // boutique mise a jour par socket, heure de livraison...).
+    // Reconfigurer SEULEMENT ce qui a change (fantome rempli, boutique mise a
+    // jour par socket, heure de livraison...) et qui existe AVANT comme APRES.
+    // ⚠️ UIKit leve une exception (crash) si on reconfigure un item absent du
+    // nouveau snapshot : pied de liste retire au retour de `hasMore`, banniere
+    // retiree, rangee dont le design a change.
     let old = dataSource.snapshot()
+    let fresh = snap
+    let kept = { (item: Item) in old.indexOfItem(item) != nil && fresh.indexOfItem(item) != nil }
     var changed: [Item] = []
     for (pos, content) in next.enumerated() where pos < previous.count && previous[pos] != content {
       let item = Item.row(position: pos, design: content.design)
-      if old.indexOfItem(item) != nil { changed.append(item) }
+      if kept(item) { changed.append(item) }
     }
-    if bannersChanged, old.indexOfItem(.banner) != nil { changed.append(.banner) }
-    if old.indexOfItem(.footer) != nil { changed.append(.footer) }
+    if bannersChanged, kept(.banner) { changed.append(.banner) }
+    if kept(.footer) { changed.append(.footer) }
     if !changed.isEmpty { snap.reconfigureItems(changed) }
 
     let t0 = CACurrentMediaTime()

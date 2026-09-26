@@ -75,8 +75,8 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
     ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
     ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
-    ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s, puces, squelette
-    ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs par geste (CADisplayLink, fil principal)
+    ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (retenu pendant le scroll), puces, squelette
+    ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
     ├── HLScreenProbe.swift         # Sonde ECRAN : pixel Metal, heure reelle d'affichage (`presentedTime`)
     ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
 ```
@@ -86,13 +86,24 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   rangées) et par arrivée de page (durée d'application). Côté JS
   (`utils/nativeListDiagnostics.ts`) : log local `[NATIVE]`, fil d'Ariane
   Sentry, message Sentry sur saccade et bilan tous les 10 gestes (débit borné),
-  plus « liste native active » et « premier geste » à chaque lancement. Sert en
-  build TestFlight, où il n'y a aucun terminal.
+  plus « liste native active » et « geste N après lancement » (3 premiers
+  scrolls) à chaque lancement. Sert en build TestFlight, où il n'y a aucun
+  terminal.
   - ⚠️ `dropped`/`hitches`/`worstMs` ne voient que le fil principal : une image
-    composée en retard par le serveur de rendu d'iOS (flou...) leur échappe
-    (cas mesuré : double micro-pause du 1er scroll, 0 image perdue côté app).
+    composée en retard par le serveur de rendu d'iOS (flou...) leur échappe.
     Les champs `screen*` (`HLScreenProbe`) mesurent l'affichage réel ;
     `screenDrops` = `[ms, écart ms, offsetY]` des premières pertes.
+  - **Mouvement** : `stalls` (image immobile en plein mouvement), `jumps`
+    (saut) et `motionAt`. Pour les 3 premiers gestes : `motion` (déplacement
+    par image, pt), `fingerUpFrame` (début de l'élan) et `events`
+    (`[ms, quoi, offsetY]` : `cfgN` rangée configurée, `revealN` fondu d'une
+    boutique, `applyN` pose de rangées, `banner` / `bannerHeld` autoplay,
+    `leftTop`). Mesure du build 59 : double micro-pause du 1er scroll
+    ressentie, 25 premiers gestes à 0 image perdue ÉCRAN comme fil principal
+    (flou `baked`) — ce n'est pas un accroc de rendu, d'où la sonde de
+    mouvement.
+- **Bannière retenue pendant le scroll (`BANNER_PAUSE_ON_SCROLL`, OTA)** : pas
+  d'avance auto tant que la liste défile (doigt ou élan). Tag `bannerPause`.
 - **Barres floutées v4/v5 (`CARD_BLUR_MODE`, OTA)** : `baked` (défaut) floute
   la photo de la carte UNE fois (64 px, CoreImage logiciel, hors fil de
   l'écran, cache par URL) et l'affiche comme une image calée sur la photo ;

@@ -58,6 +58,11 @@ public final class HomeListModule: Module {
         HLBlurBar.mode = HLBlurBar.Mode(rawValue: mode) ?? .baked
       }
 
+      // Autoplay de la banniere retenu pendant le defilement de la liste.
+      Prop("bannerPauseOnScroll") { (_: HomeListView, pause: Bool) in
+        HLBannerCell.pauseOnListScroll = pause
+      }
+
       OnViewDidUpdateProps { (view: HomeListView) in
         view.applyProps()
       }

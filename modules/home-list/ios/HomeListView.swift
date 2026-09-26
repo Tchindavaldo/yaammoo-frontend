@@ -95,6 +95,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       r["blur"] = HLBlurBar.mode.rawValue
       r["bakes"] = HLBlurBar.bakes
       r["bakeMaxMs"] = HLBlurBar.bakeMaxMs
+      r["bannerPause"] = HLBannerCell.pauseOnListScroll
       self?.onDiagnostics(r)
     }
     DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
@@ -137,6 +138,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLBannerCell.reuseId, for: indexPath) as! HLBannerCell
       c.delegate = self
       c.configure(banners: shownBanners, loading: shownBannerLoading)
+      bannerCell = c
+      c.listScrolling = perf.isRunning
       return c
     case .row(let position, let design):
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLShopCell.reuseId(design), for: indexPath) as! HLShopCell
@@ -144,6 +147,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       let t0 = CACurrentMediaTime()
       if position < rows.count { c.configure(rows[position], position: position) }
       perf.recordConfigure(CACurrentMediaTime() - t0)
+      perf.mark("cfg\(position)")
       return c
     case .footer:
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLFooterCell.reuseId, for: indexPath) as! HLFooterCell
@@ -238,6 +242,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     if !changed.isEmpty { snap.reconfigureItems(changed) }
 
     let t0 = CACurrentMediaTime()
+    perf.mark("apply\(next.count)")
     dataSource.apply(snap, animatingDifferences: false)
     // Sonde : cout d'une arrivee de page (remplissage des fantomes, ajout en
     // queue), mesure pendant ou hors geste.
@@ -275,6 +280,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     if top != atTop || near != nearBottom {
       atTop = top
       nearBottom = near
+      perf.mark(top ? "top" : "leftTop")
       onEdgeChange(["atTop": top, "nearBottom": near])
     }
     checkEndReached()
@@ -283,13 +289,23 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   // Sonde de fluidite : un rapport par geste (doigt pose → fin de l'elan).
   func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
     perf.begin()
+    bannerCell?.listScrolling = true
   }
 
   func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-    if !decelerate { perf.end(rows: rows.count, offset: scrollView.contentOffset.y) }
+    if decelerate {
+      perf.fingerUp()
+    } else {
+      endGesture(scrollView)
+    }
   }
 
   func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+    endGesture(scrollView)
+  }
+
+  private func endGesture(_ scrollView: UIScrollView) {
+    bannerCell?.listScrolling = false
     perf.end(rows: rows.count, offset: scrollView.contentOffset.y)
   }
 
@@ -369,6 +385,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
 
   private func revealShop(_ cell: HLShopCell) {
     if case .shop(let s)? = cell.content { revealedShops.insert(s.id) }
+    if !cell.revealed { perf.mark("reveal\(cell.position)") }
     cell.reveal(animated: true)
   }
 
@@ -379,6 +396,10 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
 
   func bannerTapped(_ bannerId: String) {
     onBannerPress(["id": bannerId])
+  }
+
+  func bannerAutoplay(_ cell: HLBannerCell, advanced: Bool) {
+    perf.mark(advanced ? "banner" : "bannerHeld")
   }
 
   func bannerIsReady(_ cell: HLBannerCell) {

@@ -7,13 +7,19 @@ import { Sentry } from "@/src/services/sentry";
  * rapport est journalise en local (`[NATIVE]`) ET laisse une trace Sentry :
  * - fil d'Ariane pour tous (joint au prochain evenement) ;
  * - message « saccade » des qu'un geste perd des images ou accroche ;
- * - message « premier geste » a CHAQUE lancement : la double micro-pause du
- *   premier scroll s'y lit (un geste isole ne declenche pas de bilan) ;
+ * - message « geste N apres lancement » pour les `DETAILED_GESTURES` premiers
+ *   scrolls de CHAQUE lancement : la double micro-pause des premiers scrolls
+ *   s'y lit (un geste isole ne declenche pas de bilan). Ils portent le profil
+ *   de mouvement image par image (`motion`, `fingerUpFrame`), les arrets /
+ *   sauts detectes (`stalls`, `jumps`, `motionAt`) et la chronologie de ce qui
+ *   a change a l'ecran (`events` : `cfgN`, `revealN`, `applyN`, `banner`,
+ *   `bannerHeld`, `leftTop`) ;
  * - bilan tous les `SUMMARY_EVERY` gestes, fluides compris, pour pouvoir
  *   affirmer que ca ne saccade PAS.
  * Deux sondes par geste : `dropped`/`hitches`/`worstMs` (fil principal de
  * l'app) et `screen*` (ce qui arrive vraiment a l'ecran, serveur de rendu
- * compris). Tag `blur` = rendu des barres floutees (`live` | `baked`).
+ * compris). Tags `blur` = rendu des barres floutees (`live` | `baked`),
+ * `bannerPause` = autoplay de la banniere retenu pendant le scroll.
  * Debit borne (un message / `MIN_GAP_MS`, `MAX_MESSAGES` par lancement) : le
  * quota Sentry ne doit pas partir dans une sonde de test.
  */
@@ -21,6 +27,8 @@ import { Sentry } from "@/src/services/sentry";
 const MIN_GAP_MS = 10_000;
 const MAX_MESSAGES = 40;
 const SUMMARY_EVERY = 10;
+/** Gestes envoyes a chaque lancement, fluides ou non (= natif `detailedGestures`). */
+const DETAILED_GESTURES = 3;
 
 let sent = 0;
 let lastSentAt = 0;
@@ -76,7 +84,10 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
   Sentry.addBreadcrumb({ category: "home-list", level: "info", data: r });
 
   if (r.kind === "scroll") {
-    const tags = { blur: String(r.blur ?? "inconnu") };
+    const tags = {
+      blur: String(r.blur ?? "inconnu"),
+      bannerPause: String(r.bannerPause ?? "inconnu"),
+    };
     summary.gestures += 1;
     summary.frames += r.frames ?? 0;
     summary.dropped += r.dropped ?? 0;
@@ -86,19 +97,21 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
     summary.screenHitches += r.screenHitches ?? 0;
     summary.screenWorstMs = Math.max(summary.screenWorstMs, r.screenWorstMs ?? 0);
     summary.rows = r.rows ?? summary.rows;
-    // Premier scroll du lancement : toujours envoye, fluide ou non.
-    if (r.gesture === 1) {
-      send("home-list: premier geste", "info", r, true, tags);
+    // Premiers scrolls du lancement : toujours envoyes, fluides ou non.
+    if ((r.gesture ?? 0) >= 1 && r.gesture <= DETAILED_GESTURES) {
+      send(`home-list: geste ${r.gesture} apres lancement`, "info", r, true, tags);
     } else if (
       (r.hitches ?? 0) > 0 ||
       (r.dropped ?? 0) >= 3 ||
       (r.screenHitches ?? 0) > 0 ||
-      (r.screenDropped ?? 0) >= 3
+      (r.screenDropped ?? 0) >= 3 ||
+      (r.stalls ?? 0) > 0 ||
+      (r.jumps ?? 0) > 0
     ) {
       send("home-list: saccade pendant le scroll", "warning", r, false, tags);
     }
     if (summary.gestures % SUMMARY_EVERY === 0) {
-      send(`home-list: bilan ${SUMMARY_EVERY} gestes`, "info", { ...summary, blur: tags.blur }, true, tags);
+      send(`home-list: bilan ${SUMMARY_EVERY} gestes`, "info", { ...summary, ...tags }, true, tags);
       Object.assign(summary, EMPTY_SUMMARY);
     }
   } else if (r.kind === "apply" && (r.applyMs ?? 0) + (r.patchMs ?? 0) > 8) {

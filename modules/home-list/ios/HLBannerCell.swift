@@ -53,6 +53,35 @@ final class HLBannerCell: UICollectionViewCell, UIScrollViewDelegate {
     contentView.addSubview(dotSkeleton)
     let tap = UITapGestureRecognizer(target: self, action: #selector(onTap))
     scroll.addGestureRecognizer(tap)
+    // Autoplay coupe hors premier plan (arriere-plan, ecran eteint, centre de
+    // controle) : sinon les avances s'empilent sans s'achever et, au retour,
+    // le carrousel defile a toute vitesse avant de se recaler.
+    let nc = NotificationCenter.default
+    nc.addObserver(self, selector: #selector(appWillResignActive),
+                   name: UIApplication.willResignActiveNotification, object: nil)
+    nc.addObserver(self, selector: #selector(appDidBecomeActive),
+                   name: UIApplication.didBecomeActiveNotification, object: nil)
+  }
+
+  @objc private func appWillResignActive() {
+    stopAutoplay()
+    resume?.cancel()
+    snapToPage()
+  }
+
+  @objc private func appDidBecomeActive() {
+    snapToPage()
+    if window != nil { startAutoplay() }
+  }
+
+  /** Recale sans animation sur la diapo la plus proche (jamais sur un clone). */
+  private func snapToPage() {
+    guard !slides.isEmpty else { return }
+    let w = pageWidth
+    let page = min(max(round(scroll.contentOffset.x / w), 0), CGFloat(slides.count - 1))
+    scroll.setContentOffset(CGPoint(x: page * w, y: 0), animated: false)
+    teleportIfOnClone()
+    applyScrollEffects()
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) non supporte") }
@@ -273,7 +302,11 @@ final class HLBannerCell: UICollectionViewCell, UIScrollViewDelegate {
     stopAutoplay()
     guard banners.count > 1, window != nil else { return }
     timer = Timer.scheduledTimer(withTimeInterval: Self.autoplay, repeats: true) { [weak self] _ in
-      guard let self = self, !self.scroll.isDragging, !self.scroll.isDecelerating else { return }
+      guard let self = self, !self.scroll.isDragging, !self.scroll.isDecelerating,
+            UIApplication.shared.applicationState == .active else { return }
+      // Part toujours d'une vraie diapo : une avance interrompue ne laisse
+      // jamais le carrousel au-dela des clones.
+      self.teleportIfOnClone()
       let w = self.pageWidth
       let page = round(self.scroll.contentOffset.x / w)
       self.scroll.setContentOffset(CGPoint(x: (page + 1) * w, y: 0), animated: true)

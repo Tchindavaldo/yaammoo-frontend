@@ -18,9 +18,12 @@ import { Sentry } from "@/src/services/sentry";
  *   `applyN`, `banner`, `leftTop`) ;
  * - bilan tous les `SUMMARY_EVERY` gestes, fluides compris, pour pouvoir
  *   affirmer que ca ne saccade PAS.
- * Deux sondes par geste : `dropped`/`hitches`/`worstMs` (fil principal de
- * l'app) et `screen*` (ce qui arrive vraiment a l'ecran, serveur de rendu
- * compris). Tags `blur` = rendu des barres floutees (`live` | `baked`),
+ * Trois sondes par geste : `dropped`/`hitches`/`worstMs` (heure des images du
+ * fil principal : aveugle aux retards d'UNE image), `mainBusy` (occupation
+ * reelle du fil principal > 8 ms) et `screen*` (ce qui arrive vraiment a
+ * l'ecran, serveur de rendu compris). Le natif ecrit aussi chaque rapport
+ * dans le journal de l'iPhone (`[HL]`, lecture directe par `idevicesyslog`).
+ * Tags `blur` = rendu des barres floutees (`live` | `baked`),
  * `bannerAutoplay` = defilement auto de la banniere actif ou coupe,
  * `cellDiag` = famille d'elements retiree des boutiques ce lancement.
  * Debit borne (un message / `MIN_GAP_MS`, `MAX_MESSAGES` par lancement) : le
@@ -90,6 +93,8 @@ const EMPTY_SUMMARY = {
   screenDropped: 0,
   screenHitches: 0,
   screenWorstMs: 0,
+  mainBusyLong: 0,
+  mainBusyMaxMs: 0,
 };
 const summary = { ...EMPTY_SUMMARY, rows: 0 };
 /** Numeros des gestes du bilan ayant perdu une image ecran (4e geste et suivants compris). */
@@ -143,6 +148,8 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
     summary.screenDropped += r.screenDropped ?? 0;
     summary.screenHitches += r.screenHitches ?? 0;
     summary.screenWorstMs = Math.max(summary.screenWorstMs, r.screenWorstMs ?? 0);
+    summary.mainBusyLong += r.mainBusyLong ?? 0;
+    summary.mainBusyMaxMs = Math.max(summary.mainBusyMaxMs, r.mainBusyMaxMs ?? 0);
     summary.rows = r.rows ?? summary.rows;
     if ((r.screenDropped ?? 0) > 0) dropGestures.push(r.gesture ?? 0);
     // Premiers scrolls du lancement : toujours envoyes, fluides ou non.

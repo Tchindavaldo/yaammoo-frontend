@@ -90,17 +90,28 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   plus « liste native active » et « geste N après lancement » (3 premiers
   scrolls) à chaque lancement. Sert en build TestFlight, où il n'y a aucun
   terminal.
-  - ⚠️ `dropped`/`hitches`/`worstMs` ne voient que le fil principal : une image
-    composée en retard par le serveur de rendu d'iOS (flou...) leur échappe.
-    Les champs `screen*` (`HLScreenProbe`) mesurent l'affichage réel ;
-    `screenDrops` = `[ms, écart ms, offsetY]` des premières pertes.
+  - ⚠️ `dropped`/`hitches`/`worstMs` lisent l'heure des images du fil
+    principal : un fil occupé 17 à 33 ms (UNE image perdue) ne la décale
+    pas, ils ne voient que les retards de 2 images et plus. `mainBusy`
+    (`[ms, durée ms, offsetY]`, occupations > 8 ms, commit compris),
+    `mainBusyLong`, `mainBusyMaxMs` mesurent l'occupation réelle. Les champs
+    `screen*` (`HLScreenProbe`) mesurent l'affichage réel ; `screenDrops` =
+    `[ms, écart ms, offsetY, rang]` des premières pertes (`rang` = image du
+    calque Metal dans le geste).
+  - **Journal de l'iPhone** (TestFlight) : chaque rapport part aussi en
+    `NSLog` (`[HL] <n°> <morceau>/<total> <json>`, JSON découpé par 800
+    caractères). Lecture directe, iPhone branché en USB :
+    `idevicesyslog -m "[HL]"`, sans attendre Sentry.
   - **Mouvement** : `stalls` (image immobile en plein mouvement), `jumps`
     (saut) et `motionAt`. Pour les 3 premiers gestes : `motion` (déplacement
     par image, pt), `fingerUpFrame` (début de l'élan) et `events`
     (`[ms, quoi, offsetY]` : `cfgN` rangée configurée (`n` = cellule neuve),
     `inNdD` / `outN` entrée / sortie d'écran de la rangée N de design D (`n` =
     premier affichage de la cellule), `revealN` fondu d'une
-    boutique, `applyN` pose de rangées, `banner` avance auto, `leftTop`).
+    boutique, `applyN` pose de rangées, `banner` avance auto, `leftTop`,
+    `up` doigt levé, `pfN` préchargement de N rangées ; suffixe `/ms` = coût
+    de l'étape sur le fil principal, la mise en page d'une rangée entrante
+    étant avancée dans `willDisplay` pour être chronométrée).
     Rapport : `rowCells` / `cardCells` (cellules créées depuis le lancement),
     `viewH`, `cellDiag`. Mesure du build 59 : double micro-pause du 1er scroll
     ressentie, 25 premiers gestes à 0 image perdue ÉCRAN comme fil principal
@@ -118,10 +129,14 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     première fois (pertes vers 587 / 885 / 1239 / 1533 pt, écarts = hauteur
     d'une rangée), plus rien une fois les cellules réutilisées.
     **`cellDiag` (`CELL_DIAG`, OTA, TestFlight seulement, `HLCellDiag`)** :
-    `rotate` retire une famille d'éléments par lancement (`noclip` coins non
-    découpés, `notext`, `nophoto`, `nofx` dégradés + fond des barres
-    floutées, `base` intact) ; la variante sans perte désigne le coupable.
-    Remettre `"off"` par OTA ensuite.
+    variantes fixes `noclip` (coins non découpés), `notext`, `nophoto`,
+    `nofx` (dégradés + fond des barres floutées). Build 61 : toutes perdent
+    encore une image, aucune famille n'est seule en cause ; 7 pertes sur 11
+    tombent à 85 ou 102 ms du début du geste, quelle que soit la position.
+    `rotate` alterne donc `base` et `preroll` (design intact, horloge et
+    calque Metal lancés au doigt posé via `hitTest`, avant le geste) : si
+    ces pertes disparaissent en `preroll`, c'était le redémarrage de la
+    sonde. Remettre `"off"` par OTA ensuite.
 - **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
   seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
   false` dans `useBannerLoop`) : aucun défilement auto nulle part. Cause de la

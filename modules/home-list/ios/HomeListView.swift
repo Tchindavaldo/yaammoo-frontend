@@ -102,11 +102,24 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       r["rowCells"] = HLShopCell.created
       r["cardCells"] = HLMenuCardCell.created
       r["viewH"] = Int(self?.collection.bounds.height ?? 0)
-      self?.onDiagnostics(r)
+      self?.report(r)
     }
     DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
       self?.perf.screen.warmUp()
     }
+  }
+
+  /** Rapport de la sonde : journal de l'iPhone (lecture directe) + JS (Sentry). */
+  private func report(_ r: [String: Any]) {
+    HLPerfMonitor.log(r)
+    onDiagnostics(r)
+  }
+
+  // Variante `preroll` de la sonde : le doigt pose lance l'horloge avant le geste.
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    let hit = super.hitTest(point, with: event)
+    if hit != nil, event?.type == .touches { perf.touchDown() }
+    return hit
   }
 
   private func setupCollection() {
@@ -153,8 +166,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       let t0 = CACurrentMediaTime()
       if position < rows.count { c.configure(rows[position], position: position) }
       perf.recordConfigure(CACurrentMediaTime() - t0)
-      // `n` : cellule neuve (sinon une cellule reutilisee).
-      perf.mark("cfg\(position)\(fresh ? "n" : "")")
+      // `n` : cellule neuve (sinon une cellule reutilisee), `/ms` : cout.
+      perf.mark("cfg\(position)\(fresh ? "n" : "")/\(HLPerfMonitor.ms(since: t0))")
       return c
     case .footer:
       let c = cv.dequeueReusableCell(withReuseIdentifier: HLFooterCell.reuseId, for: indexPath) as! HLFooterCell
@@ -267,7 +280,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
         report["patchRows"] = p.rows
         report["patchMs"] = (p.ms * 10).rounded() / 10
       }
-      onDiagnostics(report)
+      self.report(report)
     }
     lastPatch = nil
     // Fin du chargement sans boutique : la banniere attendait peut-etre la liste.
@@ -315,12 +328,17 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   }
 
   // Sonde : entree a l'ecran d'une rangee (`in<rang>d<design>`, `n` = premier
-  // affichage de cette cellule) et sortie (`out<rang>`). Le prechargement
-  // configure les rangees en avance : seule l'entree dit quand elles s'affichent.
+  // affichage de cette cellule, `/ms` = cout de sa mise en page) et sortie
+  // (`out<rang>`). Le prechargement configure les rangees en avance : seule
+  // l'entree dit quand elles s'affichent.
   func collectionView(_ cv: UICollectionView, willDisplay cell: UICollectionViewCell,
                       forItemAt indexPath: IndexPath) {
     guard let c = cell as? HLShopCell else { return }
-    perf.mark("in\(c.position)d\(c.design)\(c.displays == 0 ? "n" : "")")
+    // Mise en page avancee ICI (meme passe, meme image) pour la chronometrer :
+    // une rangee neuve y cree ses cartes.
+    let t0 = CACurrentMediaTime()
+    c.layoutIfNeeded()
+    perf.mark("in\(c.position)d\(c.design)\(c.displays == 0 ? "n" : "")/\(HLPerfMonitor.ms(since: t0))")
     c.displays += 1
   }
 
@@ -375,6 +393,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   // MARK: - Prechargement des images des rangees a venir
 
   func collectionView(_ cv: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+    let t0 = CACurrentMediaTime()
+    defer { perf.mark("pf\(indexPaths.count)/\(HLPerfMonitor.ms(since: t0))") }
     var items: [(String?, CGSize)] = []
     for ip in indexPaths {
       guard case .row(let pos, let design)? = dataSource.itemIdentifier(for: ip),

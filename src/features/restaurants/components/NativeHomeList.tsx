@@ -62,11 +62,11 @@ const CARD_BLUR_MODE: HomeListBlurMode = "baked";
 const BANNER_AUTOPLAY = false;
 
 /**
- * Diagnostic TEMPORAIRE : une image perdue a l'ecran quand une nouvelle rangee
- * du haut entre pour la premiere fois (scrolls 2-3). `rotate` retire une
- * famille d'elements des boutiques a chaque lancement (coins, textes, photos,
- * effets) pour trouver laquelle coute ; tag Sentry `cellDiag`. TestFlight
- * seulement (natif). Remettre `"off"` par OTA une fois la cause trouvee.
+ * Diagnostic TEMPORAIRE des pertes d'UNE image aux scrolls 2-3. Build 61 : le
+ * retrait d'une famille d'elements (coins, textes, photos, effets) n'en
+ * supprime aucune. `rotate` alterne maintenant `base` et `preroll` (sonde
+ * lancee au doigt pose) ; tag Sentry `cellDiag`. TestFlight seulement
+ * (natif). Remettre `"off"` par OTA une fois la cause trouvee.
  */
 const CELL_DIAG: HomeListCellDiag = "rotate";
 

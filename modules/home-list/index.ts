@@ -84,8 +84,9 @@ export type HomeListRowsUpdate = {
 export type HomeListBlurMode = "live" | "baked";
 
 /**
- * `off` : design intact. `rotate` : une famille d'elements des boutiques
- * retiree a tour de role, une variante par lancement. Sinon, une variante fixe.
+ * `off` : design intact. `rotate` : `base` et `preroll` (sonde lancee au doigt
+ * pose) a tour de role, une variante par lancement. Sinon, une variante fixe
+ * (dont les familles d'elements retirees : `noclip`, `notext`...).
  */
 export type HomeListCellDiag =
   | "off"
@@ -94,7 +95,8 @@ export type HomeListCellDiag =
   | "noclip"
   | "notext"
   | "nophoto"
-  | "nofx";
+  | "nofx"
+  | "preroll";
 
 export type HomeListViewProps = ViewProps & {
   banners: HomeListBanner[];

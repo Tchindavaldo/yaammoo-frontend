@@ -13,6 +13,11 @@ import UIKit
  principal ; `screen` (`HLScreenProbe`) mesure ce qui arrive vraiment a
  l'ecran (champs `screen*`).
 
+ ⚠️ `dropped` lit l'heure des images (`timestamp`) : un fil principal occupe
+ 17 a 33 ms (UNE image perdue) ne decale pas cette heure, il ne compte que
+ les retards de 2 images et plus. `mainBusy` mesure donc l'occupation reelle
+ du fil principal (reveil → mise en veille de la boucle, commit compris).
+
  Mouvement : une pause ressentie SANS image perdue est un contenu qui
  s'arrete ou saute alors que les images arrivent a l'heure. Le deplacement
  par image est donc releve : `stalls` (image immobile en plein mouvement),
@@ -52,10 +57,50 @@ final class HLPerfMonitor: NSObject {
   /** Rang du geste depuis le lancement : 1 = le premier scroll. */
   private var gesture = 0
 
-  var isRunning: Bool { link != nil }
+  /** Occupation du fil principal > `busyThreshold` : [ms depuis le debut, duree ms, offsetY]. */
+  private static let busyThreshold: CFTimeInterval = 0.008
+  private static let maxBusy = 8
+  private var observer: CFRunLoopObserver?
+  private var busySince: CFTimeInterval = 0
+  private var busy: [[Double]] = []
+  private var busyLong = 0
+  private var busyMax: CFTimeInterval = 0
+
+  /** Variante `preroll` : horloge et calque Metal lances au doigt pose, avant le geste. */
+  private var prerolling = false
+  private var prerollId = 0
+
+  var isRunning: Bool { link != nil && !prerolling }
+
+  /**
+   Doigt pose (variante `preroll`) : l'horloge et le calque Metal tournent
+   deja quand le geste commence. Si les pertes des images 2-3 du geste
+   disparaissent, c'etait le redemarrage de la sonde, pas la liste.
+   */
+  func touchDown() {
+    guard HLCellDiag.prerollsProbe, link == nil else { return }
+    prerolling = true
+    prerollId += 1
+    let id = prerollId
+    startLink()
+    // Simple tape, sans geste : on arrete.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+      guard let self = self, self.prerolling, self.prerollId == id else { return }
+      self.prerolling = false
+      self.link?.invalidate()
+      self.link = nil
+    }
+  }
+
+  private func startLink() {
+    let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
+    l.add(to: .main, forMode: .common)
+    link = l
+  }
 
   func begin() {
-    guard link == nil else { return }
+    guard link == nil || prerolling else { return }
+    prerolling = false
     frames = 0
     dropped = 0
     hitches = 0
@@ -68,17 +113,23 @@ final class HLPerfMonitor: NSObject {
     lastOffset = nil
     fingerUpFrame = -1
     events.removeAll()
+    busy.removeAll()
+    busyLong = 0
+    busyMax = 0
     gesture += 1
     start = CACurrentMediaTime()
     screen.begin(expected: expected)
-    let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
-    l.add(to: .main, forMode: .common)
-    link = l
+    if link == nil { startLink() }
+    watchMainThread()
   }
 
   @objc private func tick(_ l: CADisplayLink) {
     let frameDuration = l.targetTimestamp - l.timestamp
     if frameDuration > 0 { expected = frameDuration }
+    if prerolling {
+      screen.idleFrame()
+      return
+    }
     if last > 0 {
       let dt = l.timestamp - last
       frames += 1
@@ -95,15 +146,86 @@ final class HLPerfMonitor: NSObject {
 
   /** Doigt leve avec elan : separe le glissement de la deceleration dans `motion`. */
   func fingerUp() {
-    guard link != nil else { return }
+    guard isRunning else { return }
     fingerUpFrame = deltas.count
+    mark("up")
   }
 
   /** Evenement visible pendant le geste (revelation, banniere, page...). */
   func mark(_ what: String) {
-    guard link != nil, gesture <= Self.detailedGestures, events.count < Self.maxEvents else { return }
+    guard isRunning, gesture <= Self.detailedGestures, events.count < Self.maxEvents else { return }
     let ms = ((CACurrentMediaTime() - start) * 1000).rounded()
     events.append([ms, what, Int(offsetProvider?() ?? 0)])
+  }
+
+  private static var logSeq = 0
+
+  /**
+   Journal de l'iPhone (`NSLog`, TestFlight seulement) : lisible en direct
+   depuis l'ordinateur (`idevicesyslog -m "[HL]"`), sans attendre Sentry.
+   Ligne `[HL] <rapport> <morceau>/<total> <json>` : le journal systeme
+   tronque les longues lignes, le JSON est donc decoupe.
+   */
+  static func log(_ report: [String: Any]) {
+    guard HLCellDiag.isTestBuild, JSONSerialization.isValidJSONObject(report),
+          let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
+          let json = String(data: data, encoding: .utf8) else { return }
+    logSeq += 1
+    let chars = Array(json)
+    let size = 800
+    let count = (chars.count + size - 1) / size
+    for i in 0..<count {
+      let part = String(chars[(i * size)..<min(chars.count, (i + 1) * size)])
+      NSLog("[HL] %@", "\(logSeq) \(i + 1)/\(count) \(part)" as NSString)
+    }
+  }
+
+  /** Millisecondes entieres depuis `t0` (cout d'une etape, pour les `events`). */
+  static func ms(since t0: CFTimeInterval) -> Int {
+    Int(((CACurrentMediaTime() - t0) * 1000).rounded())
+  }
+
+  // MARK: Occupation du fil principal
+
+  private func watchMainThread() {
+    guard observer == nil else { return }
+    busySince = 0
+    let activities = CFRunLoopActivity.afterWaiting.rawValue | CFRunLoopActivity.beforeWaiting.rawValue
+    // Ordre maximal : passe APRES le commit Core Animation (ordre 2 000 000),
+    // donc l'occupation mesuree comprend la mise en page et le commit.
+    let obs = CFRunLoopObserverCreateWithHandler(kCFAllocatorDefault, activities, true, CFIndex.max) {
+      [weak self] _, activity in
+      self?.runLoop(activity)
+    }
+    CFRunLoopAddObserver(CFRunLoopGetMain(), obs, .commonModes)
+    observer = obs
+  }
+
+  private func unwatchMainThread() {
+    guard let obs = observer else { return }
+    CFRunLoopRemoveObserver(CFRunLoopGetMain(), obs, .commonModes)
+    CFRunLoopObserverInvalidate(obs)
+    observer = nil
+    busySince = 0
+  }
+
+  private func runLoop(_ activity: CFRunLoopActivity) {
+    let now = CACurrentMediaTime()
+    if activity == .afterWaiting {
+      busySince = now
+      return
+    }
+    let since = busySince
+    guard since > 0 else { return }
+    busySince = 0
+    let d = now - since
+    busyMax = max(busyMax, d)
+    guard d > Self.busyThreshold else { return }
+    busyLong += 1
+    if busy.count < Self.maxBusy {
+      let ms = { (s: CFTimeInterval) -> Double in (s * 10_000).rounded() / 10 }
+      busy.append([ms(since - start), ms(d), Double(Int(offsetProvider?() ?? 0))])
+    }
   }
 
   /**
@@ -133,16 +255,17 @@ final class HLPerfMonitor: NSObject {
   }
 
   func recordConfigure(_ seconds: CFTimeInterval) {
-    guard link != nil else { return }
+    guard isRunning else { return }
     configures += 1
     configureTotal += seconds
     configureMax = max(configureMax, seconds)
   }
 
   func end(rows: Int, offset: CGFloat) {
-    guard let l = link else { return }
+    guard let l = link, !prerolling else { return }
     l.invalidate()
     link = nil
+    unwatchMainThread()
     let ms = { (s: CFTimeInterval) -> Double in (s * 1000 * 10).rounded() / 10 }
     let motion = motionStats()
     var report: [String: Any] = [
@@ -161,6 +284,9 @@ final class HLPerfMonitor: NSObject {
       "offsetY": Int(offset),
       "stalls": motion.stalls,
       "jumps": motion.jumps,
+      "mainBusy": busy,
+      "mainBusyLong": busyLong,
+      "mainBusyMaxMs": ms(busyMax),
     ]
     if !motion.at.isEmpty { report["motionAt"] = motion.at }
     if gesture <= Self.detailedGestures {

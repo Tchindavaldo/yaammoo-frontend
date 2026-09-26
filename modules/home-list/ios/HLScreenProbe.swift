@@ -47,6 +47,11 @@ final class HLScreenProbe {
     work.async { [weak self] in self?.present(nil, offset: 0) }
   }
 
+  /** Image hors mesure : garde le calque actif avant le geste (variante `preroll`). */
+  func idleFrame() {
+    warmUp()
+  }
+
   func begin(expected: CFTimeInterval) {
     guard commandQueue != nil else { return }
     session = Session(start: CACurrentMediaTime(), expected: expected)
@@ -93,11 +98,17 @@ final class HLScreenProbe {
     var expected: CFTimeInterval
     var skipped = 0
     private var last: CFTimeInterval = 0
+    /** Images du calque arrivees a l'ecran depuis le debut du geste. */
+    private var presented = 0
     private var frames = 0
     private var dropped = 0
     private var hitches = 0
     private var worst: CFTimeInterval = 0
-    /** Premieres pertes : [ms depuis le debut du geste, ecart ms, offsetY]. */
+    /**
+     Premieres pertes : [ms depuis le debut du geste, ecart ms, offsetY, rang].
+     `rang` = image du calque dans le geste : une perte aux rangs 2-3 tombe au
+     redemarrage du calque Metal, pas forcement dans la liste.
+     */
     private var drops: [[Double]] = []
 
     init(start: CFTimeInterval, expected: CFTimeInterval) {
@@ -108,12 +119,13 @@ final class HLScreenProbe {
     func record(presentedAt t: CFTimeInterval, offset: CGFloat) {
       // 0 = image remplacee avant d'avoir ete affichee ; l'ecart suivant la compte.
       guard t > 0, t > last else { return }
+      presented += 1
       if last > 0 {
         let dt = t - last
         frames += 1
         if dt > expected * 1.5 {
           dropped += max(1, Int((dt / expected).rounded()) - 1)
-          if drops.count < 6 { drops.append([ms(t - start), ms(dt), Double(Int(offset))]) }
+          if drops.count < 6 { drops.append([ms(t - start), ms(dt), Double(Int(offset)), Double(presented)]) }
         }
         if dt > 0.05 { hitches += 1 }
         worst = max(worst, dt)

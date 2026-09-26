@@ -15,7 +15,13 @@ import UIKit
  - `noclip` : coins arrondis non decoupes (cartes, avatar, squelettes...) ;
  - `notext` : aucun texte (cartes et en-tete) ;
  - `nophoto` : aucune photo (cartes, avatar, photo floutee des barres) ;
- - `nofx` : ni degrades ni fond floute des barres (textes gardes).
+ - `nofx` : ni degrades ni fond floute des barres (textes gardes) ;
+ - `preroll` : design intact, sonde lancee au doigt pose (`HLPerfMonitor`).
+
+ Build 61 : toutes les familles perdent encore une image, aucune n'est seule
+ en cause. `rotate` alterne desormais `base` et `preroll` : 7 pertes sur 11
+ tombaient a 85 ou 102 ms du debut du geste quelle que soit la position,
+ soit juste apres le redemarrage de la sonde.
 
  Prop `cellDiag` (JS, donc OTA) : `off` | `rotate` (variante suivante a
  chaque lancement) | nom d'une variante. Actif seulement en TestFlight : un
@@ -23,8 +29,11 @@ import UIKit
  */
 enum HLCellDiag {
   enum Variant: String, CaseIterable {
-    case base, noclip, notext, nophoto, nofx
+    case base, noclip, notext, nophoto, nofx, preroll
   }
+
+  /** Variantes alternees par `rotate`. */
+  private static let rotation: [Variant] = [.base, .preroll]
 
   /** Variante du lancement, recue au montage avant la creation des cellules. */
   private(set) static var variant: Variant = .base
@@ -39,14 +48,13 @@ enum HLCellDiag {
     if let fixed = Variant(rawValue: mode) {
       variant = fixed
     } else if mode == "rotate" {
-      let all = Variant.allCases
-      let i = UserDefaults.standard.integer(forKey: nextKey) % all.count
-      variant = all[i]
+      let i = UserDefaults.standard.integer(forKey: nextKey) % rotation.count
+      variant = rotation[i]
       UserDefaults.standard.set(i + 1, forKey: nextKey)
     }
   }
 
-  private static var isTestBuild: Bool {
+  static var isTestBuild: Bool {
     #if DEBUG
     return true
     #else
@@ -58,16 +66,18 @@ enum HLCellDiag {
   static var hidesBlurPhoto: Bool { variant == .nophoto || variant == .nofx }
   /** Voile et flou systeme des barres masques. */
   static var hidesBlurVeil: Bool { variant == .nofx }
+  /** Sonde demarree au doigt pose plutot qu'au debut du geste. */
+  static var prerollsProbe: Bool { variant == .preroll }
 
   /** Applique la variante a une vue et a ses sous-vues, une fois construites. */
   static func apply(_ root: UIView) {
-    guard variant != .base else { return }
+    guard variant != .base, variant != .preroll else { return }
     walk(root)
   }
 
   private static func walk(_ v: UIView) {
     switch variant {
-    case .base:
+    case .base, .preroll:
       return
     case .noclip:
       // Decoupe rectangulaire (rayon 0) gardee : elle ne coute rien.

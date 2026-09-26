@@ -107,20 +107,22 @@ nouveau binaire et ne peuvent pas etre poussees en OTA.
 | `app.json` → `runtimeVersion` (valeur manuelle) | Un update ne s'applique qu'aux apps de **meme runtimeVersion**. |
 | `eas.json` → `channel` par profil | `production` / `preview` / `development`. |
 | `src/services/useOtaUpdates.ts` | Verifie, telecharge et **applique** la mise a jour. |
-| `src/features/appVersion/components/OtaUpdateCard.tsx` | Carte en haut d'ecran (composant dedie, pas un toast). |
+| `src/features/appVersion/components/OtaUpdateCard.tsx` | Carte sombre par-dessus la barre d'onglets (composant dedie, pas un toast). |
 
 **Carte de mise a jour** (`OtaUpdateCard` + `services/otaNotice.ts`) :
 
 - **« Mise a jour telechargee »** : telechargement termine alors que l'app est deja
   affichee (issue `deferred` de `useOtaUpdates`). Invite a fermer puis rouvrir
-  l'app ; reste affichee jusqu'a fermeture. Pas de bouton « Redemarrer » :
-  relancer une app deja peinte rejoue le boot a nu.
+  l'app ; retiree seule apres 8 s (trait de decompte). Pas de bouton
+  « Redemarrer » : relancer une app deja peinte rejoue le boot a nu.
 - **« Application a jour »** : ce lancement execute une update jamais executee
   sur l'appareil (`Updates.updateId` compare a la derniere memorisee en
   AsyncStorage, cle `ota.lastRunUpdateId`). Affichee une fois le splash leve,
   retiree seule apres 5 s. Un lancement sur le bundle du store n'en declenche
   jamais.
-- Inactive en `__DEV__`, comme `useOtaUpdates`.
+- En `__DEV__` (Expo Go), pas d'OTA : `DEV_PREVIEW` affiche les deux cartes
+  en boucle pour juger le visuel (la rouge ne se ferme pas seule).
+  `DARK` et `POSITION` basculent fond clair/sombre et haut/bas.
 
 Publier : `eas update --branch production --environment production --message "..."`.
 ⚠️ Depuis le SDK 55, `--environment` est **obligatoire**. Le SDK 56 active aussi

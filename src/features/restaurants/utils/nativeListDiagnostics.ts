@@ -1,3 +1,4 @@
+import { AppState } from "react-native";
 import { Sentry } from "@/src/services/sentry";
 
 /**
@@ -22,6 +23,12 @@ import { Sentry } from "@/src/services/sentry";
  * `bannerAutoplay` = defilement auto de la banniere actif ou coupe.
  * Debit borne (un message / `MIN_GAP_MS`, `MAX_MESSAGES` par lancement) : le
  * quota Sentry ne doit pas partir dans une sonde de test.
+ *
+ * Envois RETENUS pendant l'usage de la liste : les messages partent apres
+ * `FLUSH_IDLE_MS` sans geste, ou quand l'app passe en arriere-plan (tag
+ * `deferred`, `heldMs` = attente). Build 60 : 5 des 10 scrolls 2-3 perdaient
+ * une image ecran 0,5 a 1,3 s apres un envoi de la sonde, le 1er scroll (sans
+ * envoi avant lui) jamais. Si ces pertes disparaissent, c'etait la sonde.
  */
 
 const MIN_GAP_MS = 10_000;
@@ -29,10 +36,48 @@ const MAX_MESSAGES = 40;
 const SUMMARY_EVERY = 10;
 /** Gestes envoyes a chaque lancement, fluides ou non (= natif `detailedGestures`). */
 const DETAILED_GESTURES = 3;
+/** Silence de la liste avant de vider la file des messages. */
+const FLUSH_IDLE_MS = 10_000;
 
 let sent = 0;
 let lastSentAt = 0;
 let announced = false;
+
+type Held = {
+  message: string;
+  level: "info" | "warning";
+  extra: Record<string, unknown>;
+  tags: Record<string, string>;
+  at: number;
+};
+const held: Held[] = [];
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let appStateHooked = false;
+
+const flush = () => {
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = null;
+  const now = Date.now();
+  for (const h of held.splice(0)) {
+    Sentry.captureMessage(h.message, {
+      level: h.level,
+      tags: { home_list: "native", deferred: "true", ...h.tags },
+      extra: { ...h.extra, heldMs: now - h.at },
+    });
+  }
+};
+
+/** Repousse l'envoi : appele a chaque fin de geste, la file part au silence. */
+const scheduleFlush = () => {
+  if (!appStateHooked) {
+    appStateHooked = true;
+    AppState.addEventListener("change", (s) => {
+      if (s !== "active") flush();
+    });
+  }
+  if (flushTimer) clearTimeout(flushTimer);
+  flushTimer = setTimeout(flush, FLUSH_IDLE_MS);
+};
 // `rows` : rangees chargees au dernier geste, pour savoir jusqu'ou le bilan va.
 const EMPTY_SUMMARY = {
   gestures: 0,
@@ -45,6 +90,8 @@ const EMPTY_SUMMARY = {
   screenWorstMs: 0,
 };
 const summary = { ...EMPTY_SUMMARY, rows: 0 };
+/** Numeros des gestes du bilan ayant perdu une image ecran (4e geste et suivants compris). */
+let dropGestures: number[] = [];
 
 /**
  * `always` : ignore l'ecart minimal (pas le plafond). Le bilan en a besoin,
@@ -61,11 +108,7 @@ const send = (
   if (sent >= MAX_MESSAGES || (!always && now - lastSentAt < MIN_GAP_MS)) return;
   sent += 1;
   lastSentAt = now;
-  Sentry.captureMessage(message, {
-    level,
-    tags: { home_list: "native", ...tags },
-    extra,
-  });
+  held.push({ message, level, extra, tags, at: now });
 };
 
 /** Une fois par lancement : preuve que la build embarque bien la liste native. */
@@ -82,6 +125,7 @@ export const announceNativeList = () => {
 export const reportNativeDiagnostics = (r: Record<string, any>) => {
   console.log(`[NATIVE] ${JSON.stringify(r)}`);
   Sentry.addBreadcrumb({ category: "home-list", level: "info", data: r });
+  scheduleFlush();
 
   if (r.kind === "scroll") {
     const tags = {
@@ -97,6 +141,7 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
     summary.screenHitches += r.screenHitches ?? 0;
     summary.screenWorstMs = Math.max(summary.screenWorstMs, r.screenWorstMs ?? 0);
     summary.rows = r.rows ?? summary.rows;
+    if ((r.screenDropped ?? 0) > 0) dropGestures.push(r.gesture ?? 0);
     // Premiers scrolls du lancement : toujours envoyes, fluides ou non.
     if ((r.gesture ?? 0) >= 1 && r.gesture <= DETAILED_GESTURES) {
       send(`home-list: geste ${r.gesture} apres lancement`, "info", r, true, tags);
@@ -111,8 +156,9 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
       send("home-list: saccade pendant le scroll", "warning", r, false, tags);
     }
     if (summary.gestures % SUMMARY_EVERY === 0) {
-      send(`home-list: bilan ${SUMMARY_EVERY} gestes`, "info", { ...summary, ...tags }, true, tags);
+      send(`home-list: bilan ${SUMMARY_EVERY} gestes`, "info", { ...summary, dropGestures, ...tags }, true, tags);
       Object.assign(summary, EMPTY_SUMMARY);
+      dropGestures = [];
     }
   } else if (r.kind === "apply" && (r.applyMs ?? 0) + (r.patchMs ?? 0) > 8) {
     send("home-list: arrivee de page lente", "warning", r);

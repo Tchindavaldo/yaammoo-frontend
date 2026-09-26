@@ -101,9 +101,16 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ressentie, 25 premiers gestes à 0 image perdue ÉCRAN comme fil principal
     (flou `baked`) — ce n'est pas un accroc de rendu, d'où la sonde de
     mouvement.
+  - **Envois retenus** : les messages Sentry partent après 10 s sans geste
+    ou à la mise en arrière-plan (tag `deferred`, `heldMs`), jamais pendant
+    le scroll. Le bilan liste `dropGestures` (gestes ayant perdu une image
+    écran). Build 60 : 1er scroll à 0 perte sur 8 lancements (bannière
+    coupée) ; 5 des 10 scrolls 2-3 perdaient UNE image écran, 0,5 à 1,3 s
+    après un envoi de la sonde.
 - **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
   seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
-  false` dans `useBannerLoop`) : aucun défilement auto nulle part. Suspect des micro-pauses des premiers scrolls. Tag `bannerAutoplay`.
+  false` dans `useBannerLoop`) : aucun défilement auto nulle part. Cause de la
+  micro-pause du 1er scroll (build 60 : disparue). Tag `bannerAutoplay`.
 - **Barres floutées v4/v5 (`CARD_BLUR_MODE`, OTA)** : `baked` (défaut) floute
   la photo de la carte UNE fois (64 px, CoreImage logiciel, hors fil de
   l'écran, cache par URL) et l'affiche comme une image calée sur la photo ;

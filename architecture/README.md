@@ -25,6 +25,8 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [driver.md](./driver.md) | Rôle driver — commandes déléguées (onglet, panel, carte, socket, contrat backend) |
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
 | [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
+| [merchant-broadcast.md](./merchant-broadcast.md) | Notifications boutique — envois à une audience (clients / ville / tous), quota du plan, semaine en barres, derniers envois, composeur, réception côté client |
+| [user-location.md](./user-location.md) | Localisation de l'utilisateur — permission après les notifications, envoi à chaque connexion et au retour au premier plan (`POST /user/location`) |
 | [support-merchant.md](./support-merchant.md) | Messages boutique — discussions clients reçues par le marchand (feature séparée, HTTP + socket) |
 | [support.md](./support.md) | Contactez-nous — chat support client (écran plein écran, chips d'objet, historique, HTTP + socket) |
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |

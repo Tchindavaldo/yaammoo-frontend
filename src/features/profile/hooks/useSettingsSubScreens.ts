@@ -15,6 +15,8 @@ export type SettingsSubScreen =
   | "supportChat"
   // Boutique -> Messages : discussions recues par la boutique.
   | "merchantSupport"
+  // Boutique -> Notifications : envois aux clients (quota du plan).
+  | "broadcast"
   // Section « Livraison » (user) + item « Livreurs » (boutique).
   | "driverApply"
   | "driverOrders"
@@ -34,6 +36,7 @@ const ALL_CLOSED: SettingsSubScreenState = {
   userBonus: false,
   supportChat: false,
   merchantSupport: false,
+  broadcast: false,
   driverApply: false,
   driverOrders: false,
   driverManage: false,

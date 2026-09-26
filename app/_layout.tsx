@@ -27,6 +27,7 @@ import {
 import { useSocketEvents } from "@/src/services/useSocketEvents";
 import { useOtaUpdates } from "@/src/services/useOtaUpdates";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
+import { useUserLocationSync } from "@/src/features/location/hooks/useUserLocationSync";
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
@@ -94,6 +95,9 @@ function AppContent() {
 
   // Connecté = Firebase user présent ET profil chargé.
   const isSignedIn = !!user && !!userData;
+  // Localisation : demandée APRÈS la permission notifications (enchaînée dans
+  // l'effet ci-dessous), puis renvoyée au retour au premier plan.
+  const { capture: captureLocation } = useUserLocationSync(isSignedIn);
   // L'auth est résolue quand Firebase a fini de répondre (loading false).
   const authResolved = !loading;
 
@@ -162,16 +166,20 @@ function AppContent() {
       // la permission n'etait plus jamais demandee.
       const t = setTimeout(() => {
         notifSetupUid.current = user.uid;
-        setupNotifications().catch((error) => {
-          console.error("Erreur lors de l'initialisation des notifications:", error);
-        });
+        setupNotifications()
+          .catch((error) => {
+            console.error("Erreur lors de l'initialisation des notifications:", error);
+          })
+          // Deux popups natives ne doivent pas se chevaucher : la localisation
+          // n'est demandée qu'une fois celle des notifications refermée.
+          .finally(() => void captureLocation("login"));
       }, NOTIF_SETUP_DELAY_MS);
       return () => clearTimeout(t);
     }
     if (!isSignedIn) {
       notifSetupUid.current = null;
     }
-  }, [isSignedIn, user, userData, setupNotifications]);
+  }, [isSignedIn, user, userData, setupNotifications, captureLocation]);
 
   // Écran de mise à jour — UN SEUL, pour les deux cas :
   //   `forceUpdate`     → version sous le minimum, aucune issue.

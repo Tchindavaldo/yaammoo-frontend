@@ -32,7 +32,7 @@
           "comgooglemaps"
         ],
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.",
+        "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants de votre ville et vous faire connaître leurs offres.",
         "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus.",
         "NSPhotoLibraryAddUsageDescription": "Yaammoo enregistre dans vos photos les images que vous exportez.",
         "NSCameraUsageDescription": "Yaammoo utilise l'appareil photo pour photographier vos plats et votre boutique.",

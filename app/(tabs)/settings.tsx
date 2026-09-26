@@ -8,6 +8,7 @@ import { DriverApplyModal } from "@/src/features/driver/components/DriverApplyMo
 import { DriverManageModal } from "@/src/features/driver/components/DriverManageModal";
 import { DriverMyApplicationsModal } from "@/src/features/driver/components/DriverMyApplicationsModal";
 import { DriverOrdersModal } from "@/src/features/driver/components/DriverOrdersModal";
+import { BroadcastManageModal } from "@/src/features/merchant/components/broadcast/BroadcastManageModal";
 import { EditBoutiquePanel } from "@/src/features/merchant/components/EditBoutiquePanel";
 import { MenuManageModal } from "@/src/features/merchant/components/MenuManageModal";
 import { MerchantSupportModal } from "@/src/features/merchant/components/support/MerchantSupportModal";
@@ -170,6 +171,11 @@ export default function SettingsScreen() {
                 icon="chatbubbles-outline"
                 title="Messages"
                 onPress={() => open("merchantSupport")}
+              />
+              <SettingGridItem
+                icon="megaphone-outline"
+                title="Notifications"
+                onPress={() => open("broadcast")}
               />
               {!appleReviewMode && (
                 <SettingGridItem
@@ -347,6 +353,12 @@ export default function SettingsScreen() {
       <MerchantSupportModal
         visible={visible.merchantSupport}
         onClose={() => close("merchantSupport")}
+      />
+
+      {/* Boutique : notifications envoyées aux clients */}
+      <BroadcastManageModal
+        visible={visible.broadcast}
+        onClose={() => close("broadcast")}
       />
 
       {/* Contactez-nous : chat support */}

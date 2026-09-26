@@ -4,13 +4,13 @@ import { Config } from "@/src/api/config";
 
 /**
  * Upload une image (URI locale ou blob web) vers le backend et renvoie l'URL
- * publique. Utilisé pour la photo de la boutique (création + édition) et,
- * potentiellement, les images de menu. Lève en cas d'échec serveur.
+ * publique. Utilisé pour la photo de la boutique (création + édition), les
+ * images de menu et celles des notifications boutique. Lève en cas d'échec serveur.
  */
 export async function uploadImageToServer(
   uri: string,
   /** Dossier de rangement cote stockage (cf. backend `storageFolders.js`). */
-  folder: "shops" | "menus" = "shops",
+  folder: "shops" | "menus" | "broadcasts" = "shops",
 ): Promise<string> {
   const formData = new FormData();
   const filename = uri.split("/").pop() || "image.jpg";

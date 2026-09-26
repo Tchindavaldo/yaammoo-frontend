@@ -30,6 +30,11 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
     // Bonus éligible / mis à jour → ouvre le modal Bonus (Settings).
     case "bonus":
       return "/(tabs)/settings?section=bonus";
+    // Annonce d'une boutique → le home ouvre sa recherche sur la boutique.
+    case "boutique_broadcast":
+      return notif.shopName
+        ? `/(tabs)?shop=${encodeURIComponent(notif.shopName)}`
+        : "/(tabs)/notifications";
     default:
       return "/(tabs)/notifications";
   }
@@ -56,6 +61,8 @@ export const getNotificationIcon = (type?: string): string => {
       return "person-remove-outline";
     case "bonus":
       return "gift-outline";
+    case "boutique_broadcast":
+      return "megaphone-outline";
     default:
       return "notifications-outline";
   }

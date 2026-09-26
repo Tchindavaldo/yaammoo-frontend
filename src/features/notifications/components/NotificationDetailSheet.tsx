@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
@@ -28,6 +29,8 @@ export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification
   const title = notification.title || notification.titre || 'Notification';
   const message = notification.body || notification.message || '';
   const hasOrderAction = !!(notification.orderId || ['order_new','order_status','order_cancel_by_user','order_cancel_by_merchant','order_rank_top','order_delivering'].includes(notification.type || ''));
+  // Annonce de boutique : le chip ouvre la boutique (recherche du home).
+  const hasShopAction = notification.type === 'boutique_broadcast' && !!notification.shopName;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -42,13 +45,23 @@ export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification
               <Text style={styles.date}>{formatDate(notification.createdAt)}</Text>
               <Text style={styles.title}>{title}</Text>
             </View>
-            {hasOrderAction && (
+            {(hasOrderAction || hasShopAction) && (
               <Pressable style={styles.chip} onPress={() => onAction(notification)}>
-                <Text style={styles.chipText}>Voir la commande</Text>
+                <Text style={styles.chipText}>
+                  {hasShopAction ? 'Voir la boutique' : 'Voir la commande'}
+                </Text>
               </Pressable>
             )}
           </View>
-          <Text style={styles.message}>{message}</Text>
+          {!!message && <Text style={styles.message}>{message}</Text>}
+          {!!notification.imageUrl && (
+            <Image
+              source={{ uri: notification.imageUrl }}
+              style={styles.image}
+              contentFit="cover"
+              transition={150}
+            />
+          )}
         </Pressable>
       </Pressable>
     </Modal>
@@ -98,6 +111,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: Theme.colors.gray[700],
     marginBottom: 8,
+  },
+  image: {
+    width: '100%',
+    aspectRatio: 16 / 10,
+    borderRadius: 16,
+    marginTop: 8,
+    backgroundColor: Theme.colors.gray[100],
   },
   chip: {
     paddingHorizontal: 12,

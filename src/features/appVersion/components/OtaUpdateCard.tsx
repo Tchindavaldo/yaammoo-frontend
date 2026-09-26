@@ -81,6 +81,7 @@ const PALETTE = DARK
       message: "rgba(255,255,255,0.68)",
       closeBg: "rgba(255,255,255,0.12)",
       closeIcon: "rgba(255,255,255,0.75)",
+      bar: "#ffffff" as string | null,
     }
   : {
       card: "#ffffff",
@@ -92,6 +93,8 @@ const PALETTE = DARK
       message: "#6b6b72",
       closeBg: "#f2f2f5",
       closeIcon: "#8e8e93",
+      // Fond clair : trait de la teinte de la carte.
+      bar: null as string | null,
     };
 
 /** Duree d'affichage avant retrait automatique (trait de decompte). */
@@ -291,7 +294,7 @@ export const OtaUpdateCard = () => {
               style={[
                 styles.bar,
                 {
-                  backgroundColor: c.tint,
+                  backgroundColor: PALETTE.bar ?? c.tint,
                   width: barWidth - 2 * TRACK_INSET,
                   transform: [
                     {

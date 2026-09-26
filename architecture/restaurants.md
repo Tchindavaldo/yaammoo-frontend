@@ -17,9 +17,18 @@ src/features/restaurants/
 ├── context/PageRevealGate.tsx      # Scroll figé jusqu'à la révélation d'une page insérée
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
 ├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
+├── hooks/useShopSearchDeepLink.ts  # `/(tabs)?shop=<nom>` (annonce de boutique) → recherche ouverte sur la boutique
+├── hooks/useHomeListScroll.ts      # Home : loader bas (Animated, sans rendu), fetch à l'entrée des fantômes, tap onglet Home, bords de la liste native
+├── hooks/usePageRevealLock.ts      # Home : verrou de page (PageRevealGate), déblocage au calme, onContentSizeChange
+├── hooks/useHomeListData.ts        # Home : listData (bannière + boutiques + fantômes), firstScreenUris, drawDistance (échauffement)
+├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
+├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
+├── hooks/useHomeHeartbeat.ts       # Home : sonde [HB] (temporaire)
 ├── utils/deliveryUtils.ts
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
+├── utils/homeListConfig.ts         # Home : constantes mesurées (DRAW_DISTANCE, GHOST_COUNT, seuils…), BANNER_ITEM, CATEGORIES
 └── components/
+    ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), homeScreenStyles
     ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
@@ -40,7 +49,10 @@ src/features/restaurants/
         └── Design1..7.tsx          # Rangées horizontales par boutique
 ```
 
-Écran : [`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx).
+Écran : [`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx) — assemblage seul
+(contextes, hooks `useHome*`, `NativeHomeList` / FlashList, CheckoutSheet).
+L'ordre d'appel `usePageRevealLock` puis `useHomeListScroll` reprend celui des
+effets d'avant le découpage.
 
 ---
 
@@ -448,9 +460,9 @@ d'origine conservées.
 Deux déclencheurs, même effet : remontée puis **troncature à la première page**
 (`resetToFirstPage`), pour ne pas garder des dizaines de cellules montées.
 
-- **Tap sur l'onglet Home** : écouteur `tabPress`, posé **dans l'écran** et non
-  dans `(tabs)/_layout.tsx` — ce layout est partagé par les 5 onglets et n'a pas
-  accès à la liste. Garde `isFocused()` : sans elle, taper Home depuis un autre
+- **Tap sur l'onglet Home** : écouteur `tabPress`, posé **par l'écran**
+  (`hooks/useHomeListScroll.ts`) et non dans `(tabs)/_layout.tsx` — ce layout
+  est partagé par les 5 onglets et n'a pas accès à la liste. Garde `isFocused()` : sans elle, taper Home depuis un autre
   onglet remonterait la liste pendant la navigation entrante.
 - **Scroll manuel** : `onMomentumScrollEnd`, jamais `onScroll` — retirer des
   cellules pendant que la liste défile la ferait sauter.
@@ -537,7 +549,7 @@ Quatre sources ont été trouvées et corrigées ; **aucune ne doit revenir** :
 |---|---|---|
 | `FastFoodContext` | `value={{ ... }}` littéral | `useMemo` sur la `value` |
 | `useFastFoods` | `.filter()` + `{...context}` dans le corps du hook | `useMemo` sur les deux |
-| `app/(tabs)/index.tsx` | `renderItem` / `keyExtractor` inline | `useCallback`, plus `handleMenuClickRef` pour figer le handler |
+| `app/(tabs)/index.tsx` | `renderItem` / `keyExtractor` inline | `useCallback` dans `hooks/useHomeListRenderers.tsx`, plus `handleMenuClickRef` (`hooks/useHomeCheckout.ts`) pour figer le handler |
 | `DesignRouter` | pas de `memo` ; tableau des 6 variantes JSX instanciées | `React.memo` ; on sélectionne le **composant**, pas l'élément |
 
 > ⚠️ `keyExtractor` ne doit **jamais** retomber sur l'index nu : une insertion en

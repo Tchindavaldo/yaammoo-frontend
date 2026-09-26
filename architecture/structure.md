@@ -87,14 +87,21 @@ src/features/
 │
 ├── merchant/                            # Détail complet : architecture/orders-merchant.md
 │   ├── context/                         # MerchantContext + MerchantWalletContext
-│   ├── hooks/                           # useMerchant · useWithdraw
-│   ├── services/                        # merchantService · withdrawService · merchantSupportService
+│   ├── hooks/                           # useMerchant · useWithdraw · useBroadcast
+│   ├── services/                        # merchantService · withdrawService · merchantSupportService · broadcastService
+│   ├── utils/broadcastQuota.ts          # Quota / semaine / dates des notifications boutique
 │   ├── utils/orderGroupKey.ts           # Clé de groupage d'une cmd (client + date + créneau/zone)
 │   ├── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
 │   │                                    #   (Livraison / Commande / Montant), gestion menus, portefeuille
+│   ├── components/broadcast/            # Notifications envoyées aux clients (Settings → Boutique →
+│   │                                    #   Notifications). Détail : architecture/merchant-broadcast.md
 │   └── components/support/              # Chat MARCHAND (Settings → Boutique → Messages) —
 │                                        #   feature séparée, aucun composant partagé avec support/
 │                                        #   Détail : architecture/support-merchant.md
+│
+├── location/                            # Position de l'utilisateur (POST /user/location)
+│   ├── hooks/useUserLocationSync.ts     # permission après les notifs, capture, géocodage inverse
+│   └── services/userLocationService.ts  # Détail : architecture/user-location.md
 │
 ├── driver/                             # Rôle driver (commandes déléguées)
 │   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket
@@ -152,7 +159,13 @@ src/features/
 │       ├── DeleteAccountModal.tsx       # Modal « Supprimer mon compte »
 │       └── LogoutModal.tsx              # Modal de confirmation de déconnexion
 │
-└── menu/ restaurants/
+├── restaurants/                         # Home client — détail : architecture/restaurants.md
+│   ├── hooks/useHome*.ts(x)             # Écran home découpé : scroll, données, rendu des cellules,
+│   │                                    #   commande, sonde [HB] ; + usePageRevealLock (verrou de page)
+│   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
+│   └── components/home/                 # HomeHeader, HomeFullScreenStates, homeScreenStyles
+│
+└── menu/
 ```
 
 > Le socket n'est pas une feature avec Context/Provider : c'est un singleton

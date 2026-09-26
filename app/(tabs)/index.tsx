@@ -1,198 +1,60 @@
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Toast } from "@/src/components/Toast";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
-import { RestaurantHeader } from "@/src/features/restaurants/components/RestaurantHeader";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { useShopSearchDeepLink } from "@/src/features/restaurants/hooks/useShopSearchDeepLink";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import { FlashList, type FlashListRef } from "@shopify/flash-list";
-import React, {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  Animated,
-  RefreshControl,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlashList } from "@shopify/flash-list";
+import React, { useCallback, useEffect, useState } from "react";
+import { Animated, RefreshControl, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
-import { DesignRouter } from "@/src/features/restaurants/components/DesignRouter";
-import { HeroBanner } from "@/src/features/restaurants/components/HeroBanner";
 import { ShopRevealProvider } from "@/src/features/restaurants/context/ShopRevealContext";
+import { PageRevealGateProvider } from "@/src/features/restaurants/context/PageRevealGate";
+import { HomeHeader } from "@/src/features/restaurants/components/home/HomeHeader";
 import {
-  PageRevealGateProvider,
-  usePageRevealGate,
-} from "@/src/features/restaurants/context/PageRevealGate";
-import { designNumberFor } from "@/src/features/restaurants/utils/designCycle";
-import { makePlaceholders } from "@/src/features/restaurants/utils/pagePlaceholders";
-import {
-  FILL_PLACEHOLDERS,
-  PAGE_SIZE,
-} from "@/src/features/restaurants/context/FastFoodContext";
-import { AppBanner, Menu } from "@/src/types";
-import { Ionicons } from "@expo/vector-icons";
+  HomeErrorScreen,
+  HomeLoadingScreen,
+} from "@/src/features/restaurants/components/home/HomeFullScreenStates";
+import { homeStyles as styles } from "@/src/features/restaurants/components/home/homeScreenStyles";
+import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
+import { useHomeHeartbeat } from "@/src/features/restaurants/hooks/useHomeHeartbeat";
+import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListData";
+import { useHomeListRenderers } from "@/src/features/restaurants/hooks/useHomeListRenderers";
+import { useHomeListScroll } from "@/src/features/restaurants/hooks/useHomeListScroll";
+import { usePageRevealLock } from "@/src/features/restaurants/hooks/usePageRevealLock";
+import { AppBanner } from "@/src/types";
 import { NativeHomeList } from "@/src/features/restaurants/components/NativeHomeList";
-import { isHomeListAvailable, type HomeListHandle } from "@/modules/home-list";
+import { isHomeListAvailable } from "@/modules/home-list";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
-import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useNavigation, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
 /**
- * Item 0 de la liste : la banniere. Objet constant (jamais recree) pour que la
- * memoisation de `listData` et les cles de la FlatList restent stables.
- */
-const BANNER_ITEM = { __banner: true as const, id: "__banner__" };
-
-/**
- * Menus affiches du premier ecran : aligne sur `LIMIT_MENUS_ENABLED` /
- * `MAX_VISIBLE_MENUS` des designs. Le groupe du premier ecran n'attend que
- * des images montees : les menus caches ne se resolvant jamais, les attendre
- * bloquerait la revelation (puis le voile anti-scroll) jusqu'au garde-fou.
- */
-const FIRST_SCREEN_MENUS = 5;
-
-/**
- * Hauteur du loader de pagination (`styles.footerLoader`). Volontairement
- * genereuse : le loader doit se remarquer meme en scroll rapide.
- */
-const FOOTER_LOADER_HEIGHT = 48;
-
-/** Distance d'apparition du loader : visible AVANT le bas strict, donc
- *  toujours en premier par rapport aux elements nouvellement charges. */
-const LOADER_VISIBLE_DISTANCE = 120;
-
-/**
- * Zone de pre-rendu de FlashList autour de l'ecran.
+ * Home client : en-tete, banniere + boutiques paginees (liste NATIVE iOS quand
+ * le build l'embarque, FlashList sinon), commande d'un menu.
  *
- * 1600 et non 800 : a 800, en bas de la page 2 les rangees de la page 1
- * sortaient de la zone et leurs cellules partaient aux fantomes du bas ; en
- * remontant, chacune revenait par un rebind fantome -> vraie boutique
- * (squelette, images, fondu) : legere pause a chaque remontee.
+ * La logique vit dans `src/features/restaurants/` : `hooks/useHome*` (scroll,
+ * donnees, rendu des cellules, commande, sonde), `hooks/usePageRevealLock`
+ * (verrou de page) et `components/home/` (en-tete, ecrans plein, styles).
+ * Voir architecture/restaurants.md.
  */
-const DRAW_DISTANCE = 1600;
-
-/** Hauteur moyenne d'une rangee boutique (variantes 190 a 280 px + marges). */
-const ROW_HEIGHT_ESTIMATE = 270;
-
-/**
- * Pre-rendu elargi au demarrage : monte d'un coup la reserve de cellules
- * qu'exige la zone de pre-rendu en regime (ecran + `DRAW_DISTANCE` de chaque
- * cote, ~4000 px), pendant que l'utilisateur regarde le premier ecran. Revenu
- * a `DRAW_DISTANCE`, FlashList garde ces cellules en reserve de recyclage.
- * Independant de `PAGE_SIZE` : c'est la zone, pas la page, qui fixe le besoin.
- */
-const WARMUP_DRAW_DISTANCE = 2 * DRAW_DISTANCE + 800;
-const WARMUP_MS = 1500;
-
-/**
- * Fantomes tenus d'avance en bas de liste, calcules en PIXELS et non en
- * pages : la page suivante (`PAGE_SIZE`, remplie a l'arrivee des donnees)
- * PLUS assez de rangees pour remplir TOUTE la zone d'echauffement.
- *
- * ⚠️ Deux raisons, mesurees a la sonde `[ROW]` :
- * - la reserve de cellules ne peut pas depasser le nombre de rangees
- *   presentes a l'echauffement. Avec 9 fantomes, 13 cellules etaient
- *   creees alors que la zone en regime en demande ~16 : les 3 fantomes
- *   ajoutes au remplissage de la page 2 se MONTAIENT en plein scroll
- *   (`MONTAGE-CELL __ph_12..14`, la pause ressentie), pas a la page 3 ;
- * - les fantomes ajoutes apres chaque remplissage tombent ainsi loin hors
- *   de la zone de pre-rendu. Valable quel que soit `PAGE_SIZE`.
- */
-const GHOST_COUNT =
-  PAGE_SIZE + Math.ceil(WARMUP_DRAW_DISTANCE / ROW_HEIGHT_ESTIMATE);
-
-/**
- * Distance du bas a laquelle part le fetch : quand le PREMIER fantome entre
- * dans la zone de pre-rendu (tous les fantomes sont sous lui ; +90 = marge
- * basse de la liste). Les donnees arrivent donc en general avant que ses
- * squelettes soient a l'ecran.
- */
-const PLACEHOLDER_FETCH_DISTANCE = GHOST_COUNT * ROW_HEIGHT_ESTIMATE + 90;
-
-/**
- * Calme exige avant de liberer le scroll (doigt leve depuis au moins ce
- * delai). Plus court qu'un intervalle entre deux glissements d'une rafale.
- */
-const UNLOCK_QUIET_MS = 350;
-
-/** Vrai pour l'item banniere, faux pour une boutique. */
-const isBannerItem = (item: any) => item?.__banner === true;
-
-const CATEGORIES = [
-  { name: "All", icon: "grid-outline" },
-  { name: "Fast Food", icon: "fast-food-outline" },
-  { name: "Pizza", icon: "pizza-outline" },
-  { name: "Burger", icon: "nutrition-outline" },
-  { name: "Drinks", icon: "beer-outline" },
-  { name: "Rice", icon: "restaurant-outline" },
-];
-
 export default function HomeScreen() {
   const onLayoutRootView = useHideSplash();
-  const { user, userData, ensureProfileRefreshed } = useAuth();
-  const { requireAuth } = useAuthGate();
-  const requireName = useRequireName();
+  const { ensureProfileRefreshed } = useAuth();
   const { unreadCount, ensureLoaded: ensureNotificationsLoaded } =
     useNotifications();
-  const { addOrder, ensureLoaded: ensureOrdersLoaded } = useOrders();
+  const { ensureLoaded: ensureOrdersLoaded } = useOrders();
 
   // Tout ce qui n'est pas indispensable a l'affichage part d'ICI, une fois
   // l'app a l'ecran : sous le splash, seules `/fastFood/all` et
   // `/settings/app-version` ont le droit de partir. Les badges panier et
   // notifications tiennent sur leur cache en attendant ces reponses.
-  // SONDE [HB] (temporaire) : battement 1 s + rendus/s. Si [HB] s'arrete au
-  // gel, le thread JS est bloque ; s'il continue avec des rendus qui
-  // explosent, c'est une boucle de rendu ; s'il continue au calme, le gel est
-  // natif (UI).
-  const hb = ((globalThis as any).__hb ??= { home: 0, row: 0, ph: 0 });
-  hb.home++;
-  useEffect(() => {
-    // Frames JS lentes (> 34 ms) et la pire, par seconde : si le scroll rame
-    // avec `lentes=0`, la saccade est native (UI), pas JavaScript.
-    let slow = 0;
-    let worst = 0;
-    let prev = 0;
-    let raf = 0;
-    const tick = (ts: number) => {
-      if (prev) {
-        const dt = ts - prev;
-        if (dt > 34) slow++;
-        if (dt > worst) worst = dt;
-      }
-      prev = ts;
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    const t = setInterval(() => {
-      if (slow || hb.home || hb.row || hb.ph)
-        console.log(
-          `[HB] lentes=${slow} pire=${worst.toFixed(0)}ms home=${hb.home} row=${hb.row} ph=${hb.ph}`,
-        );
-      slow = 0;
-      worst = 0;
-      hb.home = 0;
-      hb.row = 0;
-      hb.ph = 0;
-    }, 1000);
-    return () => {
-      clearInterval(t);
-      cancelAnimationFrame(raf);
-    };
-  }, [hb]);
+  useHomeHeartbeat();
   useEffect(() => {
     void ensureProfileRefreshed();
     ensureNotificationsLoaded();
@@ -224,27 +86,13 @@ export default function HomeScreen() {
   const HEADER_HEIGHT = 100 + insets.top;
 
   const [searchOpen, setSearchOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
-  const [checkoutVisible, setCheckoutVisible] = useState(false);
+  // Tap sur une annonce de boutique : recherche ouverte sur son nom.
+  useShopSearchDeepLink(() => setSearchOpen(true));
+  const checkout = useHomeCheckout();
 
   // For testing: force loader to persist
-  const [forceLoading, setForceLoading] = useState(false);
+  const [forceLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
-  const [toast, setToast] = useState<{
-    message: string;
-    type: "success" | "error";
-  } | null>(null);
-
-  // Loader bas INDEPENDANT : monte une seule fois, apparait/disparait en
-  // fade sans jamais toucher au contenu de la liste (ni `ListFooterComponent`
-  // qui re-layoute, ni `scrollEnabled` qui reconstruit). `pointerEvents none` :
-  // il ne bloque ni scroll ni taps. Visible seulement pendant un fetch avec
-  // une suite (`hasMore`) ET dans la zone basse (`loaderVisible`, marge
-  // `LOADER_VISIBLE_DISTANCE`) : en remontant, il se cache ; en approchant du
-  // bas, il apparait toujours en premier devant les elements charges.
-  // Pilote sans rendu React par `syncLoader`, plus bas.
-  const loaderOpacity = useRef(new Animated.Value(0)).current;
 
   const onManualRefresh = async () => {
     setRefreshing(true);
@@ -252,268 +100,31 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  // TEST: mettre `false` pour desactiver le reset au tap onglet Home
-  // (mesure scroll sans troncature). Remettre `true` avant merge : UX voulue.
-  const TAP_HOME_RESET_ENABLED = true;
-
-  // Retour en haut quand on retape l'onglet Home alors qu'on y est deja.
-  //
-  // ⚠️ Gere ICI et pas dans `(tabs)/_layout.tsx` : ce layout est partage par
-  // tous les onglets, et il n'a pas acces a la liste de cet ecran. L'evenement
-  // `tabPress` remonte au screen, qui est le seul a tenir la ref.
-  const listRef = useRef<FlashListRef<any>>(null);
-  // Liste NATIVE (iOS, `modules/home-list`) quand le build l'embarque ; sinon
-  // la FlashList ci-dessous reste en place, inchangee.
-  const nativeListRef = useRef<HomeListHandle>(null);
-  // Ref stable vers `loadMore` pour le declenchement depuis `handleScroll`
-  // sans recreer le handler (et sans reconstruire la liste).
-  const loadMoreRef = useRef(loadMore);
-  loadMoreRef.current = loadMore;
-  // Ref stable vers `setListAtBottom`, meme raison que `loadMoreRef`.
-  const setListAtBottomRef = useRef(setListAtBottom);
-  setListAtBottomRef.current = setListAtBottom;
-  // Hauteur max deja vue : une croissance prouve que la page inseree est
-  // commitee et mesuree, ce qui libere le verrou de page en attente.
-  const contentHeightRef = useRef(0);
-  const notifyPageLaidOutRef = useRef(notifyPageLaidOut);
-  notifyPageLaidOutRef.current = notifyPageLaidOut;
-  // Le verrou de page ne tombe plus aux squelettes mais a la REVELATION des
-  // boutiques inserees (voir `PageRevealGate`).
-  // --- Deblocage au CALME seulement ---
-  // Page revelee : le verrou ne tombe que si le doigt est leve ET qu'aucun
-  // geste n'a eu lieu depuis `UNLOCK_QUIET_MS`. Des glissements rapproches
-  // pendant le blocage sont donc ignores jusqu'au bout : liberer au milieu
-  // d'une rafale faisait partir un geste a moitie pris, a moitie bloque
-  // (sensation « il ne sait pas s'il doit scroller ou s'arreter »).
-  // Suivi par `onTouchStart/End` d'une View englobante : ils partent meme
-  // quand le scroll est desactive, sans capter le geste.
-  const touchingRef = useRef(false);
-  const lastTouchEndRef = useRef(0);
-  const quietTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const releaseWhenQuiet = useCallback(() => {
-    if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
-    quietTimerRef.current = null;
-    const quietFor = Date.now() - lastTouchEndRef.current;
-    if (!touchingRef.current && quietFor >= UNLOCK_QUIET_MS) {
-      notifyPageLaidOutRef.current();
-      return;
-    }
-    console.log(
-      `[GATE] UNLOCK differe (${touchingRef.current ? "doigt pose" : `geste il y a ${quietFor} ms`})`,
-    );
-    quietTimerRef.current = setTimeout(
-      releaseWhenQuiet,
-      touchingRef.current ? 80 : UNLOCK_QUIET_MS - quietFor,
-    );
-  }, []);
-  useEffect(
-    () => () => {
-      if (quietTimerRef.current) clearTimeout(quietTimerRef.current);
-    },
-    [],
-  );
-  const onListTouchStart = useCallback(() => {
-    touchingRef.current = true;
-  }, []);
-  const onListTouchEnd = useCallback(() => {
-    touchingRef.current = false;
-    lastTouchEndRef.current = Date.now();
-  }, []);
-  const revealGate = usePageRevealGate(releaseWhenQuiet);
-  const prevLenRef = useRef(fastFoods.length);
-  // Layout effect : la page est declaree avant le layout natif (donc avant
-  // `onContentSizeChange`).
-  useLayoutEffect(() => {
-    const prev = prevLenRef.current;
-    prevLenRef.current = fastFoods.length;
-    if (insertLock && fastFoods.length > prev && prev > 0) {
-      revealGate.startPage(
-        fastFoods.slice(prev).map((ff: any) => ff.id).filter(Boolean),
-      );
-    }
-  }, [fastFoods, insertLock, revealGate]);
-  // Verrou libere ailleurs (securite 8 s, reset) : la page est oubliee.
-  useEffect(() => {
-    if (!insertLock) revealGate.reset();
-  }, [insertLock, revealGate]);
-  const handleContentSizeChange = useCallback((_w: number, h: number) => {
-    // ⚠️ Suivi dans LES DEUX SENS : apres un pull-to-refresh la liste repart
-    // de zero, donc elle ne redepassera JAMAIS l'ancien max — sans le suivi
-    // vers le bas, aucune croissance ne serait detectee et le verrou de page
-    // resterait bloque (plus de loader ni de fetch sur la page 2).
-    if (h === contentHeightRef.current) return;
-    const grew = h > contentHeightRef.current;
-    contentHeightRef.current = h;
-    if (!grew) return;
-    // Fantomes : fin de chargement deja posee au remplissage (meme lot, cf.
-    // `pumpStaggeredAppend`). Rien a liberer ici, et surtout aucun rendu.
-    if (FILL_PLACEHOLDERS) return;
-    if (revealGate.isActive()) revealGate.laidOut();
-    else notifyPageLaidOutRef.current();
-  }, [revealGate]);
-  const navigation = useNavigation();
-
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Position courante : garde-fou contre une troncature hors du haut de liste. */
-  const atTopRef = useRef(true);
-
-  // Retour en haut AU SCROLL MANUEL : meme troncature que par le bouton.
-  //
-  // ⚠️ Declenchee a l'arret du scroll (`onMomentumScrollEnd`), jamais pendant
-  // (`onScroll`) : retirer des cellules sous un doigt qui defile ferait sauter
-  // la liste. Et toujours derriere la garde « on est bien en haut ».
-  /**
-   * Bas de liste atteint : declenche le fetch de la page suivante (transition
-   * dans `handleScroll`).
-   *
-   * ⚠️ REF SEULE, jamais d'etat. C'etait un `useState` que plus rien ne lisait
-   * au rendu : chaque arrivee en bas et chaque deblocage re-rendait le home
-   * pour rien. Mesure (sonde `[GATE] FRAMES`) : au deblocage du scroll, DEUX
-   * rendus consecutifs de 40-75 ms chacun, au moment exact ou le doigt
-   * reprend — la saccade ressentie.
-   */
-  const atBottomRef = useRef(false);
-  // Visibilite du loader : meme mecanisme de transition que `atBottom`, mais
-  // avec une marge (`LOADER_VISIBLE_DISTANCE`). Le loader apparait donc avant
-  // le bas strict, toujours en premier devant les elements charges.
-  // ⚠️ Ref aussi : le loader est une `Animated.Value` pilotee directement
-  // (`syncLoader`), sans passer par un rendu React.
-  const loaderVisibleRef = useRef(false);
-  const loadingMoreRef = useRef(loadingMore);
-  loadingMoreRef.current = loadingMore;
-  const hasMoreRef = useRef(hasMore);
-  hasMoreRef.current = hasMore;
-  const loaderShownRef = useRef(false);
-  const syncLoader = useCallback(() => {
-    const show =
-      loadingMoreRef.current && hasMoreRef.current && loaderVisibleRef.current;
-    if (show === loaderShownRef.current) return;
-    loaderShownRef.current = show;
-    if (show) {
-      Animated.timing(loaderOpacity, {
-        toValue: 1,
-        duration: 180,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      // Disparition directe, sans fondu de sortie.
-      loaderOpacity.stopAnimation();
-      loaderOpacity.setValue(0);
-    }
-  }, [loaderOpacity]);
-  // Re-armement : apres un fetch, le rebond au bas redeclenche la transition
-  // sans geste (double fetch, double loader). On n'autorise le fetch suivant
-  // qu'apres etre remonte de 200 px : le rebond (±40 px) ne re-arme jamais.
-  const fetchArmedRef = useRef(true);
-  const handleScroll = useCallback(
-    (e: any) => {
-      const y = e.nativeEvent.contentOffset.y;
-      atTopRef.current = y <= 4;
-
-      // Bas de liste reellement atteint : c'est la condition qui autorise le
-      // gel du scroll pendant le chargement (voir `scrollEnabled`). On la
-      // calcule ici plutot que dans `onEndReached`, qui se declenche AVANT le
-      // bas (`onEndReachedThreshold`) et figerait la liste en plein defilement.
-      //
-      // ⚠️ `setState` UNIQUEMENT au changement de valeur. Le home se re-rend a
-      // chaque agitation de contexte et ses cellules sont lourdes (voir
-      // « references stables » dans architecture/restaurants.md) : appeler le
-      // setter a chaque frame de scroll reconstruirait les cellules visibles en
-      // plein geste. Le ref porte la valeur courante, l'etat ne bouge qu'aux
-      // deux transitions qui interessent le rendu.
-      const { contentSize, layoutMeasurement } = e.nativeEvent;
-      const distanceToEnd = contentSize.height - layoutMeasurement.height - y;
-      // Le « bas » est desormais l'entree des FANTOMES dans le champ de vision
-      // (ils occupent la fin du contenu) : le fetch part des qu'on les voit,
-      // et ses donnees viennent remplir les squelettes deja en place.
-      const nextAtBottom = distanceToEnd <= PLACEHOLDER_FETCH_DISTANCE;
-      const nextLoaderVisible = distanceToEnd <= LOADER_VISIBLE_DISTANCE;
-      if (nextLoaderVisible !== loaderVisibleRef.current) {
-        loaderVisibleRef.current = nextLoaderVisible;
-        syncLoader();
-      }
-      // Bas STRICT (10 px) pour l'INSERTION : une page arrivee pendant que
-      // l'utilisateur est remonte attend son retour, elle ne s'insere jamais
-      // sous ses yeux. Ecriture ref uniquement, aucun rendu.
-      setListAtBottomRef.current(distanceToEnd <= 10);
-      if (distanceToEnd > PLACEHOLDER_FETCH_DISTANCE + 200) {
-        fetchArmedRef.current = true;
-      }
-      if (nextAtBottom !== atBottomRef.current) {
-        atBottomRef.current = nextAtBottom;
-        // ⚠️ Le fetch ne part QU'ICI, au bas reel, jamais en avance, et une
-        // seule fois par arrivee (re-arme apres 200 px) : le loader est
-        // visible. `loadMore` garde le reste (fini, deja en vol = ignore).
-        if (nextAtBottom && fetchArmedRef.current) {
-          fetchArmedRef.current = false;
-          console.log(
-            `[ROW] AT-BOTTOM fetch distance=${distanceToEnd.toFixed(1)}`,
-          );
-          loadMoreRef.current();
-        }
-      }
-
-      // Un scroll reel leve le verrou pose par la troncature : sans ce signal,
-      // le contexte ne peut pas distinguer le rebond automatique de
-      // `onEndReached` (la liste raccourcit, sa fin remonte sous le viewport)
-      // d'une descente voulue par l'utilisateur.
-      notifyUserScroll();
-    },
-    [notifyUserScroll, syncLoader],
-  );
-
-  const handleMomentumEnd = useCallback(() => {
-    // Ne RIEN faire : le reset au momentum detruit les cellules et cause la
-    // pause au scroll suivant. Le reset ne se fait plus QUE sur tap explicite
-    // sur l'onglet Home (voir listener `tabPress` ligne ~225).
-  }, []);
-
-  // ⚠️ Liberation du gel des l'arrivee de la page. Sans cet effet, `atBottom`
-  // resterait a `true` : la liste vient de s'allonger, on n'est donc plus en
-  // bas, mais AUCUN `onScroll` ne repart pour le signaler — le scroll etait
-  // desactive, donc immobile. La liste resterait figee definitivement.
-  // Aucun `setState` ici : refs + loader pilote directement (voir plus haut).
-  useEffect(() => {
-    if (!loadingMore) {
-      atBottomRef.current = false;
-      loaderVisibleRef.current = false;
-    }
-    syncLoader();
-  }, [loadingMore, hasMore, syncLoader]);
-  useEffect(() => {
-    // `tabPress` part a CHAQUE appui sur l'onglet, y compris depuis un autre
-    // ecran. `isFocused()` limite donc l'action au cas « on est deja sur le
-    // home » ; sinon on remonterait la liste pendant la navigation entrante,
-    // ce qui annulerait la position d'un retour arriere.
-    const unsubscribe = (navigation as any).addListener("tabPress", () => {
-      if (!(navigation as any).isFocused()) return;
-      // ⚠️ AVANT l'animation : une page suivante encore en vol arriverait
-      // pendant la remontee et ferait monter ses cellules (~100 ms de commit
-      // natif chacune), bloquant le thread JS au moment ou l'animation doit
-      // tourner. La troncature seule est trop tardive : elle n'intervient
-      // qu'apres les 450 ms ci-dessous, quand le mal est fait.
-      cancelPendingLoadMore();
-      listRef.current?.scrollToOffset({ offset: 0, animated: true });
-      nativeListRef.current?.scrollToTop();
-      // Troncature une fois la remontee terminee : moins de cellules en
-      // memoire, la liste retrouve l'etat qu'elle avait apres le premier GET.
-      //
-      // ⚠️ `atTopRef` est la garde INDISPENSABLE. Tronquer sans savoir ou on se
-      // trouve fait remonter le bas de liste sous le viewport, ce qui declenche
-      // `onEndReached` → `loadMore` recharge → on retronque… boucle de
-      // pagination infinie a ~120 ms le tour. On ne tronque donc QUE si on est
-      // reellement revenu en haut.
-      if (TAP_HOME_RESET_ENABLED) {
-        resetTimerRef.current = setTimeout(() => {
-          if (atTopRef.current) resetToFirstPage();
-        }, 450);
-      }
-    });
-    return () => {
-      unsubscribe();
-      if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
-    };
-  }, [navigation, resetToFirstPage, cancelPendingLoadMore]);
+  // Verrou de page (FlashList) puis defilement : cet ordre garde celui des
+  // effets d'avant le decoupage.
+  const {
+    revealGate,
+    onListTouchStart,
+    onListTouchEnd,
+    handleContentSizeChange,
+  } = usePageRevealLock({ fastFoods, insertLock, notifyPageLaidOut });
+  const {
+    loaderOpacity,
+    listRef,
+    nativeListRef,
+    loadMoreRef,
+    handleScroll,
+    handleMomentumEnd,
+    handleNativeEdgeChange,
+  } = useHomeListScroll({
+    loadMore,
+    setListAtBottom,
+    loadingMore,
+    hasMore,
+    notifyUserScroll,
+    cancelPendingLoadMore,
+    resetToFirstPage,
+  });
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
@@ -525,229 +136,22 @@ export default function HomeScreen() {
     [router],
   );
 
-  // Images que la banniere et la PREMIERE boutique vont charger. Elles sont
-  // declarees au groupe AVANT que la FlatList ne monte quoi que ce soit : sans
-  // ca, le groupe se scelle en ne connaissant que la banniere (le header monte
-  // avant les cellules) et la laisse partir seule.
-  const firstScreenUris = useMemo(() => {
-    const first: any = fastFoods[0];
-    return [
-      banners?.[0]?.imageUrl,
-      first?.image,
-      ...((first?.menu ?? [])
-        .slice(0, FIRST_SCREEN_MENUS)
-        .map((m: any) => m?.image) as string[]),
-    ].filter(Boolean) as string[];
-  }, [banners, fastFoods]);
-
-  // ⚠️ La banniere est un ITEM de la liste, plus un `ListHeaderComponent`.
-  //
-  // En header, elle vivait HORS de la virtualisation : toujours montee, et
-  // ignoree de la fenetre de rendu. Deux regimes qui ne se coordonnaient pas —
-  // `initialNumToRender` comptait des boutiques sans jamais compter les ~235 px
-  // qu'elle occupe, si bien que la fenetre initiale s'arretait toujours trop
-  // haut et qu'il restait une cellule a monter au premier geste.
-  //
-  // En item 0, la banniere entre dans la meme fenetre que les boutiques : la
-  // liste connait enfin la hauteur reelle de son contenu et dimensionne son
-  // rendu initial en consequence.
-  // Pre-rendu elargi jusqu'a `WARMUP_MS` apres la premiere page (voir
-  // `WARMUP_DRAW_DISTANCE`). Un seul changement d'etat, une seule fois.
-  const [warmup, setWarmup] = useState(true);
-  const hasFirstPage = fastFoods.length > 0;
-  useEffect(() => {
-    if (!hasFirstPage || !warmup) return;
-    const t = setTimeout(() => setWarmup(false), WARMUP_MS);
-    return () => clearTimeout(t);
-  }, [hasFirstPage, warmup]);
-
-  const listData = useMemo(() => {
-    // Fantomes de la page suivante, montes d'avance en squelette (voir
-    // `utils/pagePlaceholders`) : a l'arrivee des donnees, FlashList les
-    // rebind au lieu de monter de nouvelles rangees — plus de pause.
-    //
-    // ⚠️ Fin de catalogue : fantomes RETIRES, pas replies. Replies a hauteur
-    // 0, ils tombaient tous dans la zone de pre-rendu et FlashList leur
-    // montait une cellule chacun d'un coup (9 `MONTAGE-CELL`, 1,4 s de JS en
-    // dev a la derniere page). Retires, seules leurs cellules disparaissent,
-    // et les rangees du dessus gardent les leurs (`DRAW_DISTANCE` 1600).
-    const withGhosts =
-      FILL_PLACEHOLDERS && hasMore && !loading && fastFoods.length > 0;
-    const data = [
-      BANNER_ITEM,
-      ...fastFoods,
-      ...(withGhosts ? makePlaceholders(fastFoods.length, GHOST_COUNT) : []),
-    ];
-    // SONDE : chaque recompute = les donnees ont change de reference. Si les
-    // vagues REBIND/DEMONTAGE coincident avec ces lignes SANS scroll, le
-    // coupable est le churn de donnees (socket/pagination), pas la liste.
-    console.log(
-      `[ROW] DATACHG n=${data.length} head=${data
-        .slice(0, 4)
-        .map((d: any) => String(d?.id ?? "?").slice(0, 4))
-        .join(",")}`,
-    );
-    // SONDE : cles dupliquees = React ne distingue plus les cellules et
-    // demonte/remonte au hasard a chaque mise a jour (pagination qui chevauche,
-    // troncature + re-append). A retirer avec la sonde [ROW].
-    const ids = data.map((d: any) => d?.id);
-    if (new Set(ids).size !== ids.length) {
-      console.log(
-        `[ROW] DOUBLONS listData: ${data.length} items, ${new Set(ids).size} uniques`,
-      );
-    }
-    return data;
-  }, [fastFoods, hasMore, loading]);
-
-  // Pied de liste : le loader de pagination vit HORS de la liste (overlay
-  // fixe au-dessus de la navbar, en fade) pour ne jamais toucher au contenu :
-  // ici seulement les etats stables (vide, fin de catalogue).
-  const listFooter = useMemo(() => {
-    if (fastFoods.length === 0 && !loading) {
-      return (
-        <View style={styles.centered}>
-          <Ionicons
-            name="search-outline"
-            size={60}
-            color={Theme.colors.gray[200]}
-          />
-          <Text style={styles.emptyText}>
-            {searchQuery
-              ? `Aucun restaurant trouvé pour "${searchQuery}"`
-              : "Aucun restaurant disponible pour le moment"}
-          </Text>
-        </View>
-      );
-    }
-    if (!hasMore && !loading && fastFoods.length > 0) {
-      return (
-        <View style={styles.footerEnd}>
-          <Text style={styles.footerEndText}>
-            Vous avez vu toutes les boutiques
-          </Text>
-        </View>
-      );
-    }
-    return null;
-  }, [hasMore, loading, fastFoods.length, searchQuery]);
-
-  const handleMenuClick = (menu: Menu) => {
-    // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
-    // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
-    // Nom / prenom manquant : la sheet dediee passe AVANT le checkout.
-    requireAuth(() =>
-      requireName(() => {
-        setSelectedMenu(menu);
-        setCheckoutVisible(true);
-      }),
-    );
-  };
-
-  // Le handler change a chaque rendu (il capture `requireAuth` et les setters),
-  // mais `renderItem` doit rester stable. La ref donne le meilleur des deux :
-  // une identite figee cote FlatList, toujours la derniere version a l'appel.
-  const handleMenuClickRef = useRef(handleMenuClick);
-  handleMenuClickRef.current = handleMenuClick;
-
-  // ⚠️ `renderItem` et `keyExtractor` DOIVENT rester stables.
-  //
-  // Inlines, ils etaient recrees a chaque rendu : la FlatList voyait des
-  // cellules « neuves » et remontait la derniere en boucle
-  // (mount → 65 ms de rendu → unmount → mount …), avec ~70 ms de blocage JS a
-  // chaque tour, EN CONTINU, meme sans scroller. C'est la micro-saccade
-  // ressentie au retour en haut de liste. Ne pas les reinliner.
-  // ⚠️ Identite figee : passer `(menu) => ref.current(menu)` recreait une
-  // lambda par cellule et par rendu, ce qui aurait annule le `memo` de
-  // `DesignRouter`.
-  const onMenuClickStable = useCallback(
-    (menu: Menu) => handleMenuClickRef.current(menu),
-    [],
-  );
-
-  const renderItem = useCallback(
-    ({ item, index }: { item: any; index: number }) => {
-      if (isBannerItem(item)) {
-        return (
-          <HeroBanner
-            banners={banners}
-            onBonusPress={handleBannerPress}
-            loading={loading}
-          />
-        );
-      }
-      // ⚠️ `index - 1` : la banniere occupe la position 0, `designIndex` et la
-      // regle « pas de provider pour la premiere boutique » (DesignRouter)
-      // raisonnent en rang de BOUTIQUE, pas en rang de ligne.
-      return (
-        <DesignRouter
-          fastFood={item}
-          onMenuClick={onMenuClickStable}
-          index={index - 1}
-        />
-      );
-    },
-    [onMenuClickStable, banners, handleBannerPress, loading],
-  );
-
-  // ⚠️ `index` en secours produisait une cle DEPENDANTE DE LA POSITION : a
-  // l'insertion d'une boutique en tete (socket), toutes les cles se decalaient
-  // et React remontait toute la liste. Prefixe explicite, jamais l'index nu.
-  const keyExtractor = useCallback(
-    // `listKey` : cle du fantome remplace, reprise par la boutique qui le
-    // remplit (`utils/pagePlaceholders`). Sinon l'`id` backend.
-    (item: any, index: number) => item.listKey ?? item.id ?? `idx-${index}`,
-    [],
-  );
-
-  /**
-   * Type de cellule, pour le RECYCLAGE (FlashList).
-   *
-   * C'est la piece maitresse de la migration : FlashList ne detruit plus une
-   * rangee qui sort de l'ecran, elle REUTILISE son instance native pour la
-   * rangee qui entre. Le commit natif de 63-90 ms — la micro-pause ressentie au
-   * doigt, mesuree par la sonde `[ROW]` — n'est alors paye qu'UNE fois par type,
-   * quelle que soit la distance parcourue ou le nombre de boutiques.
-   *
-   * ⚠️ Une vue ne peut etre recyclee que vers une cellule de MEME structure. Les
-   * 7 variantes de `DesignRouter` n'ont ni la meme hauteur (190 a 280 px) ni le
-   * meme arbre de vues : les melanger ferait recycler une carte vers un gabarit
-   * incompatible, ce qui annule le gain et provoque des sauts de layout. On rend
-   * donc le type explicite — la banniere d'un cote, chaque variante de l'autre.
-   *
-   * ⚠️ On type par COMPOSANT, pas par `designIndex` : plusieurs index rendent
-   * le meme design, typer sur l'index nu creerait des pools distincts pour des
-   * vues identiques. La table vient de `designCycle.ts`, la MEME que celle de
-   * `DesignRouter` — ne jamais la redupliquer ici (elles avaient diverge).
-   */
-  const getItemType = useCallback((item: any) => {
-    if (isBannerItem(item)) return "banner";
-    return `shop-d${designNumberFor(item?.designIndex)}`;
-  }, []);
-
-  const showToast = (message: string, type: "success" | "error") => {
-    setToast({ message, type });
-  };
-
-  const handleConfirmOrder = async (order: any) => {
-    try {
-      const result = await addOrder(order);
-      if (result.success) {
-        showToast(
-          order.status === "pending"
-            ? "Commande envoyée au marchand ! 🚀"
-            : "Article ajouté au panier ! ✨",
-          "success",
-        );
-        return true;
-      } else {
-        showToast(result.message || "Une erreur est survenue.", "error");
-        return false;
-      }
-    } catch (error) {
-      showToast("Une erreur est survenue.", "error");
-      return false;
-    }
-  };
+  const { firstScreenUris, listData, drawDistance } = useHomeListData({
+    fastFoods,
+    banners,
+    hasMore,
+    loading,
+  });
+  const { listFooter, renderItem, keyExtractor, getItemType } =
+    useHomeListRenderers({
+      banners,
+      loading,
+      hasMore,
+      fastFoodsCount: fastFoods.length,
+      searchQuery,
+      onBannerPress: handleBannerPress,
+      onMenuClick: checkout.onMenuClickStable,
+    });
 
   // Écran de chargement plein — RÉSERVÉ au tout premier affichage.
   // ⚠️ `!searchQuery` est indispensable : une recherche vide la liste et
@@ -755,72 +159,22 @@ export default function HomeScreen() {
   // home et ferait disparaître la barre de recherche, empêchant l'utilisateur
   // de corriger sa saisie.
   if ((loading && fastFoods.length === 0 && !searchQuery) || forceLoading) {
-    return (
-      <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={styles.loadingText}>
-            Recherche des meilleurs plats...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <HomeLoadingScreen onLayout={onLayoutRootView} />;
   }
 
-  // Échec du chargement initial : la page entière est remplacée par un message
-  // centré et un bouton de relance. Rien d'autre n'est affiché — ni header, ni
-  // liste : il n'y a aucune donnée à montrer, et un contenu partiel donnerait
-  // l'impression d'une page cassée plutôt que d'un réseau indisponible.
+  // Échec du chargement initial : page entière remplacée (voir HomeErrorScreen).
   if (error && fastFoods.length === 0 && !loading) {
-    return (
-      <SafeAreaView style={styles.container} onLayout={onLayoutRootView}>
-        <View style={styles.centered}>
-          <Ionicons
-            name="cloud-offline-outline"
-            size={54}
-            color={Theme.colors.gray[300]}
-          />
-          <Text style={styles.errorTitle}>Connexion indisponible</Text>
-          <Text style={styles.errorText}>
-            Impossible de charger le contenu. Vérifiez votre connexion.
-          </Text>
-          <TouchableOpacity
-            style={styles.retryBtn}
-            activeOpacity={0.8}
-            onPress={refresh}
-          >
-            <Ionicons name="refresh" size={17} color={Theme.colors.white} />
-            <Text style={styles.retryText}>Réessayer</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
+    return <HomeErrorScreen onLayout={onLayoutRootView} onRetry={refresh} />;
   }
 
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
-      <RestaurantHeader
-        userName={
-          [userData?.infos?.prenom, userData?.infos?.nom]
-            .filter(Boolean)
-            .join(" ") ||
-          user?.displayName ||
-          "Utilisateur"
-        }
-        userPhoto={
-          (userData as any)?.photoUrl || (userData as any)?.photo || ""
-        }
-        location="Banganté, Cameroun"
+      <HomeHeader
         unreadCount={unreadCount}
-        onNotifPress={() => router.push("/(tabs)/notifications")}
-        onProfilePress={() => router.push("/(tabs)/settings")}
-        onCartPress={() => router.push("/(tabs)/cart")}
-        onOrdersPress={() => router.push("/(tabs)/settings?section=pending")}
-        searchVisible={searchOpen}
+        searchOpen={searchOpen}
         onSearchToggle={() => setSearchOpen(!searchOpen)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        categories={CATEGORIES}
         selectedCategory={selectedCategory}
         onCategorySelect={setSelectedCategory}
       />
@@ -868,14 +222,9 @@ export default function HomeScreen() {
               footerIsEmpty={fastFoods.length === 0 && !loading}
               onRefresh={onManualRefresh}
               onEndReached={() => loadMoreRef.current()}
-              onMenuPress={onMenuClickStable}
+              onMenuPress={checkout.onMenuClickStable}
               onBannerPress={handleBannerPress}
-              onEdgeChange={(top, near) => {
-                atTopRef.current = top;
-                loaderVisibleRef.current = near;
-                syncLoader();
-                notifyUserScroll();
-              }}
+              onEdgeChange={(top, near) => handleNativeEdgeChange(top, near)}
             />
           ) : (
           <FlashList
@@ -928,7 +277,7 @@ export default function HomeScreen() {
             // Pre-rendu modere : les rangees proches se montent en avance, mais
             // une page ajoutee pendant qu'on lit le haut ne se monte pas (pas
             // de pause d'insertion). 3200 montait tout, y compris hors regard.
-            drawDistance={warmup ? WARMUP_DRAW_DISTANCE : DRAW_DISTANCE}
+            drawDistance={drawDistance}
             // ⚠️ SCROLL FIGE une fois le bas atteint, tant que la page suivante
             // charge. On ne bride pas le rebond (ni `bounces`, ni
             // `contentInset` negatif, ni reclampage depuis `onScroll`) : ces
@@ -966,112 +315,20 @@ export default function HomeScreen() {
        </PageRevealGateProvider>
       </ShopRevealProvider>
       <CheckoutSheet
-        key={selectedMenu?.id || "checkout"}
-        visible={checkoutVisible}
-        onClose={() => setCheckoutVisible(false)}
-        menu={selectedMenu}
-        onConfirm={handleConfirmOrder}
+        key={checkout.selectedMenu?.id || "checkout"}
+        visible={checkout.checkoutVisible}
+        onClose={checkout.closeCheckout}
+        menu={checkout.selectedMenu}
+        onConfirm={checkout.handleConfirmOrder}
       />
 
-      {toast && (
+      {checkout.toast && (
         <Toast
-          message={toast.message}
-          type={toast.type}
-          onHide={() => setToast(null)}
+          message={checkout.toast.message}
+          type={checkout.toast.type}
+          onHide={checkout.hideToast}
         />
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-  },
-  centered: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-  },
-  loadingText: {
-    color: Theme.colors.gray[500],
-    fontSize: 14,
-  },
-  listContent: {
-    // paddingBottom géré dynamiquement avec useTabBarHeight
-  },
-  // ⚠️ Hauteur FIXE et genereuse (et non un simple padding de 24) : le loader
-  // doit se remarquer meme en scroll rapide. Trop court, il defilait sans
-  // qu'on le voie — on avait l'impression que les boutiques apparaissaient
-  // sans chargement.
-  footerLoader: {
-    // Meme valeur que le `contentInset` negatif qui coupe le rebond du bas.
-    height: FOOTER_LOADER_HEIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  // Loader bas INDEPENDANT : fixe au-dessus de la navbar, monte une fois,
-  // visible seulement en fade pendant un fetch avec suite. Sans fond ni
-  // bordure, juste l'indicateur en grand.
-  bottomLoader: {
-    position: "absolute",
-    alignSelf: "center",
-  },
-  footerEnd: {
-    paddingVertical: 24,
-    alignItems: "center",
-  },
-  footerEndText: {
-    fontSize: 13,
-    color: Theme.colors.gray[400],
-  },
-  emptyText: {
-    color: Theme.colors.gray[500],
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 10,
-    paddingHorizontal: 40,
-  },
-  errorTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: Theme.colors.dark,
-  },
-  errorText: {
-    fontSize: 14,
-    color: Theme.colors.gray[500],
-    textAlign: "center",
-    paddingHorizontal: 40,
-    marginTop: -4,
-  },
-  retryBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    marginTop: 10,
-    paddingHorizontal: 22,
-    paddingVertical: 11,
-    borderRadius: Theme.borderRadius.pill,
-    backgroundColor: Theme.colors.primary,
-  },
-  retryText: {
-    color: Theme.colors.white,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-    gap: 12,
-  },
-  loadingOverlayText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-});

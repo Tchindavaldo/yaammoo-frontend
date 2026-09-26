@@ -120,8 +120,9 @@ nouveau binaire et ne peuvent pas etre poussees en OTA.
   AsyncStorage, cle `ota.lastRunUpdateId`). Affichee une fois le splash leve,
   retiree seule apres 5 s. Un lancement sur le bundle du store n'en declenche
   jamais.
-- En `__DEV__` (Expo Go), pas d'OTA : `DEV_PREVIEW` affiche les deux cartes
-  en boucle pour juger le visuel (la rouge ne se ferme pas seule).
+- En `__DEV__` (Expo Go), pas d'OTA : `DEV_PREVIEW` (coupe par defaut)
+  affiche les deux cartes en boucle pour juger le visuel (la rouge ne se ferme
+  pas seule).
   `DARK` et `POSITION` basculent fond clair/sombre et haut/bas.
 
 Publier : `eas update --branch production --environment production --message "..."`.

@@ -110,7 +110,7 @@ const TRACK_INSET = 18;
  * decompte boucle sans la fermer), « Application a jour » a sa fermeture, puis
  * de nouveau « telechargee » 3 s apres. Sans effet en build (`__DEV__` faux).
  */
-const DEV_PREVIEW = true;
+const DEV_PREVIEW = false;
 
 export const OtaUpdateCard = () => {
   const insets = useSafeAreaInsets();

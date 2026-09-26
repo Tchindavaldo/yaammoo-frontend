@@ -111,7 +111,7 @@ nouveau binaire et ne peuvent pas etre poussees en OTA.
 
 **Carte de mise a jour** (`OtaUpdateCard` + `services/otaNotice.ts`) :
 
-- **« Mise a jour prete »** : telechargement termine alors que l'app est deja
+- **« Mise a jour telechargee »** : telechargement termine alors que l'app est deja
   affichee (issue `deferred` de `useOtaUpdates`). Invite a fermer puis rouvrir
   l'app ; reste affichee jusqu'a fermeture. Pas de bouton « Redemarrer » :
   relancer une app deja peinte rejoue le boot a nu.

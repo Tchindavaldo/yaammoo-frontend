@@ -76,7 +76,7 @@ export function useOtaUpdates() {
         // juste avant de redemarrer, pas au debut du check.
         if (isSplashHidden()) {
           trackUpdateFetch("deferred", Date.now() - startedAt);
-          // Carte « Mise a jour prete » : l'utilisateur sait qu'il doit
+          // Carte « Mise a jour telechargee » : l'utilisateur sait qu'il doit
           // relancer l'app pour en profiter.
           notifyUpdateDownloaded();
           return;

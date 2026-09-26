@@ -13,7 +13,7 @@ import { consumeUpdateApplied, onUpdateDownloaded } from "../services/otaNotice"
  * `OfflineBanner`). Composant DEDIE, volontairement distinct des toasts : carte
  * blanche flottante, pastille d'icone teintee, titre + une ligne d'explication.
  *
- * - « Mise a jour prete » : reste affichee jusqu'a fermeture, l'utilisateur
+ * - « Mise a jour telechargee » : reste affichee jusqu'a fermeture, l'utilisateur
  *   doit relancer l'app pour l'appliquer.
  * - « Application a jour » : se retire seule, un fin trait marque le temps
  *   restant.
@@ -31,8 +31,9 @@ const CONTENT: Record<
   downloaded: {
     icon: "arrow-down",
     tint: "#ec4913",
-    title: "Mise à jour prête",
-    message: "Fermez puis rouvrez l'application pour profiter des nouveautés.",
+    title: "Mise à jour téléchargée",
+    message:
+      "De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter.",
   },
   applied: {
     icon: "checkmark",
@@ -51,7 +52,7 @@ const TRACK_INSET = 18;
 
 /**
  * Apercu en developpement (Expo Go, Metro) : les OTA n'y existent pas, la carte
- * s'y affiche donc d'office. « Mise a jour prete » au lancement, puis
+ * s'y affiche donc d'office. « Mise a jour telechargee » au lancement, puis
  * « Application a jour » a sa fermeture. Sans effet en build (`__DEV__` faux).
  */
 const DEV_PREVIEW = true;
@@ -162,13 +163,12 @@ export const OtaUpdateCard = () => {
         ]}
         onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
       >
-        {/* Blanc dominant, teinte seulement sur le tiers droit : a gauche, la
-            pastille porte deja la couleur. Rogne par son propre calque, pour
-            ne pas couper l'ombre de la carte. */}
+        {/* Degrade sur tout le fond : blanc a gauche (la pastille porte deja
+            la couleur), teinte a droite. Rogne par son propre calque, pour ne
+            pas couper l'ombre de la carte. */}
         <LinearGradient
           pointerEvents="none"
-          colors={["#ffffff", "#ffffff", `${c.tint}1f`]}
-          locations={[0, 0.6, 1]}
+          colors={["#ffffff", `${c.tint}1f`]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={styles.gradient}
@@ -224,8 +224,8 @@ const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
     // Assez large pour masquer les boutons du header derriere.
-    left: 8,
-    right: 8,
+    left: 6,
+    right: 6,
     // Au-dessus des ecrans et des sheets, comme `OfflineBanner`.
     zIndex: 9999,
     elevation: 14,

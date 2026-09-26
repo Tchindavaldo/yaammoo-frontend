@@ -90,6 +90,11 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   ajoutée n'envoie que ses boutiques. L'état de fin de liste voyage dans le
   même appel que les rangées qu'il encadre. Sonde : `patchRows` / `patchMs`
   dans le rapport `apply`.
+- **Arrivée synchronisée** : `loading` (dans `updateRows`) affiche des
+  squelettes tant que la première page manque. Côté natif, `listLoading` vaut
+  VRAI par défaut : la bannière (prop) arrive avant le premier `updateRows`, et
+  la porte commune bannière + première boutique reste fermée tant que la liste
+  charge. Sans ça, la bannière sortait seule, avant les boutiques.
 - **Réglages ajustables par OTA** : `PAGE_SIZE` (FastFoodContext) et
   `PREFETCH_DISTANCE` (NativeHomeList) sont du JS.
 - **Aucun verrou de scroll** : ni `insertLock`, ni HOLD, ni `PageRevealGate`.

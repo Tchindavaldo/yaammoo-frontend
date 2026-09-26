@@ -57,6 +57,8 @@ struct HLRowsUpdateRecord: Record {
   @Field var ghostCount: Int = 0
   @Field var footerText: String? = nil
   @Field var footerIsEmpty: Bool = false
+  /** Premiere page en cours : squelettes a la place des boutiques. */
+  @Field var loading: Bool = false
 }
 
 /** Glyphes Ionicons (police deja chargee par l'app) : `name -> caractere`. */

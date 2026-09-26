@@ -46,6 +46,11 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   var ghostCount = 3
   var footerText: String?
   var footerIsEmpty = false
+  /**
+   Premiere page en cours. VRAI par defaut : la banniere (prop) arrive avant le
+   premier `updateRows`, et ne doit pas sortir seule en croyant la liste vide.
+   */
+  var listLoading = true
   /** Le fetch part quand le premier fantome est a moins de cette distance de l'ecran. */
   var prefetchDistance: CGFloat = 1200
   var bottomInset: CGFloat = 0 { didSet { updateInsets() } }
@@ -170,6 +175,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     ghostCount = max(0, u.ghostCount)
     footerText = u.footerText
     footerIsEmpty = u.footerIsEmpty
+    listLoading = u.loading
     lastPatch = (u.rows.count, (CACurrentMediaTime() - t0) * 1000)
     applyProps()
   }
@@ -179,7 +185,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   /** Appele a chaque lot de props (`OnViewDidUpdateProps`) et apres `updateRows`. */
   func applyProps() {
     var next: [HLRowContent] = shops.map { .shop($0) }
-    if hasMore && !shops.isEmpty {
+    // Fantomes : en queue quand une page suit, ou seuls pendant la premiere page.
+    if (hasMore && !shops.isEmpty) || (shops.isEmpty && listLoading) {
       for pos in shops.count..<(shops.count + ghostCount) {
         next.append(.ghost(design: HLLayout.design(forPosition: pos)))
       }
@@ -237,6 +244,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       onDiagnostics(report)
     }
     lastPatch = nil
+    // Fin du chargement sans boutique : la banniere attendait peut-etre la liste.
+    tryOpenFirstGate()
     DispatchQueue.main.async { [weak self] in self?.checkEndReached() }
   }
 
@@ -276,7 +285,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
    a l'arrivee d'une page ou quand on s'eloigne.
    */
   private func checkEndReached() {
-    guard hasMore, let firstGhost = rows.firstIndex(where: {
+    // Squelettes de la premiere page : elle est deja demandee par le home.
+    guard hasMore, !shops.isEmpty, let firstGhost = rows.firstIndex(where: {
       if case .ghost = $0 { return true } else { return false }
     }) else { return }
     guard let attrs = collection.layoutAttributesForItem(
@@ -371,7 +381,9 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     guard !firstGateOpen else { return }
     let hasShop = rows.contains { if case .shop = $0 { return true } else { return false } }
     let needsBanner = !shownBanners.isEmpty
-    guard (firstShopReady || !hasShop) && (bannerReady || !needsBanner) else { return }
+    // Sans boutique ET sans chargement seulement : sinon la banniere sortirait
+    // avant que la premiere boutique (et ses images) soit arrivee.
+    guard (firstShopReady || (!hasShop && !listLoading)) && (bannerReady || !needsBanner) else { return }
     firstGateOpen = true
     if let c = firstShopCell { revealShop(c) }
     bannerCell?.reveal(animated: true)

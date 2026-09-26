@@ -119,6 +119,7 @@ type SentState = {
   hasMore: boolean;
   footerText: string | null;
   footerIsEmpty: boolean;
+  loading: boolean;
 };
 
 interface Props {
@@ -209,10 +210,11 @@ export const NativeHomeList: React.FC<Props> = ({
       !!prev &&
       prev.hasMore === hasMore &&
       prev.footerText === footerText &&
-      prev.footerIsEmpty === footerIsEmpty;
+      prev.footerIsEmpty === footerIsEmpty &&
+      prev.loading === loading;
     if (sameRows && sameEnd) return;
 
-    sentRef.current = { rows, hasMore, footerText, footerIsEmpty };
+    sentRef.current = { rows, hasMore, footerText, footerIsEmpty, loading };
     view
       .updateRows({
         start,
@@ -222,13 +224,14 @@ export const NativeHomeList: React.FC<Props> = ({
         ghostCount: PAGE_SIZE,
         footerText,
         footerIsEmpty,
+        loading,
       })
       .catch((error) => {
         // Etat natif inconnu : le prochain envoi repartira de zero (liste entiere).
         sentRef.current = null;
         console.warn("[NATIVE] updateRows a echoue", error);
       });
-  }, [rows, hasMore, footerText, footerIsEmpty]);
+  }, [rows, hasMore, footerText, footerIsEmpty, loading]);
 
   const nativeBanners = useMemo<HomeListBanner[]>(
     () =>

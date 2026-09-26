@@ -62,6 +62,8 @@ export type HomeListRowsUpdate = {
   ghostCount: number;
   footerText: string | null;
   footerIsEmpty: boolean;
+  /** Chargement en cours : sans boutique, le natif affiche des squelettes. */
+  loading: boolean;
 };
 
 export type HomeListViewProps = ViewProps & {

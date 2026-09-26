@@ -8,6 +8,12 @@ export interface UserLocationPayload {
   latitude: number;
   longitude: number;
   accuracy?: number;
+  /** m */
+  altitude?: number;
+  /** m/s */
+  speed?: number;
+  /** degrés, 0 = nord */
+  heading?: number;
   city?: string;
   /** Département (Cameroun). */
   subregion?: string;
@@ -15,21 +21,33 @@ export interface UserLocationPayload {
   /** Quartier / arrondissement. */
   district?: string;
   street?: string;
+  streetNumber?: string;
+  /** Nom du lieu (bâtiment, repère). */
+  placeName?: string;
+  /** Adresse complète (Android). */
+  formattedAddress?: string;
   postalCode?: string;
   country?: string;
   isoCountryCode?: string;
+  /** Fuseau du lieu (iOS). */
+  timezone?: string;
   source: LocationSource;
   platform?: "ios" | "android" | "web";
   capturedAt?: string;
 }
 
 /**
- * Enregistre la position de l'utilisateur connecté (Bearer ajouté par
- * `setupHttp`). Historique + dernière position côté backend :
- * voir architecture/user-location.md.
+ * Enregistre la position de l'utilisateur connecté. Au premier plan, le Bearer
+ * est ajouté par `setupHttp` ; la tâche arrière-plan, qui peut tourner sans
+ * interface (donc sans `setupHttp`), passe son propre jeton `idToken`.
+ * Historique côté backend : voir architecture/user-location.md.
  */
 export const userLocationService = {
-  async send(payload: UserLocationPayload): Promise<void> {
-    await axios.post(`${Config.apiUrl}/user/location`, payload);
+  async send(payload: UserLocationPayload, idToken?: string): Promise<void> {
+    await axios.post(
+      `${Config.apiUrl}/user/location`,
+      payload,
+      idToken ? { headers: { Authorization: `Bearer ${idToken}` } } : undefined,
+    );
   },
 };

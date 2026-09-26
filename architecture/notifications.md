@@ -167,6 +167,26 @@ La page [`app/(tabs)/cart.tsx`](../app/(tabs)/cart.tsx) lit `useLocalSearchParam
 
 ---
 
+## Image dans la notification iOS (Notification Service Extension)
+
+iOS n'affiche l'image d'un push qu'avec une extension. La cible
+`NotificationService` (ajoutée par `plugins/withNotificationServiceExtension.js`,
+sources dans `plugins/notification-service/`) télécharge `imageUrl` et
+l'attache avant l'affichage.
+
+- Appelée seulement si le push porte `mutable-content: 1` : le backend ne le pose
+  que quand il y a une image (notifications boutique). Les autres notifications
+  (commandes, bonus…) ne passent pas par l'extension.
+- Sans image, téléchargement raté ou délai iOS (~30 s) dépassé : la notification
+  part **telle quelle**, texte seul — jamais bloquée.
+- JPEG / PNG / GIF tels quels ; autre format (WebP, HEIC) ré-encodé en JPEG.
+- Signature : Xcode Cloud (signature automatique) ; EAS via
+  `extra.eas.build.experimental.ios.appExtensions` (app.json), bundle
+  `com.rauval.yaammoo.NotificationService`.
+- ⚠️ Build native requise (pas d'OTA). Absente d'Expo Go.
+
+---
+
 ## Icône de la barre de statut (Android)
 
 Déclarée via le plugin `expo-notifications` dans `app.json` :

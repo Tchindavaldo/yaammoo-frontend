@@ -1,5 +1,23 @@
 # Structure globale — yaammoo/src & app/
 
+## Point d'entrée
+
+`index.js` (`package.json` → `main`) importe la tâche de localisation
+arrière-plan **puis** `expo-router/entry` : Android exécute la tâche sans monter
+l'interface, elle doit donc être définie au chargement du bundle.
+
+## plugins/ — config plugins Expo (appliqués à chaque `expo prebuild`)
+
+```
+plugins/
+├── withXcodeCloud.js                    # Podfile, ci_scripts, versions (Xcode Cloud)
+├── withModularHeadersFix.js
+├── withNotificationServiceExtension.js  # Cible iOS NotificationService (image des push)
+└── notification-service/                # SOURCES de l'extension, copiées dans ios/NotificationService/
+    ├── NotificationService.swift
+    └── NotificationService-Info.plist
+```
+
 ## app/ — Expo Router
 
 ```
@@ -100,7 +118,9 @@ src/features/
 │                                        #   Détail : architecture/support-merchant.md
 │
 ├── location/                            # Position de l'utilisateur (POST /user/location)
-│   ├── hooks/useUserLocationSync.ts     # permission après les notifs, capture, géocodage inverse
+│   ├── hooks/useUserLocationSync.ts     # permissions (après les notifs), capture, suivi arrière-plan
+│   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js)
+│   ├── utils/buildLocationPayload.ts    # position + géocodage inverse → payload
 │   └── services/userLocationService.ts  # Détail : architecture/user-location.md
 │
 ├── driver/                             # Rôle driver (commandes déléguées)

@@ -14,7 +14,19 @@
     "runtimeVersion": "1.1.1",
     "extra": {
       "eas": {
-        "projectId": "24675cd4-f658-43d1-9bfc-0ce0ff16a007"
+        "projectId": "24675cd4-f658-43d1-9bfc-0ce0ff16a007",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "NotificationService",
+                  "bundleIdentifier": "com.rauval.yaammoo.NotificationService"
+                }
+              ]
+            }
+          }
+        }
       },
       "router": {}
     },
@@ -26,13 +38,13 @@
       "usesAppleSignIn": true,
       "infoPlist": {
         "UIBackgroundModes": [
-          "remote-notification"
+          "remote-notification",
+          "location"
         ],
         "LSApplicationQueriesSchemes": [
           "comgooglemaps"
         ],
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "Yaammoo utilise votre position pour afficher les restaurants de votre ville et vous faire connaître leurs offres.",
         "NSPhotoLibraryUsageDescription": "Yaammoo a besoin d'accéder à vos photos pour ajouter des images à votre boutique et à vos menus.",
         "NSPhotoLibraryAddUsageDescription": "Yaammoo enregistre dans vos photos les images que vous exportez.",
         "NSCameraUsageDescription": "Yaammoo utilise l'appareil photo pour photographier vos plats et votre boutique.",
@@ -120,7 +132,19 @@
         {
           "icon": "./assets/images/logo-notification-white.png"
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Yaammoo utilise votre position pour le suivi de vos livraisons et pour afficher les restaurants de votre ville et leurs offres.",
+          "locationAlwaysAndWhenInUsePermission": "Yaammoo utilise votre position, même quand l'app est fermée, pour le suivi en temps réel des livraisons en cours par les livreurs et pour vous proposer les restaurants et offres de votre ville.",
+          "locationAlwaysPermission": "Yaammoo utilise votre position, même quand l'app est fermée, pour le suivi en temps réel des livraisons en cours par les livreurs et pour vous proposer les restaurants et offres de votre ville.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ],
+      "./plugins/withNotificationServiceExtension"
     ],
     "experiments": {
       "typedRoutes": true,

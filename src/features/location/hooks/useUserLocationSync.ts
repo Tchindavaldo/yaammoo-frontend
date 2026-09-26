@@ -4,22 +4,48 @@ import { useCallback, useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
 import {
   LocationSource,
-  UserLocationPayload,
   userLocationService,
 } from "../services/userLocationService";
+import {
+  backgroundLocationSupported,
+  startBackgroundLocation,
+  stopBackgroundLocation,
+} from "../tasks/backgroundLocationTask";
+import { buildLocationPayload } from "../utils/buildLocationPayload";
 
 /** Dernier envoi réussi (ms), partagé entre sessions. */
 const LAST_SENT_KEY = "user_location_last_sent";
 /** Écart minimal entre deux captures hors connexion (ouverture, premier plan). */
 const MIN_INTERVAL_MS = 30 * 60 * 1000;
+/** La permission « Toujours » n'est proposée qu'une fois, jamais redemandée. */
+const BG_ASKED_KEY = "user_location_bg_asked";
 
-const clean = (v?: string | null) => (v && v.trim() ? v.trim() : undefined);
+/**
+ * Suivi app fermée : permission « Toujours » demandée une seule fois (après
+ * celle « Pendant l'utilisation »), puis tâche arrière-plan lancée. Relancée à
+ * chaque connexion si déjà accordée (idempotent).
+ */
+const ensureBackgroundTracking = async () => {
+  if (!backgroundLocationSupported) return;
+  const current = await Location.getBackgroundPermissionsAsync();
+  let status = current.status;
+  if (
+    status !== "granted" &&
+    current.canAskAgain &&
+    !(await AsyncStorage.getItem(BG_ASKED_KEY))
+  ) {
+    await AsyncStorage.setItem(BG_ASKED_KEY, "1");
+    status = (await Location.requestBackgroundPermissionsAsync()).status;
+  }
+  if (status === "granted") await startBackgroundLocation();
+};
 
 /**
  * Position de l'utilisateur, envoyée au backend :
  * - à la connexion (`capture("login")`, appelée après la permission
  *   notifications) : la permission de localisation est demandée à ce moment,
- *   une seule fois — un refus n'est jamais redemandé ;
+ *   une seule fois — un refus n'est jamais redemandé. Puis la permission
+ *   « Toujours » (suivi app fermée, voir `backgroundLocationTask`) ;
  * - au retour au premier plan, au plus toutes les 30 min.
  *
  * Silencieux : ni loader ni toast. Aucune fonction de l'app n'en dépend, un
@@ -45,38 +71,18 @@ export const useUserLocationSync = (isSignedIn: boolean) => {
       }
       if (status !== "granted") return;
 
-      const position = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const { latitude, longitude, accuracy } = position.coords;
-
-      // Géocodage inverse du téléphone : ville, département, région. Peut
-      // échouer hors ligne — les coordonnées partent quand même.
-      let place: Location.LocationGeocodedAddress | undefined;
       try {
-        [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
-      } catch (error) {
-        console.warn("Géocodage inverse impossible:", error);
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        await userLocationService.send(
+          await buildLocationPayload(position, source),
+        );
+        await AsyncStorage.setItem(LAST_SENT_KEY, String(Date.now()));
+      } finally {
+        // Après la capture : la popup « Toujours » ne retarde pas l'envoi.
+        if (source === "login") await ensureBackgroundTracking();
       }
-
-      const payload: UserLocationPayload = {
-        latitude,
-        longitude,
-        accuracy: accuracy ?? undefined,
-        city: clean(place?.city),
-        subregion: clean(place?.subregion),
-        region: clean(place?.region),
-        district: clean(place?.district),
-        street: clean(place?.street),
-        postalCode: clean(place?.postalCode),
-        country: clean(place?.country),
-        isoCountryCode: clean(place?.isoCountryCode),
-        source,
-        platform: Platform.OS === "ios" ? "ios" : "android",
-        capturedAt: new Date(position.timestamp).toISOString(),
-      };
-      await userLocationService.send(payload);
-      await AsyncStorage.setItem(LAST_SENT_KEY, String(Date.now()));
     } catch (error) {
       console.warn("Capture de localisation impossible:", error);
     } finally {
@@ -92,6 +98,18 @@ export const useUserLocationSync = (isSignedIn: boolean) => {
     });
     return () => sub.remove();
   }, [isSignedIn, capture]);
+
+  // Déconnexion (connecté → non connecté) : fin du suivi app fermée. Pas au
+  // démarrage, où `isSignedIn` vaut false le temps de charger la session.
+  const wasSignedIn = useRef(false);
+  useEffect(() => {
+    if (wasSignedIn.current && !isSignedIn) {
+      stopBackgroundLocation().catch((error) =>
+        console.warn("Arrêt du suivi de localisation impossible:", error),
+      );
+    }
+    wasSignedIn.current = isSignedIn;
+  }, [isSignedIn]);
 
   return { capture };
 };

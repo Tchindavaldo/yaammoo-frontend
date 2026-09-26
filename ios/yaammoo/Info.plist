@@ -76,11 +76,11 @@
     <key>NSLocalNetworkUsageDescription</key>
     <string>Expo Dev Launcher uses the local network to discover and connect to development servers running on your computer.</string>
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <string>Yaammoo utilise votre position, même quand l'app est fermée, pour le suivi en temps réel des livraisons en cours par les livreurs et pour vous proposer les restaurants et offres de votre ville.</string>
     <key>NSLocationAlwaysUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <string>Yaammoo utilise votre position, même quand l'app est fermée, pour le suivi en temps réel des livraisons en cours par les livreurs et pour vous proposer les restaurants et offres de votre ville.</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Yaammoo utilise votre position pour afficher les restaurants et marchands à proximité.</string>
+    <string>Yaammoo utilise votre position pour le suivi de vos livraisons et pour afficher les restaurants de votre ville et leurs offres.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Yaammoo utilise le micro pour vos notes vocales destinées aux livreurs.</string>
     <key>NSMotionUsageDescription</key>
@@ -115,6 +115,8 @@
     <key>UIBackgroundModes</key>
     <array>
       <string>remote-notification</string>
+      <string>location</string>
+      <string>fetch</string>
     </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>

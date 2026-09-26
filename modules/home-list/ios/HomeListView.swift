@@ -36,7 +36,9 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     case footer
   }
 
-  // Props (appliquees ensemble dans `applyProps`).
+  // Boutiques et etat de fin de liste : fonction `updateRows` (jamais des
+  // props, cf. HomeListModule). Le reste : props, appliquees ensemble dans
+  // `applyProps`.
   var shops: [HLShop] = []
   var banners: [HLBanner] = []
   var bannerLoading = false
@@ -58,6 +60,9 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   private var shownBannerLoading = false
   private var revealedShops = Set<String>()
   private var menuOffsets: [String: CGFloat] = [:]
+
+  /** Rangees recues au dernier `updateRows` et cout de leur pose (sonde). */
+  private var lastPatch: (rows: Int, ms: Double)?
 
   private var fetchArmed = true
   private var atTop = true
@@ -141,9 +146,37 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     collection?.verticalScrollIndicatorInsets.bottom = bottomInset
   }
 
+  // MARK: - Mise a jour des boutiques
+
+  /**
+   Mise a jour PARTIELLE (fonction `updateRows`) : les rangees ont deja ete
+   decodees sur le fil JS, il ne reste ici qu'a les poser. Le cout ne depend
+   plus du nombre de boutiques deja chargees.
+   */
+  func updateRows(_ u: HLRowsUpdateRecord) {
+    let t0 = CACurrentMediaTime()
+    let total = max(0, u.total)
+    var next = shops
+    if next.count > total { next.removeSubrange(total...) }
+    for (i, record) in u.rows.enumerated() {
+      let pos = u.start + i
+      // Jamais de trou : une rangee au-dela de la fin connue est ignoree.
+      guard pos < total, pos <= next.count else { break }
+      let shop = HLShop(record)
+      if pos < next.count { next[pos] = shop } else { next.append(shop) }
+    }
+    shops = next
+    hasMore = u.hasMore
+    ghostCount = max(0, u.ghostCount)
+    footerText = u.footerText
+    footerIsEmpty = u.footerIsEmpty
+    lastPatch = (u.rows.count, (CACurrentMediaTime() - t0) * 1000)
+    applyProps()
+  }
+
   // MARK: - Application des props
 
-  /** Appele une fois par lot de props (`OnViewDidUpdateProps`). */
+  /** Appele a chaque lot de props (`OnViewDidUpdateProps`) et apres `updateRows`. */
   func applyProps() {
     var next: [HLRowContent] = shops.map { .shop($0) }
     if hasMore && !shops.isEmpty {
@@ -189,15 +222,21 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     // queue), mesure pendant ou hors geste.
     if next.count != previous.count || changed.contains(where: { if case .row = $0 { return true }; return false }) {
       let applyMs = ((CACurrentMediaTime() - t0) * 10_000).rounded() / 10
-      onDiagnostics([
+      var report: [String: Any] = [
         "kind": "apply",
         "applyMs": applyMs,
         "rowsBefore": previous.count,
         "rowsAfter": next.count,
         "reconfigured": changed.count,
         "duringScroll": perf.isRunning,
-      ])
+      ]
+      if let p = lastPatch {
+        report["patchRows"] = p.rows
+        report["patchMs"] = (p.ms * 10).rounded() / 10
+      }
+      onDiagnostics(report)
     }
+    lastPatch = nil
     DispatchQueue.main.async { [weak self] in self?.checkEndReached() }
   }
 

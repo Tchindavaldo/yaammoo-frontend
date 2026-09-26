@@ -56,7 +56,7 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
 ├── expo-module.config.json
 └── ios/
     ├── HomeList.podspec            # ExpoModulesCore + SDWebImage (meme cache qu'expo-image)
-    ├── HomeListModule.swift        # Props, evenements, scrollToTop
+    ├── HomeListModule.swift        # Props visuelles, evenements, updateRows, scrollToTop
     ├── HomeListView.swift          # UICollectionView + diffable (identite = position + design), fetch, bords
     ├── HLShopCell.swift            # Rangee : en-tete + cartes horizontales, revelation groupee (8 s max)
     ├── HLMenuCardCell.swift        # Carte 7/4/5 + les 2 lignes SOUS la carte (ItemMeta) + squelettes
@@ -80,6 +80,18 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
 - **Aucune règle métier en Swift** : `NativeHomeList.tsx` envoie des lignes
   déjà prêtes (prix formaté, heure de livraison recalculée chaque minute,
   frais, images de secours résolues en URL). Le Swift ne fait qu'afficher.
+- **Boutiques par `updateRows`, JAMAIS par une prop** : une prop renvoyait
+  toute la liste à chaque page, décodée par Expo sur le fil de l'écran
+  (≈ 1 ms par boutique déjà chargée : accroc de 165 ms à 147 boutiques, mesuré
+  en test volume). `updateRows({start, rows, total, hasMore, ghostCount,
+  footerText, footerIsEmpty})` n'envoie que les rangées à partir de la
+  première qui diffère, décodées sur le fil JS. Une rangée inchangée garde sa
+  référence (`rowFor`, cache par boutique + heure de livraison), donc une page
+  ajoutée n'envoie que ses boutiques. L'état de fin de liste voyage dans le
+  même appel que les rangées qu'il encadre. Sonde : `patchRows` / `patchMs`
+  dans le rapport `apply`.
+- **Réglages ajustables par OTA** : `PAGE_SIZE` (FastFoodContext) et
+  `PREFETCH_DISTANCE` (NativeHomeList) sont du JS.
 - **Aucun verrou de scroll** : ni `insertLock`, ni HOLD, ni `PageRevealGate`.
   Remplir un fantôme ou ajouter des rangées hors écran ne coûte presque rien
   en UIKit (reconfiguration d'une cellule existante), le défilement continue

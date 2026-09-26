@@ -3,11 +3,19 @@ import {
   type HomeListBanner,
   type HomeListHandle,
   type HomeListIcons,
+  type HomeListNativeHandle,
   type HomeListRow,
 } from "@/modules/home-list";
 import { AppBanner, FastFood, Menu } from "@/src/types";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AppState, Image, StyleSheet } from "react-native";
 import { PAGE_SIZE } from "../context/FastFoodContext";
 import { V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
@@ -26,6 +34,13 @@ import {
  * aucune regle metier. Recoit en retour les evenements (appui menu/banniere,
  * fin de liste, rafraichissement, bords) et les traduit pour le home.
  */
+
+/**
+ * Avance du chargement : la page suivante est demandee quand le premier
+ * squelette arrive a cette distance (px) du bas de l'ecran. Reglage JS, donc
+ * ajustable par OTA, comme `PAGE_SIZE`.
+ */
+const PREFETCH_DISTANCE = 1200;
 
 const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
 
@@ -55,7 +70,7 @@ const fallbackFor = (design: number, i: number) =>
     : design === 5 ? FALLBACK_V5[i % FALLBACK_V5.length]
       : FALLBACK_V7;
 
-const toRow = (ff: FastFood): HomeListRow => {
+const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
   const f = ff as any;
   const design = designNumberFor(ff.designIndex);
   return {
@@ -66,7 +81,7 @@ const toRow = (ff: FastFood): HomeListRow => {
     avatarFallback: AVATAR_FALLBACK,
     orders: Math.round(f?.stats?.orders ?? 0),
     votes: Math.round(f?.stats?.votes ?? 0),
-    deliveryTime: getNextDeliveryTime(f?.deliveryHours, f?.orderLeadTime ?? 0),
+    deliveryTime,
     menus: (ff.menu ?? []).map((m: any, i: number) => ({
       id: menuIdOf(ff, m, i),
       title: m?.titre ?? "",
@@ -80,6 +95,30 @@ const toRow = (ff: FastFood): HomeListRow => {
       metaFeeLabel: metaFeeLabelFor(i),
     })),
   };
+};
+
+/**
+ * Une rangee par boutique, RE-UTILISEE tant que la boutique (meme objet) et son
+ * heure de livraison n'ont pas change. Une rangee inchangee garde donc la meme
+ * reference, et `updateRows` n'envoie au natif que ce qui a reellement bouge.
+ */
+const rowCache = new WeakMap<FastFood, HomeListRow>();
+
+const rowFor = (ff: FastFood): HomeListRow => {
+  const f = ff as any;
+  const deliveryTime = getNextDeliveryTime(f?.deliveryHours, f?.orderLeadTime ?? 0);
+  const cached = rowCache.get(ff);
+  if (cached && cached.deliveryTime === deliveryTime) return cached;
+  const row = toRow(ff, deliveryTime);
+  rowCache.set(ff, row);
+  return row;
+};
+
+type SentState = {
+  rows: HomeListRow[];
+  hasMore: boolean;
+  footerText: string | null;
+  footerIsEmpty: boolean;
 };
 
 interface Props {
@@ -139,10 +178,57 @@ export const NativeHomeList: React.FC<Props> = ({
   }, []);
 
   const rows = useMemo(
-    () => fastFoods.map(toRow),
+    () => fastFoods.map(rowFor),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [fastFoods, minute],
   );
+
+  // Vue native : `updateRows` en interne, seul `scrollToTop` expose au home.
+  const viewRef = useRef<HomeListNativeHandle>(null);
+  useImperativeHandle(
+    listRef,
+    () => ({ scrollToTop: () => viewRef.current?.scrollToTop() ?? Promise.resolve() }),
+    [],
+  );
+
+  // Envoi PARTIEL des boutiques : a partir de la premiere rangee qui differe
+  // de ce que le natif a deja (reference, cf. `rowFor`). Une page ajoutee
+  // n'envoie que ses boutiques, jamais toute la liste.
+  const sentRef = useRef<SentState | null>(null);
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const prev = sentRef.current;
+    let start = 0;
+    if (prev) {
+      const n = Math.min(prev.rows.length, rows.length);
+      while (start < n && prev.rows[start] === rows[start]) start++;
+    }
+    const sameRows = !!prev && start === rows.length && prev.rows.length === rows.length;
+    const sameEnd =
+      !!prev &&
+      prev.hasMore === hasMore &&
+      prev.footerText === footerText &&
+      prev.footerIsEmpty === footerIsEmpty;
+    if (sameRows && sameEnd) return;
+
+    sentRef.current = { rows, hasMore, footerText, footerIsEmpty };
+    view
+      .updateRows({
+        start,
+        rows: rows.slice(start),
+        total: rows.length,
+        hasMore,
+        ghostCount: PAGE_SIZE,
+        footerText,
+        footerIsEmpty,
+      })
+      .catch((error) => {
+        // Etat natif inconnu : le prochain envoi repartira de zero (liste entiere).
+        sentRef.current = null;
+        console.warn("[NATIVE] updateRows a echoue", error);
+      });
+  }, [rows, hasMore, footerText, footerIsEmpty]);
 
   const nativeBanners = useMemo<HomeListBanner[]>(
     () =>
@@ -192,16 +278,11 @@ export const NativeHomeList: React.FC<Props> = ({
 
   return (
     <HomeListView
-      ref={listRef}
+      ref={viewRef}
       style={styles.list}
-      rows={rows}
       banners={nativeBanners}
       bannerLoading={loading && nativeBanners.length === 0}
-      hasMore={hasMore}
-      ghostCount={PAGE_SIZE}
-      footerText={footerText}
-      footerIsEmpty={footerIsEmpty}
-      prefetchDistance={1200}
+      prefetchDistance={PREFETCH_DISTANCE}
       bottomInset={bottomInset}
       sidePadding={sidePadding}
       refreshing={refreshing}

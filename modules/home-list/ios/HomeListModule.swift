@@ -11,32 +11,17 @@ public final class HomeListModule: Module {
     View(HomeListView.self) {
       Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics")
 
-      Prop("rows") { (view: HomeListView, rows: [HLShopRecord]) in
-        view.shops = rows.map(HLShop.init)
-      }
-
+      // ⚠️ Les boutiques ne sont PAS une prop. Une prop renvoie TOUTE la liste a
+      // chaque page, et Expo la decode sur le fil de l'ecran : environ 1 ms par
+      // boutique deja chargee, soit un accroc de 165 ms a 147 boutiques. La
+      // fonction `updateRows` ne recoit que les rangees nouvelles ou modifiees,
+      // et ses arguments sont decodes sur le fil JS.
       Prop("banners") { (view: HomeListView, banners: [HLBannerRecord]) in
         view.banners = banners.map(HLBanner.init)
       }
 
       Prop("bannerLoading") { (view: HomeListView, loading: Bool) in
         view.bannerLoading = loading
-      }
-
-      Prop("hasMore") { (view: HomeListView, hasMore: Bool) in
-        view.hasMore = hasMore
-      }
-
-      Prop("ghostCount") { (view: HomeListView, count: Int) in
-        view.ghostCount = max(0, count)
-      }
-
-      Prop("footerText") { (view: HomeListView, text: String?) in
-        view.footerText = text
-      }
-
-      Prop("footerIsEmpty") { (view: HomeListView, empty: Bool) in
-        view.footerIsEmpty = empty
       }
 
       Prop("prefetchDistance") { (view: HomeListView, distance: Double) in
@@ -66,6 +51,10 @@ public final class HomeListModule: Module {
 
       AsyncFunction("scrollToTop") { (view: HomeListView) in
         view.scrollToTop()
+      }
+
+      AsyncFunction("updateRows") { (view: HomeListView, update: HLRowsUpdateRecord) in
+        view.updateRows(update)
       }
     }
   }

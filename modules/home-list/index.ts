@@ -49,14 +49,24 @@ export type HomeListIcons = {
 
 type Event<T> = { nativeEvent: T };
 
-export type HomeListViewProps = ViewProps & {
+/**
+ * Mise a jour PARTIELLE de la liste (`updateRows`) : seules les rangees a partir
+ * de `start` sont envoyees, la liste est ramenee a `total`. L'etat de fin de
+ * liste voyage dans le meme appel que les rangees qu'il encadre.
+ */
+export type HomeListRowsUpdate = {
+  start: number;
   rows: HomeListRow[];
-  banners: HomeListBanner[];
-  bannerLoading: boolean;
+  total: number;
   hasMore: boolean;
   ghostCount: number;
   footerText: string | null;
   footerIsEmpty: boolean;
+};
+
+export type HomeListViewProps = ViewProps & {
+  banners: HomeListBanner[];
+  bannerLoading: boolean;
   prefetchDistance: number;
   bottomInset: number;
   sidePadding: number;
@@ -75,9 +85,18 @@ export type HomeListHandle = {
   scrollToTop: () => Promise<void>;
 };
 
+/**
+ * Methodes de la vue native. ⚠️ Les boutiques passent par `updateRows`, jamais
+ * par une prop : une prop renvoie toute la liste a chaque page et le natif la
+ * decode sur le fil de l'ecran (accrocs croissants avec la longueur de liste).
+ */
+export type HomeListNativeHandle = HomeListHandle & {
+  updateRows: (update: HomeListRowsUpdate) => Promise<void>;
+};
+
 export const isHomeListAvailable =
   Platform.OS === "ios" && requireOptionalNativeModule("HomeList") != null;
 
 export const HomeListView: ComponentType<
-  HomeListViewProps & { ref?: Ref<HomeListHandle> }
+  HomeListViewProps & { ref?: Ref<HomeListNativeHandle> }
 > | null = isHomeListAvailable ? requireNativeView("HomeList") : null;

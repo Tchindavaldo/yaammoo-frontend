@@ -42,6 +42,23 @@ struct HLBannerRecord: Record {
   @Field var tappable: Bool = false
 }
 
+/**
+ Mise a jour de la liste (fonction `updateRows`) : seules les rangees a partir
+ de `start` sont transmises, jamais toute la liste. Les rangees `< start` sont
+ inchangees ; la liste est ramenee a `total`. L'etat de fin de liste voyage
+ dans le MEME appel que les rangees : fantomes et pied de liste ne peuvent pas
+ changer une frame avant les boutiques qu'ils encadrent.
+ */
+struct HLRowsUpdateRecord: Record {
+  @Field var start: Int = 0
+  @Field var rows: [HLShopRecord] = []
+  @Field var total: Int = 0
+  @Field var hasMore: Bool = false
+  @Field var ghostCount: Int = 0
+  @Field var footerText: String? = nil
+  @Field var footerIsEmpty: Bool = false
+}
+
 /** Glyphes Ionicons (police deja chargee par l'app) : `name -> caractere`. */
 struct HLIconsRecord: Record {
   @Field var fontFamily: String? = nil

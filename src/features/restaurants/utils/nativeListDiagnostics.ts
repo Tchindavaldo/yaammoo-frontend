@@ -62,7 +62,7 @@ export const reportNativeDiagnostics = (r: Record<string, any>) => {
       send(`home-list: bilan ${SUMMARY_EVERY} gestes`, "info", { ...summary });
       Object.assign(summary, { gestures: 0, frames: 0, dropped: 0, hitches: 0, worstMs: 0 });
     }
-  } else if (r.kind === "apply" && (r.applyMs ?? 0) > 8) {
+  } else if (r.kind === "apply" && (r.applyMs ?? 0) + (r.patchMs ?? 0) > 8) {
     send("home-list: arrivee de page lente", "warning", r);
   }
 };

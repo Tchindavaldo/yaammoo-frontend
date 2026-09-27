@@ -6,6 +6,14 @@ import { getOptionalIdToken } from "@/src/services/idToken";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
 import { sinceBoot } from "@/src/utils/bootClock";
+import {
+  HOME_CLIENT_SETTINGS_FALLBACK,
+  MAX_SERVER_LIMIT,
+  parseHomeClientSettings,
+  readStoredHomeClientSettings,
+  storeHomeClientSettings,
+  type HomeClientSettings,
+} from "../utils/homeClientSettings";
 import { placeholderKey } from "../utils/pagePlaceholders";
 import axios from "axios";
 import React, {
@@ -23,13 +31,6 @@ import React, {
 // s'accumulaient, et les images arrivaient toutes en bloc au lieu d'apparaitre
 // boutique par boutique. La FlatList ne monte que ce qui est visible : le
 // chargement suit donc naturellement l'ordre d'affichage, sans file a gerer.
-
-/**
- * Boutiques chargées par page. Le catalogue vise 500 boutiques : tout charger
- * d'un coup, c'est plusieurs Mo de JSON avant le premier pixel.
- *
- */
-export const PAGE_SIZE = 10;
 
 /**
  * Insertion DANS les fantomes de la page suivante (`utils/pagePlaceholders`) :
@@ -63,13 +64,6 @@ const INSERT_LOCK_SAFETY_MS = 8000;
  * liste garde toutes ses pages en memoire.
  */
 const RESET_ENABLED = false;
-
-/**
- * Plafond de `limit` IMPOSE par le backend (`GET /fastFood/all`). Demander plus
- * n'echoue pas : le serveur rabote silencieusement, d'ou des boutiques non
- * rafraichies sans le moindre signal. Voir `architecture/restaurants.md`.
- */
-const MAX_SERVER_LIMIT = 50;
 
 /**
  * Delai au-dela duquel on entre dans la home sans le catalogue.
@@ -171,6 +165,11 @@ interface FastFoodContextType {
   clearDeliveryOfferForBonus: (bonusId: string) => void;
   /** Bannières publicitaires actives du home, reçues via GET /fastfood/all. */
   banners: AppBanner[];
+  /**
+   * Taille de page et distance de prechargement du home, pilotees par le
+   * serveur (`clientSettings`). Voir `utils/homeClientSettings`.
+   */
+  homeSettings: HomeClientSettings;
 }
 
 // ── Normalisation (partagée entre le fetch HTTP et l'injection socket) ──
@@ -333,6 +332,49 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const runIdRef = useRef(0);
   const [appleReviewMode, setAppleReviewMode] = useState(false);
   const [banners, setBanners] = useState<AppBanner[]>([]);
+  /**
+   * Reglages d'affichage du home (`clientSettings`). L'etat sert l'ecran
+   * (fantomes, prechargement) ; la ref sert `fetchPage`, callback stable qui
+   * lirait sinon une valeur figee.
+   */
+  const [homeSettings, setHomeSettings] = useState<HomeClientSettings>(
+    HOME_CLIENT_SETTINGS_FALLBACK,
+  );
+  const homeSettingsRef = useRef(HOME_CLIENT_SETTINGS_FALLBACK);
+  /** Vrai des qu'une reponse serveur a fixe les reglages : la copie gardee, plus ancienne, ne l'ecrase plus. */
+  const serverSettingsRef = useRef(false);
+  /** Lecture de la copie gardee au lancement precedent : la premiere page l'attend. */
+  const storedSettingsRef = useRef<Promise<void> | null>(null);
+  const applyHomeSettings = useCallback((s: HomeClientSettings) => {
+    homeSettingsRef.current = s;
+    setHomeSettings((prev) =>
+      prev.pageSize === s.pageSize &&
+      prev.prefetchDistance === s.prefetchDistance
+        ? prev
+        : s,
+    );
+  }, []);
+  /** `clientSettings` d'une reponse premiere page : applique, puis garde pour le lancement suivant. */
+  const applyServerSettings = useCallback(
+    (raw: unknown) => {
+      if (!raw || typeof raw !== "object") return;
+      serverSettingsRef.current = true;
+      applyHomeSettings(parseHomeClientSettings(raw));
+      storeHomeClientSettings(raw);
+    },
+    [applyHomeSettings],
+  );
+  useEffect(() => {
+    storedSettingsRef.current = readStoredHomeClientSettings().then((s) => {
+      if (!serverSettingsRef.current) applyHomeSettings(s);
+    });
+  }, [applyHomeSettings]);
+  /**
+   * Boutiques de la premiere page, pour `resetToFirstPage()` : la taille de page
+   * peut changer depuis (reponse serveur), la troncature doit garder
+   * exactement la page que `firstPageCursorRef` termine.
+   */
+  const firstPageSizeRef = useRef(0);
   const [error, setError] = useState<string | null>(null);
   // Double l'etat : le callback de retour reseau est pose UNE fois et lirait
   // sinon un `error` fige par la closure.
@@ -396,10 +438,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // résolus. Visiteur anonyme (ou token indisponible) : appel sans header,
       // la route continue de répondre normalement.
       const idToken = await getOptionalIdToken();
+      // Premiere page : taille gardee au lancement precedent (lecture locale,
+      // deja finie en general, Firebase tranche bien apres).
+      if (isFirstPage && storedSettingsRef.current) {
+        await storedSettingsRef.current;
+      }
       const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
         params: {
-          limit: PAGE_SIZE,
+          limit: homeSettingsRef.current.pageSize,
           ...(cursor ? { cursor } : {}),
           ...(q ? { q } : {}),
         },
@@ -428,6 +475,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
         setBanners(
           Array.isArray(response.data?.banners) ? response.data.banners : [],
         );
+        // Reglages d'affichage : premiere page seulement, comme les bannieres.
+        // Ils valent pour les pages SUIVANTES (celle-ci est deja partie).
+        applyServerSettings(response.data?.clientSettings);
       }
 
       const next = response.data?.nextCursor ?? null;
@@ -450,6 +500,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
             normalizeFastFood(item, index % 6),
           );
           pumpLenRef.current = data.length;
+          firstPageSizeRef.current = data.length;
           setFastFoods(data);
         } else {
           // La page s'insere ENTIERE D'UN COUP, mais seulement au bas strict
@@ -524,7 +575,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // fin du fetch et l'apparition des cartes.
       if (isFirstPage) setLoading(false);
     }
-  }, []);
+  }, [applyServerSettings]);
 
   // ⚠️ La recherche courante est lue via une REF, pas via la dependance d'un
   // `useCallback`. Sinon `refresh` et `loadMore` changent de reference a chaque
@@ -563,8 +614,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // ⚠️ Le backend PLAFONNE `limit` a 50. Une seule requete laisserait donc
       // les boutiques au-dela du 50e avec leurs anciens prix — silencieusement.
       // On enchaine les pages par curseur jusqu'a couvrir tout ce qui est
-      // affiche. `PAGE_SIZE` vaut 3 : sans ce plafond de 50 par requete, un
-      // catalogue de 100 boutiques demanderait 34 allers-retours au lieu de 2.
+      // affiche, par 50 et non par la taille de page du home : a 3 par page,
+      // un catalogue de 100 boutiques demanderait 34 allers-retours au lieu de 2.
       const fresh = new Map<string, any>();
       let cursor: string | null = null;
 
@@ -578,8 +629,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
         });
 
         // Au login invite → connecte, c'est ce rafraichissement qui remplace le
-        // fetch premiere page : le flag review doit suivre le compte connecte.
-        if (!cursor) setAppleReviewMode(response.data?.appleReviewMode === true);
+        // fetch premiere page : le flag review doit suivre le compte connecte,
+        // les reglages d'affichage aussi.
+        if (!cursor) {
+          setAppleReviewMode(response.data?.appleReviewMode === true);
+          applyServerSettings(response.data?.clientSettings);
+        }
 
         const raw: any[] = response.data?.data ?? [];
         for (const item of raw) {
@@ -609,7 +664,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       // Rattrapage silencieux : un echec ne doit ni afficher d'erreur, ni
       // remplacer les donnees en place. Le prochain retour reessaiera.
     }
-  }, []);
+  }, [applyServerSettings]);
 
   /** Recharge depuis le début (pull-to-refresh). */
   const refresh = useCallback(async () => {
@@ -626,7 +681,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    * ⚠️ Ce verrou etait un COOLDOWN de 800 ms, remplace ici par un rearmement au
    * geste (`notifyUserScroll`). Un delai fixe est une devinette : il refusait
    * aussi les demandes LEGITIMES d'un utilisateur qui redescend vite — avec
-   * PAGE_SIZE=3 le bas de liste est atteint en ~300 ms, donc quasi toujours
+   * des pages de 3 le bas de liste est atteint en ~300 ms, donc quasi toujours
    * dans la fenetre. Le loader restait alors fige et la page suivante
    * n'arrivait jamais. On ne devine plus une duree : on distingue le rebond
    * automatique (aucun scroll entre la troncature et `onEndReached`) du scroll
@@ -689,18 +744,20 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
    * exact qu'elle avait apres le premier GET. Les pages suivantes seront
    * rechargees normalement au scroll.
    *
-   * ⚠️ Sans effet si rien n'a ete pagine (`fastFoods.length <= PAGE_SIZE`) :
-   * declencher un rendu pour rien reintroduirait le probleme qu'on corrige.
+   * ⚠️ Sans effet si rien n'a ete pagine (liste pas plus longue que la
+   * premiere page) : declencher un rendu pour rien reintroduirait le probleme
+   * qu'on corrige.
    */
   const resetToFirstPage = useCallback(() => {
     if (!RESET_ENABLED) return;
+    const firstPageSize = firstPageSizeRef.current;
     // ⚠️ Les effets de bord sont ICI, PAS dans l'updater de `setFastFoods`.
     // Un updater n'est pas garanti execute une seule fois : React le rejoue
     // (StrictMode, rendu concurrent, re-rendu declenche par un contexte
     // voisin — frequent sur ce home). Quand le verrou et le curseur y vivaient,
     // une simple notification entrante les reposait apres coup et gelait la
     // pagination. Ne pas les y remettre.
-    if (fastFoodsLenRef.current <= PAGE_SIZE) return;
+    if (fastFoodsLenRef.current <= firstPageSize) return;
 
     // SONDE [ROW] : qui tronque pendant le scroll ? A retirer avec la sonde.
     console.log(
@@ -738,9 +795,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     cursorRef.current = firstPageCursorRef.current;
     setHasMore(!!firstPageCursorRef.current);
     // La base des designs repart de la liste conservee.
-    pumpLenRef.current = PAGE_SIZE;
+    pumpLenRef.current = firstPageSize;
     setFastFoods((prev) =>
-      prev.length <= PAGE_SIZE ? prev : prev.slice(0, PAGE_SIZE),
+      prev.length <= firstPageSize ? prev : prev.slice(0, firstPageSize),
     );
   }, []);
 
@@ -1170,6 +1227,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       upsertFastFoodFromSocket,
       applyDeliveryOffer,
       clearDeliveryOfferForBonus,
+      homeSettings,
     }),
     [
       fastFoods,
@@ -1197,6 +1255,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       upsertFastFoodFromSocket,
       applyDeliveryOffer,
       clearDeliveryOfferForBonus,
+      homeSettings,
     ],
   );
 

@@ -80,6 +80,7 @@ export default function HomeScreen() {
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
+    homeSettings,
   } = useFastFoods();
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
@@ -220,6 +221,8 @@ export default function HomeScreen() {
                     : null
               }
               footerIsEmpty={fastFoods.length === 0 && !loading}
+              ghostCount={homeSettings.pageSize}
+              prefetchDistance={homeSettings.prefetchDistance}
               onRefresh={onManualRefresh}
               onEndReached={() => loadMoreRef.current()}
               onMenuPress={checkout.onMenuClickStable}

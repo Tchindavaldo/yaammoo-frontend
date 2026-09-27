@@ -77,7 +77,6 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
     cv.register(HLMenuCardCell.self, forCellWithReuseIdentifier: HLMenuCardCell.reuseId(d))
     contentView.addSubview(cv)
     menus = cv
-    HLCellDiag.apply(header)
   }
 
   // MARK: Configuration

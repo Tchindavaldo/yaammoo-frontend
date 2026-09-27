@@ -83,21 +83,6 @@ export type HomeListRowsUpdate = {
  */
 export type HomeListBlurMode = "live" | "baked";
 
-/**
- * `off` : design intact. `rotate` : `base` et `preroll` (sonde lancee au doigt
- * pose) a tour de role, une variante par lancement. Sinon, une variante fixe
- * (dont les familles d'elements retirees : `noclip`, `notext`...).
- */
-export type HomeListCellDiag =
-  | "off"
-  | "rotate"
-  | "base"
-  | "noclip"
-  | "notext"
-  | "nophoto"
-  | "nofx"
-  | "preroll";
-
 export type HomeListViewProps = ViewProps & {
   banners: HomeListBanner[];
   bannerLoading: boolean;
@@ -111,14 +96,12 @@ export type HomeListViewProps = ViewProps & {
   cardBlurMode: HomeListBlurMode;
   /** Defilement auto de la banniere (sinon seul le doigt la fait defiler). */
   bannerAutoplay: boolean;
-  /** Diagnostic TEMPORAIRE des entrees de rangees (TestFlight seulement). */
-  cellDiag: HomeListCellDiag;
   onMenuPress: (e: Event<{ shopId: string; menuId: string }>) => void;
   onBannerPress: (e: Event<{ id: string }>) => void;
   onEndReached: (e: Event<Record<string, never>>) => void;
   onRefresh: (e: Event<Record<string, never>>) => void;
   onEdgeChange: (e: Event<{ atTop: boolean; nearBottom: boolean }>) => void;
-  /** Sonde de fluidite : `kind: "scroll"` (par geste) ou `"apply"` (par page). */
+  /** Sonde de fluidite (TestFlight seulement) : `kind: "scroll"` (par geste) ou `"apply"` (par page). */
   onDiagnostics: (e: Event<Record<string, any>>) => void;
 };
 

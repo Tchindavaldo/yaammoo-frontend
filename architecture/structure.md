@@ -202,6 +202,7 @@ src/features/
 │   ├── hooks/useHome*.ts(x)             # Écran home découpé : scroll, données, rendu des cellules,
 │   │                                    #   commande, sonde [HB] ; + usePageRevealLock (verrou de page)
 │   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
+│   ├── utils/homeClientSettings.ts      # Taille de page / préchargement venus du serveur (`settings_client`)
 │   └── components/home/                 # HomeHeader, HomeFullScreenStates, homeScreenStyles
 │
 └── menu/

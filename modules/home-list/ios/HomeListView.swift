@@ -25,7 +25,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   let onEndReached = EventDispatcher()
   let onRefresh = EventDispatcher()
   let onEdgeChange = EventDispatcher()
-  /** Rapports de fluidite (scroll, pages) : journalises cote JS + Sentry. */
+  /** Rapports de fluidite (scroll, pages) : journal de l'iPhone, cote JS. */
   let onDiagnostics = EventDispatcher()
   private let perf = HLPerfMonitor()
 
@@ -85,8 +85,6 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     clipsToBounds = true
     backgroundColor = .white
     setupCollection()
-    // Pixel de la sonde ecran, au-dessus de la liste (coin haut gauche, marge blanche).
-    layer.addSublayer(perf.screen.layer)
     perf.offsetProvider = { [weak self] in self?.collection.contentOffset.y ?? 0 }
     perf.onReport = { [weak self] report in
       var r = report
@@ -96,32 +94,22 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       r["bakes"] = HLBlurBar.bakes
       r["bakeMaxMs"] = HLBlurBar.bakeMaxMs
       r["bannerAutoplay"] = HLBannerCell.autoplayEnabled
-      // Diagnostic des entrees de rangees : variante du lancement, cellules
-      // creees depuis le lancement, hauteur visible (situer les rangees).
-      r["cellDiag"] = HLCellDiag.variant.rawValue
+      // Cellules creees depuis le lancement, hauteur visible (situer les rangees).
       r["rowCells"] = HLShopCell.created
       r["cardCells"] = HLMenuCardCell.created
       r["viewH"] = Int(self?.collection.bounds.height ?? 0)
       self?.report(r)
     }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
-      self?.perf.screen.warmUp()
-    }
   }
 
   /**
-   Rapport de la sonde, vers JS (journal de l'iPhone `[HL]` + Sentry). Pas de
-   `NSLog` ici : iOS 26 le masque (`<private>`) dans une build de release.
+   Rapport de la sonde, vers JS (journal de l'iPhone `[HL]`), TestFlight et
+   debug seulement. Pas de `NSLog` ici : iOS 26 le masque (`<private>`) dans
+   une build de release.
    */
   private func report(_ r: [String: Any]) {
+    guard HLPerfMonitor.enabled else { return }
     onDiagnostics(r)
-  }
-
-  // Variante `preroll` de la sonde : le doigt pose lance l'horloge avant le geste.
-  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
-    let hit = super.hitTest(point, with: event)
-    if hit != nil, event?.type == .touches { perf.touchDown() }
-    return hit
   }
 
   private func setupCollection() {

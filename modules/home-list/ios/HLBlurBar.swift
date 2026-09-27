@@ -91,9 +91,8 @@ final class HLBlurBar: UIView {
       insertSubview(v, at: 0)
       effect = v
     }
-    effect?.isHidden = !live || HLCellDiag.hidesBlurVeil
-    backdrop.isHidden = live || HLCellDiag.hidesBlurPhoto
-    veil.isHidden = HLCellDiag.hidesBlurVeil
+    effect?.isHidden = !live
+    backdrop.isHidden = live
     veil.backgroundColor = UIColor(white: 1, alpha: live ? HLBlurBar.liveVeil : HLBlurBar.bakedVeil)
   }
 

@@ -27,6 +27,7 @@ src/features/restaurants/
 ├── utils/deliveryUtils.ts
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
 ├── utils/homeListConfig.ts         # Home : constantes mesurées (DRAW_DISTANCE, GHOST_COUNT, seuils…), BANNER_ITEM, CATEGORIES
+├── utils/homeClientSettings.ts     # Home : taille de page + distance de préchargement venues du serveur (`clientSettings`), valeurs de secours, copie gardée
 └── components/
     ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), homeScreenStyles
     ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
@@ -76,33 +77,26 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
     ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
-    ├── HLPerfMonitor.swift         # Sonde : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
-    ├── HLScreenProbe.swift         # Sonde ECRAN : pixel Metal, heure reelle d'affichage (`presentedTime`)
-    ├── HLCellDiag.swift            # Diagnostic TEMPORAIRE : une famille d'elements retiree par lancement (`cellDiag`)
+    ├── HLPerfMonitor.swift         # Sonde TestFlight : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
     ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
 ```
 
-- **Sonde de fluidité (`onDiagnostics`)** : un rapport par geste de scroll
-  (images perdues, accrocs > 50 ms, pire image, coût de configuration des
-  rangées) et par arrivée de page (durée d'application). Côté JS
-  (`utils/nativeListDiagnostics.ts`) : log local `[NATIVE]`, fil d'Ariane
-  Sentry, message Sentry sur saccade et bilan tous les 10 gestes (débit borné),
-  plus « liste native active » et « geste N après lancement » (3 premiers
-  scrolls) à chaque lancement. Sert en build TestFlight, où il n'y a aucun
-  terminal.
+- **Sonde de fluidité (`onDiagnostics`, TestFlight et debug seulement)** :
+  `HLPerfMonitor.enabled` (reçu de sandbox) la coupe en build App Store. Un
+  rapport par geste de scroll (images perdues, accrocs > 50 ms, pire image,
+  coût de configuration des rangées) et par arrivée de page (durée
+  d'application). Côté JS (`utils/nativeListDiagnostics.ts`) : journal de
+  l'iPhone SEULEMENT, plus aucun envoi Sentry (seul « liste native active »,
+  une fois par lancement, y part encore).
+  - **Journal de l'iPhone** : `console.log` JS (`[HL] <n°> <morceau>/<total>
+    <json>`, JSON découpé par 800 caractères, le journal système coupant une
+    ligne vers 1 000). Lecture, iPhone branché en USB : `idevicesyslog -m
+    "[HL]"`. Pas de `NSLog` natif : iOS 26 le masque (`<private>`) en release.
   - ⚠️ `dropped`/`hitches`/`worstMs` lisent l'heure des images du fil
     principal : un fil occupé 17 à 33 ms (UNE image perdue) ne la décale
     pas, ils ne voient que les retards de 2 images et plus. `mainBusy`
     (`[ms, durée ms, offsetY]`, occupations > 8 ms, commit compris),
-    `mainBusyLong`, `mainBusyMaxMs` mesurent l'occupation réelle. Les champs
-    `screen*` (`HLScreenProbe`) mesurent l'affichage réel ; `screenDrops` =
-    `[ms, écart ms, offsetY, rang]` des premières pertes (`rang` = image du
-    calque Metal dans le geste).
-  - **Journal de l'iPhone** : chaque rapport part aussi en `console.log` JS
-    (`[HL] <n°> <morceau>/<total> <json>`, JSON découpé par 800 caractères,
-    le journal système coupant une ligne vers 1 000). Lecture directe, iPhone
-    branché en USB : `idevicesyslog -m "[HL]"`, sans attendre Sentry. Pas de
-    `NSLog` natif : iOS 26 le masque (`<private>`) en release.
+    `mainBusyLong`, `mainBusyMaxMs` mesurent l'occupation réelle.
   - **Mouvement** : `stalls` (image immobile en plein mouvement), `jumps`
     (saut) et `motionAt`. Pour les 3 premiers gestes : `motion` (déplacement
     par image, pt), `fingerUpFrame` (début de l'élan) et `events`
@@ -114,30 +108,17 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     de l'étape sur le fil principal, la mise en page d'une rangée entrante
     étant avancée dans `willDisplay` pour être chronométrée).
     Rapport : `rowCells` / `cardCells` (cellules créées depuis le lancement),
-    `viewH`, `cellDiag`. Mesure du build 59 : double micro-pause du 1er scroll
-    ressentie, 25 premiers gestes à 0 image perdue ÉCRAN comme fil principal
-    (flou `baked`) — ce n'est pas un accroc de rendu, d'où la sonde de
-    mouvement.
-  - **Envois retenus** : les messages Sentry partent après 10 s sans geste
-    ou à la mise en arrière-plan (tag `deferred`, `heldMs`), jamais pendant
-    le scroll. Le bilan liste `dropGestures` (gestes ayant perdu une image
-    écran). Build 60 : 1er scroll à 0 perte sur 8 lancements (bannière
-    coupée) ; 5 des 10 scrolls 2-3 perdaient UNE image écran, 0,5 à 1,3 s
-    après un envoi de la sonde. Envois retenus (OTA) : même taux, ce n'était
-    pas la sonde.
-  - **Pertes à l'entrée des rangées du haut** : UNE image écran (fil
-    principal fluide) quand une nouvelle rangée entre par le bas pour la
-    première fois (pertes vers 587 / 885 / 1239 / 1533 pt, écarts = hauteur
-    d'une rangée), plus rien une fois les cellules réutilisées.
-    **`cellDiag` (`CELL_DIAG`, OTA, TestFlight seulement, `HLCellDiag`)** :
-    variantes fixes `noclip` (coins non découpés), `notext`, `nophoto`,
-    `nofx` (dégradés + fond des barres floutées). Build 61 : toutes perdent
-    encore une image, aucune famille n'est seule en cause ; 7 pertes sur 11
-    tombent à 85 ou 102 ms du début du geste, quelle que soit la position.
-    `rotate` alterne donc `base` et `preroll` (design intact, horloge et
-    calque Metal lancés au doigt posé via `hitTest`, avant le geste) : si
-    ces pertes disparaissent en `preroll`, c'était le redémarrage de la
-    sonde. Remettre `"off"` par OTA ensuite.
+    `viewH`.
+  - **Sonde ÉCRAN retirée** (calque Metal d'un pixel, `presentedTime`) : son
+    démarrage au début du geste faisait perdre UNE image juste après le
+    lâcher du doigt (scrolls 2-3). Builds 61-62 : ces pertes tombaient à
+    85-120 ms du début du geste, fil principal libre, et disparaissaient
+    quand la sonde démarrait dès le doigt posé ; retirer une famille
+    d'éléments des rangées (coins, textes, photos, effets) n'y changeait
+    rien. Les envois Sentry de la sonde, eux, n'étaient pas en cause.
+- **Test : 2 menus pour les 3 premières boutiques (`TOP_SHOPS` /
+  `TOP_SHOP_MENUS` dans `NativeHomeList.tsx`, OTA)** : moins de cartes à
+  créer à l'entrée des premières rangées. `TOP_SHOPS = 0` coupe le test.
 - **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
   seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
   false` dans `useBannerLoop`) : aucun défilement auto nulle part. Cause de la
@@ -169,15 +150,22 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   VRAI par défaut : la bannière (prop) arrive avant le premier `updateRows`, et
   la porte commune bannière + première boutique reste fermée tant que la liste
   charge. Sans ça, la bannière sortait seule, avant les boutiques.
-- **Réglages ajustables par OTA** : `PAGE_SIZE` (FastFoodContext) et
-  `PREFETCH_DISTANCE` (NativeHomeList) sont du JS. Idem pour `ICON_ROLES`
-  (rôle lu par le Swift -> nom Ionicons) et `FONTS` (nom PostScript par
-  graisse, `null` = police système) : le Swift ne fixe ni icône ni police.
+- **Taille de page et préchargement pilotés par le serveur** (table
+  `settings_client` du backend, sans build ni OTA) : la première page de
+  `GET /fastFood/all` renvoie `clientSettings` (`homePageSize`,
+  `homePrefetchDistance`). `FastFoodContext` l'applique aux pages SUIVANTES
+  (`homeSettings`) et le garde (AsyncStorage) : la première page du lancement
+  d'après part avec. Valeur de secours (premier lancement, clé absente ou
+  invalide) : `HOME_CLIENT_SETTINGS_FALLBACK` (10 boutiques, 1200 px), dans
+  `utils/homeClientSettings.ts`. Taille plafonnée à 50 (`MAX_SERVER_LIMIT`).
+- **Réglages ajustables par OTA** : `ICON_ROLES` (rôle lu par le Swift -> nom
+  Ionicons) et `FONTS` (nom PostScript par graisse, `null` = police système) :
+  le Swift ne fixe ni icône ni police.
 - **Aucun verrou de scroll** : ni `insertLock`, ni HOLD, ni `PageRevealGate`.
   Remplir un fantôme ou ajouter des rangées hors écran ne coûte presque rien
   en UIKit (reconfiguration d'une cellule existante), le défilement continue
   pendant le chargement comme pendant l'insertion.
-- **Fantômes** : `ghostCount` (= `PAGE_SIZE`) rangées squelettes en fin de
+- **Fantômes** : `ghostCount` (= `homeSettings.pageSize`) rangées squelettes en fin de
   liste ; la vraie boutique du même rang reconfigure la même cellule. Le fetch
   (`onEndReached`) part quand le premier fantôme est à `prefetchDistance` de
   l'écran, re-armé à chaque page arrivée.
@@ -299,7 +287,7 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 
   > ⚠️ C'était un **cooldown de 800 ms** (`RESET_COOLDOWN_MS`), avec report de la
   > demande refusée (`deferredLoadRef`). Un délai fixe est une devinette : il
-  > refusait aussi les demandes **légitimes**. Avec `PAGE_SIZE = 3`, le bas de
+  > refusait aussi les demandes **légitimes**. Avec des pages de 3, le bas de
   > liste est atteint en ~300 ms, donc quasi toujours dans la fenêtre. Ne pas
   > réintroduire de délai : on distingue le rebond automatique du geste réel.
 
@@ -569,8 +557,8 @@ tant que la page suivante charge.
   de l'écran : le gate garde un set des cellules montées, relu par `startPage`.
 - **Fantômes de la page suivante** (`utils/pagePlaceholders.ts`,
   `debug/home-squelettes-en-avance`). `GHOST_COUNT` boutiques fantômes
-  (`PAGE_SIZE` + de quoi remplir la zone d'échauffement de ~4000 px, calcul
-  en pixels donc valable pour tout `PAGE_SIZE` ; moins de fantomes = réserve
+  (taille de page de SECOURS + de quoi remplir la zone d'échauffement de ~4000 px,
+  calcul en pixels donc valable pour toute taille de page ; moins de fantomes = réserve
   de cellules trop petite, montages en plein scroll au remplissage) sont ajoutées en fin de `listData` tant que
   `hasMore`, retirées en fin de catalogue (repliées à hauteur 0, elles
   tombaient toutes dans la zone de pré-rendu : 9 montages d'un coup) ; pré-rendu élargi

@@ -2,21 +2,22 @@ import QuartzCore
 import UIKit
 
 /**
- Sonde de fluidite de la liste native, pour les builds SANS terminal
- (TestFlight) : les rapports partent vers JS (`onDiagnostics`), qui les
- journalise et les transmet a Sentry.
+ Sonde de fluidite de la liste native, lue dans le journal de l'iPhone
+ (`[HL]`, cote JS) : TestFlight et debug seulement (`enabled`), elle ne
+ tourne jamais dans une build App Store.
 
  Mesure, pour chaque geste de scroll (du doigt pose a l'arret de l'elan) :
- images affichees, images perdues (intervalle > 1,5 x la cadence de l'ecran),
- accrocs (> 50 ms), pire intervalle, et le temps de configuration des
- rangees reutilisees pendant le geste. Ces chiffres-la ne voient que le fil
- principal ; `screen` (`HLScreenProbe`) mesure ce qui arrive vraiment a
- l'ecran (champs `screen*`).
+ images perdues (intervalle > 1,5 x la cadence de l'ecran), accrocs
+ (> 50 ms), pire intervalle, et le temps de configuration des rangees
+ reutilisees pendant le geste.
 
  ⚠️ `dropped` lit l'heure des images (`timestamp`) : un fil principal occupe
  17 a 33 ms (UNE image perdue) ne decale pas cette heure, il ne compte que
  les retards de 2 images et plus. `mainBusy` mesure donc l'occupation reelle
  du fil principal (reveil → mise en veille de la boucle, commit compris).
+
+ Plus de sonde ECRAN (calque Metal) : son demarrage au debut du geste
+ faisait lui-meme perdre une image juste apres le lacher du doigt.
 
  Mouvement : une pause ressentie SANS image perdue est un contenu qui
  s'arrete ou saute alors que les images arrivent a l'heure. Le deplacement
@@ -26,9 +27,17 @@ import UIKit
  */
 final class HLPerfMonitor: NSObject {
   var onReport: (([String: Any]) -> Void)?
-  /** Position du scroll, relevee a chaque image pour situer les pertes a l'ecran. */
+  /** Position du scroll, relevee a chaque image. */
   var offsetProvider: (() -> CGFloat)?
-  let screen = HLScreenProbe()
+
+  /** TestFlight (recu de sandbox) ou debug : jamais l'App Store. */
+  static let enabled: Bool = {
+    #if DEBUG
+    return true
+    #else
+    return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+    #endif
+  }()
 
   /** Gestes dont on envoie le profil complet (`motion`, `events`). */
   private static let detailedGestures = 3
@@ -66,41 +75,10 @@ final class HLPerfMonitor: NSObject {
   private var busyLong = 0
   private var busyMax: CFTimeInterval = 0
 
-  /** Variante `preroll` : horloge et calque Metal lances au doigt pose, avant le geste. */
-  private var prerolling = false
-  private var prerollId = 0
-
-  var isRunning: Bool { link != nil && !prerolling }
-
-  /**
-   Doigt pose (variante `preroll`) : l'horloge et le calque Metal tournent
-   deja quand le geste commence. Si les pertes des images 2-3 du geste
-   disparaissent, c'etait le redemarrage de la sonde, pas la liste.
-   */
-  func touchDown() {
-    guard HLCellDiag.prerollsProbe, link == nil else { return }
-    prerolling = true
-    prerollId += 1
-    let id = prerollId
-    startLink()
-    // Simple tape, sans geste : on arrete.
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-      guard let self = self, self.prerolling, self.prerollId == id else { return }
-      self.prerolling = false
-      self.link?.invalidate()
-      self.link = nil
-    }
-  }
-
-  private func startLink() {
-    let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
-    l.add(to: .main, forMode: .common)
-    link = l
-  }
+  var isRunning: Bool { link != nil }
 
   func begin() {
-    guard link == nil || prerolling else { return }
-    prerolling = false
+    guard Self.enabled, link == nil else { return }
     frames = 0
     dropped = 0
     hitches = 0
@@ -118,18 +96,15 @@ final class HLPerfMonitor: NSObject {
     busyMax = 0
     gesture += 1
     start = CACurrentMediaTime()
-    screen.begin(expected: expected)
-    if link == nil { startLink() }
+    let l = CADisplayLink(target: self, selector: #selector(tick(_:)))
+    l.add(to: .main, forMode: .common)
+    link = l
     watchMainThread()
   }
 
   @objc private func tick(_ l: CADisplayLink) {
     let frameDuration = l.targetTimestamp - l.timestamp
     if frameDuration > 0 { expected = frameDuration }
-    if prerolling {
-      screen.idleFrame()
-      return
-    }
     if last > 0 {
       let dt = l.timestamp - last
       frames += 1
@@ -141,7 +116,6 @@ final class HLPerfMonitor: NSObject {
     let offset = offsetProvider?() ?? 0
     if let prev = lastOffset { deltas.append(offset - prev) }
     lastOffset = offset
-    screen.frame(offset: offset, expected: expected)
   }
 
   /** Doigt leve avec elan : separe le glissement de la deceleration dans `motion`. */
@@ -151,11 +125,14 @@ final class HLPerfMonitor: NSObject {
     mark("up")
   }
 
-  /** Evenement visible pendant le geste (revelation, banniere, page...). */
-  func mark(_ what: String) {
+  /**
+   Evenement visible pendant le geste (revelation, banniere, page...).
+   Libelle evalue seulement si le geste est mesure : rien a construire hors sonde.
+   */
+  func mark(_ what: @autoclosure () -> String) {
     guard isRunning, gesture <= Self.detailedGestures, events.count < Self.maxEvents else { return }
     let ms = ((CACurrentMediaTime() - start) * 1000).rounded()
-    events.append([ms, what, Int(offsetProvider?() ?? 0)])
+    events.append([ms, what(), Int(offsetProvider?() ?? 0)])
   }
 
   /** Millisecondes entieres depuis `t0` (cout d'une etape, pour les `events`). */
@@ -240,7 +217,7 @@ final class HLPerfMonitor: NSObject {
   }
 
   func end(rows: Int, offset: CGFloat) {
-    guard let l = link, !prerolling else { return }
+    guard let l = link else { return }
     l.invalidate()
     link = nil
     unwatchMainThread()
@@ -273,14 +250,6 @@ final class HLPerfMonitor: NSObject {
       report["fingerUpFrame"] = fingerUpFrame
       report["events"] = events
     }
-    let session = screen.end()
-    // Copie figee : une fermeture differee ne doit pas capturer un `var`.
-    let base = report
-    // Les derniers affichages du geste arrivent apres son arret : on les attend.
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-      var full = base
-      if let s = session { full.merge(s.report) { _, new in new } }
-      self?.onReport?(full)
-    }
+    onReport?(report)
   }
 }

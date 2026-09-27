@@ -2,7 +2,6 @@ import {
   HomeListView,
   type HomeListBanner,
   type HomeListBlurMode,
-  type HomeListCellDiag,
   type HomeListFonts,
   type HomeListHandle,
   type HomeListIcons,
@@ -20,7 +19,6 @@ import React, {
   useState,
 } from "react";
 import { AppState, Image, StyleSheet } from "react-native";
-import { PAGE_SIZE } from "../context/FastFoodContext";
 import { V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
 import { designNumberFor } from "../utils/designCycle";
 import { getNextDeliveryTime } from "../utils/deliveryUtils";
@@ -39,17 +37,10 @@ import {
  */
 
 /**
- * Avance du chargement : la page suivante est demandee quand le premier
- * squelette arrive a cette distance (px) du bas de l'ecran. Reglage JS, donc
- * ajustable par OTA, comme `PAGE_SIZE`.
- */
-const PREFETCH_DISTANCE = 1200;
-
-/**
  * Barres floutees des cartes 4 et 5. `"baked"` : photo floutee une fois,
  * affichee comme une image (aucun flou a l'ecran). `"live"` : flou systeme,
  * recalcule par iOS a chaque image. Basculable par OTA pour comparer sur le
- * meme telephone : le rapport Sentry « premier geste » (`screenDropped`) tranche.
+ * meme telephone : le journal `[HL]` (`dropped`, `mainBusy`) tranche.
  */
 const CARD_BLUR_MODE: HomeListBlurMode = "baked";
 
@@ -62,13 +53,12 @@ const CARD_BLUR_MODE: HomeListBlurMode = "baked";
 const BANNER_AUTOPLAY = false;
 
 /**
- * Diagnostic TEMPORAIRE des pertes d'UNE image aux scrolls 2-3. Build 61 : le
- * retrait d'une famille d'elements (coins, textes, photos, effets) n'en
- * supprime aucune. `rotate` alterne maintenant `base` et `preroll` (sonde
- * lancee au doigt pose) ; tag Sentry `cellDiag`. TestFlight seulement
- * (natif). Remettre `"off"` par OTA une fois la cause trouvee.
+ * Test TEMPORAIRE : les `TOP_SHOPS` premieres boutiques n'affichent que
+ * `TOP_SHOP_MENUS` menus (moins de cartes a creer a l'entree des premieres
+ * rangees). `TOP_SHOPS = 0` coupe le test, par OTA.
  */
-const CELL_DIAG: HomeListCellDiag = "rotate";
+const TOP_SHOPS = 3;
+const TOP_SHOP_MENUS = 2;
 
 const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
 
@@ -160,8 +150,22 @@ const rowFor = (ff: FastFood): HomeListRow => {
   return row;
 };
 
+/** Rangee reduite a `TOP_SHOP_MENUS` menus, meme reference tant que la rangee ne change pas. */
+const cappedCache = new WeakMap<HomeListRow, HomeListRow>();
+
+const cappedRow = (row: HomeListRow): HomeListRow => {
+  if (row.menus.length <= TOP_SHOP_MENUS) return row;
+  let capped = cappedCache.get(row);
+  if (!capped) {
+    capped = { ...row, menus: row.menus.slice(0, TOP_SHOP_MENUS) };
+    cappedCache.set(row, capped);
+  }
+  return capped;
+};
+
 type SentState = {
   rows: HomeListRow[];
+  ghostCount: number;
   hasMore: boolean;
   footerText: string | null;
   footerIsEmpty: boolean;
@@ -179,6 +183,10 @@ interface Props {
   sidePadding: number;
   footerText: string | null;
   footerIsEmpty: boolean;
+  /** Squelettes de la page suivante : taille de page courante (`homeSettings`). */
+  ghostCount: number;
+  /** Avance du chargement (`homeSettings.prefetchDistance`). */
+  prefetchDistance: number;
   onRefresh: () => void;
   onEndReached: () => void;
   onMenuPress: (menu: Menu) => void;
@@ -197,6 +205,8 @@ export const NativeHomeList: React.FC<Props> = ({
   sidePadding,
   footerText,
   footerIsEmpty,
+  ghostCount,
+  prefetchDistance,
   onRefresh,
   onEndReached,
   onMenuPress,
@@ -225,7 +235,7 @@ export const NativeHomeList: React.FC<Props> = ({
   }, []);
 
   const rows = useMemo(
-    () => fastFoods.map(rowFor),
+    () => fastFoods.map((ff, i) => (i < TOP_SHOPS ? cappedRow(rowFor(ff)) : rowFor(ff))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [fastFoods, minute],
   );
@@ -254,20 +264,21 @@ export const NativeHomeList: React.FC<Props> = ({
     const sameRows = !!prev && start === rows.length && prev.rows.length === rows.length;
     const sameEnd =
       !!prev &&
+      prev.ghostCount === ghostCount &&
       prev.hasMore === hasMore &&
       prev.footerText === footerText &&
       prev.footerIsEmpty === footerIsEmpty &&
       prev.loading === loading;
     if (sameRows && sameEnd) return;
 
-    sentRef.current = { rows, hasMore, footerText, footerIsEmpty, loading };
+    sentRef.current = { rows, ghostCount, hasMore, footerText, footerIsEmpty, loading };
     view
       .updateRows({
         start,
         rows: rows.slice(start),
         total: rows.length,
         hasMore,
-        ghostCount: PAGE_SIZE,
+        ghostCount,
         footerText,
         footerIsEmpty,
         loading,
@@ -277,7 +288,7 @@ export const NativeHomeList: React.FC<Props> = ({
         sentRef.current = null;
         console.warn("[NATIVE] updateRows a echoue", error);
       });
-  }, [rows, hasMore, footerText, footerIsEmpty, loading]);
+  }, [rows, ghostCount, hasMore, footerText, footerIsEmpty, loading]);
 
   const nativeBanners = useMemo<HomeListBanner[]>(
     () =>
@@ -331,7 +342,7 @@ export const NativeHomeList: React.FC<Props> = ({
       style={styles.list}
       banners={nativeBanners}
       bannerLoading={loading && nativeBanners.length === 0}
-      prefetchDistance={PREFETCH_DISTANCE}
+      prefetchDistance={prefetchDistance}
       bottomInset={bottomInset}
       sidePadding={sidePadding}
       refreshing={refreshing}
@@ -339,7 +350,6 @@ export const NativeHomeList: React.FC<Props> = ({
       fonts={FONTS}
       cardBlurMode={CARD_BLUR_MODE}
       bannerAutoplay={BANNER_AUTOPLAY}
-      cellDiag={CELL_DIAG}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}
       onEndReached={() => onEndReached()}

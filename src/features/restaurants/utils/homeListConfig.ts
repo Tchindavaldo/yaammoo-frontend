@@ -1,4 +1,4 @@
-import { PAGE_SIZE } from "../context/FastFoodContext";
+import { HOME_CLIENT_SETTINGS_FALLBACK } from "./homeClientSettings";
 
 // Réglages de la liste du home (`app/(tabs)/index.tsx`). Extraits tels quels
 // de l'écran : chaque valeur a été mesurée, voir architecture/restaurants.md.
@@ -45,15 +45,19 @@ export const ROW_HEIGHT_ESTIMATE = 270;
  * qu'exige la zone de pre-rendu en regime (ecran + `DRAW_DISTANCE` de chaque
  * cote, ~4000 px), pendant que l'utilisateur regarde le premier ecran. Revenu
  * a `DRAW_DISTANCE`, FlashList garde ces cellules en reserve de recyclage.
- * Independant de `PAGE_SIZE` : c'est la zone, pas la page, qui fixe le besoin.
+ * Independant de la taille de page : c'est la zone, pas la page, qui fixe le besoin.
  */
 export const WARMUP_DRAW_DISTANCE = 2 * DRAW_DISTANCE + 800;
 export const WARMUP_MS = 1500;
 
 /**
- * Fantomes tenus d'avance en bas de liste, calcules en PIXELS et non en
- * pages : la page suivante (`PAGE_SIZE`, remplie a l'arrivee des donnees)
- * PLUS assez de rangees pour remplir TOUTE la zone d'echauffement.
+ * Fantomes tenus d'avance en bas de liste (FlashList), calcules en PIXELS et
+ * non en pages : la page suivante (remplie a l'arrivee des donnees) PLUS assez
+ * de rangees pour remplir TOUTE la zone d'echauffement.
+ *
+ * Page comptee a sa taille de SECOURS, pas celle du serveur (`homeSettings`) :
+ * valeur figee au chargement. Une page serveur plus grande reste couverte tant
+ * qu'elle tient dans les rangees d'echauffement (~15 de plus).
  *
  * ⚠️ Deux raisons, mesurees a la sonde `[ROW]` :
  * - la reserve de cellules ne peut pas depasser le nombre de rangees
@@ -62,10 +66,11 @@ export const WARMUP_MS = 1500;
  *   ajoutes au remplissage de la page 2 se MONTAIENT en plein scroll
  *   (`MONTAGE-CELL __ph_12..14`, la pause ressentie), pas a la page 3 ;
  * - les fantomes ajoutes apres chaque remplissage tombent ainsi loin hors
- *   de la zone de pre-rendu. Valable quel que soit `PAGE_SIZE`.
+ *   de la zone de pre-rendu. Valable quelle que soit la taille de page.
  */
 export const GHOST_COUNT =
-  PAGE_SIZE + Math.ceil(WARMUP_DRAW_DISTANCE / ROW_HEIGHT_ESTIMATE);
+  HOME_CLIENT_SETTINGS_FALLBACK.pageSize +
+  Math.ceil(WARMUP_DRAW_DISTANCE / ROW_HEIGHT_ESTIMATE);
 
 /**
  * Distance du bas a laquelle part le fetch : quand le PREMIER fantome entre

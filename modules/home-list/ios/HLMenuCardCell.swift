@@ -104,7 +104,6 @@ final class HLMenuCardCell: UICollectionViewCell {
     let skel = HLSkeletonView(radius: size.radius)
     skeletons.insertSubview(skel, at: 0)
     cardSkeleton = skel
-    HLCellDiag.apply(contentView)
   }
 
   /**

@@ -1,0 +1,24 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.rauval.yaammoo'
+version = '1.0.0'
+
+expoModule {
+  canBePublished false
+}
+
+android {
+  namespace "com.rauval.yaammoo.bonuspager"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // ReactFontManager (police Ionicons chargee par expo-font) et NativeGestureUtil.
+  implementation 'com.facebook.react:react-android'
+}

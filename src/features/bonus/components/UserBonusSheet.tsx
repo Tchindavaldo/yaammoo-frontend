@@ -29,7 +29,7 @@ import {
 import { BonusPageBackground, USE_IMAGE_BG } from "./BonusPageBackground";
 import { BonusPagerInfo } from "./BonusPagerInfo";
 import { BonusEmptyState, BonusSkeleton } from "./BonusStates";
-import { GALLERY_STEP } from "./gallery.constants";
+import { GALLERY_GAP, galleryWindow } from "./gallery.constants";
 import { NativeBonusPager } from "./NativeBonusPager";
 
 interface UserBonusSheetProps {
@@ -89,7 +89,6 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   // réinitialise (`const` n'est pas hoisté). Ils évitent un rendu — et un appel
   // natif — à chaque frame du listener `scrollX` ; voir leur usage plus bas.
   const indexRef = useRef(0);
-  const lastGalleryX = useRef(0);
   useEffect(() => {
     if (visible) {
       // Les bonus ne se chargent plus au boot : c'est l'ouverture de la sheet
@@ -100,7 +99,6 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
       // Le miroir hors-React suit, sinon il resterait sur l'index de la session
       // précédente et bloquerait le premier `setIndex` (valeurs jugées égales).
       indexRef.current = 0;
-      lastGalleryX.current = 0;
       setOpenKey((k) => k + 1);
     }
   }, [visible, scrollX, ensureLoaded]);
@@ -131,9 +129,6 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     return () => t.stop();
   }, [visible, anim]);
 
-  // Ref de la galerie de mini-cartes : on la fait défiler auto pour garder la
-  // carte active visible (n'en montre que ~2 à la fois).
-  const galleryRef = useRef<ScrollView>(null);
 
   /**
    * Index visé par une navigation directe (tap sur une mini-carte). Pendant
@@ -164,23 +159,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
     // abonnements posés au 1er montage ne suivent plus le carrousel recréé.
   }, [scrollX, openKey]);
 
-  // Auto-scroll de la galerie EN TEMPS RÉEL : la mini-carte active reste calée
-  // en 1ère position (à gauche) et les autres défilent derrière elle, suivant le
-  // doigt pendant le slide du carrousel (pas seulement au changement d'index).
-  useEffect(() => {
-    const id = scrollX.addListener(({ value }) => {
-      // Position fractionnaire du carrousel (0 = 1er bonus, 1 = 2e…).
-      const pos = value / CAROUSEL_INTERVAL;
-      const x = Math.max(0, pos * GALLERY_STEP);
-      // Sous le demi-pixel le déplacement est invisible : on épargne un appel
-      // natif par frame, coûteux quand le thread JS est déjà chargé (retour
-      // d'arrière-plan). C'est ce qui faisait décrocher la galerie du doigt.
-      if (Math.abs(x - lastGalleryX.current) < 0.5) return;
-      lastGalleryX.current = x;
-      galleryRef.current?.scrollTo({ x, animated: false });
-    });
-    return () => scrollX.removeListener(id);
-  }, [scrollX, openKey]);
+  /** Largeur libre de la galerie (mesurée) : fixe le nombre de mini-cartes. */
+  const [galleryW, setGalleryW] = useState(0);
 
   /** Navigation directe : pose le verrou puis délègue au carousel. */
   /**
@@ -355,29 +335,27 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
               radius={20}
             >
               <View style={styles.pagInner}>
-                <View style={styles.galleryScroll}>
-                  <Animated.ScrollView
-                    key={openKey}
-                    ref={galleryRef}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.gallery}
-                  >
-                    {bonuses.map((b, i) => (
-                      <BonusGalleryCard
-                        key={b.id ?? i}
-                        bonus={b}
-                        position={i}
-                        scrollX={scrollX}
-                        active={i === index}
-                        activeTextColor={DARK_ICON}
-                        // `goToBonus` reçoit la position : une fermeture
-                        // `() => goToBonus(i)` serait recréée par carte à
-                        // chaque rendu et casserait la mémoïsation.
-                        onPress={goToBonus}
-                      />
-                    ))}
-                  </Animated.ScrollView>
+                {/* Galerie FIXE : autant de mini-cartes que l'espace libre en
+                    contient ; rien ne défile, seule la mise en avant varie au
+                    scroll entre les cartes affichées. */}
+                <View
+                  style={styles.galleryBox}
+                  onLayout={(e) => setGalleryW(e.nativeEvent.layout.width)}
+                >
+                  {galleryWindow(bonuses.length, index, galleryW).map((i) => (
+                    <BonusGalleryCard
+                      key={bonuses[i].id ?? i}
+                      bonus={bonuses[i]}
+                      position={i}
+                      scrollX={scrollX}
+                      active={i === index}
+                      activeTextColor={DARK_ICON}
+                      // `goToBonus` reçoit la position : une fermeture
+                      // `() => goToBonus(i)` serait recréée par carte à
+                      // chaque rendu et casserait la mémoïsation.
+                      onPress={goToBonus}
+                    />
+                  ))}
                 </View>
 
                 <BonusPagerInfo bonuses={bonuses} scrollX={scrollX} />
@@ -437,14 +415,14 @@ const styles = StyleSheet.create({
     borderWidth: CARD_IMAGE_BG ? 1 : 0.5,
     borderColor: CARD_IMAGE_BG ? GLASS_BORDER : "rgba(0,0,0,0.04)",
   },
-  // Largeur bornée à ~2 mini-cartes : la galerie défile (auto-scroll) au lieu
-  // d'étaler toutes les cartes. Le pager héro garde sa place à droite.
-  galleryScroll: { width: 2 * GALLERY_STEP },
-  gallery: {
+  // Prend l'espace laissé par le panneau héro ; mesuré pour savoir combien de
+  // mini-cartes y tiennent (`galleryWindow`).
+  galleryBox: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "stretch",
-    gap: 8,
-    paddingRight: 4,
+    gap: GALLERY_GAP,
+    marginRight: 8,
   },
   // space-between : galerie (largeur fixe) à gauche, panneau héro collé au bord
   // DROIT — sinon l'espace résiduel laisse un vide à droite du compteur.

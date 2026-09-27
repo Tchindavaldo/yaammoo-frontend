@@ -87,7 +87,18 @@ modules/bonus-pager/
     ├── BPFooterParts.swift     # BPIconView (Ionicons), BPGalleryCard
     ├── BPHeroPanel.swift       # Panneau heros fixe (couleurs interpolees, BPFadeStack par texte)
     └── BPModels.swift          # Record JS → BPItem, couleurs, melange de couleurs
+└── android/src/main/java/com/rauval/yaammoo/bonuspager/
+    ├── BonusPagerModule.kt     # Memes props + GroupView (cartes React montees dans la piste)
+    ├── BonusPagerView.kt       # HorizontalScrollView pagine + pied de page, mise en page manuelle
+    ├── BPScroll.kt             # BPPages (piste, positions Yoga) + BPScroll (aimantation, annule le toucher React)
+    ├── BPFooterView.kt         # Carte du bas : galerie fixe + panneau heros (canvas)
+    ├── BPGalleryCard.kt        # Mini-carte (canvas) + BPText (texte ellipse)
+    ├── BPHeroPanel.kt          # Panneau heros fixe, meme formule que BPHeroPanel.swift
+    └── BPModels.kt             # Record JS → BPItem, couleurs, polices (Ionicons via ReactFontManager)
 ```
+
+> **Android natif** : même contrat que l'iOS. Sans build natif embarquant le
+> module (Expo Go, dev client ancien), le rendu React reste utilisé.
 
 - **Hybride** : les `BonusCard` restent React (enfants de la vue, montés dans
   la piste du `UIScrollView` via `mountChildComponentView`, une page par
@@ -220,6 +231,12 @@ pagination outlined en bas, au-dessus de la navbar (galerie à slider à gauche 
 panneau « héro » du bonus courant à droite). Pas de flèches prev/next : la
 navigation se fait au swipe ou au tap sur une mini-carte, et l'espace libéré
 revient au panneau.
+
+**Galerie FIXE (actuel).** Plus de défilement : la galerie prend l'espace
+laissé par le panneau héro et affiche autant de mini-cartes qu'il en tient
+(2 minimum), par pages calées pour rester pleines en fin de liste
+(`galleryWindow`, `gallery.constants.ts` / `BPFooterView.window`). Au scroll,
+seule la mise en avant (fond, barre, couleur) varie entre les cartes affichées.
 
 **Colonne gauche — galerie (`BonusGalleryCard`).** Mini-cartes **sans bordure ni
 cadre** : la carte active se distingue par sa **barre de progression** (largeur

@@ -21,10 +21,6 @@ final class BPFooterView: UIView {
   private static let cardPad: CGFloat = 10
   private static let cardRadius: CGFloat = 20
   static let galleryStep = BPGalleryCard.width + 8
-  /** Deux mini-cartes visibles ; la galerie defile derriere la carte active. */
-  private static let galleryWidth = 2 * galleryStep
-  /** `paddingRight: 4` du contenu de la galerie. */
-  private static let galleryTrailing: CGFloat = 4
   static let panelWidth: CGFloat = 168
 
   private let card = UIView()
@@ -61,6 +57,7 @@ final class BPFooterView: UIView {
       return c
     }
     panel.configure(items: items, iconFontFamily: iconFontFamily)
+    lastWindow = []
     setNeedsLayout()
   }
 
@@ -77,12 +74,12 @@ final class BPFooterView: UIView {
                         height: max(0, bounds.height - s.cardMarginTop))
     let inner = card.bounds.insetBy(dx: s.cardPad, dy: s.cardPad)
 
-    galleryClip.frame = CGRect(x: inner.minX, y: inner.minY, width: s.galleryWidth, height: inner.height)
+    // Galerie FIXE : tout l'espace laisse par le panneau (moins 8 d'ecart).
+    let freeW = max(0, inner.width - s.panelWidth - 8)
+    galleryClip.frame = CGRect(x: inner.minX, y: inner.minY, width: freeW, height: inner.height)
     let cardH = BPGalleryCard.height
-    for (i, c) in galleryCards.enumerated() {
-      c.frame = CGRect(x: CGFloat(i) * s.galleryStep, y: 0, width: BPGalleryCard.width, height: cardH)
-    }
-    galleryStrip.frame = CGRect(x: 0, y: (inner.height - cardH) / 2, width: stripWidth, height: cardH)
+    galleryStrip.frame = CGRect(x: 0, y: (inner.height - cardH) / 2, width: freeW, height: cardH)
+    lastWindow = []
 
     let panelH = BPHeroPanel.height
     panel.frame = CGRect(x: inner.maxX - s.panelWidth, y: inner.minY + (inner.height - panelH) / 2,
@@ -90,20 +87,40 @@ final class BPFooterView: UIView {
     sync(position: position)
   }
 
-  /** Largeur du contenu de la galerie (cartes + ecarts + marge de fin). */
-  private var stripWidth: CGFloat {
-    guard !galleryCards.isEmpty else { return 0 }
-    return CGFloat(galleryCards.count) * BPFooterView.galleryStep - 8 + BPFooterView.galleryTrailing
+  private var lastWindow: [Int] = []
+
+  /**
+   Mini-cartes affichees : autant qu'il en tient (2 minimum), par pages de `k`
+   calees pour rester pleines en fin de liste (`galleryWindow` cote RN).
+   */
+  private func window(index: Int) -> [Int] {
+    let n = galleryCards.count
+    let k = max(2, Int((galleryStrip.bounds.width + 8) / BPFooterView.galleryStep))
+    if n <= k { return Array(0..<n) }
+    let start = min((index / k) * k, n - k)
+    return Array(start..<(start + k))
   }
 
   /** Appele a chaque image du scroll : toute l'animation du pied de page. */
   func sync(position p: CGFloat) {
     position = p
-    // Galerie : la carte active reste calee a gauche, bornee au bout du contenu
-    // (comme le `scrollTo` d'un ScrollView, qui ne depasse pas sa fin).
-    let maxX = max(0, stripWidth - BPFooterView.galleryWidth)
-    let x = min(max(0, p * BPFooterView.galleryStep), maxX)
-    galleryStrip.frame.origin.x = -x
+    // Galerie FIXE : rien ne defile ; la fenetre ne change qu'en passant a une
+    // autre page, et seule la mise en avant varie entre les cartes affichees.
+    let idx = Int(max(0, p).rounded())
+    let win = window(index: min(idx, max(0, galleryCards.count - 1)))
+    if win != lastWindow {
+      lastWindow = win
+      let cardH = BPGalleryCard.height
+      for (i, c) in galleryCards.enumerated() {
+        if let slot = win.firstIndex(of: i) {
+          c.isHidden = false
+          c.frame = CGRect(x: CGFloat(slot) * BPFooterView.galleryStep, y: 0,
+                           width: BPGalleryCard.width, height: cardH)
+        } else {
+          c.isHidden = true
+        }
+      }
+    }
     for (i, c) in galleryCards.enumerated() {
       let distance = abs(p - CGFloat(i))
       c.apply(focus: max(0, 1 - distance), active: distance < 0.5)

@@ -3,14 +3,14 @@ import type { ComponentType, ReactNode } from "react";
 import { Platform, type ViewProps } from "react-native";
 
 /**
- * Carrousel natif de la sheet Bonus — iOS uniquement.
+ * Carrousel natif de la sheet Bonus — iOS (Swift) et Android (Kotlin).
  *
  * Les cartes restent des composants React (enfants de la vue) ; le natif
  * possede le defilement (UIScrollView pagine) et dessine le pied de page
  * (galerie + panneau heros), mis a jour dans le MEME appel que le scroll.
  *
  * ⚠️ Le module n'existe que dans un build natif qui l'embarque. Sur un dev
- * client plus ancien, Expo Go ou Android, `isBonusPagerAvailable` vaut
+ * client plus ancien ou Expo Go, `isBonusPagerAvailable` vaut
  * `false` et la sheet garde son carrousel React.
  */
 
@@ -44,7 +44,8 @@ export type BonusPagerViewProps = ViewProps & {
 };
 
 export const isBonusPagerAvailable =
-  Platform.OS === "ios" && requireOptionalNativeModule("BonusPager") != null;
+  (Platform.OS === "ios" || Platform.OS === "android") &&
+  requireOptionalNativeModule("BonusPager") != null;
 
 export const BonusPagerView: ComponentType<BonusPagerViewProps> | null =
   isBonusPagerAvailable ? requireNativeView("BonusPager") : null;

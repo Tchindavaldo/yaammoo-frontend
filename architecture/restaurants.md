@@ -116,9 +116,14 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     quand la sonde démarrait dès le doigt posé ; retirer une famille
     d'éléments des rangées (coins, textes, photos, effets) n'y changeait
     rien. Les envois Sentry de la sonde, eux, n'étaient pas en cause.
-- **Test : 2 menus pour les 3 premières boutiques (`TOP_SHOPS` /
-  `TOP_SHOP_MENUS` dans `NativeHomeList.tsx`, OTA)** : moins de cartes à
-  créer à l'entrée des premières rangées. `TOP_SHOPS = 0` coupe le test.
+- **Test : 3 menus pour toutes les boutiques (`TOP_SHOPS` /
+  `TOP_SHOP_MENUS` dans `NativeHomeList.tsx`, OTA)** : l'écran ne change pas
+  (3 cartes visibles au plus, 2 en design 4 et 5), seul le reste de la rangée
+  disparaît. Si les pauses cessent, un chargement des menus au scroll
+  horizontal (squelettes, comme la liste verticale) vaut une build native.
+  `TOP_SHOPS = 0` coupe le test. Test précédent (2 menus, 3 premières
+  boutiques) : premiers lancements à 12-16 ms par rangée neuve, puis 6-10 ms
+  à partir de 03:13 le 27/09, y compris sur les boutiques 4 et 5 NON tronquées.
 - **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
   seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
   false` dans `useBannerLoop`) : aucun défilement auto nulle part. Cause de la

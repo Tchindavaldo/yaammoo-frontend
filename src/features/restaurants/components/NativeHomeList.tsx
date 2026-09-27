@@ -53,12 +53,14 @@ const CARD_BLUR_MODE: HomeListBlurMode = "baked";
 const BANNER_AUTOPLAY = false;
 
 /**
- * Test TEMPORAIRE : les `TOP_SHOPS` premieres boutiques n'affichent que
- * `TOP_SHOP_MENUS` menus (moins de cartes a creer a l'entree des premieres
- * rangees). `TOP_SHOPS = 0` coupe le test, par OTA.
+ * Test TEMPORAIRE : les `TOP_SHOPS` premieres boutiques (toutes, ici)
+ * n'affichent que `TOP_SHOP_MENUS` menus. A 3 menus, l'ecran ne change pas
+ * (3 cartes visibles au plus) : seul le reste de la rangee disparait. Si les
+ * pauses cessent, un chargement des menus au scroll horizontal vaut une build.
+ * `TOP_SHOPS = 0` coupe le test, par OTA.
  */
-const TOP_SHOPS = 3;
-const TOP_SHOP_MENUS = 2;
+const TOP_SHOPS = Infinity;
+const TOP_SHOP_MENUS = 3;
 
 const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
 

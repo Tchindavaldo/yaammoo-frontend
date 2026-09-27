@@ -25,6 +25,11 @@ final class BPFooterView: UIView {
   /** `paddingRight: 4` du contenu de la galerie. */
   private static let galleryTrailing: CGFloat = 4
   static let panelWidth: CGFloat = 168
+  /** Marge laterale d'une carte du haut dans sa page (`BonusCard`, GUTTER − CARD_PAD). */
+  private static let pageCardMargin: CGFloat = 6
+  /** Ecart entre deux slides du panneau = ecart entre deux cartes du haut. */
+  private static let slideGap = 2 * pageCardMargin
+  private static let slidePitch = panelWidth + slideGap
 
   private let card = UIView()
   private let galleryClip = UIView()
@@ -96,10 +101,11 @@ final class BPFooterView: UIView {
     let slideH = BPHeroSlide.height
     panel.frame = CGRect(x: inner.maxX - s.panelWidth, y: inner.minY + (inner.height - slideH) / 2,
                          width: s.panelWidth, height: slideH)
-    track.bounds = CGRect(x: 0, y: 0, width: CGFloat(slides.count) * s.panelWidth, height: slideH)
+    track.bounds = CGRect(x: 0, y: 0, width: max(0, CGFloat(slides.count) * s.slidePitch - s.slideGap),
+                          height: slideH)
     track.center = CGPoint(x: track.bounds.width / 2, y: slideH / 2)
     for (i, slide) in slides.enumerated() {
-      slide.frame = CGRect(x: CGFloat(i) * s.panelWidth, y: 0, width: s.panelWidth, height: slideH)
+      slide.frame = CGRect(x: CGFloat(i) * s.slidePitch, y: 0, width: s.panelWidth, height: slideH)
     }
     sync(position: position)
   }
@@ -122,8 +128,24 @@ final class BPFooterView: UIView {
       let distance = abs(p - CGFloat(i))
       c.apply(focus: max(0, 1 - distance), active: distance < 0.5)
     }
-    // Panneau heros : la piste glisse en bloc, un panneau par bonus.
-    let last = CGFloat(max(0, slides.count - 1))
-    track.transform = CGAffineTransform(translationX: -min(max(p, 0), last) * BPFooterView.panelWidth, y: 0)
+    track.transform = CGAffineTransform(translationX: -trackOffset(p), y: 0)
+  }
+
+  /**
+   Panneau heros, cale sur les cartes du haut : la piste reste immobile, puis
+   glisse AU MEME RYTHME que les cartes pendant que leur ecart traverse le
+   panneau, puis s'arrete. Son ecart reste ainsi sous celui des cartes, et
+   chaque slide sous la carte de sa couleur.
+   */
+  private func trackOffset(_ p: CGFloat) -> CGFloat {
+    let s = BPFooterView.self
+    let q = min(max(p, 0), CGFloat(max(0, slides.count - 1)))
+    let i = floor(q)
+    let w = bounds.width
+    guard w > 0 else { return q * s.slidePitch }
+    // Distance du bord droit d'une carte au repos a celui du panneau.
+    let lead = (w - s.pageCardMargin) - (card.frame.minX + panel.frame.maxX)
+    let local = min(max((q - i) * w - lead, 0), s.slidePitch)
+    return i * s.slidePitch + local
   }
 }

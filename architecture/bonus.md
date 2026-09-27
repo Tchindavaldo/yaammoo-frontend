@@ -245,6 +245,15 @@ pendant l'animation — un `jumpTarget` (ref) fait ignorer ces étapes au listen
 sinon le titre et la ligne de réclamation défileraient en accéléré jusqu'à la
 destination.
 
+> **Panneau héro calé sur les cartes du haut.** Les slides sont espacés de
+> 12 px (`SLIDE_GAP` / `slideGap` = 2 × la marge 6 d'une `BonusCard`), comme
+> les cartes. La piste reste immobile, puis glisse AU MÊME RYTHME que les
+> cartes pendant que leur écart traverse le panneau (à partir de `LEAD` = 10,
+> distance entre le bord droit d'une carte et celui du panneau), puis
+> s'arrête : l'écart du panneau reste sous celui des cartes, chaque slide sous
+> la carte de sa couleur. Même calcul des deux côtés : `trackRange`
+> (`BonusPagerInfo`) et `trackOffset` (`BPFooterView.swift`).
+
 > **Panneau héro (galerie de droite) : vrai carrousel, même principe que la
 > carte du haut (`BonusCarousel`).** Le contenu ENTIER d'un bonus (numéro en
 > filigrane + icône + émetteur + nom + statut) est rendu dans une PISTE

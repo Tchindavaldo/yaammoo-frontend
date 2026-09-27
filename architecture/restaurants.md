@@ -98,10 +98,11 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     `screen*` (`HLScreenProbe`) mesurent l'affichage réel ; `screenDrops` =
     `[ms, écart ms, offsetY, rang]` des premières pertes (`rang` = image du
     calque Metal dans le geste).
-  - **Journal de l'iPhone** (TestFlight) : chaque rapport part aussi en
-    `NSLog` (`[HL] <n°> <morceau>/<total> <json>`, JSON découpé par 800
-    caractères). Lecture directe, iPhone branché en USB :
-    `idevicesyslog -m "[HL]"`, sans attendre Sentry.
+  - **Journal de l'iPhone** : chaque rapport part aussi en `console.log` JS
+    (`[HL] <n°> <morceau>/<total> <json>`, JSON découpé par 800 caractères,
+    le journal système coupant une ligne vers 1 000). Lecture directe, iPhone
+    branché en USB : `idevicesyslog -m "[HL]"`, sans attendre Sentry. Pas de
+    `NSLog` natif : iOS 26 le masque (`<private>`) en release.
   - **Mouvement** : `stalls` (image immobile en plein mouvement), `jumps`
     (saut) et `motionAt`. Pour les 3 premiers gestes : `motion` (déplacement
     par image, pt), `fingerUpFrame` (début de l'élan) et `events`

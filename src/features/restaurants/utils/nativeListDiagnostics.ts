@@ -21,8 +21,8 @@ import { Sentry } from "@/src/services/sentry";
  * Trois sondes par geste : `dropped`/`hitches`/`worstMs` (heure des images du
  * fil principal : aveugle aux retards d'UNE image), `mainBusy` (occupation
  * reelle du fil principal > 8 ms) et `screen*` (ce qui arrive vraiment a
- * l'ecran, serveur de rendu compris). Le natif ecrit aussi chaque rapport
- * dans le journal de l'iPhone (`[HL]`, lecture directe par `idevicesyslog`).
+ * l'ecran, serveur de rendu compris). Chaque rapport part aussi dans le
+ * journal de l'iPhone (`logReport`, lecture directe par `idevicesyslog`).
  * Tags `blur` = rendu des barres floutees (`live` | `baked`),
  * `bannerAutoplay` = defilement auto de la banniere actif ou coupe,
  * `cellDiag` = famille d'elements retiree des boutiques ce lancement.
@@ -129,8 +129,27 @@ export const announceNativeList = () => {
   });
 };
 
+/** Taille d'un morceau : le journal systeme coupe une ligne vers 1 000 caracteres. */
+const LOG_CHUNK = 800;
+let logSeq = 0;
+
+/**
+ * Journal de l'iPhone, lisible en direct depuis l'ordinateur (iPhone en USB) :
+ * `idevicesyslog -m "[HL]"`. Ligne `[HL] <rapport> <morceau>/<total> <json>`,
+ * le JSON etant decoupe pour ne pas etre tronque. Passe par le JS : un `NSLog`
+ * natif sort masque (`<private>`) en release sous iOS 26, `console.log` non.
+ */
+const logReport = (r: Record<string, any>) => {
+  const json = JSON.stringify(r);
+  const count = Math.max(1, Math.ceil(json.length / LOG_CHUNK));
+  logSeq += 1;
+  for (let i = 0; i < count; i++) {
+    console.log(`[HL] ${logSeq} ${i + 1}/${count} ${json.slice(i * LOG_CHUNK, (i + 1) * LOG_CHUNK)}`);
+  }
+};
+
 export const reportNativeDiagnostics = (r: Record<string, any>) => {
-  console.log(`[NATIVE] ${JSON.stringify(r)}`);
+  logReport(r);
   Sentry.addBreadcrumb({ category: "home-list", level: "info", data: r });
   scheduleFlush();
 

@@ -109,9 +109,11 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     }
   }
 
-  /** Rapport de la sonde : journal de l'iPhone (lecture directe) + JS (Sentry). */
+  /**
+   Rapport de la sonde, vers JS (journal de l'iPhone `[HL]` + Sentry). Pas de
+   `NSLog` ici : iOS 26 le masque (`<private>`) dans une build de release.
+   */
   private func report(_ r: [String: Any]) {
-    HLPerfMonitor.log(r)
     onDiagnostics(r)
   }
 

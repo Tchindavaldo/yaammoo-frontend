@@ -158,28 +158,6 @@ final class HLPerfMonitor: NSObject {
     events.append([ms, what, Int(offsetProvider?() ?? 0)])
   }
 
-  private static var logSeq = 0
-
-  /**
-   Journal de l'iPhone (`NSLog`, TestFlight seulement) : lisible en direct
-   depuis l'ordinateur (`idevicesyslog -m "[HL]"`), sans attendre Sentry.
-   Ligne `[HL] <rapport> <morceau>/<total> <json>` : le journal systeme
-   tronque les longues lignes, le JSON est donc decoupe.
-   */
-  static func log(_ report: [String: Any]) {
-    guard HLCellDiag.isTestBuild, JSONSerialization.isValidJSONObject(report),
-          let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
-          let json = String(data: data, encoding: .utf8) else { return }
-    logSeq += 1
-    let chars = Array(json)
-    let size = 800
-    let count = (chars.count + size - 1) / size
-    for i in 0..<count {
-      let part = String(chars[(i * size)..<min(chars.count, (i + 1) * size)])
-      NSLog("[HL] %@", "\(logSeq) \(i + 1)/\(count) \(part)" as NSString)
-    }
-  }
-
   /** Millisecondes entieres depuis `t0` (cout d'une etape, pour les `events`). */
   static func ms(since t0: CFTimeInterval) -> Int {
     Int(((CACurrentMediaTime() - t0) * 1000).rounded())

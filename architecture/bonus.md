@@ -84,7 +84,8 @@ modules/bonus-pager/
     ├── BonusPagerModule.swift  # Props : items, footerHeight, textColor, iconFontFamily
     ├── BonusPagerView.swift    # UIScrollView pagine ; cartes React montees dans sa piste
     ├── BPFooterView.swift      # Carte du bas : galerie (gauche) + panneau heros (droite)
-    ├── BPFooterParts.swift     # BPIconView (Ionicons), BPGalleryCard, BPHeroSlide
+    ├── BPFooterParts.swift     # BPIconView (Ionicons), BPGalleryCard
+    ├── BPHeroPanel.swift       # Panneau heros fixe (couleurs interpolees, BPFadeStack par texte)
     └── BPModels.swift          # Record JS → BPItem, couleurs, melange de couleurs
 ```
 
@@ -245,15 +246,16 @@ pendant l'animation — un `jumpTarget` (ref) fait ignorer ces étapes au listen
 sinon le titre et la ligne de réclamation défileraient en accéléré jusqu'à la
 destination.
 
-> **ACTUEL — panneau héro FIXE (remplace la piste décrite ci-dessous).** Plus
-> rien ne glisse : un calque texte par bonus (filigrane, icône, émetteur, nom,
-> statut) superposé au même endroit, en **fondu croisé** piloté par le scroll
-> (opacité 1 au centre, 0 à mi-chemin). Fond du badge d'icône et jauge sont
-> **partagés** : couleur interpolée entre les deux bonus encadrants, jauge fixe
-> (40 px, à droite de la ligne de statut) remplie en continu de 0 (1er) à
-> plein (dernier). Même logique des deux côtés : `BonusPagerInfo` (`scrollX`)
-> et `BPFooterView.syncPanel` (iOS, position fractionnaire). Les paragraphes
-> « piste » qui suivent sont l'historique.
+> **ACTUEL — panneau héro FIXE, chaque élément animé SEUL (remplace la piste
+> décrite ci-dessous).** Rien ne glisse. Couleurs (icône, fond du badge,
+> filigrane, point + libellé de statut, jauge) interpolées en continu entre les
+> deux bonus encadrants. Textes et glyphe : un empilement par élément
+> (`FadeStack` RN / `BPFadeStack` iOS), une vue par suite de valeurs
+> identiques — un texte inchangé ne bouge pas ; sinon court fondu (±0,15 carte)
+> décalé par élément (filigrane −0,2, icône −0,1, émetteur −0,05, nom 0,
+> statut +0,1). Jauge fixe (40 px) remplie de 0 (1er) à plein (dernier).
+> Même formule des deux côtés : `BonusPagerInfo` et `BPHeroPanel.swift`. Les
+> paragraphes « piste » qui suivent sont l'historique.
 
 > **Panneau héro synchronisé sur les cartes du haut.** Les slides sont espacés
 > de 12 px (`SLIDE_GAP` / `slideGap` = 2 × la marge 6 d'une `BonusCard`), comme

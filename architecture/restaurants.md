@@ -27,7 +27,6 @@ src/features/restaurants/
 ├── hooks/useHomeListData.ts        # Home : listData (bannière + boutiques + fantômes), firstScreenUris, drawDistance (échauffement)
 ├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
 ├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
-├── hooks/useHomeHeartbeat.ts       # Home : sonde [HB] (temporaire)
 ├── utils/deliveryUtils.ts
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
 ├── utils/homeListConfig.ts         # Home : constantes mesurées (DRAW_DISTANCE, GHOST_COUNT, seuils…), BANNER_ITEM, CATEGORIES

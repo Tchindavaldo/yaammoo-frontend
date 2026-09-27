@@ -20,7 +20,6 @@ import {
 } from "@/src/features/restaurants/components/home/HomeFullScreenStates";
 import { homeStyles as styles } from "@/src/features/restaurants/components/home/homeScreenStyles";
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
-import { useHomeHeartbeat } from "@/src/features/restaurants/hooks/useHomeHeartbeat";
 import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListData";
 import { useHomeListRenderers } from "@/src/features/restaurants/hooks/useHomeListRenderers";
 import { useHomeListScroll } from "@/src/features/restaurants/hooks/useHomeListScroll";
@@ -54,7 +53,6 @@ export default function HomeScreen() {
   // l'app a l'ecran : sous le splash, seules `/fastFood/all` et
   // `/settings/app-version` ont le droit de partir. Les badges panier et
   // notifications tiennent sur leur cache en attendant ces reponses.
-  useHomeHeartbeat();
   useEffect(() => {
     void ensureProfileRefreshed();
     ensureNotificationsLoaded();

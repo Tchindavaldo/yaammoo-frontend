@@ -10,6 +10,9 @@
 .expo/
 dist/
 web-build/
+# Sorties Gradle des modules natifs locaux
+modules/*/android/build/
+modules/*/android/.gradle/
 expo-env.d.ts
 
 # Native

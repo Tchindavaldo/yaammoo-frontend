@@ -40,9 +40,6 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   // advanceDays, deliveryOffer). Évite un refetch `GET /fastfood/:id` côté
   // checkout (deliveryOffer n'y figure d'ailleurs PAS, seul le /all le porte).
   const placeholder = isPlaceholder(fastFood);
-  // SONDE [HB] (temporaire) : rendus de rangees par seconde.
-  const hb = (globalThis as any).__hb;
-  if (hb) placeholder ? hb.ph++ : hb.row++;
 
   const handleMenuClick = (menu: Menu) => {
     // Fantome : rien a commander.

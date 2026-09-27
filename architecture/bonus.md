@@ -245,6 +245,16 @@ pendant l'animation — un `jumpTarget` (ref) fait ignorer ces étapes au listen
 sinon le titre et la ligne de réclamation défileraient en accéléré jusqu'à la
 destination.
 
+> **ACTUEL — panneau héro FIXE (remplace la piste décrite ci-dessous).** Plus
+> rien ne glisse : un calque texte par bonus (filigrane, icône, émetteur, nom,
+> statut) superposé au même endroit, en **fondu croisé** piloté par le scroll
+> (opacité 1 au centre, 0 à mi-chemin). Fond du badge d'icône et jauge sont
+> **partagés** : couleur interpolée entre les deux bonus encadrants, jauge fixe
+> (40 px, à droite de la ligne de statut) remplie en continu de 0 (1er) à
+> plein (dernier). Même logique des deux côtés : `BonusPagerInfo` (`scrollX`)
+> et `BPFooterView.syncPanel` (iOS, position fractionnaire). Les paragraphes
+> « piste » qui suivent sont l'historique.
+
 > **Panneau héro synchronisé sur les cartes du haut.** Les slides sont espacés
 > de 12 px (`SLIDE_GAP` / `slideGap` = 2 × la marge 6 d'une `BonusCard`), comme
 > les cartes. La piste suit les cartes **en proportion** (`position × PITCH`) :

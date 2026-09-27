@@ -380,11 +380,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                   </Animated.ScrollView>
                 </View>
 
-                <BonusPagerInfo
-                  bonuses={bonuses}
-                  scrollX={scrollX}
-                  dotColor={DARK_ICON}
-                />
+                <BonusPagerInfo bonuses={bonuses} scrollX={scrollX} />
               </View>
             </BonusGlassCard>
           )}

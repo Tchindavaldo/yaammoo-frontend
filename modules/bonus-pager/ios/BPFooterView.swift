@@ -25,19 +25,18 @@ final class BPFooterView: UIView {
   /** `paddingRight: 4` du contenu de la galerie. */
   private static let galleryTrailing: CGFloat = 4
   static let panelWidth: CGFloat = 168
-  /** Marge laterale d'une carte du haut dans sa page (`BonusCard`, GUTTER − CARD_PAD). */
-  private static let pageCardMargin: CGFloat = 6
-  /** Ecart entre deux slides du panneau = ecart entre deux cartes du haut. */
-  private static let slideGap = 2 * pageCardMargin
-  private static let slidePitch = panelWidth + slideGap
 
   private let card = UIView()
   private let galleryClip = UIView()
   private let galleryStrip = UIView()
   private var galleryCards: [BPGalleryCard] = []
+  /** Panneau heros FIXE : calques superposes en fondu, rien ne glisse. */
   private let panel = UIView()
-  private let track = UIView()
+  private let badgeBg = UIView()
+  private let gauge = UIView()
+  private let gaugeFill = UIView()
   private var slides: [BPHeroSlide] = []
+  private var colors: [BPRGBA] = []
   private var position: CGFloat = 0
 
   override init(frame: CGRect) {
@@ -52,7 +51,14 @@ final class BPFooterView: UIView {
     galleryClip.addSubview(galleryStrip)
     card.addSubview(galleryClip)
     panel.clipsToBounds = true
-    panel.addSubview(track)
+    badgeBg.layer.cornerRadius = 7
+    panel.addSubview(badgeBg)
+    gauge.backgroundColor = UIColor(white: 0, alpha: 0.08)
+    gauge.layer.cornerRadius = 1.5
+    gauge.clipsToBounds = true
+    gaugeFill.layer.cornerRadius = 1.5
+    gauge.addSubview(gaugeFill)
+    panel.addSubview(gauge)
     card.addSubview(panel)
   }
 
@@ -70,11 +76,11 @@ final class BPFooterView: UIView {
       return c
     }
     slides = items.enumerated().map { (i, item) -> BPHeroSlide in
-      let s = BPHeroSlide(item: item, position: i, total: items.count,
-                          gaugeColor: textColor, iconFontFamily: iconFontFamily)
-      track.addSubview(s)
+      let s = BPHeroSlide(item: item, position: i, iconFontFamily: iconFontFamily)
+      panel.insertSubview(s, belowSubview: gauge)
       return s
     }
+    colors = items.map { BPRGBA($0.color) }
     setNeedsLayout()
   }
 
@@ -101,12 +107,12 @@ final class BPFooterView: UIView {
     let slideH = BPHeroSlide.height
     panel.frame = CGRect(x: inner.maxX - s.panelWidth, y: inner.minY + (inner.height - slideH) / 2,
                          width: s.panelWidth, height: slideH)
-    track.bounds = CGRect(x: 0, y: 0, width: max(0, CGFloat(slides.count) * s.slidePitch - s.slideGap),
-                          height: slideH)
-    track.center = CGPoint(x: track.bounds.width / 2, y: slideH / 2)
-    for (i, slide) in slides.enumerated() {
-      slide.frame = CGRect(x: CGFloat(i) * s.slidePitch, y: 0, width: s.panelWidth, height: slideH)
+    badgeBg.frame = CGRect(x: 0, y: 0, width: 22, height: 22)
+    for slide in slides {
+      slide.frame = panel.bounds
     }
+    let gw = BPHeroSlide.gaugeWidth
+    gauge.frame = CGRect(x: s.panelWidth - gw, y: 51 + (14 - 3) / 2, width: gw, height: 3)
     sync(position: position)
   }
 
@@ -128,18 +134,28 @@ final class BPFooterView: UIView {
       let distance = abs(p - CGFloat(i))
       c.apply(focus: max(0, 1 - distance), active: distance < 0.5)
     }
-    track.transform = CGAffineTransform(translationX: -trackOffset(p), y: 0)
+    syncPanel(p)
   }
 
   /**
-   Panneau heros : la piste suit les cartes du haut en proportion, du premier
-   au dernier point du geste (demarre et s'arrete avec elles, dans les deux
-   sens). Plus etroit que les cartes, il glisse moins vite : son ecart ne
-   reste pas sous celui des cartes pendant le glissement, seulement au repos.
-   (L'ancienne piste « au meme rythme pendant que l'ecart traverse le
-   panneau » attendait les cartes au retour et s'arretait avant elles.)
+   Panneau heros fixe (meme logique que `BonusPagerInfo` cote RN) : textes en
+   fondu croise (1 au centre, 0 a mi-chemin), fond du badge et jauge colores
+   par melange des deux bonus encadrants, jauge de 0 (1er) a pleine (dernier).
    */
-  private func trackOffset(_ p: CGFloat) -> CGFloat {
-    min(max(p, 0), CGFloat(max(0, slides.count - 1))) * BPFooterView.slidePitch
+  private func syncPanel(_ p: CGFloat) {
+    guard !slides.isEmpty else { return }
+    let last = CGFloat(slides.count - 1)
+    let q = min(max(p, 0), last)
+    for (i, slide) in slides.enumerated() {
+      slide.alpha = max(0, 1 - 2 * abs(q - CGFloat(i)))
+    }
+    let lo = Int(q.rounded(.down))
+    let hi = min(lo + 1, slides.count - 1)
+    let t = q - CGFloat(lo)
+    let tint = colors[lo].mix(colors[hi], t)
+    badgeBg.backgroundColor = tint.withAlphaComponent(CGFloat(0x1f) / 255)
+    gaugeFill.backgroundColor = tint
+    let ratio = last > 0 ? q / last : 1
+    gaugeFill.frame = CGRect(x: 0, y: 0, width: gauge.bounds.width * ratio, height: 3)
   }
 }

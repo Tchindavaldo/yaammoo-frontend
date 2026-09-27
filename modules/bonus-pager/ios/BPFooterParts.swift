@@ -152,14 +152,11 @@ final class BPHeroSlide: UIView {
   private let name = UILabel()
   private let dot = UIView()
   private let status = UILabel()
-  private let gauge = UIView()
-  private let gaugeFill = UIView()
-  /** Portion pleine de la jauge : position du bonus dans la pile (0 → 100 %). */
-  private let fraction: CGFloat
+  /** Largeur de la jauge partagee (`GAUGE_W` cote RN). */
+  static let gaugeWidth: CGFloat = 40
 
-  init(item: BPItem, position: Int, total: Int, gaugeColor: UIColor, iconFontFamily: String?) {
+  init(item: BPItem, position: Int, iconFontFamily: String?) {
     icon = BPIconView(glyph: item.icon, size: 13, fontFamily: iconFontFamily)
-    fraction = total > 1 ? CGFloat(position) / CGFloat(total - 1) : 1
     super.init(frame: .zero)
     isUserInteractionEnabled = false
 
@@ -170,8 +167,7 @@ final class BPHeroSlide: UIView {
     ])
     addSubview(ghost)
 
-    badge.backgroundColor = item.color.withAlphaComponent(CGFloat(0x1f) / 255)
-    badge.layer.cornerRadius = 7
+    // Fond du badge porte par le pied de page (couleur interpolee, partagee).
     icon.color = item.color
     badge.addSubview(icon)
     addSubview(badge)
@@ -201,14 +197,6 @@ final class BPHeroSlide: UIView {
     status.font = .systemFont(ofSize: 11, weight: .heavy)
     status.textColor = item.statusColor
     addSubview(status)
-
-    gauge.backgroundColor = UIColor(white: 0, alpha: 0.08)
-    gauge.layer.cornerRadius = 1.5
-    gauge.clipsToBounds = true
-    gaugeFill.backgroundColor = gaugeColor
-    gaugeFill.layer.cornerRadius = 1.5
-    gauge.addSubview(gaugeFill)
-    addSubview(gauge)
   }
 
   required init?(coder: NSCoder) { fatalError("init(coder:) non supporte") }
@@ -233,14 +221,11 @@ final class BPHeroSlide: UIView {
 
     name.frame = CGRect(x: 0, y: 28, width: w, height: 17)
 
-    // Statut + jauge sur la meme ligne ; le libelle cede la place a la jauge.
+    // Statut ; la jauge (partagee, fixe) occupe la droite de la ligne.
     let rowY: CGFloat = 51
     let rowH: CGFloat = 14
     dot.frame = CGRect(x: 0, y: rowY + (rowH - 7) / 2, width: 7, height: 7)
-    let statusW = min(ceil(status.sizeThatFits(.zero).width), max(0, w - 12 - 9 - 24))
+    let statusW = min(ceil(status.sizeThatFits(.zero).width), max(0, w - 12 - 9 - BPHeroSlide.gaugeWidth))
     status.frame = CGRect(x: 12, y: rowY, width: statusW, height: rowH)
-    let gaugeX = status.frame.maxX + 9
-    gauge.frame = CGRect(x: gaugeX, y: rowY + (rowH - 3) / 2, width: max(0, w - gaugeX), height: 3)
-    gaugeFill.frame = CGRect(x: 0, y: 0, width: gauge.bounds.width * fraction, height: 3)
   }
 }

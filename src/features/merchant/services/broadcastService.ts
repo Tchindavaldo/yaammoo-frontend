@@ -4,6 +4,7 @@ import type {
   BroadcastAudience,
   BroadcastItem,
   BroadcastPlan,
+  BroadcastShop,
   BroadcastState,
 } from "../types/broadcast.types";
 
@@ -55,6 +56,15 @@ export const broadcastErrorMessage = (error: any, fallback: string): string => {
  * backend (refus 429) : le client ne fait que l'afficher.
  */
 export const broadcastService = {
+  /** Nom et photo de la boutique, pour l'aperçu (même avatar que le push). */
+  async getShop(fastFoodId: string): Promise<BroadcastShop> {
+    const res = await axios.get(`${Config.apiUrl}/fastfood/${fastFoodId}`);
+    const d = res.data?.data || {};
+    // Même source que le push (backend `shopSender` : `fastfoods.image`, HTTPS).
+    const photo = [d.image].find((u) => typeof u === "string" && u.startsWith("https://"));
+    return { name: String(d.name || d.nom || ""), imageUrl: photo || null };
+  },
+
   /** Plan, villes desservies et envois, du plus récent au plus ancien. */
   async getState(fastFoodId: string): Promise<BroadcastState> {
     const res = await axios.get(`${BASE()}/${fastFoodId}`);

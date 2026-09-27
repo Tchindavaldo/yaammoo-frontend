@@ -10,6 +10,7 @@ import type {
   BroadcastDraft,
   BroadcastItem,
   BroadcastPlan,
+  BroadcastShop,
   BroadcastState,
 } from "../types/broadcast.types";
 
@@ -33,6 +34,7 @@ export const useBroadcast = (active: boolean, onLoadError: () => void) => {
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
+  const [shop, setShop] = useState<BroadcastShop | null>(null);
 
   const apply = useCallback((state: BroadcastState) => {
     setPlan(state.plan);
@@ -57,6 +59,13 @@ export const useBroadcast = (active: boolean, onLoadError: () => void) => {
         setLoaded(true);
         onLoadError();
       },
+    );
+    // Identité de la boutique pour l'aperçu : échec = logo de l'app.
+    broadcastService.getShop(fastFoodId).then(
+      (s) => {
+        if (alive) setShop(s);
+      },
+      () => {},
     );
     return () => {
       alive = false;
@@ -108,5 +117,5 @@ export const useBroadcast = (active: boolean, onLoadError: () => void) => {
     [fastFoodId, sending],
   );
 
-  return { plan, cities, items, loaded, refreshing, sending, refresh, send };
+  return { plan, cities, items, shop, loaded, refreshing, sending, refresh, send };
 };

@@ -44,15 +44,16 @@ internal object ConversationStyle {
     val pictureUrl = data["imageUrl"]?.takeIf { it.isNotBlank() }
 
     val (avatar, picture) = coroutineScope {
-      val avatarJob = async { NotificationImages.download(sender.imageUrl, NotificationImages.AVATAR_SIDE) }
+      val avatarJob = async { sender.imageUrl?.let { NotificationImages.download(it, NotificationImages.AVATAR_SIDE) } }
       val pictureJob = async { pictureUrl?.let { NotificationImages.download(it, NotificationImages.PICTURE_SIDE) } }
       avatarJob.await() to pictureJob.await()
     }
 
-    // Logo introuvable : icone de l'app, comme une notification ordinaire.
-    if (avatar == null) return picture?.let { bigPicture(context, base, it) }
-
     val content = notification.notificationRequest.content
+    // Logo absent ou introuvable : icone de l'app, mais toujours
+    // « Boutique · Titre » puis le message.
+    if (avatar == null) return plain(context, base, sender.name, content.title, content.text, picture)
+
     val text = messageText(content.title, content.text, sender.name)
     val icon = IconCompat.createWithBitmap(NotificationImages.circle(avatar))
     val shop = Person.Builder()
@@ -110,16 +111,39 @@ internal object ConversationStyle {
     id
   }.getOrNull()
 
-  /** Sans logo mais avec photo : vignette a droite, grande photo depliee. */
-  private fun bigPicture(
+  /**
+   * Sans logo : nom de la boutique en en-tete, titre saisi, message en dessous (replie comme
+   * deplie). Avec photo : vignette a droite, grande photo depliee, le message
+   * repris en resume (sinon Android le masque une fois deplie).
+   */
+  private fun plain(
     context: Context,
     base: android.app.Notification,
-    picture: Bitmap
-  ): android.app.Notification =
-    NotificationCompat.Builder(context, base)
-      .setLargeIcon(picture)
-      .setStyle(NotificationCompat.BigPictureStyle().bigPicture(picture).bigLargeIcon(null as Bitmap?))
-      .build()
+    senderName: String,
+    title: String?,
+    body: String?,
+    picture: Bitmap?
+  ): android.app.Notification {
+    val head = title?.trim().orEmpty()
+    val tail = body?.trim().orEmpty()
+    // Nom de la boutique dans l'en-tete (a cote du nom de l'app), titre saisi seul.
+    val fullTitle = head.ifEmpty { senderName }
+    val builder = NotificationCompat.Builder(context, base)
+      .setSubText(senderName)
+      .setContentTitle(fullTitle)
+      .setContentText(tail.ifEmpty { null })
+    if (picture != null) {
+      val style = NotificationCompat.BigPictureStyle()
+        .bigPicture(picture)
+        .bigLargeIcon(null as Bitmap?)
+        .setBigContentTitle(fullTitle)
+      if (tail.isNotEmpty()) style.setSummaryText(tail)
+      builder.setLargeIcon(picture).setStyle(style)
+    } else if (tail.isNotEmpty()) {
+      builder.setStyle(NotificationCompat.BigTextStyle().setBigContentTitle(fullTitle).bigText(tail))
+    }
+    return builder.build()
+  }
 
   /**
    * Titre en gras sur la premiere ligne, puis le message : le nom de la
@@ -138,12 +162,12 @@ internal object ConversationStyle {
   }
 
   /** Boutique expeditrice lue dans les donnees du push. */
-  private class Sender(val id: String, val name: String, val imageUrl: String) {
+  private class Sender(val id: String, val name: String, val imageUrl: String?) {
     companion object {
       fun from(data: Map<String, String>): Sender? {
         val name = data["senderName"]?.trim().orEmpty()
-        val imageUrl = data["senderImageUrl"]?.trim().orEmpty()
-        if (name.isEmpty() || !imageUrl.startsWith("https://")) return null
+        val imageUrl = data["senderImageUrl"]?.trim()?.takeIf { it.startsWith("https://") }
+        if (name.isEmpty()) return null
         val id = data["senderId"]?.trim().orEmpty().ifEmpty { name }
         return Sender(id, name, imageUrl)
       }

@@ -63,9 +63,11 @@ Provider monté dans `app/_layout.tsx` sous `MerchantProvider`.
 - **Demandes de livraison** : `driverApplicationCreated` (→ marchand, nouvelle demande),
   `driverApplicationDecided` (→ candidat, accepté/refusé). Payload `{ data: application }`.
   Ces events passent par un **bus** dans `DriverContext`
-  (`notifyApplicationEvent` / `register|unregisterApplicationHandler`) ; les modals
-  `DriverManageModal` et `DriverMyApplicationsModal` s'y abonnent pendant qu'ils sont
-  ouverts et mettent à jour leur liste **sans refetch**.
+  (`notifyApplicationEvent` / `register|unregisterApplicationHandler`) ;
+  `useStaffDrivers` (écran Personnel, voir [staff.md](./staff.md)) et
+  `DriverMyApplicationsModal` s'y abonnent pendant qu'ils sont ouverts et mettent à
+  jour leur liste **sans refetch** ; `useStaffPendingCount` (tuile Personnel) y
+  recompte les demandes en attente.
 
 Refresh au (re)connect. La **relance** d'une demande met à jour le state local (pas de
 GET → pas de pull-refresh visible).
@@ -79,7 +81,7 @@ ouvre le bon modal (`?section=drivers` ou `?section=my-applications`).
 
 Types de notif (routing dans `notificationRouting.ts`) :
 
-- `driver_application` (→ marchand) → modal Livreurs.
+- `driver_application` (→ marchand) → écran Personnel, onglet Livreurs.
 - `driver_application_decided` (→ candidat) → modal Mes demandes.
 - `driver_removed` (→ livreur retiré) → modal Mes demandes (`route: settings?section=my-applications`).
 
@@ -107,9 +109,10 @@ agrège les commandes de **toutes** ses boutiques.
 - **Section user « Livraison »** : item **« Mes demandes »** (`DriverMyApplicationsModal`)
   — le user voit le statut de ses demandes (en attente / acceptée / refusée) et peut
   **relancer** une demande refusée.
-- **Section boutique** : item **« Livreurs »** (`DriverManageModal`) — le marchand
-  voit les demandes reçues (accepter/refuser) + ses livreurs assignés. Loader centré
-  au 1er chargement ; nom = nom complet, sinon email, sinon « Utilisateur ».
+- **Section boutique** : les livreurs font partie du **Personnel** (item
+  « Personnel », `StaffManageModal`, onglet **Livreurs**) — demandes reçues
+  (accepter/refuser) + livreurs assignés (retirer). L'ancien `DriverManageModal` est
+  supprimé. Détail : [staff.md](./staff.md).
 
 Un user devient livreur quand un marchand **accepte** une de ses demandes (le backend
 pose alors `driverId` sur le user).

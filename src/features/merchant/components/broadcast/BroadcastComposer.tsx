@@ -14,7 +14,11 @@ import {
   TextInput,
   View,
 } from "react-native";
-import type { BroadcastAudience, BroadcastDraft } from "../../types/broadcast.types";
+import type {
+  BroadcastAudience,
+  BroadcastDraft,
+  BroadcastShop,
+} from "../../types/broadcast.types";
 import { BroadcastAudiencePicker } from "./BroadcastAudiencePicker";
 import { BroadcastPreview } from "./BroadcastPreview";
 import { BC, capsLabel } from "./broadcastTheme";
@@ -30,6 +34,8 @@ interface Props {
   /** Audiences permises par le plan, et villes desservies par la boutique. */
   audiences: BroadcastAudience[];
   cities: string[];
+  /** Nom et photo de la boutique, pour l'aperçu (null = pas encore chargés). */
+  shop: BroadcastShop | null;
   sending: boolean;
   /** Décalage bas au repos (au-dessus de la tab bar). */
   restBottom: number;
@@ -47,6 +53,7 @@ export const BroadcastComposer: React.FC<Props> = ({
   menuImages,
   audiences,
   cities,
+  shop,
   sending,
   restBottom,
   onSend,
@@ -182,7 +189,7 @@ export const BroadcastComposer: React.FC<Props> = ({
           />
         )}
 
-        <BroadcastPreview title={title} body={bodyOn ? body : ""} imageUri={imageUri} />
+        <BroadcastPreview shop={shop} title={title} body={bodyOn ? body : ""} imageUri={imageUri} />
 
         <TextInput
           value={title}

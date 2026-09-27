@@ -20,7 +20,7 @@ quota atomique, diffusion).
 | `merchant/components/broadcast/BroadcastHistoryRow.tsx` | Ligne repliable + gabarits par nombre d'envois (`rowLayoutFor`) + vignette + résumé d'audience |
 | `merchant/components/broadcast/BroadcastComposer.tsx` | Composeur flottant : audience, aperçu, titre, message et image révélés à la demande, envoi |
 | `merchant/components/broadcast/BroadcastAudiencePicker.tsx` | Puces « Mes clients / Ma ville / Tout le monde » (selon le plan) + villes desservies |
-| `merchant/components/broadcast/BroadcastPreview.tsx` | Aperçu en direct de la notification reçue (icône app, photo floutée en fond) |
+| `merchant/components/broadcast/BroadcastPreview.tsx` | Aperçu en direct de la notification reçue : photo de la boutique en avatar + logo de l'app (`logo.png`) en pastille (sans photo : logo de l'app seul), nom de la boutique en en-tête (à la place du nom de l'app), titre saisi seul, message, photo floutée en fond. Nom/photo via `GET /fastfood/:id` (`broadcastService.getShop`, `name` + `image` HTTPS, comme le push) |
 | `merchant/components/broadcast/broadcastTheme.ts` | Palette de l'écran + style des étiquettes en capitales |
 | `merchant/hooks/useBroadcast.ts` | Plan, villes, historique (chargés à l'ouverture), pull-to-refresh, envoi (upload de l'image locale d'abord) |
 | `merchant/services/broadcastService.ts` | Appels HTTP, `FREE_PLAN` (repli avant réponse), message d'erreur du backend |

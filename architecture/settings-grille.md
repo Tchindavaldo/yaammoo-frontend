@@ -31,7 +31,9 @@ une **grille de tuiles par section**, séparées visuellement.
 suppression, déconnexion) :
 
 - **Deep-link** `?section=` : `pending` / `active` / `finished` → commandes ·
-  `drivers` → Livreurs · `my-applications` → Mes demandes · `bonus` → Bonus.
+  `drivers` → Personnel, onglet Livreurs · `staff` → Personnel ·
+  `my-applications` → Mes demandes · `bonus` → Bonus. L'onglet d'ouverture de
+  Personnel est exposé par le hook (`staffTab`).
   Chaque nouvelle valeur est traitée une seule fois (ajustement pendant le rendu).
 - **Tap sur l'onglet** : tout est refermé et le param `section` est effacé.
 - **Déconnexion** : les modals logout / suppression sont refermés ; leur loader

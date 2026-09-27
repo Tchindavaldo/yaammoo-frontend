@@ -43,7 +43,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
     () => setToast({ message: "Impossible de charger vos notifications", type: "error" }),
     [],
   );
-  const { plan, cities, items, loaded, refreshing, sending, refresh, send } = useBroadcast(
+  const { plan, cities, items, shop, loaded, refreshing, sending, refresh, send } = useBroadcast(
     visible,
     onLoadError,
   );
@@ -168,6 +168,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
           menuImages={menuImages}
           audiences={plan.audiences}
           cities={cities}
+          shop={shop}
           sending={sending}
           restBottom={tabBarHeight + 10}
           onSend={onSend}

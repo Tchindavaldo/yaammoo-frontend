@@ -148,6 +148,15 @@ src/features/
 │   ├── services/driverService.ts       # GET /order/driver/:id · PUT /order (avec driverId)
 │   └── components/                      # DriverOrderPanel (clone "Terminées") + DriverOrderCard
 │
+├── staff/                              # Personnel boutique (Settings → Boutique → Personnel)
+│   ├── hooks/                          # useStaff (membres/rôles) · useStaffDrivers (livreurs + demandes)
+│   │                                   #   · useStaffPendingCount (tuile Settings)
+│   ├── services/staffService.ts        # HTTP /staff + STAFF_FREE_PLAN (quotas affichés)
+│   ├── utils/                          # staffPermissions (catalogue) · staffFormat (téléphone, noms)
+│   ├── types/staff.types.ts
+│   └── components/                      # StaffManageModal + cartes, onglets, feuilles
+│                                        #   Détail : architecture/staff.md
+│
 ├── payment/
 │   ├── constants/reviewPayment.ts        # REVIEW_STEP_MS — durée d'une étape simulée en review
 │   ├── hooks/useCartPayment.ts          # Paiement global panier (isolé de useCheckout)

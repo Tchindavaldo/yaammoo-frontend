@@ -229,8 +229,10 @@ présentation** :
 - La notification est d'abord construite par Expo, puis reprise
   (`NotificationCompat.Builder(context, base)`) : tap, routage JS
   (`data.route`) et extras d'Expo sont conservés.
-- Logo introuvable : notification d'Expo (avec la photo en grand si elle
-  existe). Toute exception : notification d'Expo intacte.
+- Boutique sans logo (ou logo introuvable), dès que `senderName` est là :
+  icône de l'app, titre **« Boutique · Titre »**, message dessous (BigText) ;
+  avec photo, BigPicture avec le message en résumé (sinon Android le masque
+  une fois dépliée). Toute exception : notification d'Expo intacte.
 - ⚠️ Une version de l'app **sans** le module affiche ces push en notification
   classique, sans la photo.
 - ⚠️ Build native requise (EAS). Absent d'Expo Go.

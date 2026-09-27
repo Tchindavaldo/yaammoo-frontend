@@ -23,6 +23,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [menu.md](./menu.md) | Gestion des menus côté marchand (panel, formulaire multi-étapes, designs récap) |
 | [bonus.md](./bonus.md) | Bonus & récompenses client (bottom sheet, carrousel, registre évolutif, moteur d'éligibilité, claim, campagne `status_view` : flyer + preuve vidéo) |
 | [driver.md](./driver.md) | Rôle driver — commandes déléguées (onglet, panel, carte, socket, contrat backend) |
+| [staff.md](./staff.md) | Personnel boutique (Settings → Boutique → Personnel) — quotas, rôles et permissions, membres (création, fiche, suspension), livreurs et demandes |
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
 | [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
 | [merchant-broadcast.md](./merchant-broadcast.md) | Notifications boutique — envois à une audience (clients / ville / tous), quota du plan, semaine en barres, derniers envois, composeur, réception côté client |

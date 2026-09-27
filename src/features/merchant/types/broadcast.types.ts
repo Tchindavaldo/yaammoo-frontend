@@ -40,6 +40,12 @@ export interface BroadcastState {
   items: BroadcastItem[];
 }
 
+/** Boutique expéditrice telle que le client la voit dans la notification. */
+export interface BroadcastShop {
+  name: string;
+  imageUrl: string | null;
+}
+
 /** Saisie du composeur. `imageUri` : URL distante (photo de menu) ou URI locale (galerie). */
 export interface BroadcastDraft {
   title: string;

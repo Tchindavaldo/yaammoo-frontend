@@ -17,11 +17,12 @@ export type SettingsSubScreen =
   | "merchantSupport"
   // Boutique -> Notifications : envois aux clients (quota du plan).
   | "broadcast"
-  // Section « Livraison » (user) + item « Livreurs » (boutique).
+  // Section « Livraison » (user).
   | "driverApply"
   | "driverOrders"
-  | "driverManage"
   | "driverMyApps"
+  // Boutique -> Personnel : membres, rôles, livreurs et demandes.
+  | "staffManage"
   | "deleteAccount"
   | "logout";
 
@@ -39,8 +40,8 @@ const ALL_CLOSED: SettingsSubScreenState = {
   broadcast: false,
   driverApply: false,
   driverOrders: false,
-  driverManage: false,
   driverMyApps: false,
+  staffManage: false,
   deleteAccount: false,
   logout: false,
 };
@@ -51,8 +52,9 @@ const SECTION_TARGET: Record<string, SettingsSubScreen> = {
   pending: "userOrders",
   active: "userOrders",
   finished: "userOrders",
-  // Notif « demande de livraison » (marchand) → modal Livreurs.
-  drivers: "driverManage",
+  // Notif « demande de livraison » (marchand) → Personnel, onglet Livreurs.
+  drivers: "staffManage",
+  staff: "staffManage",
   // Notif « demande décidée » (candidat) → modal Mes demandes.
   "my-applications": "driverMyApps",
   // Notif « bonus éligible » → modal Bonus.
@@ -66,12 +68,13 @@ const SECTION_TARGET: Record<string, SettingsSubScreen> = {
 export function useSettingsSubScreens(isSignedIn: boolean) {
   const navigation = useNavigation();
   const [visible, setVisible] = useState<SettingsSubScreenState>(ALL_CLOSED);
+  // Onglet d'ouverture de Personnel : Livreurs via le deep-link `drivers`.
+  const [staffTab, setStaffTab] = useState<"team" | "drivers">("team");
 
-  const open = useCallback(
-    (screen: SettingsSubScreen) =>
-      setVisible((v) => ({ ...v, [screen]: true })),
-    [],
-  );
+  const open = useCallback((screen: SettingsSubScreen) => {
+    if (screen === "staffManage") setStaffTab("team");
+    setVisible((v) => ({ ...v, [screen]: true }));
+  }, []);
   const close = useCallback(
     (screen: SettingsSubScreen) =>
       setVisible((v) => ({ ...v, [screen]: false })),
@@ -102,6 +105,7 @@ export function useSettingsSubScreens(isSignedIn: boolean) {
       Object.prototype.hasOwnProperty.call(SECTION_TARGET, section)
     ) {
       const target = SECTION_TARGET[section];
+      if (target === "staffManage") setStaffTab(section === "drivers" ? "drivers" : "team");
       setVisible((v) => ({ ...v, [target]: true }));
     }
   }
@@ -117,5 +121,5 @@ export function useSettingsSubScreens(isSignedIn: boolean) {
     return unsubscribe;
   }, [navigation, section]);
 
-  return { visible, open, close };
+  return { visible, open, close, staffTab };
 }

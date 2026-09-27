@@ -5,7 +5,6 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { UserBonusSheet } from "@/src/features/bonus/components/UserBonusSheet";
 import { DriverApplyModal } from "@/src/features/driver/components/DriverApplyModal";
-import { DriverManageModal } from "@/src/features/driver/components/DriverManageModal";
 import { DriverMyApplicationsModal } from "@/src/features/driver/components/DriverMyApplicationsModal";
 import { DriverOrdersModal } from "@/src/features/driver/components/DriverOrdersModal";
 import { BroadcastManageModal } from "@/src/features/merchant/components/broadcast/BroadcastManageModal";
@@ -24,6 +23,8 @@ import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificat
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { StaffManageModal } from "@/src/features/staff/components/StaffManageModal";
+import { useStaffPendingCount } from "@/src/features/staff/hooks/useStaffPendingCount";
 import { SupportChatSheet } from "@/src/features/support/components/SupportChatSheet";
 import { UserWalletModal } from "@/src/features/wallet/components/UserWalletModal";
 import { Theme } from "@/src/theme";
@@ -53,8 +54,11 @@ export default function SettingsScreen() {
   const { notifEnabled, handleNotifToggle } = useNotificationSwitch();
   const [darkMode, setDarkMode] = useState(false);
   // Sous-pages (modals / sheets) : deep-link, reset au tap onglet et au logout.
-  const { visible, open, close } = useSettingsSubScreens(isSignedIn);
+  const { visible, open, close, staffTab } = useSettingsSubScreens(isSignedIn);
   const insets = useSafeAreaInsets();
+  const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
+  // Demandes de livreur en attente : mises en avant sur la tuile Personnel.
+  const pendingDrivers = useStaffPendingCount(isMerchant, visible.staffManage);
 
   useSettingsTabBarStyle(visible.userBonus);
 
@@ -148,7 +152,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Boutique - only show for merchants (AVANT Livraison) */}
-        {userData?.isMarchand && userData?.fastFoodId && (
+        {isMerchant && (
           <>
             <SectionHeader title="Boutique" />
             <SettingGrid>
@@ -163,9 +167,15 @@ export default function SettingsScreen() {
                 onPress={() => open("menuManage")}
               />
               <SettingGridItem
-                icon="bicycle-outline"
-                title="Livreurs"
-                onPress={() => open("driverManage")}
+                icon="people-outline"
+                title="Personnel"
+                tone={pendingDrivers > 0 ? "accent" : "neutral"}
+                hint={
+                  pendingDrivers > 0
+                    ? `${pendingDrivers} demande${pendingDrivers > 1 ? "s" : ""}`
+                    : undefined
+                }
+                onPress={() => open("staffManage")}
               />
               <SettingGridItem
                 icon="chatbubbles-outline"
@@ -387,10 +397,11 @@ export default function SettingsScreen() {
         onClose={() => close("driverMyApps")}
       />
 
-      {/* Boutique : gérer demandes + livreurs */}
-      <DriverManageModal
-        visible={visible.driverManage}
-        onClose={() => close("driverManage")}
+      {/* Boutique : personnel (membres, rôles) + livreurs et demandes */}
+      <StaffManageModal
+        visible={visible.staffManage}
+        initialTab={staffTab}
+        onClose={() => close("staffManage")}
       />
       </BlurScope>
 

@@ -1,5 +1,42 @@
 # Structure globale — yaammoo/src & app/
 
+## Point d'entrée
+
+`index.js` (`package.json` → `main`) importe la tâche de localisation
+arrière-plan **puis** `expo-router/entry` : Android exécute la tâche sans monter
+l'interface, elle doit donc être définie au chargement du bundle.
+
+## plugins/ — config plugins Expo (appliqués à chaque `expo prebuild`)
+
+```
+plugins/
+├── withXcodeCloud.js                    # Podfile, ci_scripts, versions (Xcode Cloud)
+├── withModularHeadersFix.js
+├── withNotificationServiceExtension.js  # Cible iOS NotificationService (image des push, logo de boutique en avatar)
+└── notification-service/                # SOURCES de l'extension, copiées dans ios/NotificationService/
+    ├── NotificationService.swift
+    └── NotificationService-Info.plist
+```
+
+## modules/notification-style/ — module Expo local, Android seul
+
+Notifications d'une boutique en conversation (logo en avatar, pastille de
+l'app). Détail : [notifications.md](./notifications.md).
+
+```
+modules/notification-style/
+├── expo-module.config.json              # platforms: android (autolinking, pas de JS)
+└── android/
+    ├── build.gradle
+    └── src/main/
+        ├── AndroidManifest.xml          # Récepteur NOTIFICATION_EVENT prioritaire + FileProvider
+        ├── res/xml/notification_style_paths.xml
+        └── java/com/rauval/yaammoo/notificationstyle/
+            ├── ConversationNotificationsService.kt  # NotificationsService d'Expo + PresentationDelegate
+            ├── ConversationStyle.kt                 # MessagingStyle + raccourci de conversation
+            └── NotificationImages.kt                # Téléchargement, avatar rond, photo partagée
+```
+
 ## app/ — Expo Router
 
 ```
@@ -19,6 +56,7 @@ app/
 │   ├── boutique.tsx         # Commandes marchand (statuts via chips ; menu/portefeuille → Settings)
 │   ├── cart.tsx             # Panier seul (mono-section) ; commandes/portefeuille → Settings « Mes activités »
 │   ├── notifications.tsx    # Liste notifs + DetailSheet
+│   ├── settings.tsx         # Paramètres (grille de sections) — cf. settings-grille.md
 │   └── profile.tsx
 │
 └── modal.tsx
@@ -86,14 +124,23 @@ src/features/
 │
 ├── merchant/                            # Détail complet : architecture/orders-merchant.md
 │   ├── context/                         # MerchantContext + MerchantWalletContext
-│   ├── hooks/                           # useMerchant · useWithdraw
-│   ├── services/                        # merchantService · withdrawService · merchantSupportService
+│   ├── hooks/                           # useMerchant · useWithdraw · useBroadcast
+│   ├── services/                        # merchantService · withdrawService · merchantSupportService · broadcastService
+│   ├── utils/broadcastQuota.ts          # Quota / semaine / dates des notifications boutique
 │   ├── utils/orderGroupKey.ts           # Clé de groupage d'une cmd (client + date + créneau/zone)
 │   ├── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
 │   │                                    #   (Livraison / Commande / Montant), gestion menus, portefeuille
+│   ├── components/broadcast/            # Notifications envoyées aux clients (Settings → Boutique →
+│   │                                    #   Notifications). Détail : architecture/merchant-broadcast.md
 │   └── components/support/              # Chat MARCHAND (Settings → Boutique → Messages) —
 │                                        #   feature séparée, aucun composant partagé avec support/
 │                                        #   Détail : architecture/support-merchant.md
+│
+├── location/                            # Position de l'utilisateur (POST /user/location)
+│   ├── hooks/useUserLocationSync.ts     # permissions (après les notifs), capture, suivi arrière-plan
+│   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js)
+│   ├── utils/buildLocationPayload.ts    # position + géocodage inverse → payload
+│   └── services/userLocationService.ts  # Détail : architecture/user-location.md
 │
 ├── driver/                             # Rôle driver (commandes déléguées)
 │   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket
@@ -136,15 +183,29 @@ src/features/
 │       └── ...                          # BonusCard, BonusClaimRow, BonusPagerInfo, BonusGalleryCard…
 │
 ├── profile/                             # Écran Settings — cf. settings-grille.md
-│   ├── hooks/useProfileNameSheet.ts     # ProfileNameProvider + requireName() — cf. profile-name-sheet.md
+│   ├── hooks/
+│   │   ├── useProfileNameSheet.ts       # ProfileNameProvider + requireName() — cf. profile-name-sheet.md
+│   │   ├── useSettingsSubScreens.ts     # Visibilité des sous-pages Settings + deep-link + resets
+│   │   ├── useNotificationSwitch.ts     # Switch Notifications (permission OS + token synced)
+│   │   └── useSettingsTabBarStyle.ts    # Ombre de la tab bar pendant la sheet Bonus
 │   ├── utils/missingName.ts             # Détection prénom / nom manquant
 │   └── components/
 │       ├── ProfileNameSheet.tsx         # Carte « nom / prénom manquant » (home + avant commande)
 │       ├── SettingGrid.tsx              # Grille d'une section (colonnes déduites du nb d'items)
 │       ├── SettingGridItem.tsx          # Tuile pressable (icône + libellé + hint)
-│       └── SettingGridSwitch.tsx        # Tuile portant un Switch (mode inline pleine largeur)
+│       ├── SettingGridSwitch.tsx        # Tuile portant un Switch (mode inline pleine largeur)
+│       ├── SettingsProfileCard.tsx      # En-tête fixe flouté de Settings (avatar, nom, contact)
+│       ├── DeleteAccountModal.tsx       # Modal « Supprimer mon compte »
+│       └── LogoutModal.tsx              # Modal de confirmation de déconnexion
 │
-└── menu/ restaurants/
+├── restaurants/                         # Home client — détail : architecture/restaurants.md
+│   ├── hooks/useHome*.ts(x)             # Écran home découpé : scroll, données, rendu des cellules,
+│   │                                    #   commande, sonde [HB] ; + usePageRevealLock (verrou de page)
+│   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
+│   ├── utils/homeClientSettings.ts      # Taille de page / préchargement venus du serveur (`settings_client`)
+│   └── components/home/                 # HomeHeader, HomeFullScreenStates, homeScreenStyles
+│
+└── menu/
 ```
 
 > Le socket n'est pas une feature avec Context/Provider : c'est un singleton
@@ -177,6 +238,10 @@ src/
     │                           # Metro en dev web, ce qui relançait un bundle à chaque ping
     ├── otaTelemetry.ts         # Suivi des mises à jour OTA → Sentry
     └── useOtaUpdates.ts        # Mises a jour OTA expo-updates (voir http-versioning.md)
+                                #   Carte « Mise a jour telechargee / Application a jour » :
+                                #   features/appVersion/components/OtaUpdateCard.tsx (montee a la
+                                #   racine, comme OfflineBanner) + services/otaNotice.ts (signaux,
+                                #   derniere update executee en AsyncStorage)
 ```
 
 ## ⚠️ Projet non-CNG : `app.json` n'est PAS la source de vérité native

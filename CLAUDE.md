@@ -3,8 +3,8 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **16 règles numérotées R1 → R16.** Toute nouvelle règle ajoutée à ce fichier
-> DOIT recevoir le numéro suivant (R16, R17, …) et le total ci-dessus doit être
+> **17 règles numérotées R1 → R17.** Toute nouvelle règle ajoutée à ce fichier
+> DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
 ## R1 — Style de réponse (OBLIGATOIRE)
@@ -57,7 +57,7 @@ contrat d'API ».
 >
 > **Accusé obligatoire** : la toute première réponse de la session doit commencer
 > par la ligne fournie par le hook, seule sur sa ligne :
-> `✅ CLAUDE.md lu en entier (N l., 16 règles R1→R16) + architecture/README.md (M l.)`
+> `✅ CLAUDE.md lu en entier (N l., 17 règles R1→R17) + architecture/README.md (M l.)`
 > Absence de cette ligne = hook non déclenché : le signaler et le réparer.
 
 Lis **`architecture/README.md`** (à la racine) avant de travailler : il donne une vision
@@ -101,10 +101,14 @@ L'architecture doit rester **propre, moderne, modulaire**. Règles non négociab
 > Elle n'a rien à voir avec l'organisation des dossiers/features dans le code.
 > Quand on dit "isoler un travail", on parle de **l'isoler sur sa propre branche Git**.
 
-**Règle d'or : tout travail de changement — moyen ou important — doit se faire sur
-une NOUVELLE branche Git créée AVANT de toucher au code.** Ne jamais coder
-directement sur `main`. Avant la moindre modification non triviale, créer la branche
-avec le bon préfixe, puis travailler dessus.
+**Règle d'or : ne jamais coder directement sur `main`.** Sur `main`, créer la
+branche avec le bon préfixe AVANT de toucher au code, puis travailler dessus.
+
+**Déjà sur une branche de travail (`feature/…`, `debug/…`) : on CONTINUE dessus.**
+Le travail suivant se fait sur la branche courante — ne jamais repartir de
+`main` pour créer une nouvelle branche. Une nouvelle branche ne se crée que si
+l'utilisateur le demande, et alors DEPUIS la branche courante, sauf s'il dit
+explicitement « depuis main ».
 
 Sont concernés (liste non exhaustive) : nouvelle feature, refacto, ajout/duplication
 de composant, modification d'un flux, correction de bug. Seules les retouches
@@ -119,11 +123,11 @@ Toujours préfixer les branches selon leur nature :
 - `backup/<sujet>` — sauvegarde d'un état (ne pas y travailler).
 
 Règles de création :
-- **Tout travail de debug** commence sur une branche `debug/`, créée depuis la
+- **Branche de debug** (sur `main`, ou demandée) : `debug/`, créée depuis la
   branche d'où vient le problème (pas depuis `main`).
-- **Tout travail de feature / changement moyen ou important** commence sur une
-  branche `feature/`, créée depuis `main` (sauf indication contraire).
-- Une branche = un sujet. Ne pas mélanger plusieurs travaux sur la même branche.
+- **Tout travail de feature / changement moyen ou important** part de `main`
+  UNIQUEMENT si on est sur `main` ; sinon il continue sur la branche courante
+  (voir la règle d'or).
 
 ## R6 — État & Contextes (OBLIGATOIRE)
 
@@ -258,3 +262,17 @@ la feature courante, puis on l'adapte librement. On n'ajoute pas de prop
   `extractPeriodDate`…) restent partagés : ils n'ont pas de rendu à faire
   diverger.
 - Un fichier dupliqué reste soumis à R4 : s'il dépasse 500 lignes, le découper.
+
+## R17 — Builds et tests : TOUJOURS demander avant (OBLIGATOIRE)
+
+**Aucun build ni test lancé sans l'accord explicite de l'utilisateur**, donné
+dans le message en cours. Demander d'abord, attendre la réponse.
+
+- **Jamais de compilation Android en local** (`./gradlew`, `expo run:android`,
+  `expo prebuild` suivi d'un build…) : trop long, et la machine n'a ni le temps
+  ni les ressources. Un build Android passe par **EAS** (profil dev), et
+  seulement après accord.
+- Même règle pour tout build iOS, test automatisé ou commande lourde
+  (installation de dépendances de build, téléchargement Gradle…).
+- Sans build possible, vérifier par relecture du code et le dire en 1 phrase
+  dans le compte rendu.

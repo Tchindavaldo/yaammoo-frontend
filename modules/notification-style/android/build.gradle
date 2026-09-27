@@ -1,0 +1,30 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.rauval.yaammoo'
+version = '1.0.0'
+
+expoModule {
+  canBePublished false
+}
+
+android {
+  namespace "com.rauval.yaammoo.notificationstyle"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // Classes etendues (NotificationsService, ExpoPresentationDelegate) : memes
+  // versions que celles qu'embarque expo-notifications.
+  implementation project(':expo-notifications')
+  implementation 'androidx.core:core:1.17.0'
+  implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+  // RemoteMessage (lecture des donnees du push) : fourni a l'execution par
+  // expo-notifications, qui fixe la version.
+  compileOnly 'com.google.firebase:firebase-messaging:25.0.1'
+}

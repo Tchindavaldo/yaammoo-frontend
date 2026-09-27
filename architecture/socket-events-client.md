@@ -28,7 +28,7 @@
 > version fraîche **à la même position**. Il enchaîne les pages par curseur
 > jusqu'à couvrir tout ce qui est affiché : `limit` est plafonné à **50** par le
 > backend, qui rabote silencieusement, donc une requête unique laisserait les
-> boutiques au-delà du 50e avec leurs anciens prix. Avec `PAGE_SIZE = 3`, ce
+> boutiques au-delà du 50e avec leurs anciens prix. Avec des pages de 3, ce
 > plafond ramène un catalogue de 100 boutiques à 2 allers-retours au lieu de 34.
 > Une boutique absente de la réponse est **conservée** : la retirer la ferait
 > disparaître de l'écran.

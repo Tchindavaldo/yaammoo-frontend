@@ -1,42 +1,12 @@
+import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { getBonusDescriptor } from "../config/bonusRegistry";
-import { computeEligibility } from "../hooks/useBonusEligibility";
 import type { Bonus } from "../types/bonus.types";
+// Fonctions pures partagées avec le pied de page natif (`NativeBonusPager`).
+import { remainingUses, statusOf } from "../utils/bonusPagerItem";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
-
-/**
- * Libellé + couleur d'un bonus, en fonction PURE (pas un hook) : `TextSlide`
- * est rendu dans une boucle `.map`, où `useBonusStatus` (hook) est interdit.
- * Reprend exactement la même dérivation que `useBonusStatus` — dupliquée ici
- * plutôt que d'ajouter une variante au hook partagé (R16) — mais s'appuie sur
- * la même fonction pure `computeEligibility` pour ne pas diverger du calcul
- * d'éligibilité réel.
- */
-const statusOf = (bonus: Bonus) => {
-  const d = getBonusDescriptor(bonus.type);
-  const p = computeEligibility(bonus);
-  const reqStatus = bonus.requestStatus ?? "none";
-  const isInactive = bonus.active === false;
-  const isRedeemed = bonus.redeemed === true;
-  const isPending = reqStatus === "pending";
-  const isApproved = reqStatus === "approved";
-  const isEligible =
-    !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
-  const label = isInactive
-    ? "Inactif"
-    : isRedeemed
-      ? "Utilisé"
-      : isApproved
-        ? "Validé"
-        : isPending
-          ? "En attente"
-          : isEligible
-            ? "Éligible"
-            : "Non éligible";
-  return { label, color: d.color };
-};
 
 interface BonusPagerInfoProps {
   bonuses: Bonus[];
@@ -46,12 +16,35 @@ interface BonusPagerInfoProps {
 }
 
 const PANEL_W = 168;
+const GUTTER = Theme.spacing.md;
+/** Marge latérale d'une carte du haut dans sa page (`BonusCard` : GUTTER − CARD_PAD). */
+const CARD_MARGIN = GUTTER - 10;
+/** Écart entre deux slides = écart entre deux cartes du haut. */
+const SLIDE_GAP = 2 * CARD_MARGIN;
+const PITCH = PANEL_W + SLIDE_GAP;
+/**
+ * Bord droit d'une carte au repos (CARD_MARGIN du bord) → bord droit du
+ * panneau (GUTTER du bord, `pagCard` de `UserBonusSheet`).
+ */
+const LEAD = GUTTER - CARD_MARGIN;
 
-/** Utilisations restantes si un plafond est défini, sinon null. */
-const remainingUses = (bonus?: Bonus): number | null => {
-  if (!bonus || typeof bonus.usageLimit !== "number") return null;
-  const used = bonus.usageCount ?? 0;
-  return bonus.remainingUses ?? Math.max(0, bonus.usageLimit - used);
+/**
+ * Piste calée sur les cartes du haut : immobile, puis glisse AU MÊME RYTHME
+ * que les cartes pendant que leur écart traverse le panneau, puis s'arrête.
+ * Son écart reste sous celui des cartes, chaque slide sous la carte de sa
+ * couleur (même calcul que `BPFooterView.trackOffset` côté iOS).
+ */
+const trackRange = (count: number) => {
+  const inputRange = [0];
+  const outputRange = [0];
+  for (let i = 0; i < count - 1; i++) {
+    const page = i * CAROUSEL_INTERVAL;
+    inputRange.push(page + LEAD, page + LEAD + PITCH);
+    outputRange.push(-i * PITCH, -(i + 1) * PITCH);
+  }
+  inputRange.push((count - 1) * CAROUSEL_INTERVAL);
+  outputRange.push(-(count - 1) * PITCH);
+  return { inputRange, outputRange };
 };
 
 /**
@@ -63,27 +56,21 @@ const remainingUses = (bonus?: Bonus): number | null => {
  * suit le scroll — elle dit « où on en est » dans la pile de bonus.
  *
  * **Texte = vrai carrousel**, même principe que `BonusCarousel` (carte du
- * haut) : une PISTE contenant un slide par bonus, large de `bonuses.length *
- * PANEL_W`, translatée en un seul bloc via `scrollX`. Pas de fondu, pas de
- * calcul de voisin — le slide N+1 est physiquement à côté du slide N et entre
- * dans le cadre au même rythme que celui-ci en sort, comme un scroll normal.
+ * haut) : une PISTE contenant un slide par bonus (espacés de `SLIDE_GAP`,
+ * l'écart des cartes du haut), translatée en un seul bloc via `scrollX`. Pas
+ * de fondu, pas de calcul de voisin — le slide N+1 est physiquement à côté du
+ * slide N et entre dans le cadre au même rythme que celui-ci en sort.
  */
 export const BonusPagerInfo = ({
   bonuses,
   scrollX,
   dotColor,
 }: BonusPagerInfoProps) => {
-  // Translation de la PISTE de texte : `scrollX` (0..N-1 en unités de
-  // CAROUSEL_INTERVAL) est ramené à l'échelle de la piste (0..N-1 en unités
-  // de PANEL_W), puis inversé — la piste glisse dans le sens opposé au doigt,
-  // exactement comme un ScrollView natif.
+  // Translation de la PISTE de texte, calée sur les cartes du haut (voir
+  // `trackRange`) — la piste glisse dans le sens opposé au doigt.
   const trackTranslateX =
     bonuses.length > 1
-      ? scrollX.interpolate({
-          inputRange: bonuses.map((_, i) => i * CAROUSEL_INTERVAL),
-          outputRange: bonuses.map((_, i) => -i * PANEL_W),
-          extrapolate: "clamp",
-        })
+      ? scrollX.interpolate({ ...trackRange(bonuses.length), extrapolate: "clamp" })
       : 0;
 
   return (
@@ -94,7 +81,10 @@ export const BonusPagerInfo = ({
         <Animated.View
           style={[
             styles.trackInner,
-            { width: bonuses.length * PANEL_W, transform: [{ translateX: trackTranslateX }] },
+            {
+              width: Math.max(0, bonuses.length * PITCH - SLIDE_GAP),
+              transform: [{ translateX: trackTranslateX }],
+            },
           ]}
         >
           {bonuses.map((b, i) => (
@@ -207,7 +197,7 @@ const styles = StyleSheet.create({
   },
   // Cadre visible de la piste : largeur d'un panneau, le reste est masqué.
   track: { width: PANEL_W, overflow: "hidden" },
-  trackInner: { flexDirection: "row" },
+  trackInner: { flexDirection: "row", gap: SLIDE_GAP },
   // Un slide = un panneau plein, mêmes dimensions que l'ancien bloc texte.
   slide: { width: PANEL_W, gap: 6 },
   topRowText: {

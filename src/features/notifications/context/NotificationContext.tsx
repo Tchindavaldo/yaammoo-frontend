@@ -18,6 +18,11 @@ export interface Notification {
   type?: string;
   route?: string;
   orderId?: string;
+  /** Notification envoyée par une boutique (`boutique_broadcast`) : image jointe. */
+  imageUrl?: string;
+  /** Boutique émettrice d'un `boutique_broadcast`. */
+  shopId?: string;
+  shopName?: string;
 }
 
 interface NotificationContextType {

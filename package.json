@@ -1,6 +1,6 @@
 {
   "name": "yaammoo",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
@@ -56,6 +56,7 @@
     "expo-store-review": "~57.0.3",
     "expo-symbols": "~57.0.3",
     "expo-system-ui": "~57.0.4",
+    "expo-task-manager": "~57.0.20",
     "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.3",
     "firebase": "^12.9.0",

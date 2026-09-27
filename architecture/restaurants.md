@@ -14,15 +14,28 @@ tournant, plus le carrousel de bannières.
 src/features/restaurants/
 ├── context/FastFoodContext.tsx     # État + fetch paginé + injection socket
 ├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique (+ revealAnim)
+├── context/PageRevealGate.tsx      # Scroll figé jusqu'à la révélation d'une page insérée
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
 ├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
+├── hooks/useShopSearchDeepLink.ts  # `/(tabs)?shop=<nom>` (annonce de boutique) → recherche ouverte sur la boutique
+├── hooks/useHomeListScroll.ts      # Home : loader bas (Animated, sans rendu), fetch à l'entrée des fantômes, tap onglet Home, bords de la liste native
+├── hooks/usePageRevealLock.ts      # Home : verrou de page (PageRevealGate), déblocage au calme, onContentSizeChange
+├── hooks/useHomeListData.ts        # Home : listData (bannière + boutiques + fantômes), firstScreenUris, drawDistance (échauffement)
+├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
+├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
+├── hooks/useHomeHeartbeat.ts       # Home : sonde [HB] (temporaire)
 ├── utils/deliveryUtils.ts
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
+├── utils/homeListConfig.ts         # Home : constantes mesurées (DRAW_DISTANCE, GHOST_COUNT, seuils…), BANNER_ITEM, CATEGORIES
+├── utils/homeClientSettings.ts     # Home : taille de page + distance de préchargement venues du serveur (`clientSettings`), valeurs de secours, copie gardée
 └── components/
+    ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), homeScreenStyles
     ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
+    ├── ShopSkeleton.tsx            # Copie de CardSkeleton (R16), respiration sur driver NATIF (fantomes : JS-driven saturait le thread UI)
+    ├── NativeHomeList.tsx          # Pont JS de la liste NATIVE iOS (modules/home-list) : donnees pre-calculees + evenements
     └── designs/
         ├── DesignItem.tsx          # Enveloppe seule : squelette + fondu + ItemMeta
         ├── item/
@@ -37,7 +50,146 @@ src/features/restaurants/
         └── Design1..7.tsx          # Rangées horizontales par boutique
 ```
 
-Écran : [`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx).
+Écran : [`app/(tabs)/index.tsx`](../app/(tabs)/index.tsx) — assemblage seul
+(contextes, hooks `useHome*`, `NativeHomeList` / FlashList, CheckoutSheet).
+L'ordre d'appel `usePageRevealLock` puis `useHomeListScroll` reprend celui des
+effets d'avant le découpage.
+
+---
+
+## Liste NATIVE iOS (`feature/home-liste-native`, test)
+
+Réécriture de la liste du home en UIKit, pour sortir le défilement et le
+recyclage des lignes du JavaScript (sous FlashList, chaque réutilisation d'une
+rangée coûtait un rendu React complet de la boutique et de ses cartes).
+
+```
+modules/home-list/                  # Module Expo local (autolinking : ./modules)
+├── index.ts                        # requireNativeView('HomeList') + types ; isHomeListAvailable
+├── expo-module.config.json
+└── ios/
+    ├── HomeList.podspec            # ExpoModulesCore + SDWebImage (meme cache qu'expo-image)
+    ├── HomeListModule.swift        # Props visuelles, evenements, updateRows, scrollToTop
+    ├── HomeListView.swift          # UICollectionView + diffable (identite = position + design), fetch, bords
+    ├── HLShopCell.swift            # Rangee : en-tete + cartes horizontales, revelation groupee (8 s max)
+    ├── HLMenuCardCell.swift        # Carte 7/4/5 + les 2 lignes SOUS la carte (ItemMeta) + squelettes
+    ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
+    ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
+    ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
+    ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
+    ├── HLPerfMonitor.swift         # Sonde TestFlight : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
+    ├── HLPreheater.swift           # Rangees sous l'ecran creees au repos avant le 1er scroll (liste allongee par le bas)
+    ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
+```
+
+- **Sonde de fluidité (`onDiagnostics`, TestFlight et debug seulement)** :
+  `HLPerfMonitor.enabled` (reçu de sandbox) la coupe en build App Store. Un
+  rapport par geste de scroll (images perdues, accrocs > 50 ms, pire image,
+  coût de configuration des rangées), par arrivée de page (durée
+  d'application) et un pour le préchauffage (`preheat`). Côté JS (`utils/nativeListDiagnostics.ts`) : journal de
+  l'iPhone SEULEMENT, plus aucun envoi Sentry (seul « liste native active »,
+  une fois par lancement, y part encore).
+  - **Journal de l'iPhone** : `console.log` JS (`[HL] <n°> <morceau>/<total>
+    <json>`, JSON découpé par 800 caractères, le journal système coupant une
+    ligne vers 1 000). Lecture, iPhone branché en USB : `idevicesyslog -m
+    "[HL]"`. Pas de `NSLog` natif : iOS 26 le masque (`<private>`) en release.
+  - ⚠️ `dropped`/`hitches`/`worstMs` lisent l'heure des images du fil
+    principal : un fil occupé 17 à 33 ms (UNE image perdue) ne la décale
+    pas, ils ne voient que les retards de 2 images et plus. `mainBusy`
+    (`[ms, durée ms, offsetY]`, occupations > 8 ms, commit compris),
+    `mainBusyLong`, `mainBusyMaxMs` mesurent l'occupation réelle.
+  - **Mouvement** : `stalls` (image immobile en plein mouvement), `jumps`
+    (saut) et `motionAt`. Pour les 3 premiers gestes : `motion` (déplacement
+    par image, pt), `fingerUpFrame` (début de l'élan) et `events`
+    (`[ms, quoi, offsetY]` : `cfgN` rangée configurée (`n` = cellule neuve),
+    `inNdD` / `outN` entrée / sortie d'écran de la rangée N de design D (`n` =
+    premier affichage de la cellule), `revealN` fondu d'une
+    boutique, `applyN` pose de rangées, `banner` avance auto, `leftTop`,
+    `up` doigt levé, `pfN` préchargement de N rangées ; suffixe `/ms` = coût
+    de l'étape sur le fil principal, la mise en page d'une rangée entrante
+    étant avancée dans `willDisplay` pour être chronométrée).
+    Rapport : `rowCells` / `cardCells` (cellules créées depuis le lancement),
+    `viewH`.
+  - **Sonde ÉCRAN retirée** (calque Metal d'un pixel, `presentedTime`) : son
+    démarrage au début du geste faisait perdre UNE image juste après le
+    lâcher du doigt (scrolls 2-3). Builds 61-62 : ces pertes tombaient à
+    85-120 ms du début du geste, fil principal libre, et disparaissaient
+    quand la sonde démarrait dès le doigt posé ; retirer une famille
+    d'éléments des rangées (coins, textes, photos, effets) n'y changeait
+    rien. Les envois Sentry de la sonde, eux, n'étaient pas en cause.
+- **Préchauffage des rangées (`HLPreheater`, `PREHEAT_SCREENS` dans
+  `NativeHomeList.tsx`, OTA, `0` = coupé)** : cause des micro-pauses des
+  premiers scrolls (journal du 27/09) = la PREMIÈRE apparition des boutiques 2
+  à 5. Chaque pic du fil principal (19-22 ms) tombe sur `in2d5n` … `in5d5n` :
+  une cellule neuve crée sa liste de cartes et ses cartes (10-16 ms). Dès la
+  boutique 6, UIKit recycle (1-2 ms). Ni les squelettes de fin de page (posés
+  avec la 1re page, arrivées de page à 1,5-6 ms, jamais sur un pic) ni le
+  nombre de menus n'y sont pour rien : la troncature à 2-3 menus (OTA) n'a rien
+  changé, elle est retirée. Remède : après le fondu de la 1re boutique, la
+  liste est allongée PAR LE BAS (sous le bord, masqué par `clipsToBounds`),
+  une rangée de plus toutes les 30 ms, jusqu'à `PREHEAT_SCREENS` écrans sous
+  l'écran, puis reprend sa taille : les cellules créées vont dans la réserve
+  de UIKit. Le haut ne bouge pas ; bords (`onEdgeChange`) et fetch lisent la
+  hauteur VISIBLE (`bounds` de la vue hôte), jamais celle de la liste. Le
+  premier geste l'interrompt. Rapport `kind: "preheat"` (`end` : `done` /
+  `drag` / `moving`, `stepsMs`, `restoreMs`, `newRowCells`, `newCardCells`) ;
+  au scroll, `in2d5` SANS `n` = rangée préchauffée.
+- **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
+  seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
+  false` dans `useBannerLoop`) : aucun défilement auto nulle part. Cause de la
+  micro-pause du 1er scroll (build 60 : disparue). Tag `bannerAutoplay`.
+- **Barres floutées v4/v5 (`CARD_BLUR_MODE`, OTA)** : `baked` (défaut) floute
+  la photo de la carte UNE fois (64 px, CoreImage logiciel, hors fil de
+  l'écran, cache par URL) et l'affiche comme une image calée sur la photo ;
+  `live` = `UIVisualEffectView`, recalculé par iOS à chaque image, suspect de
+  la double micro-pause du 1er scroll (la 2e boutique, design 4, est la
+  première à en porter). Rapports : tag `blur`, `bakes`, `bakeMaxMs`.
+
+- **Repli automatique** : `isHomeListAvailable` est faux sur Android et sur un
+  dev client qui n'embarque pas le module ; le home garde alors sa FlashList.
+- **Aucune règle métier en Swift** : `NativeHomeList.tsx` envoie des lignes
+  déjà prêtes (prix formaté, heure de livraison recalculée chaque minute,
+  frais, images de secours résolues en URL). Le Swift ne fait qu'afficher.
+- **Boutiques par `updateRows`, JAMAIS par une prop** : une prop renvoyait
+  toute la liste à chaque page, décodée par Expo sur le fil de l'écran
+  (≈ 1 ms par boutique déjà chargée : accroc de 165 ms à 147 boutiques, mesuré
+  en test volume). `updateRows({start, rows, total, hasMore, ghostCount,
+  footerText, footerIsEmpty})` n'envoie que les rangées à partir de la
+  première qui diffère, décodées sur le fil JS. Une rangée inchangée garde sa
+  référence (`rowFor`, cache par boutique + heure de livraison), donc une page
+  ajoutée n'envoie que ses boutiques. L'état de fin de liste voyage dans le
+  même appel que les rangées qu'il encadre. Sonde : `patchRows` / `patchMs`
+  dans le rapport `apply`.
+- **Arrivée synchronisée** : `loading` (dans `updateRows`) affiche des
+  squelettes tant que la première page manque. Côté natif, `listLoading` vaut
+  VRAI par défaut : la bannière (prop) arrive avant le premier `updateRows`, et
+  la porte commune bannière + première boutique reste fermée tant que la liste
+  charge. Sans ça, la bannière sortait seule, avant les boutiques.
+- **Taille de page et préchargement pilotés par le serveur** (table
+  `settings_client` du backend, sans build ni OTA) : la première page de
+  `GET /fastFood/all` renvoie `clientSettings` (`homePageSize`,
+  `homePrefetchDistance`). `FastFoodContext` l'applique aux pages SUIVANTES
+  (`homeSettings`) et le garde (AsyncStorage) : la première page du lancement
+  d'après part avec. Valeur de secours (premier lancement, clé absente ou
+  invalide) : `HOME_CLIENT_SETTINGS_FALLBACK` (10 boutiques, 1200 px), dans
+  `utils/homeClientSettings.ts`. Taille plafonnée à 50 (`MAX_SERVER_LIMIT`).
+- **Réglages ajustables par OTA** : `ICON_ROLES` (rôle lu par le Swift -> nom
+  Ionicons) et `FONTS` (nom PostScript par graisse, `null` = police système) :
+  le Swift ne fixe ni icône ni police.
+- **Aucun verrou de scroll** : ni `insertLock`, ni HOLD, ni `PageRevealGate`.
+  Remplir un fantôme ou ajouter des rangées hors écran ne coûte presque rien
+  en UIKit (reconfiguration d'une cellule existante), le défilement continue
+  pendant le chargement comme pendant l'insertion.
+- **Fantômes** : `ghostCount` (= `homeSettings.pageSize`) rangées squelettes en fin de
+  liste ; la vraie boutique du même rang reconfigure la même cellule. Le fetch
+  (`onEndReached`) part quand le premier fantôme est à `prefetchDistance` de
+  l'écran, re-armé à chaque page arrivée.
+- **Révélation** : même règle que `ShopRevealContext` (avatar + cartes
+  visibles attendus ensemble, fondu 220 ms, bannière avec la boutique 0) ;
+  boutique déjà vue ou images déjà en mémoire = affichage direct.
+- **Design** : toutes les cotes viennent des styles RN (`HLTheme.swift`) ;
+  un changement de design se fait des deux côtés tant que les deux listes
+  coexistent.
 
 ---
 
@@ -150,7 +302,7 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 
   > ⚠️ C'était un **cooldown de 800 ms** (`RESET_COOLDOWN_MS`), avec report de la
   > demande refusée (`deferredLoadRef`). Un délai fixe est une devinette : il
-  > refusait aussi les demandes **légitimes**. Avec `PAGE_SIZE = 3`, le bas de
+  > refusait aussi les demandes **légitimes**. Avec des pages de 3, le bas de
   > liste est atteint en ~300 ms, donc quasi toujours dans la fenêtre. Ne pas
   > réintroduire de délai : on distingue le rebond automatique du geste réel.
 
@@ -373,9 +525,9 @@ d'origine conservées.
 Deux déclencheurs, même effet : remontée puis **troncature à la première page**
 (`resetToFirstPage`), pour ne pas garder des dizaines de cellules montées.
 
-- **Tap sur l'onglet Home** : écouteur `tabPress`, posé **dans l'écran** et non
-  dans `(tabs)/_layout.tsx` — ce layout est partagé par les 5 onglets et n'a pas
-  accès à la liste. Garde `isFocused()` : sans elle, taper Home depuis un autre
+- **Tap sur l'onglet Home** : écouteur `tabPress`, posé **par l'écran**
+  (`hooks/useHomeListScroll.ts`) et non dans `(tabs)/_layout.tsx` — ce layout
+  est partagé par les 5 onglets et n'a pas accès à la liste. Garde `isFocused()` : sans elle, taper Home depuis un autre
   onglet remonterait la liste pendant la navigation entrante.
 - **Scroll manuel** : `onMomentumScrollEnd`, jamais `onScroll` — retirer des
   cellules pendant que la liste défile la ferait sauter.
@@ -389,6 +541,10 @@ Le pied de liste et `onEndReached` ont été **testés et mis hors de cause** da
 la boucle mount/unmount de la dernière cellule.
 
 ## Bas de liste — scroll figé pendant le chargement (`debug/home-bottom-overscroll`)
+
+> ⚠️ Section propre à la **FlashList** (Android, ou iOS sans le module
+> natif). La liste native iOS ne fige JAMAIS le scroll : voir « Liste NATIVE
+> iOS » plus haut.
 
 Arrivé en bas avec le loader de pagination visible, on pouvait continuer à tirer
 vers le bas : le loader remontait et découvrait un blanc qui se lisait comme une
@@ -404,6 +560,39 @@ tant que la page suivante charge.
   en plein geste.
 - **Le gel est libéré dès l'arrivée de la page** : la liste s'est allongée, on
   n'est plus en bas.
+- **Verrou tenu jusqu'à la RÉVÉLATION, pas aux squelettes**
+  (`context/PageRevealGate.tsx`). `insertLock` tombait au premier
+  `onContentSizeChange`, donc dès les squelettes posés : les images se
+  révélaient ensuite en plein geste (micro-pause). Désormais chaque boutique
+  montée de la page insérée signale sa révélation (`PageRevealReporter` dans
+  `DesignRouter`, lit `ShopRevealContext.ready`) ; le verrou et le loader tombent
+  quand toutes sont révélées, fondu (`REVEAL_MS`) compris. Boutiques non montées
+  (hors `drawDistance`) non attendues. Filet : `INSERT_LOCK_SAFETY_MS` porté à
+  8 s (= `MAX_WAIT_MS`). ⚠️ Les layout effects des cellules passent AVANT celui
+  de l'écran : le gate garde un set des cellules montées, relu par `startPage`.
+- **Fantômes de la page suivante** (`utils/pagePlaceholders.ts`,
+  `debug/home-squelettes-en-avance`). `GHOST_COUNT` boutiques fantômes
+  (taille de page de SECOURS + de quoi remplir la zone d'échauffement de ~4000 px,
+  calcul en pixels donc valable pour toute taille de page ; moins de fantomes = réserve
+  de cellules trop petite, montages en plein scroll au remplissage) sont ajoutées en fin de `listData` tant que
+  `hasMore`, retirées en fin de catalogue (repliées à hauteur 0, elles
+  tombaient toutes dans la zone de pré-rendu : 9 montages d'un coup) ; pré-rendu élargi
+  1,5 s au démarrage (`WARMUP_DRAW_DISTANCE`) pour chauffer la réserve de
+  cellules : même `designIndex` que la
+  position qu'occupera la vraie boutique, donc même variante et même type de
+  cellule. Elles sont montées d'avance en squelette (`ShopRevealProvider`
+  `hold`). Le fetch part quand elles entrent dans le champ
+  (`PLACEHOLDER_FETCH_DISTANCE`) ; à l'arrivée, FlashList **rebind** ces
+  cellules au lieu d'en monter : plus de montage à l'insertion, donc plus de
+  HOLD ni d'`insertLock` (`FILL_PLACEHOLDERS` dans le contexte, `false` = retour
+  à l'ancien flux). `resetKey` remet le groupe à zéro au passage fantôme ↔ réel
+  dans une cellule recyclée. **Clé de ligne commune** : la boutique insérée
+  reprend la clé du fantôme qu'elle remplace (`listKey = placeholderKey(rang)`,
+  lue en premier par `keyExtractor`) ; sans elle, FlashList déplaçait et
+  re-mesurait les cellules et la page se figeait. L'`id` backend reste la clé
+  de la page 1 et des boutiques insérées en tête par socket (une seule cellule
+  montée, rien ne se décale) ; les mises à jour socket de menus/boutiques se
+  font sur place et conservent `listKey`.
 - `FOOTER_LOADER_HEIGHT` (48) est volontairement généreuse : le loader doit se
   remarquer même en scroll rapide.
 
@@ -425,7 +614,7 @@ Quatre sources ont été trouvées et corrigées ; **aucune ne doit revenir** :
 |---|---|---|
 | `FastFoodContext` | `value={{ ... }}` littéral | `useMemo` sur la `value` |
 | `useFastFoods` | `.filter()` + `{...context}` dans le corps du hook | `useMemo` sur les deux |
-| `app/(tabs)/index.tsx` | `renderItem` / `keyExtractor` inline | `useCallback`, plus `handleMenuClickRef` pour figer le handler |
+| `app/(tabs)/index.tsx` | `renderItem` / `keyExtractor` inline | `useCallback` dans `hooks/useHomeListRenderers.tsx`, plus `handleMenuClickRef` (`hooks/useHomeCheckout.ts`) pour figer le handler |
 | `DesignRouter` | pas de `memo` ; tableau des 6 variantes JSX instanciées | `React.memo` ; on sélectionne le **composant**, pas l'élément |
 
 > ⚠️ `keyExtractor` ne doit **jamais** retomber sur l'index nu : une insertion en

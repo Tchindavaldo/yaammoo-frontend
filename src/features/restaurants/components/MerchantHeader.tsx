@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { Theme } from '@/src/theme';
-import { CardSkeleton } from '@/src/components/CardSkeleton';
+import { ShopSkeleton } from './ShopSkeleton';
 import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 
 interface MerchantHeaderProps {
@@ -134,16 +134,16 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
     <>
       <View style={styles.left}>
         <View style={styles.avatarContainer}>
-          <CardSkeleton radius={16} animating={!skeletonGone} />
+          <ShopSkeleton radius={16} animating={!skeletonGone} />
         </View>
         <View style={styles.nameSkeleton}>
-          <CardSkeleton radius={6} animating={!skeletonGone} />
+          <ShopSkeleton radius={6} animating={!skeletonGone} />
         </View>
       </View>
       {/* Un bloc unique a la place des 5 etoiles : le squelette suggere la
           zone, il n'a pas a en mimer le detail. */}
       <View style={styles.ratingSkeleton}>
-        <CardSkeleton radius={6} animating={!skeletonGone} />
+        <ShopSkeleton radius={6} animating={!skeletonGone} />
       </View>
     </>
   );

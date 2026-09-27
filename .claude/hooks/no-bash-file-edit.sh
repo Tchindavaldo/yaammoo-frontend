@@ -30,9 +30,14 @@ stripped=$(printf '%s' "$cmd" | sed "s/'[^']*'/''/g; s/\"[^\"]*\"/\"\"/g")
 # multiligne (donc hors de portee du filtrage ci-dessus, qui travaille ligne par
 # ligne) et contenant des chevrons legitimes (`Co-Authored-By: <mail>`).
 # Ces commandes n'ecrivent aucun fichier du projet.
-case "$cmd" in
-  *"git commit"*|*"git tag "*|*"git merge"*|*"git revert"*) exit 0 ;;
-esac
+#
+# ⚠️ Exemption UNIQUEMENT si la commande COMMENCE par git. Avec `*git commit*`,
+# un `sed -i ... ; git commit` passait entier sans controle (constate le
+# 2026-09-25).
+if printf '%s' "$cmd" | grep -qE '^[[:space:]]*git([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(commit|tag|merge|revert)\b' \
+   && ! printf '%s' "$stripped" | grep -qE ';|&&|\|'; then
+  exit 0
+fi
 
 deny() {
   cat >&2 <<EOF
@@ -70,6 +75,13 @@ if printf '%s' "$cmd" | grep -qE '\bsed[[:space:]]+(-[a-zA-Z]*i|--in-place)'; th
 fi
 if printf '%s' "$cmd" | grep -qE '\bperl[[:space:]]+.*-i'; then
   deny "perl -i (edition en place)"
+fi
+# --- Reformatage de fichiers entiers ---
+# Le projet n'a PAS de formateur configure : lancer prettier/eslint --fix
+# reecrit tout le fichier (diff illisible, 226 lignes pour 30 utiles le
+# 2026-09-25). On garde le style existant, a la main, via Edit.
+if printf '%s' "$cmd" | grep -qE '\bprettier\b.*(--write|-w\b)|\beslint\b.*--fix'; then
+  deny "reformatage automatique (prettier --write / eslint --fix) interdit dans ce projet"
 fi
 if printf '%s' "$cmd" | grep -qE '\btruncate\b'; then
   deny "truncate modifie un fichier"

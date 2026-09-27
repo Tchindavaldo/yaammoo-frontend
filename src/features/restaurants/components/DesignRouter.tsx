@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { FastFood, Menu } from '@/src/types';
 import { Design1 } from './designs/Design1';
 import { Design2 } from './designs/Design2';
@@ -7,6 +8,8 @@ import { Design4 } from './designs/Design4';
 import { Design5 } from './designs/Design5';
 import { Design7 } from './designs/Design7';
 import { ShopRevealProvider } from '../context/ShopRevealContext';
+import { PageRevealReporter } from '../context/PageRevealGate';
+import { isPlaceholder } from '../utils/pagePlaceholders';
 import { DesignNumber, designNumberFor } from '../utils/designCycle';
 
 const DESIGN_COMPONENTS: Record<DesignNumber, typeof Design7> = {
@@ -36,7 +39,14 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   // déjà présentes dans `GET /fastfood/all` (deliveryHours, orderLeadTime,
   // advanceDays, deliveryOffer). Évite un refetch `GET /fastfood/:id` côté
   // checkout (deliveryOffer n'y figure d'ailleurs PAS, seul le /all le porte).
+  const placeholder = isPlaceholder(fastFood);
+  // SONDE [HB] (temporaire) : rendus de rangees par seconde.
+  const hb = (globalThis as any).__hb;
+  if (hb) placeholder ? hb.ph++ : hb.row++;
+
   const handleMenuClick = (menu: Menu) => {
+    // Fantome : rien a commander.
+    if (placeholder) return;
     const ff = fastFood as any;
     onMenuClick({
       ...menu,
@@ -76,8 +86,24 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
   // remonter — `REMONTAGE` a 150-165 ms en plein scroll, mesure par la sonde
   // `[ROW]`. Le provider est donc TOUJOURS monte ; seul son mode varie.
   return (
-    <ShopRevealProvider passthrough={listIndex === 0}>
-      {design}
+    <ShopRevealProvider
+      passthrough={listIndex === 0}
+      // Fantome de la page suivante : squelette tenu jusqu'a la vraie boutique.
+      hold={placeholder}
+      // Remise a zero seulement aux passages fantome <-> reel : entre deux
+      // vraies boutiques recyclees, comportement inchange.
+      resetKey={placeholder ? fastFood.id : "real"}
+    >
+      {/* ⚠️ Fantome NON TOUCHABLE. Sinon un doigt pose sur une carte fantome
+          au moment du remplissage donnait le « responder » a une vue que le
+          rebind remplace : il n'etait jamais relache, le ScrollView restait
+          bloque (JS responder) et plus aucun appui ne passait, navbar
+          comprise. Vue TOUJOURS presente (arbre invariant), seul le mode
+          change. */}
+      <View pointerEvents={placeholder ? "none" : "auto"}>{design}</View>
+      {/* Signale la revelation au verrou de page du home (scroll fige tant
+          que les boutiques inserees ne sont pas affichees). */}
+      <PageRevealReporter id={fastFood.id} />
     </ShopRevealProvider>
   );
 };

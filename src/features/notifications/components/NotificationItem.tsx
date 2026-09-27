@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
 import { useNotifications } from '../hooks/useNotifications';
@@ -43,6 +44,10 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
         <Text style={styles.date}>{new Date(notification.createdAt).toLocaleDateString()}</Text>
       </View>
 
+      {/* Annonce de boutique : sa photo à droite, comme dans la notif système. */}
+      {!!notification.imageUrl && (
+        <Image source={{ uri: notification.imageUrl }} style={styles.thumb} contentFit="cover" />
+      )}
       {!read && <View style={styles.unreadDot} />}
       <Ionicons name="chevron-forward" size={18} color={Theme.colors.gray[400]} style={{ marginLeft: 4 }} />
     </TouchableOpacity>
@@ -69,6 +74,11 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 'bold' },
   message: { fontSize: 13, color: Theme.colors.gray[600], lineHeight: 18 },
   date: { fontSize: 11, color: Theme.colors.gray[400], marginTop: 4 },
+  thumb: {
+    width: 48, height: 48, borderRadius: 10,
+    marginLeft: Theme.spacing.sm,
+    backgroundColor: Theme.colors.gray[100],
+  },
   unreadDot: {
     width: 8, height: 8, borderRadius: 4,
     backgroundColor: Theme.colors.primary,

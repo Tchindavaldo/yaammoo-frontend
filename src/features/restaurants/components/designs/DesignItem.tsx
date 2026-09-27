@@ -1,4 +1,4 @@
-import { CardSkeleton } from "@/src/components/CardSkeleton";
+import { ShopSkeleton } from "../ShopSkeleton";
 import { Image } from "expo-image";
 import React from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
@@ -128,8 +128,40 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
             onError={markResolved}
           />
         ) : null}
-        <CardSkeleton radius={skel.radius} animating={!skeletonGone} />
+        <ShopSkeleton radius={skel.radius} animating={!skeletonGone} />
+      </Animated.View>
+      {/* Squelette des DEUX LIGNES d'infos sous la carte (`ItemMeta` : nom,
+          puis livraison). Memes marges que `metaBlock`, meme fondu inverse. */}
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.metaSkeleton,
+          {
+            top: skel.height,
+            width: skel.width,
+            opacity: reveal.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 0],
+            }),
+          },
+        ]}
+      >
+        <View style={[styles.metaBar, { width: "70%", height: 12 }]} />
+        <View style={[styles.metaBar, { width: "50%", height: 10 }]} />
       </Animated.View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  // Calque sur `sharedStyles.metaBlock` (paddingTop 8, paddingLeft 4).
+  metaSkeleton: {
+    position: "absolute",
+    left: 0,
+    paddingTop: 10,
+    paddingLeft: 4,
+    gap: 6,
+  },
+  // Teinte de base de `ShopSkeleton`, statique.
+  metaBar: { backgroundColor: "#e6eaef", borderRadius: 4 },
+});

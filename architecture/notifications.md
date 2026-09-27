@@ -137,6 +137,7 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 | `order_cancel_by_user` | `/(tabs)/notifications` | Marchand — annulation client |
 | `order_cancel_by_merchant` | `/(tabs)/notifications` | User — annulation marchand |
 | `bonus` | `/(tabs)/settings?section=bonus` | User — bonus éligible (ouvre UserBonusSheet) |
+| `boutique_broadcast` | `/(tabs)?shop=<shopName>` | User — annonce d'une boutique (image, chip « Voir la boutique », le home ouvre sa recherche) — voir [merchant-broadcast.md](./merchant-broadcast.md) |
 | *(inconnu)* | `/(tabs)/notifications` | Fallback |
 
 ### Routes réelles émises par le backend (override via `notif.route`)
@@ -163,6 +164,76 @@ La page [`app/(tabs)/cart.tsx`](../app/(tabs)/cart.tsx) lit `useLocalSearchParam
 | `cart` | `currentTab = "cart"` (panier) |
 | `pending` / `active` / `finished` / `delivered` | `currentTab = "status"` + `activeStatus = <section>` |
 | `bonus` | `/settings?section=bonus` (ouvre UserBonusSheet dans Settings) |
+
+---
+
+## Image dans la notification iOS (Notification Service Extension)
+
+iOS n'affiche l'image d'un push qu'avec une extension. La cible
+`NotificationService` (ajoutée par `plugins/withNotificationServiceExtension.js`,
+sources dans `plugins/notification-service/`) télécharge `imageUrl` et
+l'attache avant l'affichage.
+
+- Appelée seulement si le push porte `mutable-content: 1` : le backend ne le pose
+  qu'avec une image ou une boutique expéditrice (section suivante). Les autres
+  notifications (marchand, bonus…) ne passent pas par l'extension.
+- Sans image, téléchargement raté ou délai iOS (~30 s) dépassé : la notification
+  part **telle quelle**, texte seul — jamais bloquée.
+- JPEG / PNG / GIF tels quels ; autre format (WebP, HEIC) ré-encodé en JPEG.
+- Signature : Xcode Cloud (signature automatique) ; EAS via
+  `extra.eas.build.experimental.ios.appExtensions` (app.json), bundle
+  `com.rauval.yaammoo.NotificationService`.
+- ⚠️ Build native requise (pas d'OTA). Absente d'Expo Go.
+
+---
+
+## Notification d'une boutique : logo en avatar (façon WhatsApp)
+
+Quand une boutique « parle » au client (annonce `boutique_broadcast`, statut de
+commande, rang top 1), le push porte `senderId`, `senderName` et
+`senderImageUrl` (backend : `helpers/shopSender.js`, logo réduit à 256 px).
+La notification s'affiche alors comme un message de la boutique : **logo à
+gauche**, **icône de l'app en pastille**, **nom de la boutique en titre**, le
+titre d'origine (« Commande prête ») en tête du message. Boutique sans logo :
+rien ne change, icône de l'app.
+
+### iOS — notification de communication
+
+Même extension `NotificationService` : elle télécharge le logo (en parallèle
+de l'image), donne un `INSendMessageIntent` venant de la boutique puis
+`content.updating(from:)`. Exige :
+
+- entitlement `com.apple.developer.usernotifications.communication` et
+  `NSUserActivityTypes = [INSendMessageIntent]` (app.json → `ios/yaammoo/`) ;
+- `IntentsSupported = [INSendMessageIntent]` dans le plist de l'extension ;
+- ⚠️ la capacité **Communication Notifications** activée sur l'App ID
+  `com.rauval.yaammoo` (portail Apple), sinon l'export signé échoue.
+
+Refus d'iOS ou échec : notification classique, jamais bloquée.
+
+### Android — conversation (`modules/notification-style/`)
+
+Module Expo local, Android seul, sans JS. Le backend envoie ces push en
+**données seules** (sans bloc `notification`, sinon Android les affiche
+lui-même app fermée). expo-notifications les présente depuis `title` /
+`message` / `channelId` ; le module s'intercale **uniquement à la
+présentation** :
+
+| Fichier | Rôle |
+|---|---|
+| `AndroidManifest.xml` | Récepteur `NOTIFICATION_EVENT` prioritaire (10 > -1 d'Expo) + `FileProvider` des photos |
+| `ConversationNotificationsService.kt` | Sous-classe de `NotificationsService` d'Expo : seul le `PresentationDelegate` change |
+| `ConversationStyle.kt` | `MessagingStyle` (boutique = `Person` avec le logo rond), raccourci long-lived exclu du lanceur (exigé par Android 11+), photo en message image |
+| `NotificationImages.kt` | Téléchargement borné (8 s), décodage réduit, avatar rond, photo partagée via `FileProvider` |
+
+- La notification est d'abord construite par Expo, puis reprise
+  (`NotificationCompat.Builder(context, base)`) : tap, routage JS
+  (`data.route`) et extras d'Expo sont conservés.
+- Logo introuvable : notification d'Expo (avec la photo en grand si elle
+  existe). Toute exception : notification d'Expo intacte.
+- ⚠️ Une version de l'app **sans** le module affiche ces push en notification
+  classique, sans la photo.
+- ⚠️ Build native requise (EAS). Absent d'Expo Go.
 
 ---
 

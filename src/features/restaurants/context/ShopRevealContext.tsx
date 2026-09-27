@@ -103,7 +103,20 @@ export const ShopRevealProvider: React.FC<{
    * toujours monte ; c'est seulement son comportement qui change.
    */
   passthrough?: boolean;
-}> = ({ children, expect, passthrough }) => {
+  /**
+   * `true` : le groupe ne se revele JAMAIS (ni scellement, ni garde-fou). Pose
+   * sur une boutique FANTOME (`utils/pagePlaceholders`) : son squelette doit
+   * tenir jusqu'a l'arrivee de la vraie boutique dans la meme cellule.
+   */
+  hold?: boolean;
+  /**
+   * Un changement de valeur REMET le groupe a zero (squelette de retour,
+   * `revealAnim` a 0). Sert au passage fantome <-> vraie boutique dans une
+   * cellule RECYCLEE : sans lui, un groupe deja revele montrerait le contenu
+   * vide du fantome, ou la vraie boutique sans attendre ses images.
+   */
+  resetKey?: string;
+}> = ({ children, expect, passthrough, hold, resetKey }) => {
   const pendingRef = React.useRef<Set<string>>(new Set());
   const knownRef = React.useRef<Set<string>>(new Set());
 
@@ -118,16 +131,33 @@ export const ShopRevealProvider: React.FC<{
       pendingRef.current.add(uri);
     });
   }
-  const [ready, setReady] = React.useState(false);
+  const [readyState, setReady] = React.useState(false);
   const readyRef = React.useRef(false);
   const revealAnim = React.useRef(new Animated.Value(0)).current;
+  const sealedRef = React.useRef(false);
+
+  // Remise a zero AVANT le rendu des enfants : ils se reinscrivent pendant
+  // leur propre rendu, juste apres, sur un groupe vierge.
+  const resetKeyRef = React.useRef(resetKey);
+  if (resetKey !== resetKeyRef.current) {
+    resetKeyRef.current = resetKey;
+    readyRef.current = false;
+    sealedRef.current = false;
+    pendingRef.current = new Set();
+    knownRef.current = new Set();
+    revealAnim.stopAnimation();
+    revealAnim.setValue(0);
+    if (readyState) setReady(false);
+  }
+  // `readyState` peut encore valoir `true` pendant le rendu de la remise a zero.
+  const ready = readyState && readyRef.current;
 
   // ⚠️ Fenetre d'inscription. Le premier `onLoad` peut arriver avant que les
   // cartes suivantes n'aient eu le temps de s'inscrire : a cet instant le set
   // des images en attente est vide, et la boutique se revelerait alors qu'il
   // reste des images en route. On n'evalue donc rien avant la fin du rendu
-  // initial, quand toutes les inscriptions sont faites.
-  const sealedRef = React.useRef(false);
+  // initial, quand toutes les inscriptions sont faites. (`sealedRef` est
+  // declare plus haut : la remise a zero `resetKey` le rouvre.)
 
   const finish = React.useCallback(() => {
     if (readyRef.current) return;
@@ -155,15 +185,17 @@ export const ShopRevealProvider: React.FC<{
     // En `passthrough`, ce provider ne pilote aucun groupe : ni scellement ni
     // garde-fou a armer. Laisser tourner son timer de 8 s ferait travailler un
     // etat que personne ne lit.
-    if (passthrough) return;
+    // En `hold` (fantome), le squelette doit tenir : rien a sceller.
+    if (passthrough || hold) return;
 
     // Fin du rendu initial : toutes les cartes de la rangee se sont inscrites.
+    // Rejoue a chaque `resetKey` (fantome -> vraie boutique dans la cellule).
     sealedRef.current = true;
     evaluate();
 
     const timer = setTimeout(finish, MAX_WAIT_MS);
     return () => clearTimeout(timer);
-  }, [evaluate, finish, passthrough]);
+  }, [evaluate, finish, passthrough, hold, resetKey]);
 
   const register = React.useCallback((uri: string) => {
     if (readyRef.current) return;

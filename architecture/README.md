@@ -25,6 +25,8 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [driver.md](./driver.md) | Rôle driver — commandes déléguées (onglet, panel, carte, socket, contrat backend) |
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
 | [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
+| [merchant-broadcast.md](./merchant-broadcast.md) | Notifications boutique — envois à une audience (clients / ville / tous), quota du plan, semaine en barres, derniers envois, composeur, réception côté client |
+| [user-location.md](./user-location.md) | Localisation de l'utilisateur — permission après les notifications, envoi à chaque connexion, au retour au premier plan et app fermée (tâche arrière-plan, `POST /user/location`) |
 | [support-merchant.md](./support-merchant.md) | Messages boutique — discussions clients reçues par le marchand (feature séparée, HTTP + socket) |
 | [support.md](./support.md) | Contactez-nous — chat support client (écran plein écran, chips d'objet, historique, HTTP + socket) |
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |
@@ -32,7 +34,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement** |
 | [home-scroll-pause.md](./home-scroll-pause.md) | ⚠️ **EN COURS** — micro-pause au scroll du home : mesures, sonde `[ROW]`, `windowSize={15}` (fonctionne, OTA) et tentative FlashList (non résolue) |
 | [profile-name-sheet.md](./profile-name-sheet.md) | Sheet « nom / prénom manquant » — home à l'arrivée + garde `requireName` avant toute commande (home, panier), voile, clavier |
-| [settings-grille.md](./settings-grille.md) | Écran Settings — grille de tuiles par section (SettingGrid / SettingGridItem / SettingGridSwitch), teintes, sections |
+| [settings-grille.md](./settings-grille.md) | Écran Settings — grille de tuiles par section (SettingGrid / SettingGridItem / SettingGridSwitch), teintes, sections, sous-pages (useSettingsSubScreens), modals suppression / déconnexion |
 
 ---
 
@@ -86,6 +88,7 @@ yaammoo/
 │   ├── components/           # Composants partagés (Toast, AppBlurView…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
 │   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)
 │
+├── modules/                  # Modules Expo locaux (autolinking) : home-list/ = liste native iOS du home (voir restaurants.md) ; bonus-pager/ = carrousel natif iOS de la sheet Bonus (voir bonus.md) ; notification-style/ = notifications Android d'une boutique en conversation, logo en avatar (voir notifications.md)
 ├── assets/                   # Images, fonts
 ├── architecture/             # Ce dossier
 └── app.json, package.json

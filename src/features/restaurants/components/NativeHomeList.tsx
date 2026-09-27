@@ -20,6 +20,7 @@ import React, {
 } from "react";
 import { AppState, Image, StyleSheet } from "react-native";
 import { V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
+import { fontFor } from "@/src/theme/fonts";
 import { designNumberFor } from "../utils/designCycle";
 import { getNextDeliveryTime } from "../utils/deliveryUtils";
 import {
@@ -93,7 +94,13 @@ const ICONS: HomeListIcons = {
  * Polices du texte de la liste native, par graisse : nom PostScript d'une
  * police deja chargee (expo-font), `null` = police systeme. Changeable par OTA.
  */
-const FONTS: HomeListFonts = { w600: null, w700: null, w800: null, w900: null };
+/** Police du theme (`src/theme/fonts.ts`), noms PostScript ; `null` = systeme. */
+const FONTS: HomeListFonts = {
+  w600: fontFor(600),
+  w700: fontFor(700),
+  w800: fontFor(800),
+  w900: fontFor(900),
+};
 
 /** Frais de la ligne sous la carte du variant 4 (`ItemMeta`). */
 const metaFeeLabelFor = (i: number) =>

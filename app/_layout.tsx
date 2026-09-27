@@ -1,4 +1,5 @@
 import "@/src/services/webTitleFix";
+import { useAppFont } from "@/src/theme/appFont";
 import {
   DefaultTheme,
   ThemeProvider,
@@ -244,6 +245,10 @@ function AppContent() {
 }
 
 function RootLayout() {
+  // Police du theme (OTA, voir src/theme/fonts.ts) : chargee sous le splash,
+  // avant le premier texte peint.
+  const fontReady = useAppFont();
+  if (!fontReady) return null;
   return (
     // ⚠️ OBLIGATOIRE des qu'un composant de `react-native-gesture-handler` est
     // utilise (carrousel de la banniere) : sans cette racine, ses gestes sont

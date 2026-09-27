@@ -224,6 +224,8 @@ src/
 │       ├── DatePill.tsx         # Pilule de dates repliable (chips date + "+N", sélection)
 │       └── SectionSwitcher.tsx  # FAB switch sections (animé) — plus utilisé par cart.tsx (panier mono-section)
 ├── theme/                       # Theme.colors, typography, spacing
+│   ├── fonts.ts                 # Police globale OTA (`FONT_THEME`), noms PostScript par graisse
+│   └── appFont.tsx              # Text/TextInput a police du theme + useAppFont (chargement)
 ├── types/                       # Commande, Menu, Livraison, User…
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)

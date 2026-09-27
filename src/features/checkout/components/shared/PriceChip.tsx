@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text } from 'react-native';
 import { styles } from '../CheckoutSheet.styles';
+import { DS } from "@/src/theme/ds";
 
 interface PriceChipProps {
   isActive: boolean;
@@ -21,7 +22,7 @@ export const PriceChip: React.FC<PriceChipProps> = ({ isActive, label, price, on
       <Text style={[styles.sizeLabel, isActive ? styles.sizeLabelActive : styles.sizeLabelInactive]}>
         {label}
       </Text>
-      <Text style={[styles.sizePrice, styles.textDark, isActive && { color: '#ec4913' }]}>
+      <Text style={[styles.sizePrice, styles.textDark, isActive && { color: DS.accent }]}>
         {price > 0 ? `${price} F` : 'no ref'}
       </Text>
     </TouchableOpacity>

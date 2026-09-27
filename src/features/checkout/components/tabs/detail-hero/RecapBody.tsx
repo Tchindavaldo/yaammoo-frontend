@@ -9,6 +9,7 @@ import {
   SIZES,
 } from "./heroShared";
 import { amount, Banner, PALETTE, Tile } from "./recapTiles";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Design « recap photo » : la photo remplit toute la section ; par-dessus,
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
   },
   chipsGap: { height: 6 },
   topShade: { position: "absolute", left: 0, right: 0, top: 0, height: 80 },

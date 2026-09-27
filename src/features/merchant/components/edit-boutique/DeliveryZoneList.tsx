@@ -8,6 +8,7 @@ import {
   GHOST_HEADER_HEIGHT,
   GHOST_MIN_VISIBLE,
 } from "./GhostZoneTable";
+import { DS } from "@/src/theme/ds";
 
 interface DeliveryZoneListProps {
   groups: ZoneGroup[];
@@ -86,14 +87,14 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                   flexDirection: "row",
                   alignItems: "center",
                   gap: 8,
-                  backgroundColor: "#f8fafc",
+                  backgroundColor: DS.slate50,
                   borderBottomWidth: 1,
-                  borderBottomColor: "#f1f5f9",
+                  borderBottomColor: DS.slate100,
                   paddingVertical: 9,
                   paddingHorizontal: 12,
                 }}
               >
-                <Ionicons name="location" size={14} color="#ec4913" />
+                <Ionicons name="location" size={14} color={DS.accent} />
                 <Text
                   style={{
                     flex: 1,
@@ -126,7 +127,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                     alignItems: "center",
                     paddingBottom: 6,
                     borderBottomWidth: 1,
-                    borderBottomColor: "#f1f5f9",
+                    borderBottomColor: DS.slate100,
                   }}
                 >
                   <Text style={colHeader}>Heure</Text>
@@ -151,8 +152,8 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                         alignItems: "center",
                         paddingVertical: 8,
                         borderBottomWidth: hi === g.hours.length - 1 ? 0 : 1,
-                        borderBottomColor: "#f8fafc",
-                        backgroundColor: isSelected ? "#fef3ec" : "transparent",
+                        borderBottomColor: DS.slate50,
+                        backgroundColor: isSelected ? DS.accentSoft : "transparent",
                         borderRadius: isSelected ? 8 : 0,
                         paddingHorizontal: isSelected ? 6 : 0,
                       }}
@@ -170,7 +171,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                             width: 6,
                             height: 6,
                             borderRadius: 3,
-                            backgroundColor: isSelected ? "#ec4913" : "#cbd5e1",
+                            backgroundColor: isSelected ? DS.accent : "#cbd5e1",
                           }}
                         />
                         <Text
@@ -186,7 +187,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                       <Text style={cellValue}>
                         {hh.periodicPrix ? `${hh.periodicPrix} F` : "—"}
                       </Text>
-                      <Text style={[cellValue, { color: "#ec4913" }]}>
+                      <Text style={[cellValue, { color: DS.accent }]}>
                         {hh.expressPrix ? `${hh.expressPrix} F` : "—"}
                       </Text>
                     </TouchableOpacity>

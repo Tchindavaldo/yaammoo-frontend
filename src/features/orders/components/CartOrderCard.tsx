@@ -5,6 +5,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { computeGrandTotal } from "../../merchant/components/MerchantOrderMontantTab";
+import { DS } from "@/src/theme/ds";
 
 interface CartOrderCardProps {
   order: Commande;
@@ -93,7 +94,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                 <Text style={styles.avatarInitials}>{initials}</Text>
               )}
               <View
-                style={[styles.orderCountBadge, { backgroundColor: "#ec4913" }]}
+                style={[styles.orderCountBadge, { backgroundColor: DS.accent }]}
               >
                 <Text style={styles.orderCountText}>{orderCount}</Text>
               </View>
@@ -231,7 +232,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                 transition={150}
               />
             ) : (
-              <Ionicons name="fast-food" size={24} color="#ec4913" />
+              <Ionicons name="fast-food" size={24} color={DS.accent} />
             )}
           </View>
 
@@ -283,7 +284,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                       <Ionicons
                         name="trash-outline"
                         size={16}
-                        color="#dc2626"
+                        color={DS.danger}
                       />
                       <Text style={styles.deleteBtnText}>annuler</Text>
                     </TouchableOpacity>
@@ -321,7 +322,7 @@ const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: DS.gray100,
     paddingHorizontal: 16,
   },
   summaryRow: {
@@ -374,7 +375,7 @@ const styles = StyleSheet.create({
   summaryPrice: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   summaryChipsRow: {
     flexDirection: "row",
@@ -416,9 +417,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   rankBadgeRow: {
-    fontSize: 10,
+    fontSize: 13,
     fontWeight: "900",
-    color: "#111827",
+    color: DS.ink,
     marginLeft: 2,
   },
   summaryTitleContainer: {
@@ -429,7 +430,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   statusBadge: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: DS.gray100,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
@@ -473,12 +474,15 @@ const styles = StyleSheet.create({
     height: 32,
     paddingHorizontal: 10,
     borderRadius: 16,
-    backgroundColor: "#fee2e2",
+    // Soft : blanc + bordure grise, seule l'icône reste rouge.
+    backgroundColor: DS.bg,
+    borderWidth: 1,
+    borderColor: DS.line,
   },
   deleteBtnText: {
     fontSize: 11,
     fontWeight: "bold",
-    color: "#dc2626",
+    color: DS.ink,
   },
   qtyLabel: {
     backgroundColor: "black",
@@ -494,7 +498,7 @@ const styles = StyleSheet.create({
   rankContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: DS.gray100,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -508,7 +512,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   orderCountBadge: {
     position: "absolute",

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /** Un fastfood ayant des commandes en cours sur la date/statut sélectionné. */
 export interface TrackedFastFood {
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     maxWidth: 140,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.gray100,
     padding: 6,
     borderRadius: 18,
     marginRight: 8,
@@ -172,19 +173,20 @@ const styles = StyleSheet.create({
   ffCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Theme.colors.primary + "10",
+    // Soft (comme le panier) : blanc + bordure grise.
+    backgroundColor: DS.bg,
     padding: 6,
     borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: "transparent",
+    borderWidth: 1,
+    borderColor: DS.line,
   },
+  // Sélectionnée : fond gris léger + bordure gris foncé adoucie.
   ffCardActive: {
-    borderColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.gray100,
+    borderColor: DS.faint,
   },
-  ffAvatarActive: {
-    borderWidth: 1.5,
-    borderColor: "rgba(236,73,19,1.00)",
-  },
+  // Aucun anneau autour de l'avatar sélectionné.
+  ffAvatarActive: {},
   ffInfo: {
     flexShrink: 1,
     minWidth: 0,
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 46,
     borderRadius: 21,
-    backgroundColor: "#fee2e2",
+    backgroundColor: DS.gray100,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -206,7 +208,7 @@ const styles = StyleSheet.create({
   ffAvatarInitials: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.ink,
   },
   // Pastille de comptage, en badge d'angle sur la mini-card.
   ffPill: {
@@ -219,19 +221,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.ink,
     borderWidth: 1.5,
-    borderColor: "#fff",
+    borderColor: DS.bg,
   },
   ffPillText: {
     fontSize: 9,
     fontWeight: "800",
-    color: "#fff",
+    color: DS.bg,
   },
   ffName: {
     fontSize: 13,
     fontWeight: "bold",
-    color: "#111827",
+    color: DS.ink,
     marginTop: 2,
   },
 });

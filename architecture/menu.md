@@ -21,7 +21,7 @@ yaammoo/src/features/merchant/components/
 │   ├── MenuRecapDesign2.tsx        # "Blocs" — hero card + blocs bordés par section
 │   ├── MenuRecapDesign3.tsx        # "Édito" — mise en page éditoriale
 │   └── MenuRecapDesign4.tsx        # "Synthèse" — recap bref (bandeau + 4 stat-tuiles + résumés condensés +N)
-└── MenuManageModal.tsx             # Overlay plein écran gestion menus (Settings → "Gestion menu")
+└── MenuManageModal.tsx             # Page entière, route app/shop/menu.tsx (sans navbar), gestion menus (Settings → "Gestion menu")
 ```
 
 ---

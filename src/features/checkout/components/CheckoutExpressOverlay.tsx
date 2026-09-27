@@ -13,6 +13,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 import { verifyBonusCode } from "../services/verifyBonusCode";
+import { DS } from "@/src/theme/ds";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -254,7 +255,7 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
                       <Text
                         style={[
                           styles.periodLieu,
-                          isSelected && { color: "#ec4913" },
+                          isSelected && { color: DS.accent },
                         ]}
                       >
                         {item.lieu}
@@ -270,7 +271,7 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
                         <Text
                           style={[
                             styles.periodPrix,
-                            isSelected && { color: "#ec4913" },
+                            isSelected && { color: DS.accent },
                           ]}
                         >
                           {item.prix} F
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   header: {
     flexDirection: "row",
@@ -358,12 +359,12 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   scrollContent: {
     height: 240,
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 0,
     borderBottomWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   periodRowActive: {
     backgroundColor: "transparent",
@@ -408,8 +409,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxActive: {
-    backgroundColor: "#ec4913",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accent,
+    borderColor: DS.accent,
   },
   periodLieu: {
     fontSize: 14,
@@ -434,6 +435,6 @@ const styles = StyleSheet.create({
   freePrix: {
     fontSize: 13,
     fontWeight: "bold",
-    color: "#ec4913",
+    color: DS.accent,
   },
 });

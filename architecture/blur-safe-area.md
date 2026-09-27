@@ -253,3 +253,53 @@ Ce ratio est utilisé aux **deux** endroits, qui doivent rester alignés :
 | `useTabBarHeight()` | hauteur lue par tous les écrans pour leur `paddingBottom` de liste et leurs barres flottantes (`cart.tsx`, `CartStatusPanel`, `OrderManagePanel`, `notifications.tsx`, `index.tsx`) |
 
 Modifier l'un sans l'autre décale le contenu par rapport à la barre.
+
+---
+
+## 4. Récapitulatif des ratios de safe-area basse PAR OS
+
+La safe-area basse n'est **jamais** prise telle quelle : chaque famille d'écran
+en garde une part, réglée **séparément pour iOS et Android**.
+
+| Famille | Source | iOS | Android |
+|---|---|---|---|
+| Tab bar | `TAB_BAR_INSET_RATIO` (`src/hooks/useTabBarHeight.ts`) | 0,5 | 0,9 |
+| Sheets de commande | `SHEET_INSET_RATIO_*` (`checkout/hooks/useSheetInsets.ts`) | 0,5 | 1 |
+| Pages entières (hors `(tabs)`) | `PAGE_INSET_RATIO` (`src/hooks/usePageBottomInset.ts`) | 1 | 1 |
+| Sheets marchand (`<Modal>` ancrés en bas) | `useSheetSafeInsets()` (même fichier, même ratio) | 1 | 1 |
+
+**Couleur de la bande** : `SAFE_AREA_BG` (même fichier), appliquée partout
+depuis là. `SAFE_AREA_DEBUG = true` la passe en `DS.accent` (et dessine la bande
+sous les pieds fixes `ownFooter`) pour comparer l'alignement par captures ;
+`false` en production (`DS.bg`).
+
+Pages Boutique et sheets marchand : inset **complet** sur les deux OS, aligné
+sur l'écran Personnel (référence validée). Le 0,5 iOS laissait une marge trop
+fine (Menu, Notifications, filtres, détail commande).
+
+Sheets marchand passés à `useSheetSafeInsets` (importé sous l'alias
+`useSafeAreaInsets`, seul `bottom` change) : `MerchantFilterSheet`,
+`DelegateDriverSheet`, `MerchantOrderBottomSheet`, `AddMenuSheetMultiStep`,
+`edit-boutique/ZoneFormSheet`, `edit-boutique/ZoneListSheet`. Les calques
+rendus DANS une page (`WithdrawOverlay`, `BroadcastComposer`) n'ont rien à
+ajouter : `ShopPageFrame` a déjà réservé la safe-area.
+
+### Pages entières sans navbar (`app/shop/*`)
+
+Les pages de Settings → Boutique sont des routes hors `(tabs)` : pas de navbar.
+« Personnel » en fait partie (`app/shop/staff.tsx`, `?section=drivers`) : la
+tuile et le deep-link de settings y redirigent.
+Chacune est enveloppée dans `merchant/components/shop/ShopPageFrame.tsx`, qui :
+
+- réserve en bas `usePageBottomInset()` (ratio par OS ci-dessus) ;
+- sauf avec `ownFooter` (pages à pied de page fixe : « Commandes », « Gérer ma
+  boutique ») : le cadre ne réserve rien, le pied descend jusqu'au bord et
+  absorbe lui-même `useFooterBottomInset()` — `FOOTER_INSET_RATIO` = `PAGE_INSET_RATIO`,
+  pour que la bande soit alignée sur les autres pages — au lieu de flotter au-dessus d'une bande vide ;
+- **tronque** (`overflow: "hidden"`) tout ce qui déborde au-dessus : aucun
+  élément (barre de filtres, FAB, composeur…) ne passe sous la barre système.
+
+Le contenu d'une page entière **n'ajoute donc jamais** `insets.bottom` ni la
+hauteur de la tab bar (sinon la marge est doublée et un vide de la taille de la
+navbar apparaît). Les écrans qui partageaient la mise en page d'un onglet ont
+leur copie dédiée (R16) : `shop/ShopOrderManagePanel.tsx` pour « Commandes ».

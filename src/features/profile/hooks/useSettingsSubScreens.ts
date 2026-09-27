@@ -6,8 +6,7 @@ export type SettingsSubScreen =
   | "editBoutique"
   | "menuManage"
   | "walletManage"
-  // Section « Mes activités » (user + marchand) : commandes + portefeuille.
-  | "userOrders"
+  // Section « Mes activités » : portefeuille (les commandes sont un onglet).
   | "userWallet"
   // Bonus (Settings → Bonus et parrainage) : bottom sheet.
   | "userBonus"
@@ -32,7 +31,6 @@ const ALL_CLOSED: SettingsSubScreenState = {
   editBoutique: false,
   menuManage: false,
   walletManage: false,
-  userOrders: false,
   userWallet: false,
   userBonus: false,
   supportChat: false,
@@ -48,10 +46,6 @@ const ALL_CLOSED: SettingsSubScreenState = {
 
 // Deep-link `?section=` → sous-page à ouvrir.
 const SECTION_TARGET: Record<string, SettingsSubScreen> = {
-  // Notifications / home « Mes commandes » → modal commandes.
-  pending: "userOrders",
-  active: "userOrders",
-  finished: "userOrders",
   // Notif « demande de livraison » (marchand) → Personnel, onglet Livreurs.
   drivers: "staffManage",
   staff: "staffManage",

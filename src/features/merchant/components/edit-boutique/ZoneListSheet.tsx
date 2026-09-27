@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import type { ZoneGroup, ZoneHourEntry } from "./groupZones";
 import { useSheetAnimation } from "./useSheetAnimation";
 import { zoneListStyles as st } from "./ZoneListSheet.styles";

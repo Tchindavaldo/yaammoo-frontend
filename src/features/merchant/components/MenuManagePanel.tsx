@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import Svg, { G, Path } from "react-native-svg";
 import { AddMenuSheetMultiStep } from "./AddMenuSheetMultiStep";
+import { DS } from "@/src/theme/ds";
 
 interface MenuManagePanelProps {
   menus: any[];
@@ -194,7 +195,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     // pour obtenir une teinte translucide (8%/13% d'opacité) — une valeur
     // `rgba(...)` ne peut pas être suffixée de la sorte, React Native rendait
     // alors un fond plein illisible au lieu d'un fond léger.
-    const statusColor = isAvailable ? "#2dd36f" : "#ec4913";
+    const statusColor = isAvailable ? "#2dd36f" : DS.accent;
 
     return (
       <View style={styles.menuRowWrapper}>
@@ -209,7 +210,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                 transition={150}
               />
             ) : (
-              <Ionicons name="fast-food" size={20} color="#ec4913" />
+              <Ionicons name="fast-food" size={20} color={DS.accent} />
             )}
             <View
               style={[styles.menuStatusDot, { backgroundColor: statusColor }]}
@@ -473,7 +474,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                             confirmActionType === "available"
                               ? "darkgreen"
                               : confirmActionType === "delete"
-                                ? "rgba(236,73,19,1.00)"
+                                ? DS.accent
                                 : "#ff9d9d",
                           right: 110,
                         },
@@ -499,7 +500,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                     <TouchableOpacity
                       style={[
                         styles.cfnChip,
-                        { backgroundColor: "rgba(236,73,19,1.00)", right: 0 },
+                        { backgroundColor: DS.accent, right: 0 },
                       ]}
                       onPress={closeConfirmModal}
                     >
@@ -610,8 +611,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     height: 32,
-    backgroundColor: "rgba(236,73,19,1.00)",
-    shadowColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.accent,
+    shadowColor: DS.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.35,
     shadowRadius: 4,
@@ -633,7 +634,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statusTabActive: {
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.accent,
   },
   statusTabLabel: {
     fontSize: 10,
@@ -641,7 +642,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   listContent: {
-    paddingBottom: 100,
+    // ShopPageFrame reserve deja la safe-area basse.
+    paddingBottom: 8,
   },
   emptyState: {
     alignItems: "center",
@@ -661,7 +663,7 @@ const styles = StyleSheet.create({
   menuRowWrapper: {
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: DS.gray100,
     paddingHorizontal: 16,
   },
   menuSummaryRow: {
@@ -713,7 +715,7 @@ const styles = StyleSheet.create({
   menuPrice: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   menuName: {
     fontSize: 13,
@@ -725,7 +727,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: DS.gray100,
     height: 22,
     borderRadius: 8,
     justifyContent: "center",
@@ -845,7 +847,7 @@ const styles = StyleSheet.create({
   cfnAvatarCard: {
     width: 45,
     height: 45,
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.accent,
     borderRadius: 22.5,
     overflow: "hidden",
     marginLeft: 0,

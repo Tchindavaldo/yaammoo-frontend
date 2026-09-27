@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { Theme } from '@/src/theme';
 import { ShopSkeleton } from './ShopSkeleton';
 import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
+import { DS } from "@/src/theme/ds";
 
 interface MerchantHeaderProps {
   name: string;
@@ -197,9 +198,9 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
           <View style={styles.ratingContainer}>
           {stars.map((fill, i) => (
             <View key={i} style={styles.starWrapper}>
-              <Ionicons name="star" size={14} color="#e8440a" />
+              <Ionicons name="star" size={14} color={DS.accentDeep} />
               <View style={[styles.starFill, { width: `${fill * 100}%` }]}>
-                <Ionicons name="star" size={14} color="#e8440a" />
+                <Ionicons name="star" size={14} color={DS.accentDeep} />
               </View>
             </View>
           ))}

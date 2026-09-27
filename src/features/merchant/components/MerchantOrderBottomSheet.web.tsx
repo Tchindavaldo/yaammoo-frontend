@@ -17,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { DS } from "@/src/theme/ds";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -57,7 +58,7 @@ type Tab = 'livraison' | 'commandes';
 
 const COLORS = [
   { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' },
-  { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' },
+  { bg: DS.accentCream, text: '#A04000', badge: '#E67E22' },
   { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' },
   { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' },
 ];
@@ -418,7 +419,7 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
               <Ionicons
                 name={isPlaying ? "pause" : "play"}
                 size={16}
-                color="#ec4913"
+                color={DS.accent}
               />
             </View>
             <Waveform active={isPlaying} progress={playbackProgress} />
@@ -525,7 +526,7 @@ function Waveform({ active, progress = 0 }: { active?: boolean; progress?: numbe
             style={[
               styles.wavebar,
               { height: h },
-              (active && isPlayed) && { backgroundColor: '#ec4913' },
+              (active && isPlayed) && { backgroundColor: DS.accent },
               (active && !isPlayed) && { backgroundColor: 'rgba(236,19,49,0.2)' }
             ]}
           />
@@ -563,15 +564,15 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 9, color: '#fff', fontWeight: '800' },
   userName: { fontSize: 16, fontWeight: '700', color: '#111827' },
   userAddr: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  closeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  closeBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: DS.gray100, alignItems: 'center', justifyContent: 'center' },
   closeBtnText: { fontSize: 14, color: '#4B5563' },
-  tabBar: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+  tabBar: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, borderColor: DS.gray100 },
   tab: { marginRight: 24, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: '#111827' },
   tabText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
   tabTextActive: { color: '#111827' },
   content: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
-  mapPlaceholder: { backgroundColor: '#F3F4F6', borderRadius: 20, marginBottom: 8, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: '#E5E7EB' },
+  mapPlaceholder: { backgroundColor: DS.gray100, borderRadius: 20, marginBottom: 8, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', borderWidth: 1, borderColor: '#E5E7EB' },
   mapGridH: { position: 'absolute', left: 0, right: 0, top: '50%', height: 1, backgroundColor: 'rgba(0,0,0,0.03)' },
   mapGridV: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, backgroundColor: 'rgba(0,0,0,0.03)' },
   pinContainer: { position: 'absolute', top: '35%', left: '51%' },
@@ -580,35 +581,35 @@ const styles = StyleSheet.create({
   mapLabel: { position: 'absolute', bottom: 20, fontSize: 11, fontWeight: '500', color: '#6B7280' },
   webMapTag: { position: 'absolute', bottom: 6, flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
   webMapTagText: { fontSize: 9, color: '#6B7280', fontWeight: '600' },
-  infoCard: { backgroundColor: '#F9FAFB', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#F3F4F6' },
+  infoCard: { backgroundColor: DS.gray50, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: DS.gray100 },
   infoLabel: { fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '700', marginBottom: 6 },
   infoVal: { fontSize: 14, fontWeight: '600', color: '#111827' },
   infoValSm: { fontSize: 13, color: '#374151', lineHeight: 20 },
-  voiceBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#F3F4F6' },
+  voiceBar: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: DS.gray50, borderRadius: 16, padding: 12, borderWidth: 1, borderColor: DS.gray100 },
   playBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
   wave: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 2, height: 32 },
   wavebar: { width: 2.5, borderRadius: 2, backgroundColor: '#D1D5DB' },
   waveDur: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', minWidth: 28, textAlign: 'right' },
   cmdRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
-  cmdRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  cmdIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
+  cmdRowBorder: { borderBottomWidth: 1, borderBottomColor: DS.gray100 },
+  cmdIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: DS.gray100, alignItems: 'center', justifyContent: 'center' },
   cmdName: { flex: 1, fontSize: 13, color: '#374151', fontWeight: '500' },
   cmdZone: { fontSize: 11, color: '#6B7280', fontWeight: '600', marginTop: 1 },
   cmdQty: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
   cmdPrice: { fontSize: 13, fontWeight: '700', color: '#111827' },
-  cmdTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: '#F3F4F6' },
+  cmdTotal: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 4, borderTopWidth: 1, borderTopColor: DS.gray100 },
   cmdTotalLabel: { fontSize: 13, fontWeight: '700', color: '#374151' },
   cmdTotalVal: { fontSize: 16, fontWeight: '800', color: '#111827' },
   navBarContainer: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#F3F4F6',
+    paddingVertical: 12, borderTopWidth: 1, borderTopColor: DS.gray100,
   },
   navArrow: { paddingHorizontal: 12, paddingVertical: 8 },
   navArrowText: { fontSize: 18, fontWeight: '800', color: '#111827' },
   navBar: { flexDirection: 'row', gap: 6, paddingHorizontal: 8 },
   navTab: {
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8,
-    backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: DS.gray50, borderWidth: 1, borderColor: '#E5E7EB',
   },
   navTabActive: { backgroundColor: '#111827', borderColor: '#111827' },
   navTabText: { fontSize: 11, fontWeight: '600', color: '#6B7280' },

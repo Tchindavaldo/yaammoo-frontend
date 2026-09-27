@@ -4,6 +4,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { DS } from "@/src/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
@@ -39,9 +40,9 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
     visible
   );
 
-  // Hauteur navbar (≈58) + safe area bas.
-  const TAB_BAR_HEIGHT = 58;
-  const bottomInset = insets.bottom + TAB_BAR_HEIGHT;
+  // Page entière hors (tabs) (`app/shop/messages.tsx`) : plus de navbar, seule la safe-area basse compte.
+  // La safe-area est déjà réservée par ShopPageFrame : rien à ajouter ici.
+  const bottomInset = 0;
 
   // Chaque ouverture repart de la liste.
   useEffect(() => {
@@ -109,7 +110,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
                 styles.flex,
                 {
                   marginTop: headerHeight + 6,
-                  marginBottom: bottomInset + 24,
+                  marginBottom: bottomInset + 8,
                 },
               ]}
             >
@@ -118,7 +119,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
           ) : (
             <ScrollView
               style={[styles.flex, { marginTop: headerHeight + 6 }]}
-              contentContainerStyle={{ paddingBottom: bottomInset + 24 }}
+              contentContainerStyle={{ paddingBottom: bottomInset + 8 }}
             >
               <Text style={styles.section}>Discussions reçues</Text>
               {threads.length === 0 ? (
@@ -150,7 +151,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFill, zIndex: 2000 },
+  overlay: { flex: 1, backgroundColor: DS.bg },
   contentBg: {
     position: "absolute",
     left: 0,

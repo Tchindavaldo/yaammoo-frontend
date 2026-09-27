@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 
 export interface ChipItem {
   key: string;
@@ -163,31 +163,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: Theme.colors.primary + "10",
+    // Soft : non sélectionné = bordure grise seule, pas de fond.
+    borderWidth: 1,
+    borderColor: DS.line,
     maxWidth: 150,
   },
-  chipActive: { backgroundColor: Theme.colors.primary },
+  // Sélectionné : fond orange léger.
+  chipActive: { backgroundColor: DS.accent + "10", borderColor: "transparent" },
   chipText: {
     flexShrink: 1,
     fontSize: 12,
     fontWeight: "700",
-    color: Theme.colors.primary,
+    color: DS.muted,
   },
-  chipTextActive: { color: "#fff" },
+  chipTextActive: { color: DS.accent },
   badge: {
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#fff",
+    backgroundColor: DS.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
   },
-  badgeActive: { backgroundColor: "rgba(255,255,255,0.25)" },
+  badgeActive: { backgroundColor: DS.bg },
   badgeText: {
     fontSize: 10,
     fontWeight: "700",
-    color: Theme.colors.primary,
+    color: DS.muted,
   },
-  badgeTextActive: { color: "#fff" },
+  badgeTextActive: { color: DS.accent },
 });

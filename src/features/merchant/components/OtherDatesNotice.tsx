@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 interface Props {
   /**
@@ -47,7 +48,7 @@ export const OtherDatesNotice: React.FC<Props> = ({
           activeOpacity={0.8}
         >
           <Ionicons name="alert-circle-outline" size={18} color={PAST_COLOR} />
-          <Text style={[styles.text, { color: PAST_COLOR }]}>
+          <Text style={styles.text}>
             {pastCount} Commandes passées non traitées
           </Text>
         </TouchableOpacity>
@@ -60,7 +61,7 @@ export const OtherDatesNotice: React.FC<Props> = ({
           activeOpacity={0.8}
         >
           <Ionicons name="calendar-outline" size={18} color={FUTURE_COLOR} />
-          <Text style={[styles.text, { color: FUTURE_COLOR }]}>
+          <Text style={styles.text}>
             {futureCount} Commandes futur pas encore traité
           </Text>
         </TouchableOpacity>
@@ -69,10 +70,10 @@ export const OtherDatesNotice: React.FC<Props> = ({
   );
 };
 
-/** Passé non traité : du retard, on alerte. */
-const PAST_COLOR = "#C0392B";
-/** Futur non traité : information de planning, pas une alerte. */
-const FUTURE_COLOR = "#2E6FD9";
+/** Passé non traité : du retard, on alerte (icône seule colorée). */
+const PAST_COLOR = DS.danger;
+/** Futur non traité : information de planning (icône seule colorée). */
+const FUTURE_COLOR = DS.accent;
 
 const styles = StyleSheet.create({
   row: {
@@ -99,19 +100,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 12,
-    borderWidth: 1,
+    // Fond gris neutre : seule l'icône porte la couleur.
+    backgroundColor: DS.gray100,
   },
-  cardPast: {
-    backgroundColor: PAST_COLOR + "12",
-    borderColor: PAST_COLOR + "33",
-  },
-  cardFuture: {
-    backgroundColor: FUTURE_COLOR + "12",
-    borderColor: FUTURE_COLOR + "33",
-  },
+  cardPast: {},
+  cardFuture: {},
   text: {
     flex: 1,
     fontSize: 12,
     fontWeight: "700",
+    color: DS.ink,
   },
 });

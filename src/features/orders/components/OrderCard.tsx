@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
 import { Commande } from '@/src/types';
+import { DS } from "@/src/theme/ds";
 
 interface OrderCardProps {
   order: Commande;
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'rgba(236,73,19,1.00)',
+    backgroundColor: DS.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
   quantityChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(236,73,19,1.00)',
+    backgroundColor: DS.accent,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderTopLeftRadius: 20,

@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
+import { DS } from "@/src/theme";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Toast } from "@/src/components/Toast";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { useBroadcast } from "../../hooks/useBroadcast";
 import { useMerchant } from "../../hooks/useMerchant";
 import type {
@@ -35,7 +35,7 @@ type ToastState = { message: string; type: "success" | "error" } | null;
 /**
  * Écran plein écran « Notifications » (Settings → Boutique) : quota du plan,
  * semaine en barres, derniers envois, et composeur d'une notification envoyée
- * aux clients. Vue absolue dans l'arbre comme MenuManageModal (pas de <Modal>).
+ * aux clients. Rendu par la route `app/shop/notifications.tsx` (hors (tabs), sans navbar).
  */
 export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
   const [toast, setToast] = useState<ToastState>(null);
@@ -48,7 +48,8 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
     onLoadError,
   );
   const { menus } = useMerchant();
-  const tabBarHeight = useTabBarHeight();
+  // Page entière hors (tabs) : ni tab bar, ni safe-area (réservée par ShopPageFrame).
+  const tabBarHeight = 0;
   const [headerHeight, setHeaderHeight] = useState(70);
   const [now, setNow] = useState(() => new Date());
   const [draft, setDraft] = useState<BroadcastDraft | null>(null);
@@ -183,9 +184,8 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1000,
-    backgroundColor: "transparent",
+    flex: 1,
+    backgroundColor: DS.bg,
   },
   contentBg: {
     position: "absolute",

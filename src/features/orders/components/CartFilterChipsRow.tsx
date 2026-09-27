@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /** Les trois axes de filtrage du panier. */
 export type CartFilterKind = "zone" | "periode" | "heure";
@@ -48,7 +49,7 @@ const CHIP_GAP = 6; // espace icone / texte / chevron dans un chip
 const CHIP_FLEX: number | undefined = 0; // 1 = chips a largeur egale
 
 // Chip selectionne : teinte legere, jamais un aplat fonce.
-const ACTIVE_BG = "#f1f5f9";
+const ACTIVE_BG = DS.slate100;
 const ACTIVE_BORDER = "#cbd5e1";
 
 /**
@@ -212,7 +213,7 @@ export const CartFilterOptionRow: React.FC<{
         borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: active ? "#ffffff22" : "#f1f5f9",
+        backgroundColor: active ? "#ffffff22" : DS.slate100,
       }}
     >
       <Text

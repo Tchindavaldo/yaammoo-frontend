@@ -93,6 +93,19 @@ if printf '%s' "$cmd" | grep -qE '\b(python3?|node|ruby|perl)\b.*<<'; then
   deny "heredoc vers un interpreteur (reecriture de fichier deguisee)"
 fi
 
+# --- Script inline qui ecrit un fichier (node -e / python -c ...) : meme
+#     contournement que le heredoc (constate le 2026-09-27). Les scripts du
+#     scratchpad restent autorises (codemods explicitement valides). ---
+if printf '%s' "$cmd" | grep -qE 'writeFileSync|appendFileSync|open\([^)]*["'"'"'][wa]\+?["'"'"']|\.write_text\(' \
+   && ! printf '%s' "$cmd" | grep -q '/scratchpad/'; then
+  deny "script inline qui ecrit un fichier (node -e / python -c)"
+fi
+
+# --- Copie / deplacement vers le code : `cp`/`mv` cree un fichier hors Write ---
+if printf '%s' "$stripped" | grep -qE '(^|;|&&|\|)[[:space:]]*(cp|mv)[[:space:]]+[^;&|]*[[:space:]](\./)?(src|app|components|architecture)/'; then
+  deny "cp/mv vers le code (cree un fichier hors Write)"
+fi
+
 # --- Lecture pure d'un fichier -> Read ---
 # Uniquement quand la commande se resume a ca : `cat f`, `head -n 20 f`.
 # Un `cat` dans un pipe (`cat f | grep x`) reste autorise, c'est du traitement.

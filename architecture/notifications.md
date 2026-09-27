@@ -322,7 +322,7 @@ uni**, uniquement app fermee.
 ### Page Notifications
 **`app/(tabs)/notifications.tsx`**
 - Header absolute + BlurView : titre + unread count + bouton "Mark all as read"
-- FlatList de `NotificationItem` avec `paddingTop: HEADER_HEIGHT` et **`progressViewOffset={HEADER_HEIGHT}`** pour que le spinner de pull-to-refresh soit visible sous le header (sinon masqué derrière le blur)
+- SectionList groupée par jour (« Aujourd'hui », « Hier », jour de semaine, puis date) via `utils/groupNotificationsByDate.ts`, en-têtes non collants, avec `paddingTop: HEADER_HEIGHT` et **`progressViewOffset={HEADER_HEIGHT}`** pour que le spinner de pull-to-refresh soit visible sous le header (sinon masqué derrière le blur)
 - Pull-to-refresh → `refresh()` avec loader natif visible
 - Empty state : "Aucune notification"
 - Intègre `NotificationDetailSheet`

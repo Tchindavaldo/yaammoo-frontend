@@ -21,6 +21,7 @@ import { usePhoneAuth } from "@/src/features/auth/hooks/usePhoneAuth";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { Users, UsersInfos } from "@/src/types";
+import { DS } from "@/src/theme/ds";
 
 const { width, height } = Dimensions.get("window");
 
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 10,
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.accent,
     justifyContent: "center",
     alignItems: "center",
   },

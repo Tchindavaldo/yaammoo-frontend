@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Commande, FastFood } from "@/src/types";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { computeGrandTotal } from "../../merchant/components/MerchantOrderMontantTab";
+import { DS } from "@/src/theme/ds";
 
 interface ClientOrderCardProps {
   order: Commande;
@@ -74,7 +75,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
                 <Text style={styles.avatarInitials}>{initials}</Text>
               )}
               <View
-                style={[styles.orderCountBadge, { backgroundColor: "#ec4913" }]}
+                style={[styles.orderCountBadge, { backgroundColor: DS.accent }]}
               >
                 <Text style={styles.orderCountText}>{orderCount}</Text>
               </View>
@@ -172,7 +173,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
     const deliveryType = deliveryRaw?.type;
     const deliveryColor =
       deliveryType === "express"
-        ? "#ec4913"
+        ? DS.accent
         : deliveryType === "time"
           ? "#2563eb"
           : "#ccc";
@@ -218,7 +219,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
                 transition={150}
               />
             ) : (
-              <Ionicons name="fast-food" size={24} color="#ec4913" />
+              <Ionicons name="fast-food" size={24} color={DS.accent} />
             )}
             <Ionicons
               name="navigate"
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: DS.gray100,
     paddingHorizontal: 16,
   },
   summaryRow: {
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
   summaryPrice: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   summaryChipsRow: {
     flexDirection: "row",
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   statusBadge: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: DS.gray100,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
@@ -458,7 +459,7 @@ const styles = StyleSheet.create({
   rankContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: DS.gray100,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -472,7 +473,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   orderCountBadge: {
     position: "absolute",

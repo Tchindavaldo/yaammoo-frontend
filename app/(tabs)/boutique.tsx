@@ -37,8 +37,8 @@ export default function BoutiqueScreen() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Onglet de statut actif + nb de commandes affichées, pour la pilule du header.
-  const [statusInfo, setStatusInfo] = useState<{ label: string; count: number }>(
-    { label: 'En Attente', count: 0 },
+  const [statusInfo, setStatusInfo] = useState<{ label: string; count: number; amount: number }>(
+    { label: 'En Attente', count: 0, amount: 0 },
   );
 
   const todayISO = new Date().toISOString().substring(0, 10);

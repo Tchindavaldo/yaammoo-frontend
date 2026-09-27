@@ -13,7 +13,7 @@ Discussions ouvertes par les clients **envers une boutique**, consultées depuis
 ```
 src/features/merchant/
 ├── components/support/
-│   ├── MerchantSupportModal.tsx      # Écran plein écran : liste <-> conversation
+│   ├── MerchantSupportModal.tsx      # Page entière, route app/shop/messages.tsx (sans navbar) : liste <-> conversation
 │   ├── MerchantSupportChatView.tsx   # Conversation + saisie
 │   ├── MerchantSupportBubble.tsx     # Bulle (boutique à droite, client à gauche)
 │   ├── MerchantSupportThreadRow.tsx  # Ligne de la liste

@@ -1,5 +1,5 @@
 import { GroupStatusCounts } from "@/src/features/driver/components/GroupStatusCounts";
-import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
+import { MerchantStickyChipsRow } from "./MerchantStickyChipsRow";
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
@@ -31,9 +31,12 @@ import { MerchantFilterSheet } from "./MerchantFilterSheet";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
 import { MerchantOrderSkeleton } from "./MerchantOrderSkeleton";
 import { OtherDatesNotice } from "./OtherDatesNotice";
+import { DS } from "@/src/theme/ds";
 
 // Hauteur de la barre de filtres fixée au-dessus de la navbar.
 const FILTER_BAR_HEIGHT = 54;
+// Hauteur réservée au rappel « autres dates » posé au-dessus de la barre.
+const NOTICE_DOCK_HEIGHT = 58;
 
 type OrderStatus = "pending" | "proccess" | "finish";
 
@@ -58,7 +61,7 @@ interface OrderManagePanelProps {
    * Remonte l'onglet de statut actif et son nombre de commandes, pour la pilule
    * du header de page (« N cmd <statut> »).
    */
-  onStatusChange?: (info: { label: string; count: number }) => void;
+  onStatusChange?: (info: { label: string; count: number; amount: number }) => void;
   /** Hauteur du header de page : la barre stats+chips s'y cale (en blur), la liste
       scrolle dessous. Défaut 0 (pas d'offset). */
   topOffset?: number;
@@ -485,9 +488,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     statusTabs.find((t) => t.key === selectedStatus)?.label ?? "";
   const visibleCount = dateFilteredOrders.length;
   useEffect(() => {
-    onStatusChange?.({ label: statusLabel, count: visibleCount });
+    onStatusChange?.({ label: statusLabel, count: visibleCount, amount: totalAmount });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusLabel, visibleCount]);
+  }, [statusLabel, visibleCount, totalAmount]);
 
   // Grouping logic for the finished orders design (Untitled-1 style)
   const deliveryData = useMemo(() => {
@@ -684,7 +687,11 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const SNAP_PHASE = 0;
   const SNAP_ANCHOR = LIST_PAD_TOP_INNER - SNAP_PHASE;
   // paddingBottom léger : juste de quoi ne pas coller/chevaucher le bas du parent.
-  const listPadBottom = tabBarHeight + FILTER_BAR_HEIGHT + 24;
+  // Rappel « autres dates » calé au-dessus de la barre de filtres : la liste
+  // lui réserve sa hauteur pour que la dernière carte ne passe pas dessous.
+  const hasOtherDates = untreatedCounts.past > 0 || untreatedCounts.future > 0;
+  const listPadBottom =
+    tabBarHeight + FILTER_BAR_HEIGHT + 24 + (hasOtherDates ? NOTICE_DOCK_HEIGHT : 0);
 
   // Espace réellement libre entre la barre fixe du haut et celle du bas : le
   // message de liste vide l'occupe entièrement pour être centré verticalement.
@@ -714,7 +721,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     [SNAP_ANCHOR, CARD_STRIDE],
   );
 
-  // Barre fixe (stats + chips) calée sous le header de page.
+  // Barre fixe (stats) calée sous le header de page.
   const fixedBar = (
     <View
       style={[styles.fixedBar, { top: topOffset }]}
@@ -728,7 +735,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             <Text
               style={{
                 fontSize: 25,
-                color: Theme.colors.primary,
+                color: DS.accent,
                 marginLeft: 8,
                 fontWeight: "900",
               }}
@@ -744,7 +751,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
             <Text
               style={{
                 fontSize: 25,
-                color: Theme.colors.primary,
+                color: DS.accent,
                 marginLeft: 8,
                 fontWeight: "900",
               }}
@@ -770,7 +777,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         pointerEvents="none"
       />
       <View style={{ flex: 1 }}>
-        <StickyChipsRow
+        <MerchantStickyChipsRow
           items={statusTabs.map((t) => ({
             key: t.key,
             label: t.label,
@@ -788,7 +795,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
         onPress={() => setFilterOpen(true)}
         activeOpacity={0.8}
       >
-        <Ionicons name="options-outline" size={20} color="#fff" />
+        <Ionicons name="options-outline" size={20} color={DS.ink} />
       </TouchableOpacity>
     </View>
   );
@@ -838,12 +845,6 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                 color="#D3D1C7"
               />
               <Text style={styles.emptyText}>Aucune commande terminée</Text>
-              <OtherDatesNotice
-                pastCount={untreatedCounts.past}
-                futureCount={untreatedCounts.future}
-                inset={false}
-                onPress={() => setFilterOpen(true)}
-              />
             </View>
           ) : (
             deliveryData && (
@@ -1051,12 +1052,6 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                 color={Theme.colors.gray[300]}
               />
               <Text style={styles.emptyText}>{emptyLabel}</Text>
-              <OtherDatesNotice
-                pastCount={untreatedCounts.past}
-                futureCount={untreatedCounts.future}
-                inset={false}
-                onPress={() => setFilterOpen(true)}
-              />
             </View>
           ) : (
             <View style={{ gap: 6 }}>
@@ -1080,26 +1075,27 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
               ))}
             </View>
           )}
-
-          {/* Rappel de fin de liste : des commandes existent sur d'AUTRES dates
-              (jours précédents non traités, jours à venir, ou les deux). Un tap
-              ouvre le sheet pour choisir la date. Liste vide → le message
-              centré porte déjà l'info, pas de doublon. Masqué aussi pendant le
-              squelette : les commandes affichées sont périmées, ce rappel le
-              serait autant. */}
-          {!(loading && !pullRefreshing) && dateFilteredOrders.length > 0 && (
-            <OtherDatesNotice
-              pastCount={untreatedCounts.past}
-              futureCount={untreatedCounts.future}
-              onPress={() => setFilterOpen(true)}
-            />
-          )}
         </ScrollView>
       )}
       </BlurTarget>
 
       {/* Barre fixe (stats) en blur, par-dessus la liste. */}
       {fixedBar}
+
+      {/* Rappel des commandes sur d'AUTRES dates, calé juste au-dessus de la
+          barre de filtres (masqué pendant le squelette : compteurs périmés). */}
+      {!(loading && !pullRefreshing) && hasOtherDates && (
+        <View
+          style={[styles.noticeDock, { bottom: tabBarHeight + FILTER_BAR_HEIGHT }]}
+          pointerEvents="box-none"
+        >
+          <OtherDatesNotice
+            pastCount={untreatedCounts.past}
+            futureCount={untreatedCounts.future}
+            onPress={() => setFilterOpen(true)}
+          />
+        </View>
+      )}
 
       {/* Barre de filtres en bas (chips statut + icône sheet). */}
       {filterBar}
@@ -1180,8 +1176,7 @@ const styles = StyleSheet.create({
   statBox: {
     flex: 1,
     alignItems: "flex-start",
-    // Même fond que la pilule du header (orange translucide) : marie bien avec le blur.
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.gray100,
     padding: 10,
     borderRadius: 10,
   },
@@ -1197,6 +1192,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   // Barre de filtres en bas : chips de statut + bouton du bottom sheet.
+  // Rappel « autres dates » posé juste au-dessus de la barre de filtres.
+  noticeDock: { position: "absolute", left: 0, right: 0, paddingBottom: 8 },
   bottomBar: {
     position: "absolute",
     left: 0,
@@ -1216,7 +1213,9 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: DS.bg,
+    borderWidth: 1,
+    borderColor: DS.line,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1292,14 +1291,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "rgba(236,73,19,0.1)",
+    backgroundColor: DS.accentAlpha(0.1),
     borderWidth: 1,
-    borderColor: "rgba(236,73,19,1.00)",
+    borderColor: DS.accent,
   },
   btnLaunchGroupText: {
     fontSize: 9,
     fontWeight: "900",
-    color: "rgba(236,73,19,1.00)",
+    color: DS.accent,
     textTransform: "uppercase",
   },
   btnLaunchGroupLaunched: {

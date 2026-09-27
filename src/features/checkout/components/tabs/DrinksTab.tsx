@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Boisson } from '@/src/types';
 import { styles } from '../CheckoutSheet.styles';
+import { DS } from "@/src/theme/ds";
 
 interface DrinksTabProps {
   availableDrinks: Boisson[];
@@ -55,7 +56,7 @@ export const DrinksTab: React.FC<DrinksTabProps> = ({
               <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
                 {isSelected && <Ionicons name="checkmark" size={14} color="white" />}
               </View>
-              <Ionicons name="wine-outline" size={20} color={isSelected ? '#ec4913' : '#94a3b8'} style={{ marginLeft: 12 }} />
+              <Ionicons name="wine-outline" size={20} color={isSelected ? DS.accent : '#94a3b8'} style={{ marginLeft: 12 }} />
               <Text style={[styles.drinkName, styles.textDark]}>{item.type}</Text>
             </TouchableOpacity>
 
@@ -64,11 +65,11 @@ export const DrinksTab: React.FC<DrinksTabProps> = ({
                 <Text style={styles.drinkUnitPrice}>{item.prix} F</Text>
                 <View style={styles.drinkQuantityControl}>
                   <TouchableOpacity onPress={() => handleQuantityChange(item.type, -1)} style={styles.qtyBtn}>
-                    <Ionicons name="remove" size={14} color="#ec4913" />
+                    <Ionicons name="remove" size={14} color={DS.accent} />
                   </TouchableOpacity>
                   <Text style={styles.drinkQty}>{qty}</Text>
                   <TouchableOpacity onPress={() => handleQuantityChange(item.type, 1)} style={styles.qtyBtn}>
-                    <Ionicons name="add" size={14} color="#ec4913" />
+                    <Ionicons name="add" size={14} color={DS.accent} />
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.drinkTotalPrice}>{totalPrice} F</Text>

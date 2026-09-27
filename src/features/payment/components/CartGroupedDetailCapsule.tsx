@@ -17,6 +17,7 @@ import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import type { CartPaymentState } from "../hooks/useCartPayment";
 import { GROUPED_SHEET_HEIGHT } from "./CartGroupedDeliverySheet.styles";
+import { DS } from "@/src/theme/ds";
 
 /**
  * COPIE DEDIEE et AUTONOME de la capsule flottante du parcours groupe
@@ -376,8 +377,8 @@ export const CartGroupedDetailCapsule: React.FC<
                   autoFocus
                   /* Curseur explicite : la teinte systeme se voyait a peine
                        sur le fond sombre de la capsule. */
-                  selectionColor="#ec4913"
-                  cursorColor="#ec4913"
+                  selectionColor={DS.accent}
+                  cursorColor={DS.accent}
                 />
               </View>
               <TouchableOpacity
@@ -539,7 +540,7 @@ const styles = StyleSheet.create({
   payerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     height: 40,
     borderRadius: 20,
     justifyContent: "center",

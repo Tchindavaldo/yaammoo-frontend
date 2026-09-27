@@ -1,5 +1,6 @@
 import { Platform, StyleSheet } from "react-native";
 import { C, SHEET_HEIGHT } from "./CartPaymentSheet.styles";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Hauteur du sheet GROUPE. Android gagne 60 px : la barre de navigation y mange
@@ -79,7 +80,7 @@ export const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
     alignItems: "center",
     justifyContent: "center",
   },

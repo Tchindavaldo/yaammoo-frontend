@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { DS } from "@/src/theme";
 import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
@@ -12,8 +13,7 @@ interface WalletManageModalProps {
 
 /**
  * Écran plein écran du portefeuille marchand (depuis Settings → Boutique).
- * Rendu comme EditBoutiquePanel : View absolue dans l'arbre (PAS un <Modal>),
- * donc le header floute le settings, la tab bar reste visible, et pas de slide.
+ * Rendu par la route `app/shop/wallet.tsx` : page entière hors (tabs), sans navbar.
  */
 export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, onClose }) => {
   const { refresh } = useMerchant();
@@ -51,9 +51,8 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1000,
-    backgroundColor: "transparent",
+    flex: 1,
+    backgroundColor: DS.bg,
   },
   contentBg: {
     position: "absolute",

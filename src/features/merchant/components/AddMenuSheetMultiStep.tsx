@@ -23,7 +23,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import { MenuRecap } from "./recap-designs/MenuRecap";
 
 type Step = "nameImage" | "details" | "recap";

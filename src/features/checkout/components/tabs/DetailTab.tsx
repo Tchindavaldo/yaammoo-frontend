@@ -5,6 +5,7 @@ import { Menu } from '@/src/types';
 import { PriceChip } from '../shared/PriceChip';
 import { ImageSlider } from '../shared/ImageSlider';
 import { styles } from '../CheckoutSheet.styles';
+import { DS } from "@/src/theme/ds";
 
 interface DetailTabProps {
   menu: Menu;
@@ -81,7 +82,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
       {/* Price Summary Grid */}
       <View style={styles.gridRow}>
         <View style={styles.gridBtn}>
-          <Ionicons name="fast-food-outline" size={18} color="#ec4913" />
+          <Ionicons name="fast-food-outline" size={18} color={DS.accent} />
           <View style={styles.gridTextCenter}>
             <Text style={[styles.gridTitle, styles.textDark]}>Menu</Text>
             <Text style={styles.gridSubText}>{menuPrice} FCFA</Text>
@@ -89,7 +90,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         </View>
 
         <View style={styles.gridBtn}>
-          <Ionicons name="wine-outline" size={18} color="#ec4913" />
+          <Ionicons name="wine-outline" size={18} color={DS.accent} />
           <View style={styles.gridTextCenter}>
             <Text style={[styles.gridTitle, styles.textDark]}>Boisson</Text>
             <Text style={styles.gridSubText}>{drinksPrice} FCFA</Text>
@@ -97,7 +98,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         </View>
 
         <View style={styles.gridBtn}>
-          <Ionicons name="add-circle-outline" size={18} color="#ec4913" />
+          <Ionicons name="add-circle-outline" size={18} color={DS.accent} />
           <View style={styles.gridTextCenter}>
             <Text style={[styles.gridTitle, styles.textDark]}>Extras</Text>
             <Text style={styles.gridSubText}>{extrasPrice} FCFA</Text>
@@ -105,11 +106,11 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         </View>
 
         <View style={styles.gridBtn}>
-          <Ionicons name="bicycle-outline" size={18} color={isDeliveryFree || deliveryPrice > 0 ? "#ec4913" : "#94a3b8"} />
+          <Ionicons name="bicycle-outline" size={18} color={isDeliveryFree || deliveryPrice > 0 ? DS.accent : "#94a3b8"} />
           <View style={styles.gridTextCenter}>
             <Text style={[styles.gridTitle, styles.textDark]}>Livraison</Text>
             {isDeliveryFree ? (
-              <Text style={[styles.gridSubText, { fontWeight: 'bold', color: '#ec4913' }]}>Gratuit</Text>
+              <Text style={[styles.gridSubText, { fontWeight: 'bold', color: DS.accent }]}>Gratuit</Text>
             ) : (
               <Text style={styles.gridSubText}>{deliveryPrice} FCFA</Text>
             )}
@@ -117,10 +118,10 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         </View>
 
         <View style={[styles.gridBtn, { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottomWidth: 0 }]}>
-          <Ionicons name="wallet-outline" size={18} color="#ec4913" />
+          <Ionicons name="wallet-outline" size={18} color={DS.accent} />
           <View style={styles.gridTextCenter}>
             <Text style={[styles.gridTitle, styles.textDark]}>Total</Text>
-            <Text style={[styles.gridSubText, { fontWeight: 'bold', color: '#ec4913' }]}>
+            <Text style={[styles.gridSubText, { fontWeight: 'bold', color: DS.accent }]}>
               {totalDisplay} FCFA
             </Text>
           </View>

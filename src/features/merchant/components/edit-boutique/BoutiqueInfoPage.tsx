@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { styles } from "./styles";
+import { DS } from "@/src/theme/ds";
 
 interface BoutiqueInfoPageProps {
   image: string;
@@ -265,7 +266,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               ]}
               onPress={onAddZone}
             >
-              <Ionicons name="add" size={20} color="#ec4913" />
+              <Ionicons name="add" size={20} color={DS.accent} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -289,7 +290,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       {/* Récupération à la boutique (déplacé depuis la page 2) */}
       <View
         style={{
-          backgroundColor: "#f8fafc",
+          backgroundColor: DS.slate50,
           borderRadius: 14,
           padding: 14,
           marginTop: 16,

@@ -13,7 +13,7 @@ quota atomique, diffusion).
 
 | Fichier | Rôle |
 |---|---|
-| `merchant/components/broadcast/BroadcastManageModal.tsx` | Écran plein écran (vue absolue comme `MenuManageModal`) : header, page qui défile, bouton flottant, composeur, toasts |
+| `merchant/components/broadcast/BroadcastManageModal.tsx` | Page entière, route `app/shop/notifications.tsx` (hors `(tabs)`, sans navbar) : header, page qui défile, bouton flottant, composeur, toasts |
 | `merchant/components/broadcast/BroadcastWeekCard.tsx` | Carte calendrier : mois + puce du plan, une barre par jour (hauteur = envois), limites du plan toujours visibles, reste de la semaine |
 | `merchant/components/broadcast/BroadcastQuotaTiles.tsx` | Tuile sombre « Aujourd'hui » (reste / limite + capsules) et tuile « Remise à zéro » (compte à rebours jusqu'à minuit) |
 | `merchant/components/broadcast/BroadcastHistory.tsx` | Derniers envois selon leur nombre (voir plus bas) + carte dépliée d'un envoi unique |
@@ -72,7 +72,7 @@ affiché tel quel en toast). Quota du jour atteint : le bouton passe gris.
 
 ## Composeur
 
-- Vue absolue dans l'overlay (pas de `<Modal>`), posée au-dessus de la tab bar,
+- Vue absolue dans la page (pas de `<Modal>` imbriqué), posée au-dessus de la safe-area basse,
   remontée au-dessus du clavier par les events `Keyboard` (même principe que le
   retrait de `PorteFeuillePanel`).
 - Animations en driver JS : une opacité native bloque le défilement de la bande

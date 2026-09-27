@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "@/src/theme";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { DS } from "@/src/theme/ds";
 
 /**
  * GuestGate — protège un écran entièrement lié au compte (panier, profil…).
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
     width: 76,
     height: 76,
     borderRadius: 38,
-    backgroundColor: "rgba(236,73,19,0.10)",
+    backgroundColor: DS.accentAlpha(0.10),
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
+import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 /** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
     // La card remplit le conteneur, qui porte la hauteur de l'overlay.
     flex: 1,
   },
@@ -299,12 +300,12 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   inputContainer: {
     // Place restante de la card, au lieu d'une hauteur fixe qui debordait.
@@ -318,7 +319,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flex: 1,
     height: 60,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 16,
     paddingHorizontal: 20,
     justifyContent: "center",
@@ -332,11 +333,11 @@ const styles = StyleSheet.create({
   checkBtn: {
     width: 60,
     height: 60,
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#ec4913",
+    shadowColor: DS.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

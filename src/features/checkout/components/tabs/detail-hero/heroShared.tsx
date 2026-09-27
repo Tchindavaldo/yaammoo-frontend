@@ -9,6 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Briques communes du bloc image + tailles + recap du checkout HOME
@@ -24,7 +25,7 @@ export const RECAP_HEIGHT = 73;
  * dispose librement de ce cadre ; le footer ne bouge jamais.
  */
 export const SECTION_HEIGHT = HERO_HEIGHT + HERO_MARGIN_BOTTOM + RECAP_HEIGHT;
-export const ACCENT = "#ec4913";
+export const ACCENT = DS.accent;
 /** Orange attenue : l'accent plein est trop criard sur cette section. */
 export const SOFT_ACCENT = "#d9774f";
 export const INK = "#0f172a";

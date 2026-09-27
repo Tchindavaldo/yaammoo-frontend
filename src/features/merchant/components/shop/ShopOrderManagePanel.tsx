@@ -1,0 +1,1383 @@
+import { GroupStatusCounts } from "@/src/features/driver/components/GroupStatusCounts";
+import { MerchantStickyChipsRow } from "../MerchantStickyChipsRow";
+import type { DriverInfo } from "@/src/features/driver/services/driverService";
+import { Theme } from "@/src/theme";
+import { Commande } from "@/src/types";
+import { Ionicons } from "@expo/vector-icons";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { orderGroupKey } from "../../utils/orderGroupKey";
+import { DelegateDriverSheet } from "../DelegateDriverSheet";
+import { MerchantFilterSheet } from "../MerchantFilterSheet";
+import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "../MerchantOrderCard";
+import { MerchantOrderSkeleton } from "../MerchantOrderSkeleton";
+import { OtherDatesNotice } from "../OtherDatesNotice";
+import { DS } from "@/src/theme/ds";
+import { useFooterBottomInset } from "@/src/hooks/usePageBottomInset";
+
+/*
+ * Copie dédiée de OrderManagePanel pour la page entière « Commandes »
+ * (app/shop/orders.tsx), R16. Différence : pas de navbar sous la page, la barre
+ * de filtres est collée au bas du cadre (ShopPageFrame réserve la safe-area).
+ */
+
+// Hauteur de la barre de filtres fixée en bas de la page.
+const FILTER_BAR_HEIGHT = 54;
+// Hauteur réservée au rappel « autres dates » posé au-dessus de la barre.
+const NOTICE_DOCK_HEIGHT = 58;
+
+type OrderStatus = "pending" | "proccess" | "finish";
+
+export interface DateOption {
+  iso: string;
+  label: string;
+}
+
+interface ShopOrderManagePanelProps {
+  orders: Commande[];
+  loading: boolean;
+  onRefresh: () => void;
+  onUpdateStatus: (orderId: string, status: string) => Promise<void | boolean>;
+  /** Délègue une commande à un livreur (pose driverId). */
+  onDelegate?: (orderId: string, driverId: string) => Promise<void | boolean>;
+  /** Date sélectionnée (ISO YYYY-MM-DD) ou null pour "aujourd'hui". Contrôlée par le header. */
+  selectedDate: string | null;
+  onSelectDate: (iso: string | null) => void;
+  /** Remonte au parent la liste des dates disponibles (pour les chips du header). */
+  onDatesChange?: (dates: DateOption[]) => void;
+  /**
+   * Remonte l'onglet de statut actif et son nombre de commandes, pour la pilule
+   * du header de page (« N cmd <statut> »).
+   */
+  onStatusChange?: (info: { label: string; count: number; amount: number }) => void;
+  /** Hauteur du header de page : la barre stats+chips s'y cale (en blur), la liste
+      scrolle dessous. Défaut 0 (pas d'offset). */
+  topOffset?: number;
+}
+
+export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
+  orders,
+  loading,
+  onRefresh,
+  onUpdateStatus,
+  onDelegate,
+  selectedDate,
+  onSelectDate,
+  onDatesChange,
+  onStatusChange,
+  topOffset = 0,
+}) => {
+  /**
+   * Vrai uniquement quand le rafraichissement vient du GESTE de l'utilisateur.
+   *
+   * ⚠️ `loading` ne distingue pas le pull-to-refresh du rattrapage declenche par
+   * le retour dans l'app : s'en servir seul affichait la roue native ET le
+   * squelette en meme temps. On marque donc le geste ici, et chaque indicateur
+   * ne se montre que dans son cas.
+   */
+  const [pullRefreshing, setPullRefreshing] = useState(false);
+
+  const handlePullRefresh = useCallback(() => {
+    setPullRefreshing(true);
+    onRefresh();
+  }, [onRefresh]);
+
+  // Le parent ne dit pas quand sa requete se termine : on suit `loading`, qui
+  // retombe a la fin du refetch.
+  useEffect(() => {
+    if (!loading) setPullRefreshing(false);
+  }, [loading]);
+
+  // Pas de navbar : la barre de filtres descend jusqu'au bord et absorbe
+  // elle-même la safe-area (ShopPageFrame `ownFooter`), comme une tab bar.
+  const tabBarHeight = useFooterBottomInset();
+  const { height: windowHeight } = useWindowDimensions();
+  // Alias non masqué de la prop `orders` : plusieurs helpers locaux ont un
+  // paramètre nommé `orders`. Transmis aux cartes pour l'onglet Montant du sheet.
+  const allShopOrders = orders;
+  // Hauteur mesurée de la barre fixe (stats + chips) pour décaler la liste.
+  const [barHeight, setBarHeight] = useState(0);
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>("pending");
+  // 'express' par défaut pour le tab finished (seul tab à grouper en accordéon).
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
+    "express",
+  );
+  // États d'affichage du bouton de groupe ("Lancé ✓" / "..."). Le lancement
+  // passe désormais par le sélecteur DelegateDriverSheet (feedback dans le
+  // sheet) ; ces états restent lus mais ne sont plus flippés directement ici.
+  const [launchedGroups] = useState<Record<string, boolean>>({});
+  const [launchingGroups] = useState<Record<string, boolean>>({});
+  // Groupe pour lequel le sélecteur "qui livre" (Lancer tout) est ouvert.
+  const [delegateGroup, setDelegateGroup] = useState<Commande[] | null>(null);
+  // Sous-tab actif par groupe : 'en_attente' | 'en_cours'
+  const [groupSubTab, setGroupSubTab] = useState<
+    Record<string, "en_attente" | "en_cours" | "termine">
+  >({});
+  // Bottom sheet de filtres (dates + périodes de livraison).
+  const [filterOpen, setFilterOpen] = useState(false);
+  // Périodes de livraison cochées (multi-sélection) ; vide = toutes.
+  const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroupId((prev) => (prev === groupId ? null : groupId));
+  };
+
+  // Commandes RÉELLEMENT lançables d'un groupe : prêtes (`finished`) et PAS encore
+  // déléguées (pas de driverId) ni lancées. « Lancer tout » ne doit agir que sur
+  // celles-ci — jamais réassigner une commande déjà déléguée à un livreur.
+  const launchableOf = (groupOrders: Commande[]): Commande[] =>
+    groupOrders.filter((o) => o.status === "finished" && !(o as any).driverId);
+
+  // Livrer tout le groupe soi-même : on assigne le fastFoodId comme "driverId"
+  // (le restaurant EST le livreur), puis on passe la commande en `delivering`.
+  const selfDeliverGroup = async (
+    groupOrders: Commande[],
+  ): Promise<boolean> => {
+    const targets = launchableOf(groupOrders);
+    if (targets.length === 0) return true;
+    const results = await Promise.all(
+      targets.map(async (o) => {
+        // Pose driverId = fastFoodId (le resto se livre lui-même).
+        if (onDelegate) await onDelegate(o.id, o.fastFoodId);
+        return onUpdateStatus(o.id, "delivering");
+      }),
+    );
+    return !results.some((r) => r === false);
+  };
+
+  // Déléguer tout le groupe à un livreur (uniquement les commandes lançables).
+  const delegateGroupTo = async (
+    groupOrders: Commande[],
+    driverId: string,
+  ): Promise<boolean> => {
+    if (!onDelegate) return false;
+    const targets = launchableOf(groupOrders);
+    if (targets.length === 0) return true;
+    const results = await Promise.all(
+      targets.map((o) => onDelegate(o.id, driverId)),
+    );
+    return !results.some((r) => r === false);
+  };
+
+  // Helpers de date : retourne YYYY-MM-DD à partir d'une commande (clé stable)
+  const getOrderDateISO = (order: Commande): string => {
+    const deliveryDate = order.delivery?.date;
+    const dateStr = deliveryDate || order.createdAt || "";
+    if (!dateStr) return new Date().toISOString().substring(0, 10);
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return new Date().toISOString().substring(0, 10);
+      return d.toISOString().substring(0, 10);
+    } catch {
+      return new Date().toISOString().substring(0, 10);
+    }
+  };
+
+  const todayISO = new Date().toISOString().substring(0, 10);
+
+  // Format d'affichage pour un chip / header de section : "10 juin" (jour chiffré + mois).
+  const formatDateLabel = (iso: string): string => {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+    } catch {
+      return iso;
+    }
+  };
+
+  const statusMap: Record<OrderStatus, string[]> = {
+    pending: ["pending"],
+    proccess: ["processing", "active", "in_progress"],
+    finish: ["completed", "finished", "done", "delivering", "delivered"],
+  };
+
+  const filteredOrders = orders.filter((o) =>
+    statusMap[selectedStatus].includes(o.status),
+  );
+
+  // Dates uniques (ISO YYYY-MM-DD) disponibles pour ce statut
+  const availableDateISOs = useMemo(() => {
+    return [...new Set(filteredOrders.map(getOrderDateISO))];
+  }, [filteredOrders]);
+
+  // Ordre des chips : futures (asc) → aujourd'hui → passées (desc)
+  const sortedDateISOs = useMemo(() => {
+    const futures = availableDateISOs.filter((d) => d > todayISO).sort();
+    const past = availableDateISOs
+      .filter((d) => d < todayISO)
+      .sort()
+      .reverse();
+    const hasToday = availableDateISOs.includes(todayISO);
+    return [...futures, ...(hasToday ? [todayISO] : []), ...past];
+  }, [availableDateISOs]);
+
+  // Sections passées (uniquement pour la vue par défaut pending/processing)
+  const pastDateISOs = useMemo(() => {
+    return availableDateISOs
+      .filter((d) => d < todayISO)
+      .sort()
+      .reverse();
+  }, [availableDateISOs]);
+
+  // Dates de TOUTES les commandes, tous statuts confondus. `availableDateISOs`
+  // ne voit que le statut de l'onglet actif : s'en servir pour les rappels
+  // masquerait « des commandes à venir » sur En cours quand ces commandes sont
+  // encore en attente. Les rappels parlent du planning, pas de l'onglet.
+  const allDateISOs = useMemo(
+    () => [...new Set(orders.map(getOrderDateISO))],
+    [orders],
+  );
+
+  // Remonte au header la liste des dates disponibles (chips).
+  // Dépend d'une clé string stable (et pas du tableau, recréé à chaque render)
+  // pour éviter une boucle setState → render → nouveau tableau → effet.
+  const datesKey = sortedDateISOs.join(",");
+  useEffect(() => {
+    onDatesChange?.(
+      sortedDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datesKey]);
+
+  // Trie par rank pour pending/proccess
+  const sortByRank = (arr: Commande[]) => {
+    return [...arr].sort((a, b) => {
+      const ra = (a as any).rank ?? Infinity;
+      const rb = (b as any).rank ?? Infinity;
+      return ra - rb;
+    });
+  };
+
+  // ─── Groupement des commandes d'un même client ──────────────────────────────
+  // Une seule ligne par groupe : on n'affiche que la commande la mieux classée
+  // (rank le plus petit) et le bottom sheet reçoit tout le groupe. Le regroupement
+  // se fait par `orderGroupKey` (règle partagée avec l'onglet Montant du sheet),
+  // sans condition de rangs consécutifs.
+  const groupBySlot = (
+    arr: Commande[],
+  ): { head: Commande; group: Commande[] }[] => {
+    const buckets = new Map<string, Commande[]>();
+
+    arr.forEach((o) => {
+      const key = orderGroupKey(o);
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(o);
+      else buckets.set(key, [o]);
+    });
+
+    const rankOf = (o: Commande) => (o as any).rank ?? Infinity;
+    const entries: { head: Commande; group: Commande[] }[] = [];
+
+    buckets.forEach((group) => {
+      // Ordonne le groupe par rang : la tête est la commande la mieux classée.
+      const sorted = [...group].sort((a, b) => rankOf(a) - rankOf(b));
+      entries.push({ head: sorted[0], group: sorted });
+    });
+
+    // La ligne prend la position de sa commande la mieux classée.
+    return entries.sort((a, b) => rankOf(a.head) - rankOf(b.head));
+  };
+
+  // Commandes filtrées :
+  //  - Si un chip de date est sélectionné → uniquement cette date
+  //  - Sinon → uniquement aujourd'hui (la liste principale)
+  //    Pour pending/proccess, les dates passées non traitées sont rendues en sections sous la liste.
+  //    Pour finish, on n'affiche jamais l'historique en dessous : seulement la date sélectionnée.
+  // Clé de période d'une commande : "express", "surplace", ou le créneau ("12h").
+  const periodKeyOf = (o: Commande): string => {
+    const d = (o as any).delivery;
+    if (d?.status !== true) return "surplace";
+    if (d?.type === "express") return "express";
+    return d?.time || "À définir";
+  };
+
+  const dateFilteredOrders = useMemo(() => {
+    const isoFilter = selectedDate || todayISO;
+    let filtered = filteredOrders.filter(
+      (o) => getOrderDateISO(o) === isoFilter,
+    );
+    // Multi-sélection : vide = toutes les périodes.
+    if (selectedPeriods.length > 0) {
+      filtered = filtered.filter((o) =>
+        selectedPeriods.includes(periodKeyOf(o)),
+      );
+    }
+    if (selectedStatus === "pending" || selectedStatus === "proccess") {
+      return sortByRank(filtered);
+    }
+    return filtered;
+  }, [filteredOrders, selectedDate, selectedStatus, selectedPeriods]);
+
+  // Périodes disponibles pour la date active : express / sur place puis créneaux,
+  // avec le NOMBRE de commandes de chacune (compté sur la date active, statut courant).
+  const availablePeriods = useMemo(() => {
+    const isoFilter = selectedDate || todayISO;
+    const counts: Record<string, number> = {};
+    filteredOrders.forEach((o) => {
+      if (getOrderDateISO(o) !== isoFilter) return;
+      const k = periodKeyOf(o);
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    const slots = Object.keys(counts)
+      .filter((k) => k !== "express" && k !== "surplace")
+      .sort();
+    // Les deux modes de livraison sont TOUJOURS listés (0 si aucune commande) :
+    // sinon les lignes apparaissent/disparaissent au changement de date.
+    return [
+      {
+        key: "express",
+        label: "Livraison express",
+        count: counts.express || 0,
+      },
+      {
+        key: "surplace",
+        label: "Récupérer\nsur place",
+        count: counts.surplace || 0,
+      },
+      ...slots.map((s) => ({ key: s, label: s, count: counts[s] })),
+    ];
+  }, [filteredOrders, selectedDate]);
+
+  // Total de la date active (toutes périodes) pour le libellé « Toutes les périodes ».
+  const allPeriodsCount = useMemo(
+    () => availablePeriods.reduce((acc, p) => acc + p.count, 0),
+    [availablePeriods],
+  );
+
+  // Une période cochée qui disparaît (changement de date/statut) est retirée.
+  const periodsKey = availablePeriods.map((p) => p.key).join(",");
+  useEffect(() => {
+    setSelectedPeriods((prev) => {
+      const keys = periodsKey ? periodsKey.split(",") : [];
+      const next = prev.filter((p) => keys.includes(p));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [periodsKey]);
+
+  // Lignes affichées : une entrée par ligne de liste, avec son groupe éventuel.
+  const displayRows = useMemo(() => {
+    if (selectedStatus !== "pending" && selectedStatus !== "proccess") {
+      return dateFilteredOrders.map((o) => ({ head: o, group: [o] }));
+    }
+    return groupBySlot(dateFilteredOrders);
+  }, [dateFilteredOrders, selectedStatus]);
+
+  // Compteurs des rappels : commandes NON TRAITÉES (encore en attente ou en
+  // cours) sur les jours passés et sur les jours à venir.
+  //
+  // Volontairement GLOBAUX : indépendants de l'onglet de statut ET de la date
+  // filtrée — le marchand veut savoir combien de commandes l'attendent
+  // ailleurs, pas combien correspondent au filtre courant. Seule la date
+  // affichée est exclue (inutile d'annoncer ce qu'on est en train de regarder).
+  const untreatedCounts = useMemo(() => {
+    let past = 0;
+    let future = 0;
+    orders.forEach((o) => {
+      const untreated =
+        statusMap.pending.includes(o.status) ||
+        statusMap.proccess.includes(o.status);
+      if (!untreated) return;
+      const iso = getOrderDateISO(o);
+      if (iso === selectedDate) return;
+      if (iso < todayISO) past += 1;
+      else if (iso > todayISO) future += 1;
+    });
+    return { past, future };
+    // `statusMap` / `todayISO` sont recréés à chaque rendu (même convention que
+    // `counts`) : les lister annulerait la mémoïsation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, selectedDate]);
+
+  const emptyLabel =
+    selectedStatus === "pending"
+      ? "Aucune commande en attente"
+      : selectedStatus === "proccess"
+        ? "Aucune commande en cours"
+        : "Aucune commande terminée";
+
+  // Badges des chips de statut : ils comptent les commandes de la DATE ACTIVE,
+  // TOUTES périodes confondues (express + sur place + créneaux) — pas le total
+  // tous jours confondus, qui ferait afficher des commandes passées dans le
+  // badge du jour affiché. Volontairement INDÉPENDANTS de `selectedPeriods` :
+  // le marchand veut la somme du jour même quand une seule card est cochée.
+  const counts = useMemo(() => {
+    const isoFilter = selectedDate || todayISO;
+    const scoped = orders.filter((o) => getOrderDateISO(o) === isoFilter);
+    return {
+      pending: scoped.filter((o) => statusMap.pending.includes(o.status))
+        .length,
+      proccess: scoped.filter((o) => statusMap.proccess.includes(o.status))
+        .length,
+      finish: scoped.filter((o) => statusMap.finish.includes(o.status)).length,
+    };
+    // `statusMap` / `todayISO` sont recréés à chaque rendu : les lister ici
+    // annulerait la mémoïsation (même convention que `dateFilteredOrders`).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, selectedDate]);
+
+  const totalAmount = dateFilteredOrders.reduce(
+    (acc, o) => acc + (o.total || 0),
+    0,
+  );
+
+  // Dates du sheet : à venir (hors aujourd'hui) et passées. Les dates futures
+  // viennent de TOUTES les commandes, en cohérence avec le rappel `hasFuture` :
+  // les scoper à l'onglet ouvrirait un sheet sans la date qu'on vient
+  // d'annoncer.
+  const futureDateOptions = useMemo(
+    () =>
+      allDateISOs
+        .filter((d) => d > todayISO)
+        .sort()
+        .map((iso) => ({ iso, label: formatDateLabel(iso) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allDateISOs],
+  );
+  const pastDateOptions = useMemo(
+    () => pastDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })),
+    [pastDateISOs],
+  );
+
+  // Badges des cards de dates du filter sheet : NOMBRE DE COMMANDES du lot
+  // (toutes dates futures / aujourd'hui / toutes dates passées), pas le nombre
+  // de dates. Volontairement INDÉPENDANTS de l'onglet de statut ET des périodes
+  // cochées : chaque card affiche toujours le total de SA période.
+  // En revanche on ne compte que les VRAIES commandes : `orders` est le pool
+  // brut de la boutique et contient aussi `pendingToBuy` (encore au panier du
+  // client) et les annulées, qui gonflaient le compteur.
+  const dateScopeCounts = useMemo(() => {
+    const countable = new Set([
+      ...statusMap.pending,
+      ...statusMap.proccess,
+      ...statusMap.finish,
+    ]);
+    let past = 0;
+    let today = 0;
+    let future = 0;
+    orders.forEach((o) => {
+      if (!countable.has(o.status)) return;
+      const iso = getOrderDateISO(o);
+      if (iso < todayISO) past += 1;
+      else if (iso > todayISO) future += 1;
+      else today += 1;
+    });
+    return { past, today, future };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders]);
+
+  const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
+    { key: "pending", label: "En Attente", icon: "time-outline" },
+    { key: "proccess", label: "En cours", icon: "restaurant-outline" },
+    { key: "finish", label: "Terminées", icon: "checkmark-done-outline" },
+  ];
+
+  // Remonte au header « N cmd <statut> ». On compte les commandes RÉELLEMENT
+  // affichées (date + périodes filtrées), pas le total tous jours confondus.
+  const statusLabel =
+    statusTabs.find((t) => t.key === selectedStatus)?.label ?? "";
+  const visibleCount = dateFilteredOrders.length;
+  useEffect(() => {
+    onStatusChange?.({ label: statusLabel, count: visibleCount, amount: totalAmount });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusLabel, visibleCount, totalAmount]);
+
+  // Grouping logic for the finished orders design (Untitled-1 style)
+  const deliveryData = useMemo(() => {
+    if (selectedStatus !== "finish") return null;
+
+    const express: Commande[] = [];
+    const surplace: Commande[] = [];
+    const scheduled: Record<string, Commande[]> = {};
+
+    dateFilteredOrders.forEach((o) => {
+      const d = (o as any).delivery;
+      const hasDelivery = d?.status === true;
+      if (!hasDelivery) {
+        surplace.push(o);
+        return;
+      }
+      if (d?.type === "express") {
+        express.push(o);
+      } else {
+        const slot = d?.time || "À définir";
+        if (!scheduled[slot]) scheduled[slot] = [];
+        scheduled[slot].push(o);
+      }
+    });
+
+    const groupByUser = (ordersArr: Commande[]) => {
+      const userMap: Record<string, Commande[]> = {};
+      ordersArr.forEach((o) => {
+        const u = o.userData;
+        const key = o.userId || u?.email || o.id || `anon_${Math.random()}`;
+        if (!userMap[key]) userMap[key] = [];
+        userMap[key].push(o);
+      });
+      return Object.values(userMap);
+    };
+
+    return {
+      expressGroups: groupByUser(express),
+      surplaceGroups: groupByUser(surplace),
+      slots: Object.entries(scheduled).map(([slot, orders]) => ({
+        title: slot,
+        userGroups: groupByUser(orders),
+      })),
+    };
+  }, [dateFilteredOrders, selectedStatus]);
+
+  const renderUserGroup = (orders: Commande[], groupId?: string) => {
+    const isForced = groupId ? launchedGroups[groupId] : false;
+    return (
+      <MerchantOrderCard
+        key={orders[0].id}
+        order={orders[0]}
+        allOrders={orders}
+        groupPool={allShopOrders}
+        isForceLaunched={isForced}
+        onUpdateStatus={async (status) => {
+          await Promise.all(orders.map((o) => onUpdateStatus(o.id, status)));
+        }}
+        onDelegate={
+          onDelegate
+            ? async (driverId) => {
+                await Promise.all(
+                  orders.map((o) => onDelegate(o.id, driverId)),
+                );
+              }
+            : undefined
+        }
+      />
+    );
+  };
+
+  /**
+   * Rend les sous-tabs En attente / En cours + les cartes filtrées
+   * pour un groupe de userGroups donné (Express ou slot horaire).
+   */
+  const renderGroupWithSubTabs = (
+    userGroups: Commande[][],
+    groupId: string,
+  ) => {
+    const activeSubTab = groupSubTab[groupId] ?? "en_attente";
+
+    // Répartition par statut de LIVRAISON :
+    //  - En attente : prête à livrer, pas encore lancée (`finished`)
+    //  - En cours   : course lancée (`delivering`)
+    //  - Terminé    : livrée (`delivered`)
+    const allGroupOrders = userGroups.flat();
+    const enAttenteOrders = allGroupOrders.filter(
+      (o) => o.status === "finished",
+    );
+    const enCoursOrders = allGroupOrders.filter(
+      (o) => o.status === "delivering",
+    );
+    const deliveredOrders = allGroupOrders.filter(
+      (o) => o.status === "delivered",
+    );
+
+    // Regroupe par utilisateur pour chaque sous-liste
+    const groupByUser = (ordersArr: Commande[]): Commande[][] => {
+      const userMap: Record<string, Commande[]> = {};
+      ordersArr.forEach((o) => {
+        const key =
+          o.userId || o.userData?.email || o.id || `anon_${Math.random()}`;
+        if (!userMap[key]) userMap[key] = [];
+        userMap[key].push(o);
+      });
+      return Object.values(userMap);
+    };
+
+    const enAttenteGroups = groupByUser(enAttenteOrders);
+    const enCoursGroups = groupByUser(enCoursOrders);
+    const deliveredGroups = groupByUser(deliveredOrders);
+    const activeGroups =
+      activeSubTab === "en_cours"
+        ? enCoursGroups
+        : activeSubTab === "termine"
+          ? deliveredGroups
+          : enAttenteGroups;
+
+    const renderSubTab = (
+      key: "en_attente" | "en_cours" | "termine",
+      label: string,
+      count: number,
+    ) => {
+      const active = activeSubTab === key;
+      return (
+        <TouchableOpacity
+          style={[styles.subTab, active && styles.subTabActive]}
+          onPress={() =>
+            setGroupSubTab((prev) => ({ ...prev, [groupId]: key }))
+          }
+        >
+          <Text
+            style={[styles.subTabLabel, active && styles.subTabLabelActive]}
+          >
+            {label}
+          </Text>
+          {count > 0 && (
+            <View
+              style={[styles.subTabBadge, active && styles.subTabBadgeActive]}
+            >
+              <Text
+                style={[
+                  styles.subTabBadgeText,
+                  active && styles.subTabBadgeTextActive,
+                ]}
+              >
+                {count}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      );
+    };
+
+    return (
+      <View style={{ marginTop: 4 }}>
+        {/* Sous-tabs En attente / En cours / Terminé */}
+        <View style={styles.subTabRow}>
+          {renderSubTab("en_attente", "En attente", enAttenteOrders.length)}
+          {renderSubTab("en_cours", "En cours", enCoursOrders.length)}
+          {renderSubTab("termine", "Terminé", deliveredOrders.length)}
+        </View>
+
+        {/* Liste des commandes du sous-tab actif */}
+        {activeGroups.length === 0 ? (
+          <View style={styles.subTabEmpty}>
+            <Text style={styles.subTabEmptyText}>
+              {activeSubTab === "en_cours"
+                ? "Aucune livraison en cours"
+                : activeSubTab === "termine"
+                  ? "Aucune livraison terminée"
+                  : "Aucune commande en attente"}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ gap: 6, marginTop: 6 }}>
+            {activeGroups.map((group) => renderUserGroup(group, groupId))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  // La liste démarre sous la barre fixe (header de page + stats/chips).
+  const listTopPad = topOffset + barHeight;
+
+  // Espace réservé au-dessus de la 1re carte (paddingTop interne du contenu).
+  const LIST_PAD_TOP_INNER = 1;
+  // paddingTop total du contentContainer = barre fixe (mesurée) + espace interne.
+  const MAIN_LIST_PAD_TOP = listTopPad + LIST_PAD_TOP_INNER;
+  // Décalage de calage fin du SNAP uniquement (n'affecte pas le padding visuel) :
+  // ajuste où le raccord tombe (padding/bordure carte vs bordure barre fixe).
+  // Augmenter = la carte se cale un peu plus bas. Ajustable.
+  const SNAP_PHASE = 0;
+  const SNAP_ANCHOR = LIST_PAD_TOP_INNER - SNAP_PHASE;
+  // paddingBottom léger : juste de quoi ne pas coller/chevaucher le bas du parent.
+  // Rappel « autres dates » calé au-dessus de la barre de filtres : la liste
+  // lui réserve sa hauteur pour que la dernière carte ne passe pas dessous.
+  const hasOtherDates = untreatedCounts.past > 0 || untreatedCounts.future > 0;
+  const listPadBottom =
+    tabBarHeight + FILTER_BAR_HEIGHT + 8 + (hasOtherDates ? NOTICE_DOCK_HEIGHT : 0);
+
+  // Espace réellement libre entre la barre fixe du haut et celle du bas : le
+  // message de liste vide l'occupe entièrement pour être centré verticalement.
+  const emptyStateHeight = Math.max(
+    160,
+    windowHeight - MAIN_LIST_PAD_TOP - listPadBottom,
+  );
+  // Pas de la grille = hauteur carte (mesurée) + gap entre cartes.
+  const CARD_STRIDE = MERCHANT_CARD_HEIGHT + 6;
+
+  // Snap APRÈS-COUP : scroll libre ; à l'arrêt, on aligne la carte la plus proche
+  // PILE sur le bord bas de la barre fixe. La carte i affleure ce bord quand
+  // l'offset vaut y = LIST_PAD_TOP_INNER + i*CARD_STRIDE (indépendant du header,
+  // car listTopPad — header+barre mesurés — s'annule dans le calcul à l'écran).
+  const scrollRef = useRef<ScrollView>(null);
+  const onScrollSettled = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const rel = y - SNAP_ANCHOR;
+      if (rel <= 0) return; // au-dessus de la 1re carte → ne pas toucher
+      const residual = rel % CARD_STRIDE;
+      if (residual < 4 || residual > CARD_STRIDE - 4) return; // déjà ~aligné
+      // Scrolle vers le haut OU le bas vers le bord de carte le plus proche.
+      const target = SNAP_ANCHOR + Math.round(rel / CARD_STRIDE) * CARD_STRIDE;
+      scrollRef.current?.scrollTo({ y: target, animated: true });
+    },
+    [SNAP_ANCHOR, CARD_STRIDE],
+  );
+
+  // Barre fixe (stats) calée sous le header de page.
+  const fixedBar = (
+    <View
+      style={[styles.fixedBar, { top: topOffset }]}
+      onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+    >
+      {/* Stats Row */}
+      <View style={styles.statsRow}>
+        <View style={styles.statBox}>
+          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+            <Text style={styles.statVal}>{dateFilteredOrders.length}</Text>
+            <Text
+              style={{
+                fontSize: 25,
+                color: DS.accent,
+                marginLeft: 8,
+                fontWeight: "900",
+              }}
+            >
+              cmd
+            </Text>
+          </View>
+          <Text style={styles.statLbl}>Commandes effectue</Text>
+        </View>
+        <View style={styles.statBox}>
+          <View style={{ flexDirection: "row", alignItems: "baseline" }}>
+            <Text style={styles.statVal}>{totalAmount}</Text>
+            <Text
+              style={{
+                fontSize: 25,
+                color: DS.accent,
+                marginLeft: 8,
+                fontWeight: "900",
+              }}
+            >
+              fcfa
+            </Text>
+          </View>
+          <Text style={styles.statLbl}>Montant Total</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  // Barre de filtres en BAS (design « Mes livraisons ») : chips de statut +
+  // icône ouvrant le bottom sheet de filtres (dates / périodes).
+  const filterBar = (
+    <View style={[styles.bottomBar, { bottom: 0, paddingBottom: tabBarHeight }]}>
+      {/* Fond flouté : les cartes qui scrollent derrière restent devinables. */}
+      <BlurView
+        intensity={40}
+        tint="light"
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <View style={{ flex: 1 }}>
+        <MerchantStickyChipsRow
+          items={statusTabs.map((t) => ({
+            key: t.key,
+            label: t.label,
+            count: counts[t.key],
+          }))}
+          activeKey={selectedStatus}
+          // La date choisie dans le MerchantFilterSheet est conservée au
+          // changement d'onglet de statut (pas de retour forcé à aujourd'hui).
+          onSelect={(k) => setSelectedStatus(k as OrderStatus)}
+        />
+      </View>
+
+      <TouchableOpacity
+        style={styles.filterBtn}
+        onPress={() => setFilterOpen(true)}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="options-outline" size={20} color={DS.ink} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      {/* Flou Android (SDK 57) : la barre de filtres floute la liste
+          (`BlurTarget`). Les sheets restent hors de la zone. */}
+      <BlurScope>
+      <BlurTarget style={styles.container}>
+      {/* Conditional List Rendering */}
+      {selectedStatus === "finish" ? (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingTop: listTopPad + 8, paddingBottom: listPadBottom },
+          ]}
+          scrollIndicatorInsets={{ top: listTopPad }}
+          refreshControl={
+            <RefreshControl
+              refreshing={pullRefreshing}
+              onRefresh={handlePullRefresh}
+              progressViewOffset={listTopPad}
+            />
+          }
+        >
+          {/* ⚠️ Rafraîchissement en cours (retour dans l'app) : on montre le
+              squelette AVANT le test de liste vide. Sinon l'écran « Aucune
+              commande terminée » s'affichait pendant le chargement, ce qui est
+              faux — les commandes existent, elles arrivent.
+              `!pullRefreshing` : le geste a déjà sa roue native, le squelette
+              par-dessus masquerait la liste que l'utilisateur tire. */}
+          {loading && !pullRefreshing ? (
+            <>
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+            </>
+          ) : dateFilteredOrders.length === 0 ? (
+            /* Rien de terminé sur la date affichée : on le dit, puis les cartes
+               annoncent ce qui existe sur les autres jours (passé / futur). */
+            <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>
+              <Ionicons
+                name="checkmark-done-outline"
+                size={50}
+                color="#D3D1C7"
+              />
+              <Text style={styles.emptyText}>Aucune commande terminée</Text>
+            </View>
+          ) : (
+            deliveryData && (
+              <View>
+                {deliveryData.expressGroups.length > 0 && (
+                  <View style={{ marginBottom: 15 }}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => toggleGroup("express")}
+                      style={styles.groupHeader}
+                    >
+                      <View style={styles.groupHeaderLeft}>
+                        <Ionicons
+                          name={
+                            expandedGroupId === "express"
+                              ? "chevron-down"
+                              : "chevron-forward"
+                          }
+                          size={12}
+                          color="#888780"
+                        />
+                        <Text style={styles.groupTitle}>Express</Text>
+                        <GroupStatusCounts
+                          orders={deliveryData.expressGroups.flat()}
+                        />
+                      </View>
+
+                      {/* Masqué si aucune commande lançable (toutes déjà déléguées/lancées). */}
+                      {launchableOf(deliveryData.expressGroups.flat()).length >
+                        0 && (
+                        <TouchableOpacity
+                          style={[
+                            styles.btnLaunchGroup,
+                            launchedGroups["express"] &&
+                              styles.btnLaunchGroupLaunched,
+                          ]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            // Ouvre le sélecteur "qui livre" : uniquement les lançables.
+                            setDelegateGroup(
+                              launchableOf(deliveryData!.expressGroups.flat()),
+                            );
+                          }}
+                          disabled={launchingGroups["express"]}
+                        >
+                          <Text
+                            style={[
+                              styles.btnLaunchGroupText,
+                              launchedGroups["express"] &&
+                                styles.btnLaunchGroupTextLaunched,
+                            ]}
+                          >
+                            {launchingGroups["express"] ? "..." : "Lancer tout"}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </TouchableOpacity>
+
+                    {expandedGroupId === "express" &&
+                      renderGroupWithSubTabs(
+                        deliveryData.expressGroups,
+                        "express",
+                      )}
+                  </View>
+                )}
+
+                {deliveryData.surplaceGroups.length > 0 && (
+                  <View style={{ marginBottom: 15 }}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => toggleGroup("surplace")}
+                      style={styles.groupHeader}
+                    >
+                      <View style={styles.groupHeaderLeft}>
+                        <Ionicons
+                          name={
+                            expandedGroupId === "surplace"
+                              ? "chevron-down"
+                              : "chevron-forward"
+                          }
+                          size={12}
+                          color="#888780"
+                        />
+                        <Text style={styles.groupTitle}>Sur place</Text>
+                        <View style={styles.groupCountBadge}>
+                          <Text style={styles.groupCountText}>
+                            {deliveryData.surplaceGroups.length} commande
+                            {deliveryData.surplaceGroups.length > 1 ? "s" : ""}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    {expandedGroupId === "surplace" && (
+                      <View style={{ gap: 6 }}>
+                        {deliveryData.surplaceGroups.map((group) =>
+                          renderUserGroup(group, "surplace"),
+                        )}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {deliveryData.slots.map((slot, sIdx) => {
+                  const groupId = `slot_${sIdx}`;
+                  const isExpanded = expandedGroupId === groupId;
+                  const isLaunched = launchedGroups[groupId];
+
+                  return (
+                    <View key={groupId} style={{ marginBottom: 15 }}>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggleGroup(groupId)}
+                        style={styles.groupHeader}
+                      >
+                        <View style={styles.groupHeaderLeft}>
+                          <Ionicons
+                            name={
+                              isExpanded ? "chevron-down" : "chevron-forward"
+                            }
+                            size={12}
+                            color="#888780"
+                          />
+                          <Text style={styles.groupTitle}>{slot.title}</Text>
+                          <GroupStatusCounts orders={slot.userGroups.flat()} />
+                        </View>
+
+                        {/* Masqué si aucune commande lançable dans le créneau. */}
+                        {launchableOf(slot.userGroups.flat()).length > 0 && (
+                          <TouchableOpacity
+                            style={[
+                              styles.btnLaunchGroup,
+                              isLaunched && styles.btnLaunchGroupLaunched,
+                            ]}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              setDelegateGroup(
+                                launchableOf(slot.userGroups.flat()),
+                              );
+                            }}
+                            disabled={launchingGroups[groupId]}
+                          >
+                            <Text
+                              style={[
+                                styles.btnLaunchGroupText,
+                                isLaunched && styles.btnLaunchGroupTextLaunched,
+                              ]}
+                            >
+                              {launchingGroups[groupId] ? "..." : "Lancer tout"}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </TouchableOpacity>
+
+                      {isExpanded &&
+                        renderGroupWithSubTabs(slot.userGroups, groupId)}
+                    </View>
+                  );
+                })}
+              </View>
+            )
+          )}
+        </ScrollView>
+      ) : (
+        <ScrollView
+          ref={scrollRef}
+          style={styles.container}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingTop: MAIN_LIST_PAD_TOP, paddingBottom: listPadBottom },
+          ]}
+          scrollIndicatorInsets={{ top: listTopPad }}
+          onMomentumScrollEnd={onScrollSettled}
+          refreshControl={
+            <RefreshControl
+              refreshing={pullRefreshing}
+              onRefresh={handlePullRefresh}
+              progressViewOffset={listTopPad}
+            />
+          }
+        >
+          {/* Liste principale (aujourd'hui par défaut, ou date choisie dans le
+              bottom sheet de filtres — y compris une date passée). */}
+          {/* ⚠️ Même raison que la liste « terminées » : le squelette passe
+              AVANT le test de liste vide, sinon un « aucune commande » s'affiche
+              pendant le rafraîchissement alors qu'elles arrivent.
+              `!pullRefreshing` : le geste a déjà sa roue native. */}
+          {loading && !pullRefreshing ? (
+            <>
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+              <MerchantOrderSkeleton />
+            </>
+          ) : dateFilteredOrders.length === 0 ? (
+            /* Liste vide : le message centré dit ce qui manque sur la date
+               affichée, les cartes disent ce qui existe sur les autres jours. */
+            <View style={[styles.emptyState, { minHeight: emptyStateHeight }]}>
+              <Ionicons
+                name={
+                  selectedStatus === "pending"
+                    ? "time-outline"
+                    : "restaurant-outline"
+                }
+                size={50}
+                color={Theme.colors.gray[300]}
+              />
+              <Text style={styles.emptyText}>{emptyLabel}</Text>
+            </View>
+          ) : (
+            <View style={{ gap: 6 }}>
+              {displayRows.map(({ head, group }) => (
+                <MerchantOrderCard
+                  key={head.id}
+                  order={head}
+                  sheetOrders={group}
+                  groupPool={allShopOrders}
+                  onUpdateStatus={async (status) => {
+                    // Valider depuis la CARTE traite toute la ligne groupée.
+                    await Promise.all(
+                      group.map((o) => onUpdateStatus(o.id, status)),
+                    );
+                  }}
+                  // Valider depuis le SHEET ne traite que la commande affichée.
+                  onValidateOne={(orderId, status) =>
+                    onUpdateStatus(orderId, status)
+                  }
+                />
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      )}
+      </BlurTarget>
+
+      {/* Barre fixe (stats) en blur, par-dessus la liste. */}
+      {fixedBar}
+
+      {/* Rappel des commandes sur d'AUTRES dates, calé juste au-dessus de la
+          barre de filtres (masqué pendant le squelette : compteurs périmés). */}
+      {!(loading && !pullRefreshing) && hasOtherDates && (
+        <View
+          style={[styles.noticeDock, { bottom: tabBarHeight + FILTER_BAR_HEIGHT }]}
+          pointerEvents="box-none"
+        >
+          <OtherDatesNotice
+            pastCount={untreatedCounts.past}
+            futureCount={untreatedCounts.future}
+            onPress={() => setFilterOpen(true)}
+          />
+        </View>
+      )}
+
+      {/* Barre de filtres en bas (chips statut + icône sheet). */}
+      {filterBar}
+      </BlurScope>
+
+      <MerchantFilterSheet
+        visible={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        todayISO={todayISO}
+        futureDates={futureDateOptions}
+        pastDates={pastDateOptions}
+        selectedDate={selectedDate}
+        onSelectDate={onSelectDate}
+        periods={availablePeriods}
+        allPeriodsCount={allPeriodsCount}
+        todayOrdersCount={dateScopeCounts.today}
+        futureOrdersCount={dateScopeCounts.future}
+        pastOrdersCount={dateScopeCounts.past}
+        selectedPeriods={selectedPeriods}
+        onTogglePeriod={(k) =>
+          setSelectedPeriods((prev) =>
+            prev.includes(k) ? prev.filter((p) => p !== k) : [...prev, k],
+          )
+        }
+        onTogglePeriods={(keys, select) =>
+          setSelectedPeriods((prev) => {
+            const rest = prev.filter((p) => !keys.includes(p));
+            return select ? [...rest, ...keys] : rest;
+          })
+        }
+        onResetPeriods={() => setSelectedPeriods([])}
+        pastUntreated={selectedStatus !== "finish"}
+        statusTabs={statusTabs.map((t) => ({
+          key: t.key,
+          label: t.label,
+          count: counts[t.key],
+        }))}
+        selectedStatus={selectedStatus}
+        onSelectStatus={(k) => setSelectedStatus(k as OrderStatus)}
+      />
+
+      {/* Sélecteur "qui livre" pour "Lancer tout" (groupe entier). */}
+      <DelegateDriverSheet
+        visible={!!delegateGroup}
+        onClose={() => setDelegateGroup(null)}
+        onSelfDeliver={() => selfDeliverGroup(delegateGroup || [])}
+        onDelegate={(d: DriverInfo) =>
+          delegateGroupTo(delegateGroup || [], d.driverId)
+        }
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  // Barre fixe (stats + chips) calée sous le header de page, en blur.
+  fixedBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    backgroundColor: "white",
+    // Trait de séparation bas : délimite la barre fixe de la liste.
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  statsRow: {
+    flexDirection: "row",
+    backgroundColor: "white",
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    gap: 15,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: "flex-start",
+    backgroundColor: DS.gray100,
+    padding: 10,
+    borderRadius: 10,
+  },
+  statVal: {
+    fontSize: 31,
+    fontWeight: "900",
+    color: "black",
+  },
+  statLbl: {
+    fontSize: 11,
+    color: "rgba(0,0,0,0.44)",
+    fontWeight: "bold",
+    marginTop: 2,
+  },
+  // Barre de filtres en bas : chips de statut + bouton du bottom sheet.
+  // Rappel « autres dates » posé juste au-dessus de la barre de filtres.
+  noticeDock: { position: "absolute", left: 0, right: 0, paddingBottom: 8 },
+  bottomBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    // Voile clair par-dessus le blur : lisible sans masquer le scroll derrière.
+    backgroundColor: "rgba(255,255,255,0.55)",
+    overflow: "hidden",
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+    gap: 10,
+  },
+  filterBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: DS.bg,
+    borderWidth: 1,
+    borderColor: DS.line,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  listContent: {
+    paddingBottom: 100,
+  },
+  // Message de liste vide : centré verticalement dans l'espace disponible
+  // (hauteur imposée en ligne via `emptyStateHeight`).
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: Theme.colors.gray[500],
+    textAlign: "center",
+  },
+  // Rappel de fin de liste : commandes passées non traitées.
+  pastNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 14,
+    marginHorizontal: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: Theme.colors.primary + "10",
+  },
+  pastNoticeText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "700",
+    color: Theme.colors.primary,
+  },
+  groupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+    marginBottom: 4,
+  },
+  groupHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  groupTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#333",
+  },
+  groupCountBadge: {
+    backgroundColor: "#FFF",
+    borderWidth: 0.5,
+    borderColor: "#D3D1C7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  groupCountText: {
+    fontSize: 10,
+    color: "#5F5E5A",
+    fontWeight: "500",
+  },
+  btnLaunchGroup: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: DS.accentAlpha(0.1),
+    borderWidth: 1,
+    borderColor: DS.accent,
+  },
+  btnLaunchGroupText: {
+    fontSize: 9,
+    fontWeight: "900",
+    color: DS.accent,
+    textTransform: "uppercase",
+  },
+  btnLaunchGroupLaunched: {
+    backgroundColor: "#C0DD97",
+    borderColor: "#C0DD97",
+  },
+  btnLaunchGroupTextLaunched: {
+    color: "#27500A",
+  },
+  // Sous-tabs En attente / En cours (intérieur d'un groupe déroulé)
+  subTabRow: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginTop: 8,
+    backgroundColor: "#F5F4F0",
+    borderRadius: 10,
+    padding: 3,
+    gap: 3,
+  },
+  subTab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 5,
+  },
+  subTabActive: {
+    backgroundColor: "white",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  subTabLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#888780",
+  },
+  subTabLabelActive: {
+    color: "#1A1916",
+  },
+  subTabBadge: {
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#E5E4DF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  subTabBadgeActive: {
+    backgroundColor: Theme.colors.primary,
+  },
+  subTabBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#5F5E5A",
+  },
+  subTabBadgeTextActive: {
+    color: "white",
+  },
+  subTabEmpty: {
+    alignItems: "center",
+    paddingVertical: 24,
+    marginHorizontal: 16,
+  },
+  subTabEmptyText: {
+    fontSize: 12,
+    color: "#A8A7A2",
+    fontStyle: "italic",
+  },
+});

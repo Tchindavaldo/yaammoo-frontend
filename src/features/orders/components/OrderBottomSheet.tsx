@@ -21,6 +21,7 @@ import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { MontantTab } from "../../merchant/components/MerchantOrderMontantTab";
 import { DriverInfoTab } from "./DriverInfoTab";
 import { RateMenuTab } from "./RateMenuTab";
+import { DS } from "@/src/theme/ds";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const SHEET_HEIGHT = 480;
@@ -41,7 +42,7 @@ export type OrderItem = {
 
 const COLORS = [
   { bg: "#EAF3DE", text: "#4B7C16", badge: "#7CB342" },
-  { bg: "#FDEBD0", text: "#A04000", badge: "#E67E22" },
+  { bg: DS.accentCream, text: "#A04000", badge: "#E67E22" },
   { bg: "#D6EAF8", text: "#1B4F72", badge: "#3498DB" },
   { bg: "#E8DAEF", text: "#512E5F", badge: "#8E44AD" },
 ];
@@ -612,12 +613,12 @@ function LivraisonTab({
                     },
                   ]}
                 >
-                  <Ionicons name="flash-outline" size={28} color="#ec4913" />
+                  <Ionicons name="flash-outline" size={28} color={DS.accent} />
                   <Text
                     style={{
                       fontSize: 12,
                       fontWeight: "600",
-                      color: "#ec4913",
+                      color: DS.accent,
                     }}
                   >
                     Express
@@ -680,7 +681,7 @@ function LivraisonTab({
               <Ionicons
                 name={isPlaying ? "pause" : "play"}
                 size={16}
-                color="#ec4913"
+                color={DS.accent}
               />
             </View>
             <Waveform active={isPlaying} progress={playbackProgress} />
@@ -780,10 +781,10 @@ function CommandesTab({
         style={{
           flex: 1,
           maxHeight: ITEMS_CARD_MAX_H,
-          backgroundColor: "#F9FAFB",
+          backgroundColor: DS.gray50,
           borderRadius: 16,
           borderWidth: 1,
-          borderColor: "#F3F4F6",
+          borderColor: DS.gray100,
           overflow: "hidden",
           marginBottom: 12,
         }}
@@ -809,7 +810,7 @@ function CommandesTab({
                   paddingVertical: 11,
                   borderBottomWidth:
                     i < items.length - 1 || hasDelivery ? 1 : 0,
-                  borderBottomColor: "#F3F4F6",
+                  borderBottomColor: DS.gray100,
                 }}
               >
                 {/* Plat : visuel du menu. Extra / boisson : icône. */}
@@ -829,7 +830,7 @@ function CommandesTab({
                       borderRadius: 9,
                       backgroundColor:
                         o.type === "extra"
-                          ? "#FFF7ED"
+                          ? DS.accent50
                           : o.type === "drink"
                             ? "#EFF6FF"
                             : "#F0FDF4",
@@ -837,7 +838,7 @@ function CommandesTab({
                       justifyContent: "center",
                     }}
                   >
-                    <Ionicons name={icon} size={16} color="#ec4913" />
+                    <Ionicons name={icon} size={16} color={DS.accent} />
                   </View>
                 )}
 
@@ -922,7 +923,7 @@ function CommandesTab({
                   justifyContent: "center",
                 }}
               >
-                <Ionicons name="bicycle-outline" size={16} color="#ec4913" />
+                <Ionicons name="bicycle-outline" size={16} color={DS.accent} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text
@@ -970,13 +971,13 @@ function CommandesTab({
             alignItems: "center",
             padding: 14,
             borderTopWidth: 1,
-            borderTopColor: "#F3F4F6",
+            borderTopColor: DS.gray100,
           }}
         >
           <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
             {deliveryGrouped ? "Total" : "Total commande"}
           </Text>
-          <Text style={{ fontSize: 16, fontWeight: "900", color: "#ec4913" }}>
+          <Text style={{ fontSize: 16, fontWeight: "900", color: DS.accent }}>
             {total} {CURRENCY}
           </Text>
         </View>
@@ -1030,7 +1031,7 @@ function Waveform({
             style={[
               styles.wavebar,
               { height: h },
-              active && isPlayed && { backgroundColor: "#ec4913" },
+              active && isPlayed && { backgroundColor: DS.accent },
               active && !isPlayed && { backgroundColor: "rgba(236,19,49,0.2)" },
             ]}
           />
@@ -1120,7 +1121,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: DS.gray100,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1132,7 +1133,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: DS.gray100,
   },
   tab: {
     marginRight: 24,
@@ -1157,7 +1158,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   mapPlaceholder: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: DS.gray100,
     borderRadius: 20,
     marginBottom: 8,
     alignItems: "center",
@@ -1237,15 +1238,15 @@ const styles = StyleSheet.create({
   mapLoadingText: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#ec4913",
+    color: DS.accent,
     textTransform: "uppercase",
   },
   infoCard: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: DS.gray50,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: DS.gray100,
   },
   infoLabel: {
     fontSize: 10,
@@ -1269,11 +1270,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: DS.gray50,
     borderRadius: 16,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: DS.gray100,
   },
   playBtn: {
     width: 32,
@@ -1301,7 +1302,7 @@ const styles = StyleSheet.create({
   },
   cmdRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: DS.gray100,
   },
   cmdIcon: {
     width: 32,
@@ -1357,7 +1358,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: DS.gray100,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
@@ -1380,7 +1381,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    borderTopColor: DS.gray100,
   },
   cmdNavTabs: {
     flexDirection: "row",
@@ -1396,7 +1397,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: DS.gray50,
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },

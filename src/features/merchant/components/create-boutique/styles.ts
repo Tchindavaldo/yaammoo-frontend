@@ -1,5 +1,6 @@
 import { Theme } from "@/src/theme";
 import { Dimensions, StyleSheet } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 const { width } = Dimensions.get("window");
 
@@ -68,7 +69,7 @@ export const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderStyle: "dashed",
@@ -85,7 +86,7 @@ export const styles = StyleSheet.create({
     width: "100%",
     height: 140,
     borderRadius: 16,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderStyle: "dashed",
@@ -135,7 +136,7 @@ export const styles = StyleSheet.create({
     marginLeft: 2,
   },
   glassInput: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     paddingHorizontal: 15,
     height: 50,
     color: "#0f172a",
@@ -173,7 +174,7 @@ export const styles = StyleSheet.create({
     maxWidth: 160,
   },
   itemChipTextActive: {
-    color: "#ec4913",
+    color: DS.accent,
   },
   chipSeparator: {
     fontSize: 13,
@@ -183,7 +184,7 @@ export const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 13,
     fontWeight: "700",
-    color: "#ec4913",
+    color: DS.accent,
   },
   // Ligne d'édition (inputs + boutons supprimer/valider).
   editRow: {
@@ -201,17 +202,17 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
   },
   validateBtn: {
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
   },
   // Sous-bloc Lieux/Prix de l'heure active.
   zoneBlock: {
     marginTop: 6,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
+    borderTopColor: DS.slate100,
   },
   emptyHoursText: {
     color: "#94a3b8",

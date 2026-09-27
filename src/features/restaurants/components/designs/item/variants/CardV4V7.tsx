@@ -18,6 +18,7 @@ import {
 } from "../config";
 import { CardBottom, DarkBottomShade } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
+import { DS } from "@/src/theme/ds";
 
 const IS_ANDROID = Platform.OS === "android";
 
@@ -34,7 +35,7 @@ const V4_COLORS = [
   "#ebf5eb",
 ];
 const V4_ACCENTS = [
-  "#e8440a",
+  DS.accentDeep,
   "#6c5ce7",
   "#00b894",
   "#fd79a8",
@@ -60,7 +61,7 @@ export const CardV4: React.FC<CardVariantProps> = ({
   const accentColor = USE_VARIABLE_BACKGROUNDS
     ? V4_ACCENTS[index % V4_ACCENTS.length]
     : V4_ACCENTS[0];
-  const accent = "#e8440a";
+  const accent = DS.accentDeep;
 
   return (
     <TouchableOpacity
@@ -190,7 +191,7 @@ export const CardV7: React.FC<CardVariantProps> = ({
 
     {/* Zone basse commune (flag CARD_BOTTOM_STYLE, fond deja porte) */}
     <CardBottom
-      accent="#e8440a"
+      accent={DS.accentDeep}
       deliveryTime={deliveryTime}
       stock={stock}
       withBackground={false}
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   v4PriceNew: {
-    color: "#e8440a",
+    color: DS.accentDeep,
     fontSize: 16,
     fontWeight: "900",
     letterSpacing: 0,

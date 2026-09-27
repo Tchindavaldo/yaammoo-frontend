@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { DS } from "@/src/theme/ds";
 
 interface MapComponentProps {
   region: any;
@@ -51,7 +52,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ address, region, coords, de
 
 const styles = StyleSheet.create({
   mapPlaceholder: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: DS.gray100,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

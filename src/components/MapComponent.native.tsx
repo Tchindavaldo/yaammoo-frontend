@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
+import { DS } from "@/src/theme/ds";
 
 interface MapComponentProps {
   region: {
@@ -50,7 +51,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ region, coords, deliveryTyp
       rotateEnabled={false}
       pitchEnabled={false}
     >
-      <Marker coordinate={coords} pinColor="#ec4913" />
+      <Marker coordinate={coords} pinColor={DS.accent} />
     </MapView>
   );
 };
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: DS.gray100,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,

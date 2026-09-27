@@ -8,6 +8,7 @@ import MapComponent from '@/src/components/MapComponent';
 import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import { DeliveryUser } from './MerchantOrderBottomSheet';
+import { DS } from "@/src/theme/ds";
 
 // ─── InfoCard ──────────────────────────────────────────────────────────────────
 export function InfoCard({
@@ -44,7 +45,7 @@ function Waveform({ active, progress = 0 }: { active?: boolean; progress?: numbe
             style={[
               styles.wavebar,
               { height: h },
-              (active && isPlayed) && { backgroundColor: '#ec4913' },
+              (active && isPlayed) && { backgroundColor: DS.accent },
               (active && !isPlayed) && { backgroundColor: 'rgba(236,19,49,0.2)' },
             ]}
           />
@@ -162,7 +163,7 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
           <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>Message vocal</Text>
           <TouchableOpacity style={styles.voiceBar} activeOpacity={0.7} onPress={playSound}>
             <View style={styles.playBtn}>
-              <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color="#ec4913" />
+              <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={DS.accent} />
             </View>
             <Waveform active={isPlaying} progress={playbackProgress} />
             <Text style={styles.waveDur}>
@@ -182,8 +183,8 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
 
 const styles = StyleSheet.create({
   infoCard: {
-    backgroundColor: '#F9FAFB', borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: '#F3F4F6',
+    backgroundColor: DS.gray50, borderRadius: 16, padding: 14,
+    borderWidth: 1, borderColor: DS.gray100,
   },
   infoLabel: {
     fontSize: 10, color: '#9CA3AF', textTransform: 'uppercase',
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
   infoVal: { fontSize: 14, fontWeight: '600', color: '#111827' },
   infoValSm: { fontSize: 13, color: '#374151', lineHeight: 20 },
   mapPlaceholder: {
-    backgroundColor: '#F3F4F6', borderRadius: 20, marginBottom: 8,
+    backgroundColor: DS.gray100, borderRadius: 20, marginBottom: 8,
     alignItems: 'center', justifyContent: 'center',
     overflow: 'hidden', position: 'relative',
     borderWidth: 1, borderColor: '#E5E7EB',
@@ -208,11 +209,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1, shadowRadius: 4, elevation: 2,
   },
-  mapLoadingText: { fontSize: 10, fontWeight: '700', color: '#ec4913', textTransform: 'uppercase' },
+  mapLoadingText: { fontSize: 10, fontWeight: '700', color: DS.accent, textTransform: 'uppercase' },
   voiceBar: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#F9FAFB', borderRadius: 16, padding: 12,
-    borderWidth: 1, borderColor: '#F3F4F6',
+    backgroundColor: DS.gray50, borderRadius: 16, padding: 12,
+    borderWidth: 1, borderColor: DS.gray100,
   },
   playBtn: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: '#111827',

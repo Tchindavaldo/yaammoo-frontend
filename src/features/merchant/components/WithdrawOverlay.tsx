@@ -13,6 +13,7 @@ import {
 import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import { WithdrawState } from "../hooks/useWithdraw";
+import { DS } from "@/src/theme/ds";
 
 interface WithdrawOverlayProps {
   phone: string;
@@ -361,8 +362,8 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   chipActive: {
-    backgroundColor: "#ec4913",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accent,
+    borderColor: DS.accent,
   },
   chipText: {
     color: "rgba(255,255,255,0.7)",
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
   payerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     height: 40,
     borderRadius: 20,
     justifyContent: "center",

@@ -1,4 +1,3 @@
-import { Theme } from "@/src/theme";
 import { Image } from "expo-image";
 import React from "react";
 import {
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Filtre fastfood du panier — duplication autonome du filtre haut de la page
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     maxWidth: 140,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.gray100,
     padding: 6,
     borderRadius: 18,
     marginRight: 8,
@@ -290,13 +290,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 0,
   },
-  // Non sélectionnée : fond gris neutre.
+  // Soft : non sélectionnée = blanc + bordure grise.
   ffCardFillIdle: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: DS.bg,
+    borderWidth: 1,
+    borderColor: DS.line,
   },
-  // Sélectionnée : le fond se colore (aucune bordure).
+  // Sélectionnée : bordure gris foncé (adoucie) + fond gris léger.
   ffCardFillActive: {
-    backgroundColor: Theme.colors.primary + "22",
+    backgroundColor: DS.gray100,
+    borderWidth: 1,
+    borderColor: DS.faint,
   },
   ffCardCompact: {
     maxWidth: 160,
@@ -304,19 +308,18 @@ const styles = StyleSheet.create({
   ffCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.bg,
     padding: 6,
     borderRadius: 18,
-    borderWidth: 1.5,
-    borderColor: "transparent",
+    borderWidth: 1,
+    borderColor: DS.line,
   },
   ffCardActive: {
-    borderColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.gray100,
+    borderColor: DS.faint,
   },
-  ffAvatarActive: {
-    borderWidth: 1.5,
-    borderColor: "rgba(236,73,19,1.00)",
-  },
+  // Aucun anneau autour de l'avatar sélectionné (mode 4+ boutiques).
+  ffAvatarActive: {},
   ffInfo: {
     flexShrink: 1,
     minWidth: 0,
@@ -331,7 +334,8 @@ const styles = StyleSheet.create({
     width: 42,
     height: 46,
     borderRadius: 21,
-    backgroundColor: "#fee2e2",
+    // Avatar sans couleur ni bordure : gris neutre, seules les initiales sont orange.
+    backgroundColor: DS.gray100,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
   ffAvatarInitials: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.ink,
   },
   // Pastille de comptage, en badge d'angle sur la mini-card.
   ffPill: {
@@ -356,14 +360,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.ink,
     borderWidth: 1.5,
-    borderColor: "#fff",
+    borderColor: DS.bg,
   },
   ffPillText: {
     fontSize: 9,
     fontWeight: "800",
-    color: "#fff",
+    color: DS.bg,
   },
   ffName: {
     fontSize: 13,

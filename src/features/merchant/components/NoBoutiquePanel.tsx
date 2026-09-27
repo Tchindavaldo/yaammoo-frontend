@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "@/src/theme";
 import { CreateBoutiquePanel } from "./CreateBoutiquePanel";
+import { DS } from "@/src/theme/ds";
 
 // Hauteur approximative de la tab bar (navbar du bas) à réserver sous le bouton.
 const TAB_BAR_HEIGHT = 60;
@@ -33,7 +34,7 @@ export const NoBoutiquePanel = () => {
         <Ionicons
           name="fast-food"
           size={250}
-          color="rgba(236,73,19,1.00)"
+          color={DS.accent}
           style={{ opacity: 0.1 }}
         />
       </View>

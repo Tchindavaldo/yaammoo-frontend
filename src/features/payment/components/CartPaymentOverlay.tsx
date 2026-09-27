@@ -15,6 +15,7 @@ import {
 import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import { CartPaymentState } from "../hooks/useCartPayment";
+import { DS } from "@/src/theme/ds";
 
 interface CartPaymentOverlayProps {
   phone: string;
@@ -182,8 +183,8 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
                 autoFocus={autoFocus}
                 /* Curseur explicite : la teinte systeme (bleu iOS) se voyait a
                    peine sur le fond sombre de la capsule. */
-                selectionColor="#ec4913"
-                cursorColor="#ec4913"
+                selectionColor={DS.accent}
+                cursorColor={DS.accent}
               />
             </View>
             <TouchableOpacity
@@ -339,8 +340,8 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   chipActive: {
-    backgroundColor: "#ec4913",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accent,
+    borderColor: DS.accent,
   },
   chipText: {
     color: "rgba(255,255,255,0.7)",
@@ -373,7 +374,7 @@ const styles = StyleSheet.create({
   payerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     height: 40,
     borderRadius: 20,
     justifyContent: "center",

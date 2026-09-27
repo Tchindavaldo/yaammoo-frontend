@@ -12,7 +12,9 @@ yaammoo/src/features/orders/
 ├── context/
 │   └── OrderContext.tsx       # Provider + état global des commandes client
 ├── hooks/
-│   └── useOrders.ts           # Re-export de useOrdersContext (simplicité d'import)
+│   ├── useOrders.ts           # Re-export de useOrdersContext (simplicité d'import)
+│   ├── useCartFastFoodInfos.ts # Nom + image des boutiques du panier absentes du home (GET /fastFood/:id)
+│   └── useClientFilterOptions.ts # Options + compteurs du ClientFilterSheet (dates, périodes, chips)
 ├── services/
 │   ├── ratingService.ts       # API notation (menu + livreur) : rate, stats, avis
 │   └── ratingStatsCache.ts    # Cache mémoire des stats notation (anti-refetch/loader)
@@ -29,8 +31,8 @@ yaammoo/src/features/orders/
     ├── OrderCard.tsx          # Carte commande détaillée (panier pendingToBuy)
     ├── OrderHeader.tsx        # Header de la page orders
     ├── OrderTrackingHeader.tsx # Liste horizontale des fastfoods (avatar + nb cmd + nom) + chips statut
-    ├── CartStatusPanel.tsx    # Panneau suivi virtualisé (FlatList, groupes, jours passés, détail)
-    ├── UserOrdersModal.tsx    # Modal plein écran « État des commandes » (Settings → Mes activités)
+    ├── CartStatusPanel.tsx    # Panneau suivi virtualisé (FlatList, groupes, détail) — onglet « Commandes »
+    ├── CartStatusPanel.parts.tsx # GroupSubTabs, buildFlatItems, helpers de dates/périodes/groupage
     ├── DriverInfoTab.tsx      # Tab « Livreur » (infos + stats + notation livreur)
     ├── RateMenuTab.tsx        # Tab « Noter » (image plat + stats + notation plat)
     └── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande
@@ -38,9 +40,18 @@ yaammoo/src/features/orders/
 
 > **Suivi des commandes déplacé** : le panier (`cart.tsx`) n'affiche plus que le
 > panier (`pendingToBuy`). Le suivi (pending/processing/finished/delivered) vit
-> dans `CartStatusPanel`, ouvert via `UserOrdersModal` depuis Settings →
-> section « Mes activités » (visible user ET marchand). Deep-links commandes →
-> `/(tabs)/settings?section=pending|finished`.
+> dans `CartStatusPanel`, rendu par l'onglet **« Commandes »** de la navbar
+> (`app/(tabs)/orders.tsx`, pour tout utilisateur ; il remplace l'ancien onglet
+> Boutique). Deep-links commandes → `/(tabs)/orders?section=pending|active|finished`
+> (`?section=` choisit le statut ouvert). Les anciennes routes
+> `settings|cart?section=<statut>` envoyées par le backend sont réécrites vers
+> cet onglet par `getNotificationRoute`.
+>
+> Style soft aligné sur le marchand et le panier : bouton filtre blanc à bordure
+> grise, chips de statut (`ClientDateChipsRow`) à bordure grise / sélection
+> orange léger, `ClientFilterSheet` adouci, `OrderTrackingHeader` repris du
+> filtre du panier (cartes blanches, sélection grise, avatar gris, initiales et
+> pastille noires).
 
 ---
 
@@ -154,7 +165,11 @@ séparément, aucune modification de l'un n'impacte l'autre.
 
 | Champ de `CartFastFood` | Source |
 |---|---|
-| `id` / `name` / `image` | `useFastFoods()` croisé avec `order.fastFoodId` |
+| `id` / `name` / `image` | `useFastFoods()` croisé avec `order.fastFoodId` ; boutique absente du home (pagination) → `useCartFastFoodInfos` (`GET /fastFood/:id`, cache module, 1 requête par boutique et par session) |
+
+Style soft : cartes blanches à bordure grise, sélection = fond orange très
+léger ; avatar sur fond gris (seules les initiales sont orange) ; pastille de
+comptage noire.
 | `orderCount` | nombre de commandes `pendingToBuy` de la boutique |
 | `total` | `computeCartTotal()` des commandes de la boutique (livraison mutualisée) |
 

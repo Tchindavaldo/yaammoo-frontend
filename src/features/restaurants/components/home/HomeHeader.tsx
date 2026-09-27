@@ -44,7 +44,7 @@ export const HomeHeader: React.FC<Props> = ({
       onNotifPress={() => router.push("/(tabs)/notifications")}
       onProfilePress={() => router.push("/(tabs)/settings")}
       onCartPress={() => router.push("/(tabs)/cart")}
-      onOrdersPress={() => router.push("/(tabs)/settings?section=pending")}
+      onOrdersPress={() => router.push("/(tabs)/orders?section=pending")}
       searchVisible={searchOpen}
       onSearchToggle={onSearchToggle}
       searchQuery={searchQuery}

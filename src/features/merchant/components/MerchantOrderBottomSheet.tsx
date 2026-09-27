@@ -4,7 +4,8 @@ import {
   Animated, Dimensions, Easing, PanResponder, Pressable, Modal,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from '@/src/hooks/usePageBottomInset';
 import { Ionicons } from '@expo/vector-icons';
 import { Commande } from '@/src/types';
 import { Toast } from '@/src/components/Toast';
@@ -13,6 +14,7 @@ import { CommandesTab } from './MerchantOrderCommandesTab';
 import { MontantTab } from './MerchantOrderMontantTab';
 import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
+import { DS } from "@/src/theme/ds";
 
 const SHEET_HEIGHT = 520;
 // Hauteur de la barre de chips « Cmd » (chip 24 + paddings 8/8 + trait) : le
@@ -79,7 +81,7 @@ type Props = {
 // ─── Couleurs avatar ──────────────────────────────────────────────────────────
 const COLORS = [
   { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' },
-  { bg: '#FDEBD0', text: '#A04000', badge: '#E67E22' },
+  { bg: DS.accentCream, text: '#A04000', badge: '#E67E22' },
   { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' },
   { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' },
 ];
@@ -679,7 +681,7 @@ const styles = StyleSheet.create({
   cmdChip: {
     minWidth: 28, height: 24, paddingHorizontal: 8, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB',
+    backgroundColor: DS.gray100, borderWidth: 1, borderColor: '#E5E7EB',
   },
   cmdChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
   // Barre des « Cmd » de la zone, juste sous les onglets.
@@ -688,7 +690,7 @@ const styles = StyleSheet.create({
   zoneCmdBar: {
     flexGrow: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: DS.gray100,
     marginBottom: -10,
   },
   zoneCmdScroll: {
@@ -702,7 +704,7 @@ const styles = StyleSheet.create({
   },
   cmdMoreText: { fontSize: 10, fontWeight: '800', color: '#4B5563' },
   // Top tabs
-  tabBar: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, borderColor: '#F3F4F6' },
+  tabBar: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, borderColor: DS.gray100 },
   tab: { marginRight: 24, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: '#111827' },
   tabText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },

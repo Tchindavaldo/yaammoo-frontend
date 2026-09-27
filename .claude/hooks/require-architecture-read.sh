@@ -60,6 +60,20 @@ if [ "$tool" = "Read" ]; then
   path=$(payload_get "$payload" '.tool_input.file_path') || payload_die
   case "$path" in
     */architecture/*.md)
+      # Lecture PARTIELLE (offset/limit) : le doc n'est pas lu, il est ouvert.
+      # On refuse, sinon quelques lignes suffisent a lever le blocage des
+      # recherches sans avoir la vue d'ensemble (constate le 2026-09-27).
+      offset=$(payload_get "$payload" '.tool_input.offset') || payload_die
+      limit=$(payload_get "$payload" '.tool_input.limit') || payload_die
+      if [ -n "$offset" ] && [ "$offset" != "null" ] || [ -n "$limit" ] && [ "$limit" != "null" ]; then
+        cat >&2 <<EOF
+BLOQUE (R3) — lecture partielle de ${path##*/} (offset/limit).
+
+Un architecture/*.md se lit EN ENTIER : c'est ce qui donne la vue globale et
+evite les Read/grep inutiles ensuite. Relance Read sans offset ni limit.
+EOF
+        exit 2
+      fi
       base=$(basename "$path" .md)
       : > "$marker_dir/$base"
       ;;

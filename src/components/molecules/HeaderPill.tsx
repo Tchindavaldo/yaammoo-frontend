@@ -1,4 +1,5 @@
 import { Theme } from "@/src/theme";
+import { DS, HEADER_GRADIENT } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -27,7 +28,8 @@ export const HeaderPill: React.FC<HeaderPillProps> = ({
   loading = false,
 }) => {
   const Wrapper: any = onPress && !loading ? TouchableOpacity : View;
-  const tint = filled ? "#fff" : Theme.colors.primary;
+  // Header blanc : pilule neutre (plus d'orange), sauf variante pleine.
+  const tint = filled ? "#fff" : HEADER_GRADIENT ? Theme.colors.primary : DS.ink;
   return (
     <Wrapper
       style={[styles.pill, filled && styles.pillFilled, loading && { opacity: 0.7 }]}

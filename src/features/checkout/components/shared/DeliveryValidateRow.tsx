@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { DeliveryOffer } from "@/src/types";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Ligne unique en bas des overlays de sélection de livraison (Période / Express).
@@ -23,7 +24,7 @@ import { DeliveryOffer } from "@/src/types";
  *     le bonusCode). À droite : bouton code (ouvre/ferme l'input) + VALIDER.
  */
 
-const ACCENT = "#ec4913";
+const ACCENT = DS.accent;
 
 interface DeliveryValidateRowProps {
   hasSelection: boolean;
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 10,
     borderRadius: 14,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderWidth: 1,
     borderColor: "#eef2f6",
   },
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 10,
-    backgroundColor: "rgba(236, 73, 19, 0.10)",
+    backgroundColor: DS.accentAlpha(0.10),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     paddingHorizontal: 14,
     fontSize: 14,
     color: "#0f172a",
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: ACCENT,
-    backgroundColor: "rgba(236, 73, 19, 0.06)",
+    backgroundColor: DS.accentAlpha(0.06),
     alignItems: "center",
     justifyContent: "center",
   },

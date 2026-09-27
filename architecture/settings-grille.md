@@ -26,6 +26,11 @@ une **grille de tuiles par section**, séparées visuellement.
 
 ## Sous-pages
 
+> Section **Boutique** : Commandes (`shop/orders`, copie de `(tabs)/boutique`), Gérer ma boutique, Gestion menu, Messages,
+> Notifications et Portefeuille boutique ne sont plus des sous-pages montées
+> ici mais des **routes entières** `app/shop/*` (hors `(tabs)`, sans navbar),
+> ouvertes par `router.push("/shop/…")`. Personnel reste un `<Modal>` plein écran.
+
 `useSettingsSubScreens` porte un état unique `Record<SettingsSubScreen, boolean>`
 (Boutique, menu, portefeuilles, commandes, bonus, support, livraison,
 suppression, déconnexion) :

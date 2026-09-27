@@ -21,6 +21,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
+import { DS } from "@/src/theme/ds";
 
 const { width, height } = Dimensions.get("window");
 
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
     top: 0,
     width: "100%",
     height: "35%",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
   },
   cardBack2: {
     position: "absolute",
@@ -433,11 +434,11 @@ const styles = StyleSheet.create({
     height: 21,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: "rgba(236,73,19,1.00)",
+    borderColor: DS.accent,
     alignItems: "center",
     justifyContent: "center",
   },
-  checkboxChecked: { backgroundColor: "rgba(236,73,19,1.00)" },
+  checkboxChecked: { backgroundColor: DS.accent },
   merchantLabel: { color: "white", fontSize: 18, fontWeight: "bold" },
   merchantDesc: { color: "white", fontSize: 13 },
   // Nav Buttons (RAREMENT ÉLOIGNÉS)
@@ -451,7 +452,7 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 10,
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.accent,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   ionChip: {
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.accent,
     borderRadius: 26,
     paddingHorizontal: 15,
     paddingVertical: 8,

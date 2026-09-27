@@ -15,6 +15,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 import { verifyBonusCode } from "../services/verifyBonusCode";
+import { DS } from "@/src/theme/ds";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -410,7 +411,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
                     <Text
                       style={[
                         styles.periodHour,
-                        isSelected && { color: "#ec4913" },
+                        isSelected && { color: DS.accent },
                       ]}
                     >
                       {item.hour}
@@ -429,7 +430,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
                       <Text
                         style={[
                           styles.periodPrix,
-                          isSelected && { color: "#ec4913" },
+                          isSelected && { color: DS.accent },
                         ]}
                       >
                         {item.prix} F
@@ -501,7 +502,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   header: {
     flexDirection: "row",
@@ -522,24 +523,24 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   dateChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
   dateChipActive: {
-    backgroundColor: "#ec4913",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accent,
+    borderColor: DS.accent,
   },
   dateChipText: {
     fontSize: 12,
@@ -566,7 +567,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     borderWidth: 0,
     borderBottomWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   periodRowActive: {
     backgroundColor: "transparent",
@@ -586,13 +587,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxActive: {
-    backgroundColor: "#ec4913",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accent,
+    borderColor: DS.accent,
   },
   periodDate: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#ec4913",
+    color: DS.accent,
     marginLeft: 10,
     marginRight: 6,
   },
@@ -623,6 +624,6 @@ const styles = StyleSheet.create({
   freePrix: {
     fontSize: 13,
     fontWeight: "bold",
-    color: "#ec4913",
+    color: DS.accent,
   },
 });

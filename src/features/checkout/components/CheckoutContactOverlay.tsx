@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
 import { useSheetInsets } from '../hooks/useSheetInsets';
+import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: DS.slate100,
   },
   header: {
     flexDirection: 'row',
@@ -244,12 +245,12 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: '#f8fafc',
+    backgroundColor: DS.slate50,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: DS.slate100,
   },
   inputContainer: {
     height: 240,
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flex: 1,
     height: 60,
-    backgroundColor: '#f8fafc',
+    backgroundColor: DS.slate50,
     borderRadius: 16,
     paddingHorizontal: 20,
     justifyContent: 'center',
@@ -276,11 +277,11 @@ const styles = StyleSheet.create({
   checkBtn: {
     width: 60,
     height: 60,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ec4913',
+    shadowColor: DS.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

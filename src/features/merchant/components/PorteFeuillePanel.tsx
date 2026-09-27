@@ -395,7 +395,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: Theme.spacing.sm,
-    paddingBottom: 80,
+    // ShopPageFrame reserve deja la safe-area basse.
+    paddingBottom: Theme.spacing.sm,
   },
   emptyState: {
     alignItems: "center",

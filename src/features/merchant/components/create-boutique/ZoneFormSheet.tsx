@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { hourToDate, type Zone } from "./parseBoutique";
+import { DS } from "@/src/theme/ds";
 
 interface ZoneFormSheetProps {
   visible: boolean;
@@ -120,7 +121,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                   width: 32,
                   height: 32,
                   borderRadius: 16,
-                  backgroundColor: "#f1f5f9",
+                  backgroundColor: DS.slate100,
                   alignItems: "center",
                   justifyContent: "center",
                 }}
@@ -265,7 +266,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                     paddingVertical: 14,
                   }}
                 >
-                  <Text style={{ color: "#ec4913", fontWeight: "bold" }}>
+                  <Text style={{ color: DS.accent, fontWeight: "bold" }}>
                     Sélectionner
                   </Text>
                 </TouchableOpacity>
@@ -309,7 +310,7 @@ const ModeCheckbox: React.FC<{
       flexDirection: "row",
       alignItems: "center",
       gap: 8,
-      backgroundColor: checked ? "#ecfdf5" : "#f8fafc",
+      backgroundColor: checked ? "#ecfdf5" : DS.slate50,
       borderRadius: 12,
       paddingVertical: 10,
       paddingHorizontal: 12,

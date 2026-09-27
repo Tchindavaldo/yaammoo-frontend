@@ -1,4 +1,5 @@
 import { Platform, StyleSheet } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Styles PARTAGES entre plusieurs variantes : fallbacks du flou, bloc d'infos
@@ -61,7 +62,7 @@ export const sharedStyles = StyleSheet.create({
   },
   v4ProgressFill: {
     height: "100%",
-    backgroundColor: "#e8440a",
+    backgroundColor: DS.accentDeep,
     borderRadius: 2,
   },
   // Copie dediee de `v5DeliveryStrip` pour LE SEUL design a barre de stock

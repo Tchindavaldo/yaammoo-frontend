@@ -1,6 +1,11 @@
+import { DS } from "./ds";
+
+export { DS };
+
 export const Theme = {
     colors: {
-        primary: '#ec4913',
+        // Alias du design system (src/theme/ds.ts).
+        primary: DS.accent,
         secondary: '#5856D6',
         success: '#34C759',
         danger: '#ef4444',

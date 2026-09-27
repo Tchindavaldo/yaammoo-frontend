@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../../theme";
+import { DS } from "@/src/theme/ds";
 
 interface RestaurantHeaderProps {
   userName?: string;
@@ -152,7 +153,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
               <Ionicons
                 name={cat.icon}
                 size={14}
-                color={isSelected ? "rgba(236,73,19,1.00)" : "#6b7280"}
+                color={isSelected ? DS.accent : "#6b7280"}
               />
               <Text
                 style={[styles.catLabel, isSelected && styles.catLabelActive]}
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
   chipLocalisation: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(236,73,19,1.00)",
+    backgroundColor: DS.accent,
     paddingHorizontal: 12,
     borderRadius: 18,
     height: 33, // Pour forcer la cohérence de taille avec l'avatar
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
     width: 33,
     height: 33,
     borderRadius: 16.5,
-    backgroundColor: "rgba(236,73,19,0.12)",
+    backgroundColor: DS.accentAlpha(0.12),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
   catChipActive: {
     backgroundColor: "white",
     borderBottomWidth: 2,
-    borderBottomColor: "rgba(236,73,19,1.00)",
+    borderBottomColor: DS.accent,
     borderRadius: 0,
   },
   catLabel: {
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
     color: "#6b7280",
   },
   catLabelActive: {
-    color: "rgba(236,73,19,1.00)",
+    color: DS.accent,
   },
   toolbar2: {
     backgroundColor: "white",

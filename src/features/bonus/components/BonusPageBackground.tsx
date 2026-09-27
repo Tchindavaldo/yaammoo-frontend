@@ -6,6 +6,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Image as RNImage, StyleSheet, View } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Fond de la page bonus, en pleine page derrière tout le contenu :
@@ -68,7 +69,7 @@ const VEIL = "rgba(255, 255, 255, 0.95)"; // valeur final valider
  * ~0.20 le texte foncé des cartes commence à perdre en lisibilité.
  */
 const GRADIENT_COLORS = [
-  "rgba(236,73,19,0.16)", // primary — chaud, en haut à gauche
+  DS.accentAlpha(0.16), // primary — chaud, en haut à gauche
   "rgba(255,255,255,0)", // transparent au centre : garde la zone de lecture neutre
   "rgba(88,86,214,0.16)", // secondary — froid, en bas à droite
 ] as const;

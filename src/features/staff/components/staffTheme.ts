@@ -1,29 +1,27 @@
-import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 
 /**
- * Palette de l'écran Personnel. Copie de `broadcastTheme` (R16 : l'écran
- * Notifications garde la sienne), complétée des teintes propres au personnel.
+ * Palette de l'écran Personnel, adossée au design system global (`DS`, dont
+ * elle est la référence visuelle).
  */
 export const ST = {
-  ink: "#141416",
-  text2: "#3A3A3F",
-  muted: "#6C6C70",
-  faint: "#8E8E93",
-  surface: "#F5F5F7",
-  line: "#ECECF0",
-  track: "#E4E4E8",
-  idle: "#D6D6DB",
-  accent: Theme.colors.primary,
-  /** Accent assombri : texte orange lisible sur fond blanc. */
-  accentInk: "#cb3f10",
-  accentText: "#B23A0E",
-  accentTint: "rgba(236,73,19,0.1)",
-  accentWash: "rgba(236,73,19,0.07)",
-  /** Accent éclairci : lisible sur la carte sombre. */
-  accentOnInk: "#FF9A70",
-  success: "#1F9D55",
-  danger: "#B42318",
-  backdrop: "rgba(20,20,22,0.45)",
+  ink: DS.ink,
+  text2: DS.text2,
+  muted: DS.muted,
+  faint: DS.faint,
+  surface: DS.surface,
+  line: DS.line,
+  track: DS.track,
+  idle: DS.idle,
+  accent: DS.accent,
+  accentInk: DS.accentInk,
+  accentText: DS.accentText,
+  accentTint: DS.accentTint,
+  accentWash: DS.accentWash,
+  accentOnInk: DS.accentOnInk,
+  success: DS.success,
+  danger: DS.dangerInk,
+  backdrop: DS.backdrop,
 };
 
 /** Étiquettes en capitales (sections, légendes). */

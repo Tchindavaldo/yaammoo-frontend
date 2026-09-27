@@ -1,4 +1,5 @@
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 
 /** Palette de l'écran Notifications boutique (maquette « Bento + calendrier »). */
 export const BC = {
@@ -12,7 +13,7 @@ export const BC = {
   accent: Theme.colors.primary,
   /** Accent assombri : texte orange lisible sur fond blanc. */
   accentInk: "#cb3f10",
-  accentTint: "rgba(236,73,19,0.1)",
+  accentTint: DS.accentAlpha(0.1),
 };
 
 /** Étiquettes en capitales (dates, légendes). */

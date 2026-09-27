@@ -5,6 +5,7 @@ import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
 import * as Location from 'expo-location';
 import { useSheetInsets } from '../hooks/useSheetInsets';
+import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -218,7 +219,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
                   fallbackStyle={styles.blurFallbackLight}
                   style={styles.locatingOverlay}
                 >
-                    <Loader size={40} color="#ec4913" />
+                    <Loader size={40} color={DS.accent} />
                     <Text style={styles.locatingText}>Récupération de votre position actuelle...</Text>
                   </BlurView>
                 )}
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: DS.slate100,
   },
   header: {
     flexDirection: 'row',
@@ -324,12 +325,12 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: '#f8fafc',
+    backgroundColor: DS.slate50,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: DS.slate100,
   },
   inputContainer: {
     position: 'relative',
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
   addressBox: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#f8fafc',
+    backgroundColor: DS.slate50,
     borderRadius: 20,
     padding: 20,
   },
@@ -372,7 +373,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: DS.slate100,
   },
   gpsBtnText: {
     fontSize: 12,
@@ -385,11 +386,11 @@ const styles = StyleSheet.create({
     right: 16,
     width: 40,
     height: 40,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ec4913',
+    shadowColor: DS.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -407,7 +408,7 @@ const styles = StyleSheet.create({
   locatingText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ec4913',
+    color: DS.accent,
     textAlign: 'center',
     paddingHorizontal: 20,
   },

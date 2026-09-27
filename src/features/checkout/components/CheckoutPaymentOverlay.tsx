@@ -14,6 +14,7 @@ import {
 import { useSheetInsets } from "../hooks/useSheetInsets";
 import { Loader } from "../../../components/Loader";
 import { AnimatedBorderGlow } from "./AnimatedBorderGlow";
+import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const SHEET_HEIGHT = 384;
@@ -454,7 +455,7 @@ const styles = StyleSheet.create({
   payerBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     // paddingHorizontal: 20,
     height: 40,
     borderRadius: 145,
@@ -496,8 +497,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.2)",
   },
   networkChipActive: {
-    backgroundColor: "#ec4913",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accent,
+    borderColor: DS.accent,
   },
   networkChipText: {
     color: "rgba(255,255,255,0.6)",
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   nextBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     height: 40,
     borderRadius: 145,
     justifyContent: "center",

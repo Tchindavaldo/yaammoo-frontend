@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { DS } from "@/src/theme/ds";
 
 export const styles = StyleSheet.create({
     overlay: {
@@ -26,7 +27,7 @@ export const styles = StyleSheet.create({
     },
     sheetLight: {
         backgroundColor: 'white',
-        borderColor: 'rgba(236, 73, 19, 0.1)',
+        borderColor: DS.accentAlpha(0.1),
     },
     tabsWrapper: {
         paddingVertical: 8,
@@ -47,15 +48,15 @@ export const styles = StyleSheet.create({
         gap: 6,
     },
     tabChipActive: {
-        backgroundColor: '#ec4913',
-        shadowColor: '#ec4913',
+        backgroundColor: DS.accent,
+        shadowColor: DS.accent,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 4,
     },
     tabChipInactiveLight: {
-        backgroundColor: '#f1f5f9',
+        backgroundColor: DS.slate100,
     },
     tabLabel: {
         fontSize: 12,
@@ -114,7 +115,7 @@ export const styles = StyleSheet.create({
         borderRadius: 2,
     },
     dotActive: {
-        backgroundColor: '#ec4913',
+        backgroundColor: DS.accent,
         width: 10,
     },
     dotInactive: {
@@ -144,7 +145,7 @@ export const styles = StyleSheet.create({
         borderTopWidth: 1,
         marginVertical: 4,
     },
-    borderLight: { borderColor: '#f1f5f9' },
+    borderLight: { borderColor: DS.slate100 },
     sizeChip: {
         flex: 1,
         height: 54,
@@ -155,8 +156,8 @@ export const styles = StyleSheet.create({
         borderWidth: 1,
     },
     sizeChipActive: {
-        backgroundColor: 'rgba(236, 73, 19, 0.05)',
-        borderColor: '#ec4913',
+        backgroundColor: DS.accentAlpha(0.05),
+        borderColor: DS.accent,
         borderWidth: 2,
     },
     sizeChipInactiveLight: {
@@ -168,7 +169,7 @@ export const styles = StyleSheet.create({
         textTransform: 'uppercase',
         fontWeight: 'bold',
     },
-    sizeLabelActive: { color: '#ec4913' },
+    sizeLabelActive: { color: DS.accent },
     sizeLabelInactive: { color: '#94a3b8' },
     sizePrice: {
         fontSize: 14,
@@ -201,7 +202,7 @@ export const styles = StyleSheet.create({
     gridSubText: {
         fontSize: 11,
         fontWeight: '500',
-        color: '#ec4913',
+        color: DS.accent,
         marginTop: 2,
         textAlign: 'center',
     },
@@ -217,7 +218,7 @@ export const styles = StyleSheet.create({
         gap: 4,
         borderTopWidth: 1,
     },
-    actionBarLight: { backgroundColor: 'white', borderColor: '#f1f5f9' },
+    actionBarLight: { backgroundColor: 'white', borderColor: DS.slate100 },
     priceSectionLeft: {
         flex: 1,
         alignItems: 'flex-start',
@@ -235,9 +236,9 @@ export const styles = StyleSheet.create({
         padding: 2,
         borderRadius: 9999,
         height: 48,
-        backgroundColor: '#f1f5f9',
+        backgroundColor: DS.slate100,
     },
-    counterLight: { backgroundColor: '#f1f5f9' },
+    counterLight: { backgroundColor: DS.slate100 },
     counterBtn: {
         width: 40,
         height: 40,
@@ -263,11 +264,11 @@ export const styles = StyleSheet.create({
     addToCartBtn: {
         flex: 1.5,
         height: 48,
-        backgroundColor: '#ec4913',
+        backgroundColor: DS.accent,
         borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#ec4913',
+        shadowColor: DS.accent,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -276,13 +277,13 @@ export const styles = StyleSheet.create({
     buyBtn: {
         flex: 1.2,
         height: 48,
-        backgroundColor: '#ec4913',
+        backgroundColor: DS.accent,
         borderRadius: 16,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 4,
-        shadowColor: '#ec4913',
+        shadowColor: DS.accent,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
@@ -314,7 +315,7 @@ export const styles = StyleSheet.create({
         width: 64,
         height: 64,
         borderRadius: 16,
-        backgroundColor: 'rgba(236, 73, 19, 0.05)',
+        backgroundColor: DS.accentAlpha(0.05),
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
@@ -322,13 +323,13 @@ export const styles = StyleSheet.create({
         borderColor: 'transparent',
     },
     extraIconSelected: {
-        borderColor: '#ec4913',
+        borderColor: DS.accent,
     },
     selectedBadge: {
         position: 'absolute',
         top: -4,
         right: -4,
-        backgroundColor: '#ec4913',
+        backgroundColor: DS.accent,
         width: 16,
         height: 16,
         borderRadius: 8,
@@ -351,7 +352,7 @@ export const styles = StyleSheet.create({
     },
     extraPrice: {
         fontSize: 10,
-        color: '#ec4913',
+        color: DS.accent,
         fontWeight: '500',
     },
     drinksContainer: {
@@ -364,7 +365,7 @@ export const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
+        borderBottomColor: DS.slate100,
     },
     drinkLeft: {
         flexDirection: 'row',
@@ -380,8 +381,8 @@ export const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     checkboxActive: {
-        backgroundColor: '#ec4913',
-        borderColor: '#ec4913',
+        backgroundColor: DS.accent,
+        borderColor: DS.accent,
     },
     drinkName: {
         fontSize: 14,
@@ -391,7 +392,7 @@ export const styles = StyleSheet.create({
     drinkPrice: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#ec4913',
+        color: DS.accent,
     },
     drinkDetailRow: {
         flexDirection: 'row',
@@ -409,7 +410,7 @@ export const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: '#f1f5f9',
+        backgroundColor: DS.slate100,
         borderRadius: 8,
         paddingHorizontal: 6,
         paddingVertical: 4,
@@ -430,7 +431,7 @@ export const styles = StyleSheet.create({
     drinkTotalPrice: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#ec4913',
+        color: DS.accent,
         minWidth: 60,
         textAlign: 'right',
     },
@@ -450,7 +451,7 @@ export const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 12,
         borderWidth: 1,
-        borderColor: '#f1f5f9',
+        borderColor: DS.slate100,
         alignItems: 'flex-start',
         justifyContent: 'space-between',
         minHeight: 80,
@@ -469,7 +470,7 @@ export const styles = StyleSheet.create({
     },
     infoBtnSubText: {
         fontSize: 9,
-        color: '#ec4913',
+        color: DS.accent,
         fontWeight: '500',
         marginTop: 2,
     },
@@ -496,7 +497,7 @@ export const styles = StyleSheet.create({
     },
     deliveryTypeBtn: {
         flex: 1,
-        backgroundColor: 'rgba(236, 73, 19, 0.03)',
+        backgroundColor: DS.accentAlpha(0.03),
         borderRadius: 16,
         padding: 12,
         borderWidth: 2,
@@ -506,8 +507,8 @@ export const styles = StyleSheet.create({
         minHeight: 100,
     },
     deliveryTypeActive: {
-        borderColor: '#ec4913',
-        backgroundColor: 'rgba(236, 73, 19, 0.05)',
+        borderColor: DS.accent,
+        backgroundColor: DS.accentAlpha(0.05),
     },
     deliveryTypeText: {
         marginTop: 8,

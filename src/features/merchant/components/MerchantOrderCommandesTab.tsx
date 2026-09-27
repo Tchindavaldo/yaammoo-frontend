@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { OrderItem } from './MerchantOrderBottomSheet';
+import { DS } from "@/src/theme/ds";
 
 // Ic\u00F4nes align\u00E9es sur le bottom sheet du home (checkout/tabs/DetailTab).
 const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -164,10 +165,10 @@ export function CommandesTab({
                   <View style={[
                     styles.iconBox,
                     styles.iconBoxCentered,
-                    o.type === 'extra' && { backgroundColor: '#FFF7ED' },
+                    o.type === 'extra' && { backgroundColor: DS.accent50 },
                     o.type === 'drink' && { backgroundColor: '#EFF6FF' },
                   ]}>
-                    <Ionicons name={icon} size={16} color="#ec4913" />
+                    <Ionicons name={icon} size={16} color={DS.accent} />
                   </View>
                 )}
 
@@ -196,7 +197,7 @@ export function CommandesTab({
           {hasDelivery && (
             <View style={styles.row}>
               <View style={[styles.iconBox, styles.iconBoxCentered, { backgroundColor: '#FEF2F2' }]}>
-                <Ionicons name="bicycle-outline" size={16} color="#ec4913" />
+                <Ionicons name="bicycle-outline" size={16} color={DS.accent} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.itemName} numberOfLines={1}>Livraison</Text>
@@ -259,10 +260,10 @@ const styles = StyleSheet.create({
     // Le sheet est à hauteur fixe (520) : on plafonne la carte pour qu'elle ne
     // pousse jamais le footer hors de la zone visible.
     maxHeight: 340,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: DS.gray50,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: DS.gray100,
     overflow: 'hidden',
     marginBottom: 12,
   },
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: DS.gray100,
   },
   iconBox: {
     width: 34,
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: DS.gray100,
   },
   totalLabel: {
     fontSize: 14,
@@ -338,7 +339,7 @@ const styles = StyleSheet.create({
   totalVal: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#ec4913',
+    color: DS.accent,
     marginTop: 2,
   },
   // Bouton Valider propre à la commande affichée.
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 999,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
   },
   // Bloqué : gris, mais toujours pressable pour déclencher le toast explicatif.
   validateBtnBlocked: { backgroundColor: '#D1D5DB' },

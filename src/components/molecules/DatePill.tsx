@@ -1,4 +1,5 @@
 import { Theme } from "@/src/theme";
+import { DS, HEADER_GRADIENT } from "@/src/theme/ds";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -106,7 +107,8 @@ const styles = StyleSheet.create({
   chipText: {
     fontSize: 11,
     fontWeight: "600",
-    color: Theme.colors.primary,
+    // Header blanc : dates non sélectionnées en neutre (seul le chip actif est coloré).
+    color: HEADER_GRADIENT ? Theme.colors.primary : DS.ink,
   },
   chipTextActive: {
     color: "#fff",
@@ -118,6 +120,6 @@ const styles = StyleSheet.create({
   moreText: {
     fontSize: 11,
     fontWeight: "700",
-    color: Theme.colors.primary,
+    color: HEADER_GRADIENT ? Theme.colors.primary : DS.ink,
   },
 });

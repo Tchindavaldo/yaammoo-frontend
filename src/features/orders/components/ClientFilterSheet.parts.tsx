@@ -1,4 +1,5 @@
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -67,7 +68,7 @@ export const DateScopeCard = ({
     activeOpacity={0.7}
   >
     <View style={styles.scopeTop}>
-      <Ionicons name={icon} size={18} color={active ? "#1A1916" : "#888780"} />
+      <Ionicons name={icon} size={18} color={active ? DS.accent : DS.faint} />
       <View style={[styles.countBadge, active && styles.countBadgeActive]}>
         <Text style={[styles.countText, active && styles.countTextActive]}>
           {count}

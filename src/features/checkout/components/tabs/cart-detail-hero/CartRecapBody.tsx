@@ -9,6 +9,7 @@ import {
 } from "../detail-hero/heroShared";
 import { amount, PALETTE } from "../detail-hero/recapTiles";
 import { CartBanner, CartHeroImages, CartTile } from "./cartRecapTiles";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Recap photo du checkout PANIER — copie dediee (R16) de
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
   },
   chipsGap: { height: 6 },
   topShade: { position: "absolute", left: 0, right: 0, top: 0, height: 80 },

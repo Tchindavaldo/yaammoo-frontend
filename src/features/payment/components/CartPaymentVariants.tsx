@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Variantes de design du contenu du sheet de paiement.
@@ -38,7 +39,7 @@ interface VariantProps {
 const fmt = (n: number) => `${n.toLocaleString("fr-FR")} F`;
 
 /** Teinte de marque de chaque opérateur. */
-const TINT = { orange: "#ec4913", mtn: "#f5b301" } as const;
+const TINT = { orange: DS.accent, mtn: "#f5b301" } as const;
 
 /** Montants agrégés + libellés de destination, communs aux trois variantes. */
 const useRecap = (groups: CartZoneGroup[]) => {
@@ -406,7 +407,7 @@ const s = StyleSheet.create({
     paddingLeft: 12,
     paddingRight: 6,
     borderRadius: 24,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
   },
   fieldOutlined: {
     backgroundColor: "#fff",
@@ -439,7 +440,7 @@ const s = StyleSheet.create({
   // --- Ticket ---
   ticket: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#e2e8f0",
@@ -467,7 +468,7 @@ const s = StyleSheet.create({
     color: "#94a3b8",
     letterSpacing: 0.8,
   },
-  ticketTotal: { fontSize: 20, fontWeight: "900", color: "#ec4913" },
+  ticketTotal: { fontSize: 20, fontWeight: "900", color: DS.accent },
   perforation: { flexDirection: "row", alignItems: "center", height: 12 },
   notch: {
     width: 12,
@@ -554,7 +555,7 @@ const s = StyleSheet.create({
   // --- Deux colonnes ---
   split: { flexDirection: "row", gap: 14 },
   splitLeft: { flex: 1, justifyContent: "center" },
-  splitTotal: { fontSize: 24, fontWeight: "900", color: "#ec4913" },
+  splitTotal: { fontSize: 24, fontWeight: "900", color: DS.accent },
   splitLabel: {
     fontSize: 10,
     fontWeight: "800",
@@ -566,7 +567,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
     gap: 2,
     borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
+    borderTopColor: DS.slate100,
     paddingTop: 6,
   },
   splitLine: { flexDirection: "row", justifyContent: "space-between" },

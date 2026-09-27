@@ -32,6 +32,7 @@ import {
   type CartFastFood,
 } from "@/src/features/orders/components/CartFastFoodFilter";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { useCartFastFoodInfos } from "@/src/features/orders/hooks/useCartFastFoodInfos";
 import { groupCartOrdersByZone } from "@/src/features/orders/utils/groupCartOrders";
 import { prefetchFastFoodDelivery } from "@/src/features/payment/hooks/useGroupedDeliveryData";
 import { Theme } from "@/src/theme";
@@ -49,6 +50,7 @@ import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartGroupedDeliverySheet } from "@/src/features/payment/components/CartGroupedDeliverySheet";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
+import { DS } from "@/src/theme/ds";
 
 if (
   Platform.OS === "android" &&
@@ -88,6 +90,16 @@ export default function OrdersScreen() {
     null,
   );
 
+  // Boutiques du panier non chargées sur le home (pagination) : nom + image
+  // récupérés via `GET /fastFood/:id`.
+  const missingFfIds = useMemo(() => {
+    const known = new Set(fastFoods.map((f: any) => f.id));
+    return Array.from(
+      new Set(pendingToBuy.map((o: any) => o.fastFoodId).filter(Boolean)),
+    ).filter((id) => !known.has(id)) as string[];
+  }, [pendingToBuy, fastFoods]);
+  const fetchedFfInfos = useCartFastFoodInfos(missingFfIds);
+
   // Fastfoods présents dans le panier + nombre de commandes et montant total
   // (livraison mutualisée incluse) par fastfood.
   const cartFastFoods = useMemo<CartFastFood[]>(() => {
@@ -99,10 +111,11 @@ export default function OrdersScreen() {
       let entry = map.get(ffId);
       if (!entry) {
         const ff: any = fastFoods.find((f: any) => f.id === ffId);
+        const fetched = fetchedFfInfos[ffId];
         entry = {
           id: ffId,
-          name: ff?.nom || ff?.name || "Boutique",
-          image: ff?.image || ff?.logo || ff?.coverImage,
+          name: ff?.nom || ff?.name || fetched?.name || "Boutique",
+          image: ff?.image || ff?.logo || ff?.coverImage || fetched?.image,
           orderCount: 0,
           total: 0,
         };
@@ -116,7 +129,7 @@ export default function OrdersScreen() {
       entry.total = computeCartTotal(ordersByFf.get(ffId) || []);
     });
     return Array.from(map.values());
-  }, [pendingToBuy, fastFoods]);
+  }, [pendingToBuy, fastFoods, fetchedFfInfos]);
 
   // Creneaux et zones express des boutiques du panier chargees d'avance : a
   // l'ouverture d'un sheet de livraison, la card « Zone » est deja la. Sans ce
@@ -1053,7 +1066,7 @@ const styles = StyleSheet.create({
   payerBtnHome: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     height: 40,
     borderRadius: 20,
     justifyContent: "center",

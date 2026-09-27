@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { AUTH_SHEET_HEIGHT, AUTH_SHEET_PADDING_BOTTOM } from "../constants";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Capsule flottante de saisie du flux email — COPIE DEDIEE de
@@ -506,8 +507,8 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                     returnKeyType="next"
                     onSubmitEditing={handleAction}
                     keyboardAppearance="dark"
-                    selectionColor="#ec4913"
-                    cursorColor="#ec4913"
+                    selectionColor={DS.accent}
+                    cursorColor={DS.accent}
                   />
 
                   <TextInput
@@ -536,8 +537,8 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                     keyboardAppearance="dark"
                     /* Curseur explicite : la teinte systeme se voit a peine sur
                        le fond sombre de la capsule. */
-                    selectionColor="#ec4913"
-                    cursorColor="#ec4913"
+                    selectionColor={DS.accent}
+                    cursorColor={DS.accent}
                   />
                 </View>
 
@@ -673,7 +674,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     height: 40,
     minWidth: 40,
     borderRadius: 20,

@@ -1,5 +1,6 @@
-import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
+import { MerchantStickyChipsRow as StickyChipsRow } from "./MerchantStickyChipsRow";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -12,7 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import type { DateOption } from "./OrderManagePanel";
 
 /** Filtre période : "express", "surplace", ou un créneau horaire précis (ex. "12h"). */
@@ -459,7 +461,7 @@ const DateScopeCard = ({
     activeOpacity={0.7}
   >
     <View style={styles.scopeTop}>
-      <Ionicons name={icon} size={18} color={active ? "#1A1916" : "#888780"} />
+      <Ionicons name={icon} size={18} color={active ? DS.accent : DS.faint} />
       <View style={[styles.countBadge, active && styles.countBadgeActive]}>
         <Text style={[styles.countText, active && styles.countTextActive]}>
           {count}
@@ -561,16 +563,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 7,
     borderRadius: 16,
-    backgroundColor: Theme.colors.primary + "10",
+    // Soft : non sélectionné = bordure grise seule, texte noir.
+    borderWidth: 1,
+    borderColor: DS.line,
   },
-  statusChipActive: { backgroundColor: Theme.colors.primary },
+  // Sélectionné : fond orange léger, texte orange.
+  statusChipActive: { backgroundColor: DS.accent + "10", borderColor: "transparent" },
   statusChipText: {
     flexShrink: 1,
     fontSize: 12,
     fontWeight: "700",
-    color: Theme.colors.primary,
+    color: DS.ink,
   },
-  statusChipTextActive: { color: "#fff" },
+  statusChipTextActive: { color: DS.accent },
   // Pastille d'angle (même principe que `tileBadge` de la grille horaire) :
   // hors du flux, le texte du chip garde toute la largeur.
   // Pastille dans le flux du chip, juste après le libellé.
@@ -578,24 +583,20 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#E5E3DC",
+    backgroundColor: DS.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
   },
-  // Chip actif : fond primaire — le badge doit contraster DESSUS, donc blanc.
   statusBadgeActive: {
-    backgroundColor: "#fff",
-    borderColor: "#fff",
+    backgroundColor: DS.bg,
   },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#888780",
+    color: DS.muted,
   },
-  statusBadgeTextActive: { color: Theme.colors.primary },
+  statusBadgeTextActive: { color: DS.accent },
   // Sous-sheet des créneaux horaires.
   slotSheet: {
     position: "absolute",
@@ -645,16 +646,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.gray100,
   },
-  // Chip inerte (récap du jour / remplissage) : juste là pour couvrir la largeur.
+  // Chip inerte (récap du jour / remplissage) : gris neutre.
   dateChipEmpty: {
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.gray100,
   },
   dateChipEmptyText: {
     fontSize: 11,
     fontWeight: "700",
-    color: Theme.colors.primary,
+    color: DS.muted,
   },
   // Cards de choix du lot de dates (ligne du bas).
   scopeCard: {
@@ -662,9 +663,9 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     minWidth: 0,
     borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#EFEDE6",
-    backgroundColor: "#FAF9F6",
+    borderWidth: 1,
+    borderColor: DS.line,
+    backgroundColor: DS.bg,
     paddingVertical: 9,
     paddingHorizontal: 8,
     gap: 6,
@@ -673,7 +674,7 @@ const styles = StyleSheet.create({
   // Card active : pas de bordure marquée, c'est le FOND qui porte l'état.
   scopeCardActive: {
     borderColor: "transparent",
-    backgroundColor: Theme.colors.primary + "1A",
+    backgroundColor: DS.accent + "10",
   },
   scopeTop: {
     flexDirection: "row",
@@ -787,13 +788,14 @@ const styles = StyleSheet.create({
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#EFEDE6",
+    backgroundColor: DS.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
   },
+  // Card active : badge blanc sur le fond orange léger, chiffre orange.
   countBadgeActive: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: DS.bg,
   },
   // Badge d'une ligne cochée : primaire, comme son icône et son libellé.
   countBadgeRowActive: {
@@ -802,10 +804,10 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#888780",
+    color: DS.muted,
   },
   countTextActive: {
-    color: "#fff",
+    color: DS.accent,
   },
   tileHour: {
     fontSize: 14,

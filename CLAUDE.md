@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **17 règles numérotées R1 → R17.** Toute nouvelle règle ajoutée à ce fichier
+> **19 règles numérotées R1 → R19.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -276,3 +276,27 @@ dans le message en cours. Demander d'abord, attendre la réponse.
   (installation de dépendances de build, téléchargement Gradle…).
 - Sans build possible, vérifier par relecture du code et le dire en 1 phrase
   dans le compte rendu.
+
+## R18 — Couleurs : design system `DS` uniquement (OBLIGATOIRE)
+
+Toute couleur passe par `DS` (`src/theme/ds.ts`) : **jamais de hex/rgba en dur**
+dans un composant (orange de marque `DS.accent`, variantes `DS.accentAlpha(a)`,
+surfaces `DS.slate100`, etc.). Changer le thème = changer `ds.ts`.
+
+## R19 — Safe-area basse : une seule source (OBLIGATOIRE)
+
+Toute nouvelle page, bottom sheet ou élément qui touche le bas de l'écran
+prend la safe-area basse via `src/hooks/usePageBottomInset.ts`. **Jamais**
+`insets.bottom` brut ni une marge en dur. Détail : `architecture/blur-safe-area.md` §4.
+
+- **Page entière** (hors `(tabs)`) : envelopper dans `ShopPageFrame` (ou
+  équivalent), qui réserve `usePageBottomInset()` et tronque le contenu au-dessus.
+  Le contenu scrollable n'ajoute alors ni inset ni grosse marge basse.
+- **Pied de page fixe** (barre, bouton) : `ownFooter` sur le cadre, et le pied
+  absorbe `useFooterBottomInset()` en `paddingBottom`, sans padding bas en plus
+  (sinon la bande est poussée et ne s'aligne plus avec les autres pages).
+- **Bottom sheet** (`<Modal>` ancré en bas) : `useSheetSafeInsets()`.
+- Régler une valeur = modifier `PAGE_INSET_RATIO` (iOS / Android) dans ce seul
+  fichier ; ne jamais recopier le ratio ailleurs.
+- Couleur de la bande = `SAFE_AREA_BG` (même fichier) ; `SAFE_AREA_DEBUG = true`
+  la colore en orange pour vérifier l'alignement. Jamais de couleur en dur.

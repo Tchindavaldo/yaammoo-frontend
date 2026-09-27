@@ -21,10 +21,13 @@ yaammoo/src/features/merchant/
 │   ├── merchantService.ts             # Appels API marchand
 │   └── withdrawService.ts             # Appel POST /wallet/withdraw
 └── components/
-    ├── OrderManagePanel.tsx            # Panel principal gestion commandes
+    ├── OrderManagePanel.tsx            # Panel principal gestion commandes (onglet (tabs)/boutique)
+    ├── shop/ShopOrderManagePanel.tsx   # Copie R16 pour la page entière app/shop/orders.tsx (sans navbar)
+    ├── shop/ShopPageFrame.tsx          # Cadre des pages app/shop/* : safe-area basse par OS + troncature
     ├── MerchantOrderCard.tsx           # Carte commande côté marchand (avec bouton avancer statut)
     ├── MerchantFilterSheet.tsx          # Bottom sheet filtres : dates aujourd'hui/à venir (haut),
     │                                    #   périodes de livraison multi-cochables (milieu), dates passées (bas)
+    ├── MerchantStickyChipsRow.tsx      # Chips de statut de la barre du bas (copie R16 de StickyChipsRow)
     ├── OtherDatesNotice.tsx            # Rappel 2 cartes (passé rouge / futur bleu) : cmd non traitées
     │                                    #   sur d'autres dates, compteurs globaux
     ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile) — shell + état + nav globale
@@ -74,7 +77,7 @@ yaammoo/src/features/merchant/
 | `selectedDate` | `string \| null` | Date sélectionnée (contrôlée par le header de page) |
 | `onSelectDate` | `(iso: string \| null) => void` | Remonte le choix de date au header |
 | `onDatesChange` | `(opts: DateOption[]) => void` | Remonte la liste des dates disponibles (plus consommé par `boutique.tsx`) |
-| `onStatusChange` | `({label, count}) => void` | Remonte l'onglet de statut actif + le nb de commandes affichées, pour la pilule du header |
+| `onStatusChange` | `({label, count, amount}) => void` | Remonte l'onglet de statut actif, le nb de commandes affichées et leur montant, pour la pilule du header |
 
 **Onglets statut** :
 | Key | Label | Statuts Firestore |
@@ -144,9 +147,11 @@ cas ; chacune ne s'affiche que si son compteur est > 0 :
 - Prop `inset={false}` dans les états vides : leur parent porte déjà son padding
   horizontal, sinon les marges s'additionnent.
 
-> **Liste vide** : le message « Aucune commande … » reste **centré verticalement**
-> (hauteur = fenêtre − barres fixes, via `emptyStateHeight`) et les cartes s'affichent
-> dessous. Sur une liste non vide, elles sont rendues en **fin de liste**.
+> **Position** : un seul rappel, **calé en bas**, juste au-dessus de la barre de
+> filtres (`noticeDock`, `bottom = tabBarHeight + FILTER_BAR_HEIGHT`), hors du scroll ;
+> `listPadBottom` lui réserve `NOTICE_DOCK_HEIGHT` quand un compteur est > 0. Il n'est
+> plus rendu en fin de liste ni dans les états vides (le message « Aucune commande … »
+> reste centré seul).
 - La carte **ne change pas de design** : le groupe est passé via `sheetOrders` (et non
   `allOrders`, qui bascule sur la variante groupée). Seul le bottom sheet reçoit la nav
   multi-cmd, alimentée quand `sheetOrders.length > 1`.
@@ -176,14 +181,16 @@ cas ; chacune ne s'affiche que si son compteur est > 0 :
   cochées), pas le total tous jours confondus — sinon le badge du jour affiché incluait
   des commandes passées.
 - Les chips de statut (En Attente / En cours / Terminées, avec badge compteur) ne sont
-  **plus** dans la barre fixe du haut : ils sont rendus par `StickyChipsRow`
-  (`features/driver/components`) dans une barre `position: absolute` posée juste au-dessus
+  **plus** dans la barre fixe du haut : ils sont rendus par `MerchantStickyChipsRow`
+  (copie marchande de `StickyChipsRow`, R16 : chip non sélectionné = bordure grise
+  sans fond, sélectionné = fond orange léger) dans une barre `position: absolute` posée juste au-dessus
   de la navbar, **collée à elle** : `bottom = useTabBarHeight()` (58 + `insets.bottom`,
   la vraie hauteur de la tab bar — pas de constante approximative). À droite, une icône
   `options-outline` ouvre le `MerchantFilterSheet`.
 - Fond **flouté** (`BlurView` intensité 40 + voile blanc 55 %) : les cartes qui scrollent
   derrière restent devinables.
-- La barre fixe du haut ne contient plus que les **stat-boxes**.
+- La barre fixe du haut ne contient plus que les **stat-boxes** (fond gris
+  `DS.gray100`, unités « cmd » / « fcfa » en orange).
 - `listPadBottom` réserve `tabBarHeight + FILTER_BAR_HEIGHT + 24`.
 
 **MerchantFilterSheet.tsx** — bottom sheet de filtres, **hauteur FIXE** (`height: 58%`) :

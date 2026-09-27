@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Text, TouchableOpacity, View } from "react-native";
 import type { ZoneHourEntry } from "./groupZones";
 import { zoneListStyles as st } from "./ZoneListSheet.styles";
+import { DS } from "@/src/theme/ds";
 
 interface ZoneSlotGridProps {
   lieu: string;
@@ -88,8 +89,8 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
     cards.push(
       <View key="express" style={[st.priceCard, st.priceCardExpress]}>
         <View style={st.tag}>
-          <View style={[st.tagDot, { backgroundColor: "#ec4913" }]} />
-          <Text style={[st.tagText, { color: "#ec4913" }]}>Express</Text>
+          <View style={[st.tagDot, { backgroundColor: DS.accent }]} />
+          <Text style={[st.tagText, { color: DS.accent }]}>Express</Text>
         </View>
         <Text style={st.priceValue}>{expressPrice}</Text>
         <Text style={st.priceNote} numberOfLines={1}>

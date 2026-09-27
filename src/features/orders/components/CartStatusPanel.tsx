@@ -1,6 +1,16 @@
-import { orderGroupKey } from "@/src/features/merchant/utils/orderGroupKey";
-import { StickyChipsRow } from "@/src/features/driver/components/StickyChipsRow";
+import { ClientDateChipsRow as StickyChipsRow } from "./ClientDateChipsRow";
 import { ClientFilterSheet } from "./ClientFilterSheet";
+import {
+  buildFlatItems,
+  type FlatItem,
+  getOrderDate,
+  getOrderDateISO,
+  GroupSubTabs,
+  isSameDay,
+  periodKeyOf,
+} from "./CartStatusPanel.parts";
+import { useClientFilterOptions } from "@/src/features/orders/hooks/useClientFilterOptions";
+import { DS } from "@/src/theme/ds";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
 import { ClientOrderSkeleton } from "@/src/features/orders/components/ClientOrderSkeleton";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
@@ -20,7 +30,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import {
@@ -32,141 +41,7 @@ import {
   View,
 } from "react-native";
 
-// ---------------------------------------------------------------------------
-// Types pour la FlatList virtualisée
-// ---------------------------------------------------------------------------
-type FlatItem =
-  | {
-      type: "order-card";
-      key: string;
-      order: Commande;
-      /** Commandes du même groupe (livraison mutualisée) — nav multi-cmd du sheet. */
-      group: Commande[];
-      isFinished: boolean;
-    }
-  | {
-      type: "group-subtabs";
-      key: string;
-      groupId: string;
-      counts: { attente: number; cours: number; termine: number };
-    }
-  | { type: "empty"; key: string };
 
-// ---------------------------------------------------------------------------
-// Sous-composants memoïsés pour la FlatList
-// ---------------------------------------------------------------------------
-/** Sous-tabs de livraison d'un groupe (onglet Terminées) : calqué marchand. */
-const GroupSubTabs = React.memo(function GroupSubTabs({
-  counts,
-  active,
-  onSelect,
-}: {
-  counts: { attente: number; cours: number; termine: number };
-  active: "attente" | "cours" | "termine";
-  onSelect: (k: "attente" | "cours" | "termine") => void;
-}) {
-  const tab = (
-    key: "attente" | "cours" | "termine",
-    label: string,
-    count: number,
-  ) => {
-    const on = active === key;
-    return (
-      <TouchableOpacity
-        style={[styles.subTab, on && styles.subTabActive]}
-        onPress={() => onSelect(key)}
-      >
-        <Text style={[styles.subTabLabel, on && styles.subTabLabelActive]}>
-          {label}
-        </Text>
-        {count > 0 && (
-          <View style={[styles.subTabBadge, on && styles.subTabBadgeActive]}>
-            <Text
-              style={[styles.subTabBadgeText, on && styles.subTabBadgeTextActive]}
-            >
-              {count}
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
-    );
-  };
-  return (
-    <View style={styles.subTabRow}>
-      {tab("attente", "En attente", counts.attente)}
-      {tab("cours", "En cours", counts.cours)}
-      {tab("termine", "Terminé", counts.termine)}
-    </View>
-  );
-});
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-const isSameDay = (d1: Date, d2: Date) =>
-  d1.getFullYear() === d2.getFullYear() &&
-  d1.getMonth() === d2.getMonth() &&
-  d1.getDate() === d2.getDate();
-
-const getOrderDate = (o: any): Date | null => {
-  const raw = o?.livraison?.date || o?.delivery?.date || o?.createdAt;
-  if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d.getTime()) ? null : d;
-};
-
-/**
- * Groupage des commandes en lignes, même règle que la liste marchand
- * (`orderGroupKey`) : un client, une date, un créneau/zone. La tête est la
- * commande la mieux classée ; les lignes suivent l'ordre des rangs.
- */
-const groupBySlot = (arr: Commande[]): { head: Commande; group: Commande[] }[] => {
-  const buckets = new Map<string, Commande[]>();
-  arr.forEach((o) => {
-    const key = orderGroupKey(o);
-    const bucket = buckets.get(key);
-    if (bucket) bucket.push(o);
-    else buckets.set(key, [o]);
-  });
-
-  const rankOf = (o: any) => o?.rank ?? Infinity;
-  const entries: { head: Commande; group: Commande[] }[] = [];
-  buckets.forEach((group) => {
-    const sorted = [...group].sort((a, b) => rankOf(a) - rankOf(b));
-    entries.push({ head: sorted[0], group: sorted });
-  });
-  return entries.sort((a, b) => rankOf(a.head) - rankOf(b.head));
-};
-
-/** Clé de période d'une commande : "express", "surplace" ou le créneau ("12h"). */
-const periodKeyOf = (o: any): string => {
-  const d = o?.delivery;
-  if (d?.status !== true) return "surplace";
-  if (d?.type === "express") return "express";
-  return d?.time || "À définir";
-};
-
-/** ISO (YYYY-MM-DD) de la date de livraison d'une commande. */
-const getOrderDateISO = (o: any): string => {
-  const d = getOrderDate(o);
-  return d ? d.toISOString().substring(0, 10) : "";
-};
-
-/** Libellé d'un chip de date : « 10 juin ». */
-const formatDateLabel = (iso: string) => {
-  try {
-    return new Date(iso).toLocaleDateString("fr-FR", {
-      day: "numeric",
-      month: "long",
-    });
-  } catch {
-    return iso;
-  }
-};
-
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
 interface CartStatusPanelProps {
   topOffset?: number;
   bottomOffset?: number;
@@ -310,58 +185,15 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   );
 
   // Aplatissement des données → FlatList
-  const flatItems: FlatItem[] = useMemo(() => {
-    const items: FlatItem[] = [];
-    if (filteredOrders.length === 0) {
-      items.push({ type: "empty", key: "empty" });
-      return items;
-    }
-
-    // L'onglet « Terminées » affiche des sous-tabs de livraison par groupe.
-    const isDeliveryTab = activeStatus === "finished";
-
-    // Commandes du jour à plat : le filtrage par fastfood se fait via la
-    // liste horizontale du header, plus d'accordéon par boutique.
-    if (isDeliveryTab) {
-      const attente = filteredOrders.filter((o) => o.status === "finished");
-      const cours = filteredOrders.filter((o) => o.status === "delivering");
-      const termine = filteredOrders.filter((o) => o.status === "delivered");
-      items.push({
-        type: "group-subtabs",
-        key: "gst:all",
-        groupId: "all",
-        counts: {
-          attente: attente.length,
-          cours: cours.length,
-          termine: termine.length,
-        },
-      });
-      const sub = groupSubTab["all"] ?? "attente";
-      const visible =
-        sub === "cours" ? cours : sub === "termine" ? termine : attente;
-      for (const { head, group } of groupBySlot(visible)) {
-        items.push({
-          type: "order-card",
-          key: `oc:${head.id}`,
-          order: head,
-          group,
-          isFinished: true,
-        });
-      }
-    } else {
-      for (const { head, group } of groupBySlot(filteredOrders)) {
-        items.push({
-          type: "order-card",
-          key: `oc:${head.id}`,
-          order: head,
-          group,
-          isFinished: false,
-        });
-      }
-    }
-
-    return items;
-  }, [filteredOrders, activeStatus, groupSubTab]);
+  const flatItems: FlatItem[] = useMemo(
+    () =>
+      buildFlatItems(
+        filteredOrders,
+        activeStatus === "finished",
+        groupSubTab["all"] ?? "attente",
+      ),
+    [filteredOrders, activeStatus, groupSubTab],
+  );
 
   const onManualRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -425,114 +257,23 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   const keyExtractor = useCallback((item: FlatItem) => item.key, []);
 
   // ── Options du bottom sheet de filtres (calqué marchand) ──
-  /** Commandes du statut actif, filtrées sur le fastfood sélectionné. */
-  const scopedOrders = useMemo(
-    () =>
-      statusList.filter(
-        (o: any) => !selectedFastFoodId || o.fastFoodId === selectedFastFoodId,
-      ),
-    [statusList, selectedFastFoodId],
-  );
-
-  const { futureDateOptions, pastDateOptions } = useMemo(() => {
-    const isos = [...new Set(scopedOrders.map(getOrderDateISO))].filter(Boolean);
-    const toOptions = (list: string[]) =>
-      list.map((iso) => ({ iso, label: formatDateLabel(iso) }));
-    return {
-      futureDateOptions: toOptions(isos.filter((d) => d > todayISO).sort()),
-      pastDateOptions: toOptions(
-        isos.filter((d) => d < todayISO).sort().reverse(),
-      ),
-    };
-  }, [scopedOrders, todayISO]);
-
-  /** Périodes de la date active, avec leur nombre de commandes. */
-  const availablePeriods = useMemo(() => {
-    const counts: Record<string, number> = {};
-    scopedOrders.forEach((o: any) => {
-      if (getOrderDateISO(o) !== activeDateISO) return;
-      const k = periodKeyOf(o);
-      counts[k] = (counts[k] || 0) + 1;
-    });
-    const slots = Object.keys(counts)
-      .filter((k) => k !== "express" && k !== "surplace")
-      .sort();
-    // Les deux modes de livraison sont TOUJOURS listés (0 si aucune commande)
-    // et dans le MÊME ORDRE que côté marchand : express, sur place, créneaux.
-    // Sinon les cards apparaissent/disparaissent au changement de date.
-    return [
-      {
-        key: "express",
-        label: "Livraison express",
-        count: counts.express || 0,
-      },
-      {
-        key: "surplace",
-        label: "Récupérer\nsur place",
-        count: counts.surplace || 0,
-      },
-      ...slots.map((k) => ({ key: k, label: k, count: counts[k] })),
-    ];
-  }, [scopedOrders, activeDateISO]);
-
-  const allPeriodsCount = useMemo(
-    () => availablePeriods.reduce((acc, p) => acc + p.count, 0),
-    [availablePeriods],
-  );
-
-  // Badges des cards de dates du filter sheet : NOMBRE DE COMMANDES du lot
-  // (dates futures / aujourd'hui / dates passées), pas le nombre de dates.
-  // Volontairement INDÉPENDANTS de l'onglet de statut ET des périodes cochées :
-  // chaque card affiche toujours le total de SA période.
-  const dateScopeCounts = useMemo(() => {
-    const all = [...pending, ...active, ...finished, ...delivered];
-    let past = 0;
-    let today = 0;
-    let future = 0;
-    all.forEach((o: any) => {
-      if (selectedFastFoodId && o.fastFoodId !== selectedFastFoodId) return;
-      const iso = getOrderDateISO(o);
-      if (!iso) return;
-      if (iso < todayISO) past += 1;
-      else if (iso > todayISO) future += 1;
-      else today += 1;
-    });
-    return { past, today, future };
-  }, [
+  const {
+    futureDateOptions,
+    pastDateOptions,
+    availablePeriods,
+    allPeriodsCount,
+    dateScopeCounts,
+    chipCounts,
+  } = useClientFilterOptions({
+    statusList,
     pending,
     active,
     finished,
     delivered,
     selectedFastFoodId,
     todayISO,
-  ]);
-
-  /**
-   * Badges des chips : comptés sur la date active (+ périodes cochées et
-   * fastfood sélectionné), pas sur le total tous jours confondus.
-   */
-  const chipCounts = useMemo(() => {
-    const matches = (list: Commande[]) =>
-      list.filter((o: any) => {
-        if (selectedFastFoodId && o.fastFoodId !== selectedFastFoodId)
-          return false;
-        // TOUTES périodes confondues : indépendant de `selectedPeriods`, comme
-        // les chips de statut du sheet marchand.
-        return getOrderDateISO(o) === activeDateISO;
-      }).length;
-    return {
-      pending: matches(pending),
-      active: matches(active),
-      finished: matches([...finished, ...delivered]),
-    };
-  }, [
-    pending,
-    active,
-    finished,
-    delivered,
-    selectedFastFoodId,
     activeDateISO,
-  ]);
+  });
 
   // Une période cochée qui disparaît (changement de date/statut) est retirée.
   const periodsKey = availablePeriods.map((p) => p.key).join(",");
@@ -643,7 +384,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           onPress={() => setFilterOpen(true)}
           activeOpacity={0.8}
         >
-          <Ionicons name="options-outline" size={20} color="#fff" />
+          <Ionicons name="options-outline" size={20} color={DS.ink} />
         </TouchableOpacity>
       </View>
       </BlurScope>
@@ -736,7 +477,10 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: Theme.colors.primary,
+    // Soft (comme le marchand) : blanc + bordure grise, icône noire.
+    backgroundColor: DS.bg,
+    borderWidth: 1,
+    borderColor: DS.line,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -753,46 +497,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
   },
-  // Sous-tabs de livraison (onglet Terminées) — calqué sur le marchand.
-  subTabRow: {
-    flexDirection: "row",
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 4,
-    backgroundColor: "#F5F4F0",
-    borderRadius: 10,
-    padding: 3,
-    gap: 3,
-  },
-  subTab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 6,
-    borderRadius: 8,
-    gap: 5,
-  },
-  subTabActive: {
-    backgroundColor: "white",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  subTabLabel: { fontSize: 11, fontWeight: "600", color: "#888780" },
-  subTabLabelActive: { color: "#1A1916" },
-  subTabBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: "#E5E4DF",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 5,
-  },
-  subTabBadgeActive: { backgroundColor: Theme.colors.primary },
-  subTabBadgeText: { fontSize: 9, fontWeight: "700", color: "#5F5E5A" },
-  subTabBadgeTextActive: { color: "white" },
 });

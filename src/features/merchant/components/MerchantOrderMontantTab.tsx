@@ -2,6 +2,7 @@ import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 const CURRENCY = "XAF";
 
@@ -262,7 +263,7 @@ export function MontantTab({ orders, maxHeight = 340 }: Props) {
                       <Ionicons
                         name="bicycle-outline"
                         size={15}
-                        color="#ec4913"
+                        color={DS.accent}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -313,10 +314,10 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     maxHeight: 340,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: DS.gray50,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: DS.gray100,
     overflow: "hidden",
     marginBottom: 12,
   },
@@ -336,7 +337,7 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    borderBottomColor: DS.gray100,
   },
   rankBox: {
     width: 30,
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
   },
   totalLabel: { fontSize: 13, fontWeight: "700", color: "#111827" },
   totalValStacked: { marginTop: 2 },
-  totalVal: { fontSize: 13, fontWeight: "900", color: "#ec4913" },
+  totalVal: { fontSize: 13, fontWeight: "900", color: DS.accent },
   // Plusieurs groupes : seul le total général reste coloré, les totaux de bloc
   // passent en noir pour ne pas concurrencer le montant final.
   totalValMuted: { color: "#111827" },
@@ -388,10 +389,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 14,
     borderTopWidth: 1,
-    borderTopColor: "#F3F4F6",
+    borderTopColor: DS.gray100,
   },
   grandTotalLabel: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  grandTotalVal: { fontSize: 16, fontWeight: "900", color: "#ec4913" },
+  grandTotalVal: { fontSize: 16, fontWeight: "900", color: DS.accent },
   empty: {
     flex: 1,
     alignItems: "center",

@@ -10,7 +10,8 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import { Theme } from "@/src/theme";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { driverService, DriverInfo } from "@/src/features/driver/services/driverService";

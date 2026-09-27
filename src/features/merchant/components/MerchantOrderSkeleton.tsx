@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
 
 import { MERCHANT_CARD_HEIGHT } from "./MerchantOrderCard";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Skeleton des commandes MARCHAND — copie dédiée (R16 : jamais de composant
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
     height: MERCHANT_CARD_HEIGHT,
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: DS.gray100,
     paddingHorizontal: 16,
     justifyContent: "center",
   },

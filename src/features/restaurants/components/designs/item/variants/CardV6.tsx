@@ -13,9 +13,10 @@ import {
 } from "../config";
 import { CardBottom } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
+import { DS } from "@/src/theme/ds";
 
 const V6_BG = ["#fef4f0", "#f0f4fe", "#f0fef4", "#fef0fa", "#f4f0fe", "#fefaf0"];
-const V6_ACCENT = ["#e8440a", "#0984e3", "#00b894", "#e84393", "#6c5ce7", "#e17055"];
+const V6_ACCENT = [DS.accentDeep, "#0984e3", "#00b894", "#e84393", "#6c5ce7", "#e17055"];
 
 /** DESIGN 6 : PANORAMIC SPLIT — infos a gauche, image a droite. */
 export const CardV6: React.FC<CardVariantProps> = ({

@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { useVoiceNotePlayer, useVoiceNoteRecorder } from '@/src/services/audio/useVoiceNote';
 import { useSheetInsets } from '../hooks/useSheetInsets';
+import { DS } from "@/src/theme/ds";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -232,7 +233,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                 {/* Actions (Bottom) */}
                 <View style={styles.actionsContainer}>
                   <TouchableOpacity style={styles.playBtnLarge} onPress={togglePlay}>
-                    <Ionicons name={status === 'playing' ? "pause" : "play"} size={28} color="#ec4913" />
+                    <Ionicons name={status === 'playing' ? "pause" : "play"} size={28} color={DS.accent} />
                   </TouchableOpacity>
 
                   <TouchableOpacity style={styles.deleteBtnLarge} onPress={deleteRecording}>
@@ -301,7 +302,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: DS.slate100,
   },
   header: {
     flexDirection: 'row',
@@ -322,7 +323,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: '#f8fafc',
+    backgroundColor: DS.slate50,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
@@ -339,10 +340,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ec4913',
+    shadowColor: DS.accent,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -368,13 +369,13 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
   },
   micCircleSmall: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
   },
   recordingLabel: {
     fontSize: 10,
@@ -433,7 +434,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   playerMain: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: DS.slate50,
     borderRadius: 20,
     padding: 16,
   },
@@ -448,7 +449,7 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
     borderRadius: 3,
   },
   timeRow: {
@@ -475,7 +476,7 @@ const styles = StyleSheet.create({
   playBtnLarge: {
     width: 56,
     height: 56,
-    backgroundColor: '#f8fafc',
+    backgroundColor: DS.slate50,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
@@ -496,11 +497,11 @@ const styles = StyleSheet.create({
   validateBtn: {
     width: '100%',
     height: 50,
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ec4913',
+    shadowColor: DS.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

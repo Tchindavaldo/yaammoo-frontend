@@ -17,6 +17,7 @@ import {
   PaymentVariantTicket,
   type CartPaymentVariant,
 } from "./CartPaymentVariants";
+import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -417,8 +418,8 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   networkChipActive: {
-    backgroundColor: "rgba(236, 73, 19, 0.12)",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accentAlpha(0.12),
+    borderColor: DS.accent,
   },
   networkChipText: {
     color: "rgba(31,41,55,0.7)",
@@ -426,7 +427,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   networkChipTextActive: {
-    color: "#ec4913",
+    color: DS.accent,
   },
   networkRow: {
     flexDirection: "row",
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
   },
   scopeCardActive: {
     borderColor: "transparent",
-    backgroundColor: "#ec49131A",
+    backgroundColor: DS.accent + "1A",
   },
   scopeTop: {
     flexDirection: "row",
@@ -484,7 +485,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   countBadgeActive: {
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
   },
   countText: {
     fontSize: 11,
@@ -520,7 +521,7 @@ const styles = StyleSheet.create({
   listMore: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#ec4913",
+    color: DS.accent,
     marginBottom: -4,
   },
   listItemAmount: {
@@ -530,7 +531,7 @@ const styles = StyleSheet.create({
   },
   // Montant total des commandes de la card (même place que le total).
   deliveryAmount: {
-    color: "#ec4913",
+    color: DS.accent,
     fontSize: 15,
     fontWeight: "800",
     // Le `gap: 6` de la card écarte déjà le montant de la liste : on remonte
@@ -542,10 +543,10 @@ const styles = StyleSheet.create({
   totalCard: {
     flex: 1,
     borderColor: "transparent",
-    backgroundColor: "#ec49131A",
+    backgroundColor: DS.accent + "1A",
   },
   totalCardValue: {
-    color: "#ec4913",
+    color: DS.accent,
     fontSize: 15,
     fontWeight: "800",
   },

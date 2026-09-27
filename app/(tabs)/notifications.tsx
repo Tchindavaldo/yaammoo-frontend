@@ -15,9 +15,11 @@ import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { groupNotificationsByDate } from "@/src/features/notifications/utils/groupNotificationsByDate";
+import { DS } from "@/src/theme/ds";
 import {
-  FlatList,
+  SectionList,
   StyleSheet,
   Text,
   View,
@@ -44,6 +46,10 @@ export default function NotificationsScreen() {
   const [detailVisible, setDetailVisible] = useState(false);
 
   const unreadCount = notifications.filter((n) => !isReadFlag(n)).length;
+  const sections = useMemo(
+    () => groupNotificationsByDate(notifications),
+    [notifications],
+  );
 
   const handleNotifPress = (notif: Notification) => {
     if (!isReadFlag(notif)) {
@@ -115,8 +121,12 @@ export default function NotificationsScreen() {
 
       {/* Cible du flou du header (Android). */}
       <BlurTarget style={styles.blurTarget}>
-      <FlatList
-        data={notifications}
+      <SectionList
+        sections={sections}
+        stickySectionHeadersEnabled={false}
+        renderSectionHeader={({ section }) => (
+          <Text style={styles.sectionHeader}>{section.title}</Text>
+        )}
         renderItem={({ item }) => (
           <NotificationItem notification={item} onPress={handleNotifPress} />
         )}
@@ -175,6 +185,16 @@ const styles = StyleSheet.create({
   },
   listContent: {
     // paddingTop géré dynamiquement
+  },
+  // En-tête de jour (Aujourd'hui, Hier, …) au-dessus de chaque groupe.
+  sectionHeader: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: DS.muted,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+    backgroundColor: DS.bg,
   },
   emptyTitle: {
     fontSize: 18,

@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSheetInsets } from "../hooks/useSheetInsets";
+import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -108,7 +109,7 @@ const PriceRecap: React.FC<{
     <View style={styles.recapRow}>
       {rows.map((r) => (
         <View key={r.label} style={styles.recapItem}>
-          <Ionicons name={r.icon} size={16} color="#ec4913" />
+          <Ionicons name={r.icon} size={16} color={DS.accent} />
           <Text style={styles.recapLabel}>{r.label}</Text>
           {r.free ? (
             <Text style={[styles.recapValue, styles.recapFree]}>Gratuit</Text>
@@ -363,7 +364,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   recapFree: {
-    color: "#ec4913",
+    color: DS.accent,
     fontWeight: "800",
   },
   // --- Total ---
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   totalValue: {
-    color: "#ec4913",
+    color: DS.accent,
     fontSize: 24,
     fontWeight: "800",
   },
@@ -410,8 +411,8 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   networkChipActive: {
-    backgroundColor: "rgba(236, 73, 19, 0.12)",
-    borderColor: "#ec4913",
+    backgroundColor: DS.accentAlpha(0.12),
+    borderColor: DS.accent,
   },
   networkChipText: {
     color: "rgba(31,41,55,0.7)",
@@ -419,6 +420,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   networkChipTextActive: {
-    color: "#ec4913",
+    color: DS.accent,
   },
 });

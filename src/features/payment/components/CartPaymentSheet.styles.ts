@@ -1,5 +1,6 @@
 import { Theme } from "@/src/theme";
 import { StyleSheet } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Palette : celle de l'app (`Theme` + gris slate des autres sheets du panier),
@@ -11,15 +12,15 @@ import { StyleSheet } from "react-native";
  */
 export const C = {
   sheet: "#fff",
-  surface: "#f8fafc",
+  surface: DS.slate50,
   border: "#e2e8f0",
   ink: "#0f172a",
   inkSoft: "#475569",
   muted: "#94a3b8",
   mutedLight: "#cbd5e1",
   accent: Theme.colors.primary,
-  accentSoft: "rgba(236,73,19,0.08)",
-  chipBg: "#f1f5f9",
+  accentSoft: DS.accentAlpha(0.08),
+  chipBg: DS.slate100,
   ok: "#16a34a",
 };
 

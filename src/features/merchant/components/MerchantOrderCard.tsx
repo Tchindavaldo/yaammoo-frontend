@@ -20,6 +20,7 @@ import {
   computeGrandTotal,
   computeItemsTotal,
 } from "./MerchantOrderMontantTab";
+import { DS } from "@/src/theme/ds";
 
 /** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
 export const MERCHANT_CARD_HEIGHT = 94.33;
@@ -188,7 +189,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const hasDelivery = deliveryRawStatus === true;
     const deliveryType = (order as any).delivery?.type;
     const isExpress = deliveryType === "express";
-    const deliveryColor = isExpress ? "#ec4913" : "#2563eb";
+    const deliveryColor = isExpress ? DS.accent : "#2563eb";
 
     const orderCount = allOrders.length;
     const addressStr = order.delivery?.location || "Adresse non spécifiée";
@@ -261,7 +262,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                   <Text style={styles.deliveredText}>Livré</Text>
                 </View>
               ) : isUpdating ? (
-                <ActivityIndicator size="small" color="#ec4913" />
+                <ActivityIndicator size="small" color={DS.accent} />
               ) : isDelegated ? (
                 // Confiée à un livreur : badge "Délégué" (le livreur gère la course).
                 <View style={styles.delegatedBadge}>
@@ -364,7 +365,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const deliveryType = deliveryRaw?.type;
   const deliveryColor =
     deliveryType === "express"
-      ? "#ec4913"
+      ? DS.accent
       : deliveryType === "time"
         ? "#2563eb"
         : "black";
@@ -415,7 +416,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
               transition={150}
             />
           ) : (
-            <Ionicons name="person" size={20} color="#ec4913" />
+            <Ionicons name="person" size={20} color={DS.accent} />
           )}
           <Ionicons
             name="navigate"
@@ -486,7 +487,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
             tint="light"
             style={StyleSheet.absoluteFill}
           />
-          <ActivityIndicator size="large" color="#ec4913" />
+          <ActivityIndicator size="large" color={DS.accent} />
         </View>
       )}
       </BlurScope>
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: DS.gray100,
     paddingHorizontal: 16,
   },
   summaryRow: {
@@ -539,7 +540,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: -2,
     left: -2,
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     padding: 2,
     borderRadius: 6,
     zIndex: 10,
@@ -556,7 +557,7 @@ const styles = StyleSheet.create({
   summaryPrice: {
     fontSize: 14,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   summaryChipsRow: {
     flexDirection: "row",
@@ -576,9 +577,9 @@ const styles = StyleSheet.create({
   // Chip sans item : gris doux (#9ca3af côté texte) plutôt que le #ccc d'origine,
   // qui donnait un rendu sec/désactivé.
   chipInactive: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: DS.gray50,
     borderWidth: 1,
-    borderColor: "#f3f4f6",
+    borderColor: DS.gray100,
   },
   chipText: {
     fontSize: 10,
@@ -597,7 +598,7 @@ const styles = StyleSheet.create({
   rankContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
+    backgroundColor: DS.gray100,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -678,7 +679,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   orderCountBadge: {
     position: "absolute",

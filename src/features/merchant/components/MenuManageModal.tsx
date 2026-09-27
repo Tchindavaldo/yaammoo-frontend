@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { DS } from "@/src/theme";
 import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
@@ -12,8 +13,7 @@ interface MenuManageModalProps {
 
 /**
  * Écran plein écran de gestion des menus (depuis Settings → Boutique).
- * Rendu comme EditBoutiquePanel : View absolue dans l'arbre (PAS un <Modal>),
- * donc le header floute le settings, la tab bar reste visible, et pas de slide.
+ * Rendu par la route `app/shop/menu.tsx` : page entière hors (tabs), sans navbar.
  */
 export const MenuManageModal: React.FC<MenuManageModalProps> = ({ visible, onClose }) => {
   const { menus, loading, refresh, addMenu } = useMerchant();
@@ -59,9 +59,8 @@ export const MenuManageModal: React.FC<MenuManageModalProps> = ({ visible, onClo
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 1000,
-    backgroundColor: "transparent",
+    flex: 1,
+    backgroundColor: DS.bg,
   },
   contentBg: {
     position: "absolute",

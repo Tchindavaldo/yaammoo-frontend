@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { CartZoneGroup } from "../utils/groupCartOrders";
+import { DS } from "@/src/theme/ds";
 
 interface CartZoneFooterBarProps {
   /** Groupes actuellement affichés : un seul si une zone est isolée. */
@@ -110,7 +111,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
               style={[
                 footValue,
                 livraison > 0
-                  ? { color: "#ec4913" }
+                  ? { color: DS.accent }
                   : isPickupOnly
                     ? undefined
                     : { color: "#16a34a", fontSize: 11 },

@@ -2,6 +2,7 @@ import React from 'react';
 import { FlatList, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
+import { DS } from "@/src/theme/ds";
 
 interface CategoryListProps {
   categories: { name: string; icon: string }[];
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   chipSelected: {
-    backgroundColor: '#ec4913',
+    backgroundColor: DS.accent,
   },
   text: {
     color: Theme.colors.primary,

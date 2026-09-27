@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
+import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 /** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
@@ -297,7 +298,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
                   style={styles.locatingOverlay}
                   fallbackStyle={styles.blurFallbackLight}
                 >
-                  <Loader size={40} color="#ec4913" />
+                  <Loader size={40} color={DS.accent} />
                   <Text style={styles.locatingText}>
                     Récupération de votre position actuelle...
                   </Text>
@@ -345,7 +346,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
                     recording ? "stop" : hasVoiceNote ? "mic" : "mic-outline"
                   }
                   size={20}
-                  color={recording || hasVoiceNote ? "#fff" : "#ec4913"}
+                  color={recording || hasVoiceNote ? "#fff" : DS.accent}
                 />
               </TouchableOpacity>
             )}
@@ -422,7 +423,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   header: {
     flexDirection: "row",
@@ -453,12 +454,12 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   inputContainer: {
     position: "relative",
@@ -470,7 +471,7 @@ const styles = StyleSheet.create({
   addressBox: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 20,
     padding: 20,
   },
@@ -504,7 +505,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   gpsBtnText: {
     fontSize: 12,
@@ -524,12 +525,12 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: "#ec4913",
-    backgroundColor: "rgba(236, 73, 19, 0.06)",
+    borderColor: DS.accent,
+    backgroundColor: DS.accentAlpha(0.06),
     alignItems: "center",
     justifyContent: "center",
   },
-  voiceBtnFilled: { backgroundColor: "#ec4913" },
+  voiceBtnFilled: { backgroundColor: DS.accent },
   /** Enregistrement en cours : rouge, comme un bouton d'arret. */
   voiceBtnRecording: { backgroundColor: "#ef4444", borderColor: "#ef4444" },
   checkBtn: {
@@ -538,11 +539,11 @@ const styles = StyleSheet.create({
     right: 16,
     width: 40,
     height: 40,
-    backgroundColor: "#ec4913",
+    backgroundColor: DS.accent,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#ec4913",
+    shadowColor: DS.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -560,7 +561,7 @@ const styles = StyleSheet.create({
   locatingText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#ec4913",
+    color: DS.accent,
     textAlign: "center",
     paddingHorizontal: 20,
   },

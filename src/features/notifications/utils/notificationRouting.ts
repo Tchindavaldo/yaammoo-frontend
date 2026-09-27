@@ -6,6 +6,12 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
   // → on préfixe "/(tabs)/" si ce n'est pas déjà un chemin absolu.
   const rawRoute = (notif as any).route;
   if (rawRoute) {
+    // Les commandes client vivent désormais dans l'onglet « Commandes » : les
+    // anciennes routes (settings / cart ?section=<statut>) y sont redirigées.
+    const legacy = String(rawRoute).match(
+      /(?:settings|cart)\?section=(pending|active|finished|delivered)/,
+    );
+    if (legacy) return `/(tabs)/orders?section=${legacy[1]}`;
     return rawRoute.startsWith("/") ? rawRoute : `/(tabs)/${rawRoute}`;
   }
   // Minuscules : le push `bonus.activation_changed` envoie `type: "Bonus"`.
@@ -17,9 +23,9 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
       return "/(tabs)/notifications";
     case "order_status":
     case "order_delivering":
-      return "/(tabs)/settings?section=finished";
+      return "/(tabs)/orders?section=finished";
     case "order_rank_top":
-      return "/(tabs)/settings?section=pending";
+      return "/(tabs)/orders?section=pending";
     // Demande de livraison reçue (→ marchand) : ouvre le modal "Livreurs".
     case "driver_application":
       return "/(tabs)/settings?section=drivers";

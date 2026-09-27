@@ -7,6 +7,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CardVariantProps, SHOW_BOTTOM_BAR } from "../config";
 import { CardBottom } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
+import { DS } from "@/src/theme/ds";
 
 /** Chip prix blanc en haut-gauche, positionne en absolu. */
 const cornerPrice = (top: number, left: number) => [
@@ -70,7 +71,7 @@ export const CardV1: React.FC<CardVariantProps> = ({
         style={styles.v1Heart}
         fallbackStyle={shared.blurFallbackDark}
       >
-        <Ionicons name="heart" size={16} color="#e8440a" />
+        <Ionicons name="heart" size={16} color={DS.accentDeep} />
       </BlurView>
     </View>
 
@@ -106,7 +107,7 @@ export const CardV1: React.FC<CardVariantProps> = ({
     </View>
 
     {SHOW_BOTTOM_BAR && (
-      <CardBottom accent="#e8440a" deliveryTime={deliveryTime} stock={stock} />
+      <CardBottom accent={DS.accentDeep} deliveryTime={deliveryTime} stock={stock} />
     )}
   </TouchableOpacity>
 );
@@ -155,7 +156,7 @@ export const CardV2: React.FC<CardVariantProps> = ({
       </View>
     </View>
     {SHOW_BOTTOM_BAR && (
-      <CardBottom accent="#e8440a" deliveryTime={deliveryTime} stock={stock} />
+      <CardBottom accent={DS.accentDeep} deliveryTime={deliveryTime} stock={stock} />
     )}
   </TouchableOpacity>
 );
@@ -203,7 +204,7 @@ export const CardV3: React.FC<CardVariantProps> = ({
       {menu.titre}
     </Text>
     {SHOW_BOTTOM_BAR && (
-      <CardBottom accent="#e8440a" deliveryTime={deliveryTime} stock={stock} />
+      <CardBottom accent={DS.accentDeep} deliveryTime={deliveryTime} stock={stock} />
     )}
   </TouchableOpacity>
 );

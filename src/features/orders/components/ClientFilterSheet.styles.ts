@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Styles du ClientFilterSheet. Volontairement PROPRES au client : aucun
@@ -48,16 +49,19 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 7,
     borderRadius: 16,
-    backgroundColor: Theme.colors.primary + "10",
+    // Soft : non sélectionné = bordure grise seule, texte noir.
+    borderWidth: 1,
+    borderColor: DS.line,
   },
-  statusChipActive: { backgroundColor: Theme.colors.primary },
+  // Sélectionné : fond orange léger, texte orange.
+  statusChipActive: { backgroundColor: DS.accent + "10", borderColor: "transparent" },
   statusChipText: {
     flexShrink: 1,
     fontSize: 12,
     fontWeight: "700",
-    color: Theme.colors.primary,
+    color: DS.ink,
   },
-  statusChipTextActive: { color: "#fff" },
+  statusChipTextActive: { color: DS.accent },
   // Pastille d'angle (même principe que `tileBadge` de la grille horaire) :
   // hors du flux, le texte du chip garde toute la largeur.
   // Pastille dans le flux du chip, juste après le libellé.
@@ -65,24 +69,20 @@ export const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#E5E3DC",
+    backgroundColor: DS.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
   },
-  // Chip actif : fond primaire — le badge doit contraster DESSUS, donc blanc.
   statusBadgeActive: {
-    backgroundColor: "#fff",
-    borderColor: "#fff",
+    backgroundColor: DS.bg,
   },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: "800",
-    color: "#888780",
+    color: DS.muted,
   },
-  statusBadgeTextActive: { color: Theme.colors.primary },
+  statusBadgeTextActive: { color: DS.accent },
   // Sous-sheet des créneaux horaires.
   slotSheet: {
     position: "absolute",
@@ -132,16 +132,16 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.gray100,
   },
-  // Chip inerte (récap du jour / remplissage) : juste là pour couvrir la largeur.
+  // Chip inerte (récap du jour / remplissage) : gris neutre.
   dateChipEmpty: {
-    backgroundColor: Theme.colors.primary + "10",
+    backgroundColor: DS.gray100,
   },
   dateChipEmptyText: {
     fontSize: 11,
     fontWeight: "700",
-    color: Theme.colors.primary,
+    color: DS.muted,
   },
   // Cards de choix du lot de dates (ligne du bas).
   scopeCard: {
@@ -149,9 +149,9 @@ export const styles = StyleSheet.create({
     flexBasis: 0,
     minWidth: 0,
     borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#EFEDE6",
-    backgroundColor: "#FAF9F6",
+    borderWidth: 1,
+    borderColor: DS.line,
+    backgroundColor: DS.bg,
     paddingVertical: 9,
     paddingHorizontal: 8,
     gap: 6,
@@ -160,7 +160,7 @@ export const styles = StyleSheet.create({
   // Card active : pas de bordure marquée, c'est le FOND qui porte l'état.
   scopeCardActive: {
     borderColor: "transparent",
-    backgroundColor: Theme.colors.primary + "1A",
+    backgroundColor: DS.accent + "10",
   },
   scopeTop: {
     flexDirection: "row",
@@ -274,13 +274,14 @@ export const styles = StyleSheet.create({
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#EFEDE6",
+    backgroundColor: DS.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
   },
+  // Card active : badge blanc sur le fond orange léger, chiffre orange.
   countBadgeActive: {
-    backgroundColor: Theme.colors.primary,
+    backgroundColor: DS.bg,
   },
   // Badge d'une ligne cochée : primaire, comme son icône et son libellé.
   countBadgeRowActive: {
@@ -289,10 +290,10 @@ export const styles = StyleSheet.create({
   countText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#888780",
+    color: DS.muted,
   },
   countTextActive: {
-    color: "#fff",
+    color: DS.accent,
   },
   tileHour: {
     fontSize: 14,

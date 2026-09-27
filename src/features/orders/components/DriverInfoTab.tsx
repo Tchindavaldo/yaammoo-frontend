@@ -25,6 +25,7 @@ import {
   View,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { DS } from "@/src/theme/ds";
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Même hauteur de référence que CheckoutContactOverlay (base du blur + container).
 const SHEET_H = 384;
@@ -600,7 +601,7 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   commentInlineHeader: {
     flexDirection: "row",
@@ -626,18 +627,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: DS.slate100,
   },
   commentModalInput: {
     height: 140,
     fontSize: 15,
     color: "#334155",
     textAlignVertical: "top",
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 16,
     padding: 16,
   },
@@ -666,7 +667,7 @@ const styles = StyleSheet.create({
   // — repris de LivraisonTab —
   statePlaceholder: {
     height: "100%",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: DS.gray100,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
@@ -677,11 +678,11 @@ const styles = StyleSheet.create({
   },
   deliveredText: { fontSize: 12, fontWeight: "600", color: "#27500A" },
   infoCard: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: DS.gray50,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: DS.gray100,
   },
   infoLabel: {
     fontSize: 10,

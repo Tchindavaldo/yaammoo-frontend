@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, View } from "react-native";
 import { colHeader } from "./DeliveryZoneList";
+import { DS } from "@/src/theme/ds";
 
 /** Hauteur d'une ligne vide du tableau fantome (plus compacte qu'une ligne
  *  reelle : on en affiche ainsi davantage dans le meme espace libre). */
@@ -32,7 +33,7 @@ export const GhostTable: React.FC<{ rows: number }> = ({ rows }) => (
         flexDirection: "row",
         alignItems: "center",
         gap: 8,
-        backgroundColor: "#f1f5f9",
+        backgroundColor: DS.slate100,
         borderBottomWidth: 1,
         borderBottomColor: "#e2e8f0",
         paddingVertical: 9,
@@ -80,7 +81,7 @@ export const GhostTable: React.FC<{ rows: number }> = ({ rows }) => (
             alignItems: "center",
             height: GHOST_ROW_HEIGHT,
             borderBottomWidth: i === rows - 1 ? 0 : 1,
-            borderBottomColor: "#f1f5f9",
+            borderBottomColor: DS.slate100,
           }}
         >
           <GhostCell align="left" />

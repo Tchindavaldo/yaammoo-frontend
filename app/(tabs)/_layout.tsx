@@ -16,7 +16,7 @@ import { HapticTab } from "@/components/haptic-tab";
 import { Theme as Colors } from "@/src/theme";
 import { useColorScheme } from "@/src/hooks/use-color-scheme";
 import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
-
+import { DS } from "@/src/theme/ds";
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
@@ -44,7 +44,7 @@ export default function TabLayout() {
             </TabScreenBlurTarget>
           )}
           screenOptions={{
-            tabBarActiveTintColor: "rgba(236,73,19,1.00)",
+            tabBarActiveTintColor: DS.accent,
             tabBarInactiveTintColor: "#000000",
             headerShown: false,
             tabBarShowLabel: true,
@@ -114,17 +114,27 @@ export default function TabLayout() {
               ),
             }}
           />
+          {/* Onglet Commandes (commandes du client) pour tout le monde. La
+              page Boutique (marchand) reste une route sans onglet (href null),
+              ouverte depuis Profil → Boutique → « Commandes » ou « Créer ma
+              boutique ». */}
           <Tabs.Screen
-            name="boutique"
+            name="orders"
             options={{
-              tabBarLabel: "Boutique",
+              tabBarLabel: "Commandes",
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   size={focused ? 22 : 20}
-                  name={focused ? "storefront" : "storefront-outline"}
+                  name={focused ? "receipt" : "receipt-outline"}
                   color={color}
                 />
               ),
+            }}
+          />
+          <Tabs.Screen
+            name="boutique"
+            options={{
+              href: null,
             }}
           />
           <Tabs.Screen

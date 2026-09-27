@@ -7,12 +7,6 @@ import { UserBonusSheet } from "@/src/features/bonus/components/UserBonusSheet";
 import { DriverApplyModal } from "@/src/features/driver/components/DriverApplyModal";
 import { DriverMyApplicationsModal } from "@/src/features/driver/components/DriverMyApplicationsModal";
 import { DriverOrdersModal } from "@/src/features/driver/components/DriverOrdersModal";
-import { BroadcastManageModal } from "@/src/features/merchant/components/broadcast/BroadcastManageModal";
-import { EditBoutiquePanel } from "@/src/features/merchant/components/EditBoutiquePanel";
-import { MenuManageModal } from "@/src/features/merchant/components/MenuManageModal";
-import { MerchantSupportModal } from "@/src/features/merchant/components/support/MerchantSupportModal";
-import { WalletManageModal } from "@/src/features/merchant/components/WalletManageModal";
-import { UserOrdersModal } from "@/src/features/orders/components/UserOrdersModal";
 import { DeleteAccountModal } from "@/src/features/profile/components/DeleteAccountModal";
 import { LogoutModal } from "@/src/features/profile/components/LogoutModal";
 import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
@@ -23,12 +17,12 @@ import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificat
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
-import { StaffManageModal } from "@/src/features/staff/components/StaffManageModal";
 import { useStaffPendingCount } from "@/src/features/staff/hooks/useStaffPendingCount";
 import { SupportChatSheet } from "@/src/features/support/components/SupportChatSheet";
 import { UserWalletModal } from "@/src/features/wallet/components/UserWalletModal";
 import { Theme } from "@/src/theme";
-import React, { useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Platform,
@@ -56,9 +50,18 @@ export default function SettingsScreen() {
   // Sous-pages (modals / sheets) : deep-link, reset au tap onglet et au logout.
   const { visible, open, close, staffTab } = useSettingsSubScreens(isSignedIn);
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
   // Demandes de livreur en attente : mises en avant sur la tuile Personnel.
   const pendingDrivers = useStaffPendingCount(isMerchant, visible.staffManage);
+
+  // Personnel = page entière `app/shop/staff` (tuile ou deep-link) : on y
+  // redirige puis on referme le drapeau local.
+  useEffect(() => {
+    if (!visible.staffManage) return;
+    router.push({ pathname: "/shop/staff", params: { section: staffTab } });
+    close("staffManage");
+  }, [visible.staffManage, staffTab, router, close]);
 
   useSettingsTabBarStyle(visible.userBonus);
 
@@ -115,12 +118,16 @@ export default function SettingsScreen() {
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
         <SectionHeader title="Mes activités" />
         <SettingGrid>
-          <SettingGridItem
-            icon="receipt-outline"
-            title="État des commandes"
-            tone="accent"
-            onPress={() => open("userOrders")}
-          />
+          {/* Les commandes du client sont l'onglet « Commandes » de la navbar :
+              sans boutique, la tuile propose d'en créer une. */}
+          {!isMerchant && (
+            <SettingGridItem
+              icon="storefront-outline"
+              title="Créer ma boutique"
+              tone="accent"
+              onPress={() => router.push("/(tabs)/boutique")}
+            />
+          )}
           {!appleReviewMode && (
             <SettingGridItem
               icon="wallet-outline"
@@ -156,15 +163,22 @@ export default function SettingsScreen() {
           <>
             <SectionHeader title="Boutique" />
             <SettingGrid>
+              {/* Commandes reçues par la boutique (page marchand). */}
+              <SettingGridItem
+                icon="receipt-outline"
+                title="Commandes"
+                tone="accent"
+                onPress={() => router.push("/shop/orders")}
+              />
               <SettingGridItem
                 icon="storefront-outline"
                 title="Gérer ma boutique"
-                onPress={() => open("editBoutique")}
+                onPress={() => router.push("/shop/edit")}
               />
               <SettingGridItem
                 icon="restaurant-outline"
                 title="Gestion menu"
-                onPress={() => open("menuManage")}
+                onPress={() => router.push("/shop/menu")}
               />
               <SettingGridItem
                 icon="people-outline"
@@ -180,18 +194,18 @@ export default function SettingsScreen() {
               <SettingGridItem
                 icon="chatbubbles-outline"
                 title="Messages"
-                onPress={() => open("merchantSupport")}
+                onPress={() => router.push("/shop/messages")}
               />
               <SettingGridItem
                 icon="megaphone-outline"
                 title="Notifications"
-                onPress={() => open("broadcast")}
+                onPress={() => router.push("/shop/notifications")}
               />
               {!appleReviewMode && (
                 <SettingGridItem
                   icon="wallet-outline"
                   title="Portefeuille boutique"
-                  onPress={() => open("walletManage")}
+                  onPress={() => router.push("/shop/wallet")}
                 />
               )}
             </SettingGrid>
@@ -330,45 +344,13 @@ export default function SettingsScreen() {
       </BlurScope>
       </BlurTarget>
 
-      {/* Edit Boutique Modal */}
-      <EditBoutiquePanel
-        visible={visible.editBoutique}
-        onClose={() => close("editBoutique")}
-        onSuccess={() => {
-          // Refresh if needed
-        }}
-      />
-
-      {/* Gestion menu / Portefeuille (modals plein écran) */}
-      <MenuManageModal
-        visible={visible.menuManage}
-        onClose={() => close("menuManage")}
-      />
-      <WalletManageModal
-        visible={visible.walletManage}
-        onClose={() => close("walletManage")}
-      />
+      {/* Boutique : gérer, menu, messages, notifications, portefeuille sont des
+          routes entières `app/shop/*` (hors (tabs), sans navbar). */}
 
       {/* Mes activités : commandes + portefeuille user (plein écran) */}
-      <UserOrdersModal
-        visible={visible.userOrders}
-        onClose={() => close("userOrders")}
-      />
       <UserWalletModal
         visible={visible.userWallet}
         onClose={() => close("userWallet")}
-      />
-
-      {/* Boutique : discussions recues des clients */}
-      <MerchantSupportModal
-        visible={visible.merchantSupport}
-        onClose={() => close("merchantSupport")}
-      />
-
-      {/* Boutique : notifications envoyées aux clients */}
-      <BroadcastManageModal
-        visible={visible.broadcast}
-        onClose={() => close("broadcast")}
       />
 
       {/* Contactez-nous : chat support */}
@@ -397,12 +379,6 @@ export default function SettingsScreen() {
         onClose={() => close("driverMyApps")}
       />
 
-      {/* Boutique : personnel (membres, rôles) + livreurs et demandes */}
-      <StaffManageModal
-        visible={visible.staffManage}
-        initialTab={staffTab}
-        onClose={() => close("staffManage")}
-      />
       </BlurScope>
 
       {/* Modals de confirmation (hors BlurScope) : suppression, déconnexion */}

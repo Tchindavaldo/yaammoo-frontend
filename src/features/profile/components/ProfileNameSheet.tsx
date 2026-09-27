@@ -20,8 +20,9 @@ import { useProfileNameSheet } from "../hooks/useProfileNameSheet";
 import { MissingName } from "../utils/missingName";
 import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { DS } from "@/src/theme/ds";
 
-const ACCENT = "#e8440a";
+const ACCENT = DS.accentDeep;
 /** Marge entre la carte et le bas de l'ecran (ou le haut du clavier). */
 const CARD_GAP = 24;
 const CARD_GAP_KEYBOARD = 12;

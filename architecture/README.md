@@ -73,6 +73,7 @@ yaammoo/
 │   ├── _layout.tsx           # Racine : AuthProvider, OrderProvider, NotificationProvider, MerchantProvider, FastFoodProvider
 │   ├── (auth)/               # Pages login/register/phone
 │   ├── (tabs)/               # Tabs principales (home, boutique, cart, notifications, profile)
+│   ├── shop/                 # Pages entieres Settings → Boutique, sans navbar (orders, edit, menu, messages, notifications, wallet)
 │   └── modal.tsx
 │
 ├── src/
@@ -84,7 +85,7 @@ yaammoo/
 │   │   ├── merchant/         # Panel marchand (boutique, commandes, menu) + components/recap-designs/ (3 designs récapitulatif menu)
 │   │   └── menu/ restaurants/ profile/ payment/
 │   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs) + version.ts + setupHttp.ts (headers globaux x-app-version)
-│   ├── theme/                # Theme.colors, typography ; fonts.ts = police globale changeable par OTA (`FONT_THEME` : jakarta, manrope, figtree, dmsans, system) ; appFont.tsx = remplace `Text`/`TextInput` de RN pour poser la police selon `fontWeight` (hors styles a `fontFamily` explicite), chargee sous le splash dans `app/_layout.tsx` ; la liste native iOS la recoit via la prop `fonts`
+│   ├── theme/                # ds.ts = design system (SOURCE UNIQUE des couleurs : DS.accent, accentAlpha(a), surfaces, palette Personnel…) ; Theme.colors (primary = DS.accent), typography ; fonts.ts = police globale changeable par OTA (`FONT_THEME` : jakarta, manrope, figtree, dmsans, system) ; appFont.tsx = remplace `Text`/`TextInput` de RN pour poser la police selon `fontWeight` (hors styles a `fontFamily` explicite), chargee sous le splash dans `app/_layout.tsx` ; la liste native iOS la recoit via la prop `fonts`
 │   ├── types/                # Types TS partagés (Commande, Menu, Livraison…)
 │   ├── components/           # Composants partagés (Toast, AppBlurView…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
 │   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)

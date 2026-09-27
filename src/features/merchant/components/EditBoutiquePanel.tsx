@@ -2,9 +2,10 @@ import React from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { Theme } from "@/src/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFooterBottomInset } from "@/src/hooks/usePageBottomInset";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
-import { styles, TAB_BAR_HEIGHT } from "./edit-boutique/styles";
+import { styles } from "./edit-boutique/styles";
 import { useEditBoutique } from "./edit-boutique/useEditBoutique";
 import { groupZonesByLieu } from "./edit-boutique/groupZones";
 import { hourToDate } from "./edit-boutique/parseBoutique";
@@ -33,6 +34,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   onSuccess,
 }) => {
   const insets = useSafeAreaInsets();
+  const footerInset = useFooterBottomInset();
   const s = useEditBoutique({ visible, onClose, onSuccess });
   // Sheet de consultation des zones, ouvrable depuis la page 1.
   const [showZoneList, setShowZoneList] = React.useState(false);
@@ -94,6 +96,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   };
 
   return (
+    // Page entière rendue par la route `app/shop/edit.tsx` (hors (tabs), sans navbar).
     <View style={styles.overlay}>
       {/* Fond blanc opaque FIXE sous le header : couvre toute la zone de contenu
           (évite que le settings transparaisse au scroll). Derrière le header, on
@@ -126,7 +129,9 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
         <View
           style={[
             styles.cardGrid,
-            { flex: 1, paddingBottom: insets.bottom + TAB_BAR_HEIGHT + 5 },
+            // Bouton fixe en bas : il absorbe lui-même la safe-area
+            // (ShopPageFrame `ownFooter` dans app/shop/edit.tsx).
+            { flex: 1, paddingBottom: footerInset },
           ]}
         >
           {s.loadingData ? (

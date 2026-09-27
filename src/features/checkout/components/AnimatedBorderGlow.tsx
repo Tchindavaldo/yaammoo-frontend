@@ -6,6 +6,7 @@ import Svg, {
   Rect,
   Stop,
 } from "react-native-svg";
+import { DS } from "@/src/theme/ds";
 
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
@@ -75,7 +76,7 @@ export const AnimatedBorderGlow: React.FC<AnimatedBorderGlowProps> = ({
         <Svg width={width} height={height}>
           <Defs>
             <LinearGradient id="glow" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#ec4913" />
+              <Stop offset="0" stopColor={DS.accent} />
               <Stop offset="0.33" stopColor="#f59e0b" />
               <Stop offset="0.66" stopColor="#10b981" />
               <Stop offset="1" stopColor="#3b82f6" />

@@ -13,6 +13,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { CAMEROON_CITIES } from "./constants";
+import { DS } from "@/src/theme/ds";
 
 /** Overlay iOS-like contenant un DateTimePicker "time". */
 export const TimePickerOverlay: React.FC<{
@@ -83,7 +84,7 @@ export const CityPickerModal: React.FC<{
               Villes de livraison
             </Text>
             <TouchableOpacity onPress={onDone}>
-              <Text style={{ color: "#ec4913", fontWeight: "bold" }}>
+              <Text style={{ color: DS.accent, fontWeight: "bold" }}>
                 Terminer
               </Text>
             </TouchableOpacity>

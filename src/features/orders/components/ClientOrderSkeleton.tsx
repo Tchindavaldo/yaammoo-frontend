@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Skeleton de la page SUIVI DES COMMANDES (`CartStatusPanel`) — copie dédiée de
@@ -68,7 +69,7 @@ const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: DS.gray100,
     paddingHorizontal: 16,
   },
   row: {

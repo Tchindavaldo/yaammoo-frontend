@@ -18,10 +18,11 @@ import {
 } from "../config";
 import { DarkBottomShade, V5BottomBar } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
+import { DS } from "@/src/theme/ds";
 
 const IS_ANDROID = Platform.OS === "android";
 
-const V5_ACCENTS = ["#e8440a", "#6c5ce7", "#00b894", "#fd79a8", "#0984e3", "#e17055"];
+const V5_ACCENTS = [DS.accentDeep, "#6c5ce7", "#00b894", "#fd79a8", "#0984e3", "#e17055"];
 
 /** DESIGN 5 : GLASS SHOWCASE — poster en fond, bande livraison en bas. */
 export const CardV5: React.FC<CardVariantProps> = ({

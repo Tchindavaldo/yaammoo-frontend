@@ -5,7 +5,6 @@ import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { StaffHeader } from "./StaffHeader";
 import { Toast } from "@/src/components/Toast";
 import type { DriverApplication, DriverInfo } from "@/src/features/driver/services/driverService";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStaff } from "../hooks/useStaff";
 import { useStaffDrivers } from "../hooks/useStaffDrivers";
 import { STAFF_FREE_PLAN } from "../services/staffService";
@@ -50,8 +49,6 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   );
   const staff = useStaff(visible, onLoadError);
   const drv = useStaffDrivers(visible, onLoadError);
-  // Page plein écran (pas de tab bar) : FAB sur la safe-area.
-  const insets = useSafeAreaInsets();
   const { userData } = useAuth();
   const ownerName =
     [userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(" ") || "Propriétaire";
@@ -115,7 +112,8 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
 
   const membersFull = members.length >= plan.memberLimit;
   const driversFull = drv.drivers.length >= plan.driverLimit;
-  const fabBottom = insets.bottom + 16;
+  // Safe-area basse réservée par ShopPageFrame.
+  const fabBottom = 16;
   const member = memberId ? members.find((m) => m.id === memberId) || null : null;
   const memberRole = member ? roles.find((r) => r.id === member.roleId) || null : null;
   const openRole = expanded ? roles.find((r) => r.id === expanded) || null : null;
@@ -230,13 +228,8 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   const refresh = () => Promise.all([staff.refresh(), drv.refresh()]);
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
+    // Route `app/shop/staff.tsx` dans ShopPageFrame (safe-area + retour par
+    // glissement du bord gauche) : plus de <Modal> englobant.
     <View style={styles.overlay}>
 
       <StaffHeader
@@ -268,7 +261,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
 
       {/* Seules les listes défilent, tronquées au bord de la safe-area basse. */}
       <ScrollView
-        style={[styles.scroll, { marginBottom: insets.bottom }]}
+        style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingTop: 2, paddingBottom: FAB_HEIGHT + 30 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -400,7 +393,6 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
 
       {toast && <Toast message={toast.message} type={toast.type} onHide={() => setToast(null)} />}
     </View>
-    </Modal>
   );
 };
 

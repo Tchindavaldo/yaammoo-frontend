@@ -423,15 +423,14 @@ passe aussi des commandes) :
 - `src/features/orders/components/CartStatusPanel.tsx` : panneau suivi/tracking
   autonome (filtre statut/date, groupes par boutique, jours précédents, détail
   via `OrderBottomSheet`), extrait de l'ancien cart.tsx.
-- `src/features/orders/components/UserOrdersModal.tsx` : modal plein écran
-  (« État des commandes ») wrappant `CartStatusPanel`.
 - `src/features/wallet/components/UserWalletModal.tsx` : modal plein écran
   (« Portefeuille ») wrappant `WalletPanel`. **Caché en review**.
 
-Deep-links : `onOrdersPress` (home) et les notifications commandes pointent vers
-`/(tabs)/settings?section=pending|finished` → `settings.tsx` ouvre
-`UserOrdersModal`. Le `?section=cart` du bouton panier est devenu inutile (cart
-est mono-section).
+Le suivi des commandes n'est plus dans Settings : c'est l'onglet **« Commandes »**
+de la navbar (`app/(tabs)/orders.tsx` → `CartStatusPanel`), `UserOrdersModal` a
+été supprimé. Deep-links : `onOrdersPress` (home) et les notifications commandes
+pointent vers `/(tabs)/orders?section=pending|active|finished`. Le `?section=cart`
+du bouton panier est devenu inutile (cart est mono-section).
 
 ## Gestion des erreurs
 

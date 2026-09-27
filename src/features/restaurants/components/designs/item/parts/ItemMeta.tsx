@@ -5,6 +5,7 @@ import { Text, View } from "react-native";
 import { useNextDeliveryTime } from "../../../../utils/deliveryUtils";
 import { SHOW_AVAILABILITY } from "../config";
 import { sharedStyles as styles } from "../styles/sharedStyles";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Bloc d'infos rendu SOUS la carte, hors de celle-ci : nom du menu, livraison
@@ -83,7 +84,7 @@ export const ItemMeta: React.FC<{
         <View style={[styles.metaRow, { justifyContent: "space-between" }]}>
           <Text style={styles.metaText}>
             Livraison{" "}
-            <Text style={{ color: "#e8440a", fontWeight: "900" }}>
+            <Text style={{ color: DS.accentDeep, fontWeight: "900" }}>
               {index % 3 === 0 ? "gratuite" : index % 3 === 1 ? "300F" : "1000F"}
             </Text>
           </Text>
@@ -96,12 +97,12 @@ export const ItemMeta: React.FC<{
           {variant === 5 || variant === 7 ? (
             <Text style={styles.metaText}>
               Livré en{" "}
-              <Text style={{ color: "#e8440a", fontWeight: "900" }}>30min</Text>
+              <Text style={{ color: DS.accentDeep, fontWeight: "900" }}>30min</Text>
             </Text>
           ) : (
             <>
               <Text style={styles.metaText}>Livraison </Text>
-              <Text style={[styles.metaFree, { color: "#e8440a" }]}>
+              <Text style={[styles.metaFree, { color: DS.accentDeep }]}>
                 offerte 30min
               </Text>
             </>

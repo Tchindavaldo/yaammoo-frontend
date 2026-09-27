@@ -44,8 +44,11 @@ blanc + texte orange.
 | `collapsedCount` | number? |
 
 Le `TabHeader` accepte aussi `onBack?: () => void` : affiche un chevron retour à
-gauche du titre (utilisé par les écrans plein écran en overlay — voir EditBoutique,
-MenuManageModal, WalletManageModal).
+gauche du titre. Les pages Settings → Boutique (EditBoutique, MenuManageModal,
+WalletManageModal, MerchantSupportModal, BroadcastManageModal) sont des routes
+entières `app/shop/{edit,menu,wallet,messages,notifications}.tsx`, hors du
+groupe `(tabs)` donc sans navbar, avec `TabHeader` + pastille « Retour »
+(`router.back()`).
 
 ### `SectionSwitcher.tsx`
 FAB flottant (bas-droite) qui, au clic, déploie verticalement vers le haut les

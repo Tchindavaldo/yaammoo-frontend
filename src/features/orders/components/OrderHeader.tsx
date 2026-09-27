@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
+import { DS } from "@/src/theme/ds";
 
 interface OrderHeaderProps {
   activeTab: string;
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   activeChip: {
-    backgroundColor: 'rgba(236,73,19,1.00)',
+    backgroundColor: DS.accent,
   },
   label: {
     fontSize: 9, // original was font-size: 8px or similar
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -7,
     right: -7,
-    backgroundColor: 'rgba(236,73,19,1.00)',
+    backgroundColor: DS.accent,
     width: 20,
     height: 20,
     borderRadius: 10,

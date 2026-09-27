@@ -19,6 +19,7 @@ import {
   consumeUpdateApplied,
   onUpdateDownloaded,
 } from "../services/otaNotice";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Carte de mise a jour OTA, montee une seule fois a la racine de l'app (comme
@@ -48,7 +49,7 @@ const CONTENT: Record<
 > = {
   downloaded: {
     icon: "arrow-down",
-    tint: "#ec4913",
+    tint: DS.accent,
     title: "Mise à jour téléchargée",
     message:
       "De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter.",

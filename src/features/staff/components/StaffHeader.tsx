@@ -1,7 +1,9 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Theme } from "@/src/theme";
+import { LinearGradient } from "expo-linear-gradient";
+import { DS, Theme } from "@/src/theme";
+import { HEADER_GRADIENT } from "@/src/theme/ds";
 import { ST } from "./staffTheme";
 
 interface Props {
@@ -22,6 +24,16 @@ export const StaffHeader: React.FC<Props> = ({ title, subtitle, right, onHeightC
       style={[styles.wrap, { paddingTop: insets.top }]}
       onLayout={(e) => onHeightChange?.(e.nativeEvent.layout.height)}
     >
+      {/* Dégradé orange doux des headers de page (comme TabHeader). */}
+      {HEADER_GRADIENT && (
+        <LinearGradient
+          colors={[DS.accent + "0A", DS.accent + "33"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      )}
       <View style={styles.texts}>
         <Text style={styles.title} numberOfLines={1}>{title}</Text>
         {!!subtitle && <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>}
@@ -48,5 +60,5 @@ const styles = StyleSheet.create({
   },
   texts: { flexShrink: 1 },
   title: { fontSize: 24, fontWeight: "bold", color: ST.ink },
-  subtitle: { fontSize: 13, fontWeight: "600", color: ST.muted, marginTop: 2 },
+  subtitle: { fontSize: 13, fontWeight: "600", color: ST.accent, marginTop: 2 },
 });

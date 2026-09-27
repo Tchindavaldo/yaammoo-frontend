@@ -1,4 +1,5 @@
 import { Theme } from "@/src/theme";
+import { DS, HEADER_GRADIENT } from "@/src/theme/ds";
 import {
   AppBlurView as BlurView,
   useNativeBlurActive,
@@ -54,13 +55,15 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
         fallbackStyle={styles.blurFallback}
       />
       {/* Dégradé doux orange par-dessus le blur (le texte reste foncé/lisible). */}
-      <LinearGradient
-        colors={[Theme.colors.primary + "0A", Theme.colors.primary + "33"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      {HEADER_GRADIENT && (
+        <LinearGradient
+          colors={[Theme.colors.primary + "0A", Theme.colors.primary + "33"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      )}
       {!!onBack && (
         <TouchableOpacity style={styles.backBtn} onPress={onBack} hitSlop={8}>
           <Ionicons name="chevron-back" size={24} color={Theme.colors.dark} />
@@ -88,8 +91,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: Theme.spacing.md,
+    // Fond blanc : bas plus serré (sans fond coloré, l'espace paraît vide).
+    paddingBottom: HEADER_GRADIENT ? Theme.spacing.md : Theme.spacing.sm,
     backgroundColor: "rgba(255, 255, 255, 0.015)",
-    borderBottomWidth: 0.4,
+    // Trait orange seulement avec le dégradé (fond blanc = pas de trait).
+    borderBottomWidth: HEADER_GRADIENT ? 0.4 : 0,
     borderBottomColor: Theme.colors.primary,
     overflow: "hidden",
   },
@@ -117,7 +123,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 13,
-    color: Theme.colors.primary,
+    // Header blanc : sous-titre neutre ; orange seulement avec le dégradé.
+    color: HEADER_GRADIENT ? Theme.colors.primary : DS.muted,
     marginTop: 2,
     fontWeight: "600",
   },

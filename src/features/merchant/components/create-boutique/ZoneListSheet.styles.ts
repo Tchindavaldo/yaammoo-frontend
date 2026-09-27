@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { DS } from "@/src/theme/ds";
 
 /**
  * Styles du bottom sheet de consultation des zones. Reprend la charte de
@@ -39,7 +40,7 @@ export const zoneListStyles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -58,14 +59,14 @@ export const zoneListStyles = StyleSheet.create({
   chip: {
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   chipOn: {
-    borderColor: "#ec4913",
-    backgroundColor: "#ec4913",
+    borderColor: DS.accent,
+    backgroundColor: DS.accent,
   },
   chipText: {
     fontSize: 12,
@@ -94,7 +95,7 @@ export const zoneListStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     overflow: "hidden",
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     borderRadius: 12,
@@ -103,8 +104,8 @@ export const zoneListStyles = StyleSheet.create({
     gap: 4,
   },
   priceCardExpress: {
-    borderColor: "#fed7aa",
-    backgroundColor: "#fff7ed",
+    borderColor: DS.accent200,
+    backgroundColor: DS.accent50,
   },
   priceCardSched: {
     borderColor: "#a7f3d0",
@@ -119,7 +120,7 @@ export const zoneListStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderColor: "#cbd5e1",
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
   },
   priceCardMoreText: {
     fontSize: 18,
@@ -128,8 +129,8 @@ export const zoneListStyles = StyleSheet.create({
   },
   /** Creneau en cours d'edition, quand il est affiche en carte. */
   priceCardActive: {
-    borderColor: "#ec4913",
-    backgroundColor: "#fff7ed",
+    borderColor: DS.accent,
+    backgroundColor: DS.accent50,
   },
   tag: {
     flexDirection: "row",
@@ -178,8 +179,8 @@ export const zoneListStyles = StyleSheet.create({
     gap: 2,
   },
   slotActive: {
-    borderColor: "#ec4913",
-    backgroundColor: "#fff7ed",
+    borderColor: DS.accent,
+    backgroundColor: DS.accent50,
   },
   slotHour: {
     fontSize: 13,
@@ -191,7 +192,7 @@ export const zoneListStyles = StyleSheet.create({
     fontWeight: "600",
     color: "#64748b",
   },
-  slotPriceActive: { color: "#ec4913" },
+  slotPriceActive: { color: DS.accent },
 
   // ---- Variante C : zone unique (bandeau + ligne express + creneaux) ----
   /** Bandeau sombre nommant la zone, quand la boutique n'en a qu'une. */
@@ -231,7 +232,7 @@ export const zoneListStyles = StyleSheet.create({
   },
   /** Bandeau de la zone non affichee : meme forme, en clair. */
   detectedOff: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: DS.slate50,
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
@@ -256,7 +257,7 @@ export const zoneListStyles = StyleSheet.create({
     marginTop: "auto",
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
+    borderTopColor: DS.slate100,
     fontSize: 11,
     fontWeight: "500",
     color: "#94a3b8",

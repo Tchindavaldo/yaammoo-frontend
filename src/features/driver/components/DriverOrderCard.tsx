@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import MerchantOrderBottomSheet from "../../merchant/components/MerchantOrderBottomSheet";
+import { DS } from "@/src/theme/ds";
 
 /** Hauteur fixe d'une carte livreur (alignée sur la carte marchand). */
 export const LIVREUR_CARD_HEIGHT = 94.33;
@@ -65,7 +66,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
 
   const deliveryType = (order as any).delivery?.type;
   const isExpress = deliveryType === "express";
-  const deliveryColor = isExpress ? "#ec4913" : "#2563eb";
+  const deliveryColor = isExpress ? DS.accent : "#2563eb";
   const orderCount = group.length;
   const addressStr =
     order.delivery?.location || order.delivery?.address || "Adresse non spécifiée";
@@ -103,7 +104,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
             </View>
 
             {isUpdating ? (
-              <ActivityIndicator size="small" color="#ec4913" />
+              <ActivityIndicator size="small" color={DS.accent} />
             ) : isDelivered ? (
               <View style={styles.deliveredBadge}>
                 <Ionicons name="checkmark-done" size={14} color="#16a34a" />
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
+    borderBottomColor: DS.gray100,
     paddingHorizontal: 16,
   },
   summaryRow: {
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 16,
     fontWeight: "900",
-    color: "#ec4913",
+    color: DS.accent,
   },
   orderCountBadge: {
     position: "absolute",

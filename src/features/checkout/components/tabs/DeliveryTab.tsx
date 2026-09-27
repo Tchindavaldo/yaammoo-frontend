@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "../CheckoutSheet.styles";
+import { DS } from "@/src/theme/ds";
 
 interface DeliveryTabProps {
   delivery: Livraison;
@@ -48,16 +49,16 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
 
   const getBtnStyle = (filled: boolean) => [
     styles.infoBtnLarge,
-    { backgroundColor: "#f1f5f9", borderColor: "#cbd5e1", borderWidth: 1 },
+    { backgroundColor: DS.slate100, borderColor: "#cbd5e1", borderWidth: 1 },
     filled && {
-      borderColor: "#ec4913",
+      borderColor: DS.accent,
       borderWidth: 2,
-      backgroundColor: "rgba(236, 73, 19, 0.05)",
+      backgroundColor: DS.accentAlpha(0.05),
     },
   ];
 
-  const getIconColor = (filled: boolean) => (filled ? "#ec4913" : "#94a3b8");
-  const getTextColor = (filled: boolean) => (filled ? "#ec4913" : "#0f172a");
+  const getIconColor = (filled: boolean) => (filled ? DS.accent : "#94a3b8");
+  const getTextColor = (filled: boolean) => (filled ? DS.accent : "#0f172a");
 
   const deliveryType = delivery.type;
 
@@ -310,7 +311,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <Ionicons
               name="flash-outline"
               size={22}
-              color={delivery.type === "express" ? "#ec4913" : "#94a3b8"}
+              color={delivery.type === "express" ? DS.accent : "#94a3b8"}
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
@@ -319,7 +320,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
               <Text
                 style={[
                   styles.deliveryTypeSubText,
-                  delivery.type === "express" && { color: "#ec4913" },
+                  delivery.type === "express" && { color: DS.accent },
                 ]}
               >
                 {deliveryFree && expressPrice
@@ -330,7 +331,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                 <Text
                   style={[
                     styles.deliveryTypeSubText,
-                    delivery.type === "express" && { color: "#ec4913" },
+                    delivery.type === "express" && { color: DS.accent },
                   ]}
                 >
                   <Text style={localStyles.freeLabel}>Offert</Text>
@@ -352,7 +353,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <Ionicons
               name="calendar-outline"
               size={22}
-              color={delivery.type === "standard" ? "#ec4913" : "#94a3b8"}
+              color={delivery.type === "standard" ? DS.accent : "#94a3b8"}
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
@@ -363,7 +364,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   <Text
                     style={[
                       styles.deliveryTypeSubText,
-                      delivery.type === "standard" && { color: "#ec4913" },
+                      delivery.type === "standard" && { color: DS.accent },
                     ]}
                     numberOfLines={1}
                   >
@@ -372,7 +373,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   <Text
                     style={[
                       styles.deliveryTypeSubText,
-                      delivery.type === "standard" && { color: "#ec4913" },
+                      delivery.type === "standard" && { color: DS.accent },
                     ]}
                   >
                     <Text style={localStyles.freeLabel}>Offert</Text>
@@ -388,7 +389,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     <Text
                       style={[
                         styles.deliveryTypeSubText,
-                        delivery.type === "standard" && { color: "#ec4913" },
+                        delivery.type === "standard" && { color: DS.accent },
                       ]}
                     >
                       {selectedDate}
@@ -397,7 +398,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   <Text
                     style={[
                       styles.deliveryTypeSubText,
-                      delivery.type === "standard" && { color: "#ec4913" },
+                      delivery.type === "standard" && { color: DS.accent },
                     ]}
                   >
                     {selectedHour
@@ -425,7 +426,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <Ionicons
               name="remove-circle-outline"
               size={22}
-              color={delivery.type === "aucune" ? "#ec4913" : "#94a3b8"}
+              color={delivery.type === "aucune" ? DS.accent : "#94a3b8"}
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
@@ -434,7 +435,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
               <Text
                 style={[
                   styles.deliveryTypeSubText,
-                  delivery.type === "aucune" && { color: "#ec4913" },
+                  delivery.type === "aucune" && { color: DS.accent },
                 ]}
               >
                 {pickupAllowed === false
@@ -487,7 +488,7 @@ const localStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: DS.slate100,
     borderColor: "#cbd5e1",
     borderWidth: 1,
     borderRadius: 16,

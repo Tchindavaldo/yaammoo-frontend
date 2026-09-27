@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Embalage } from '@/src/types';
 import { styles } from '../CheckoutSheet.styles';
+import { DS } from "@/src/theme/ds";
 
 interface ExtrasTabProps {
   availablePackaging: Embalage[];
@@ -36,7 +37,7 @@ export const ExtrasTab: React.FC<ExtrasTabProps> = ({
             activeOpacity={0.7}
           >
             <View style={[styles.extraIconContainer, isSelected && styles.extraIconSelected]}>
-              <Ionicons name="cube-outline" size={24} color={isSelected ? '#ec4913' : '#94a3b8'} />
+              <Ionicons name="cube-outline" size={24} color={isSelected ? DS.accent : '#94a3b8'} />
               {isSelected && (
                 <View style={styles.selectedBadge}>
                   <Text style={styles.selectedBadgeText}>1</Text>

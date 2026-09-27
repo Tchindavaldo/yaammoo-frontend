@@ -53,8 +53,9 @@ app/
 ├── (tabs)/                  # Tabs authentifiées
 │   ├── _layout.tsx
 │   ├── index.tsx            # Home (liste restaurants, feed)
-│   ├── boutique.tsx         # Commandes marchand (statuts via chips ; menu/portefeuille → Settings)
-│   ├── cart.tsx             # Panier seul (mono-section) ; commandes/portefeuille → Settings « Mes activités »
+│   ├── orders.tsx           # Onglet « Commandes » : suivi des commandes du client (CartStatusPanel, ?section=)
+│   ├── boutique.tsx         # Commandes marchand — sans onglet (href null), ouvert via Profil → Boutique → Commandes / Créer ma boutique
+│   ├── cart.tsx             # Panier seul (mono-section) ; portefeuille → Settings « Mes activités »
 │   ├── notifications.tsx    # Liste notifs + DetailSheet
 │   ├── settings.tsx         # Paramètres (grille de sections) — cf. settings-grille.md
 │   └── profile.tsx
@@ -118,8 +119,7 @@ src/features/
 │   ├── utils/sanitizeOrder.ts           # Sanitization stricte d'une commande (envoi /order, /transaction)
 │   └── components/
 │       ├── OrderCard.tsx                # Carte client
-│       ├── CartStatusPanel.tsx          # Suivi commandes autonome (statut/date/groupes/jours passés/détail)
-│       ├── UserOrdersModal.tsx          # Modal plein écran « État des commandes » (Settings → Mes activités)
+│       ├── CartStatusPanel.tsx          # Suivi commandes autonome (statut/date/groupes/détail) — onglet Commandes
 │       └── ...
 │
 ├── merchant/                            # Détail complet : architecture/orders-merchant.md

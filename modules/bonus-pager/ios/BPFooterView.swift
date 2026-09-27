@@ -132,20 +132,14 @@ final class BPFooterView: UIView {
   }
 
   /**
-   Panneau heros, cale sur les cartes du haut : la piste reste immobile, puis
-   glisse AU MEME RYTHME que les cartes pendant que leur ecart traverse le
-   panneau, puis s'arrete. Son ecart reste ainsi sous celui des cartes, et
-   chaque slide sous la carte de sa couleur.
+   Panneau heros : la piste suit les cartes du haut en proportion, du premier
+   au dernier point du geste (demarre et s'arrete avec elles, dans les deux
+   sens). Plus etroit que les cartes, il glisse moins vite : son ecart ne
+   reste pas sous celui des cartes pendant le glissement, seulement au repos.
+   (L'ancienne piste « au meme rythme pendant que l'ecart traverse le
+   panneau » attendait les cartes au retour et s'arretait avant elles.)
    */
   private func trackOffset(_ p: CGFloat) -> CGFloat {
-    let s = BPFooterView.self
-    let q = min(max(p, 0), CGFloat(max(0, slides.count - 1)))
-    let i = floor(q)
-    let w = bounds.width
-    guard w > 0 else { return q * s.slidePitch }
-    // Distance du bord droit d'une carte au repos a celui du panneau.
-    let lead = (w - s.pageCardMargin) - (card.frame.minX + panel.frame.maxX)
-    let local = min(max((q - i) * w - lead, 0), s.slidePitch)
-    return i * s.slidePitch + local
+    min(max(p, 0), CGFloat(max(0, slides.count - 1))) * BPFooterView.slidePitch
   }
 }

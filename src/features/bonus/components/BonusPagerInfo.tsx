@@ -22,30 +22,17 @@ const CARD_MARGIN = GUTTER - 10;
 /** Écart entre deux slides = écart entre deux cartes du haut. */
 const SLIDE_GAP = 2 * CARD_MARGIN;
 const PITCH = PANEL_W + SLIDE_GAP;
-/**
- * Bord droit d'une carte au repos (CARD_MARGIN du bord) → bord droit du
- * panneau (GUTTER du bord, `pagCard` de `UserBonusSheet`).
- */
-const LEAD = GUTTER - CARD_MARGIN;
 
 /**
- * Piste calée sur les cartes du haut : immobile, puis glisse AU MÊME RYTHME
- * que les cartes pendant que leur écart traverse le panneau, puis s'arrête.
- * Son écart reste sous celui des cartes, chaque slide sous la carte de sa
- * couleur (même calcul que `BPFooterView.trackOffset` côté iOS).
+ * Piste proportionnelle aux cartes du haut : elle démarre et s'arrête avec
+ * elles, dans les deux sens (même calcul que `BPFooterView.trackOffset` côté
+ * iOS). Plus étroite, elle glisse moins vite : son écart n'est sous celui des
+ * cartes qu'au repos.
  */
-const trackRange = (count: number) => {
-  const inputRange = [0];
-  const outputRange = [0];
-  for (let i = 0; i < count - 1; i++) {
-    const page = i * CAROUSEL_INTERVAL;
-    inputRange.push(page + LEAD, page + LEAD + PITCH);
-    outputRange.push(-i * PITCH, -(i + 1) * PITCH);
-  }
-  inputRange.push((count - 1) * CAROUSEL_INTERVAL);
-  outputRange.push(-(count - 1) * PITCH);
-  return { inputRange, outputRange };
-};
+const trackRange = (count: number) => ({
+  inputRange: Array.from({ length: count }, (_, i) => i * CAROUSEL_INTERVAL),
+  outputRange: Array.from({ length: count }, (_, i) => -i * PITCH),
+});
 
 /**
  * Colonne droite de la carte de pagination — bloc « héro » du bonus courant.

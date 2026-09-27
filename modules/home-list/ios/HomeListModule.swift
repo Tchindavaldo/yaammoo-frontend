@@ -28,6 +28,12 @@ public final class HomeListModule: Module {
         view.prefetchDistance = CGFloat(distance)
       }
 
+      // Prechauffage des rangees sous l'ecran (`HLPreheater`), en ecrans.
+      // 0 = coupe. Recu au montage, avant la premiere page.
+      Prop("preheatScreens") { (view: HomeListView, screens: Double) in
+        view.preheater.screens = CGFloat(max(0, screens))
+      }
+
       Prop("bottomInset") { (view: HomeListView, inset: Double) in
         view.bottomInset = CGFloat(inset)
       }

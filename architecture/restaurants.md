@@ -78,14 +78,15 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
     ├── HLPerfMonitor.swift         # Sonde TestFlight : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
+    ├── HLPreheater.swift           # Rangees sous l'ecran creees au repos avant le 1er scroll (liste allongee par le bas)
     ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
 ```
 
 - **Sonde de fluidité (`onDiagnostics`, TestFlight et debug seulement)** :
   `HLPerfMonitor.enabled` (reçu de sandbox) la coupe en build App Store. Un
   rapport par geste de scroll (images perdues, accrocs > 50 ms, pire image,
-  coût de configuration des rangées) et par arrivée de page (durée
-  d'application). Côté JS (`utils/nativeListDiagnostics.ts`) : journal de
+  coût de configuration des rangées), par arrivée de page (durée
+  d'application) et un pour le préchauffage (`preheat`). Côté JS (`utils/nativeListDiagnostics.ts`) : journal de
   l'iPhone SEULEMENT, plus aucun envoi Sentry (seul « liste native active »,
   une fois par lancement, y part encore).
   - **Journal de l'iPhone** : `console.log` JS (`[HL] <n°> <morceau>/<total>
@@ -116,14 +117,23 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     quand la sonde démarrait dès le doigt posé ; retirer une famille
     d'éléments des rangées (coins, textes, photos, effets) n'y changeait
     rien. Les envois Sentry de la sonde, eux, n'étaient pas en cause.
-- **Test : 3 menus pour toutes les boutiques (`TOP_SHOPS` /
-  `TOP_SHOP_MENUS` dans `NativeHomeList.tsx`, OTA)** : l'écran ne change pas
-  (3 cartes visibles au plus, 2 en design 4 et 5), seul le reste de la rangée
-  disparaît. Si les pauses cessent, un chargement des menus au scroll
-  horizontal (squelettes, comme la liste verticale) vaut une build native.
-  `TOP_SHOPS = 0` coupe le test. Test précédent (2 menus, 3 premières
-  boutiques) : premiers lancements à 12-16 ms par rangée neuve, puis 6-10 ms
-  à partir de 03:13 le 27/09, y compris sur les boutiques 4 et 5 NON tronquées.
+- **Préchauffage des rangées (`HLPreheater`, `PREHEAT_SCREENS` dans
+  `NativeHomeList.tsx`, OTA, `0` = coupé)** : cause des micro-pauses des
+  premiers scrolls (journal du 27/09) = la PREMIÈRE apparition des boutiques 2
+  à 5. Chaque pic du fil principal (19-22 ms) tombe sur `in2d5n` … `in5d5n` :
+  une cellule neuve crée sa liste de cartes et ses cartes (10-16 ms). Dès la
+  boutique 6, UIKit recycle (1-2 ms). Ni les squelettes de fin de page (posés
+  avec la 1re page, arrivées de page à 1,5-6 ms, jamais sur un pic) ni le
+  nombre de menus n'y sont pour rien : la troncature à 2-3 menus (OTA) n'a rien
+  changé, elle est retirée. Remède : après le fondu de la 1re boutique, la
+  liste est allongée PAR LE BAS (sous le bord, masqué par `clipsToBounds`),
+  une rangée de plus toutes les 30 ms, jusqu'à `PREHEAT_SCREENS` écrans sous
+  l'écran, puis reprend sa taille : les cellules créées vont dans la réserve
+  de UIKit. Le haut ne bouge pas ; bords (`onEdgeChange`) et fetch lisent la
+  hauteur VISIBLE (`bounds` de la vue hôte), jamais celle de la liste. Le
+  premier geste l'interrompt. Rapport `kind: "preheat"` (`end` : `done` /
+  `drag` / `moving`, `stepsMs`, `restoreMs`, `newRowCells`, `newCardCells`) ;
+  au scroll, `in2d5` SANS `n` = rangée préchauffée.
 - **Défilement auto de la bannière COUPÉ (`BANNER_AUTOPLAY = false`, OTA)** :
   seul le doigt la fait défiler. Idem sur la FlashList (`AUTOPLAY_ENABLED =
   false` dans `useBannerLoop`) : aucun défilement auto nulle part. Cause de la

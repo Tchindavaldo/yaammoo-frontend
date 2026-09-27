@@ -96,12 +96,17 @@ export type HomeListViewProps = ViewProps & {
   cardBlurMode: HomeListBlurMode;
   /** Defilement auto de la banniere (sinon seul le doigt la fait defiler). */
   bannerAutoplay: boolean;
+  /**
+   * Rangees sous l'ecran creees au repos avant le premier scroll, en ecrans
+   * de hauteur (0 = coupe). Ignore par une build qui ne l'embarque pas.
+   */
+  preheatScreens: number;
   onMenuPress: (e: Event<{ shopId: string; menuId: string }>) => void;
   onBannerPress: (e: Event<{ id: string }>) => void;
   onEndReached: (e: Event<Record<string, never>>) => void;
   onRefresh: (e: Event<Record<string, never>>) => void;
   onEdgeChange: (e: Event<{ atTop: boolean; nearBottom: boolean }>) => void;
-  /** Sonde de fluidite (TestFlight seulement) : `kind: "scroll"` (par geste) ou `"apply"` (par page). */
+  /** Sonde de fluidite (TestFlight seulement) : `kind: "scroll"` (par geste), `"apply"` (par page) ou `"preheat"`. */
   onDiagnostics: (e: Event<Record<string, any>>) => void;
 };
 

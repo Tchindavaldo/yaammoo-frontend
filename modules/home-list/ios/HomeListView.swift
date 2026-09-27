@@ -28,6 +28,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   /** Rapports de fluidite (scroll, pages) : journal de l'iPhone, cote JS. */
   let onDiagnostics = EventDispatcher()
   private let perf = HLPerfMonitor()
+  /** Rangees creees au repos avant le premier scroll (prop `preheatScreens`). */
+  let preheater = HLPreheater()
 
   enum Section: Int { case banner, rows, footer }
   enum Item: Hashable {
@@ -97,9 +99,42 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       // Cellules creees depuis le lancement, hauteur visible (situer les rangees).
       r["rowCells"] = HLShopCell.created
       r["cardCells"] = HLMenuCardCell.created
-      r["viewH"] = Int(self?.collection.bounds.height ?? 0)
+      r["viewH"] = Int(self?.bounds.height ?? 0)
       self?.report(r)
     }
+    setupPreheater()
+  }
+
+  private func setupPreheater() {
+    preheater.apply = { [weak self] _ in
+      guard let self = self else { return }
+      self.collection.frame = self.collectionFrame
+      self.collection.layoutIfNeeded()
+      // Mise en page complete des rangees apparues : leurs cartes naissent ici.
+      self.collection.visibleCells.forEach { $0.layoutIfNeeded() }
+    }
+    preheater.geometry = { [weak self] in
+      guard let self = self, let cv = self.collection,
+            !cv.isTracking, !cv.isDecelerating, !self.refreshing else { return nil }
+      let section = Section.rows.rawValue
+      let tops = self.rows.indices.compactMap {
+        cv.layoutAttributesForItem(at: IndexPath(item: $0, section: section))?.frame.minY
+      }
+      let h = self.bounds.height
+      return HLPreheater.Geometry(viewportBottom: cv.contentOffset.y + h, viewportHeight: h, rowTops: tops)
+    }
+    preheater.onReport = { [weak self] r in self?.report(r) }
+  }
+
+  /**
+   Cadre de la liste : la vue entiere, allongee par le bas pendant le
+   prechauffage (partie masquee, `clipsToBounds`). La zone VISIBLE reste
+   `bounds.height` : c'est elle que lisent les bords et le fetch.
+   */
+  private var collectionFrame: CGRect {
+    var f = bounds
+    f.size.height += preheater.extra
+    return f
   }
 
   /**
@@ -168,8 +203,8 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
 
   override func layoutSubviews() {
     super.layoutSubviews()
-    if collection.frame != bounds {
-      collection.frame = bounds
+    if collection.frame != collectionFrame {
+      collection.frame = collectionFrame
       collection.collectionViewLayout.invalidateLayout()
     }
   }
@@ -283,7 +318,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   func scrollViewDidScroll(_ scrollView: UIScrollView) {
     let y = scrollView.contentOffset.y
     let distanceToEnd = scrollView.contentSize.height + scrollView.contentInset.bottom
-      - scrollView.bounds.height - y
+      - bounds.height - y
     let top = y <= 4
     // `LOADER_VISIBLE_DISTANCE` du home : le loader JS n'apparait qu'en bas.
     let near = distanceToEnd <= 120
@@ -298,6 +333,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
 
   // Sonde de fluidite : un rapport par geste (doigt pose → fin de l'elan).
   func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+    preheater.stop(reason: "drag")
     perf.begin()
   }
 
@@ -350,7 +386,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     }) else { return }
     guard let attrs = collection.layoutAttributesForItem(
       at: IndexPath(item: firstGhost, section: Section.rows.rawValue)) else { return }
-    let viewportBottom = collection.contentOffset.y + collection.bounds.height
+    let viewportBottom = collection.contentOffset.y + bounds.height
     let gap = attrs.frame.minY - viewportBottom
     if gap > prefetchDistance + 200 { fetchArmed = true }
     if gap <= prefetchDistance && fetchArmed {
@@ -453,5 +489,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     firstGateOpen = true
     if let c = firstShopCell { revealShop(c) }
     bannerCell?.reveal(animated: true)
+    // Rangees sous l'ecran creees au repos, une fois le fondu termine.
+    preheater.schedule(after: HLLayout.revealDuration + 0.1)
   }
 }

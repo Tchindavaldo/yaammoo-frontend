@@ -53,14 +53,12 @@ const CARD_BLUR_MODE: HomeListBlurMode = "baked";
 const BANNER_AUTOPLAY = false;
 
 /**
- * Test TEMPORAIRE : les `TOP_SHOPS` premieres boutiques (toutes, ici)
- * n'affichent que `TOP_SHOP_MENUS` menus. A 3 menus, l'ecran ne change pas
- * (3 cartes visibles au plus) : seul le reste de la rangee disparait. Si les
- * pauses cessent, un chargement des menus au scroll horizontal vaut une build.
- * `TOP_SHOPS = 0` coupe le test, par OTA.
+ * Prechauffage : les rangees jusqu'a `PREHEAT_SCREENS` ecrans sous le bas de
+ * l'ecran sont creees au repos, avant le premier scroll (`HLPreheater`).
+ * Une rangee neuve coute 10-16 ms a son premier affichage (micro-pause des
+ * boutiques 2 a 5), une rangee recyclee 1-2 ms. `0` coupe, par OTA.
  */
-const TOP_SHOPS = Infinity;
-const TOP_SHOP_MENUS = 3;
+const PREHEAT_SCREENS = 2;
 
 const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
 
@@ -152,19 +150,6 @@ const rowFor = (ff: FastFood): HomeListRow => {
   return row;
 };
 
-/** Rangee reduite a `TOP_SHOP_MENUS` menus, meme reference tant que la rangee ne change pas. */
-const cappedCache = new WeakMap<HomeListRow, HomeListRow>();
-
-const cappedRow = (row: HomeListRow): HomeListRow => {
-  if (row.menus.length <= TOP_SHOP_MENUS) return row;
-  let capped = cappedCache.get(row);
-  if (!capped) {
-    capped = { ...row, menus: row.menus.slice(0, TOP_SHOP_MENUS) };
-    cappedCache.set(row, capped);
-  }
-  return capped;
-};
-
 type SentState = {
   rows: HomeListRow[];
   ghostCount: number;
@@ -237,7 +222,7 @@ export const NativeHomeList: React.FC<Props> = ({
   }, []);
 
   const rows = useMemo(
-    () => fastFoods.map((ff, i) => (i < TOP_SHOPS ? cappedRow(rowFor(ff)) : rowFor(ff))),
+    () => fastFoods.map(rowFor),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [fastFoods, minute],
   );
@@ -352,6 +337,7 @@ export const NativeHomeList: React.FC<Props> = ({
       fonts={FONTS}
       cardBlurMode={CARD_BLUR_MODE}
       bannerAutoplay={BANNER_AUTOPLAY}
+      preheatScreens={PREHEAT_SCREENS}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}
       onEndReached={() => onEndReached()}

@@ -3,11 +3,12 @@ import type { ComponentType, Ref } from "react";
 import { Platform, type ViewProps } from "react-native";
 
 /**
- * Liste native (UICollectionView) du home — iOS uniquement.
+ * Liste native du home : UICollectionView (iOS), RecyclerView (Android).
+ * Meme contrat JS des deux cotes.
  *
- * ⚠️ Le module n'existe que dans un build natif qui l'embarque. Sur un
- * dev client plus ancien (ou Android), `isHomeListAvailable` vaut `false` et
- * le home garde sa FlashList : aucune erreur, aucun ecran vide.
+ * ⚠️ Le module n'existe que dans un build natif qui l'embarque. Sur une
+ * build plus ancienne, `isHomeListAvailable` vaut `false` et le home garde sa
+ * FlashList : aucune erreur, aucun ecran vide.
  */
 
 export type HomeListMenu = {
@@ -124,7 +125,8 @@ export type HomeListNativeHandle = HomeListHandle & {
 };
 
 export const isHomeListAvailable =
-  Platform.OS === "ios" && requireOptionalNativeModule("HomeList") != null;
+  (Platform.OS === "ios" || Platform.OS === "android") &&
+  requireOptionalNativeModule("HomeList") != null;
 
 export const HomeListView: ComponentType<
   HomeListViewProps & { ref?: Ref<HomeListNativeHandle> }

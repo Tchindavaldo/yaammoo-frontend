@@ -199,8 +199,11 @@ src/features/
 │       └── LogoutModal.tsx              # Modal de confirmation de déconnexion
 │
 ├── restaurants/                         # Home client — détail : architecture/restaurants.md
+│   ├── context/FastFoodContext.tsx      # Provider du home : assemble les hooks useFastFood*
+│   ├── hooks/useFastFood*.ts            # Découpe du contexte : Pagination, Fetch, SocketUpdates, HomeSettings
 │   ├── hooks/useHome*.ts(x)             # Écran home découpé : scroll, données, rendu des cellules,
 │   │                                    #   commande, sonde [HB] ; + usePageRevealLock (verrou de page)
+│   ├── utils/normalizeFastFood.ts       # Normalisation boutique / menu (HTTP + socket)
 │   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
 │   ├── utils/homeClientSettings.ts      # Taille de page / préchargement venus du serveur (`settings_client`)
 │   └── components/home/                 # HomeHeader, HomeFullScreenStates, homeScreenStyles

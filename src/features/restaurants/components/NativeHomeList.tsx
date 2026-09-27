@@ -29,11 +29,11 @@ import {
 } from "../utils/nativeListDiagnostics";
 
 /**
- * Pont JS de la liste NATIVE du home (`modules/home-list`, iOS).
+ * Pont JS de la liste NATIVE du home (`modules/home-list`, iOS et Android).
  *
  * Prepare des donnees deja pretes a afficher (prix formates, heure de
- * livraison, frais, images de secours resolues en URL) : le Swift n'embarque
- * aucune regle metier. Recoit en retour les evenements (appui menu/banniere,
+ * livraison, frais, images de secours resolues en URL) : ni le Swift ni le
+ * Kotlin n'embarquent de regle metier. Recoit en retour les evenements (appui menu/banniere,
  * fin de liste, rafraichissement, bords) et les traduit pour le home.
  */
 

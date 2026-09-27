@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FILL_PLACEHOLDERS } from "../context/FastFoodContext";
+import { FILL_PLACEHOLDERS } from "./useFastFoodPagination";
 import { makePlaceholders } from "../utils/pagePlaceholders";
 import {
   BANNER_ITEM,

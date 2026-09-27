@@ -21,7 +21,12 @@ android {
 dependencies {
   // Classes etendues (NotificationsService, ExpoPresentationDelegate) : memes
   // versions que celles qu'embarque expo-notifications.
-  implementation project(':expo-notifications')
+  // ⚠️ SDK 57 : expo-notifications est livre PRECOMPILE (local-maven-repo),
+  // plus comme projet Gradle ; `project(':expo-notifications')` fait echouer
+  // le build. Version lue dans node_modules : suit les mises a jour d'Expo.
+  def notifPkg = new groovy.json.JsonSlurper().parse(
+    new File(rootDir, '../node_modules/expo-notifications/package.json'))
+  implementation "host.exp.exponent:expo.modules.notifications:${notifPkg.version}"
   implementation 'androidx.core:core:1.17.0'
   implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
   // RemoteMessage (lecture des donnees du push) : fourni a l'execution par

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { usePageRevealGate } from "../context/PageRevealGate";
-import { FILL_PLACEHOLDERS } from "../context/FastFoodContext";
+import { FILL_PLACEHOLDERS } from "./useFastFoodPagination";
 import { UNLOCK_QUIET_MS } from "../utils/homeListConfig";
 
 interface Params {

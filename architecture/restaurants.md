@@ -12,9 +12,13 @@ tournant, plus le carrousel de bannières.
 
 ```
 src/features/restaurants/
-├── context/FastFoodContext.tsx     # État + fetch paginé + injection socket
+├── context/FastFoodContext.tsx     # Assemblage : identité, retour réseau, recherche, loadMore, `value` mémoïsée
 ├── context/ShopRevealContext.tsx   # Révélation groupée d'UNE boutique (+ revealAnim)
 ├── context/PageRevealGate.tsx      # Scroll figé jusqu'à la révélation d'une page insérée
+├── hooks/useFastFoodPagination.ts  # Contexte : curseurs, verrous de page, file d'insertion, troncature ; FILL_PLACEHOLDERS
+├── hooks/useFastFoodFetch.ts       # Contexte : fetchPage, refreshLoadedSilently (identités STABLES), loading/error/bannières, garde-fou splash
+├── hooks/useFastFoodSocketUpdates.ts # Contexte : injection socket (menus, boutiques, offres livraison), sans refetch
+├── hooks/useFastFoodHomeSettings.ts  # Contexte : `homeSettings` serveur + copie gardée du lancement précédent
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
 ├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
 ├── hooks/useShopSearchDeepLink.ts  # `/(tabs)?shop=<nom>` (annonce de boutique) → recherche ouverte sur la boutique
@@ -28,6 +32,7 @@ src/features/restaurants/
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
 ├── utils/homeListConfig.ts         # Home : constantes mesurées (DRAW_DISTANCE, GHOST_COUNT, seuils…), BANNER_ITEM, CATEGORIES
 ├── utils/homeClientSettings.ts     # Home : taille de page + distance de préchargement venues du serveur (`clientSettings`), valeurs de secours, copie gardée
+├── utils/normalizeFastFood.ts      # normalizeMenu / normalizeFastFood (payload backend → format UI), fonctions pures
 └── components/
     ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), homeScreenStyles
     ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
@@ -145,8 +150,8 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   la double micro-pause du 1er scroll (la 2e boutique, design 4, est la
   première à en porter). Rapports : tag `blur`, `bakes`, `bakeMaxMs`.
 
-- **Repli automatique** : `isHomeListAvailable` est faux sur Android et sur un
-  dev client qui n'embarque pas le module ; le home garde alors sa FlashList.
+- **Repli automatique** : `isHomeListAvailable` est faux sur une build qui
+  n'embarque pas le module (iOS ou Android) ; le home garde alors sa FlashList.
 - **Aucune règle métier en Swift** : `NativeHomeList.tsx` envoie des lignes
   déjà prêtes (prix formaté, heure de livraison recalculée chaque minute,
   frais, images de secours résolues en URL). Le Swift ne fait qu'afficher.
@@ -190,6 +195,54 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
 - **Design** : toutes les cotes viennent des styles RN (`HLTheme.swift`) ;
   un changement de design se fait des deux côtés tant que les deux listes
   coexistent.
+
+## Liste NATIVE Android (`feature/home-liste-native-android`, test)
+
+Même contrat JS que l'iOS (`index.ts`, `NativeHomeList.tsx` inchangé), même
+comportement, cotes reprises de `HLTheme.swift` (dp = points iOS).
+
+```
+modules/home-list/android/
+├── build.gradle                    # react-android, expo-image (Glide en api), recyclerview, swiperefreshlayout
+└── src/main/java/com/rauval/yaammoo/homelist/
+    ├── HomeListModule.kt           # Props, evenements, updateRows (decode hors fil ecran), scrollToTop
+    ├── HomeListView.kt             # RecyclerView + SwipeRefreshLayout, DiffUtil (identite = position + design), fetch, bords
+    ├── HLListAdapter.kt            # Elements (banniere, rangee, pied), types de vue, pied de liste
+    ├── HLShopRowView.kt            # Rangee : en-tete + RecyclerView horizontal de cartes, revelation groupee (8 s max)
+    ├── HLMenuCardView.kt           # Carte 7/4/5 + ItemMeta + squelettes
+    ├── HLMerchantHeaderView.kt · HLCardBottoms.kt · HLBannerView.kt
+    ├── HLViews.kt                  # HLBox (mise en page manuelle), HLLabel (texte dessine), squelettes, degrade
+    ├── HLText.kt                   # Fragments de texte (polices, couleurs, icones Ionicons, espaces)
+    ├── HLImage.kt                  # Glide (meme moteur qu'expo-image), photo floutee d'avance des barres v4/v5
+    ├── HLPreheater.kt · HLPerfMonitor.kt · HLModels.kt · HLTheme.kt
+```
+
+- **Micro-pause des premières boutiques traitée dès le départ** (leçon iOS) :
+  `HLPreheater` crée au repos, après le fondu de la 1re boutique, une rangée
+  par rangée sous l'écran (jusqu'à `PREHEAT_SCREENS` écrans), la met en page
+  avec ses cartes, puis la dépose dans la réserve du RecyclerView
+  (`putRecycledView`). Pas d'astuce de cadre allongé comme sur iOS. Le premier
+  geste l'interrompt.
+- **Réserves** : une par design de rangée (8), et UNE commune à toutes les
+  cartes (`cardPool`, 24 par design) ; `initialPrefetchItemCount = 4` sur la
+  liste de cartes (préchargement imbriqué du GapWorker). Hauteurs fixes.
+- **Aucune mise en page remontée à la liste** : `HLBox` pose ses enfants à
+  des cadres fixes (équivalent `layoutSubviews`) et se repose seule quand son
+  contenu change ; `HLLabel` dessine son texte sans `TextView` ; `HLImageView`
+  n'appelle pas `requestLayout` à l'arrivée d'une image.
+- **Barres floutées v4/v5** : toujours `baked` (photo réduite à 64 px, floutée
+  par une transformation Glide, en cache). `cardBlurMode` est ignoré.
+- **Révélation sans squelette** si les images sont en mémoire : Glide répond
+  pendant la demande même (mêmes options que l'image affichée).
+- **Images de secours** : en release, un asset RN résolu est un nom de
+  ressource ; `HLImage.model` le charge par identifiant (`load(Int)`).
+- **Sonde** (`HLPerfMonitor`, builds de test : débogable ou installée hors
+  Play Store) : mêmes rapports que l'iOS (`scroll`, `apply`, `preheat`),
+  `mainBusy` mesuré sur les messages du fil principal. Lecture :
+  `adb logcat -s ReactNativeJS | grep "\[HL\]"`. Événement Android en plus :
+  `new<design>/<ms>` = rangée créée pendant le scroll (non préchauffée).
+- ⚠️ **Build** : module natif, donc build EAS (profil dev) avant tout test ;
+  une OTA seule ne l'embarque pas (repli FlashList).
 
 ---
 
@@ -261,6 +314,13 @@ câblage serveur est prévu, l'implémentation viendra avec les vraies catégori
 ---
 
 ## FastFoodContext — API
+
+Le provider n'est qu'un assemblage : pagination, requêtes, injection socket et
+réglages serveur vivent dans quatre hooks (`hooks/useFastFood*`, voir
+« Fichiers »), sans changement de comportement. Les hooks renvoient des refs
+et des setters stables : `fetchPage` et `refreshLoadedSilently` gardent la
+même identité à chaque rendu (sinon l'effet d'identité relancerait la première
+page), et la `value` reste mémoïsée.
 
 | Clé | Rôle |
 |---|---|
@@ -584,8 +644,8 @@ tant que la page suivante charge.
   `hold`). Le fetch part quand elles entrent dans le champ
   (`PLACEHOLDER_FETCH_DISTANCE`) ; à l'arrivée, FlashList **rebind** ces
   cellules au lieu d'en monter : plus de montage à l'insertion, donc plus de
-  HOLD ni d'`insertLock` (`FILL_PLACEHOLDERS` dans le contexte, `false` = retour
-  à l'ancien flux). `resetKey` remet le groupe à zéro au passage fantôme ↔ réel
+  HOLD ni d'`insertLock` (`FILL_PLACEHOLDERS` dans `hooks/useFastFoodPagination`,
+  `false` = retour à l'ancien flux). `resetKey` remet le groupe à zéro au passage fantôme ↔ réel
   dans une cellule recyclée. **Clé de ligne commune** : la boutique insérée
   reprend la clé du fantôme qu'elle remplace (`listKey = placeholderKey(rang)`,
   lue en premier par `keyExtractor`) ; sans elle, FlashList déplaçait et

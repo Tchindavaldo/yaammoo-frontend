@@ -88,7 +88,7 @@ yaammoo/
 │   ├── components/           # Composants partagés (Toast, AppBlurView…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
 │   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)
 │
-├── modules/                  # Modules Expo locaux (autolinking) : home-list/ = liste native iOS du home (voir restaurants.md) ; bonus-pager/ = carrousel natif iOS de la sheet Bonus (voir bonus.md) ; notification-style/ = notifications Android d'une boutique en conversation, logo en avatar (voir notifications.md)
+├── modules/                  # Modules Expo locaux (autolinking) : home-list/ = liste native du home, iOS (UICollectionView) et Android (RecyclerView) (voir restaurants.md) ; bonus-pager/ = carrousel natif iOS de la sheet Bonus (voir bonus.md) ; notification-style/ = notifications Android d'une boutique en conversation, logo en avatar (voir notifications.md)
 ├── assets/                   # Images, fonts
 ├── architecture/             # Ce dossier
 └── app.json, package.json

@@ -1,0 +1,36 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.rauval.yaammoo'
+version = '1.0.0'
+
+expoModule {
+  canBePublished false
+}
+
+android {
+  namespace "com.rauval.yaammoo.homelist"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // ReactFontManager : polices chargees par expo-font (theme, Ionicons).
+  implementation 'com.facebook.react:react-android'
+  // Glide, MEME version qu'expo-image (node_modules/expo-image/android/
+  // build.gradle) : meme moteur et meme cache que les images du reste de
+  // l'app. ⚠️ Pas de `project(':expo-image')` : en SDK 57 ce projet Gradle
+  // n'existe pas a l'evaluation du module (build en echec).
+  // Version lue dans le build.gradle d'expo-image : suit ses mises a jour.
+  def glideVersion = (new File(rootDir,
+    '../node_modules/expo-image/android/build.gradle').text =~
+    /GLIDE_VERSION\s*=\s*"([^"]+)"/)[0][1]
+  implementation "com.github.bumptech.glide:glide:${glideVersion}"
+  implementation 'androidx.recyclerview:recyclerview:1.4.0'
+  // Meme version que React Native (libs.versions.toml).
+  implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+}

@@ -29,8 +29,8 @@ const LOG_CHUNK = 800;
 let logSeq = 0;
 
 /**
- * Journal de l'iPhone, lisible en direct depuis l'ordinateur (iPhone en USB) :
- * `idevicesyslog -m "[HL]"`. Ligne `[HL] <rapport> <morceau>/<total> <json>`,
+ * Journal du telephone, lisible en direct depuis l'ordinateur (en USB) :
+ * iPhone `idevicesyslog -m "[HL]"`, Android `adb logcat -s ReactNativeJS | grep "\[HL\]"`. Ligne `[HL] <rapport> <morceau>/<total> <json>`,
  * le JSON etant decoupe pour ne pas etre tronque. Passe par le JS : un `NSLog`
  * natif sort masque (`<private>`) en release sous iOS 26, `console.log` non.
  */

@@ -13,13 +13,17 @@ yaammoo/src/features/orders/
 │   └── OrderContext.tsx       # Provider + état global des commandes client
 ├── hooks/
 │   ├── useOrders.ts           # Re-export de useOrdersContext (simplicité d'import)
+│   ├── useOrderTracking.ts    # Onglet « Suivi » : GET /driver/tracking + socket driverLocationUpdated + position du client
 │   ├── useCartFastFoodInfos.ts # Nom + image des boutiques du panier absentes du home (GET /fastFood/:id)
 │   └── useClientFilterOptions.ts # Options + compteurs du ClientFilterSheet (dates, périodes, chips)
 ├── services/
 │   ├── ratingService.ts       # API notation (menu + livreur) : rate, stats, avis
-│   └── ratingStatsCache.ts    # Cache mémoire des stats notation (anti-refetch/loader)
+│   ├── ratingStatsCache.ts    # Cache mémoire des stats notation (anti-refetch/loader)
+│   └── orderTrackingService.ts # GET /driver/tracking/:orderId + types LatLng / DriverPosition
 ├── utils/
-│   └── groupCartOrders.ts     # Regroupe le panier par zone + créneau (clé deliveryGroupKey)
+│   ├── groupCartOrders.ts     # Regroupe le panier par zone + créneau (clé deliveryGroupKey)
+│   ├── buildOrderItems.ts     # Lignes de l'onglet « Commandes » (plat, extras, boissons) + type OrderItem
+│   └── trackingEta.ts         # Heure d'arrivée estimée (haversine × 1,3 à 20 km/h), formats heure / « il y a »
 └── components/
     ├── CartFastFoodFilter.tsx # Filtre fastfood collant du panier (duplication autonome d'OrderTrackingHeader)
     ├── CartOrderCard.tsx      # Carte commande du PANIER (duplication autonome de ClientOrderCard)
@@ -35,7 +39,13 @@ yaammoo/src/features/orders/
     ├── CartStatusPanel.parts.tsx # GroupSubTabs, buildFlatItems, helpers de dates/périodes/groupage
     ├── DriverInfoTab.tsx      # Tab « Livreur » (infos + stats + notation livreur)
     ├── RateMenuTab.tsx        # Tab « Noter » (image plat + stats + notation plat)
-    └── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande
+    ├── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande (assemblage : animations, onglets)
+    ├── OrderSheetHeader.tsx   # En-tête du sheet : avatar boutique, adresse ou chips « Cmd N » (+N)
+    ├── OrderSheetTabBar.tsx   # Barre d'onglets (défile si trop d'onglets)
+    ├── OrderLivraisonTab.tsx  # Tab « Livraison »
+    ├── OrderCommandesTab.tsx  # Tab « Commandes »
+    ├── OrderTrackingTab.tsx   # Tab « Suivi » (carte + arrivée estimée + distance)
+    └── OrderTrackingMap(.native).tsx # Carte du suivi : copie R16 de MapComponent (natif), cadre simple (web)
 ```
 
 > **Suivi des commandes déplacé** : le panier (`cart.tsx`) n'affiche plus que le
@@ -380,7 +390,31 @@ la commande si le backend n'en renvoie pas).
 
 **Chemin** : `yaammoo/src/features/orders/components/OrderBottomSheet.tsx`
 
-Bottom sheet détail d'une commande client. **4 tabs** : Livraison — Commandes — Livreur — Noter.
+Bottom sheet détail d'une commande client. Tabs : Livraison — Commandes —
+Montant — **Suivi** — Livreur — Noter (selon la commande).
+
+Le fichier n'est plus qu'un assemblage (animations, choix de l'onglet) : en-tête
+`OrderSheetHeader`, barre `OrderSheetTabBar`, onglets `OrderLivraisonTab` /
+`OrderCommandesTab` / `OrderTrackingTab` (découpage R4, rendu inchangé). Un
+onglet devenu invisible (autre commande, statut changé) ramène à Livraison.
+
+### Tab Suivi (`OrderTrackingTab`)
+Visible si `status === delivering`. **Pas dans la tab Livreur** : `DriverInfoTab`
+sert aussi au marchand (`MerchantOrderBottomSheet`), R16.
+- **Carte** `OrderTrackingMap` (copie dédiée de `MapComponent`) : marqueur
+  livreur (vélo, orange) + adresse de livraison (maison, noire), région
+  recalculée pour contenir les deux, interactions coupées. Pastille « Position
+  il y a N s » / « En attente de la position du livreur… ».
+- **Arrivée estimée** (heure + « dans N min ») et **distance** : `trackingEta`
+  (vol d'oiseau × 1,3, moto à 20 km/h ; la vitesse GPS instantanée est écartée).
+- **Données** : `useOrderTracking` — `GET /driver/tracking/:orderId` à
+  l'ouverture et au retour au premier plan, puis socket
+  `driverLocationUpdated` filtré sur `orderIds`. Destination = position live du
+  téléphone si la localisation est autorisée (sans la demander), sinon
+  dernière position connue du client côté backend.
+- Sans `driverId` (la boutique livre elle-même) : message, pas de carte.
+- Côté livreur, l'envoi des positions : [user-location.md](./user-location.md)
+  § Mode livraison.
 
 ### Tab Livraison
 - **Créneau** : mêmes valeurs que le marchand — "Sur place" (pas de `delivery.status`), "Express" (`type === 'express'`), ou `Période (heure)`

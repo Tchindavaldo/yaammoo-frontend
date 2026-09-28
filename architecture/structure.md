@@ -117,10 +117,13 @@ src/features/
 ├── orders/
 │   ├── context/OrderContext.tsx         # orders[] + buyOrders + fetchOrders + updateLocalOrder
 │   ├── utils/sanitizeOrder.ts           # Sanitization stricte d'une commande (envoi /order, /transaction)
+│   ├── hooks/useOrderTracking.ts        # Onglet « Suivi » : position du livreur (HTTP + socket)
 │   └── components/
 │       ├── OrderCard.tsx                # Carte client
 │       ├── CartStatusPanel.tsx          # Suivi commandes autonome (statut/date/groupes/détail) — onglet Commandes
-│       └── ...
+│       ├── OrderBottomSheet.tsx         # Détail d'une commande : OrderSheetHeader / OrderSheetTabBar
+│       │                                #   + onglets OrderLivraisonTab, OrderCommandesTab, OrderTrackingTab…
+│       └── ...                          # Détail : architecture/orders-client.md
 │
 ├── merchant/                            # Détail complet : architecture/orders-merchant.md
 │   ├── context/                         # MerchantContext + MerchantWalletContext
@@ -136,11 +139,15 @@ src/features/
 │                                        #   feature séparée, aucun composant partagé avec support/
 │                                        #   Détail : architecture/support-merchant.md
 │
-├── location/                            # Position de l'utilisateur (POST /user/location)
+├── location/                            # Position de l'utilisateur (POST /user/location) + livreur en course
 │   ├── hooks/useUserLocationSync.ts     # permissions (après les notifs), capture, suivi arrière-plan
-│   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js)
-│   ├── utils/buildLocationPayload.ts    # position + géocodage inverse → payload
-│   └── services/userLocationService.ts  # Détail : architecture/user-location.md
+│   ├── hooks/useDeliveryTrackingSync.ts # livreur : mode livraison tant qu'une cmd est `delivering`
+│   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js), modes normal / livraison
+│   ├── tasks/trackingModes.ts           # réglages et persistance des deux modes
+│   ├── components/BackgroundLocationPromptCard.tsx # info avant la popup « Toujours » (copie de OtaUpdateCard)
+│   ├── utils/buildLocationPayload.ts    # position + géocodage inverse → payload (+ payload livreur)
+│   └── services/                        # userLocationService · driverLocationService (POST /driver/location)
+│                                        #   · backgroundPrompt. Détail : architecture/user-location.md
 │
 ├── driver/                             # Rôle driver (commandes déléguées)
 │   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket
@@ -239,6 +246,7 @@ src/
 │   ├── fonts.ts                 # Police globale OTA (`FONT_THEME`), noms PostScript par graisse
 │   └── appFont.tsx              # Text/TextInput a police du theme + useAppFont (chargement)
 ├── types/                       # Commande, Menu, Livraison, User…
+├── utils/formatDistance.ts      # « 850 m » / « 1,2 km » (home + suivi livraison)
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts

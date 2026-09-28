@@ -128,6 +128,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 | `wallet.withdrawal` | tous champs | `MerchantWalletContext.handleWithdrawalEvent` (patch solde + overlay) |
 | `newNotification` | `{ notification }` | `NotificationContext.addFromSocket(notif)` |
 | `isRead` | `{ notificationId }` | `refreshNotifications(true)` — sync silencieux multi-device |
+| `driverLocationUpdated` | `{ data: { driverId, latitude, longitude, accuracy, speed, heading, capturedAt, orderIds[] } }` | **Hors `useSocketEvents`** : écouté par `useOrderTracking` tant que l'onglet « Suivi » est ouvert (comme `driverRatingUpdated` dans `DriverInfoTab`), filtré sur `orderIds`. Fire-and-forget : l'onglet relit `GET /driver/tracking/:orderId` à l'ouverture et au retour au premier plan |
 | `newPeriodKeyDelivering` / `removePeriodKeyDelivering` | `{ periodKey }` | Suivi de livraison (log) |
 | `newClientIdDelivering` / `removeClientIdDelivering` | `{ clientId }` | Identification livreur (log) |
 
@@ -143,7 +144,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 ### Events fiabilisés (replay) vs fire-and-forget
 
 - **Fiabilisés** (persistés + rejoués à la reconnexion, avec `__eventId` et `__replay: true`) : `wallet.credited`, `wallet.withdrawal`, `payment.settled`, `newFastFoodOrders`, `userOrderUpdated`, `fastFoodOrderUpdated`, `newFastFoodMenu`, `fastFoodMenuUpdated`, `fastFoodMenuDeleted`, `bonus.reward_credentials`, `bonus.redeemed`. Le dédoublonnage est géré par `withAck` (`src/services/socketAck.ts`).
-- **Fire-and-forget** (non rejoués) : `globalMenu*`, `*PeriodKey*`, `*ClientId*`, `ordersRankUpdated`. C'est pour eux que le refresh global au `connect` sert de filet de sécurité.
+- **Fire-and-forget** (non rejoués) : `globalMenu*`, `*PeriodKey*`, `*ClientId*`, `ordersRankUpdated`, `driverLocationUpdated`. C'est pour eux que le refresh global au `connect` sert de filet de sécurité.
 
 ---
 

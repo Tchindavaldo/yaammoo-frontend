@@ -33,6 +33,11 @@ export type HomeListRow = {
   orders: number;
   votes: number;
   deliveryTime: string;
+  /**
+   * Distance formatee (« 1,2 km »), affichee apres « Ouvert » ; "" = rien.
+   * Ignoree par une build native anterieure (champ inconnu du Record).
+   */
+  distance: string;
   menus: HomeListMenu[];
 };
 

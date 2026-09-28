@@ -52,6 +52,8 @@ enum HLColor {
   static let v4Background = hex("#fdeded")
   static let v4TimeText = hex("#8a8a8a")
   static let deliveryLabel = hex("#000000e1")
+  /** `DS.muted` : distance de la boutique apres « Ouvert ». */
+  static let muted = hex("#6C6C70")
 }
 
 /** Graisses RN → UIKit : 900 black, 800 heavy, 700/bold bold, 600 semibold. */

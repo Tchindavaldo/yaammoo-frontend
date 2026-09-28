@@ -24,6 +24,13 @@ _En cours_ / _Terminé_), avec ses propres composants.
 _Terminé_, la carte affiche un badge **« Livré »** non cliquable (aucune action).
 Rôle dérivé de `userData.isDriver` (← `driverId`).
 
+**Suivi en temps réel** : tant qu'une commande est `delivering`, `DriverContext`
+(`useDeliveryTrackingSync`) passe la tâche de localisation en **mode livraison**
+(position toutes les ~10 s → `POST /driver/location` → socket
+`driverLocationUpdated` au client). « Lancer » le démarre, « Terminer » de la
+dernière course l'arrête. Détail : [user-location.md](./user-location.md)
+§ Mode livraison ; côté client, onglet « Suivi » ([orders-client.md](./orders-client.md)).
+
 ## Délégation (côté marchand)
 
 Le marchand délègue une commande via le `DelegateDriverSheet` (bouton **Lancer** d'une carte

@@ -32,6 +32,8 @@ class HLShopRecord : Record {
   @Field var orders: Int = 0
   @Field var votes: Int = 0
   @Field var deliveryTime: String = ""
+  /** Distance formatee (« 1,2 km ») apres « Ouvert » ; "" = rien. */
+  @Field var distance: String = ""
   @Field var menus: List<HLMenuRecord> = emptyList()
 }
 
@@ -101,6 +103,7 @@ data class HLShop(
   val orders: Int,
   val votes: Int,
   val deliveryTime: String,
+  val distance: String,
   val menus: List<HLMenu>,
 ) {
   constructor(r: HLShopRecord) : this(
@@ -111,6 +114,7 @@ data class HLShop(
     r.orders,
     r.votes,
     r.deliveryTime,
+    r.distance,
     r.menus.map { HLMenu(it) },
   )
 }

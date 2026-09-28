@@ -165,6 +165,9 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
               setAdvanceDays={s.setAdvanceDays}
               pickupAllowed={s.pickupAllowed}
               setPickupAllowed={s.setPickupAllowed}
+              hasShopPosition={!!s.shopPosition}
+              locating={s.locating}
+              onCaptureShopPosition={s.captureShopPosition}
               loading={s.loading}
               onSubmit={s.handleUpdate}
             />

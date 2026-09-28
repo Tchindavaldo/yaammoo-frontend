@@ -10,6 +10,7 @@ import { driverService } from "../services/driverService";
 import { useAuth } from "../../auth/context/AuthContext";
 import { Commande } from "@/src/types";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
+import { useDeliveryTrackingSync } from "../../location/hooks/useDeliveryTrackingSync";
 
 /** Event socket sur une demande de livraison (création / décision / retrait). */
 export type ApplicationEvent =
@@ -54,8 +55,13 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
   const [orders, setOrders] = useState<Commande[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Liste chargée au moins une fois : garde du suivi livraison.
+  const [loaded, setLoaded] = useState(false);
 
   const driverId = userData?.driverId;
+
+  // Course en cours (`delivering`) → position du livreur envoyée aux clients.
+  useDeliveryTrackingSync(orders, loaded && !!driverId);
 
   const fetchData = useCallback(
     async (showLoading = true) => {
@@ -65,6 +71,7 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         const orderData = await driverService.getOrders(driverId);
         setOrders(orderData);
+        setLoaded(true);
       } catch (err) {
         console.error("Driver fetch error:", err);
         setError("Erreur lors du chargement des commandes déléguées");
@@ -79,6 +86,7 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
   useResetOnUserChange(userData?.uid, () => {
     setOrders([]);
     setError(null);
+    setLoaded(false);
   });
 
   useEffect(() => {

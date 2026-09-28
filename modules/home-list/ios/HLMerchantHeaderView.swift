@@ -88,6 +88,8 @@ final class HLMerchantHeaderView: UIView {
       return
     }
     nameLabel.text = shop.name
+    // Distance (`MerchantHeader.tsx` : « Ouvert · 1,2 km », distance en gris).
+    statusLabel.attributedText = statusText(shop.distance)
     ordersChip.attributedText = chipText("receipt-outline", "\(shop.orders)")
     votesChip.attributedText = chipText("people-outline", "\(shop.votes)")
     // Les 5 etoiles sont toutes pleines dans l'original (fond ET remplissage
@@ -100,6 +102,14 @@ final class HLMerchantHeaderView: UIView {
     }
     starsLabel.attributedText = stars
     setNeedsLayout()
+  }
+
+  private func statusText(_ distance: String) -> NSAttributedString {
+    var runs = [HLRun("Ouvert", HLFont.w800(10), HLColor.green)]
+    if !distance.isEmpty {
+      runs.append(HLRun(" · \(distance)", HLFont.w700(10), HLColor.muted))
+    }
+    return HLText(runs)
   }
 
   private func chipText(_ icon: String, _ value: String) -> NSAttributedString {

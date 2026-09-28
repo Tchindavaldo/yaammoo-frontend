@@ -110,6 +110,8 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
       return
     }
     nameLabel.text = shop.name
+    // Distance (`MerchantHeader.tsx` : « Ouvert · 1,2 km », distance en gris).
+    statusLabel.text = statusText(shop.distance)
     ordersChip.text = chipText("receipt-outline", "${shop.orders}")
     votesChip.text = chipText("people-outline", "${shop.votes}")
     // Les 5 etoiles sont pleines dans l'original (#e8440a), `gap: 2`.
@@ -120,6 +122,12 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     }
     starsLabel.text = stars.build()
     content.relayout()
+  }
+
+  private fun statusText(distance: String): CharSequence {
+    val runs = HLRuns().run("Ouvert", 800, 10f, HLColor.green)
+    if (distance.isNotEmpty()) runs.run(" · $distance", 700, 10f, HLColor.muted)
+    return runs.build()
   }
 
   private fun chipText(icon: String, value: String): CharSequence =

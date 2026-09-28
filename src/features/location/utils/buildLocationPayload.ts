@@ -1,5 +1,6 @@
 import * as Location from "expo-location";
 import { Platform } from "react-native";
+import type { DriverPositionPayload } from "../services/driverLocationService";
 import {
   LocationSource,
   UserLocationPayload,
@@ -55,6 +56,24 @@ export const buildLocationPayload = async (
     timezone: clean(place?.timezone, 64),
     source,
     platform: Platform.OS === "ios" ? "ios" : "android",
+    capturedAt: new Date(position.timestamp).toISOString(),
+  };
+};
+
+/**
+ * Position → payload de `POST /driver/location` (livreur en course). Sans
+ * géocodage : envoyé toutes les ~10 s, seul le point compte.
+ */
+export const buildDriverPositionPayload = (
+  position: Location.LocationObject,
+): DriverPositionPayload => {
+  const { latitude, longitude, accuracy, speed, heading } = position.coords;
+  return {
+    latitude,
+    longitude,
+    accuracy: within(accuracy, 0, Infinity),
+    speed: within(speed, 0, Infinity),
+    heading: within(heading, 0, 360),
     capturedAt: new Date(position.timestamp).toISOString(),
   };
 };

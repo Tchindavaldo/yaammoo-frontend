@@ -23,6 +23,7 @@ import { V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/i
 import { fontFor } from "@/src/theme/fonts";
 import { designNumberFor } from "../utils/designCycle";
 import { getNextDeliveryTime } from "../utils/deliveryUtils";
+import { formatDistanceKm } from "@/src/utils/formatDistance";
 import {
   announceNativeList,
   reportNativeDiagnostics,
@@ -125,6 +126,8 @@ const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
     orders: Math.round(f?.stats?.orders ?? 0),
     votes: Math.round(f?.stats?.votes ?? 0),
     deliveryTime,
+    // « 1,2 km » apres « Ouvert » ; vide = position inconnue (rien d'affiche).
+    distance: formatDistanceKm(f?.distanceKm) ?? "",
     menus: (ff.menu ?? []).map((m: any, i: number) => ({
       id: menuIdOf(ff, m, i),
       title: m?.titre ?? "",

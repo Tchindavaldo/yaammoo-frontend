@@ -67,6 +67,14 @@ expressEditIdx: number | null
 | Jours avance | `advanceDays` | `advanceDays` | `number` |
 | Image | `image` | `image` | `string (URL)` |
 | Pickup only | `pickupOnly` | `pickupOnly` | `boolean` |
+| Position de la boutique (édition seulement) | `shopPosition` (`edit-boutique/useShopPosition.ts`) | `latitude` + `longitude` | `number` ×2 |
+
+**Position de la boutique** : bouton « Utiliser ma position actuelle » (GPS du
+téléphone, `Accuracy.High`, permission « Pendant l'utilisation » demandée si
+besoin), à faire sur place. Envoyée avec « Mettre à jour », toujours les deux
+coordonnées ensemble. Sert à la distance affichée au home (`distanceKm`, voir
+[restaurants.md](./restaurants.md) § Distance des boutiques). Absente du
+formulaire de création.
 
 ---
 

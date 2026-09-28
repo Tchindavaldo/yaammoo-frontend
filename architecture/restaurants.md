@@ -294,6 +294,23 @@ de découper la page, sinon `limit` compterait des menus, pas des boutiques.
 
 ---
 
+## Distance des boutiques
+
+`GET /fastFood/all` renvoie `distanceKm` par boutique (utilisateur → boutique,
+calculé par le backend depuis la dernière position connue de l'utilisateur et
+la position posée par la boutique ; `null` si l'une manque). Voir
+`BACKEND/architecture/geolocation.md`.
+
+- **Affichage** : après « Ouvert », en gris (`Ouvert · 1,2 km`), formaté par
+  `src/utils/formatDistance.ts` (« 850 m », « 1,2 km », « 12 km ») ; rien si
+  `null`.
+- FlashList : prop `distanceKm` de `MerchantHeader`, passée par Design4/5/7
+  (les designs du cycle). Liste native : champ `distance` (déjà formaté) de
+  `HomeListRow`, rendu par `HLMerchantHeaderView` (iOS et Android) ; une build
+  native antérieure l'ignore.
+- **Pas de tri par distance** : l'ordre reste celui du curseur
+  (`created_at DESC`), la distance est seulement affichée.
+
 ## Recherche — SERVEUR, pas locale
 
 `searchQuery` déclenche un fetch debouncé (350 ms) avec `?q=`, qui repart de la

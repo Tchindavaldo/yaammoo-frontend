@@ -34,6 +34,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { OtaUpdateCard } from "@/src/features/appVersion/components/OtaUpdateCard";
+import { BackgroundLocationPromptCard } from "@/src/features/location/components/BackgroundLocationPromptCard";
 import { initSentry, wrapWithSentry } from "@/src/services/sentry";
 import { setupHttp } from "@/src/api/setupHttp";
 import { prefetchBonusBackground } from "@/src/features/bonus/components/BonusPageBackground";
@@ -273,6 +274,9 @@ function RootLayout() {
                               visible quel que soit l'ecran affiche. */}
                           <OfflineBanner />
                           <OtaUpdateCard />
+                          {/* Information avant la popup « Toujours »
+                              (localisation arrière-plan). */}
+                          <BackgroundLocationPromptCard />
                         </AppVersionProvider>
                       </AuthGateProvider>
                     </BonusProvider>

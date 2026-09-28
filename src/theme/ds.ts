@@ -42,6 +42,12 @@ export const DS = {
   accentWash: "rgba(236,73,19,0.07)",
   accentOnInk: "#FF9A70",
 
+  // --- Texte et traits sur fond sombre (`ink`) : cartes flottantes ---
+  onInk: "#FFFFFF",
+  onInkMuted: "rgba(255,255,255,0.68)",
+  onInkFill: "rgba(255,255,255,0.12)",
+  onInkLine: "rgba(255,255,255,0.08)",
+
   // --- États ---
   success: "#1F9D55",
   danger: "#ef4444",

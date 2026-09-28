@@ -52,6 +52,8 @@ object HLColor {
   val v4Background = hex("#fdeded")
   val v4TimeText = hex("#8a8a8a")
   val deliveryLabel = hex("#000000e1")
+  /** `DS.muted` : distance de la boutique apres « Ouvert ». */
+  val muted = hex("#6C6C70")
 }
 
 /** Conversion dp -> px (densite de l'ecran, relevee par la vue hote). */

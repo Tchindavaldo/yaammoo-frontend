@@ -11,6 +11,7 @@ import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeli
 import { parseDeliveryHours, hourToDate } from "./parseBoutique";
 import { useToast } from "./useToast";
 import { useEntryAnimation } from "./useEntryAnimation";
+import { useShopPosition } from "./useShopPosition";
 
 export type { Zone } from "./parseBoutique";
 
@@ -87,6 +88,9 @@ export const useEditBoutique = ({
 
   const { setIsEntering, resetAnims } = useEntryAnimation(visible);
   const { toastVisible, toastConfig, toastAnimY, showToast } = useToast();
+  // Position GPS de la boutique (distance au home).
+  const { shopPosition, locating, loadShopPosition, captureShopPosition } =
+    useShopPosition((message) => showToast(message, "error"));
 
   // Load boutique data when visible
   useEffect(() => {
@@ -114,6 +118,7 @@ export const useEditBoutique = ({
           data.advanceDays !== undefined ? String(data.advanceDays) : "",
         );
         setPickupAllowed(data.pickupAllowed === true);
+        loadShopPosition(data);
 
         const parsed = parseDeliveryHours(data.deliveryHours || []);
         setDeliveryHours(parsed.hours);
@@ -267,6 +272,8 @@ export const useEditBoutique = ({
                 expressZonesByHour,
               )
             : undefined,
+        // Envoyées ensemble (le backend refuse l'une sans l'autre).
+        ...(shopPosition ?? {}),
       };
 
       // Nouvelle image sélectionnée (URI locale, y compris blob:/data: sur web) :
@@ -341,6 +348,9 @@ export const useEditBoutique = ({
     setAdvanceDays,
     pickupAllowed,
     setPickupAllowed,
+    shopPosition,
+    locating,
+    captureShopPosition,
     // livraison
     deliveryHours,
     newHour,

@@ -18,7 +18,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [auth.md](./auth.md) | Authentification client (Email/Password, Google/Apple Sign-In, AuthContext, **accès invité / AuthGate**) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |
-| [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank) |
+| [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank, détail `OrderBottomSheet` et son onglet **Suivi** : carte du livreur + arrivée estimée) |
 | [orders-merchant.md](./orders-merchant.md) | Gestion commandes côté marchand (panel, cartes, statuts) |
 | [menu.md](./menu.md) | Gestion des menus côté marchand (panel, formulaire multi-étapes, designs récap) |
 | [bonus.md](./bonus.md) | Bonus & récompenses client (bottom sheet, carrousel, registre évolutif, moteur d'éligibilité, claim, campagne `status_view` : flyer + preuve vidéo) |
@@ -27,12 +27,12 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
 | [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
 | [merchant-broadcast.md](./merchant-broadcast.md) | Notifications boutique — envois à une audience (clients / ville / tous), quota du plan, semaine en barres, derniers envois, composeur, réception côté client |
-| [user-location.md](./user-location.md) | Localisation de l'utilisateur — permission après les notifications, envoi à chaque connexion, au retour au premier plan et app fermée (tâche arrière-plan, `POST /user/location`) |
+| [user-location.md](./user-location.md) | Localisation de l'utilisateur — permission après les notifications, **écran d'info avant « Toujours »**, envoi à chaque connexion, au retour au premier plan et app fermée (tâche arrière-plan, `POST /user/location`) ; **mode livraison** du livreur en course (`POST /driver/location`, service de premier plan Android) |
 | [support-merchant.md](./support-merchant.md) | Messages boutique — discussions clients reçues par le marchand (feature séparée, HTTP + socket) |
 | [support.md](./support.md) | Contactez-nous — chat support client (écran plein écran, chips d'objet, historique, HTTP + socket) |
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |
 | [home-banners.md](./home-banners.md) | Bannière pub du home — carrousel dynamique, images via `/fastfood/all`, fallback statique |
-| [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement** |
+| [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement**, **distance** de chaque boutique (`distanceKm`) |
 | [home-scroll-pause.md](./home-scroll-pause.md) | ⚠️ **EN COURS** — micro-pause au scroll du home : mesures, sonde `[ROW]`, `windowSize={15}` (fonctionne, OTA) et tentative FlashList (non résolue) |
 | [profile-name-sheet.md](./profile-name-sheet.md) | Sheet « nom / prénom manquant » — home à l'arrivée + garde `requireName` avant toute commande (home, panier), voile, clavier |
 | [settings-grille.md](./settings-grille.md) | Écran Settings — grille de tuiles par section (SettingGrid / SettingGridItem / SettingGridSwitch), teintes, sections, sous-pages (useSettingsSubScreens), modals suppression / déconnexion |

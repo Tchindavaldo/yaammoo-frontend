@@ -6,6 +6,7 @@ import { Theme } from '@/src/theme';
 import { ShopSkeleton } from './ShopSkeleton';
 import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 import { DS } from "@/src/theme/ds";
+import { formatDistanceKm } from "@/src/utils/formatDistance";
 
 interface MerchantHeaderProps {
   name: string;
@@ -26,6 +27,8 @@ interface MerchantHeaderProps {
   syncWithImage?: string | null;
   /** Boutique ouverte ou fermee, affiche sous le nom. */
   isOpen?: boolean;
+  /** Distance utilisateur → boutique (`distanceKm` du backend), apres « Ouvert ». */
+  distanceKm?: number | null;
 }
 
 export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
@@ -36,7 +39,9 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   reviewCount = 0,
   syncWithImage,
   isOpen = true,
+  distanceKm,
 }) => {
+  const distance = formatDistanceKm(distanceKm);
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec
   // les cartes) et son PROPRE avatar.
   //
@@ -178,9 +183,12 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
             <View style={styles.statusRow}>
               <View style={[styles.statusDot, { backgroundColor: isOpen ? '#00b894' : '#d63031' }]} />
-              <Text style={[styles.statusText, { color: isOpen ? '#00b894' : '#d63031' }]}> 
+              <Text style={[styles.statusText, { color: isOpen ? '#00b894' : '#d63031' }]}>
                 {isOpen ? 'Ouvert' : 'Fermé'}
               </Text>
+              {distance ? (
+                <Text style={styles.distanceText}>· {distance}</Text>
+              ) : null}
             </View>
           </View>
         </View>
@@ -297,6 +305,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     color: '#000',
+  },
+  distanceText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: DS.muted,
   },
   ratingBlock: { alignItems: 'flex-end', gap: 3 },
   ratingMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },

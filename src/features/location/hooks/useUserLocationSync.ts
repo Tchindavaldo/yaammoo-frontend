@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
+import { requestBackgroundPrompt } from "../services/backgroundPrompt";
 import {
   LocationSource,
   userLocationService,
@@ -22,8 +23,10 @@ const BG_ASKED_KEY = "user_location_bg_asked";
 
 /**
  * Suivi app fermée : permission « Toujours » demandée une seule fois (après
- * celle « Pendant l'utilisation »), puis tâche arrière-plan lancée. Relancée à
- * chaque connexion si déjà accordée (idempotent).
+ * celle « Pendant l'utilisation »), précédée d'un écran d'information
+ * (`BackgroundLocationPromptCard`) : « Plus tard » n'ouvre pas la popup
+ * système et n'est jamais reproposé. Puis tâche arrière-plan lancée. Relancée
+ * à chaque connexion si déjà accordée (idempotent).
  */
 const ensureBackgroundTracking = async () => {
   if (!backgroundLocationSupported) return;
@@ -35,7 +38,9 @@ const ensureBackgroundTracking = async () => {
     !(await AsyncStorage.getItem(BG_ASKED_KEY))
   ) {
     await AsyncStorage.setItem(BG_ASKED_KEY, "1");
-    status = (await Location.requestBackgroundPermissionsAsync()).status;
+    if (await requestBackgroundPrompt()) {
+      status = (await Location.requestBackgroundPermissionsAsync()).status;
+    }
   }
   if (status === "granted") await startBackgroundLocation();
 };

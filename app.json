@@ -147,7 +147,7 @@
           "locationAlwaysPermission": "Yaammoo utilise votre position, même quand l'app est fermée, pour le suivi en temps réel des livraisons en cours par les livreurs et pour vous proposer les restaurants et offres de votre ville.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true,
-          "isAndroidForegroundServiceEnabled": false
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       "./plugins/withNotificationServiceExtension"

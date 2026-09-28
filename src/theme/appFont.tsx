@@ -1,7 +1,7 @@
 import * as Font from "expo-font";
 import React, { forwardRef, useEffect, useState } from "react";
 import type { TextInputProps, TextProps } from "react-native";
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 
 // `require` et non `import * as` : Babel copierait l'objet (interop), et le
 // getter redefini plus bas ne toucherait pas le module que lisent les ecrans.
@@ -49,7 +49,9 @@ AppTextInput.displayName = "TextInput";
 // `TextInput.State` (focus courant) est lu par certaines libs.
 Object.assign(AppTextInput, { State: (BaseTextInput as any).State });
 
-if (ACTIVE_FONTS) {
+// Web (react-native-web, export statique) : proprietes non redefinissables,
+// `defineProperty` y leve « Cannot redefine property: Text » et casse l'export.
+if (ACTIVE_FONTS && Platform.OS !== "web") {
   Object.defineProperty(RN, "Text", { configurable: true, enumerable: true, get: () => AppText });
   Object.defineProperty(RN, "TextInput", { configurable: true, enumerable: true, get: () => AppTextInput });
 }

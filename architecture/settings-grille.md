@@ -56,8 +56,8 @@ suppression, déconnexion) :
   Apple) sont ignorés, pour que la grille ne garde pas de trous.
 - Le titre de section est la prop `title` de `SettingGrid` : une section sans
   item affiché disparaît avec son titre.
-- **Mes activités** et **Livraison** sont désactivées pour l'instant
-  (`SHOW_ACTIVITIES` / `SHOW_DELIVERY` = false en tête de `settings.tsx`).
+- **Mes activités** est désactivée pour l'instant (`SHOW_ACTIVITIES` = false
+  en tête de `settings.tsx`). **Livraison** est affichée (`SHOW_DELIVERY` = true).
 
 **`cols === 1` → mode `inline`** : `SettingGrid` clone l'enfant avec
 `inline: true`, et la tuile passe icône / libellé (/ `Switch`) sur une même

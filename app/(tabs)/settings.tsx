@@ -37,7 +37,7 @@ import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 // Sections desactivees pour l'instant (repasser a true pour les reafficher).
 // Une section dont aucun item n'est affiche est masquee avec son titre.
 const SHOW_ACTIVITIES = false;
-const SHOW_DELIVERY = false;
+const SHOW_DELIVERY = true;
 
 export default function SettingsScreen() {
   const { userData } = useAuth();

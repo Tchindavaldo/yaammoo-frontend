@@ -44,4 +44,7 @@ jobs:
       # savoir de quelle publication elle provient (cf. le script).
       - run: node scripts/stamp-update-message.mjs "${{ inputs.message }}"
 
-      - run: eas update --channel "${{ inputs.channel }}" --message "${{ inputs.message }}" --non-interactive
+      # `--environment` : charge les variables EAS du meme nom que le canal
+      # (EXPO_PUBLIC_ORS_KEY…). `.env` est gitignore, absent du runner : sans
+      # cela, l'OTA partirait sans cle et effacerait l'itineraire du Suivi.
+      - run: eas update --channel "${{ inputs.channel }}" --environment "${{ inputs.channel }}" --message "${{ inputs.message }}" --non-interactive

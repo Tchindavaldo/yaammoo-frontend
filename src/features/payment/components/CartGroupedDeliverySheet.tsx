@@ -18,7 +18,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { CartPaymentState } from "../hooks/useCartPayment";
 import { useGroupedDeliveryData } from "../hooks/useGroupedDeliveryData";
 import {
@@ -538,12 +540,9 @@ export const CartGroupedDeliverySheet: React.FC<
           sheetStyles.sheet,
           styles.sheet,
           {
-            // Footer resserre : la safe area suffit a degager la nav bar, on
-            // n'y ajoute qu'un filet de marge (le sheet est deja court).
-            // Android degage ses touches de navigation ; iOS garde la moitie de
-            // la safe area, comme a l'origine.
-            paddingBottom:
-              6 + insets.bottom * (Platform.OS === "android" ? 1.1 : 0.5),
+            // Pied pose sur la bande safe-area (source unique, R19), sans
+            // marge en plus : aligne sur les autres sheets et pages.
+            paddingBottom: insets.bottom,
             transform: [{ translateY }],
           },
         ]}
@@ -641,6 +640,7 @@ export const CartGroupedDeliverySheet: React.FC<
             )}
           </View>
         </BlurTarget>
+        <SafeAreaDebugBand />
       </Animated.View>
 
       {/* Capsule flottante, rendue HORS du sheet pour remonter avec le clavier

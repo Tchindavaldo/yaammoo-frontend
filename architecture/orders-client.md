@@ -231,6 +231,9 @@ sélectionnée**. Changer de chip de statut **conserve la date choisie**. Plus d
 boutique, et plus de section « commandes des jours précédents » : les commandes sont
 rendues à plat pour la date active (les autres dates passent par le bottom sheet).
 
+Boutique absente du home (pagination) → nom + image via `useCartFastFoodInfos`
+(même hook et même cache que le panier).
+
 **Barre de filtres en BAS** (même design que la page marchand) :
 `StickyChipsRow` (En Attente / En cours / Terminées) sur fond `BlurView`, avec une
 icône `options-outline` qui ouvre le `ClientFilterSheet`.

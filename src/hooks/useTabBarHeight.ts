@@ -1,14 +1,22 @@
-import { Platform } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const TAB_BAR_BASE_HEIGHT = 58;
+import { useBottomSafeArea, PAGE_INSET_RATIO } from "@/src/hooks/usePageBottomInset";
 
 /**
- * Part de la safe area basse reservee sous la tab bar. Android en prend plus :
- * ses touches de navigation sont physiquement plus hautes que l'indicateur
- * d'accueil d'iOS, la barre de l'app s'y retrouvait collee dessus.
+ * Hauteur VISIBLE de la tab bar, au-dessus de la bande safe-area : marge haute
+ * + onglets. AUCUN padding bas interne : la bande safe-area garantit deja
+ * l'espace sous les onglets (R19). Source unique pour `_layout.tsx`,
+ * `useSettingsTabBarStyle` et les ecrans.
  */
-export const TAB_BAR_INSET_RATIO = Platform.OS === "android" ? 0.9 : 0.5;
+export const TAB_BAR_PADDING_TOP = 8;
+// Icone (cadre 28) + marge 2 + libelle (lineHeight 13), cales en bas.
+export const TAB_BAR_ITEM_HEIGHT = 44;
+export const TAB_BAR_BASE_HEIGHT = TAB_BAR_PADDING_TOP + TAB_BAR_ITEM_HEIGHT;
+
+/**
+ * Part de la safe area basse reservee sous la tab bar : la source unique
+ * (`PAGE_INSET_RATIO`, R19), pour que sa bande soit alignee sur celle des
+ * pages entieres et des sheets.
+ */
+export const TAB_BAR_INSET_RATIO = PAGE_INSET_RATIO;
 
 /**
  * Retourne la hauteur totale de la tab bar (base + safe area bottom).
@@ -16,7 +24,6 @@ export const TAB_BAR_INSET_RATIO = Platform.OS === "android" ? 0.9 : 0.5;
  * et éviter que le contenu soit caché derrière la navbar.
  */
 export function useTabBarHeight(): number {
-  const insets = useSafeAreaInsets();
-  // MEME calcul que `app/(tabs)/_layout.tsx` : les deux doivent rester alignes.
-  return TAB_BAR_BASE_HEIGHT + insets.bottom * TAB_BAR_INSET_RATIO;
+  const band = useBottomSafeArea();
+  return TAB_BAR_BASE_HEIGHT + band;
 }

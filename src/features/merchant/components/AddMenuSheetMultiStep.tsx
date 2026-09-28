@@ -25,6 +25,7 @@ import {
 } from "react-native";
 // Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { MenuRecap } from "./recap-designs/MenuRecap";
 
 type Step = "nameImage" | "details" | "recap";
@@ -87,8 +88,6 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   embedded = false,
 }) => {
   const insets = useSafeAreaInsets();
-  // En mode intégré, le footer doit dégager la tab bar du bas (toujours visible).
-  const EMBEDDED_TAB_BAR = 65;
   const [step, setStep] = useState<Step>("nameImage");
   const [images, setImages] = useState<string[]>([]);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
@@ -1129,11 +1128,12 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       <View
         style={[
           styles.footer,
-          embedded && {
-            paddingTop: Theme.spacing.sm,
-            // Au-dessus de la tab bar (toujours visible) + marge pour ne pas la chevaucher.
-            paddingBottom: EMBEDDED_TAB_BAR + Theme.spacing.lg * 1.5,
-          },
+          // Pied pose sur la bande safe-area, sans marge en plus (R19) :
+          // - intégré : la page entière (ShopPageFrame) a déjà réservé la bande ;
+          // - modal : le pied descend jusqu'au bord et absorbe la bande.
+          embedded
+            ? { paddingTop: Theme.spacing.sm, paddingBottom: 0 }
+            : { paddingBottom: insets.bottom },
         ]}
       >
         {step !== "nameImage" && (
@@ -1220,6 +1220,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
           ]}
         >
           {inner}
+          <SafeAreaDebugBand />
         </Animated.View>
       </View>
     </Modal>

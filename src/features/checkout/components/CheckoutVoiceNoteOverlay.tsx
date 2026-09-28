@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { useVoiceNotePlayer, useVoiceNoteRecorder } from '@/src/services/audio/useVoiceNote';
 import { useSheetInsets } from '../hooks/useSheetInsets';
+import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -151,12 +152,12 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
           styles.container,
           {
             height: sheetHeight,
-            // `sheetHeight` COMPREND la safe area : sans ce padding la card se
-            // centre sur une zone qui deborde sous la barre de navigation.
-            paddingBottom: insets.bottom,
+            // Card centree sur toute la hauteur du sheet (safe area comprise) :
+            // meme espace visible en haut et en bas.
           },
         ]}
       >
+        <SafeAreaDebugBand />
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>

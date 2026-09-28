@@ -9,6 +9,8 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
@@ -75,6 +77,8 @@ export default function WelcomeScreen() {
     PlusJakartaSans_800ExtraBold,
   });
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Gouttiere basse de la sheet = bande safe-area, ajoutee a la hauteur (R19).
+  const band = useBottomSafeArea();
   const slide = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -317,6 +321,7 @@ export default function WelcomeScreen() {
         <Animated.View
           style={[
             styles.sheet,
+            { height: SCREEN_H * 0.59 + band, paddingBottom: band },
             { transform: [{ translateY: sheetTranslateY }] },
           ]}
           pointerEvents={sheetOpen ? "auto" : "none"}
@@ -326,6 +331,7 @@ export default function WelcomeScreen() {
           <View style={styles.sheetBody}>
             <AuthSheetContent />
           </View>
+          <SafeAreaDebugBand />
         </Animated.View>
         </BlurScope>
       </View>
@@ -446,12 +452,11 @@ const styles = StyleSheet.create({
     // ⚠️ Hauteur FIXE (pas `maxHeight`), identique a celle de la sheet de
     // `AuthGateContext` : la taille ne doit changer ni entre les deux points
     // d'entree, ni entre les etapes du flux WhatsApp.
-    height: SCREEN_H * 0.59,
+    // Hauteur et gouttiere basse portees au rendu (bande safe-area, R19).
     backgroundColor: "#ffffff",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 0,
-    paddingBottom: 24,
     zIndex: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -8 },

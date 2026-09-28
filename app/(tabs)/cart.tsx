@@ -801,8 +801,9 @@ export default function OrdersScreen() {
             styles.listContent,
             {
               paddingTop: LIST_TOP,
-              // Reserve la navbar, la barre de chips ET le recap pose dessus.
-              paddingBottom: tabBarHeight + filterBarHeight + 100,
+              // Reserve la navbar et le recap pose dessus, sans marge en plus
+              // (R19) : la derniere carte s'arrete juste au-dessus du recap.
+              paddingBottom: tabBarHeight + filterBarHeight + 8,
             },
           ]}
           scrollIndicatorInsets={{ top: LIST_TOP }}

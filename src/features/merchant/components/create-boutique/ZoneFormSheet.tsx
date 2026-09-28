@@ -12,7 +12,9 @@ import {
   StyleSheet,
 } from "react-native";
 import { useSheetAnimation } from "./useSheetAnimation";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
@@ -98,8 +100,8 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
               borderTopLeftRadius: 24,
               borderTopRightRadius: 24,
               padding: 20,
-              // Dégage la barre de navigation système.
-              paddingBottom: 28 + insets.bottom,
+              // Contenu pose sur la bande safe-area, sans marge en plus (R19).
+              paddingBottom: insets.bottom,
             }}
           >
             <View
@@ -234,6 +236,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                 </View>
               </View>
             </ScrollView>
+            <SafeAreaDebugBand />
           </Animated.View>
 
           {/* Time picker intégré au bottom sheet (évite l'empilement de 2 Modals) */}
@@ -254,8 +257,8 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                   backgroundColor: "#1e293b",
                   borderTopLeftRadius: 24,
                   borderTopRightRadius: 24,
-                  // Dégage la barre de navigation système.
-                  paddingBottom: 24 + insets.bottom,
+                  // Contenu pose sur la bande safe-area, sans marge en plus (R19).
+                  paddingBottom: insets.bottom,
                 }}
               >
                 <TouchableOpacity
@@ -289,6 +292,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                     }
                   }}
                 />
+                <SafeAreaDebugBand />
               </View>
             </View>
           )}

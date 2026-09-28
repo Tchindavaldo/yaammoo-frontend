@@ -10,12 +10,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { DriverOrderCard } from "./DriverOrderCard";
 import { GroupStatusCounts } from "./GroupStatusCounts";
 
-// Espace réservé en bas : navbar (tabs) + barre de chips « boutique » de la modal.
-const TAB_BAR_HEIGHT = 58 + 64;
+// Barre de chips « boutique » de la modal, posée sur la navbar (tabs).
+const CHIPS_BAR_HEIGHT = 64;
 
 export interface DateOption {
   iso: string;
@@ -55,7 +55,7 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
   storeFilter = null,
   periodFilter = null,
 }) => {
-  const insets = useSafeAreaInsets();
+  const tabBarHeight = useTabBarHeight();
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>("express");
   const [groupSubTab, setGroupSubTab] = useState<
     Record<string, "en_attente" | "en_cours" | "termine">
@@ -280,7 +280,8 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
   };
 
   const listTopPad = topOffset;
-  const listPadBottom = insets.bottom + TAB_BAR_HEIGHT + 24;
+  // Navbar reelle (safe-area comprise, R19) + barre de chips, sans marge en plus.
+  const listPadBottom = tabBarHeight + CHIPS_BAR_HEIGHT + 8;
 
   const hasContent =
     deliveryData.expressGroups.length > 0 || deliveryData.slots.length > 0;

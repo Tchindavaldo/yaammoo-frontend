@@ -11,7 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { styles } from "./ClientFilterSheet.styles";
 import {
   DATE_CHIP_SLOTS,
@@ -188,7 +190,8 @@ export const ClientFilterSheet: React.FC<ClientFilterSheetProps> = ({
         style={[
           styles.sheet,
           {
-            paddingBottom: insets.bottom + 16,
+            // Contenu pose sur la bande safe-area, sans marge en plus (R19).
+            paddingBottom: insets.bottom,
             transform: [
               {
                 translateY: slide.interpolate({
@@ -370,6 +373,7 @@ export const ClientFilterSheet: React.FC<ClientFilterSheetProps> = ({
             )}
           </View>
         </View>
+        <SafeAreaDebugBand />
       </Animated.View>
 
       {/* Sous-sheet des créneaux horaires (grille de tuiles multi-cochables). */}
@@ -383,7 +387,7 @@ export const ClientFilterSheet: React.FC<ClientFilterSheetProps> = ({
           style={styles.backdrop}
           onPress={() => setSlotsOpen(false)}
         />
-        <View style={[styles.slotSheet, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.slotSheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.slotHeader}>
             <Text style={styles.slotTitle}>Créneaux horaires</Text>
             <TouchableOpacity onPress={() => setSlotsOpen(false)}>
@@ -408,6 +412,7 @@ export const ClientFilterSheet: React.FC<ClientFilterSheetProps> = ({
               </View>
             </ScrollView>
           )}
+          <SafeAreaDebugBand />
         </View>
       </Modal>
     </Modal>

@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
+import { useTabBarHeight } from '@/src/hooks/useTabBarHeight';
 import { WalletTransactionItem } from '@/src/features/wallet/components/WalletTransactionItem';
 import { useWallet } from '@/src/features/wallet/context/WalletContext';
 import { WalletTransactionSkeleton } from '@/src/features/wallet/components/WalletTransactionSkeleton';
@@ -29,6 +30,7 @@ interface WalletPanelProps {
 export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOffset = 0 }) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const { transactions, loading, refresh, ensureLoaded, loaded } = useWallet();
+  const tabBarHeight = useTabBarHeight();
 
   // Le portefeuille ne se charge plus au boot : c'est cet ecran qui le demande,
   // a son ouverture.
@@ -117,7 +119,12 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
         onRefresh={refresh}
         progressViewOffset={topOffset}
         scrollIndicatorInsets={{ top: topOffset }}
-        contentContainerStyle={[styles.listContent, { paddingTop: topOffset + 10 }]}
+        // Navbar visible par-dessus (UserWalletModal) : la fin de liste s'arrete
+        // juste au-dessus d'elle, safe-area comprise (source unique R19).
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingTop: topOffset + 10, paddingBottom: tabBarHeight + 8 },
+        ]}
         ListEmptyComponent={
           !loaded ? (
             <>
@@ -181,7 +188,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingVertical: Theme.spacing.sm,
-    paddingBottom: 80,
   },
   emptyState: {
     alignItems: 'center',

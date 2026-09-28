@@ -2,10 +2,9 @@ import { AppBlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import {
-  AUTH_SHEET_HEIGHT,
-  AUTH_SHEET_PADDING_BOTTOM,
-} from "@/src/features/auth/constants";
+import { AUTH_SHEET_HEIGHT } from "@/src/features/auth/constants";
+import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import React, {
   createContext,
   useCallback,
@@ -51,6 +50,8 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
   const isSignedIn = !!user && !!userData;
 
   const [open, setOpen] = useState(false);
+  // Gouttiere basse = bande safe-area, ajoutee a la hauteur utile (R19).
+  const band = useBottomSafeArea();
   const slide = useRef(new Animated.Value(0)).current;
 
   const close = useCallback(() => setOpen(false), []);
@@ -127,7 +128,11 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
       </BlurScope>
 
       <Animated.View
-        style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}
+        style={[
+          styles.sheet,
+          { height: AUTH_SHEET_HEIGHT + band, paddingBottom: band },
+          { transform: [{ translateY: sheetTranslateY }] },
+        ]}
         pointerEvents={open ? "auto" : "none"}
       >
         {/* ⚠️ PAS de `ScrollView` : la sheet a une hauteur fixe et son contenu
@@ -136,6 +141,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
         <View style={styles.sheetBody}>
           <AuthSheetContent />
         </View>
+        <SafeAreaDebugBand />
       </Animated.View>
     </AuthGateContext.Provider>
   );
@@ -165,12 +171,11 @@ const styles = StyleSheet.create({
     // meme taille sur tous ses ecrans (social, email, WhatsApp numero, WhatsApp
     // code). Avec `maxHeight` elle se dimensionnait sur son contenu et sautait
     // a chaque changement d'etape.
-    height: AUTH_SHEET_HEIGHT,
+    // Hauteur et gouttiere basse portees au rendu (bande safe-area, R19).
     backgroundColor: "#ffffff",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 0,
-    paddingBottom: AUTH_SHEET_PADDING_BOTTOM,
     zIndex: 1000,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -8 },

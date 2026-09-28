@@ -10,7 +10,9 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { useBonusContext } from "../context/BonusContext";
 import type { Bonus } from "../types/bonus.types";
 import { BonusCard } from "./BonusCard";
@@ -255,9 +257,10 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
             // La safe area s'AJOUTE a la hauteur utile au lieu de la rogner :
             // `SHEET_HEIGHT` reste l'espace reellement disponible pour le
             // contenu, quelle que soit la barre de navigation.
+            // Contenu pose sur la bande safe-area, sans marge en plus (R19).
             {
-              height: SHEET_HEIGHT + insets.bottom + 0,
-              paddingBottom: insets.bottom + 12,
+              height: SHEET_HEIGHT + insets.bottom,
+              paddingBottom: insets.bottom,
             },
             // Sur fond image, la sheet doit être transparente : un aplat blanc
             // recouvrirait BonusPageBackground.
@@ -267,7 +270,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
                 {
                   translateY: anim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [SHEET_HEIGHT + insets.bottom + 12, 0],
+                    outputRange: [SHEET_HEIGHT + insets.bottom, 0],
                   }),
                 },
               ],
@@ -362,6 +365,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
               </View>
             </BonusGlassCard>
           )}
+          <SafeAreaDebugBand />
         </Animated.View>
 
         {toast && (
@@ -384,7 +388,7 @@ const styles = StyleSheet.create({
   },
   sheet: {
     // Hauteur portée au runtime : `SHEET_HEIGHT` + la safe area (voir le rendu).
-    // En dur, les `paddingBottom: insets.bottom + 12` se prenaient SUR les 400 px
+    // En dur, le `paddingBottom: insets.bottom` se prenait SUR les 400 px
     // et le contenu perdait la hauteur de la barre de navigation Android — les
     // cartes se chevauchaient.
     backgroundColor: LIGHT,

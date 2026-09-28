@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { ZoneGroup, ZoneHourEntry } from "./groupZones";
 import { useSheetAnimation } from "./useSheetAnimation";
 import { zoneListStyles as st } from "./ZoneListSheet.styles";
@@ -98,8 +100,8 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
             st.sheet,
             {
               transform: [{ translateY }],
-              // Degage la barre de navigation systeme.
-              paddingBottom: 28 + insets.bottom,
+              // Contenu pose sur la bande safe-area, sans marge en plus (R19).
+              paddingBottom: insets.bottom,
               maxHeight: "95%",
             },
           ]}
@@ -201,6 +203,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
             </>
           )}
           </View>
+          <SafeAreaDebugBand />
         </Animated.View>
       </View>
     </Modal>

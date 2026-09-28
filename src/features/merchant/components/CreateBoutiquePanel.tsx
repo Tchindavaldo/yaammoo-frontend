@@ -1,9 +1,9 @@
 import React from "react";
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
-import { styles, TAB_BAR_HEIGHT } from "./create-boutique/styles";
+import { styles } from "./create-boutique/styles";
 import { useCreateBoutique } from "./create-boutique/useCreateBoutique";
 import { groupZonesByLieu } from "./create-boutique/groupZones";
 import { hourToDate } from "./create-boutique/parseBoutique";
@@ -33,7 +33,9 @@ interface CreateBoutiquePanelProps {
 export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
   onCancel,
 }) => {
-  const insets = useSafeAreaInsets();
+  // Rendu dans (tabs)/boutique, navbar par-dessus : hauteur REELLE de la
+  // navbar, safe-area comprise (source unique R19).
+  const tabBarHeight = useTabBarHeight();
   const s = useCreateBoutique({ onCancel });
   // Sheet de consultation des zones deja saisies.
   const [showZoneList, setShowZoneList] = React.useState(false);
@@ -124,7 +126,7 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
         <View
           style={[
             styles.cardGrid,
-            { flex: 1, paddingBottom: insets.bottom + TAB_BAR_HEIGHT + 5 },
+            { flex: 1, paddingBottom: tabBarHeight + 8 },
           ]}
         >
           <BoutiqueInfoPage

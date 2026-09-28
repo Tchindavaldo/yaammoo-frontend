@@ -12,12 +12,12 @@ import { LogoutModal } from "@/src/features/profile/components/LogoutModal";
 import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
 import { SettingGridItem } from "@/src/features/profile/components/SettingGridItem";
 import { SettingGridSwitch } from "@/src/features/profile/components/SettingGridSwitch";
-import { SettingsProfileCard } from "@/src/features/profile/components/SettingsProfileCard";
+import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
+import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
-import { useStaffPendingCount } from "@/src/features/staff/hooks/useStaffPendingCount";
 import { SupportChatSheet } from "@/src/features/support/components/SupportChatSheet";
 import { UserWalletModal } from "@/src/features/wallet/components/UserWalletModal";
 import { Theme } from "@/src/theme";
@@ -32,10 +32,12 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 
-const SectionHeader = ({ title }: { title: string }) => (
-  <Text style={styles.sectionTitle}>{title}</Text>
-);
+// Sections desactivees pour l'instant (repasser a true pour les reafficher).
+// Une section dont aucun item n'est affiche est masquee avec son titre.
+const SHOW_ACTIVITIES = false;
+const SHOW_DELIVERY = false;
 
 export default function SettingsScreen() {
   const { userData } = useAuth();
@@ -50,10 +52,11 @@ export default function SettingsScreen() {
   // Sous-pages (modals / sheets) : deep-link, reset au tap onglet et au logout.
   const { visible, open, close, staffTab } = useSettingsSubScreens(isSignedIn);
   const insets = useSafeAreaInsets();
+  // Hauteur reelle du TabHeader (mesuree) : decale le contenu en dessous.
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 150);
+  const tabBarHeight = useTabBarHeight();
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
-  // Demandes de livreur en attente : mises en avant sur la tuile Personnel.
-  const pendingDrivers = useStaffPendingCount(isMerchant, visible.staffManage);
 
   // Personnel = page entière `app/shop/staff` (tuile ou deep-link) : on y
   // redirige puis on referme le drapeau local.
@@ -101,26 +104,27 @@ export default function SettingsScreen() {
       <BlurTarget style={styles.container}>
       <BlurScope>
       {/* Header Profil Fixe et Flouté */}
-      <SettingsProfileCard
-        onEditPress={() => handleComingSoon("Édition du profil")}
-      />
+      <TabHeader onHeightChange={setHeaderHeight}>
+        <SettingsHeaderProfile />
+      </TabHeader>
 
       <BlurTarget style={styles.content}>
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: insets.top + 100,
-          paddingBottom: 40,
+          paddingTop: headerHeight + 16,
+          // La navbar flotte sur le bas : la fin de page s'arrete juste
+          // au-dessus d'elle, sans marge en plus (R19).
+          paddingBottom: tabBarHeight + 8,
           paddingHorizontal: 16,
         }}
       >
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
-        <SectionHeader title="Mes activités" />
-        <SettingGrid>
+        <SettingGrid title="Mes activités">
           {/* Les commandes du client sont l'onglet « Commandes » de la navbar :
               sans boutique, la tuile propose d'en créer une. */}
-          {!isMerchant && (
+          {SHOW_ACTIVITIES && !isMerchant && (
             <SettingGridItem
               icon="storefront-outline"
               title="Créer ma boutique"
@@ -128,7 +132,7 @@ export default function SettingsScreen() {
               onPress={() => router.push("/(tabs)/boutique")}
             />
           )}
-          {!appleReviewMode && (
+          {SHOW_ACTIVITIES && !appleReviewMode && (
             <SettingGridItem
               icon="wallet-outline"
               title="Portefeuille"
@@ -139,8 +143,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Compte */}
-        <SectionHeader title="Compte" />
-        <SettingGrid>
+        <SettingGrid title="Compte">
           <SettingGridItem
             icon="person-outline"
             title="Mon profil"
@@ -161,8 +164,7 @@ export default function SettingsScreen() {
         {/* Boutique - only show for merchants (AVANT Livraison) */}
         {isMerchant && (
           <>
-            <SectionHeader title="Boutique" />
-            <SettingGrid>
+            <SettingGrid title="Boutique">
               {/* Commandes reçues par la boutique (page marchand). */}
               <SettingGridItem
                 icon="receipt-outline"
@@ -172,7 +174,7 @@ export default function SettingsScreen() {
               />
               <SettingGridItem
                 icon="storefront-outline"
-                title="Gérer ma boutique"
+                title="Information"
                 onPress={() => router.push("/shop/edit")}
               />
               <SettingGridItem
@@ -183,12 +185,6 @@ export default function SettingsScreen() {
               <SettingGridItem
                 icon="people-outline"
                 title="Personnel"
-                tone={pendingDrivers > 0 ? "accent" : "neutral"}
-                hint={
-                  pendingDrivers > 0
-                    ? `${pendingDrivers} demande${pendingDrivers > 1 ? "s" : ""}`
-                    : undefined
-                }
                 onPress={() => open("staffManage")}
               />
               <SettingGridItem
@@ -213,8 +209,8 @@ export default function SettingsScreen() {
         )}
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
-        <SectionHeader title="Livraison" />
-        <SettingGrid>
+        {SHOW_DELIVERY && (
+        <SettingGrid title="Livraison">
           {/* Un livreur peut servir plusieurs boutiques → toujours pouvoir
               postuler ailleurs, même déjà livreur. */}
           {isDriver && (
@@ -235,11 +231,11 @@ export default function SettingsScreen() {
             onPress={() => open("driverApply")}
           />
         </SettingGrid>
+        )}
 
         {/* Préférences */}
-        <SectionHeader title="Préférences" />
         {/* 1 colonne : une tuile par ligne, icone et libelle cote a cote. */}
-        <SettingGrid columns={1}>
+        <SettingGrid title="Préférences" columns={1}>
           <SettingGridSwitch
             icon="notifications-outline"
             title="Notifications"
@@ -264,8 +260,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Aide */}
-        <SectionHeader title="Aide" />
-        <SettingGrid>
+        <SettingGrid title="Aide">
           <SettingGridItem
             icon="help-circle-outline"
             title="Assistance"
@@ -290,8 +285,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Legal */}
-        <SectionHeader title="Légal" />
-        <SettingGrid>
+        <SettingGrid title="Légal">
           <SettingGridItem
             icon="document-text-outline"
             title="Politique & Conditions"
@@ -305,8 +299,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Sessions */}
-        <SectionHeader title="Session" />
-        <SettingGrid>
+        <SettingGrid title="Session">
           <SettingGridItem
             icon="swap-horizontal-outline"
             title="Changer de compte"
@@ -321,8 +314,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Zone de danger */}
-        <SectionHeader title="Zone de danger" />
-        <SettingGrid>
+        <SettingGrid title="Zone de danger">
           <SettingGridItem
             icon="trash-outline"
             title="Supprimer mon compte"
@@ -399,20 +391,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  sectionTitle: {
-    fontSize: 11.5,
-    fontWeight: "800",
-    color: Theme.colors.gray[600],
-    marginLeft: 4,
-    marginTop: 22,
-    marginBottom: 8,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
   versionBlock: {
     alignItems: "center",
     padding: Theme.spacing.xl,
-    paddingBottom: 40,
+    paddingBottom: 0,
   },
   versionText: {
     fontSize: 13,

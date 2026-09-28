@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Keyboard, Platform, ScrollView, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 
 interface Props {
   /** En-tête fixe (titre, bouton fermer / retour). */
@@ -12,7 +14,8 @@ interface Props {
 
 /**
  * Page entière (formulaires Nouveau membre / Rôle) : rendue dans le <Modal>
- * de StaffManageModal, elle couvre le header et la tab bar.
+ * de StaffManageModal, elle couvre le header et la tab bar. Fenêtre séparée :
+ * elle absorbe elle-même la bande safe-area basse, sans marge en plus.
  */
 export const StaffPage: React.FC<Props> = ({ header, footer, children }) => {
   const insets = useSafeAreaInsets();
@@ -29,7 +32,7 @@ export const StaffPage: React.FC<Props> = ({ header, footer, children }) => {
     };
   }, []);
 
-  const bottomPad = keyboard > 0 ? keyboard + 10 : insets.bottom + 12;
+  const bottomPad = keyboard > 0 ? keyboard + 10 : insets.bottom;
 
   return (
     <View style={[styles.page, { paddingTop: insets.top + 12 }]}>
@@ -43,6 +46,7 @@ export const StaffPage: React.FC<Props> = ({ header, footer, children }) => {
         {children}
       </ScrollView>
       {footer && <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>}
+      <SafeAreaDebugBand />
     </View>
   );
 };

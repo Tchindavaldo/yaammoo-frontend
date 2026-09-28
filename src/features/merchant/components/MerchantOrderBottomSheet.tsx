@@ -2,10 +2,11 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Animated, Dimensions, Easing, PanResponder, Pressable, Modal,
-  NativeSyntheticEvent, NativeScrollEvent,
+  NativeSyntheticEvent, NativeScrollEvent, Platform,
 } from 'react-native';
 // Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
 import { useSheetSafeInsets as useSafeAreaInsets } from '@/src/hooks/usePageBottomInset';
+import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { Commande } from '@/src/types';
 import { Toast } from '@/src/components/Toast';
@@ -16,7 +17,8 @@ import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
 import { DS } from "@/src/theme/ds";
 
-const SHEET_HEIGHT = 520;
+// iOS aligne sur le sheet client (450) ; Android garde 490.
+const SHEET_HEIGHT = Platform.OS === 'ios' ? 450 : 490;
 // Hauteur de la barre de chips « Cmd » (chip 24 + paddings 8/8 + trait) : le
 // sheet grandit d'autant quand elle est affichée, pour ne rien rogner en bas.
 const CMD_BAR_HEIGHT = 41;
@@ -590,7 +592,7 @@ export default function MerchantOrderBottomSheet({
           {tab === 'livreur' && showDriverTab ? (
             <ScrollView
               style={styles.content}
-              contentContainerStyle={{ paddingTop: 16, paddingBottom: 16 }}
+              contentContainerStyle={{ paddingTop: 16, paddingBottom: 0 }}
               showsVerticalScrollIndicator={false}
             >
               <DriverInfoTab order={currentOrder!} allowRating={false} />
@@ -605,7 +607,7 @@ export default function MerchantOrderBottomSheet({
                 // la barre de chips.
                 zones.length > 1 && { paddingTop: 8 },
               ]}
-              contentContainerStyle={{ paddingBottom: 16 }}
+              contentContainerStyle={{ paddingBottom: 0 }}
               showsVerticalScrollIndicator={false}
             >
               <LivraisonTab user={user} />
@@ -628,6 +630,7 @@ export default function MerchantOrderBottomSheet({
             />
           )}
 
+          <SafeAreaDebugBand />
         </Animated.View>
 
         {/* Toast de blocage (au-dessus du sheet) */}
@@ -656,7 +659,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16,
+    justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16,
   },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
   avatar: {

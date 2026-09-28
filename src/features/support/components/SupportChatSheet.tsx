@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   getThreadName,
@@ -38,7 +38,7 @@ type Screen = { name: "list" } | { name: "chat"; thread: SupportThread | null };
  * l'objet se choisit en chips en haut.
  */
 export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
-  const insets = useSafeAreaInsets();
+  const tabBarHeight = useTabBarHeight();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   /** Objet de la conversation courante, remonté par la vue chat pour le header. */
@@ -47,11 +47,11 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
   const userId = userData?.uid;
   const { threads, loading, upsert } = useSupportThreads(userId, visible);
 
-  // Hauteur navbar (≈58) + safe area bas, pour caler le bouton au-dessus.
-  const TAB_BAR_HEIGHT = 58;
-  const bottomInset = insets.bottom + TAB_BAR_HEIGHT;
-  // Espace réservé sous la liste = bouton (52) + marges + navbar.
-  const listBottomPad = bottomInset + 52 + 32;
+  // Hauteur REELLE de la navbar (safe-area comprise, source unique R19), pour
+  // caler le bouton au-dessus.
+  const bottomInset = tabBarHeight;
+  // Espace réservé sous la liste = écart du bouton (16) + bouton (52) + 8.
+  const listBottomPad = bottomInset + 16 + 52 + 8;
 
   // Chaque ouverture repart de la liste.
   useEffect(() => {

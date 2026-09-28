@@ -7,12 +7,13 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Theme } from '../../../theme';
+import { DS } from '../../../theme/ds';
 
 /** Teinte de la pastille d'icone. */
 export type SettingTileTone = 'neutral' | 'accent' | 'info' | 'danger';
 
 const TONES: Record<SettingTileTone, { icon: string; bg: string }> = {
-  neutral: { icon: Theme.colors.dark, bg: 'rgba(28,28,30,0.06)' },
+  neutral: { icon: DS.ink, bg: DS.surface },
   accent: { icon: Theme.colors.primary, bg: Theme.colors.primary + '1A' },
   info: { icon: Theme.colors.info, bg: Theme.colors.info + '1A' },
   danger: { icon: Theme.colors.danger, bg: Theme.colors.danger + '1A' },
@@ -29,6 +30,8 @@ interface SettingGridItemProps {
   inline?: boolean;
   /** Affiche un loader a la place de l'icone et desactive le press. */
   loading?: boolean;
+  /** Pastille de compteur en haut a droite (masquee si 0). */
+  badge?: number;
 }
 
 export const SettingGridItem: React.FC<SettingGridItemProps> = ({
@@ -39,6 +42,7 @@ export const SettingGridItem: React.FC<SettingGridItemProps> = ({
   hint,
   inline = false,
   loading = false,
+  badge = 0,
 }) => {
   const { icon: iconColor, bg } = TONES[tone];
   const isDanger = tone === 'danger';
@@ -54,7 +58,7 @@ export const SettingGridItem: React.FC<SettingGridItemProps> = ({
         {loading ? (
           <ActivityIndicator size="small" color={iconColor} />
         ) : (
-          <Ionicons name={icon as any} size={20} color={iconColor} />
+          <Ionicons name={icon as any} size={19} color={iconColor} />
         )}
       </View>
 
@@ -62,6 +66,12 @@ export const SettingGridItem: React.FC<SettingGridItemProps> = ({
         <Text style={[styles.label, isDanger && { color: Theme.colors.danger }]}>{title}</Text>
         {!!hint && <Text style={styles.hint}>{hint}</Text>}
       </View>
+
+      {badge > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -69,14 +79,14 @@ export const SettingGridItem: React.FC<SettingGridItemProps> = ({
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: DS.bg,
     borderWidth: 1,
-    borderColor: '#ECECF0',
-    borderRadius: 18,
-    paddingHorizontal: 13,
+    borderColor: DS.line,
+    borderRadius: 16,
+    paddingHorizontal: 12,
     paddingTop: 13,
     paddingBottom: 14,
-    gap: 9,
+    gap: 10,
   },
   tileDanger: {
     backgroundColor: Theme.colors.danger + '0D',
@@ -88,18 +98,34 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   iconContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   label: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
-    lineHeight: 17,
-    letterSpacing: -0.1,
-    color: Theme.colors.dark,
+    lineHeight: 16,
+    color: DS.ink,
+  },
+  badge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: DS.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: DS.bg,
+    fontSize: 11,
+    fontWeight: '800',
   },
   hint: {
     fontSize: 11,

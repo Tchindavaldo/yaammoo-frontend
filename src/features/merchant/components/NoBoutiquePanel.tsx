@@ -1,13 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { CreateBoutiquePanel } from "./CreateBoutiquePanel";
 import { DS } from "@/src/theme/ds";
-
-// Hauteur approximative de la tab bar (navbar du bas) à réserver sous le bouton.
-const TAB_BAR_HEIGHT = 60;
 
 /**
  * Écran affiché quand l'utilisateur n'a pas encore de boutique. Présente un
@@ -15,7 +12,8 @@ const TAB_BAR_HEIGHT = 60;
  * de création (`CreateBoutiquePanel`) coiffé du header global.
  */
 export const NoBoutiquePanel = () => {
-  const insets = useSafeAreaInsets();
+  // Hauteur REELLE de la navbar, safe-area comprise (source unique R19).
+  const tabBarHeight = useTabBarHeight();
   const [creating, setCreating] = useState(false);
 
   if (creating) {
@@ -26,7 +24,7 @@ export const NoBoutiquePanel = () => {
     <View
       style={[
         styles.initialCtn,
-        { paddingBottom: insets.bottom + TAB_BAR_HEIGHT + 20 },
+        { paddingBottom: tabBarHeight + 8 },
       ]}
     >
       {/* Image en haut */}

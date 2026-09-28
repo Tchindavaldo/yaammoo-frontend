@@ -1,7 +1,6 @@
 import React from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { Theme } from "@/src/theme";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFooterBottomInset } from "@/src/hooks/usePageBottomInset";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
@@ -33,7 +32,6 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const insets = useSafeAreaInsets();
   const footerInset = useFooterBottomInset();
   const s = useEditBoutique({ visible, onClose, onSuccess });
   // Sheet de consultation des zones, ouvrable depuis la page 1.

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSheetInsets } from "../hooks/useSheetInsets";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Loader } from "../../../components/Loader";
 import { AnimatedBorderGlow } from "./AnimatedBorderGlow";
 import { DS } from "@/src/theme/ds";
@@ -232,6 +233,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
           },
         ]}
       >
+        <SafeAreaDebugBand />
         <Animated.View
           style={[
             styles.payFooterCapsule,
@@ -408,7 +410,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     justifyContent: "flex-end",
     alignItems: "center",
-    paddingBottom: 2,
+    // Capsule posee sur la bande safe-area (marginBottom), sans marge en plus (R19).
+    paddingBottom: 0,
   },
   payFooterCapsule: {
     width: "100%",

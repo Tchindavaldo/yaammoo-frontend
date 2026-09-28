@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useSheetInsets } from '../hooks/useSheetInsets';
+import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './CheckoutSheet.styles';
 import { Loader } from '../../../components/Loader';
@@ -29,9 +30,11 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
       style={[
         styles.bottomActionBar,
         styles.actionBarLight,
-        { paddingBottom: 16 + insets.bottom },
+        // Pied pose sur la bande safe-area, sans marge en plus (R19).
+        { paddingBottom: insets.bottom },
       ]}
     >
+      <SafeAreaDebugBand />
       <View style={styles.priceSectionLeft}>
         <Text style={[styles.currencyText, styles.textDark]}>XAF {"\n"}{total}</Text>
       </View>

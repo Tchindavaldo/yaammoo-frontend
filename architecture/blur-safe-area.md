@@ -239,20 +239,18 @@ peuvent pas être groupées dans un `Animated.parallel`.
 
 ## 3. Safe-area de la tab bar
 
-La barre d'onglets ne réserve **qu'une fraction** de `insets.bottom` :
-`TAB_BAR_INSET_RATIO` — **0,9 sur Android**, **0,5 sur iOS** — exporté par
-[`src/hooks/useTabBarHeight.ts`](../src/hooks/useTabBarHeight.ts). La prendre en
-entier laissait un grand vide sous les icônes sur iPhone ; Android en garde
-presque tout, ses touches de navigation étant physiquement plus hautes.
-
-Ce ratio est utilisé aux **deux** endroits, qui doivent rester alignés :
+La barre d'onglets réserve la bande safe-area de la source unique
+(`useBottomSafeArea()`, §4). Sa partie visible est définie UNE fois dans
+[`src/hooks/useTabBarHeight.ts`](../src/hooks/useTabBarHeight.ts) :
+`TAB_BAR_PADDING_TOP` (8) + `TAB_BAR_ITEM_HEIGHT` (44) = `TAB_BAR_BASE_HEIGHT`.
+**Aucun padding bas interne** : `components/haptic-tab.tsx` retire le padding (5)
+de react-navigation et cale icône + libellé en bas, directement sur la bande.
 
 | Consommateur | Usage |
 |---|---|
-| [`app/(tabs)/_layout.tsx`](<../app/(tabs)/_layout.tsx>) | `height` et `paddingBottom` de la `tabBarStyle` |
-| `useTabBarHeight()` | hauteur lue par tous les écrans pour leur `paddingBottom` de liste et leurs barres flottantes (`cart.tsx`, `CartStatusPanel`, `OrderManagePanel`, `notifications.tsx`, `index.tsx`) |
-
-Modifier l'un sans l'autre décale le contenu par rapport à la barre.
+| [`app/(tabs)/_layout.tsx`](<../app/(tabs)/_layout.tsx>) | `height` (`useTabBarHeight()`), `paddingTop`, hauteur des onglets |
+| `useSettingsTabBarStyle` | même `tabBarStyle` (constantes importées) |
+| `useTabBarHeight()` | hauteur lue par tous les écrans pour leur `paddingBottom` de liste et leurs barres flottantes |
 
 ---
 
@@ -261,12 +259,30 @@ Modifier l'un sans l'autre décale le contenu par rapport à la barre.
 La safe-area basse n'est **jamais** prise telle quelle : chaque famille d'écran
 en garde une part, réglée **séparément pour iOS et Android**.
 
-| Famille | Source | iOS | Android |
-|---|---|---|---|
-| Tab bar | `TAB_BAR_INSET_RATIO` (`src/hooks/useTabBarHeight.ts`) | 0,5 | 0,9 |
-| Sheets de commande | `SHEET_INSET_RATIO_*` (`checkout/hooks/useSheetInsets.ts`) | 0,5 | 1 |
-| Pages entières (hors `(tabs)`) | `PAGE_INSET_RATIO` (`src/hooks/usePageBottomInset.ts`) | 1 | 1 |
-| Sheets marchand (`<Modal>` ancrés en bas) | `useSheetSafeInsets()` (même fichier, même ratio) | 1 | 1 |
+**Source UNIQUE** : `PAGE_INSET_RATIO` (`src/hooks/usePageBottomInset.ts`,
+iOS 1 / Android 1). Tout en dérive — plus aucun ratio ailleurs :
+
+| Famille | Accès |
+|---|---|
+| Tab bar (`(tabs)/_layout`, `useTabBarHeight`, `useSettingsTabBarStyle`) | `useBottomSafeArea()` (`TAB_BAR_INSET_RATIO` = alias) |
+| Sheets de commande + overlays | `useSheetInsets()` → `useSheetSafeInsets()` |
+| Pages entières (hors `(tabs)`) | `ShopPageFrame` / `usePageBottomInset()` |
+| Pieds fixes | `useFooterBottomInset()` |
+| Tous les `<Modal>` ancrés en bas (filtres, détail commande, bonus, zones, auth, paiement groupé…) | `useSheetSafeInsets()` |
+| Cartes flottantes (nom manquant, mise à jour) | `useBottomSafeArea()` + leur écart propre |
+
+Règles appliquées partout :
+- Sheet / pied qui touche le bas : `paddingBottom` = la bande, **sans constante
+  ajoutée** (plus de `16 +`, `28 +`, `32 +`) ; le dernier élément se pose dessus.
+- **Pas de padding bas interne** dans l'élément du bas (tab bar, pied, conteneur
+  final d'un sheet) : la bande garantit déjà l'espace. Seule une fin de liste
+  qui défile garde `8`.
+- Écran dans `(tabs)` : fin de liste = `useTabBarHeight() + 8` (+ hauteur de la
+  barre fixe éventuelle) ; jamais `insets.bottom + constante de navbar`.
+- `SafeAreaDebugBand` (`src/components/`) en dernier enfant de chaque conteneur
+  qui descend au bord : visible seulement si `SAFE_AREA_DEBUG`.
+- Exception : `CartGroupedDetailCapsule` garde `insets.bottom` brut pour
+  corriger une **mesure du clavier** Android (valeur physique, pas une marge).
 
 **Couleur de la bande** : `SAFE_AREA_BG` (même fichier), appliquée partout
 depuis là. `SAFE_AREA_DEBUG = true` la passe en `DS.accent` (et dessine la bande

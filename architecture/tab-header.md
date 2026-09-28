@@ -43,6 +43,9 @@ blanc + texte orange.
 | `onSelect` | `(iso: string \| null) => void` |
 | `collapsedCount` | number? |
 
+`children` (optionnel) remplace titre + zone droite par un contenu libre :
+utilisé par Settings (`SettingsHeaderProfile`). `title` est alors omis.
+
 Le `TabHeader` accepte aussi `onBack?: () => void` : affiche un chevron retour à
 gauche du titre. Les pages Settings → Boutique (EditBoutique, MenuManageModal,
 WalletManageModal, MerchantSupportModal, BroadcastManageModal) sont des routes

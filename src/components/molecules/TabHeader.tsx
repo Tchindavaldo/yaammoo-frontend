@@ -12,7 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface TabHeaderProps {
   /** Titre principal de la page (ex. "Boutique", "Notifications"). */
-  title: string;
+  title?: string;
+  /** Contenu libre a la place du titre et de la zone droite (ex. carte profil). */
+  children?: React.ReactNode;
   /** Texte secondaire affiché sous le titre (ex. date sélectionnée, "27 non lues"). */
   subtitle?: string;
   /** Zone de droite : contenu spécifique à la page (liste de dates, bouton "Tout marquer lu", etc.). */
@@ -34,6 +36,7 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
   right,
   onBack,
   onHeightChange,
+  children,
 }) => {
   const insets = useSafeAreaInsets();
   // Android : flou seulement si l'ecran pose une cible (`BlurTarget`).
@@ -69,11 +72,17 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
           <Ionicons name="chevron-back" size={24} color={Theme.colors.dark} />
         </TouchableOpacity>
       )}
-      <View style={styles.left}>
-        <Text style={styles.title}>{title}</Text>
-        {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      </View>
-      {!!right && <View style={styles.right}>{right}</View>}
+      {children ? (
+        <View style={styles.body}>{children}</View>
+      ) : (
+        <>
+          <View style={styles.left}>
+            <Text style={styles.title}>{title}</Text>
+            {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          </View>
+          {!!right && <View style={styles.right}>{right}</View>}
+        </>
+      )}
     </View>
   );
 };
@@ -107,6 +116,9 @@ const styles = StyleSheet.create({
   backBtn: {
     marginRight: 8,
     justifyContent: "center",
+  },
+  body: {
+    flex: 1,
   },
   left: {
     flexShrink: 0,

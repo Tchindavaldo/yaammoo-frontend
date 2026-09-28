@@ -3,26 +3,39 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DS } from "@/src/theme/ds";
 
 /**
+ * SOURCE UNIQUE de la safe-area basse de l'app (R19). Tout element qui touche
+ * le bas de l'ecran en derive : pages entieres, pieds de page fixes, tab bar,
+ * bottom sheets (marchand, commande, paiement). Aucune autre part de
+ * `insets.bottom` n'existe ailleurs.
+ */
+
+/**
+ * Part de la safe area basse reservee, par OS. Aligne sur l'ecran Personnel
+ * (reference) : inset complet sur les deux OS (iOS : indicateur d'accueil,
+ * Android : barre systeme). La garde par OS reste pour pouvoir diverger sans
+ * toucher aux appelants.
+ */
+export const PAGE_INSET_RATIO = Platform.OS === "android" ? 1 : 1;
+
+/**
  * Mode verification : `true` colore la bande safe-area basse (pages, pieds
- * fixes, bottom sheets) pour comparer l'alignement par captures. Seul
- * interrupteur de l'app ; `false` en production.
+ * fixes, tab bar, bottom sheets) pour comparer l'alignement par captures.
+ * Seul interrupteur de l'app ; `false` en production.
  */
 export const SAFE_AREA_DEBUG = false;
 
 /** Couleur de la bande safe-area basse, appliquee partout depuis ici. */
 export const SAFE_AREA_BG = SAFE_AREA_DEBUG ? DS.accent : DS.bg;
 
-/**
- * Part de la safe area basse reservee sous une PAGE ENTIERE (hors (tabs), sans
- * navbar). Aligne sur l'ecran Personnel (reference) : inset complet sur les
- * deux OS (iOS : indicateur d'accueil, Android : barre systeme). La garde par
- * OS reste pour pouvoir diverger sans toucher aux appelants.
- */
-export const PAGE_INSET_RATIO = Platform.OS === "android" ? 1 : 1;
+/** Hauteur de la bande safe-area basse (px), commune a tous les elements. */
+export function useBottomSafeArea(): number {
+  const insets = useSafeAreaInsets();
+  return insets.bottom * PAGE_INSET_RATIO;
+}
 
 /**
  * Insets pour les bottom sheets (Modal ancree en bas) : identiques a
- * `useSafeAreaInsets()`, sauf `bottom` ramene au ratio par OS ci-dessus.
+ * `useSafeAreaInsets()`, sauf `bottom` ramene au ratio ci-dessus.
  */
 export function useSheetSafeInsets() {
   const insets = useSafeAreaInsets();
@@ -30,10 +43,9 @@ export function useSheetSafeInsets() {
 }
 
 /**
- * Pied de page FIXE d'une page entiere (barre de filtres, bouton de
- * validation) : il descend dans la safe area comme une tab bar, au lieu de
- * flotter au-dessus d'une bande vide. Meme ratio que les pages : bandes
- * alignees d'une page a l'autre.
+ * Pied de page FIXE (barre de filtres, bouton de validation, tab bar) : il
+ * descend dans la safe area au lieu de flotter au-dessus d'une bande vide.
+ * Meme ratio que les pages : bandes alignees d'un ecran a l'autre.
  */
 export const FOOTER_INSET_RATIO = PAGE_INSET_RATIO;
 

@@ -12,6 +12,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 // Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Theme } from "@/src/theme";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { driverService, DriverInfo } from "@/src/features/driver/services/driverService";
@@ -93,7 +94,8 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
       {/* animationType="fade" → l'overlay noir apparaît EN FONDU (plus le
           sheet qui monte de façon brusque). */}
       <Pressable style={styles.backdrop} onPress={() => !busy && onClose()}>
-        <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
+        {/* Contenu pose sur la bande safe-area, sans marge en plus (R19). */}
+        <Pressable style={[styles.sheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.handle} />
           <Text style={styles.title}>Qui livre cette commande ?</Text>
 
@@ -144,6 +146,7 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
           )}
 
           {error && <Text style={styles.error}>{error}</Text>}
+          <SafeAreaDebugBand />
         </Pressable>
       </Pressable>
     </Modal>

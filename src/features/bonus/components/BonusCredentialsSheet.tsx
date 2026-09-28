@@ -11,7 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { Bonus } from "../types/bonus.types";
 
 interface BonusCredentialsSheetProps {
@@ -133,7 +135,8 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
         style={[
           styles.sheet,
           {
-            paddingBottom: insets.bottom + 16,
+            // Contenu pose sur la bande safe-area, sans marge en plus (R19).
+            paddingBottom: insets.bottom,
             transform: [
               {
                 translateY: slide.interpolate({
@@ -188,6 +191,7 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
         ))}
 
         <Text style={styles.hint}>Appuie sur une ligne pour la copier.</Text>
+        <SafeAreaDebugBand />
       </Animated.View>
     </Modal>
   );

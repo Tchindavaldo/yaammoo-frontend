@@ -5,7 +5,7 @@ import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameSheet";
 import { ProfileNameProvider } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import {
   AppBlurView as BlurView,
   isNativeBlurAvailable,
@@ -15,21 +15,23 @@ import { StyleSheet } from "react-native";
 import { HapticTab } from "@/components/haptic-tab";
 import { Theme as Colors } from "@/src/theme";
 import { useColorScheme } from "@/src/hooks/use-color-scheme";
-import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
+import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
+import {
+  TAB_BAR_ITEM_HEIGHT,
+  TAB_BAR_PADDING_TOP,
+  useTabBarHeight,
+} from "@/src/hooks/useTabBarHeight";
 import { DS } from "@/src/theme/ds";
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const insets = useSafeAreaInsets();
 
-  // Hauteur de base de la navbar + safe area bottom
-  const TAB_BAR_BASE_HEIGHT = 64;
   /**
-   * Part de la safe area basse REELLEMENT reservee — ratio partage avec
-   * `useTabBarHeight`, dont dependent tous les ecrans (Android en prend plus,
-   * ses touches de navigation etant plus hautes).
+   * Safe-area basse reservee sous la navbar : source unique (R19), la meme
+   * que `useTabBarHeight`, les pages entieres et les sheets.
    */
-  const bottomInset = insets.bottom * TAB_BAR_INSET_RATIO;
-  const tabBarHeight = TAB_BAR_BASE_HEIGHT + bottomInset;
+  const bottomInset = useBottomSafeArea();
+  // Base visible (marge haute + onglets, sans padding bas) + bande safe-area.
+  const tabBarHeight = useTabBarHeight();
 
   return (
     <ProfileNameProvider>
@@ -52,14 +54,18 @@ export default function TabLayout() {
             tabBarLabelStyle: {
               fontSize: 10,
               fontWeight: "600",
+              lineHeight: 13,
               marginTop: 2,
             },
             tabBarBackground: () => (
-              <BlurView
-                tint="light"
-                intensity={80}
-                style={StyleSheet.absoluteFill}
-              />
+              <>
+                <BlurView
+                  tint="light"
+                  intensity={80}
+                  style={StyleSheet.absoluteFill}
+                />
+                <SafeAreaDebugBand />
+              </>
             ),
             tabBarStyle: {
               height: tabBarHeight,
@@ -79,12 +85,10 @@ export default function TabLayout() {
               left: 0,
               right: 0,
               paddingBottom: bottomInset,
-              paddingTop: 8,
+              paddingTop: TAB_BAR_PADDING_TOP,
             },
             tabBarItemStyle: {
-              height: TAB_BAR_BASE_HEIGHT,
-              justifyContent: "center",
-              alignItems: "center",
+              height: TAB_BAR_ITEM_HEIGHT,
             },
           }}
         >

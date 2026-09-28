@@ -1,8 +1,11 @@
 import { isNativeBlurAvailable } from "@/src/components/AppBlurView";
-import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
+import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
+import {
+  TAB_BAR_BASE_HEIGHT,
+  TAB_BAR_PADDING_TOP,
+} from "@/src/hooks/useTabBarHeight";
 import { useNavigation } from "expo-router";
 import { useEffect } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 /**
  * Page Bonus V2 (fond blanc pur) : l'ombre montante de la tab bar crée une
@@ -11,14 +14,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
  */
 export function useSettingsTabBarStyle(bonusVisible: boolean) {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomSafeArea();
 
   useEffect(() => {
     // MEME calcul que `app/(tabs)/_layout.tsx` / `useTabBarHeight` : la navbar
     // ne doit pas changer de hauteur d'un onglet a l'autre.
-    const bottomInset = insets.bottom * TAB_BAR_INSET_RATIO;
     const base = {
-      height: 64 + bottomInset,
+      height: TAB_BAR_BASE_HEIGHT + bottomInset,
       borderTopLeftRadius: 20,
       borderTopRightRadius: 20,
       // MEME regle que `_layout.tsx` : sans flou natif (Android < 12), un fond
@@ -32,7 +34,7 @@ export function useSettingsTabBarStyle(bonusVisible: boolean) {
       left: 0,
       right: 0,
       paddingBottom: bottomInset,
-      paddingTop: 8,
+      paddingTop: TAB_BAR_PADDING_TOP,
     };
     navigation.setOptions({
       tabBarStyle: bonusVisible
@@ -53,5 +55,5 @@ export function useSettingsTabBarStyle(bonusVisible: boolean) {
             shadowRadius: 8,
           },
     });
-  }, [bonusVisible, navigation, insets.bottom]);
+  }, [bonusVisible, navigation, bottomInset]);
 }

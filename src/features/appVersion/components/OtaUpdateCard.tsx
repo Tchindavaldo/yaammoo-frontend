@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { onSplashHidden } from "@/src/hooks/useHideSplash";
-import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
+import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { Theme } from "@/src/theme";
 
 import {
@@ -115,6 +115,8 @@ const DEV_PREVIEW = false;
 
 export const OtaUpdateCard = () => {
   const insets = useSafeAreaInsets();
+  // Bande safe-area basse : source unique (R19) ; la carte flotte au-dessus.
+  const band = useBottomSafeArea();
   const [kind, setKind] = useState<Kind | null>(null);
   const [barWidth, setBarWidth] = useState(0);
   const enter = useRef(new Animated.Value(0)).current;
@@ -221,7 +223,7 @@ export const OtaUpdateCard = () => {
           ? { top: insets.top + 2 }
           : // Survole la barre d'onglets (la recouvre), qui ne reserve qu'une
             // PART de la safe area (cf. `_layout`).
-            { bottom: insets.bottom * TAB_BAR_INSET_RATIO + BOTTOM_GAP },
+            { bottom: band + BOTTOM_GAP },
       ]}
     >
       <Animated.View

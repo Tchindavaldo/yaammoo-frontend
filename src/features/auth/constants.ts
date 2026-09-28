@@ -16,12 +16,9 @@ const { height: SCREEN_H } = Dimensions.get("window");
 export const AUTH_SHEET_HEIGHT =
   SCREEN_H * (Platform.OS === "android" ? 0.59 : 0.57);
 
-/**
- * Gouttiere basse de la sheet (`styles.sheet.paddingBottom`).
- *
- * ⚠️ Partagee avec la capsule : celle-ci est rendue DANS le corps de la sheet,
- * donc au-dessus de ce padding. Sans le compenser, son voile s'arretait 24 px
- * trop haut — une bande blanche non floutee restait en bas — et son sommet
- * depassait d'autant.
+/*
+ * Gouttiere basse de la sheet : la bande safe-area (`useBottomSafeArea`,
+ * source unique R19), AJOUTEE a `AUTH_SHEET_HEIGHT` (hauteur utile du
+ * contenu). La capsule (`AuthFieldCapsule`) la compense avec le meme hook :
+ * son voile descend jusqu'au bord et fait `AUTH_SHEET_HEIGHT + bande`.
  */
-export const AUTH_SHEET_PADDING_BOTTOM = 24;

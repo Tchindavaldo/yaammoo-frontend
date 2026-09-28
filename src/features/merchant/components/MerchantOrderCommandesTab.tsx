@@ -126,7 +126,7 @@ export function CommandesTab({
   }
 
   return (
-    <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
+    <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 0 }}>
       {/* Container arrondi : items scrollables + total fixe */}
       <View style={styles.card}>
         <ScrollView
@@ -257,15 +257,12 @@ export function CommandesTab({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    // Le sheet est à hauteur fixe (520) : on plafonne la carte pour qu'elle ne
-    // pousse jamais le footer hors de la zone visible.
-    maxHeight: 340,
+    // Remplit la hauteur restante du sheet, collée net à la bande safe-area.
     backgroundColor: DS.gray50,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: DS.gray100,
     overflow: 'hidden',
-    marginBottom: 12,
   },
   row: {
     flexDirection: 'row',

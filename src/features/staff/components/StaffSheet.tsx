@@ -26,9 +26,9 @@ interface Props {
 
 /**
  * Feuille remontant du bas, rendue dans l'overlay de l'écran Personnel (pas
- * de <Modal>). Au repos le bas se cale au-dessus de la tab bar ; clavier
- * ouvert, au-dessus du clavier (même mécanique que le composeur de
- * notifications).
+ * de <Modal>). Au repos le bas se cale sur la bande safe-area réservée par
+ * la page ; clavier ouvert, au-dessus du clavier (même mécanique que le
+ * composeur de notifications).
  */
 export const StaffSheet: React.FC<Props> = ({ onClose, full = false, header, footer, children }) => {
   const insets = useSafeAreaInsets();
@@ -59,8 +59,9 @@ export const StaffSheet: React.FC<Props> = ({ onClose, full = false, header, foo
   }, []);
 
   const topGap = insets.top + 24;
-  // Tab bar masquée sur l'écran Personnel : seule la safe-area compte.
-  const bottomPad = keyboard > 0 ? keyboard + 10 : insets.bottom + 12;
+  // Rendue dans la page Personnel (ShopPageFrame) : la safe-area basse est
+  // déjà réservée et tronquée sous la feuille. Au repos, rien à ajouter (R19).
+  const bottomPad = keyboard > 0 ? keyboard + 10 : 0;
   const translateY = enter.interpolate({ inputRange: [0, 1], outputRange: [60, 0] });
 
   return (
@@ -85,15 +86,13 @@ export const StaffSheet: React.FC<Props> = ({ onClose, full = false, header, foo
         {header}
         <ScrollView
           style={full ? styles.scrollFull : styles.scrollFit}
-          contentContainerStyle={[styles.content, !footer && { paddingBottom: keyboard > 0 ? bottomPad : 12 }]}
+          contentContainerStyle={[styles.content, !footer && { paddingBottom: keyboard > 0 ? bottomPad : 8 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {children}
         </ScrollView>
         {footer && <View style={[styles.footer, { paddingBottom: bottomPad }]}>{footer}</View>}
-        {/* Sans footer : bande blanche fixe sur la safe-area, le contenu s'y arrête. */}
-        {!footer && keyboard === 0 && <View style={{ height: insets.bottom }} />}
       </Animated.View>
     </View>
   );

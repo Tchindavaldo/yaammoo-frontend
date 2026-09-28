@@ -10,7 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { AUTH_SHEET_HEIGHT, AUTH_SHEET_PADDING_BOTTOM } from "../constants";
+import { AUTH_SHEET_HEIGHT } from "../constants";
+import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { DS } from "@/src/theme/ds";
 
 /**
@@ -109,6 +110,8 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
 }) => {
   const [mounted, setMounted] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
+  // Gouttiere basse de la sheet = bande safe-area (source unique, R19).
+  const band = useBottomSafeArea();
 
   const isPwd = field === "password";
 
@@ -346,7 +349,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
    * changeait donc de taille a chaque fois. Ici il fait toujours la meme,
    * exactement calee sur la sheet.
    */
-  const VEIL_HEIGHT = AUTH_SHEET_HEIGHT;
+  const VEIL_HEIGHT = AUTH_SHEET_HEIGHT + band;
 
   /**
    * Position de la capsule : FIXE, en HAUT du voile.
@@ -396,7 +399,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
   if (!mounted) return null;
 
   return (
-    <Animated.View pointerEvents="box-none" style={styles.slot}>
+    <Animated.View pointerEvents="box-none" style={[styles.slot, { bottom: -band }]}>
       {/* Voile FLOUTE de la zone basse : du bas de l'ecran jusqu'au bord
           superieur de la capsule. Rendu AVANT elle, il passe donc dessous. */}
       <Animated.View
@@ -593,14 +596,13 @@ const styles = StyleSheet.create({
   /**
    * Calque qui porte le voile et la capsule.
    *
-   * ⚠️ `bottom` NEGATIF : la capsule est rendue dans le corps de la sheet, qui
-   * porte une gouttiere basse (`AUTH_SHEET_PADDING_BOTTOM`). Sans ce
-   * debordement, le voile s'arretait au-dessus d'elle — une bande blanche non
-   * floutee restait en bas de la sheet.
+   * ⚠️ `bottom` NEGATIF (porte au rendu : `-band`) : la capsule est rendue
+   * dans le corps de la sheet, qui porte une gouttiere basse = la bande
+   * safe-area. Sans ce debordement, le voile s'arretait au-dessus d'elle — une
+   * bande blanche non floutee restait en bas de la sheet.
    */
   slot: {
     ...StyleSheet.absoluteFill,
-    bottom: -AUTH_SHEET_PADDING_BOTTOM,
   },
   capsule: {
     position: "absolute",

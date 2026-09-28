@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { Theme } from "@/src/theme";
@@ -12,8 +12,6 @@ import { DriverOrderPanel, DateOption } from "./DriverOrderPanel";
 import { DriverFilterSheet } from "./DriverFilterSheet";
 import { StickyChipsRow } from "./StickyChipsRow";
 
-/** Hauteur de la navbar (tabs) — la modal est montée dans (tabs), navbar par-dessus. */
-const NAVBAR_HEIGHT = 58;
 
 interface DriverOrdersModalProps {
   visible: boolean;
@@ -31,7 +29,9 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
   onClose,
 }) => {
   const { userData } = useAuth();
-  const insets = useSafeAreaInsets();
+  // La modal est montée dans (tabs), navbar par-dessus : hauteur REELLE de la
+  // navbar, safe-area comprise (source unique R19).
+  const tabBarHeight = useTabBarHeight();
   const { orders, loading, refresh, updateStatus } = useDriver();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -162,7 +162,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
 
       {/* Barre de filtres en BAS : chips boutique (nom + nb en attente) + icône sheet */}
       {showFilter && (
-        <View style={[styles.bottomBar, { bottom: insets.bottom + NAVBAR_HEIGHT }]}>
+        <View style={[styles.bottomBar, { bottom: tabBarHeight }]}>
           <View style={{ flex: 1 }}>
             <StickyChipsRow
               items={[

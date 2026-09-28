@@ -13,8 +13,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { DateOption } from "./OrderManagePanel";
 
 /** Filtre période : "express", "surplace", ou un créneau horaire précis (ex. "12h"). */
@@ -178,7 +179,8 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
         style={[
           styles.sheet,
           {
-            paddingBottom: insets.bottom + 16,
+            // Contenu pose sur la bande safe-area, sans marge en plus (R19).
+            paddingBottom: insets.bottom,
             transform: [
               {
                 translateY: slide.interpolate({
@@ -360,6 +362,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
             )}
           </View>
         </View>
+        <SafeAreaDebugBand />
       </Animated.View>
 
       {/* Sous-sheet des créneaux horaires (grille de tuiles multi-cochables). */}
@@ -373,7 +376,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
           style={styles.backdrop}
           onPress={() => setSlotsOpen(false)}
         />
-        <View style={[styles.slotSheet, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.slotSheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.slotHeader}>
             <Text style={styles.slotTitle}>Créneaux horaires</Text>
             <TouchableOpacity onPress={() => setSlotsOpen(false)}>
@@ -398,6 +401,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
               </View>
             </ScrollView>
           )}
+          <SafeAreaDebugBand />
         </View>
       </Modal>
     </Modal>

@@ -33,7 +33,9 @@ export const MerchantSupportChatView: React.FC<Props> = ({
   const [draft, setDraft] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
-  const paddingBottom = useMerchantKeyboardOffset(bottomInset + 10);
+  // Saisie posee sur la bande safe-area (reservee par ShopPageFrame), sans
+  // marge en plus (R19).
+  const paddingBottom = useMerchantKeyboardOffset(bottomInset);
 
   const { messages, loading, sending, error, send: reply } =
     useMerchantSupportConversation({ userId, thread, onThreadUpdated });

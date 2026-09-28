@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSheetInsets } from "../hooks/useSheetInsets";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
@@ -316,9 +317,8 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
           styles.container,
           {
             height: sheetHeight,
-            // `sheetHeight` COMPREND la safe area : sans ce padding la card
-            // descend dessous et se colle a la barre de navigation Android.
-            paddingBottom: insets.bottom,
+            // Card centree sur toute la hauteur du sheet (safe area comprise) :
+            // meme espace visible en haut et en bas.
             // On decale `bottom` et NON `transform` : un parent porteur d'un
             // transform anime en JS ne retransmet pas les evenements de
             // mouvement sur Android, ce qui bloquerait le scroll de la liste.
@@ -326,6 +326,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
           },
         ]}
       >
+        <SafeAreaDebugBand />
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>

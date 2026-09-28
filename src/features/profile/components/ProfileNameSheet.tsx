@@ -14,11 +14,10 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { useProfileNameSheet } from "../hooks/useProfileNameSheet";
 import { MissingName } from "../utils/missingName";
-import { TAB_BAR_INSET_RATIO } from "@/src/hooks/useTabBarHeight";
+import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
 
@@ -50,13 +49,10 @@ export function ProfileNameSheet() {
   const { visible, missing, saving, error, dismiss, submit } =
     useProfileNameSheet();
   const { userData } = useAuth();
-  const insets = useSafeAreaInsets();
-  // iOS : le home indicator n'a pas besoin de tout l'inset (meme ratio que la
-  // tab bar) ; Android garde l'inset complet (barre de navigation).
-  const cardBottom =
-    Platform.OS === "ios"
-      ? 8 + insets.bottom * TAB_BAR_INSET_RATIO
-      : CARD_GAP + insets.bottom;
+  // Carte FLOTTANTE (pas un pied) : elle garde son ecart au-dessus de la bande
+  // safe-area, dont la hauteur vient de la source unique (R19).
+  const band = useBottomSafeArea();
+  const cardBottom = Platform.OS === "ios" ? 8 + band : CARD_GAP + band;
 
   const [mounted, setMounted] = useState(false);
   const [variant, setVariant] = useState<MissingName>("both");
@@ -196,7 +192,7 @@ export function ProfileNameSheet() {
       h.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mounted, insets.bottom, lift]);
+  }, [mounted, band, lift]);
 
   if (!mounted) return null;
 

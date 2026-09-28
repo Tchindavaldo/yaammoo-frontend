@@ -13,7 +13,8 @@ une **grille de tuiles par section**, séparées visuellement.
 | `src/features/profile/components/SettingGrid.tsx` | Bloc gris arrondi d'une section, dispose les tuiles en lignes |
 | `src/features/profile/components/SettingGridItem.tsx` | Tuile pressable : pastille d'icône, libellé, `hint` optionnel |
 | `src/features/profile/components/SettingGridSwitch.tsx` | Tuile portant un `Switch` (Notifications, Mode sombre) |
-| `src/features/profile/components/SettingsProfileCard.tsx` | En-tête fixe flouté : avatar, nom, contact, badge Marchand, bouton d'édition |
+| `src/features/profile/components/SettingsHeaderProfile.tsx` | Contenu du `TabHeader` partagé (prop `children`) : avatar, nom + badge Marchand, contact (maquette D) |
+| `src/features/profile/components/SettingsProfileCard.tsx` | Ancien en-tête (plus monté) |
 | `src/features/profile/components/DeleteAccountModal.tsx` | Modal « Supprimer mon compte » : saisie `SUPPRIMER`, loader, erreur inline |
 | `src/features/profile/components/LogoutModal.tsx` | Modal de confirmation de déconnexion (+ `push-token/remove` best-effort) |
 | `src/features/profile/hooks/useSettingsSubScreens.ts` | Visibilité des sous-pages (`visible` / `open` / `close`), deep-link `?section=`, reset au tap onglet et à la déconnexion |
@@ -53,6 +54,10 @@ suppression, déconnexion) :
   ligne incomplète s'étire au lieu de laisser un vide.
 - Les enfants `false` / `null` (items masqués par une condition, ex. mode review
   Apple) sont ignorés, pour que la grille ne garde pas de trous.
+- Le titre de section est la prop `title` de `SettingGrid` : une section sans
+  item affiché disparaît avec son titre.
+- **Mes activités** et **Livraison** sont désactivées pour l'instant
+  (`SHOW_ACTIVITIES` / `SHOW_DELIVERY` = false en tête de `settings.tsx`).
 
 **`cols === 1` → mode `inline`** : `SettingGrid` clone l'enfant avec
 `inline: true`, et la tuile passe icône / libellé (/ `Switch`) sur une même
@@ -61,10 +66,10 @@ parce que les tuiles à `Switch` sont trop étroites en 3 colonnes.
 
 ## Différenciation visuelle des sections
 
-- Fond de page **blanc** ; chaque `SettingGrid` est un **bloc gris arrondi**
-  (`#F2F2F7`, radius 22) ; les tuiles sont **blanches** avec bordure `#ECECF0`.
-  La séparation entre sections se lit ainsi d'un coup d'œil, sans grisonner
-  toute la page.
+- Fond de page **blanc**, sans bloc gris : les tuiles (`DS.bg`, bordure
+  `DS.line`, radius 16, pastille 36 `DS.surface`) posent directement sur la
+  page. Les sections se séparent par des titres 18 / 800 `DS.ink`
+  (style « Ma boutique » de la maquette C).
 
 ## Teintes d'icônes (`tone`)
 

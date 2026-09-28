@@ -5,7 +5,6 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DS } from "@/src/theme";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   getMerchantTopicDescriptor,
@@ -31,7 +30,6 @@ type Screen = { name: "list" } | { name: "chat"; thread: MerchantSupportThread }
  * clients et y répond ; elle n'en crée jamais — pas de bouton « Nouveau chat ».
  */
 export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
-  const insets = useSafeAreaInsets();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const { userData } = useAuth();
@@ -110,7 +108,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
                 styles.flex,
                 {
                   marginTop: headerHeight + 6,
-                  marginBottom: bottomInset + 8,
+                  marginBottom: bottomInset,
                 },
               ]}
             >

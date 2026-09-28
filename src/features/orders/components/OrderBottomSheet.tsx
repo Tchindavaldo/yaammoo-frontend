@@ -16,7 +16,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { MontantTab } from "../../merchant/components/MerchantOrderMontantTab";
 import { DriverInfoTab } from "./DriverInfoTab";
@@ -24,10 +26,7 @@ import { RateMenuTab } from "./RateMenuTab";
 import { DS } from "@/src/theme/ds";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-const SHEET_HEIGHT = 480;
-
-/** Hauteur max des cartes d'items (Commandes / Montant) : sheet à hauteur fixe. */
-const ITEMS_CARD_MAX_H = 300;
+const SHEET_HEIGHT = 450;
 
 export type OrderItem = {
   name: string;
@@ -423,7 +422,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
           {tab === "noter" && showRateTab ? (
             <ScrollView
               style={styles.content}
-              contentContainerStyle={{ paddingBottom: 24 }}
+              contentContainerStyle={{ paddingBottom: 0 }}
               showsVerticalScrollIndicator={false}
             >
               <RateMenuTab
@@ -444,17 +443,17 @@ export const OrderBottomSheet: React.FC<Props> = ({
           ) : tab === "livreur" && showDriverTab ? (
             <ScrollView
               style={styles.content}
-              contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}
+              contentContainerStyle={{ paddingTop: 16, paddingBottom: 0 }}
               showsVerticalScrollIndicator={false}
             >
               <DriverInfoTab order={selectedOrder!} allowRating />
             </ScrollView>
           ) : tab === "montant" && showMontantTab ? (
-            <MontantTab orders={allOrders!} maxHeight={ITEMS_CARD_MAX_H} />
+            <MontantTab orders={allOrders!} />
           ) : tab === "livraison" ? (
             <ScrollView
               style={styles.content}
-              contentContainerStyle={{ paddingBottom: 24 }}
+              contentContainerStyle={{ paddingBottom: 0 }}
               showsVerticalScrollIndicator={false}
             >
               <LivraisonTab
@@ -473,6 +472,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
             />
           )}
 
+          <SafeAreaDebugBand />
         </Animated.View>
       </View>
     </Modal>
@@ -772,21 +772,19 @@ function CommandesTab({
         flex: 1,
         paddingHorizontal: 20,
         paddingTop: 16,
-        paddingBottom: 8,
+        paddingBottom: 0,
       }}
     >
-      {/* Container arrondi : items scrollables + total fixe. Hauteur plafonnée
-          (sheet à hauteur fixe) pour que la ligne de total reste visible. */}
+      {/* Container arrondi : items scrollables + total fixe. Remplit la hauteur
+          restante du sheet, collé net à la bande safe-area. */}
       <View
         style={{
           flex: 1,
-          maxHeight: ITEMS_CARD_MAX_H,
           backgroundColor: DS.gray50,
           borderRadius: 16,
           borderWidth: 1,
           borderColor: DS.gray100,
           overflow: "hidden",
-          marginBottom: 12,
         }}
       >
         <ScrollView
@@ -1066,7 +1064,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 14,
     paddingBottom: 16,
   },
   userRow: {

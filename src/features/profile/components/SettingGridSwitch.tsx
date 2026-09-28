@@ -5,10 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Theme } from '../../../theme';
+import { DS } from '../../../theme/ds';
 import type { SettingTileTone } from './SettingGridItem';
 
 const TONES: Record<SettingTileTone, { icon: string; bg: string }> = {
-  neutral: { icon: Theme.colors.dark, bg: 'rgba(28,28,30,0.06)' },
+  neutral: { icon: DS.ink, bg: DS.surface },
   accent: { icon: Theme.colors.primary, bg: Theme.colors.primary + '1A' },
   info: { icon: Theme.colors.info, bg: Theme.colors.info + '1A' },
   danger: { icon: Theme.colors.danger, bg: Theme.colors.danger + '1A' },
@@ -47,7 +48,7 @@ export const SettingGridSwitch: React.FC<SettingGridSwitchProps> = ({
     return (
       <View style={[styles.tile, styles.tileInline]}>
         <View style={[styles.iconContainer, { backgroundColor: bg }]}>
-          <Ionicons name={icon as any} size={20} color={iconColor} />
+          <Ionicons name={icon as any} size={19} color={iconColor} />
         </View>
         <Text style={[styles.label, styles.labelInline]}>{title}</Text>
         {control}
@@ -59,7 +60,7 @@ export const SettingGridSwitch: React.FC<SettingGridSwitchProps> = ({
     <View style={styles.tile}>
       <View style={styles.topRow}>
         <View style={[styles.iconContainer, { backgroundColor: bg }]}>
-          <Ionicons name={icon as any} size={20} color={iconColor} />
+          <Ionicons name={icon as any} size={19} color={iconColor} />
         </View>
         {control}
       </View>
@@ -71,14 +72,14 @@ export const SettingGridSwitch: React.FC<SettingGridSwitchProps> = ({
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: DS.bg,
     borderWidth: 1,
-    borderColor: '#ECECF0',
-    borderRadius: 18,
-    paddingHorizontal: 13,
+    borderColor: DS.line,
+    borderRadius: 16,
+    paddingHorizontal: 12,
     paddingTop: 13,
     paddingBottom: 14,
-    gap: 9,
+    gap: 10,
   },
   tileInline: {
     flexDirection: 'row',
@@ -94,17 +95,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   iconContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   label: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontWeight: '700',
-    lineHeight: 17,
-    letterSpacing: -0.1,
-    color: Theme.colors.dark,
+    lineHeight: 16,
+    color: DS.ink,
   },
 });

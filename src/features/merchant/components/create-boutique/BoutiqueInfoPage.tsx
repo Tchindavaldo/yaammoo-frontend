@@ -92,7 +92,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{
-        paddingBottom: 16,
+        paddingBottom: 0,
         flexGrow: 1,
         justifyContent: "space-between",
       }}

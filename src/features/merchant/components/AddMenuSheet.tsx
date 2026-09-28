@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from '@/src/hooks/usePageBottomInset';
+import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
@@ -139,6 +141,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
               )}
             </TouchableOpacity>
           </View>
+          <SafeAreaDebugBand />
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -218,6 +221,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: Theme.spacing.lg,
+    // Pose sur la bande safe-area : pas de padding bas interne (R19).
+    paddingBottom: 0,
     borderTopWidth: 1,
     borderTopColor: Theme.colors.gray[100],
   },

@@ -15,7 +15,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
 
@@ -236,9 +238,6 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
       <Animated.View
         style={[
           styles.container,
-          // Reserve la barre de navigation Android : la hauteur de l'overlay ne
-          // change pas, seul le contenu est remonte au-dessus de la navbar.
-          { paddingBottom: insets.bottom },
           {
             transform: [
               {
@@ -252,6 +251,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
           },
         ]}
       >
+        <SafeAreaDebugBand />
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>

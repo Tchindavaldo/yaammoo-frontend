@@ -4,9 +4,6 @@ import { DS } from "@/src/theme/ds";
 
 const { width } = Dimensions.get("window");
 
-// Hauteur approximative de la tab bar (navbar du bas) a reserver sous le contenu.
-export const TAB_BAR_HEIGHT = 60;
-
 export const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFill,

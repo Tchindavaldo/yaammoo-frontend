@@ -20,6 +20,7 @@ import {
 } from "@/src/features/orders/components/OrderTrackingHeader";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
+import { useCartFastFoodInfos } from "../hooks/useCartFastFoodInfos";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { Commande } from "@/src/types";
@@ -41,6 +42,8 @@ import {
   View,
 } from "react-native";
 
+/** Hauteur de la barre de filtres du bas (meme gabarit que le marchand). */
+const FILTER_BAR_HEIGHT = 54;
 
 interface CartStatusPanelProps {
   topOffset?: number;
@@ -119,6 +122,19 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
    * Les pastilles, elles, comptent les commandes de la DATE sélectionnée par
    * statut : en attente / en cours / terminées.
    */
+  // Boutiques des commandes absentes du catalogue du home (pagination) : nom
+  // et image demandes une fois via GET /fastFood/:id, comme dans le panier.
+  const missingFfIds = useMemo(() => {
+    const ids = new Set<string>();
+    [...pending, ...active, ...finished, ...delivered].forEach((o: any) => {
+      if (o.fastFoodId && !fastFoods.some((f) => f.id === o.fastFoodId)) {
+        ids.add(o.fastFoodId);
+      }
+    });
+    return Array.from(ids);
+  }, [pending, active, finished, delivered, fastFoods]);
+  const fetchedFfInfos = useCartFastFoodInfos(missingFfIds);
+
   const trackedFastFoods = useMemo(() => {
     const all = [...pending, ...active, ...finished, ...delivered];
     const map = new Map<string, TrackedFastFood>();
@@ -128,11 +144,12 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
       let entry: TrackedFastFood | undefined = map.get(ffId);
       if (!entry) {
         const ff: any = fastFoods.find((f) => f.id === ffId);
+        const fetched = fetchedFfInfos[ffId];
         entry = {
           id: ffId,
-          name: ff?.nom || ff?.name || "Boutique",
+          name: ff?.nom || ff?.name || fetched?.name || "Boutique",
           // `image` est déjà normalisé (photo du fastfood, sinon 1er plat).
-          image: ff?.image || ff?.logo || ff?.coverImage,
+          image: ff?.image || ff?.logo || ff?.coverImage || fetched?.image,
           orderCount: 0,
           counts: { pending: 0, active: 0, finished: 0 },
         };
@@ -149,7 +166,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         entry!.counts.finished += 1;
     });
     return Array.from(map.values());
-  }, [pending, active, finished, delivered, fastFoods, activeDateISO]);
+  }, [pending, active, finished, delivered, fastFoods, fetchedFfInfos, activeDateISO]);
 
   // Sélection obligatoire : par défaut le premier fastfood de la liste. On
   // re-sélectionne aussi si le fastfood courant disparaît (changement d'onglet).
@@ -334,8 +351,9 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         }
         contentContainerStyle={{
           paddingTop: topOffset + trackingHeaderHeight,
-          // Réserve la navbar + la barre de filtres du bas.
-          paddingBottom: tabBarHeight + bottomOffset + 80,
+          // Réserve la navbar + la barre de filtres du bas, sans marge en plus
+          // (R19) : la dernière carte s'arrête juste au-dessus de la barre.
+          paddingBottom: tabBarHeight + bottomOffset + FILTER_BAR_HEIGHT + 8,
         }}
         scrollIndicatorInsets={{ top: topOffset + trackingHeaderHeight }}
         refreshControl={

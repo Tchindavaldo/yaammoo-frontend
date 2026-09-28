@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSheetInsets } from "../hooks/useSheetInsets";
+import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
@@ -198,12 +199,12 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
           styles.container,
           {
             height: sheetHeight,
-            // `sheetHeight` COMPREND la safe area : sans ce padding la card se
-            // centre sur une zone qui deborde sous la barre de navigation.
-            paddingBottom: insets.bottom,
+            // Card centree sur toute la hauteur du sheet (safe area comprise) :
+            // meme espace visible en haut et en bas.
           },
         ]}
       >
+        <SafeAreaDebugBand />
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>

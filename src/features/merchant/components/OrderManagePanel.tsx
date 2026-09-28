@@ -691,7 +691,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // lui réserve sa hauteur pour que la dernière carte ne passe pas dessous.
   const hasOtherDates = untreatedCounts.past > 0 || untreatedCounts.future > 0;
   const listPadBottom =
-    tabBarHeight + FILTER_BAR_HEIGHT + 24 + (hasOtherDates ? NOTICE_DOCK_HEIGHT : 0);
+    tabBarHeight + FILTER_BAR_HEIGHT + 8 + (hasOtherDates ? NOTICE_DOCK_HEIGHT : 0);
 
   // Espace réellement libre entre la barre fixe du haut et celle du bas : le
   // message de liste vide l'occupe entièrement pour être centré verticalement.

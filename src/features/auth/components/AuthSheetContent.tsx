@@ -324,7 +324,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 28,
     paddingTop: 24,
-    paddingBottom: 32,
+    // Pas de padding bas : la bande safe-area de la sheet garantit l'espace (R19).
+    paddingBottom: 0,
     alignItems: "center",
     justifyContent: "center",
     gap: 14,

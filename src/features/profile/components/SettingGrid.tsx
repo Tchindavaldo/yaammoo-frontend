@@ -10,7 +10,8 @@
 // Les enfants `false` / `null` (items masques par une condition) sont ignores,
 // pour que la grille ne garde pas de trous.
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { DS } from '../../../theme/ds';
 
 const GAP = 10;
 
@@ -23,11 +24,13 @@ function columnsFor(count: number): number {
 
 interface SettingGridProps {
   children: React.ReactNode;
+  /** Titre de section, masque avec la grille quand aucun item n'est affiche. */
+  title?: string;
   /** Force le nombre de colonnes au lieu de le deduire du nombre d'items. */
   columns?: number;
 }
 
-export const SettingGrid: React.FC<SettingGridProps> = ({ children, columns }) => {
+export const SettingGrid: React.FC<SettingGridProps> = ({ children, title, columns }) => {
   const items = React.Children.toArray(children).filter(
     (child): child is React.ReactElement<{ inline?: boolean }> => React.isValidElement(child)
   );
@@ -43,6 +46,7 @@ export const SettingGrid: React.FC<SettingGridProps> = ({ children, columns }) =
 
   return (
     <View style={styles.grid}>
+      {!!title && <Text style={styles.title}>{title}</Text>}
       {rows.map((row, rowIndex) => (
         <View key={rowIndex} style={[styles.row, rowIndex > 0 && { marginTop: GAP }]}>
           {row.map((item, colIndex) => (
@@ -59,12 +63,18 @@ export const SettingGrid: React.FC<SettingGridProps> = ({ children, columns }) =
 
 const styles = StyleSheet.create({
   grid: {
+    // Pas de bloc gris : les tuiles bordees posent directement sur la page,
+    // la separation entre sections vient des titres.
     marginBottom: 22,
-    // Bloc gris par section : les tuiles blanches ressortent dessus et la
-    // separation entre sections se lit d'un coup d'oeil.
-    backgroundColor: '#F2F2F7',
-    borderRadius: 22,
-    padding: 10,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: DS.ink,
+    marginLeft: 4,
+    marginTop: 8,
+    marginBottom: 12,
+    letterSpacing: -0.2,
   },
   row: {
     flexDirection: 'row',

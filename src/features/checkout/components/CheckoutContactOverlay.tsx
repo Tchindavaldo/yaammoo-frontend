@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
 import { useSheetInsets } from '../hooks/useSheetInsets';
+import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
@@ -124,10 +125,8 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           styles.container,
           {
             height: sheetHeight,
-            // `sheetHeight` COMPREND la safe area : sans ce padding la card se
-            // centre sur une zone qui deborde sous la barre de navigation et
-            // parait collee en bas.
-            paddingBottom: insets.bottom,
+            // Card centree sur toute la hauteur du sheet (safe area comprise) :
+            // meme espace visible en haut et en bas.
           },
           { transform: [{ translateY: keyboardHeight.interpolate({
             inputRange: [0, 100],
@@ -135,6 +134,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           }) }] }
         ]}
       >
+        <SafeAreaDebugBand />
         <View style={styles.card}>
           <View style={styles.header}>
             <View style={styles.headerLeft}>

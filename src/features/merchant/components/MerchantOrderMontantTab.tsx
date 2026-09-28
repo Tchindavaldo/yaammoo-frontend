@@ -127,11 +127,9 @@ type Group = {
 type Props = {
   /** Commandes affichées par le sheet (une seule, ou toutes celles du groupe). */
   orders: Commande[];
-  /** Plafond de la carte : dépend de la hauteur du sheet appelant (défaut 340). */
-  maxHeight?: number;
 };
 
-export function MontantTab({ orders, maxHeight = 340 }: Props) {
+export function MontantTab({ orders }: Props) {
   // Regroupe par deliveryGroupId. Une commande sans groupe forme son propre bloc.
   const groups = useMemo(() => buildDeliveryGroups(orders), [orders]);
 
@@ -152,12 +150,12 @@ export function MontantTab({ orders, maxHeight = 340 }: Props) {
         flex: 1,
         paddingHorizontal: 20,
         paddingTop: 16,
-        paddingBottom: 8,
+        paddingBottom: 0,
       }}
     >
-      {/* Même gabarit que l'onglet Commande : carte plafonnée, contenu scrollable
-          au-dessus d'une ligne de total fixe. */}
-      <View style={[styles.card, { maxHeight }]}>
+      {/* Même gabarit que l'onglet Commande : la carte remplit la hauteur
+          restante et se colle à la bande safe-area. */}
+      <View style={styles.card}>
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
@@ -309,17 +307,14 @@ export function MontantTab({ orders, maxHeight = 340 }: Props) {
 }
 
 const styles = StyleSheet.create({
-  // Gabarit identique à l'onglet Commande : le sheet est à hauteur fixe (520),
-  // on plafonne la carte pour que la ligne de total reste visible.
+  // Remplit la hauteur restante du sheet, collée net à la bande safe-area.
   card: {
     flex: 1,
-    maxHeight: 340,
     backgroundColor: DS.gray50,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: DS.gray100,
     overflow: "hidden",
-    marginBottom: 12,
   },
   // Bloc d'un groupe de livraison : pas de fond ni de padding propres — la carte
   // parente fournit déjà les deux. Le trait du bas sépare les groupes entre eux.

@@ -133,7 +133,7 @@ export default function NotificationsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.listContent,
-          { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 20 },
+          { paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight + 8 },
         ]}
         progressViewOffset={HEADER_HEIGHT}
         refreshing={loading}

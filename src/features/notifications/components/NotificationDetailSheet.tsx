@@ -1,7 +1,9 @@
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
+import { useSheetSafeInsets as useSafeAreaInsets } from '@/src/hooks/usePageBottomInset';
+import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
 
@@ -36,7 +38,8 @@ export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable
-          style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}
+          // Contenu pose sur la bande safe-area, sans marge en plus (R19).
+          style={[styles.sheet, { paddingBottom: insets.bottom }]}
           onPress={() => {}}
         >
           <View style={styles.handle} />
@@ -62,6 +65,7 @@ export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification
               transition={150}
             />
           )}
+          <SafeAreaDebugBand />
         </Pressable>
       </Pressable>
     </Modal>

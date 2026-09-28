@@ -129,7 +129,9 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       await flushReadQueue();
 
       const endpoint =
-        userData?.fastFoodId !== undefined
+        // `fastFoodId` null serait envoye en texte "null" : le backend verifie
+        // alors les droits sur une boutique inexistante et repond 403.
+        userData?.fastFoodId
           ? `/notification/user?userId=${userData?.uid}&fastFoodId=${userData.fastFoodId}`
           : `/notification/user?userId=${userData?.uid}`;
       const response = await axios.get(`${Config.apiUrl}${endpoint}`, {

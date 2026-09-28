@@ -123,7 +123,8 @@ export const useNotificationSetup = () => {
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",
-        sound: "default",
+        // Pas de `sound` : sans valeur, le canal prend le son systeme par
+        // defaut. "default" est pris pour un fichier embarque introuvable.
       });
     }
 

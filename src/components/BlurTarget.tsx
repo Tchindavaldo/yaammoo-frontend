@@ -40,7 +40,7 @@ interface ScopeValue {
   /** Cible actuellement floutee par les AppBlurView de la zone. */
   target: TargetRef | null;
   /** Une cible s'annonce active (ou se retire avec `null`). */
-  setTarget: (ref: TargetRef | null) => void;
+  setTarget: React.Dispatch<React.SetStateAction<TargetRef | null>>;
 }
 
 const BlurScopeContext = createContext<ScopeValue | null>(null);
@@ -73,7 +73,11 @@ export function BlurTarget({
   useEffect(() => {
     if (!isAndroid || !scope || !active) return;
     scope.setTarget(ref);
-    return () => scope.setTarget(null);
+    // Ne retire que SA propre cible : au premier affichage d'un onglet, la
+    // nouvelle cible s'annonce AVANT que l'ancien ecran recoive `blur` ; un
+    // `setTarget(null)` aveugle effacait alors la nouvelle cible et la tab
+    // bar retombait sur une View transparente.
+    return () => scope.setTarget((cur) => (cur === ref ? null : cur));
     // `scope.setTarget` est stable (setState) : seul `active` compte.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAndroid, active]);

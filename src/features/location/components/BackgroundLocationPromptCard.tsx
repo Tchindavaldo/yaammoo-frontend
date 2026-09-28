@@ -30,8 +30,9 @@ import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
  */
 
 const TITLE = "Suivez vos livraisons en direct";
-/** Libellé du choix « Toujours » dans la popup système (iOS et Android). */
-const ALWAYS_LABEL = "Toujours autoriser";
+/** Libellé du choix « Toujours » dans l'écran système (Android : réglages). */
+const ALWAYS_LABEL =
+  Platform.OS === "android" ? "Autoriser tout le temps" : "Toujours autoriser";
 const MESSAGE =
   Platform.OS === "android"
     ? `Sur l'écran suivant, choisissez « ${ALWAYS_LABEL} » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.`

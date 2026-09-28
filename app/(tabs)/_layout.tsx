@@ -6,32 +6,20 @@ import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameS
 import { ProfileNameProvider } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
-import {
-  AppBlurView as BlurView,
-  isNativeBlurAvailable,
-} from "@/src/components/AppBlurView";
+import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { StyleSheet } from "react-native";
 
 import { HapticTab } from "@/components/haptic-tab";
 import { Theme as Colors } from "@/src/theme";
 import { useColorScheme } from "@/src/hooks/use-color-scheme";
-import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
-import {
-  TAB_BAR_ITEM_HEIGHT,
-  TAB_BAR_PADDING_TOP,
-  useTabBarHeight,
-} from "@/src/hooks/useTabBarHeight";
+import { TAB_BAR_ITEM_HEIGHT } from "@/src/hooks/useTabBarHeight";
+import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
-  /**
-   * Safe-area basse reservee sous la navbar : source unique (R19), la meme
-   * que `useTabBarHeight`, les pages entieres et les sheets.
-   */
-  const bottomInset = useBottomSafeArea();
-  // Base visible (marge haute + onglets, sans padding bas) + bande safe-area.
-  const tabBarHeight = useTabBarHeight();
+  // Style unique de la navbar, partage avec les ecrans qui l'ajustent.
+  const tabBarStyle = useTabBarStyle();
 
   return (
     <ProfileNameProvider>
@@ -67,26 +55,7 @@ export default function TabLayout() {
                 <SafeAreaDebugBand />
               </>
             ),
-            tabBarStyle: {
-              height: tabBarHeight,
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              backgroundColor: isNativeBlurAvailable
-                ? "rgba(255, 255, 255, 0.7)"
-                : "#ffffff",
-              borderTopWidth: 0,
-              elevation: 8,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: -2 },
-              shadowOpacity: 0.08,
-              shadowRadius: 8,
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              paddingBottom: bottomInset,
-              paddingTop: TAB_BAR_PADDING_TOP,
-            },
+            tabBarStyle,
             tabBarItemStyle: {
               height: TAB_BAR_ITEM_HEIGHT,
             },

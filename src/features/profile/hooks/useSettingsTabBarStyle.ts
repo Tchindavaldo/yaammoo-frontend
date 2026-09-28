@@ -1,59 +1,27 @@
-import { isNativeBlurAvailable } from "@/src/components/AppBlurView";
-import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
-import {
-  TAB_BAR_BASE_HEIGHT,
-  TAB_BAR_PADDING_TOP,
-} from "@/src/hooks/useTabBarHeight";
+import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { useNavigation } from "expo-router";
 import { useEffect } from "react";
 
 /**
- * Page Bonus V2 (fond blanc pur) : l'ombre montante de la tab bar crée une
- * bande grise disgracieuse. On la retire tant que la modale V2 est ouverte,
- * puis on restaure le style par défaut à la fermeture (navbar inchangée sinon).
+ * Page Bonus V2 (fond blanc pur) : l'ombre montante de la tab bar cree une
+ * bande grise disgracieuse. On l'adoucit tant que la modale V2 est ouverte.
+ * Le reste du style vient de `useTabBarStyle`, commun a toutes les pages.
  */
 export function useSettingsTabBarStyle(bonusVisible: boolean) {
   const navigation = useNavigation();
-  const bottomInset = useBottomSafeArea();
+  const base = useTabBarStyle();
 
   useEffect(() => {
-    // MEME calcul que `app/(tabs)/_layout.tsx` / `useTabBarHeight` : la navbar
-    // ne doit pas changer de hauteur d'un onglet a l'autre.
-    const base = {
-      height: TAB_BAR_BASE_HEIGHT + bottomInset,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      // MEME regle que `_layout.tsx` : sans flou natif (Android < 12), un fond
-      // semi-transparent laisse voir le contenu au travers -> blanc opaque.
-      backgroundColor: isNativeBlurAvailable
-        ? "rgba(255, 255, 255, 0.7)"
-        : "#ffffff",
-      borderTopWidth: 0,
-      position: "absolute" as const,
-      bottom: 0,
-      left: 0,
-      right: 0,
-      paddingBottom: bottomInset,
-      paddingTop: TAB_BAR_PADDING_TOP,
-    };
     navigation.setOptions({
       tabBarStyle: bonusVisible
         ? {
             ...base,
             elevation: 2,
-            shadowColor: "#000",
             shadowOffset: { width: 0, height: -1 },
             shadowOpacity: 0.05,
             shadowRadius: 3,
           }
-        : {
-            ...base,
-            elevation: 8,
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 8,
-          },
+        : base,
     });
-  }, [bonusVisible, navigation, bottomInset]);
+  }, [bonusVisible, navigation, base]);
 }

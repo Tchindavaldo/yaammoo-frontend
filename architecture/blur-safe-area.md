@@ -264,7 +264,7 @@ iOS 1 / Android 1). Tout en dérive — plus aucun ratio ailleurs :
 
 | Famille | Accès |
 |---|---|
-| Tab bar (`(tabs)/_layout`, `useTabBarHeight`, `useSettingsTabBarStyle`) | `useBottomSafeArea()` (`TAB_BAR_INSET_RATIO` = alias) |
+| Tab bar : style UNIQUE `useTabBarStyle()` (`_layout` + `useSettingsTabBarStyle` qui ne fait qu'adoucir l'ombre) | `useBottomSafeArea()` (`TAB_BAR_INSET_RATIO` = alias) |
 | Sheets de commande + overlays | `useSheetInsets()` → `useSheetSafeInsets()` |
 | Pages entières (hors `(tabs)`) | `ShopPageFrame` / `usePageBottomInset()` |
 | Pieds fixes | `useFooterBottomInset()` |

@@ -155,8 +155,12 @@ class HLLabel(context: Context) : View(context) {
     return ceil(fm.descent - fm.ascent) / HLDim.density
   }
 
-  /** Taille ajustee au texte, marges comprises (dp) : pastilles. */
-  fun fitWidth(): Float = textWidth() + insets[0] + insets[2]
+  /**
+   Taille ajustee au texte, marges comprises (dp) : pastilles. +1 dp de marge :
+   l'arrondi dp -> px de `frame` peut retirer un pixel, et StaticLayout
+   tronquerait alors le texte ("250..." au lieu de "2500 F").
+   */
+  fun fitWidth(): Float = textWidth() + insets[0] + insets[2] + 1f
   fun fitHeight(): Float = lineHeight() + insets[1] + insets[3]
 
   override fun onDraw(canvas: Canvas) {

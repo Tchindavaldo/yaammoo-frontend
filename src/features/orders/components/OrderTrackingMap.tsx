@@ -12,6 +12,7 @@ import type { LatLng } from "../services/orderTrackingService";
 type Props = {
   driver: LatLng | null;
   destination: LatLng | null;
+  route?: LatLng[] | null;
 };
 
 const OrderTrackingMap: React.FC<Props> = () => (

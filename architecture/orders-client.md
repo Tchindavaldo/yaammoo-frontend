@@ -14,12 +14,14 @@ yaammoo/src/features/orders/
 ├── hooks/
 │   ├── useOrders.ts           # Re-export de useOrdersContext (simplicité d'import)
 │   ├── useOrderTracking.ts    # Onglet « Suivi » : GET /driver/tracking + socket driverLocationUpdated + position du client
+│   ├── useTrackingRoute.ts    # Itinéraire restant (recalcul seulement hors trajet)
 │   ├── useCartFastFoodInfos.ts # Nom + image des boutiques du panier absentes du home (GET /fastFood/:id)
 │   └── useClientFilterOptions.ts # Options + compteurs du ClientFilterSheet (dates, périodes, chips)
 ├── services/
 │   ├── ratingService.ts       # API notation (menu + livreur) : rate, stats, avis
 │   ├── ratingStatsCache.ts    # Cache mémoire des stats notation (anti-refetch/loader)
-│   └── orderTrackingService.ts # GET /driver/tracking/:orderId + types LatLng / DriverPosition
+│   ├── orderTrackingService.ts # GET /driver/tracking/:orderId + types LatLng / DriverPosition
+│   └── routingService.ts      # Itinéraire OpenRouteService (onglet « Suivi »)
 ├── utils/
 │   ├── groupCartOrders.ts     # Regroupe le panier par zone + créneau (clé deliveryGroupKey)
 │   ├── buildOrderItems.ts     # Lignes de l'onglet « Commandes » (plat, extras, boissons) + type OrderItem
@@ -405,8 +407,15 @@ sert aussi au marchand (`MerchantOrderBottomSheet`), R16.
   livreur (vélo, orange) + adresse de livraison (maison, noire), région
   recalculée pour contenir les deux, interactions coupées. Pastille « Position
   il y a N s » / « En attente de la position du livreur… ».
-- **Arrivée estimée** (heure + « dans N min ») et **distance** : `trackingEta`
-  (vol d'oiseau × 1,3, moto à 20 km/h ; la vitesse GPS instantanée est écartée).
+- **Itinéraire** : `useTrackingRoute` + `services/routingService.ts`
+  (OpenRouteService, profil `cycling-regular`, clé `EXPO_PUBLIC_ORS_KEY` →
+  `Config.orsKey`, offre gratuite). Tracé orange (`Polyline`). Calculé une fois,
+  puis seulement si le livreur s'écarte de > 80 m ou si la destination bouge
+  (≥ 30 s entre deux appels) ; entre-temps le tracé est raccourci au point le
+  plus proche du livreur et la durée proratisée.
+- **Arrivée estimée** (heure + « dans N min ») et **distance** : par la route
+  quand l'itinéraire est connu, sinon `trackingEta` (vol d'oiseau × 1,3, moto à
+  20 km/h ; la vitesse GPS instantanée est écartée).
 - **Données** : `useOrderTracking` — `GET /driver/tracking/:orderId` à
   l'ouverture et au retour au premier plan, puis socket
   `driverLocationUpdated` filtré sur `orderIds`. Destination = position live du

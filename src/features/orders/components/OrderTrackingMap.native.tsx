@@ -1,21 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, Polyline } from "react-native-maps";
 import { DS } from "@/src/theme/ds";
 import type { LatLng } from "../services/orderTrackingService";
 
 /**
  * Carte de l'onglet « Suivi » (détail client). COPIE DÉDIÉE (R16) de
  * `src/components/MapComponent` (partagé avec le marchand) : deux marqueurs
- * (livreur, adresse de livraison) et une région recalculée pour les contenir
- * tous les deux. Interactions coupées, comme l'original : la carte suit les
+ * (livreur, adresse de livraison), le tracé de l'itinéraire restant quand il
+ * est connu, et une région recalculée pour contenir le tout. Interactions coupées, comme l'original : la carte suit les
  * positions, l'utilisateur n'a rien à manipuler dans un sheet de 450 px.
  */
 
 type Props = {
   driver: LatLng | null;
   destination: LatLng | null;
+  /** Itinéraire restant (OpenRouteService), absent tant qu'il n'est pas calculé. */
+  route?: LatLng[] | null;
 };
 
 /** Marge autour des deux points ; delta minimal ≈ 1 km pour ne pas zoomer à l'excès. */
@@ -37,11 +39,13 @@ const regionFor = (points: LatLng[]) => {
   };
 };
 
-const OrderTrackingMap: React.FC<Props> = ({ driver, destination }) => {
+const OrderTrackingMap: React.FC<Props> = ({ driver, destination, route }) => {
   const region = useMemo(() => {
-    const points = [driver, destination].filter(Boolean) as LatLng[];
+    const points = [driver, destination, ...(route ?? [])].filter(
+      Boolean,
+    ) as LatLng[];
     return points.length ? regionFor(points) : null;
-  }, [driver, destination]);
+  }, [driver, destination, route]);
 
   if (!region) return <View style={styles.empty} />;
 
@@ -55,6 +59,15 @@ const OrderTrackingMap: React.FC<Props> = ({ driver, destination }) => {
       pitchEnabled={false}
       toolbarEnabled={false}
     >
+      {route && route.length > 1 && (
+        <Polyline
+          coordinates={route}
+          strokeColor={DS.accent}
+          strokeWidth={4}
+          lineCap="round"
+          lineJoin="round"
+        />
+      )}
       {destination && (
         <Marker coordinate={destination} anchor={{ x: 0.5, y: 0.5 }}>
           <View style={styles.destination}>

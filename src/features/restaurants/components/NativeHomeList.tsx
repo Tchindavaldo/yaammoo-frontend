@@ -62,7 +62,9 @@ const BANNER_AUTOPLAY = false;
  */
 const PREHEAT_SCREENS = 2;
 
-const uri = (asset: number) => Image.resolveAssetSource(asset)?.uri ?? null;
+// `resolveAssetSource` n'existe pas sur web : ce module y est chargé (import
+// du home) sans jamais être rendu, il ne doit donc pas planter au chargement.
+const uri = (asset: number) => Image.resolveAssetSource?.(asset)?.uri ?? null;
 
 // Images locales de secours, resolues UNE fois (URL du bundle ou de Metro).
 const FALLBACK_V7 = uri(require("@/assets/images/burger1-nobackground1.webp"));

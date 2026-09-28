@@ -16,6 +16,11 @@ export const Config = {
   // Sélection automatique : prod en release, locale en dev.
   apiUrl: __DEV__ ? DEV_API_URL : PROD_API_URL,
 
+  // ─── Itinéraire (onglet « Suivi ») ─────────────────────────────────────────
+  // Clé OpenRouteService (offre gratuite), lue dans `.env` : EXPO_PUBLIC_ORS_KEY.
+  // Absente → pas de tracé, l'arrivée reste estimée à vol d'oiseau.
+  orsKey: process.env.EXPO_PUBLIC_ORS_KEY || null,
+
   // ─── Store (mise à jour forcée) ────────────────────────────────────────────
   // Identifiant Play Store = bundleIdentifier Android (app.json → android.package).
   androidPackageName: "com.rauval.yaammoo",

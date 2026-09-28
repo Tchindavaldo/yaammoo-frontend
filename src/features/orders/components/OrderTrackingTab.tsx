@@ -11,12 +11,14 @@ import { Commande } from "@/src/types";
 import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import { useOrderTracking } from "../hooks/useOrderTracking";
+import { useTrackingRoute } from "../hooks/useTrackingRoute";
 import { estimateArrival, formatAgo, formatClock } from "../utils/trackingEta";
 import OrderTrackingMap from "./OrderTrackingMap";
 
 /**
  * Onglet « Suivi » du détail client (`OrderBottomSheet`), visible pendant la
- * course (`delivering`) : carte (livreur + adresse de livraison), heure
+ * course (`delivering`) : carte (livreur + adresse de livraison + itinéraire
+ * OpenRouteService, `useTrackingRoute`), heure
  * d'arrivée estimée et distance. Positions : `useOrderTracking` (HTTP puis
  * socket `driverLocationUpdated`).
  */
@@ -30,6 +32,8 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
     order.id,
     hasDriver && order.status === "delivering",
   );
+
+  const route = useTrackingRoute(driver, destination);
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -51,8 +55,15 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
     );
   }
 
-  const eta =
-    driver && destination
+  // Itinéraire connu : distance et durée par la route ; sinon estimation à
+  // vol d'oiseau (clé absente, réseau, premier calcul en cours).
+  const eta = route
+    ? {
+        distanceKm: route.distanceKm,
+        minutes: route.minutes,
+        arrivalAt: new Date(now + route.minutes * 60 * 1000),
+      }
+    : driver && destination
       ? estimateArrival(driver, destination, new Date(now))
       : null;
 
@@ -73,7 +84,11 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
           </View>
         ) : (
           <>
-            <OrderTrackingMap driver={driver} destination={destination} />
+            <OrderTrackingMap
+              driver={driver}
+              destination={destination}
+              route={route?.points}
+            />
             <View style={styles.badge} pointerEvents="none">
               <View
                 style={[
@@ -102,7 +117,7 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
           icon="navigate-outline"
           label="Distance"
           value={eta ? (formatDistanceKm(eta.distanceKm) ?? "—") : "—"}
-          hint={eta ? "environ, par la route" : undefined}
+          hint={eta ? (route ? "par la route" : "environ, par la route") : undefined}
         />
       </View>
     </View>

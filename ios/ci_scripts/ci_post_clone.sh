@@ -31,6 +31,17 @@ cd "$CI_PRIMARY_REPOSITORY_PATH"
 
 npm install
 
+# ─── Variables EXPO_PUBLIC_* (Xcode Cloud) ───────────────────────────────────
+# `.env` est gitignore : absent du clone. Les valeurs sont posees dans le
+# workflow Xcode Cloud (Environment Variables) ; on les ecrit dans `.env` pour
+# que Metro les inline dans le bundle JS.
+if [ -n "${EXPO_PUBLIC_ORS_KEY:-}" ]; then
+  echo "EXPO_PUBLIC_ORS_KEY=$EXPO_PUBLIC_ORS_KEY" >> .env
+  echo "[ci] EXPO_PUBLIC_ORS_KEY ecrite dans .env"
+else
+  echo "[ci] EXPO_PUBLIC_ORS_KEY absente : pas d'itineraire dans l'onglet Suivi"
+fi
+
 # ─── Versioning automatique (Xcode Cloud) ────────────────────────────────────
 # Xcode Cloud build le projet natif et ne lit PAS app.json. On synchronise donc
 # les versions natives ICI, avant le build :

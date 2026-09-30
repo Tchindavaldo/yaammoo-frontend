@@ -80,16 +80,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
   },
+  // Meme theme que l'avatar du header de l'accueil : fond blanc, filet
+  // gris, initiale orange.
   avatar: {
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: DS.accent,
+    backgroundColor: DS.bg,
+    borderWidth: 1,
+    borderColor: DS.line,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    color: DS.bg,
+    color: DS.accent,
     fontSize: 24,
     fontWeight: "800",
   },

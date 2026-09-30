@@ -130,7 +130,6 @@ export default function SettingsScreen() {
             <SettingGridItem
               icon="storefront-outline"
               title="Créer ma boutique"
-              tone="accent"
               onPress={() => router.push("/(tabs)/boutique")}
             />
           )}
@@ -138,7 +137,6 @@ export default function SettingsScreen() {
             <SettingGridItem
               icon="wallet-outline"
               title="Portefeuille"
-              tone="accent"
               onPress={() => open("userWallet")}
             />
           )}
@@ -171,7 +169,6 @@ export default function SettingsScreen() {
               <SettingGridItem
                 icon="receipt-outline"
                 title="Commandes"
-                tone="accent"
                 onPress={() => router.push("/shop/orders")}
               />
               <SettingGridItem
@@ -242,21 +239,18 @@ export default function SettingsScreen() {
           <SettingGridSwitch
             icon="notifications-outline"
             title="Notifications"
-            tone="accent"
             value={notifEnabled}
             onValueChange={handleNotifToggle}
           />
           <SettingGridSwitch
             icon="moon-outline"
             title="Mode sombre"
-            tone="accent"
             value={darkMode}
             onValueChange={setDarkMode}
           />
           <SettingGridItem
             icon="language-outline"
             title="Langue"
-            tone="accent"
             hint="Français"
             onPress={() => handleComingSoon("Langue")}
           />
@@ -282,7 +276,6 @@ export default function SettingsScreen() {
           <SettingGridItem
             icon="call-outline"
             title="Contactez-nous"
-            tone="accent"
             onPress={() => open("supportChat")}
           />
         </SettingGrid>

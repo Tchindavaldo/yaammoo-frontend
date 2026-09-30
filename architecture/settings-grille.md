@@ -77,6 +77,12 @@ parce que les tuiles à `Switch` sont trop étroites en 3 colonnes.
 **pastille** est teintée : la tuile garde son fond blanc, sauf `danger` qui
 teinte aussi fond et bordure et passe le libellé en rouge.
 
+L'écran n'utilise que `neutral` (toutes les pastilles grises) et `danger`
+(Supprimer mon compte) : pas d'icône orange isolée. L'orange ne reste que sur
+l'état des `Switch` et sur l'initiale de l'avatar du header (fond blanc, filet
+`DS.line`, comme l'avatar de l'accueil). La pastille comptes est blanche à
+filet gris, pas sombre.
+
 ## Sections
 
 Mes activités · Compte · Boutique (marchand) · Livraison · Préférences ·

@@ -5,9 +5,11 @@
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Modal,
   StyleSheet,
   Text,
@@ -37,23 +39,60 @@ export function AccountSheet({
   const insets = useSheetSafeInsets();
   const { isLoggingOut, logout } = useLogout();
 
+  // Animation maison : voile en fondu + sheet qui monte (0 = fermee, 1 = ouverte).
+  const progress = useRef(new Animated.Value(0)).current;
+  const [mounted, setMounted] = useState(visible);
+  const [sheetH, setSheetH] = useState(400);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      progress.setValue(0);
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Fermee sans « Annuler » (selection, ajout) : demontage direct.
+      setMounted(false);
+    }
+  }, [visible, progress]);
+
   const cancel = () => {
     if (isLoggingOut) return;
-    onClose();
+    Animated.timing(progress, {
+      toValue: 0,
+      duration: 200,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => onClose());
   };
+
+  const translateY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [sheetH, 0],
+  });
 
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
-      // "none" (comme LogoutModal) : au logout la sheet n'est jamais fermee,
-      // le demontage de settings l'arrache sans fondu revelant l'ecran nu.
+      // "none" : l'animation est faite ici. Au logout la sheet n'est jamais
+      // fermee, le demontage de settings l'arrache sans fondu.
       animationType="none"
       onRequestClose={cancel}
       statusBarTranslucent
     >
-      <View style={styles.backdrop} />
-      <View style={[styles.sheet, { paddingBottom: 16 + insets.bottom }]}>
+      <Animated.View style={[styles.backdrop, { opacity: progress }]} />
+      <Animated.View
+        onLayout={(e) => setSheetH(e.nativeEvent.layout.height)}
+        style={[
+          styles.sheet,
+          { paddingBottom: 16 + insets.bottom, transform: [{ translateY }] },
+        ]}
+      >
         <View style={styles.handle} />
         <Text style={styles.title}>
           {accounts.length > 1 ? "Mes comptes" : "Mon compte"}
@@ -128,7 +167,7 @@ export function AccountSheet({
             )}
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

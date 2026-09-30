@@ -173,8 +173,14 @@ export function AccountSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: DS.backdrop },
+  // Voile plein ecran et sheet en absolu : quand la sheet glisse, le voile
+  // couvre aussi la zone qu'elle libere (sinon on y voyait la page blanche).
+  backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: DS.backdrop },
   sheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: DS.bg,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

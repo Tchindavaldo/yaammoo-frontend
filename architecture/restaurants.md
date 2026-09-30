@@ -659,7 +659,10 @@ tant que la page suivante charge.
   position qu'occupera la vraie boutique, donc même variante et même type de
   cellule. Elles sont montées d'avance en squelette (`ShopRevealProvider`
   `hold`). Le fetch part quand elles entrent dans le champ
-  (`PLACEHOLDER_FETCH_DISTANCE`) ; à l'arrivée, FlashList **rebind** ces
+  (`GHOST_COUNT` × hauteur de rangée MESURÉE = hauteur du contenu / nombre
+  d'items, via `listLengthRef` ; `PLACEHOLDER_FETCH_DISTANCE` seulement avant
+  mesure — l'estimation fixe de 270 px, trop basse pour les designs à lignes
+  sous la carte, faisait partir le fetch très tard) ; à l'arrivée, FlashList **rebind** ces
   cellules au lieu d'en monter : plus de montage à l'insertion, donc plus de
   HOLD ni d'`insertLock` (`FILL_PLACEHOLDERS` dans `hooks/useFastFoodPagination`,
   `false` = retour à l'ancien flux). `resetKey` remet le groupe à zéro au passage fantôme ↔ réel

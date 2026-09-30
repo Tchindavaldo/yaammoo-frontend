@@ -112,6 +112,7 @@ export default function HomeScreen() {
     listRef,
     nativeListRef,
     loadMoreRef,
+    listLengthRef,
     handleScroll,
     handleMomentumEnd,
     handleNativeEdgeChange,
@@ -141,6 +142,7 @@ export default function HomeScreen() {
     hasMore,
     loading,
   });
+  listLengthRef.current = listData.length;
   const { listFooter, renderItem, keyExtractor, getItemType } =
     useHomeListRenderers({
       banners,

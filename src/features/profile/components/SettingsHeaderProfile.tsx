@@ -1,12 +1,21 @@
 // Contenu du TabHeader de Settings (maquette D, sans titre ni bouton d'edition) :
-// avatar, nom + badge Marchand, contact.
+// avatar, nom + badge Marchand, contact, pastille comptes a droite.
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useAccounts } from "../hooks/useAccounts";
+import { AccountSheet } from "./AccountSheet";
+import { AccountSwitcherPill } from "./AccountSwitcherPill";
 
-export function SettingsHeaderProfile() {
+interface Props {
+  onAddAccount: () => void;
+}
+
+export function SettingsHeaderProfile({ onAddAccount }: Props) {
   const { user, userData } = useAuth();
+  const accounts = useAccounts();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const firebaseName = user?.displayName || "";
   const initiale =
@@ -46,7 +55,21 @@ export function SettingsHeaderProfile() {
             </Text>
           )}
         </View>
+        <AccountSwitcherPill
+          accounts={accounts}
+          onPress={() => setSheetOpen(true)}
+        />
       </View>
+      <AccountSheet
+        visible={sheetOpen}
+        accounts={accounts}
+        onClose={() => setSheetOpen(false)}
+        onSelect={() => setSheetOpen(false)}
+        onAddAccount={() => {
+          setSheetOpen(false);
+          onAddAccount();
+        }}
+      />
     </View>
   );
 }

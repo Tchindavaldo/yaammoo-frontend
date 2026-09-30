@@ -34,6 +34,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [home-banners.md](./home-banners.md) | Bannière pub du home — carrousel dynamique, images via `/fastfood/all`, fallback statique |
 | [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement**, **distance** de chaque boutique (`distanceKm`) |
 | [home-scroll-pause.md](./home-scroll-pause.md) | ⚠️ **EN COURS** — micro-pause au scroll du home : mesures, sonde `[ROW]`, `windowSize={15}` (fonctionne, OTA) et tentative FlashList (non résolue) |
+| — (profil, header) | Pastille comptes `AccountSwitcherPill` à droite de `SettingsHeaderProfile` → `AccountSheet` (comptes, ajouter, déconnexion). Liste via `useAccounts` (compte courant seul tant que le multi-compte n'est pas stocké) |
 | [profile-name-sheet.md](./profile-name-sheet.md) | Sheet « nom / prénom manquant » — home à l'arrivée + garde `requireName` avant toute commande (home, panier), voile, clavier |
 | [settings-grille.md](./settings-grille.md) | Écran Settings — grille de tuiles par section (SettingGrid / SettingGridItem / SettingGridSwitch), teintes, sections, sous-pages (useSettingsSubScreens), modals suppression / déconnexion |
 

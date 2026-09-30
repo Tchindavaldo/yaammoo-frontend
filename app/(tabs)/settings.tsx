@@ -105,7 +105,9 @@ export default function SettingsScreen() {
       <BlurScope>
       {/* Header Profil Fixe et Flouté */}
       <TabHeader onHeightChange={setHeaderHeight}>
-        <SettingsHeaderProfile />
+        <SettingsHeaderProfile
+          onAddAccount={() => handleComingSoon("Ajouter un compte")}
+        />
       </TabHeader>
 
       <BlurTarget style={styles.content}>
@@ -209,7 +211,8 @@ export default function SettingsScreen() {
         )}
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
-        {SHOW_DELIVERY && (
+        {/* Masquee pour un marchand. */}
+        {SHOW_DELIVERY && !isMerchant && (
         <SettingGrid title="Livraison">
           {/* Un livreur peut servir plusieurs boutiques → toujours pouvoir
               postuler ailleurs, même déjà livreur. */}
@@ -295,21 +298,6 @@ export default function SettingsScreen() {
             icon="lock-closed-outline"
             title="Confidentialité"
             onPress={() => handleComingSoon("Confidentialité")}
-          />
-        </SettingGrid>
-
-        {/* Sessions */}
-        <SettingGrid title="Session">
-          <SettingGridItem
-            icon="swap-horizontal-outline"
-            title="Changer de compte"
-            onPress={() => handleComingSoon("Changer de compte")}
-          />
-          <SettingGridItem
-            icon="exit-outline"
-            title="Déconnexion"
-            tone="danger"
-            onPress={() => open("logout")}
           />
         </SettingGrid>
 

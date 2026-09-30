@@ -1,12 +1,7 @@
-import { Config } from "@/src/api/config";
-import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { getDeviceId } from "@/src/features/notifications/services/deviceId";
-import { auth } from "@/src/services/firebase";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
-import { signOut } from "firebase/auth";
-import React, { useState } from "react";
+import React from "react";
+import { useLogout } from "../hooks/useLogout";
 import {
   ActivityIndicator,
   Modal,
@@ -27,49 +22,12 @@ interface Props {
  * le loader à zéro.
  */
 export function LogoutModal({ visible, onClose }: Props) {
-  const { setUserData } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  // Logique (push-token/remove, signOut, loader jusqu'au démontage) : useLogout.
+  const { isLoggingOut, logout: confirm } = useLogout();
 
   const cancel = () => {
     if (isLoggingOut) return;
     onClose();
-  };
-
-  const confirm = async () => {
-    setIsLoggingOut(true);
-    // Best-effort: désenregistre ce device des push avant de signer out
-    try {
-      const idToken = await auth.currentUser?.getIdToken();
-      if (idToken) {
-        const deviceId = await getDeviceId();
-        await axios.post(
-          `${Config.apiUrl}/user/push-token/remove`,
-          { deviceId },
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-          },
-        );
-        console.log("[Settings] push-token/remove OK pour ce device");
-      }
-    } catch (e: any) {
-      console.warn(
-        "⚠️ [Settings] push-token/remove échoué (on continue le logout):",
-        e?.message,
-      );
-    }
-
-    // Le retour vers (auth) est piloté par le guard Stack.Protected dans
-    // app/_layout.tsx. signOut → onAuthStateChanged → userData=null → le groupe
-    // (auth) se monte automatiquement et l'écran settings se DÉMONTE.
-    // On ne ferme PAS le modal et on ne remet PAS isLoggingOut à false : le
-    // loader tourne jusqu'au démontage (comme au login). Fermer le modal ici
-    // ferait voir "settings nu" une frame avant la redirection.
-    await signOut(auth);
-    setUserData(null);
   };
 
   return (

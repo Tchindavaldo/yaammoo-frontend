@@ -57,8 +57,9 @@ export function AccountSwitcherPill({ accounts, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
+  // Jamais plus haute que l'avatar (46) : ne grandit pas le header.
   pill: {
-    height: 44,
+    height: 40,
     paddingHorizontal: 14,
     borderRadius: 999,
     backgroundColor: DS.bg,

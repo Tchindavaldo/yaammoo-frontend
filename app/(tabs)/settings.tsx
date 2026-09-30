@@ -115,7 +115,9 @@ export default function SettingsScreen() {
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: headerHeight + 16,
+          // 8 + marginTop 8 du titre de section = 16 sous le header, comme
+          // l'en-tete de jour de Notifications.
+          paddingTop: headerHeight + 8,
           // La navbar flotte sur le bas : la fin de page s'arrete juste
           // au-dessus d'elle, sans marge en plus (R19).
           paddingBottom: tabBarHeight + 8,

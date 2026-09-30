@@ -81,11 +81,12 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   // Meme theme que l'avatar du header de l'accueil : fond blanc, filet
-  // gris, initiale orange.
+  // gris, initiale orange. 46 = hauteur titre 24 + sous-titre des autres
+  // onglets (Panier, Notifications) : le TabHeader garde la meme hauteur.
   avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: DS.bg,
     borderWidth: 1,
     borderColor: DS.line,
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: DS.accent,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "800",
   },
   info: {

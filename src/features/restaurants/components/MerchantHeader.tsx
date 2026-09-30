@@ -7,6 +7,7 @@ import { ShopSkeleton } from './ShopSkeleton';
 import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
+import { IS_AERE } from "./designs/item/config";
 
 interface MerchantHeaderProps {
   name: string;
@@ -192,6 +193,16 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             </View>
           </View>
         </View>
+        {IS_AERE ? (
+          // Design aere : etoile + note /5 et nombre d'avis en pastille grise.
+          <View style={[styles.ratingBlock, styles.aereRating]}>
+            <Ionicons name="star" size={13} color={DS.star} />
+            <Text style={styles.aereScore}>{rating.toFixed(1)}/5</Text>
+            <View style={styles.aereReviews}>
+              <Text style={styles.aereReviewsText}>{reviewCount} avis</Text>
+            </View>
+          </View>
+        ) : (
         <View style={styles.ratingBlock}>
           <View style={styles.ratingMetaRow}>
             <View style={styles.statChip}>
@@ -214,6 +225,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
           ))}
           </View>
         </View>
+        )}
       </Animated.View>
       {/* Fondu de sortie sur la MEME valeur que l'entree du contenu : les deux
           se croisent exactement, sans trou ni chevauchement visible. */}
@@ -312,6 +324,16 @@ const styles = StyleSheet.create({
     color: DS.muted,
   },
   ratingBlock: { alignItems: 'flex-end', gap: 3 },
+  aereRating: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  aereScore: { fontSize: 13, fontWeight: '800', color: DS.ink },
+  aereReviews: {
+    marginLeft: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: DS.surface,
+  },
+  aereReviewsText: { fontSize: 10, fontWeight: '700', color: DS.text2 },
   ratingMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statChip: {
     flexDirection: 'row',

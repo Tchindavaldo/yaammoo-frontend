@@ -3,7 +3,16 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, View } from "react-native";
 import { useNextDeliveryTime } from "../../../../utils/deliveryUtils";
-import { SHOW_AVAILABILITY } from "../config";
+import { IS_AERE, SHOW_AVAILABILITY, deliveryFeeLabelFor } from "../config";
+import { V4AereMeta } from "../aere/CardV4Aere";
+import { V5AereMeta } from "../aere/CardV5Aere";
+import { V7AereMeta } from "../aere/CardV7Aere";
+
+const AERE_META: Record<number, typeof V4AereMeta> = {
+  4: V4AereMeta,
+  5: V5AereMeta,
+  7: V7AereMeta,
+};
 import { sharedStyles as styles } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
 
@@ -32,6 +41,21 @@ export const ItemMeta: React.FC<{
   const votes = (menu as any)?.votes ?? 0;
   // Appel conserve : le hook fait partie de l'ordre des hooks du composant.
   useNextDeliveryTime(deliveryHours, orderLeadTime);
+
+  // HOME_DESIGN = "aere" : lignes propres aux cartes 4 / 5 / 7 aerees.
+  const AereMeta = IS_AERE ? AERE_META[variant] : undefined;
+  if (AereMeta) {
+    return (
+      <View style={[styles.metaBlock, { width, marginRight }]}>
+        <AereMeta
+          title={menu.titre}
+          rating={rating}
+          votes={votes}
+          deliveryFeeLabel={deliveryFeeLabelFor(index)}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.metaBlock, { width, marginRight }]}>

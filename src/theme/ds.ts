@@ -54,6 +54,14 @@ export const DS = {
   dangerInk: "#B42318",
   warning: "#F59E0B",
   backdrop: "rgba(20,20,22,0.45)",
+
+  // --- Cartes menu aerees sur photo (HOME_DESIGN = "aere") ---
+  star: "#f5a623",
+  scrimTop: "rgba(0,0,0,0.35)",
+  scrimNone: "rgba(0,0,0,0)",
+  scrimMid: "rgba(0,0,0,0.55)",
+  scrimEnd: "rgba(0,0,0,0.95)",
+  onInkTrack: "rgba(255,255,255,0.28)",
 } as const;
 
 /**

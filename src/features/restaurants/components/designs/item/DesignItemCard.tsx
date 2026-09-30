@@ -1,7 +1,10 @@
 import React from "react";
 import { Text, TouchableOpacity } from "react-native";
 import { useNextDeliveryTime } from "../../../utils/deliveryUtils";
-import { CardVariantProps, DesignItemProps, deliveryFeeLabelFor } from "./config";
+import { CardVariantProps, DesignItemProps, IS_AERE, deliveryFeeLabelFor } from "./config";
+import { CardV4Aere } from "./aere/CardV4Aere";
+import { CardV5Aere } from "./aere/CardV5Aere";
+import { CardV7Aere } from "./aere/CardV7Aere";
 import { sharedStyles } from "./styles/sharedStyles";
 import { CardV1, CardV2, CardV3 } from "./variants/CardV1V2V3";
 import { CardV4, CardV7 } from "./variants/CardV4V7";
@@ -12,10 +15,11 @@ const VARIANTS: Record<number, React.FC<CardVariantProps>> = {
   1: CardV1,
   2: CardV2,
   3: CardV3,
-  4: CardV4,
-  5: CardV5,
+  // HOME_DESIGN = "aere" : cartes 4 / 5 / 7 du dossier `aere/`.
+  4: IS_AERE ? CardV4Aere : CardV4,
+  5: IS_AERE ? CardV5Aere : CardV5,
   6: CardV6,
-  7: CardV7,
+  7: IS_AERE ? CardV7Aere : CardV7,
 };
 
 /**

@@ -46,6 +46,10 @@ src/features/restaurants/
         ├── item/
         │   ├── config.ts           # Flags, fonds, SKELETON_SIZES, types de props
         │   ├── DesignItemCard.tsx  # Valeurs dérivées (prix, livraison) + aiguillage vers la variante
+        │   ├── aere/               # HOME_DESIGN = "aere" (config.ts) : CardV4Aere (segments), CardV5Aere (barre
+        │   │                       # flottante), CardV7Aere (jauge) + leurs lignes sous la carte ; labels.ts =
+        │   │                       # stock (« N plats dispo » / « Plus que N plats » sous 5, jauge pleine dès 20),
+        │   │                       # « gratuite », délai unique. Note de MerchantHeader en « ★ 4.5/5 · N avis »
         │   ├── parts/              # ItemMeta (infos sous la carte), CardBottom (barres basses)
         │   ├── styles/sharedStyles.ts  # Styles partagés entre variantes
         │   └── variants/           # CardV1V2V3 · CardV4V7 · CardV5 · CardV6 (rendu + styles propres)

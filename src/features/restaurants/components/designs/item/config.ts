@@ -43,6 +43,15 @@ export const SHOW_AVAILABILITY = true;
  */
 export const CARD_BOTTOM_STYLE: string = "blur2"; // "blur" | "blur2" | "v7"
 
+/**
+ * Design des cartes 4 / 5 / 7 du home et de la note de l'en-tete boutique :
+ * "actuel" (d'origine) ou "aere" (dossier `aere/` : 4 stock en segments,
+ * 5 barre flottante, 7 jauge ; libelles communs dans `aere/labels.ts`).
+ * Transmis aussi a la liste native (prop `homeDesign`), donc changeable par OTA.
+ */
+export const HOME_DESIGN: string = "aere"; // "actuel" | "aere"
+export const IS_AERE = HOME_DESIGN === "aere";
+
 /** Fonds du variant 5 : un poster different par menu, en boucle sur l'index. */
 export const V5_BACKGROUNDS = [
   require("@/assets/images/background/pop-chicken-poster.jpg"),

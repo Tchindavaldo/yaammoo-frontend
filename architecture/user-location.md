@@ -13,6 +13,7 @@ Sert au ciblage « Ma ville » des notifications boutique (voir
 | `src/features/location/hooks/useUserLocationSync.ts` | Permissions, capture au premier plan, limite de fréquence, lancement / arrêt du suivi arrière-plan |
 | `src/features/location/tasks/backgroundLocationTask.ts` | Tâche app fermée (`expo-task-manager`) : position utilisateur + position livreur en mode livraison ; `start` / `stopBackgroundLocation`, `start` / `stopDeliveryTracking` |
 | `src/features/location/tasks/trackingModes.ts` | Modes `normal` / `delivery` (persistés), réglages `startLocationUpdatesAsync` de chacun |
+| `src/features/location/hooks/useCurrentPlaceLabel.ts` | Libellé « Quartier, Arrondissement » de la pilule du header home via Nominatim (OSM : `neighbourhood`/`suburb` + `city_district`), repli géocodeur du téléphone ; seulement si l'utilisateur est à Banganté (zone desservie), sinon « Banganté, Cameroun » en dur (idem sans permission ou en échec) |
 | `src/features/location/hooks/useDeliveryTrackingSync.ts` | Livreur : mode livraison tant qu'une commande est `delivering` (monté par `DriverContext`) |
 | `src/features/location/components/BackgroundLocationPromptCard.tsx` | Écran d'information avant la popup « Toujours » (copie R16 de `OtaUpdateCard`), monté dans `app/_layout.tsx` |
 | `src/features/location/services/backgroundPrompt.ts` | Émetteur hook → carte (`requestBackgroundPrompt` / `onBackgroundPromptRequest`) |

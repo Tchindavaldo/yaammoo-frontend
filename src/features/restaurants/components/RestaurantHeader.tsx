@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../../theme";
 import { DS } from "@/src/theme/ds";
+import { LocationPill } from "./LocationPill";
 
 interface RestaurantHeaderProps {
   userName?: string;
@@ -72,10 +73,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       {/* Barre d'outils : localisation à gauche, actions (panier / commandes / notif / profil) à droite */}
       <View style={styles.toolbar1}>
         <View style={styles.colLocation}>
-          <TouchableOpacity style={styles.chipLocalisation}>
-            <Ionicons name="location-sharp" size={12} color="#fff" />
-            <Text style={styles.localisationLabel}>{location}</Text>
-          </TouchableOpacity>
+          <LocationPill location={location} />
         </View>
 
         <View style={styles.actions}>
@@ -230,20 +228,6 @@ const styles = StyleSheet.create({
   colLocation: {
     justifyContent: "center",
     alignItems: "flex-start",
-  },
-  chipLocalisation: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: DS.accent,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    height: 33, // Pour forcer la cohérence de taille avec l'avatar
-  },
-  localisationLabel: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-    marginLeft: 4,
   },
   colNotification: {
     paddingLeft: 5,

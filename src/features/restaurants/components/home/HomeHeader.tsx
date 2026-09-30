@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import React from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useCurrentPlaceLabel } from "@/src/features/location/hooks/useCurrentPlaceLabel";
 import { RestaurantHeader } from "../RestaurantHeader";
 import { CATEGORIES } from "../../utils/homeListConfig";
 
@@ -30,6 +31,7 @@ export const HomeHeader: React.FC<Props> = ({
 }) => {
   const { user, userData } = useAuth();
   const router = useRouter();
+  const placeLabel = useCurrentPlaceLabel();
 
   return (
     <RestaurantHeader
@@ -39,7 +41,7 @@ export const HomeHeader: React.FC<Props> = ({
         "Utilisateur"
       }
       userPhoto={(userData as any)?.photoUrl || (userData as any)?.photo || ""}
-      location="Banganté, Cameroun"
+      location={placeLabel}
       unreadCount={unreadCount}
       onNotifPress={() => router.push("/(tabs)/notifications")}
       onProfilePress={() => router.push("/(tabs)/settings")}

@@ -37,6 +37,7 @@ src/features/restaurants/
     ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
+    ├── LocationPill.tsx            # Pilule de localisation du header home, rendu par LOCATION_PILL_STYLE ("actuel" | "c" bordée | "d" sombre | "e" rond sans fond | "f" flottante)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
     ├── ShopSkeleton.tsx            # Copie de CardSkeleton (R16), respiration sur driver NATIF (fantomes : JS-driven saturait le thread UI)
     ├── NativeHomeList.tsx          # Pont JS de la liste NATIVE iOS (modules/home-list) : donnees pre-calculees + evenements

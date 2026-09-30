@@ -141,6 +141,7 @@ src/features/
 │
 ├── location/                            # Position de l'utilisateur (POST /user/location) + livreur en course
 │   ├── hooks/useUserLocationSync.ts     # permissions (après les notifs), capture, suivi arrière-plan
+│   ├── hooks/useCurrentPlaceLabel.ts    # « Quartier, Ville » pour la pilule du header home
 │   ├── hooks/useDeliveryTrackingSync.ts # livreur : mode livraison tant qu'une cmd est `delivering`
 │   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js), modes normal / livraison
 │   ├── tasks/trackingModes.ts           # réglages et persistance des deux modes

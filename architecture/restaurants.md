@@ -84,6 +84,7 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLMenuCardCell.swift        # Carte 7/4/5 + les 2 lignes SOUS la carte (ItemMeta) + squelettes
     ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
     ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
+    ├── HLAere.swift                # Design aere (prop `homeDesign`) : zones basses 4/5/7, lignes sous la carte, couleurs DS
     ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
     ├── HLPerfMonitor.swift         # Sonde TestFlight : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
@@ -182,6 +183,13 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   d'après part avec. Valeur de secours (premier lancement, clé absente ou
   invalide) : `HOME_CLIENT_SETTINGS_FALLBACK` (10 boutiques, 1200 px), dans
   `utils/homeClientSettings.ts`. Taille plafonnée à 50 (`MAX_SERVER_LIMIT`).
+- **Design des cartes (`homeDesign`, OTA)** : `HOME_DESIGN` de `item/config.ts`
+  (`"actuel"` | `"aere"`) part en prop ; lu au montage avant les cellules
+  (`HLDesign.aere`, iOS et Android), donc appliqué au lancement suivant une
+  OTA. Les libellés aérés (stock, jauge 0-1, « gratuite », délai, note
+  « 4.5/5 ») sont calculés en JS par `aere/labels.ts` et envoyés dans chaque
+  menu : le natif n'a aucune règle. Une build antérieure ignore ces champs et
+  garde le design actuel.
 - **Réglages ajustables par OTA** : `ICON_ROLES` (rôle lu par le Swift -> nom
   Ionicons) et `FONTS` (nom PostScript par graisse, `null` = police système) :
   le Swift ne fixe ni icône ni police.
@@ -215,6 +223,7 @@ modules/home-list/android/
     ├── HLShopRowView.kt            # Rangee : en-tete + RecyclerView horizontal de cartes, revelation groupee (8 s max)
     ├── HLMenuCardView.kt           # Carte 7/4/5 + ItemMeta + squelettes
     ├── HLMerchantHeaderView.kt · HLCardBottoms.kt · HLBannerView.kt
+    ├── HLAere.kt                   # Design aere (prop `homeDesign`), copie de HLAere.swift
     ├── HLViews.kt                  # HLBox (mise en page manuelle), HLLabel (texte dessine), squelettes, degrade
     ├── HLText.kt                   # Fragments de texte (polices, couleurs, icones Ionicons, espaces)
     ├── HLImage.kt                  # Glide (meme moteur qu'expo-image), photo floutee d'avance des barres v4/v5

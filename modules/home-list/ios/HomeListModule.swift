@@ -70,6 +70,13 @@ public final class HomeListModule: Module {
         HLBannerCell.autoplayEnabled = on
       }
 
+      // Design des cartes 4 / 5 / 7 et de la note boutique (`actuel` | `aere`).
+      // Recu au montage, avant la creation des cellules : une cellule garde
+      // le design sous lequel elle a ete construite.
+      Prop("homeDesign") { (_: HomeListView, design: String) in
+        HLDesign.aere = design == "aere"
+      }
+
       OnViewDidUpdateProps { (view: HomeListView) in
         view.applyProps()
       }

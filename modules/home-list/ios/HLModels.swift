@@ -21,6 +21,14 @@ struct HLMenuRecord: Record {
   @Field var feeLabel: String = ""
   /** « gratuite », « 300F », « 1000F » (ligne livraison du variant 4). */
   @Field var metaFeeLabel: String = ""
+  // Design aere (`homeDesign = "aere"`), calcule par `aere/labels.ts`.
+  @Field var stockValue: String = ""
+  @Field var stockUnit: String = ""
+  @Field var stockLow: Bool = false
+  @Field var stockRatio: Double = 0
+  @Field var feeText: String = ""
+  @Field var feeFree: Bool = false
+  @Field var eta: String = ""
 }
 
 struct HLShopRecord: Record {
@@ -34,6 +42,8 @@ struct HLShopRecord: Record {
   @Field var deliveryTime: String = ""
   /** Distance formatee (« 1,2 km ») apres « Ouvert » ; "" = rien. */
   @Field var distance: String = ""
+  /** Note de la boutique en design aere (« 4.5/5 »). */
+  @Field var ratingText: String = ""
   @Field var menus: [HLMenuRecord] = []
 }
 
@@ -89,6 +99,13 @@ struct HLMenu: Equatable {
   let votes: Int
   let feeLabel: String
   let metaFeeLabel: String
+  let stockValue: String
+  let stockUnit: String
+  let stockLow: Bool
+  let stockRatio: CGFloat
+  let feeText: String
+  let feeFree: Bool
+  let eta: String
 
   init(_ r: HLMenuRecord) {
     id = r.id
@@ -100,6 +117,13 @@ struct HLMenu: Equatable {
     votes = r.votes
     feeLabel = r.feeLabel
     metaFeeLabel = r.metaFeeLabel
+    stockValue = r.stockValue
+    stockUnit = r.stockUnit
+    stockLow = r.stockLow
+    stockRatio = CGFloat(min(max(r.stockRatio, 0), 1))
+    feeText = r.feeText
+    feeFree = r.feeFree
+    eta = r.eta
   }
 }
 
@@ -112,6 +136,7 @@ struct HLShop: Equatable {
   let votes: Int
   let deliveryTime: String
   let distance: String
+  let ratingText: String
   let menus: [HLMenu]
 
   init(_ r: HLShopRecord) {
@@ -123,6 +148,7 @@ struct HLShop: Equatable {
     votes = r.votes
     deliveryTime = r.deliveryTime
     distance = r.distance
+    ratingText = r.ratingText
     menus = r.menus.map(HLMenu.init)
   }
 }

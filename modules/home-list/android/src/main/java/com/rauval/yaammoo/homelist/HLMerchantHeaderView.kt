@@ -27,6 +27,12 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
   private val ordersChip = HLLabel(context)
   private val votesChip = HLLabel(context)
   private val starsLabel = HLLabel(context)
+  // Design aere : « ★ 4.5/5 » + pastille grise « N avis ».
+  private val aereScore = HLLabel(context)
+  private val aereReviews = HLLabel(context).apply {
+    background = roundedBackground(HLAereColor.surface, 8f)
+    insets = floatArrayOf(6f, 2f, 6f, 2f)
+  }
 
   private val avatarSkeleton = HLSkeletonView(context, 16f)
   private val nameSkeleton = HLSkeletonView(context, 6f)
@@ -55,6 +61,7 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
       chip.insets = floatArrayOf(5f, 2f, 5f, 2f)
     }
     content.addAll(avatar, avatarRing, nameLabel, statusDot, statusLabel, ordersChip, votesChip, starsLabel)
+    content.addAll(aereScore, aereReviews)
     skeleton.addAll(avatarSkeleton, nameSkeleton, ratingSkeleton)
 
     onPlace = { w, h ->
@@ -96,6 +103,12 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     }
     val starsW = starsLabel.textWidth()
     starsLabel.frame(w - starsW, rightTop + chipH + 3f, starsW, starsH)
+
+    // Design aere : une seule ligne centree, pastille avis a droite (marginLeft 4).
+    val rw = aereReviews.fitWidth()
+    aereReviews.frame(w - rw, cy - 9f, rw, 18f)
+    val sw = aereScore.textWidth()
+    aereScore.frame(w - rw - 4f - sw, cy - 9f, sw, 18f)
   }
 
   /** `null` = fantome : seul le squelette a un sens. */
@@ -105,6 +118,9 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
       ordersChip.text = null
       votesChip.text = null
       starsLabel.text = null
+      aereScore.text = null
+      aereReviews.text = null
+      aereReviews.visibility = View.INVISIBLE
       HLImage.clear(avatar)
       content.relayout()
       return
@@ -112,6 +128,18 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     nameLabel.text = shop.name
     // Distance (`MerchantHeader.tsx` : « Ouvert · 1,2 km », distance en gris).
     statusLabel.text = statusText(shop.distance)
+    val aere = HLDesign.aere
+    for (v in listOf(ordersChip, votesChip, starsLabel)) v.visibility = if (aere) View.INVISIBLE else View.VISIBLE
+    for (v in listOf(aereScore, aereReviews)) v.visibility = if (aere) View.VISIBLE else View.INVISIBLE
+    if (aere) {
+      aereScore.text = HLRuns()
+        .icon("star", 13f, HLColor.starYellow).gap(3f)
+        .run(shop.ratingText, 800, 13f, HLAereColor.ink)
+        .build()
+      aereReviews.text = HLRuns().run("${shop.votes} avis", 700, 10f, HLAereColor.text2).build()
+      content.relayout()
+      return
+    }
     ordersChip.text = chipText("receipt-outline", "${shop.orders}")
     votesChip.text = chipText("people-outline", "${shop.votes}")
     // Les 5 etoiles sont pleines dans l'original (#e8440a), `gap: 2`.

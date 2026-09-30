@@ -19,7 +19,14 @@ import React, {
   useState,
 } from "react";
 import { AppState, Image, StyleSheet } from "react-native";
-import { V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
+import { HOME_DESIGN, V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
+import {
+  DELIVERY_ETA,
+  feeText,
+  isStockLow,
+  stockParts,
+  stockRatio,
+} from "./designs/item/aere/labels";
 import { fontFor } from "@/src/theme/fonts";
 import { designNumberFor } from "../utils/designCycle";
 import { getNextDeliveryTime } from "../utils/deliveryUtils";
@@ -130,18 +137,32 @@ const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
     deliveryTime,
     // « 1,2 km » apres « Ouvert » ; vide = position inconnue (rien d'affiche).
     distance: formatDistanceKm(f?.distanceKm) ?? "",
-    menus: (ff.menu ?? []).map((m: any, i: number) => ({
-      id: menuIdOf(ff, m, i),
-      title: m?.titre ?? "",
-      image: m?.image || null,
-      fallbackImage: fallbackFor(design, i),
-      price: `${m?.prix1 ?? 0} F`,
-      stock: Math.round(m?.stock ?? 0),
-      rating: String(m?.rating ?? 4.5),
-      votes: Math.round(m?.votes ?? 0),
-      feeLabel: deliveryFeeLabelFor(i),
-      metaFeeLabel: metaFeeLabelFor(i),
-    })),
+    ratingText: `${Number(f?.stats?.rating ?? 4.5).toFixed(1)}/5`,
+    menus: (ff.menu ?? []).map((m: any, i: number) => {
+      const stock = Math.round(m?.stock ?? 0);
+      const fee = deliveryFeeLabelFor(i);
+      const { value, unit } = stockParts(stock);
+      return {
+        id: menuIdOf(ff, m, i),
+        title: m?.titre ?? "",
+        image: m?.image || null,
+        fallbackImage: fallbackFor(design, i),
+        price: `${m?.prix1 ?? 0} F`,
+        stock,
+        rating: String(m?.rating ?? 4.5),
+        votes: Math.round(m?.votes ?? 0),
+        feeLabel: fee,
+        metaFeeLabel: metaFeeLabelFor(i),
+        // Design aere : memes libelles que la liste JS (`aere/labels.ts`).
+        stockValue: value,
+        stockUnit: unit,
+        stockLow: isStockLow(stock),
+        stockRatio: stockRatio(stock),
+        feeText: feeText(fee),
+        feeFree: fee === "gratuit",
+        eta: DELIVERY_ETA,
+      };
+    }),
   };
 };
 
@@ -349,6 +370,7 @@ export const NativeHomeList: React.FC<Props> = ({
       fonts={FONTS}
       cardBlurMode={CARD_BLUR_MODE}
       bannerAutoplay={BANNER_AUTOPLAY}
+      homeDesign={HOME_DESIGN === "aere" ? "aere" : "actuel"}
       preheatScreens={PREHEAT_SCREENS}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}

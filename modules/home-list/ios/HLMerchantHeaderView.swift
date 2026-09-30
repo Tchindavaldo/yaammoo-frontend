@@ -23,6 +23,10 @@ final class HLMerchantHeaderView: UIView {
   private let ordersChipBg = UIView()
   private let votesChipBg = UIView()
   private let starsLabel = UILabel()
+  // Design aere : « ★ 4.5/5 » + pastille grise « N avis ».
+  private let aereScore = UILabel()
+  private let aereReviews = UILabel()
+  private let aereReviewsBg = UIView()
 
   private let avatarSkeleton = HLSkeletonView(radius: 16)
   private let nameSkeleton = HLSkeletonView(radius: 6)
@@ -67,6 +71,9 @@ final class HLMerchantHeaderView: UIView {
     content.addSubview(ordersChip)
     content.addSubview(votesChip)
     content.addSubview(starsLabel)
+    aereReviewsBg.backgroundColor = HLAereColor.surface
+    aereReviewsBg.layer.cornerRadius = 8
+    [aereScore, aereReviewsBg, aereReviews].forEach(content.addSubview)
 
     skeleton.addSubview(avatarSkeleton)
     skeleton.addSubview(nameSkeleton)
@@ -82,6 +89,9 @@ final class HLMerchantHeaderView: UIView {
       ordersChip.attributedText = nil
       votesChip.attributedText = nil
       starsLabel.attributedText = nil
+      aereScore.attributedText = nil
+      aereReviews.attributedText = nil
+      aereReviewsBg.isHidden = true
       avatar.sd_cancelCurrentImageLoad()
       avatar.image = nil
       setNeedsLayout()
@@ -90,6 +100,18 @@ final class HLMerchantHeaderView: UIView {
     nameLabel.text = shop.name
     // Distance (`MerchantHeader.tsx` : « Ouvert · 1,2 km », distance en gris).
     statusLabel.attributedText = statusText(shop.distance)
+    let aere = HLDesign.aere
+    [ordersChip, votesChip, ordersChipBg, votesChipBg, starsLabel].forEach { $0.isHidden = aere }
+    [aereScore, aereReviews, aereReviewsBg].forEach { $0.isHidden = !aere }
+    if aere {
+      aereScore.attributedText = HLText([
+        HLKerned(HLIcons.attributed("star", size: 13, color: HLColor.starYellow), 3),
+        HLRun(shop.ratingText, HLFont.w800(13), HLAereColor.ink),
+      ])
+      aereReviews.attributedText = HLRun("\(shop.votes) avis", HLFont.w700(10), HLAereColor.text2)
+      setNeedsLayout()
+      return
+    }
     ordersChip.attributedText = chipText("receipt-outline", "\(shop.orders)")
     votesChip.attributedText = chipText("people-outline", "\(shop.votes)")
     // Les 5 etoiles sont toutes pleines dans l'original (fond ET remplissage
@@ -156,6 +178,13 @@ final class HLMerchantHeaderView: UIView {
     }
     let starsW = ceil(starsLabel.sizeThatFits(.zero).width)
     starsLabel.frame = CGRect(x: bounds.width - starsW, y: rightTop + chipH + 3, width: starsW, height: starsH)
+
+    // Design aere : une seule ligne centree, pastille avis a droite (marginLeft 4).
+    let rw = ceil(aereReviews.sizeThatFits(.zero).width) + 12
+    aereReviewsBg.frame = CGRect(x: bounds.width - rw, y: cy - 9, width: rw, height: 18)
+    aereReviews.frame = aereReviewsBg.frame.insetBy(dx: 6, dy: 2)
+    let sw = ceil(aereScore.sizeThatFits(.zero).width)
+    aereScore.frame = CGRect(x: aereReviewsBg.frame.minX - 4 - sw, y: cy - 9, width: sw, height: 18)
 
     // Squelette : memes emplacements (avatar, nom 110x14, note 82x14).
     avatarSkeleton.frame = avatarRing.frame

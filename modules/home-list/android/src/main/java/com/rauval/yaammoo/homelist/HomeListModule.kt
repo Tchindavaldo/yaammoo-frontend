@@ -65,6 +65,13 @@ class HomeListModule : Module() {
         HLBannerView.autoplayEnabled = on
       }
 
+      // Design des cartes 4 / 5 / 7 et de la note boutique (`actuel` | `aere`).
+      // Recu au montage, avant la creation des cartes : une carte garde le
+      // design sous lequel elle a ete construite.
+      Prop("homeDesign") { _: HomeListView, design: String ->
+        HLDesign.aere = design == "aere"
+      }
+
       OnViewDidUpdateProps { view: HomeListView ->
         view.applyProps()
       }

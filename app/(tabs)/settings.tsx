@@ -180,7 +180,7 @@ export default function SettingsScreen() {
               />
               <SettingGridItem
                 icon="restaurant-outline"
-                title="Gestion menu"
+                title="Menu"
                 onPress={() => router.push("/shop/menu")}
               />
               <SettingGridItem

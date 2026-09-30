@@ -43,10 +43,15 @@ fun hlAereScrim(context: Context, design: Int): HLGradientView = HLGradientView(
 class HLAereV4Bottom(context: Context) : HLBox(context) {
   private val stock = HLLabel(context)
   private val bars = List(SEGMENTS) { View(context) }
+  // Fonds crees une fois : au scroll, `configure` ne fait que changer leur couleur.
+  private val fills = List(SEGMENTS) { roundedBackground(HLAereColor.onInkTrack, 2f) }
 
   init {
     addView(stock)
-    bars.forEach { addView(it) }
+    bars.forEachIndexed { i, v ->
+      v.background = fills[i]
+      addView(v)
+    }
     onPlace = { w, _ ->
       // paddingHorizontal 14, paddingBottom 14 ; segments separes de 3.
       val iw = w - 28f
@@ -65,9 +70,7 @@ class HLAereV4Bottom(context: Context) : HLBox(context) {
     val filled = ceil(m.stockRatio * SEGMENTS).toInt()
     // Rouge vif sur fond sombre (le rouge fonce y disparaitrait).
     val on = if (m.stockLow) HLAereColor.danger else Color.WHITE
-    bars.forEachIndexed { i, v ->
-      v.background = roundedBackground(if (i < filled) on else HLAereColor.onInkTrack, 2f)
-    }
+    fills.forEachIndexed { i, d -> d.setColor(if (i < filled) on else HLAereColor.onInkTrack) }
     relayout()
   }
 
@@ -84,13 +87,15 @@ class HLAereV5Bar(context: Context) : HLBox(context) {
   private val stock = HLLabel(context)
   private val track = HLBox(context)
   private val fill = View(context)
+  private val fillBg = roundedBackground(HLAereColor.ink, 2f)
   private var ratio = 0f
 
   init {
     background = roundedBackground(Color.WHITE, 14f)
     elevation = 6f * HLDim.density
+    // Pas de decoupe de la jauge : le remplissage a ses propres coins.
     track.background = roundedBackground(HLAereColor.line, 2f)
-    track.roundCorners(2f)
+    fill.background = fillBg
     track.addView(fill)
     addAll(stock, track)
     onPlace = { w, h ->
@@ -109,7 +114,7 @@ class HLAereV5Bar(context: Context) : HLBox(context) {
     // Rouge fonce : le rouge vif se confondait avec l'orange de marque.
     val color = if (m.stockLow) HLAereColor.dangerInk else HLAereColor.ink
     stock.text = HLRuns().run(m.stockValue + unit, 900, 12f, color).build()
-    fill.background = roundedBackground(color, 2f)
+    fillBg.setColor(color)
     ratio = m.stockRatio
     relayout()
   }
@@ -128,11 +133,13 @@ class HLAereV7Bottom(context: Context) : HLBox(context) {
   private val stock = HLLabel(context)
   private val track = HLBox(context)
   private val fill = View(context)
+  private val fillBg = roundedBackground(Color.WHITE, 2f)
   private var ratio = 0f
 
   init {
+    // Pas de decoupe de la jauge : le remplissage a ses propres coins.
     track.background = roundedBackground(HLAereColor.onInkTrack, 2f)
-    track.roundCorners(2f)
+    fill.background = fillBg
     track.addView(fill)
     addAll(stock, track)
     onPlace = { w, _ ->
@@ -149,7 +156,7 @@ class HLAereV7Bottom(context: Context) : HLBox(context) {
     if (m.stockUnit.isNotEmpty()) runs.run(" ${m.stockUnit}", 700, 10f, HLAereColor.onInkMuted)
     stock.text = runs.build()
     // Rouge vif sur fond sombre (le rouge fonce y disparaitrait).
-    fill.background = roundedBackground(if (m.stockLow) HLAereColor.danger else Color.WHITE, 2f)
+    fillBg.setColor(if (m.stockLow) HLAereColor.danger else Color.WHITE)
     ratio = m.stockRatio
     relayout()
   }

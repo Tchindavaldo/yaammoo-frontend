@@ -105,7 +105,8 @@ final class HLAereV5Bar: UIView {
     layer.shadowRadius = 16
     track.backgroundColor = HLAereColor.line
     track.layer.cornerRadius = 2
-    track.clipsToBounds = true
+    // Pas de `clipsToBounds` (decoupe = passe hors ecran au scroll) : le
+    // remplissage a ses propres coins et ne depasse jamais la jauge.
     fill.layer.cornerRadius = 2
     track.addSubview(fill)
     [stock, track].forEach(addSubview)
@@ -152,7 +153,7 @@ final class HLAereV7Bottom: UIView {
     stock.lineBreakMode = .byTruncatingTail
     track.backgroundColor = HLAereColor.onInkTrack
     track.layer.cornerRadius = 2
-    track.clipsToBounds = true
+    // Pas de `clipsToBounds` : cf. HLAereV5Bar.
     fill.layer.cornerRadius = 2
     track.addSubview(fill)
     [stock, track].forEach(addSubview)

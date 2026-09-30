@@ -296,6 +296,9 @@ prend la safe-area basse via `src/hooks/usePageBottomInset.ts`. **Jamais**
   absorbe `useFooterBottomInset()` en `paddingBottom`, sans padding bas en plus
   (sinon la bande est poussée et ne s'aligne plus avec les autres pages).
 - **Bottom sheet** (`<Modal>` ancré en bas) : `useSheetSafeInsets()`.
+- **JAMAIS de marge / padding bas ajouté en plus de la safe-area** (ni
+  `16 + insets.bottom`, ni `marginBottom` sur le dernier élément) : l'espace
+  bas de TOUTE page, sheet ou pied est garanti par ce seul hook.
 - Régler une valeur = modifier `PAGE_INSET_RATIO` (iOS / Android) dans ce seul
   fichier ; ne jamais recopier le ratio ailleurs.
 - Couleur de la bande = `SAFE_AREA_BG` (même fichier) ; `SAFE_AREA_DEBUG = true`

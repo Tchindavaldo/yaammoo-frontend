@@ -90,7 +90,7 @@ export function AccountSheet({
         onLayout={(e) => setSheetH(e.nativeEvent.layout.height)}
         style={[
           styles.sheet,
-          { paddingBottom: 16 + insets.bottom, transform: [{ translateY }] },
+          { paddingBottom: insets.bottom, transform: [{ translateY }] },
         ]}
       >
         <View style={styles.handle} />

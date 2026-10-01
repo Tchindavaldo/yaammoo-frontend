@@ -35,6 +35,7 @@ import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { OtaUpdateCard } from "@/src/features/appVersion/components/OtaUpdateCard";
 import { BackgroundLocationPromptCard } from "@/src/features/location/components/BackgroundLocationPromptCard";
+import { LocationDisclosureModal } from "@/src/features/location/components/LocationDisclosureModal";
 import { initSentry, wrapWithSentry } from "@/src/services/sentry";
 import { setupHttp } from "@/src/api/setupHttp";
 import { prefetchBonusBackground } from "@/src/features/bonus/components/BonusPageBackground";
@@ -275,8 +276,11 @@ function RootLayout() {
                           <OfflineBanner />
                           <OtaUpdateCard />
                           {/* Information avant la popup « Toujours »
-                              (localisation arrière-plan). */}
+                              (localisation arrière-plan, iOS). */}
                           <BackgroundLocationPromptCard />
+                          {/* Divulgation avant toute popup de localisation
+                              (Android, Google Play). */}
+                          <LocationDisclosureModal />
                         </AppVersionProvider>
                       </AuthGateProvider>
                     </BonusProvider>

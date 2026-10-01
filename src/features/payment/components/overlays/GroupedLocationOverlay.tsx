@@ -2,6 +2,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Loader } from "@/src/components/Loader";
 import { Ionicons } from "@expo/vector-icons";
 import { useVoiceNoteRecorder } from "@/src/services/audio/useVoiceNote";
+import { requestForegroundLocation } from "@/src/features/location/services/locationPermission";
 import * as Location from "expo-location";
 import React from "react";
 import {
@@ -159,7 +160,8 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
   const handleGetLocation = async () => {
     try {
       setIsLocating(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      // Écran de divulgation avant la popup système (Android, Google Play).
+      const status = await requestForegroundLocation("address");
       if (status !== "granted") {
         alert("Permission to access location was denied");
         setIsLocating(false);

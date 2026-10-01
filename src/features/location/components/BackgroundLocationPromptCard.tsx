@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -19,7 +18,7 @@ import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
 
 /**
  * Écran d'information avant la popup système « Toujours » (localisation
- * arrière-plan). COPIE DÉDIÉE (R16) de `OtaUpdateCard` : même carte sombre
+ * arrière-plan, iOS seulement). COPIE DÉDIÉE (R16) de `OtaUpdateCard` : même carte sombre
  * flottante par-dessus la barre d'onglets, même pastille teintée, même dégradé
  * et même entrée. Écarts : pas de retrait automatique ni de trait de décompte
  * (un choix est attendu), deux boutons « Plus tard » / « Continuer » à la place
@@ -30,13 +29,12 @@ import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
  */
 
 const TITLE = "Suivez vos livraisons en direct";
-/** Libellé du choix « Toujours » dans l'écran système (Android : réglages). */
-const ALWAYS_LABEL =
-  Platform.OS === "android" ? "Autoriser tout le temps" : "Toujours autoriser";
+/**
+ * iOS seulement : Android n'a plus la permission « Toujours » (refusée par
+ * Google Play), `useUserLocationSync` ne l'y demande jamais.
+ */
 const MESSAGE =
-  Platform.OS === "android"
-    ? `Sur l'écran suivant, choisissez « ${ALWAYS_LABEL} » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.`
-    : `Dans la fenêtre suivante, choisissez « ${ALWAYS_LABEL} » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.`;
+  "Dans la fenêtre suivante, choisissez « Toujours autoriser » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.";
 
 /** Ecart entre le bas de la carte et le bas visible de la barre (cf. OTA). */
 const BOTTOM_GAP = 7;

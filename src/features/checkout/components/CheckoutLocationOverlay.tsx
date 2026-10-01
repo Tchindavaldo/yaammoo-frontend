@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
 import * as Location from 'expo-location';
+import { requestForegroundLocation } from '@/src/features/location/services/locationPermission';
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
@@ -102,7 +103,8 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
   const handleGetLocation = async () => {
     try {
       setIsLocating(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      // Écran de divulgation avant la popup système (Android, Google Play).
+      const status = await requestForegroundLocation('address');
       if (status !== 'granted') {
         alert('Permission to access location was denied');
         setIsLocating(false);

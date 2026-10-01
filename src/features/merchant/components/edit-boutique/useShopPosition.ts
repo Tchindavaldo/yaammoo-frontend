@@ -1,6 +1,7 @@
 import * as Location from "expo-location";
 import { useCallback, useState } from "react";
 import { Platform } from "react-native";
+import { requestForegroundLocation } from "@/src/features/location/services/locationPermission";
 
 export type ShopPosition = { latitude: number; longitude: number };
 
@@ -34,11 +35,8 @@ export const useShopPosition = (
     }
     setLocating(true);
     try {
-      const current = await Location.getForegroundPermissionsAsync();
-      let status = current.status;
-      if (status !== "granted" && current.canAskAgain) {
-        status = (await Location.requestForegroundPermissionsAsync()).status;
-      }
+      // Écran de divulgation avant la popup système (Android, Google Play).
+      const status = await requestForegroundLocation("shop");
       if (status !== "granted") {
         onError("Autorisez la localisation dans les réglages du téléphone");
         return;

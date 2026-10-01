@@ -145,10 +145,12 @@ src/features/
 │   ├── hooks/useDeliveryTrackingSync.ts # livreur : mode livraison tant qu'une cmd est `delivering`
 │   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js), modes normal / livraison
 │   ├── tasks/trackingModes.ts           # réglages et persistance des deux modes
-│   ├── components/BackgroundLocationPromptCard.tsx # info avant la popup « Toujours » (copie de OtaUpdateCard)
+│   ├── components/BackgroundLocationPromptCard.tsx # info avant la popup « Toujours », iOS (copie de OtaUpdateCard)
+│   ├── components/LocationDisclosureModal.tsx # divulgation avant toute popup de localisation, Android (copie de LogoutModal)
 │   ├── utils/buildLocationPayload.ts    # position + géocodage inverse → payload (+ payload livreur)
 │   └── services/                        # userLocationService · driverLocationService (POST /driver/location)
-│                                        #   · backgroundPrompt. Détail : architecture/user-location.md
+│                                        #   · backgroundPrompt · locationPermission (seule demande de permission)
+│                                        #   Détail : architecture/user-location.md
 │
 ├── driver/                             # Rôle driver (commandes déléguées)
 │   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket

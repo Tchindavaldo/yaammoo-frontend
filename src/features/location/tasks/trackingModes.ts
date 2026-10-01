@@ -6,7 +6,8 @@ import { DS } from "@/src/theme/ds";
  * Deux réglages pour UNE seule tâche arrière-plan (`backgroundLocationTask`) :
  *
  * - `normal`   : position de l'utilisateur (ciblage ville, marketing), rare,
- *                exige la permission « Toujours ».
+ *                exige la permission « Toujours » : iOS seulement (retirée
+ *                d'Android, refusée par Google Play).
  * - `delivery` : livreur en course, fréquent. Android : service de premier
  *                plan (notification permanente) ; iOS : indicateur bleu. Les
  *                deux suffisent avec la permission « Pendant l'utilisation ».

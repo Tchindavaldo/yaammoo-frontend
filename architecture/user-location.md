@@ -15,7 +15,9 @@ Sert au ciblage « Ma ville » des notifications boutique (voir
 | `src/features/location/tasks/trackingModes.ts` | Modes `normal` / `delivery` (persistés), réglages `startLocationUpdatesAsync` de chacun |
 | `src/features/location/hooks/useCurrentPlaceLabel.ts` | Libellé « Quartier, Arrondissement » de la pilule du header home via Nominatim (OSM : `neighbourhood`/`suburb` + `city_district`), repli géocodeur du téléphone ; seulement si l'utilisateur est à Banganté (zone desservie), sinon « Banganté, Cameroun » en dur (idem sans permission ou en échec) |
 | `src/features/location/hooks/useDeliveryTrackingSync.ts` | Livreur : mode livraison tant qu'une commande est `delivering` (monté par `DriverContext`) |
-| `src/features/location/components/BackgroundLocationPromptCard.tsx` | Écran d'information avant la popup « Toujours » (copie R16 de `OtaUpdateCard`), monté dans `app/_layout.tsx` |
+| `src/features/location/components/BackgroundLocationPromptCard.tsx` | Écran d'information avant la popup « Toujours » (iOS, copie R16 de `OtaUpdateCard`), monté dans `app/_layout.tsx` |
+| `src/features/location/components/LocationDisclosureModal.tsx` | Écran de divulgation avant toute popup de localisation (Android, Google Play), `<Modal>` monté dans `app/_layout.tsx` |
+| `src/features/location/services/locationPermission.ts` | `requestForegroundLocation(purpose)` : seul point de demande de la permission, précédée de l'écran de divulgation |
 | `src/features/location/services/backgroundPrompt.ts` | Émetteur hook → carte (`requestBackgroundPrompt` / `onBackgroundPromptRequest`) |
 | `src/features/location/utils/buildLocationPayload.ts` | Position + géocodage inverse → payload (partagé premier plan / tâche) ; `buildDriverPositionPayload` (sans géocodage) |
 | `src/features/location/services/userLocationService.ts` | `POST /user/location` + types |
@@ -27,9 +29,9 @@ Sert au ciblage « Ma ville » des notifications boutique (voir
 
 | Moment | `source` | Permission demandée ? | Limite |
 |---|---|---|---|
-| Connexion (chaque nouvel uid de la session, y compris au lancement déjà connecté) | `login` | « Pendant l'utilisation » si jamais demandée, puis « Toujours » (une seule fois) | aucune |
+| Connexion (chaque nouvel uid de la session, y compris au lancement déjà connecté) | `login` | « Pendant l'utilisation » si jamais demandée (écran de divulgation avant, Android), puis « Toujours » (iOS, une seule fois) | aucune |
 | Retour au premier plan | `foreground` | non | 30 min depuis le dernier envoi réussi |
-| Tâche arrière-plan, app fermée ou en arrière-plan | `background` | — | 15 min et 300 m |
+| Tâche arrière-plan, app fermée ou en arrière-plan (iOS ; Android : livreur en course seulement) | `background` | — | 15 min et 300 m |
 | Tâche arrière-plan, app ouverte | `foreground` | — | 15 min et 300 m |
 | Livreur en course (mode livraison) | — (`POST /driver/location`) | « Pendant l'utilisation » à « Lancer » si jamais demandée | ~10 s et 15 m, envoi toutes les 8 s au plus |
 
@@ -106,13 +108,38 @@ Géocodage raté → coordonnées seules.
 
 - « Pendant l'utilisation » : suivi des livraisons + restaurants de la ville et
   leurs offres.
-- « Toujours » : suivi en temps réel des livraisons en cours par les livreurs,
-  même app fermée, + restaurants et offres de la ville.
+- « Toujours » (**iOS seulement**) : suivi en temps réel des livraisons en
+  cours par les livreurs, même app fermée, + restaurants et offres de la ville.
 - iOS : `UIBackgroundModes` `location` (et `fetch`, ajouté par
-  `expo-task-manager`). Android : `ACCESS_BACKGROUND_LOCATION`, plus
+  `expo-task-manager`). Android : **pas** d'`ACCESS_BACKGROUND_LOCATION`
+  (`isAndroidBackgroundLocationEnabled: false` + `blockedPermissions`), seulement
   `FOREGROUND_SERVICE(_LOCATION)` (`isAndroidForegroundServiceEnabled: true`,
-  mode livraison).
-- ⚠️ Stores : la localisation arrière-plan est justifiée par le suivi des
-  livraisons ; Google Play exige en plus le formulaire de déclaration
-  (et une vidéo) dans la console. Risque de refus assumé.
+  mode livraison : un service de premier plan démarré app ouverte n'exige que
+  « Pendant l'utilisation »).
+- ⚠️ Google Play (refus du 1er oct. 2026, version 1.1.2) : la localisation
+  arrière-plan a été refusée (suivi client app fermée = ciblage / marketing,
+  non admis) → retirée d'Android en 1.1.3. Seule la déclaration « Service de
+  premier plan → Partage de position à l'initiative de l'utilisateur » reste.
+  `getBackgroundPermissionsAsync` lève une exception sur Android sans la
+  permission au manifeste : gardé par `userBackgroundSupported`.
 - Tout changement exige une nouvelle build native (pas d'OTA).
+
+## Écran de divulgation (Android, Google Play)
+
+Google exige un écran de l'app **juste avant** toute popup système de
+localisation : quelle donnée, pourquoi, avec qui, puis un choix explicite
+(refus du 1er oct. 2026 : la popup partait seule sur le home).
+
+- **Point d'entrée unique** : `requestForegroundLocation(purpose)`
+  (`services/locationPermission.ts`). Jamais d'appel direct à
+  `requestForegroundPermissionsAsync`. Déjà accordée ou refusée
+  définitivement (`canAskAgain` faux) : aucun écran.
+- **Écran** : `LocationDisclosureModal` (copie R16 de `LogoutModal`), un
+  `<Modal>` monté une fois dans `app/_layout.tsx` : il passe au-dessus des
+  sheets déjà ouvertes en `<Modal>` (adresse de livraison). « Non merci » ou
+  retour = pas de popup système. iOS : pas d'écran (la popup affiche déjà le
+  texte d'`app.json`).
+- **Contextes** (`purpose`) : `nearby` (connexion, une seule fois, clé
+  `user_location_fg_asked`), `address` (`CheckoutLocationOverlay`,
+  `GroupedLocationOverlay`), `shop` (`useShopPosition`), `delivery`
+  (`startDeliveryTracking`, mentionne l'arrière-plan et la notification).

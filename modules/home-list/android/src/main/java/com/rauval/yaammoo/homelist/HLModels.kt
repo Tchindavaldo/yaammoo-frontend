@@ -44,6 +44,8 @@ class HLShopRecord : Record {
   @Field var distance: String = ""
   /** Note de la boutique en design aere (« 4.5/5 »). */
   @Field var ratingText: String = ""
+  /** Sous la note (design aere) : « 13h » / « express » apres « Livraison » ; "" = rien. */
+  @Field var deliveryLabel: String = ""
   @Field var menus: List<HLMenuRecord> = emptyList()
 }
 
@@ -124,6 +126,7 @@ data class HLShop(
   val deliveryTime: String,
   val distance: String,
   val ratingText: String,
+  val deliveryLabel: String,
   val menus: List<HLMenu>,
 ) {
   constructor(r: HLShopRecord) : this(
@@ -136,6 +139,7 @@ data class HLShop(
     r.deliveryTime,
     r.distance,
     r.ratingText,
+    r.deliveryLabel,
     r.menus.map { HLMenu(it) },
   )
 }

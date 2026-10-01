@@ -77,6 +77,8 @@ export const Design5: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         reviewCount={(fastFood as any)?.stats?.votes ?? 0}
         syncWithImage={fastFood.menu?.[0]?.image}
         distanceKm={(fastFood as any)?.distanceKm}
+        deliveryHours={(fastFood as any)?.deliveryHours}
+        orderLeadTime={(fastFood as any)?.orderLeadTime}
       />
       <View style={styles.scrollWrapper}>
         <FlashList

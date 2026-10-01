@@ -29,7 +29,7 @@ import {
 } from "./designs/item/aere/labels";
 import { fontFor } from "@/src/theme/fonts";
 import { designNumberFor } from "../utils/designCycle";
-import { getNextDeliveryTime } from "../utils/deliveryUtils";
+import { getNextDeliveryTime, getShopDeliveryLabel } from "../utils/deliveryUtils";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import {
   announceNativeList,
@@ -123,7 +123,11 @@ const fallbackFor = (design: number, i: number) =>
     : design === 5 ? FALLBACK_V5[i % FALLBACK_V5.length]
       : FALLBACK_V7;
 
-const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
+const toRow = (
+  ff: FastFood,
+  deliveryTime: string,
+  deliveryLabel: string,
+): HomeListRow => {
   const f = ff as any;
   const design = designNumberFor(ff.designIndex);
   return {
@@ -138,6 +142,7 @@ const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
     // « 1,2 km » apres « Ouvert » ; vide = position inconnue (rien d'affiche).
     distance: formatDistanceKm(f?.distanceKm) ?? "",
     ratingText: `${Number(f?.stats?.rating ?? 4.5).toFixed(1)}/5`,
+    deliveryLabel,
     menus: (ff.menu ?? []).map((m: any, i: number) => {
       const stock = Math.round(m?.stock ?? 0);
       const fee = deliveryFeeLabelFor(i);
@@ -176,9 +181,18 @@ const rowCache = new WeakMap<FastFood, HomeListRow>();
 const rowFor = (ff: FastFood): HomeListRow => {
   const f = ff as any;
   const deliveryTime = getNextDeliveryTime(f?.deliveryHours, f?.orderLeadTime ?? 0);
+  // En-tete : prochain creneau periodique / express / rien (MerchantHeader).
+  const deliveryLabel =
+    getShopDeliveryLabel(f?.deliveryHours, f?.orderLeadTime ?? 0) ?? "";
   const cached = rowCache.get(ff);
-  if (cached && cached.deliveryTime === deliveryTime) return cached;
-  const row = toRow(ff, deliveryTime);
+  if (
+    cached &&
+    cached.deliveryTime === deliveryTime &&
+    cached.deliveryLabel === deliveryLabel
+  ) {
+    return cached;
+  }
+  const row = toRow(ff, deliveryTime, deliveryLabel);
   rowCache.set(ff, row);
   return row;
 };

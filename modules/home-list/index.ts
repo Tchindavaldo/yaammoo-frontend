@@ -53,6 +53,12 @@ export type HomeListRow = {
   distance: string;
   /** Note de la boutique en design aere (« 4.5/5 »). */
   ratingText: string;
+  /**
+   * Sous la note (design aere) : « Livraison <valeur> », valeur « 13h »
+   * (prochain creneau periodique) ou « express » ; "" = rien. Ignoree par une
+   * build native anterieure.
+   */
+  deliveryLabel: string;
   menus: HomeListMenu[];
 };
 

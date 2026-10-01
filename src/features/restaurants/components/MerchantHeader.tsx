@@ -8,6 +8,7 @@ import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import { IS_AERE } from "./designs/item/config";
+import { useShopDeliveryLabel } from "../utils/deliveryUtils";
 
 interface MerchantHeaderProps {
   name: string;
@@ -30,6 +31,9 @@ interface MerchantHeaderProps {
   isOpen?: boolean;
   /** Distance utilisateur → boutique (`distanceKm` du backend), apres « Ouvert ». */
   distanceKm?: number | null;
+  /** Creneaux de la boutique : « Livraison 12h » / « Livraison express » sous la note (design aere). */
+  deliveryHours?: any[];
+  orderLeadTime?: number;
 }
 
 export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
@@ -41,8 +45,11 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   syncWithImage,
   isOpen = true,
   distanceKm,
+  deliveryHours,
+  orderLeadTime = 0,
 }) => {
   const distance = formatDistanceKm(distanceKm);
+  const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime);
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec
   // les cartes) et son PROPRE avatar.
   //
@@ -194,13 +201,21 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
           </View>
         </View>
         {IS_AERE ? (
-          // Design aere : etoile + note /5 et nombre d'avis en pastille grise.
-          <View style={[styles.ratingBlock, styles.aereRating]}>
-            <Ionicons name="star" size={13} color={DS.star} />
-            <Text style={styles.aereScore}>{rating.toFixed(1)}/5</Text>
-            <View style={styles.aereReviews}>
-              <Text style={styles.aereReviewsText}>{reviewCount} avis</Text>
+          // Design aere : etoile + note /5 et nombre d'avis en pastille grise,
+          // puis la prochaine livraison dessous (rien sans livraison).
+          <View style={styles.ratingBlock}>
+            <View style={styles.aereRating}>
+              <Ionicons name="star" size={13} color={DS.star} />
+              <Text style={styles.aereScore}>{rating.toFixed(1)}/5</Text>
+              <View style={styles.aereReviews}>
+                <Text style={styles.aereReviewsText}>{reviewCount} avis</Text>
+              </View>
             </View>
+            {delivery ? (
+              <Text style={styles.aereDelivery}>
+                Livraison <Text style={styles.aereDeliveryValue}>{delivery}</Text>
+              </Text>
+            ) : null}
           </View>
         ) : (
         <View style={styles.ratingBlock}>
@@ -334,6 +349,8 @@ const styles = StyleSheet.create({
     backgroundColor: DS.surface,
   },
   aereReviewsText: { fontSize: 10, fontWeight: '700', color: DS.text2 },
+  aereDelivery: { fontSize: 10, fontWeight: '700', color: DS.muted },
+  aereDeliveryValue: { fontWeight: '800', color: DS.accentDeep },
   ratingMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statChip: {
     flexDirection: 'row',

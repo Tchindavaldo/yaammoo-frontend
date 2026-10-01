@@ -33,6 +33,8 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     background = roundedBackground(HLAereColor.surface, 8f)
     insets = floatArrayOf(6f, 2f, 6f, 2f)
   }
+  // Sous la note : « Livraison 13h » / « Livraison express » ; vide = rien.
+  private val aereDelivery = HLLabel(context)
 
   private val avatarSkeleton = HLSkeletonView(context, 16f)
   private val nameSkeleton = HLSkeletonView(context, 6f)
@@ -61,7 +63,7 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
       chip.insets = floatArrayOf(5f, 2f, 5f, 2f)
     }
     content.addAll(avatar, avatarRing, nameLabel, statusDot, statusLabel, ordersChip, votesChip, starsLabel)
-    content.addAll(aereScore, aereReviews)
+    content.addAll(aereScore, aereReviews, aereDelivery)
     skeleton.addAll(avatarSkeleton, nameSkeleton, ratingSkeleton)
 
     onPlace = { w, h ->
@@ -104,11 +106,16 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     val starsW = starsLabel.textWidth()
     starsLabel.frame(w - starsW, rightTop + chipH + 3f, starsW, starsH)
 
-    // Design aere : une seule ligne centree, pastille avis a droite (marginLeft 4).
+    // Design aere : ligne de note (pastille avis a droite, marginLeft 4), puis
+    // la livraison dessous (gap 3, alignee a droite) ; le bloc reste centre.
+    val deliveryH = if (aereDelivery.visibility == View.VISIBLE) 12f else 0f
+    val noteTop = if (deliveryH > 0f) cy - (18f + 3f + deliveryH) / 2f else cy - 9f
     val rw = aereReviews.fitWidth()
-    aereReviews.frame(w - rw, cy - 9f, rw, 18f)
+    aereReviews.frame(w - rw, noteTop, rw, 18f)
     val sw = aereScore.textWidth()
-    aereScore.frame(w - rw - 4f - sw, cy - 9f, sw, 18f)
+    aereScore.frame(w - rw - 4f - sw, noteTop, sw, 18f)
+    val dw = aereDelivery.textWidth()
+    aereDelivery.frame(w - dw, noteTop + 18f + 3f, dw, deliveryH)
   }
 
   /** `null` = fantome : seul le squelette a un sens. */
@@ -121,6 +128,8 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
       aereScore.text = null
       aereReviews.text = null
       aereReviews.visibility = View.INVISIBLE
+      aereDelivery.text = null
+      aereDelivery.visibility = View.INVISIBLE
       HLImage.clear(avatar)
       content.relayout()
       return
@@ -131,12 +140,23 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     val aere = HLDesign.aere
     for (v in listOf(ordersChip, votesChip, starsLabel)) v.visibility = if (aere) View.INVISIBLE else View.VISIBLE
     for (v in listOf(aereScore, aereReviews)) v.visibility = if (aere) View.VISIBLE else View.INVISIBLE
+    val showDelivery = aere && shop.deliveryLabel.isNotEmpty()
+    aereDelivery.visibility = if (showDelivery) View.VISIBLE else View.INVISIBLE
     if (aere) {
       aereScore.text = HLRuns()
         .icon("star", 13f, HLColor.starYellow).gap(3f)
         .run(shop.ratingText, 800, 13f, HLAereColor.ink)
         .build()
       aereReviews.text = HLRuns().run("${shop.votes} avis", 700, 10f, HLAereColor.text2).build()
+      // `MerchantHeader.tsx` : « Livraison » gris, valeur en accent.
+      aereDelivery.text = if (showDelivery) {
+        HLRuns()
+          .run("Livraison ", 700, 10f, HLColor.muted)
+          .run(shop.deliveryLabel, 800, 10f, HLColor.accent)
+          .build()
+      } else {
+        null
+      }
       content.relayout()
       return
     }

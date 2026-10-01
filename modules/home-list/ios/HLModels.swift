@@ -44,6 +44,8 @@ struct HLShopRecord: Record {
   @Field var distance: String = ""
   /** Note de la boutique en design aere (« 4.5/5 »). */
   @Field var ratingText: String = ""
+  /** Sous la note (design aere) : « 13h » / « express » apres « Livraison » ; "" = rien. */
+  @Field var deliveryLabel: String = ""
   @Field var menus: [HLMenuRecord] = []
 }
 
@@ -137,6 +139,7 @@ struct HLShop: Equatable {
   let deliveryTime: String
   let distance: String
   let ratingText: String
+  let deliveryLabel: String
   let menus: [HLMenu]
 
   init(_ r: HLShopRecord) {
@@ -149,6 +152,7 @@ struct HLShop: Equatable {
     deliveryTime = r.deliveryTime
     distance = r.distance
     ratingText = r.ratingText
+    deliveryLabel = r.deliveryLabel
     menus = r.menus.map(HLMenu.init)
   }
 }

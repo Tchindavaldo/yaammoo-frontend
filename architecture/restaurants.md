@@ -325,6 +325,24 @@ la position posée par la boutique ; `null` si l'une manque). Voir
 - **Pas de tri par distance** : l'ordre reste celui du curseur
   (`created_at DESC`), la distance est seulement affichée.
 
+## Livraison dans l'en-tête boutique (design aéré)
+
+Sous la note, alignée à droite : « Livraison 13h » (prochain créneau
+**périodique**, `orderLeadTime` compris, demain si tous sont passés),
+« Livraison express » si la boutique n'a que de l'express, rien sans livraison.
+
+- Calcul unique en JS : `getShopDeliveryLabel` / `useShopDeliveryLabel`
+  (`utils/deliveryUtils.ts`), recalculé chaque minute et au retour au premier
+  plan. Créneaux : `deliveryHours[]` au nouveau format (`periodic`, `express`
+  par heure) ; ancien format `string[]` = créneaux périodiques.
+- ⚠️ Le backend ne sert le nouveau format qu'avec `x-app-version` ≥ 1.0.1
+  (posé par `setupHttp`) : un appel sans cet en-tête (curl, navigateur) reçoit
+  des heures seules, sans express. Voir `BACKEND/architecture/merchants.md`.
+- FlashList : props `deliveryHours` / `orderLeadTime` de `MerchantHeader`
+  (Design4/5/7). Liste native : champ `deliveryLabel` (« 13h » / « express »,
+  "" = rien) de `HomeListRow`, rendu par `HLMerchantHeaderView` (iOS et
+  Android) ; une build native antérieure l'ignore.
+
 ## Recherche — SERVEUR, pas locale
 
 `searchQuery` déclenche un fetch debouncé (350 ms) avec `?q=`, qui repart de la

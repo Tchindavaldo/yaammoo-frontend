@@ -13,11 +13,13 @@ Sert au ciblage « Ma ville » des notifications boutique (voir
 | `src/features/location/hooks/useUserLocationSync.ts` | Permissions, capture au premier plan, limite de fréquence, lancement / arrêt du suivi arrière-plan |
 | `src/features/location/tasks/backgroundLocationTask.ts` | Tâche app fermée (`expo-task-manager`) : position utilisateur + position livreur en mode livraison ; `start` / `stopBackgroundLocation`, `start` / `stopDeliveryTracking` |
 | `src/features/location/tasks/trackingModes.ts` | Modes `normal` / `delivery` (persistés), réglages `startLocationUpdatesAsync` de chacun |
-| `src/features/location/hooks/useCurrentPlaceLabel.ts` | Libellé « Quartier, Arrondissement » de la pilule du header home via Nominatim (OSM : `neighbourhood`/`suburb` + `city_district`), repli géocodeur du téléphone ; seulement si l'utilisateur est à Banganté (zone desservie), sinon « Banganté, Cameroun » en dur (idem sans permission ou en échec) |
+| `src/features/location/hooks/useCurrentPlaceLabel.ts` | Libellé « Quartier, Arrondissement » de la pilule du header home via Nominatim (OSM : `neighbourhood`/`suburb` + `city_district`), repli géocodeur du téléphone ; seulement si l'utilisateur est à Banganté (zone desservie), sinon « Banganté, Cameroun » en dur (idem sans permission ou en échec) ; flag `SHOW_PLACE_OUTSIDE_SERVICE_AREA = true` (OTA) : lieu réel partout |
 | `src/features/location/hooks/useDeliveryTrackingSync.ts` | Livreur : mode livraison tant qu'une commande est `delivering` (monté par `DriverContext`) |
 | `src/features/location/components/BackgroundLocationPromptCard.tsx` | Écran d'information avant la popup « Toujours » (iOS, copie R16 de `OtaUpdateCard`), monté dans `app/_layout.tsx` |
 | `src/features/location/components/LocationDisclosureModal.tsx` | Écran de divulgation avant toute popup de localisation (Android, Google Play), `<Modal>` monté dans `app/_layout.tsx` |
-| `src/features/location/services/locationPermission.ts` | `requestForegroundLocation(purpose)` : seul point de demande de la permission, précédée de l'écran de divulgation |
+| `src/features/location/services/locationPermission.ts` | `requestForegroundLocation(purpose)` : seul point de demande de la permission, précédée de l'écran de divulgation ; `onForegroundLocationStatus` prévient après chaque demande |
+| `src/features/location/config.ts` | Flags OTA : `SHOW_LOCATION_BANNER` (bandeau du home), `SHOW_PLACE_OUTSIDE_SERVICE_AREA` (lieu réel dans la pilule même hors de Banganté) |
+| `src/features/location/hooks/useLocationAccess.ts` | Statut pour le bandeau du home : `state` (`checking` / `granted` / `blocked`), `enable()` (redemande ou réglages) |
 | `src/features/location/services/backgroundPrompt.ts` | Émetteur hook → carte (`requestBackgroundPrompt` / `onBackgroundPromptRequest`) |
 | `src/features/location/utils/buildLocationPayload.ts` | Position + géocodage inverse → payload (partagé premier plan / tâche) ; `buildDriverPositionPayload` (sans géocodage) |
 | `src/features/location/services/userLocationService.ts` | `POST /user/location` + types |
@@ -48,6 +50,15 @@ Sert au ciblage « Ma ville » des notifications boutique (voir
 - Refus : jamais redemandé par l'app (clé `user_location_bg_asked` pour
   « Toujours ») ; l'utilisateur peut l'activer dans les réglages système.
 - Silencieux : ni loader ni toast ; un échec (GPS, hors ligne) est ignoré.
+- **Bandeau du home sans localisation** (`useLocationAccess` +
+  `HomeLocationBanner`, flag `SHOW_LOCATION_BANNER`, connecté ou invité, hors
+  web) : permission « Pendant
+  l'utilisation » non accordée → bandeau sous l'en-tête, au-dessus des
+  boutiques. Le home n'est **jamais bloqué** (Apple 5.1.1 : l'app doit rester
+  utilisable sans). « Activer » relance la demande (divulgation Android puis
+  popup système) ; refusée définitivement, « Réglages ». Statut relu au retour
+  au premier plan et après toute demande ; accordée, la position est envoyée
+  tout de suite (`capture("foreground", true)`) et la pilule du header relue.
 - **Déconnexion** (connecté → non connecté) : suivi arrêté. La tâche s'arrête
   aussi d'elle-même si elle ne trouve plus d'utilisateur Firebase.
 

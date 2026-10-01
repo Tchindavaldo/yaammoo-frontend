@@ -143,6 +143,8 @@ src/features/
 │   ├── hooks/useUserLocationSync.ts     # permissions (après les notifs), capture, suivi arrière-plan
 │   ├── hooks/useCurrentPlaceLabel.ts    # « Quartier, Ville » pour la pilule du header home
 │   ├── hooks/useDeliveryTrackingSync.ts # livreur : mode livraison tant qu'une cmd est `delivering`
+│   ├── hooks/useLocationAccess.ts       # statut de la localisation pour le bandeau du home
+│   ├── config.ts                        # flags OTA : bandeau du home, lieu réel dans la pilule hors Banganté
 │   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js), modes normal / livraison
 │   ├── tasks/trackingModes.ts           # réglages et persistance des deux modes
 │   ├── components/BackgroundLocationPromptCard.tsx # info avant la popup « Toujours », iOS (copie de OtaUpdateCard)
@@ -225,7 +227,7 @@ src/features/
 │   ├── utils/normalizeFastFood.ts       # Normalisation boutique / menu (HTTP + socket)
 │   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
 │   ├── utils/homeClientSettings.ts      # Taille de page / préchargement venus du serveur (`settings_client`)
-│   └── components/home/                 # HomeHeader, HomeFullScreenStates, homeScreenStyles
+│   └── components/home/                 # HomeHeader, HomeFullScreenStates, HomeLocationBanner, homeScreenStyles
 │
 └── menu/
 ```

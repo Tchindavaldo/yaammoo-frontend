@@ -61,12 +61,22 @@ const requestDisclosure = (purpose: LocationPurpose): Promise<boolean> => {
   return pending;
 };
 
+type StatusListener = (status: Location.PermissionStatus) => void;
+const statusListeners = new Set<StatusListener>();
+
 /**
- * Demande la permission si l'OS peut encore afficher sa popup, précédée sur
- * Android de l'écran de divulgation. Déjà accordée ou refusée définitivement :
- * aucun écran, statut renvoyé tel quel.
+ * Prévenu après chaque demande (bandeau du home `useLocationAccess`, pilule du
+ * header, envoi de la position par `useUserLocationSync`), quel que soit
+ * l'écran qui l'a lancée.
  */
-export const requestForegroundLocation = async (
+export const onForegroundLocationStatus = (l: StatusListener) => {
+  statusListeners.add(l);
+  return () => {
+    statusListeners.delete(l);
+  };
+};
+
+const askForeground = async (
   purpose: LocationPurpose,
 ): Promise<Location.PermissionStatus> => {
   const current = await Location.getForegroundPermissionsAsync();
@@ -77,4 +87,17 @@ export const requestForegroundLocation = async (
     return current.status;
   }
   return (await Location.requestForegroundPermissionsAsync()).status;
+};
+
+/**
+ * Demande la permission si l'OS peut encore afficher sa popup, précédée sur
+ * Android de l'écran de divulgation. Déjà accordée ou refusée définitivement :
+ * aucun écran, statut renvoyé tel quel.
+ */
+export const requestForegroundLocation = async (
+  purpose: LocationPurpose,
+): Promise<Location.PermissionStatus> => {
+  const status = await askForeground(purpose);
+  statusListeners.forEach((l) => l(status));
+  return status;
 };

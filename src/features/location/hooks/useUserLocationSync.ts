@@ -3,7 +3,10 @@ import * as Location from "expo-location";
 import { useCallback, useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
 import { requestBackgroundPrompt } from "../services/backgroundPrompt";
-import { requestForegroundLocation } from "../services/locationPermission";
+import {
+  onForegroundLocationStatus,
+  requestForegroundLocation,
+} from "../services/locationPermission";
 import {
   LocationSource,
   userLocationService,
@@ -21,8 +24,9 @@ const LAST_SENT_KEY = "user_location_last_sent";
 /** Écart minimal entre deux captures hors connexion (ouverture, premier plan). */
 const MIN_INTERVAL_MS = 30 * 60 * 1000;
 /**
- * La permission « Pendant l'utilisation » n'est proposée qu'une fois à la
- * connexion : « Non merci » sur l'écran de divulgation n'est jamais reproposé.
+ * La permission « Pendant l'utilisation » n'est proposée automatiquement
+ * qu'une fois à la connexion ; ensuite seulement via le bandeau du home
+ * (`useLocationAccess`), à l'initiative de l'utilisateur.
  */
 const FG_ASKED_KEY = "user_location_fg_asked";
 /** La permission « Toujours » n'est proposée qu'une fois, jamais redemandée. */
@@ -66,17 +70,18 @@ const ensureBackgroundTracking = async () => {
  *   fermée, voir `backgroundLocationTask`) ;
  * - au retour au premier plan, au plus toutes les 30 min.
  *
- * Silencieux : ni loader ni toast. Aucune fonction de l'app n'en dépend, un
- * échec (GPS lent, hors ligne, refus) n'a pas à interrompre l'utilisateur.
+ * Silencieux : ni loader ni toast, un échec (GPS lent, hors ligne) n'interrompt
+ * pas l'utilisateur. Le refus de la permission affiche un bandeau sur le home
+ * (`useLocationAccess`), sans rien bloquer.
  */
 export const useUserLocationSync = (isSignedIn: boolean) => {
   const running = useRef(false);
 
-  const capture = useCallback(async (source: LocationSource) => {
+  const capture = useCallback(async (source: LocationSource, force = false) => {
     if (running.current || Platform.OS === "web") return;
     running.current = true;
     try {
-      if (source !== "login") {
+      if (source !== "login" && !force) {
         const last = Number(await AsyncStorage.getItem(LAST_SENT_KEY));
         if (last && Date.now() - last < MIN_INTERVAL_MS) return;
       }
@@ -119,6 +124,15 @@ export const useUserLocationSync = (isSignedIn: boolean) => {
       if (state === "active") void capture("foreground");
     });
     return () => sub.remove();
+  }, [isSignedIn, capture]);
+
+  // Permission accordée plus tard (bandeau du home, `useLocationAccess`) : envoi
+  // immédiat, sans attendre le prochain retour au premier plan.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    return onForegroundLocationStatus((status) => {
+      if (status === "granted") void capture("foreground", true);
+    });
   }, [isSignedIn, capture]);
 
   // Déconnexion (connecté → non connecté) : fin du suivi app fermée. Pas au

@@ -1,5 +1,7 @@
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
+import { SHOW_PLACE_OUTSIDE_SERVICE_AREA } from "../config";
+import { onForegroundLocationStatus } from "../services/locationPermission";
 
 type OsmAddress = {
   neighbourhood?: string;
@@ -37,12 +39,22 @@ const normalize = (s: string) =>
 const isServiceArea = (raw: string) => normalize(raw).includes(SERVICE_AREA_KEY);
 
 /**
- * Libelle du lieu pour le header home. A Banganté : « Quartier, Arrondissement »
- * du lieu actuel. Ailleurs, sans permission ou en echec : « Banganté, Cameroun »
+ * Libelle du lieu pour le header home. A Banganté (ou partout si
+ * `SHOW_PLACE_OUTSIDE_SERVICE_AREA`) : « Quartier, Arrondissement » du lieu
+ * actuel. Ailleurs, sans permission ou en echec : « Banganté, Cameroun »
  * (seule zone desservie). Ne demande pas la permission.
  */
 export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
   const [label, setLabel] = useState(fallback);
+  // Permission accordée après le montage (bandeau du home) : libellé relu.
+  const [grantTick, setGrantTick] = useState(0);
+  useEffect(
+    () =>
+      onForegroundLocationStatus((status) => {
+        if (status === "granted") setGrantTick((t) => t + 1);
+      }),
+    [],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -83,8 +95,9 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
         }
 
         // Hors de la zone desservie : on garde la zone en dur, pour que
-        // l'utilisateur comprenne que le service n'y est pas encore.
-        if (!inZone) text = SERVICE_AREA_LABEL;
+        // l'utilisateur comprenne que le service n'y est pas encore (sauf si
+        // le flag demande le lieu reel partout).
+        if (!inZone && !SHOW_PLACE_OUTSIDE_SERVICE_AREA) text = SERVICE_AREA_LABEL;
         console.log("[LIEU] dans la zone:", inZone, "| libelle affiche:", text);
         if (alive && text) setLabel(text);
       } catch (error) {
@@ -94,7 +107,7 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [grantTick]);
 
   return label;
 };

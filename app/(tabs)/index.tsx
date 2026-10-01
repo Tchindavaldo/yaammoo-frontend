@@ -18,6 +18,9 @@ import {
   HomeErrorScreen,
   HomeLoadingScreen,
 } from "@/src/features/restaurants/components/home/HomeFullScreenStates";
+import { HomeLocationBanner } from "@/src/features/restaurants/components/home/HomeLocationBanner";
+import { useLocationAccess } from "@/src/features/location/hooks/useLocationAccess";
+import { SHOW_LOCATION_BANNER } from "@/src/features/location/config";
 import { homeStyles as styles } from "@/src/features/restaurants/components/home/homeScreenStyles";
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
 import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListData";
@@ -80,6 +83,7 @@ export default function HomeScreen() {
     setSelectedCategory,
     homeSettings,
   } = useFastFoods();
+  const locationAccess = useLocationAccess();
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
   const HEADER_HEIGHT = 100 + insets.top;
@@ -194,6 +198,15 @@ export default function HomeScreen() {
           onTouchEnd={onListTouchEnd}
           onTouchCancel={onListTouchEnd}
         >
+          {/* Localisation non accordée : bandeau d'activation au-dessus des
+              boutiques, le home reste utilisable (voir useLocationAccess). */}
+          {SHOW_LOCATION_BANNER && locationAccess.state === "blocked" && (
+            <HomeLocationBanner
+              canAskAgain={locationAccess.canAskAgain}
+              requesting={locationAccess.requesting}
+              onEnable={locationAccess.enable}
+            />
+          )}
           {/* ⚠️ FlashList, pas FlatList : elle RECYCLE les vues natives au lieu
               de les detruire en sortie d'ecran et d'en recreer en entree. C'est
               ce qui supprime definitivement la micro-pause au scroll (63-90 ms

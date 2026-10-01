@@ -33,7 +33,7 @@ src/features/restaurants/
 ├── utils/homeClientSettings.ts     # Home : taille de page + distance de préchargement venues du serveur (`clientSettings`), valeurs de secours, copie gardée
 ├── utils/normalizeFastFood.ts      # normalizeMenu / normalizeFastFood (payload backend → format UI), fonctions pures
 └── components/
-    ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), homeScreenStyles
+    ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), HomeLocationBanner (bandeau « Localisation désactivée »), homeScreenStyles
     ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)

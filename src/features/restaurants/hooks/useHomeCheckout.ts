@@ -3,8 +3,18 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { Menu } from "@/src/types";
+import { track } from "@/src/services/analytics/analytics";
 
 type HomeToast = { message: string; type: "success" | "error" } | null;
+
+/** Boutique et menu d'un menu du catalogue (champs du backend, hors type `Menu`). */
+const idsOf = (menu: Menu | null) => {
+  const m = menu as any;
+  return {
+    ...(m?.fastFoodId ? { fastFoodId: String(m.fastFoodId) } : {}),
+    ...(m?.id ? { menuId: String(m.id) } : {}),
+  };
+};
 
 /**
  * Commande depuis le home : menu choisi, visibilité du `CheckoutSheet`, envoi
@@ -20,6 +30,7 @@ export const useHomeCheckout = () => {
   const [toast, setToast] = useState<HomeToast>(null);
 
   const handleMenuClick = (menu: Menu) => {
+    track("menu_open", idsOf(menu));
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
     // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
     // Nom / prenom manquant : la sheet dediee passe AVANT le checkout.
@@ -53,6 +64,13 @@ export const useHomeCheckout = () => {
     try {
       const result = await addOrder(order);
       if (result.success) {
+        // La commande payee passe par `checkout_start` / `payment_result`.
+        if (order.status !== "pending") {
+          track("add_to_cart", {
+            ...idsOf(selectedMenu),
+            data: Number.isFinite(order.quantity) ? { quantity: order.quantity } : {},
+          });
+        }
         showToast(
           order.status === "pending"
             ? "Commande envoyée au marchand !"

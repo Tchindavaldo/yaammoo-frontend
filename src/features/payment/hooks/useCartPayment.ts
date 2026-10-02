@@ -4,6 +4,7 @@ import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
 import { useAuth } from "../../auth/context/AuthContext";
 import { REVIEW_STEP_MS } from "../constants/reviewPayment";
+import { track } from "../../../services/analytics/analytics";
 
 export type CartPaymentState =
   | "total"
@@ -67,6 +68,7 @@ export const useCartPayment = (amount: number) => {
       // Source de vérité unique : "waiting" ici (pas en local capsule) pour que
       // le retour à "input" sur erreur fonctionne toujours.
       setPaymentState("waiting");
+      track("checkout_start", { data: { total: amountOverride ?? amount } });
 
       try {
         const response = await axios.post(`${Config.apiUrl}/transaction`, {

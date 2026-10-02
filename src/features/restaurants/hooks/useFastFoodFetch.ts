@@ -1,4 +1,5 @@
 import { Config } from "@/src/api/config";
+import { trackHomePage } from "@/src/services/analytics/homePages";
 import { trackBootStep } from "@/src/services/bootTelemetry";
 import { getOptionalIdToken } from "@/src/services/idToken";
 import type { AppBanner, FastFood } from "@/src/types";
@@ -224,6 +225,8 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
 
       if (response.data && response.data.data) {
         const raw: any[] = response.data.data;
+        // Statistiques : profondeur du scroll du home, ou recherche.
+        trackHomePage(isFirstPage, raw.length, q);
         if (isFirstPage) {
           pageFetchRef.current = 1;
           const data = raw.map((item, index) =>

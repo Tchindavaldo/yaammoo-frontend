@@ -35,6 +35,8 @@ import {
   announceNativeList,
   reportNativeDiagnostics,
 } from "../utils/nativeListDiagnostics";
+import { setVisibleShops } from "@/src/services/analytics/shopImpressions";
+import { homePageOf } from "@/src/services/analytics/homePages";
 
 /**
  * Pont JS de la liste NATIVE du home (`modules/home-list`, iOS et Android).
@@ -392,6 +394,11 @@ export const NativeHomeList: React.FC<Props> = ({
       onRefresh={() => onRefresh()}
       onEdgeChange={(e) => onEdgeChange(e.nativeEvent.atTop, e.nativeEvent.nearBottom)}
       onDiagnostics={(e) => reportNativeDiagnostics(e.nativeEvent)}
+      onVisibleShops={(e) =>
+        setVisibleShops(e.nativeEvent.ids, e.nativeEvent.positions, (p) =>
+          homePageOf(p, ghostCount),
+        )
+      }
     />
   );
 };

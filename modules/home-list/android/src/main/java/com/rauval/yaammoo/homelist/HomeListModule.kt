@@ -14,7 +14,8 @@ class HomeListModule : Module() {
     Name("HomeList")
 
     View(HomeListView::class) {
-      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics")
+      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics",
+        "onVisibleShops")
 
       // ⚠️ Les boutiques ne sont PAS une prop : une prop renverrait TOUTE la
       // liste a chaque page. `updateRows` ne recoit que les rangees nouvelles

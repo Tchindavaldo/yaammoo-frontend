@@ -9,7 +9,8 @@ public final class HomeListModule: Module {
     Name("HomeList")
 
     View(HomeListView.self) {
-      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics")
+      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics",
+             "onVisibleShops")
 
       // ⚠️ Les boutiques ne sont PAS une prop. Une prop renvoie TOUTE la liste a
       // chaque page, et Expo la decode sur le fil de l'ecran : environ 1 ms par

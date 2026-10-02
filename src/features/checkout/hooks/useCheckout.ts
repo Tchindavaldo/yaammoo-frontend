@@ -5,6 +5,7 @@ import axios from "axios";
 import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
 import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
+import { track } from "../../../services/analytics/analytics";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData, user } = useAuth();
@@ -431,6 +432,11 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
 
     // Commande complète à payer (le backend déduit le fastFoodId des items).
     const order = createOrder('pending');
+    track('checkout_start', {
+      ...((menu as any)?.fastFoodId ? { fastFoodId: String((menu as any).fastFoodId) } : {}),
+      ...((menu as any)?.id ? { menuId: String((menu as any).id) } : {}),
+      data: { total: prices.displayTotal },
+    });
 
     try {
       const response = await axios.post(`${Config.apiUrl}/transaction`, {

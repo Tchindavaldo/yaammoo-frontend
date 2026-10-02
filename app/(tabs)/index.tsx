@@ -34,7 +34,17 @@ import { isHomeListAvailable } from "@/modules/home-list";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
+import {
+  clearVisibleShops,
+  setVisibleShops,
+} from "@/src/services/analytics/shopImpressions";
+import { homePageOf } from "@/src/services/analytics/homePages";
+import { track } from "@/src/services/analytics/analytics";
+
+/** Boutique « vue » : visible a 50 % au moins (meme seuil que la liste native). */
+const SHOP_VIEWABILITY = { itemVisiblePercentThreshold: 50 };
+const seenBanners = new Set<string>();
 
 /**
  * Home client : en-tete, banniere + boutiques paginees (liste NATIVE iOS quand
@@ -132,6 +142,7 @@ export default function HomeScreen() {
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
+      track("banner_click", { bannerId: String(banner.id) });
       // Une bannière `bonus` ouvre la sheet Bonus (Settings → Bonus et parrainage).
       if (banner.type === "bonus") {
         router.push("/(tabs)/settings?section=bonus");
@@ -139,6 +150,35 @@ export default function HomeScreen() {
     },
     [router],
   );
+
+  // Statistiques (FlashList) : boutiques visibles a 50 %, rang = index - banniere.
+  const shopCountRef = React.useRef(0);
+  shopCountRef.current = fastFoods.length;
+  const pageSizeRef = React.useRef(homeSettings.pageSize);
+  pageSizeRef.current = homeSettings.pageSize;
+  const handleViewableShops = useCallback(
+    ({ viewableItems }: { viewableItems: { item: any; index: number | null }[] }) => {
+      const shops = viewableItems.filter(
+        (v) => v.index != null && v.index >= 1 && v.index - 1 < shopCountRef.current && v.item?.id,
+      );
+      setVisibleShops(
+        shops.map((v) => String(v.item.id)),
+        shops.map((v) => (v.index as number) - 1),
+        (p) => homePageOf(p, pageSizeRef.current),
+      );
+    },
+    [],
+  );
+  // Bannière affichée en tête du carrousel : une vue par bannière et par lancement
+  // (les suivantes ne sont vues qu'au glissé, que la liste ne signale pas).
+  const firstBannerId = banners[0]?.id;
+  useEffect(() => {
+    if (firstBannerId == null || seenBanners.has(String(firstBannerId))) return;
+    seenBanners.add(String(firstBannerId));
+    track("banner_view", { bannerId: String(firstBannerId) });
+  }, [firstBannerId]);
+  // Home quitte (autre onglet) : les boutiques visibles sont closes.
+  useFocusEffect(useCallback(() => clearVisibleShops, []));
 
   const { firstScreenUris, listData, drawDistance } = useHomeListData({
     fastFoods,
@@ -252,6 +292,8 @@ export default function HomeScreen() {
             onScroll={handleScroll}
             scrollEventThrottle={64}
             onMomentumScrollEnd={handleMomentumEnd}
+            viewabilityConfig={SHOP_VIEWABILITY}
+            onViewableItemsChanged={handleViewableShops}
             contentContainerStyle={[
               styles.listContent,
               {

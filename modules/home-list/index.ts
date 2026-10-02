@@ -144,6 +144,11 @@ export type HomeListViewProps = ViewProps & {
   onEdgeChange: (e: Event<{ atTop: boolean; nearBottom: boolean }>) => void;
   /** Sonde de fluidite (TestFlight seulement) : `kind: "scroll"` (par geste), `"apply"` (par page) ou `"preheat"`. */
   onDiagnostics: (e: Event<Record<string, any>>) => void;
+  /**
+   * Statistiques : boutiques visibles a 50 % au moins (rang dans la liste),
+   * envoye quand l'ensemble change. Absent d'une build anterieure.
+   */
+  onVisibleShops?: (e: Event<{ ids: string[]; positions: number[] }>) => void;
 };
 
 export type HomeListHandle = {

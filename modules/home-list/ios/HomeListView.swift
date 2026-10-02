@@ -27,6 +27,9 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   let onEdgeChange = EventDispatcher()
   /** Rapports de fluidite (scroll, pages) : journal de l'iPhone, cote JS. */
   let onDiagnostics = EventDispatcher()
+  /** Statistiques : boutiques visibles a >= 50 %, envoyees quand l'ensemble change. */
+  let onVisibleShops = EventDispatcher()
+  private var visibleShopIds: [String] = []
   private let perf = HLPerfMonitor()
   /** Rangees creees au repos avant le premier scroll (prop `preheatScreens`). */
   let preheater = HLPreheater()
@@ -310,7 +313,11 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     lastPatch = nil
     // Fin du chargement sans boutique : la banniere attendait peut-etre la liste.
     tryOpenFirstGate()
-    DispatchQueue.main.async { [weak self] in self?.checkEndReached() }
+    DispatchQueue.main.async { [weak self] in
+      self?.checkEndReached()
+      // Fantomes remplis sur place, sans scroll : de nouvelles boutiques a l'ecran.
+      self?.checkVisibleShops()
+    }
   }
 
   // MARK: - Defilement
@@ -329,6 +336,31 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       onEdgeChange(["atTop": top, "nearBottom": near])
     }
     checkEndReached()
+    checkVisibleShops()
+  }
+
+  /**
+   Boutiques visibles a 50 % au moins dans la zone VISIBLE (`bounds.height`,
+   pas le cadre allonge du prechauffage). Seules les cellules affichees sont
+   parcourues ; l'evenement ne part que si l'ensemble change.
+   */
+  private func checkVisibleShops() {
+    guard let cv = collection else { return }
+    let top = cv.contentOffset.y
+    let bottom = top + bounds.height
+    let section = Section.rows.rawValue
+    var hits: [(Int, String)] = []
+    for ip in cv.indexPathsForVisibleItems where ip.section == section && ip.item < rows.count {
+      guard case .shop(let s) = rows[ip.item],
+            let f = cv.layoutAttributesForItem(at: ip)?.frame, f.height > 0 else { continue }
+      let shown = min(f.maxY, bottom) - max(f.minY, top)
+      if shown / f.height >= 0.5 { hits.append((ip.item, s.id)) }
+    }
+    hits.sort { $0.0 < $1.0 }
+    let ids = hits.map { $0.1 }
+    guard ids != visibleShopIds else { return }
+    visibleShopIds = ids
+    onVisibleShops(["ids": ids, "positions": hits.map { $0.0 }])
   }
 
   // Sonde de fluidite : un rapport par geste (doigt pose → fin de l'elan).

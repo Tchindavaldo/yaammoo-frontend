@@ -26,6 +26,7 @@ import {
   useAppVersion,
 } from "@/src/features/appVersion/context/AppVersionContext";
 import { useSocketEvents } from "@/src/services/useSocketEvents";
+import { useAnalytics } from "@/src/services/analytics/useAnalytics";
 import { useOtaUpdates } from "@/src/services/useOtaUpdates";
 import { useNotificationSetup } from "@/src/features/notifications/hooks/useNotificationSetup";
 import { useUserLocationSync } from "@/src/features/location/hooks/useUserLocationSync";
@@ -94,6 +95,8 @@ function AppContent() {
   const notifSetupUid = useRef<string | null>(null);
 
   useSocketEvents();
+  // Statistiques d'usage (sessions, ecrans, file d'envoi) : voir analytics.md.
+  useAnalytics();
   const { setup: setupNotifications } = useNotificationSetup();
 
   // Connecté = Firebase user présent ET profil chargé.

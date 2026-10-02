@@ -7,11 +7,11 @@
  * Bandeau « Localisation désactivée » du home (`HomeLocationBanner`) quand la
  * permission n'est pas accordée. false = jamais de bandeau.
  */
-export const SHOW_LOCATION_BANNER = true;
+export const SHOW_LOCATION_BANNER = false;
 
 /**
  * Pilule du header home (`useCurrentPlaceLabel`) : true = lieu réel
  * (« Quartier, Arrondissement ») partout, même hors de Banganté ; false = hors
  * de Banganté, « Banganté, Cameroun » (seule zone desservie).
  */
-export const SHOW_PLACE_OUTSIDE_SERVICE_AREA = true;
+export const SHOW_PLACE_OUTSIDE_SERVICE_AREA = false;

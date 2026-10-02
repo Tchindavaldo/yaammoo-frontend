@@ -49,7 +49,7 @@ export const CARD_BOTTOM_STYLE: string = "blur2"; // "blur" | "blur2" | "v7"
  * 5 barre flottante, 7 jauge ; libelles communs dans `aere/labels.ts`).
  * Transmis aussi a la liste native (prop `homeDesign`), donc changeable par OTA.
  */
-export const HOME_DESIGN: string = "aere"; // "actuel" | "aere"
+export const HOME_DESIGN: string = "actuel"; // "actuel" | "aere"
 export const IS_AERE = HOME_DESIGN === "aere";
 
 /** Fonds du variant 5 : un poster different par menu, en boucle sur l'index. */

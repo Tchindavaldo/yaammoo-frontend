@@ -1,0 +1,62 @@
+# Build Android de production compile SUR LE RUNNER GitHub (`eas build --local`),
+# sans la file d'attente gratuite d'Expo, puis envoi direct sur le Play Store.
+# Expo ne sert qu'a fournir le keystore et le versionCode (appVersionSource
+# remote + autoIncrement) : rien a commiter apres un build.
+#
+# Prerequis (Settings > Secrets and variables > Actions) :
+# - `EXPO_TOKEN` : deja utilise par eas-update.yml.
+# - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` : contenu du JSON du compte de service
+#   Google Play (le meme que celui utilise par `eas submit`).
+name: Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Piste Play Store
+        type: choice
+        options: [production, beta, alpha, internal]
+        default: production
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # `packager: npm` : yarn est absent des runners ubuntu recents.
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      # Le profil `production` charge les variables EAS `production`
+      # (EXPO_PUBLIC_*), `.env` etant absent du runner.
+      - run: eas build --platform android --profile production --local --non-interactive --output app.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-aab
+          path: app.aab
+
+      - uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rauval.yaammoo
+          releaseFiles: app.aab
+          track: ${{ inputs.track }}
+          status: completed

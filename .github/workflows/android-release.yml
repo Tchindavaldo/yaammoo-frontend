@@ -7,6 +7,9 @@
 # - `EXPO_TOKEN` : deja utilise par eas-update.yml.
 # - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` : contenu du JSON du compte de service
 #   Google Play (le meme que celui utilise par `eas submit`).
+# - `SENTRY_AUTH_TOKEN` : meme valeur que dans `.env`.
+#
+# La branche a builder se choisit dans « Use workflow from » (Run workflow).
 name: Android Release
 
 on:
@@ -46,7 +49,11 @@ jobs:
 
       # Le profil `production` charge les variables EAS `production`
       # (EXPO_PUBLIC_*), `.env` etant absent du runner.
+      # SENTRY_AUTH_TOKEN : la tache Gradle d'upload des sourcemaps Sentry
+      # echoue sans lui (variable EAS secrete, illisible hors serveurs Expo).
       - run: eas build --platform android --profile production --local --non-interactive --output app.aab
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - uses: actions/upload-artifact@v4
         with:

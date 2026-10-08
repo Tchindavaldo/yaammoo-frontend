@@ -19,7 +19,7 @@ import React, {
   useState,
 } from "react";
 import { AppState, Image, StyleSheet } from "react-native";
-import { HOME_DESIGN, V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
+import { HEADER_DESIGN, HOME_DESIGN, V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
 import {
   DELIVERY_ETA,
   feeText,
@@ -387,6 +387,7 @@ export const NativeHomeList: React.FC<Props> = ({
       cardBlurMode={CARD_BLUR_MODE}
       bannerAutoplay={BANNER_AUTOPLAY}
       homeDesign={HOME_DESIGN === "aere" ? "aere" : "actuel"}
+      headerDesign={HEADER_DESIGN === "aere" ? "aere" : "actuel"}
       preheatScreens={PREHEAT_SCREENS}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}

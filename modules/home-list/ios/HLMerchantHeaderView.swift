@@ -104,7 +104,7 @@ final class HLMerchantHeaderView: UIView {
     nameLabel.text = shop.name
     // Distance (`MerchantHeader.tsx` : « Ouvert · 1,2 km », distance en gris).
     statusLabel.attributedText = statusText(shop.distance)
-    let aere = HLDesign.aere
+    let aere = HLDesign.headerAere
     [ordersChip, votesChip, ordersChipBg, votesChipBg, starsLabel].forEach { $0.isHidden = aere }
     [aereScore, aereReviews, aereReviewsBg].forEach { $0.isHidden = !aere }
     aereDelivery.isHidden = !aere || shop.deliveryLabel.isEmpty

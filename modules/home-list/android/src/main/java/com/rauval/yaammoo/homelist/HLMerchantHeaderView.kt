@@ -137,7 +137,7 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     nameLabel.text = shop.name
     // Distance (`MerchantHeader.tsx` : « Ouvert · 1,2 km », distance en gris).
     statusLabel.text = statusText(shop.distance)
-    val aere = HLDesign.aere
+    val aere = HLDesign.headerAere
     for (v in listOf(ordersChip, votesChip, starsLabel)) v.visibility = if (aere) View.INVISIBLE else View.VISIBLE
     for (v in listOf(aereScore, aereReviews)) v.visibility = if (aere) View.VISIBLE else View.INVISIBLE
     val showDelivery = aere && shop.deliveryLabel.isNotEmpty()

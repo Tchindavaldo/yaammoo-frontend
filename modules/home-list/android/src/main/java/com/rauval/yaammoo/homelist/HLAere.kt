@@ -16,6 +16,8 @@ import kotlin.math.ceil
 object HLDesign {
   /** Prop `homeDesign`, recue au montage avant la creation des cartes. */
   var aere = false
+  /** Prop `headerDesign` : note de l'en-tete boutique, independante des cartes. */
+  var headerAere = false
 }
 
 /** Couleurs `DS` utilisees par le design aere. */

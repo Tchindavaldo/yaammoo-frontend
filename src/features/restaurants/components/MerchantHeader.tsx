@@ -7,7 +7,7 @@ import { ShopSkeleton } from './ShopSkeleton';
 import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
-import { IS_AERE } from "./designs/item/config";
+import { IS_HEADER_AERE } from "./designs/item/config";
 import { useShopDeliveryLabel } from "../utils/deliveryUtils";
 
 interface MerchantHeaderProps {
@@ -200,7 +200,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             </View>
           </View>
         </View>
-        {IS_AERE ? (
+        {IS_HEADER_AERE ? (
           // Design aere : etoile + note /5 et nombre d'avis en pastille grise,
           // puis la prochaine livraison dessous (rien sans livraison).
           <View style={styles.ratingBlock}>

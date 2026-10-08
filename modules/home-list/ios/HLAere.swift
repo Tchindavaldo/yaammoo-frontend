@@ -11,6 +11,8 @@ import UIKit
 enum HLDesign {
   /** Prop `homeDesign`, recue au montage avant la creation des cellules. */
   static var aere = false
+  /** Prop `headerDesign` : note de l'en-tete boutique, independante des cartes. */
+  static var headerAere = false
 }
 
 /** Couleurs `DS` utilisees par le design aere. */

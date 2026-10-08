@@ -44,13 +44,21 @@ export const SHOW_AVAILABILITY = true;
 export const CARD_BOTTOM_STYLE: string = "blur2"; // "blur" | "blur2" | "v7"
 
 /**
- * Design des cartes 4 / 5 / 7 du home et de la note de l'en-tete boutique :
+ * Design des cartes 4 / 5 / 7 du home (note de l'en-tete : `HEADER_DESIGN`) :
  * "actuel" (d'origine) ou "aere" (dossier `aere/` : 4 stock en segments,
  * 5 barre flottante, 7 jauge ; libelles communs dans `aere/labels.ts`).
  * Transmis aussi a la liste native (prop `homeDesign`), donc changeable par OTA.
  */
-export const HOME_DESIGN: string = "actuel"; // "actuel" | "aere"
+export const HOME_DESIGN: string = "aere"; // "actuel" | "aere"
 export const IS_AERE = HOME_DESIGN === "aere";
+
+/**
+ * Note de l'en-tete boutique (`MerchantHeader`), independante des cartes :
+ * "actuel" (pastilles commandes / avis + 5 etoiles) ou "aere" (« 4.5/5 · N
+ * avis » + livraison). Liste native : prop `headerDesign`, changeable par OTA.
+ */
+export const HEADER_DESIGN: string = "actuel"; // "actuel" | "aere"
+export const IS_HEADER_AERE = HEADER_DESIGN === "aere";
 
 /** Fonds du variant 5 : un poster different par menu, en boucle sur l'index. */
 export const V5_BACKGROUNDS = [

@@ -133,6 +133,12 @@ export type HomeListViewProps = ViewProps & {
    */
   homeDesign: HomeListDesign;
   /**
+   * Design de la note de l'en-tete boutique, independant des cartes, recu au
+   * montage comme `homeDesign`. Ignore par une build anterieure, qui suit
+   * `homeDesign`.
+   */
+  headerDesign: HomeListDesign;
+  /**
    * Rangees sous l'ecran creees au repos avant le premier scroll, en ecrans
    * de hauteur (0 = coupe). Ignore par une build qui ne l'embarque pas.
    */

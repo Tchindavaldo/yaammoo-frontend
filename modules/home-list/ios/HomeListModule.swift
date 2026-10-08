@@ -78,6 +78,11 @@ public final class HomeListModule: Module {
         HLDesign.aere = design == "aere"
       }
 
+      // Note de l'en-tete boutique (`actuel` | `aere`), independante des cartes.
+      Prop("headerDesign") { (_: HomeListView, design: String) in
+        HLDesign.headerAere = design == "aere"
+      }
+
       OnViewDidUpdateProps { (view: HomeListView) in
         view.applyProps()
       }

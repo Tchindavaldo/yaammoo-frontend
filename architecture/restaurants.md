@@ -190,6 +190,10 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   « 4.5/5 ») sont calculés en JS par `aere/labels.ts` et envoyés dans chaque
   menu : le natif n'a aucune règle. Une build antérieure ignore ces champs et
   garde le design actuel.
+- **Note de l'en-tête boutique (`headerDesign`, OTA)** : `HEADER_DESIGN` de
+  `item/config.ts`, indépendant des cartes (`HLDesign.headerAere`, lu par
+  `HLMerchantHeaderView`). Ex. cartes `aere` + en-tête `actuel` (pastilles +
+  étoiles). Une build antérieure l'ignore et suit `homeDesign`.
 - **Réglages ajustables par OTA** : `ICON_ROLES` (rôle lu par le Swift -> nom
   Ionicons) et `FONTS` (nom PostScript par graisse, `null` = police système) :
   le Swift ne fixe ni icône ni police.

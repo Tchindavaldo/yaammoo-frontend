@@ -91,6 +91,8 @@ src/features/
 │   ├── hooks/useCheckout.ts             # État commande, prix, validation, verdict paiement
 │   ├── services/verifyBonusCode.ts      # POST /bonus/verify — vérif code bonus (lecture seule)
 │   ├── utils/cartDeliveryTotal.ts       # Total panier + mutualisation frais de livraison
+│   ├── utils/menuPrices.ts              # N prix d'un plat (menuPriceOptions / menuPriceAt / menuPriceDescription)
+│   ├── utils/checkoutPrices.ts          # Montants du checkout home (computeCheckoutPrices)
 │   └── components/                      # BottomSheets (home, cart) + overlays paiement
 │       ├── CheckoutSheet / CartCheckoutSheet
 │       ├── CheckoutPaymentOverlay       # Capsule BAS (saisie n° + étapes paiement)
@@ -133,6 +135,9 @@ src/features/
 │   ├── utils/orderGroupKey.ts           # Clé de groupage d'une cmd (client + date + créneau/zone)
 │   ├── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
 │   │                                    #   (Livraison / Commande / Montant), gestion menus, portefeuille
+│   ├── components/menu-form/            # Modules du formulaire plat (N prix, extras, photos, stock, modal)
+│   ├── components/drinks/               # Boissons de la BOUTIQUE (Settings → Boutique → Boissons,
+│   │                                    #   route app/shop/drinks.tsx). Détail : architecture/menu.md
 │   ├── components/broadcast/            # Notifications envoyées aux clients (Settings → Boutique →
 │   │                                    #   Notifications). Détail : architecture/merchant-broadcast.md
 │   └── components/support/              # Chat MARCHAND (Settings → Boutique → Messages) —

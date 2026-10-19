@@ -1,4 +1,5 @@
 import React from 'react';
+import { menuPriceDescription, menuPriceOptions } from "../../utils/menuPrices";
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Menu } from '@/src/types';
@@ -38,9 +39,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
   // miroirs aplatis de prices[].description (normalizeMenu côté home, mapping
   // du panier). Rien ne s'affiche si la description du prix est absente.
   const priceDescription =
-    [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
-      selectedPriceIndex - 1
-    ] || "";
+    menuPriceDescription(menu, selectedPriceIndex);
 
   return (
     <View style={styles.detailContainer}>
@@ -59,24 +58,15 @@ export const DetailTab: React.FC<DetailTabProps> = ({
 
       {/* Price/Size Chips */}
       <View style={[styles.priceChipsContainer, styles.borderLight]}>
-        <PriceChip 
-          isActive={selectedPriceIndex === 1} 
-          label="Small" 
-          price={menu.prix1} 
-          onPress={() => setSelectedPriceIndex(1)} 
-        />
-        <PriceChip 
-          isActive={selectedPriceIndex === 2} 
-          label="Med" 
-          price={menu.prix2} 
-          onPress={() => setSelectedPriceIndex(2)} 
-        />
-        <PriceChip 
-          isActive={selectedPriceIndex === 3} 
-          label="Large" 
-          price={menu.prix3} 
-          onPress={() => setSelectedPriceIndex(3)} 
-        />
+        {menuPriceOptions(menu).map((opt) => (
+          <PriceChip
+            key={opt.index}
+            isActive={selectedPriceIndex === opt.index}
+            label={opt.description || `Prix ${opt.index}`}
+            price={opt.price}
+            onPress={() => setSelectedPriceIndex(opt.index)}
+          />
+        ))}
       </View>
 
       {/* Price Summary Grid */}

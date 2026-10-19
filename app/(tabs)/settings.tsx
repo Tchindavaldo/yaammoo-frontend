@@ -183,6 +183,12 @@ export default function SettingsScreen() {
                 title="Menu"
                 onPress={() => router.push("/shop/menu")}
               />
+              {/* Boissons de la boutique (proposées avec tous les plats ou certains). */}
+              <SettingGridItem
+                icon="wine-outline"
+                title="Boissons"
+                onPress={() => router.push("/shop/drinks")}
+              />
               <SettingGridItem
                 icon="people-outline"
                 title="Personnel"

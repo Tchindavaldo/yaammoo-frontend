@@ -1,15 +1,15 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   formatSizePrice,
   HeroProps,
   SECTION_HEIGHT,
-  SIZES,
 } from "../detail-hero/heroShared";
 import { amount, PALETTE } from "../detail-hero/recapTiles";
 import { CartBanner, CartHeroImages, CartTile } from "./cartRecapTiles";
 import { DS } from "@/src/theme/ds";
+import { menuPriceOptions } from "../../../utils/menuPrices";
 
 /**
  * Recap photo du checkout PANIER — copie dediee (R16) de
@@ -30,9 +30,8 @@ export const CartRecapBody: React.FC<HeroProps> = ({
   const totalIndex = recap.length - 1;
   const total = recap[totalIndex];
   const cells = recap.slice(0, totalIndex);
-  // Seules les tailles definies (prix > 0) ; un prix unique = « Prix ».
-  const prices = [menu.prix1, menu.prix2, menu.prix3];
-  const sizes = SIZES.filter(({ index }) => prices[index - 1] > 0);
+  // Prix en nombre VARIABLE (prices[]) ; un prix unique = « Prix ».
+  const sizes = menuPriceOptions(menu);
   const single = sizes.length === 1;
 
   return (
@@ -52,12 +51,17 @@ export const CartRecapBody: React.FC<HeroProps> = ({
       />
 
       <View style={styles.chipsZone}>
-        {sizes.map(({ label, index }) => {
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsRow}
+        >
+        {sizes.map(({ index }) => {
           const on = selectedPriceIndex === index;
           const name = single ? "Prix" : `Prix ${index}`;
           return (
             <TouchableOpacity
-              key={label}
+              key={index}
               activeOpacity={0.85}
               onPress={() => setSelectedPriceIndex(index)}
               style={[styles.chip, { backgroundColor: on ? p.chipOn : p.chip }]}
@@ -73,6 +77,7 @@ export const CartRecapBody: React.FC<HeroProps> = ({
             </TouchableOpacity>
           );
         })}
+        </ScrollView>
       </View>
 
       <View style={styles.chipsGap} />
@@ -105,12 +110,8 @@ const styles = StyleSheet.create({
   },
   chipsGap: { height: 6 },
   topShade: { position: "absolute", left: 0, right: 0, top: 0, height: 80 },
-  chipsZone: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 6,
-  },
+  chipsZone: { flex: 1, justifyContent: "flex-end" },
+  chipsRow: { flexDirection: "row", gap: 6 },
   chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
   chipText: { fontSize: 11, fontWeight: "700" },
   tiles: { flexDirection: "row", gap: 6 },

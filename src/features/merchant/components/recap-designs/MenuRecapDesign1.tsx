@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "@/src/theme";
-import { MenuDraft, namedItems } from "./MenuDraft.types";
+import { MenuDraft, namedItems, validPrices } from "./MenuDraft.types";
 
 const ORANGE = Theme.colors.primary;
 
@@ -12,12 +12,14 @@ const ORANGE = Theme.colors.primary;
  * Design 1 — Combo (orange chaleureux).
  * Carte food app : vignette ronde + nom + statut sur un bandeau orange dégradé,
  * gros prix d'entrée à droite, puis trois "tuiles combo" teintées orange
- * (prix / extras / boissons) et une barre stock. Brèveté totale : compteurs
+ * (photos / extras / nombre de prix) et une barre stock. Brèveté totale : compteurs
  * + 2 noms résumés, jamais de liste.
  */
 export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
   const extras = namedItems(draft.extras);
-  const drinks = namedItems(draft.drinks);
+  const prices = validPrices(draft);
+  // N prix : 3 tuiles max, la 3e résume le reste (« +N »).
+  const shownPrices = prices.length > 3 ? prices.slice(0, 2) : prices;
   const cover = draft.images[0];
   const isAvailable = draft.availability === "available";
 
@@ -74,25 +76,29 @@ export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
         </View>
       </LinearGradient>
 
-      {/* Ligne 1 — les 3 prix (même structure que la ligne combo, adaptée) */}
+      {/* Ligne 1 — les prix (N), même structure que la ligne combo */}
       <Text style={styles.sectionLabel}>Prix</Text>
       <View style={styles.tilesNoTop}>
-        {[0, 1, 2].map((i) => {
-          const price = draft.prix[i];
-          const has = price && Number(price) > 0;
-          return (
-            <Tile
-              key={i}
-              icon="pricetag"
-              count=""
-              title={has ? `${price}F` : "—"}
-              sub={has ? draft.desc[i] || "—" : "—"}
-            />
-          );
-        })}
+        {shownPrices.map((p, i) => (
+          <Tile
+            key={i}
+            icon="pricetag"
+            count=""
+            title={`${p.price}F`}
+            sub={p.description || "—"}
+          />
+        ))}
+        {prices.length > 3 && (
+          <Tile
+            icon="pricetags"
+            count=""
+            title={`+${prices.length - 2}`}
+            sub={brief(prices.slice(2).map((p) => `${p.price}F`))}
+          />
+        )}
       </View>
 
-      {/* Ligne 2 — combo photos / extras / boissons */}
+      {/* Ligne 2 — combo photos / extras / prix (les boissons sont gérées par la boutique) */}
       <Text style={styles.sectionLabel}>Détails</Text>
       <View style={styles.tilesNoTop}>
         <Tile
@@ -102,7 +108,7 @@ export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
           sub={draft.images.length > 0 ? "ajoutées" : "aucune"}
         />
         <Tile icon="add-circle" count={extras.length} title="Extras" sub={brief(extras.map((e) => e.name))} />
-        <Tile icon="cafe" count={drinks.length} title="Boissons" sub={brief(drinks.map((d) => d.name))} />
+        <Tile icon="pricetag" count={prices.length} title="Prix" sub={brief(prices.map((p) => p.description).filter(Boolean))} />
       </View>
     </View>
   );

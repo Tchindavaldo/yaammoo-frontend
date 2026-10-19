@@ -295,6 +295,7 @@ export default function OrdersScreen() {
       optionPrix1: p[0]?.description || "Standard",
       optionPrix2: p[1]?.description || "Medium",
       optionPrix3: p[2]?.description || "Large",
+      prices: p,
       image: orderToEdit.menu.image || orderToEdit.menu.coverImage || "",
       disponibilite: "active",
       images: orderToEdit.menu.images || [

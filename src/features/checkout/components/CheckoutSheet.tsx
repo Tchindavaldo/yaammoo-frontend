@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { menuPriceDescription } from "../utils/menuPrices";
 import {
   View,
   Modal,
@@ -466,9 +467,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             menu={menu}
             priceDescription={
               menu
-                ? [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
-                    selectedPriceIndex - 1
-                  ] || ""
+                ? menuPriceDescription(menu, selectedPriceIndex)
                 : ""
             }
             menuPrice={menuPrice}

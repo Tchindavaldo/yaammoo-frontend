@@ -6,6 +6,8 @@ import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
 import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
+import { menuPriceOptions } from "../utils/menuPrices";
+import { computeCheckoutPrices } from "../utils/checkoutPrices";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData, user } = useAuth();
@@ -168,63 +170,10 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     }
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
-  const prices = useMemo(() => {
-    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0, isDeliveryFree: false, displayDeliveryPrice: 0, displayTotal: 0 };
-
-    let basePrice = menu.prix1;
-    if (selectedPriceIndex === 2 && menu.prix2 > 0) basePrice = menu.prix2;
-    if (selectedPriceIndex === 3 && menu.prix3 > 0) basePrice = menu.prix3;
-
-    const menuPrice = basePrice * quantity;
-    const extrasPrice = selectedPackaging.reduce((acc, p) => acc + p.prix, 0);
-    const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix * (drinkQuantities[d.type] || 1), 0);
-    // Prix de livraison selon le type actif, indépendant entre express et période.
-    // Le prix vient EXCLUSIVEMENT de la zone/période choisie : aucun fallback.
-    // Tant que l'utilisateur n'a pas sélectionné de lieu/zone, deliveryPrice = 0.
-    // - express  → prix de la zone express sélectionnée (delivery.expressPrix)
-    // - standard → prix de la période/créneau sélectionné (delivery.prix)
-    const periodPrice =
-      delivery.prix != null && Number(delivery.prix) > 0
-        ? Number(delivery.prix)
-        : 0;
-    const expressPrice =
-      delivery.expressPrix != null && Number(delivery.expressPrix) > 0
-        ? Number(delivery.expressPrix)
-        : 0;
-    let deliveryPrice = 0;
-    if (delivery.statut) {
-      if (delivery.type === "express") {
-        deliveryPrice = expressPrice;
-      } else if (delivery.type === "standard") {
-        deliveryPrice = periodPrice;
-      }
-    }
-
-    const total = menuPrice + extrasPrice + drinksPrice + deliveryPrice;
-
-    // Livraison offerte : offre backend active OU code bonus appliqué.
-    // Le VRAI prix de livraison reste envoyé dans `delivery.prix` (le livreur
-    // doit être payé), mais le montant débité (`displayTotal`) l'exclut.
-    const deliveryOffer = (menu as any)?.deliveryOffer;
-    const isDeliveryFree =
-      delivery.statut &&
-      delivery.type !== "aucune" &&
-      (!!deliveryOffer?.active || !!delivery.bonusCode);
-
-    const displayDeliveryPrice = isDeliveryFree ? 0 : deliveryPrice;
-    const displayTotal = isDeliveryFree ? total - deliveryPrice : total;
-
-    return {
-      menuPrice,
-      extrasPrice,
-      drinksPrice,
-      deliveryPrice,
-      total,
-      isDeliveryFree,
-      displayDeliveryPrice,
-      displayTotal,
-    };
-  }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery]);
+  const prices = useMemo(
+    () => computeCheckoutPrices({ menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery }),
+    [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery],
+  );
 
   const createOrder = useCallback((status: string = "pendingToBuy"): any | null => {
     if (!menu || !userData) return null;
@@ -251,14 +200,6 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     if (drinkData.length === 0)
       drinkData.push({ name: "Aucune", status: false, prix: 0, quantite: 0 });
 
-    // Calcul du prix sélectionné
-    let selectedPrice = menu.prix1;
-    if (selectedPriceIndex === 2 && menu.prix2 > 0) selectedPrice = menu.prix2;
-    if (selectedPriceIndex === 3 && menu.prix3 > 0) selectedPrice = menu.prix3;
-
-    let selectedDescription = menu.optionPrix1 || "Standard";
-    if (selectedPriceIndex === 2) selectedDescription = menu.optionPrix2 || "Medium";
-    if (selectedPriceIndex === 3) selectedDescription = menu.optionPrix3 || "Large";
 
     const mappedMenu = {
       id: (menu as any).id || (menu as any)._id || "unknown",
@@ -270,19 +211,12 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       // `rawPrice` (prix brut hors marge) accompagne chaque taille quand le
       // backend l'a fourni sur le menu. `menu.extra`/`menu.drink` ne sont plus
       // envoyés : le backend les a rendus optionnels et détient déjà le menu.
-      prices: (
-        [
-          [menu.prix1, menu.optionPrix1 || "Standard", (menu as any).rawPrice1],
-          [menu.prix2, menu.optionPrix2 || "Medium", (menu as any).rawPrice2],
-          [menu.prix3, menu.optionPrix3 || "Large", (menu as any).rawPrice3],
-        ] as Array<[number, string, number | undefined]>
-      )
-        .filter(([price], i) => i === 0 || price > 0)
-        .map(([price, description, rawPrice]) => ({
-          price,
-          description,
-          ...(rawPrice != null && { rawPrice }),
-        })),
+      // N prix (prices[]) : l'ordre est conservé, `selectedPriceIndex` y renvoie.
+      prices: menuPriceOptions(menu).map(({ price, description, rawPrice }) => ({
+        price,
+        description,
+        ...(rawPrice != null && { rawPrice }),
+      })),
       status: menu.disponibilite === "active" || menu.disponibilite === "Disponible" ? "available" : "unavailable",
     };
 

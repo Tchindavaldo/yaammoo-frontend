@@ -10,6 +10,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { menuPriceAt } from "../../../utils/menuPrices";
 
 /**
  * Briques communes du bloc image + tailles + recap du checkout HOME
@@ -30,12 +31,6 @@ export const ACCENT = DS.accent;
 export const SOFT_ACCENT = "#d9774f";
 export const INK = "#0f172a";
 export const MUTED = "#94a3b8";
-
-export const SIZES = [
-  { label: "Small", index: 1 },
-  { label: "Med", index: 2 },
-  { label: "Large", index: 3 },
-] as const;
 
 /** Une case du recap (Menu, Boisson, Extras, Livraison, Total). */
 export interface RecapCell {
@@ -61,9 +56,9 @@ export interface HeroProps {
   width: number;
 }
 
-/** Prix d'une taille (1, 2, 3), formate comme l'ancien `PriceChip`. */
+/** Prix d'une ligne de `prices[]` (index 1-based), formate comme l'ancien `PriceChip`. */
 export const formatSizePrice = (menu: Menu, index: number) => {
-  const price = [menu.prix1, menu.prix2, menu.prix3][index - 1];
+  const price = menuPriceAt(menu, index)?.price || 0;
   return price > 0 ? `${price} F` : "no ref";
 };
 

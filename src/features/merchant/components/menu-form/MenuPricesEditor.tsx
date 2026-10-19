@@ -1,0 +1,159 @@
+import { Theme } from "@/src/theme";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { DraftPrice } from "../recap-designs/MenuDraft.types";
+import { styles } from "./AddMenuSheet.styles";
+import { DESC_MAX, DESC_MIN } from "./menuFormConstants";
+
+/**
+ * Prix du plat en nombre VARIABLE : un onglet par prix (« Prix 1 * », « Prix 2 »…),
+ * « + » pour en ajouter, poubelle pour retirer le prix sélectionné (sauf le 1er).
+ * Le prix sélectionné pilote un couple prix + description sur la même ligne.
+ */
+interface Props {
+  prices: DraftPrice[];
+  setPrices: (next: DraftPrice[]) => void;
+  selectedIdx: number;
+  setSelectedIdx: (idx: number) => void;
+  fieldStyle: (field: string) => any[];
+  focusProps: (field: string) => { onFocus: () => void; onBlur: () => void };
+  clearError: (field: string) => void;
+}
+
+const PLACEHOLDERS = [
+  ["2000", "Ex: 1 Burger + 1 Frites + 1 Boisson"],
+  ["3500", "Ex: 2 Burgers + 2 Frites + 2 Boissons"],
+  ["5000", "Ex: Seau de 8 pièces + frites"],
+];
+
+export const MenuPricesEditor: React.FC<Props> = ({
+  prices,
+  setPrices,
+  selectedIdx,
+  setSelectedIdx,
+  fieldStyle,
+  focusProps,
+  clearError,
+}) => {
+  // Hauteur auto de la description (par prix) : suit le contenu, plafonnée.
+  const [descHeights, setDescHeights] = useState<number[]>([]);
+  // Hauteur mesurée de l'input prix → hauteur min de la description (même ligne).
+  const [priceColH, setPriceColH] = useState(0);
+  const current = prices[selectedIdx] || { price: "", description: "" };
+  const [pricePh, descPh] = PLACEHOLDERS[Math.min(selectedIdx, 2)];
+
+  const update = (patch: Partial<DraftPrice>) => {
+    const next = [...prices];
+    next[selectedIdx] = { ...current, ...patch };
+    setPrices(next);
+  };
+
+  const add = () => {
+    setPrices([...prices, { price: "", description: "" }]);
+    setSelectedIdx(prices.length);
+  };
+
+  const remove = () => {
+    if (selectedIdx === 0) return;
+    setPrices(prices.filter((_, i) => i !== selectedIdx));
+    setDescHeights((h) => h.filter((_, i) => i !== selectedIdx));
+    setSelectedIdx(selectedIdx - 1);
+  };
+
+  return (
+    <>
+      <View style={[styles.priceHeaderRow, { marginTop: Theme.spacing.lg }]}>
+        <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
+          {selectedIdx === 0
+            ? "Prix 1 (obligatoire)"
+            : `Prix ${selectedIdx + 1} (optionnel)`}
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipScroll}
+          contentContainerStyle={[styles.priceTabs, { marginLeft: "auto" }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {prices.map((_, idx) => (
+            <TouchableOpacity
+              key={idx}
+              style={[styles.priceTab, selectedIdx === idx && styles.priceTabActive]}
+              onPress={() => setSelectedIdx(idx)}
+            >
+              <Text
+                style={[
+                  styles.priceTabText,
+                  selectedIdx === idx && styles.priceTabTextActive,
+                ]}
+              >
+                {idx === 0 ? "Prix 1 *" : `Prix ${idx + 1}`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.priceTab} onPress={add}>
+            <Ionicons name="add" size={14} color={Theme.colors.gray[600]} />
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      <View style={styles.priceDescRow}>
+        <TextInput
+          style={[styles.input, styles.priceCol, ...fieldStyle(`prix${selectedIdx}`)]}
+          placeholder={pricePh}
+          placeholderTextColor={Theme.colors.gray[300]}
+          keyboardType="numeric"
+          value={current.price}
+          onChangeText={(t) => {
+            update({ price: t });
+            clearError(`prix${selectedIdx}`);
+          }}
+          onLayout={(e) => {
+            const h = e.nativeEvent.layout.height;
+            if (h && h !== priceColH) setPriceColH(h);
+          }}
+          {...focusProps(`prix${selectedIdx}`)}
+        />
+        <TextInput
+          style={[
+            styles.input,
+            styles.descCol,
+            // Hauteur auto : min = hauteur de l'input prix, puis scroll interne.
+            {
+              height: Math.min(
+                DESC_MAX,
+                Math.max(priceColH || DESC_MIN, descHeights[selectedIdx] || 0),
+              ),
+            },
+            ...fieldStyle(`desc${selectedIdx}`),
+          ]}
+          placeholder={descPh}
+          placeholderTextColor={Theme.colors.gray[300]}
+          value={current.description}
+          onChangeText={(t) => {
+            update({ description: t });
+            clearError(`desc${selectedIdx}`);
+          }}
+          onContentSizeChange={(e) => {
+            const h = e.nativeEvent.contentSize.height;
+            setDescHeights((prev) => {
+              if (prev[selectedIdx] === h) return prev;
+              const next = [...prev];
+              next[selectedIdx] = h;
+              return next;
+            });
+          }}
+          multiline
+          scrollEnabled
+          {...focusProps(`desc${selectedIdx}`)}
+        />
+        {selectedIdx > 0 && (
+          <TouchableOpacity style={styles.itemActionBtn} onPress={remove}>
+            <Ionicons name="trash-outline" size={18} color={Theme.colors.danger} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </>
+  );
+};

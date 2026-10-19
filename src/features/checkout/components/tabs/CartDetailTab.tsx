@@ -1,4 +1,5 @@
 import { Menu } from "@/src/types";
+import { menuPriceDescription } from "../../utils/menuPrices";
 import React, { useState } from "react";
 import { LayoutChangeEvent, View } from "react-native";
 import { styles } from "../CartCheckoutSheet.styles";
@@ -52,9 +53,7 @@ export const CartDetailTab: React.FC<CartDetailTabProps> = ({
   const images =
     menu.images && menu.images.length > 0 ? menu.images : [menu.image];
   const priceDescription =
-    [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
-      selectedPriceIndex - 1
-    ] || "";
+    menuPriceDescription(menu, selectedPriceIndex);
 
   const recap: RecapCell[] = [
     { icon: "fast-food-outline", title: "Menu", value: `${menuPrice} FCFA` },

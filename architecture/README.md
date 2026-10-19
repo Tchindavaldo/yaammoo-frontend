@@ -20,7 +20,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |
 | [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank, détail `OrderBottomSheet` et son onglet **Suivi** : carte du livreur + arrivée estimée) |
 | [orders-merchant.md](./orders-merchant.md) | Gestion commandes côté marchand (panel, cartes, statuts) |
-| [menu.md](./menu.md) | Gestion des menus côté marchand (panel, formulaire multi-étapes, designs récap) |
+| [menu.md](./menu.md) | Gestion des menus côté marchand (panel, formulaire multi-étapes N prix, designs récap) + **boissons de la boutique** (`app/shop/drinks.tsx`) |
 | [bonus.md](./bonus.md) | Bonus & récompenses client (bottom sheet, carrousel, registre évolutif, moteur d'éligibilité, claim, campagne `status_view` : flyer + preuve vidéo) |
 | [driver.md](./driver.md) | Rôle driver — commandes déléguées (onglet, panel, carte, socket, contrat backend) |
 | [staff.md](./staff.md) | Personnel boutique (Settings → Boutique → Personnel) — quotas, rôles et permissions, membres (création, fiche, suspension), livreurs et demandes |
@@ -84,7 +84,7 @@ yaammoo/
 │   │   ├── checkout/         # Bottom sheets commande
 │   │   ├── notifications/    # Context + hooks + components
 │   │   ├── orders/           # OrderContext + cartes
-│   │   ├── merchant/         # Panel marchand (boutique, commandes, menu) + components/recap-designs/ (3 designs récapitulatif menu)
+│   │   ├── merchant/         # Panel marchand (boutique, commandes, menu) + components/menu-form/ (formulaire menu) + components/drinks/ (boissons boutique) + components/recap-designs/
 │   │   └── menu/ restaurants/ profile/ payment/
 │   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs) + version.ts + setupHttp.ts (headers globaux x-app-version)
 │   ├── theme/                # ds.ts = design system (SOURCE UNIQUE des couleurs : DS.accent, accentAlpha(a), surfaces, palette Personnel…) ; Theme.colors (primary = DS.accent), typography ; fonts.ts = police globale changeable par OTA (`FONT_THEME` : jakarta, manrope, figtree, dmsans, system) ; appFont.tsx = remplace `Text`/`TextInput` de RN pour poser la police selon `fontWeight` (hors styles a `fontFamily` explicite), chargee sous le splash dans `app/_layout.tsx` ; la liste native iOS la recoit via la prop `fonts`

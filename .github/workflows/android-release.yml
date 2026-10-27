@@ -20,6 +20,14 @@ on:
         type: choice
         options: [production, beta, alpha, internal]
         default: production
+      release_notes:
+        description: "Notes de version Play Store (« Nouveautés », 500 car. max, \\n = retour à la ligne). Vide = aucune note"
+        type: string
+        required: false
+      notes_language:
+        description: Langue des notes (doit exister dans la fiche Play Store)
+        type: string
+        default: fr-FR
 
 jobs:
   release:
@@ -69,6 +77,18 @@ jobs:
           name: app-aab
           path: app.aab
 
+      # Fichier whatsnew-<langue> lu par l'action Play. Les notes passent par
+      # env (et non ${{ }} dans le script) pour qu'aucun caractere ne soit
+      # interprete par le shell.
+      - if: inputs.release_notes != ''
+        env:
+          NOTES: ${{ inputs.release_notes }}
+          NOTES_LANG: ${{ inputs.notes_language }}
+        run: |
+          mkdir -p whatsnew
+          printf '%s' "$NOTES" | sed 's/\\n/\n/g' > "whatsnew/whatsnew-$NOTES_LANG"
+          cat "whatsnew/whatsnew-$NOTES_LANG"
+
       - uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
@@ -76,3 +96,4 @@ jobs:
           releaseFiles: app.aab
           track: ${{ inputs.track }}
           status: completed
+          whatsNewDirectory: ${{ inputs.release_notes != '' && 'whatsnew' || '' }}

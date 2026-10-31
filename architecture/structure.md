@@ -130,7 +130,7 @@ src/features/
 ├── merchant/                            # Détail complet : architecture/orders-merchant.md
 │   ├── context/                         # MerchantContext + MerchantWalletContext
 │   ├── hooks/                           # useMerchant · useWithdraw · useBroadcast
-│   ├── services/                        # merchantService · withdrawService · merchantSupportService · broadcastService
+│   ├── services/                        # merchantService · withdrawService · walletNetwork · merchantSupportService · broadcastService
 │   ├── utils/broadcastQuota.ts          # Quota / semaine / dates des notifications boutique
 │   ├── utils/orderGroupKey.ts           # Clé de groupage d'une cmd (client + date + créneau/zone)
 │   ├── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
@@ -260,6 +260,8 @@ src/
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
+    ├── socketHandlers/         # Handlers sortis de useSocketEvents (R4) : catalogEvents (menus, boutiques),
+    │                           #   bonusWalletEvents (transactions, bonus, wallet), logEvent
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
     ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp. Web : sonde en no-cors (Cloudflare sans CORS → faux « hors ligne »)
     ├── audio/useVoiceNote.ts   # Notes vocales sur expo-audio : useVoiceNoteRecorder / useVoiceNotePlayer

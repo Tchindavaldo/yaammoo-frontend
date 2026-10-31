@@ -13,6 +13,15 @@ import {
 import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import { WithdrawState } from "../hooks/useWithdraw";
+import { WithdrawQuote } from "../services/withdrawService";
+import {
+  WALLET_NETWORKS,
+  WalletBalances,
+  WalletNetwork,
+  balanceKey,
+  formatFcfa,
+  networkLabel,
+} from "../services/walletNetwork";
 import { DS } from "@/src/theme/ds";
 
 interface WithdrawOverlayProps {
@@ -23,8 +32,17 @@ interface WithdrawOverlayProps {
   onConfirm: (phone: string) => Promise<void>;
   withdrawState: WithdrawState;
   setWithdrawState: (s: WithdrawState) => void;
-  network: "orange" | "mtn";
-  onNetworkChange: (n: "orange" | "mtn") => void;
+  /** Solde débité, choisi par l'utilisateur (aucun repli automatique). */
+  sourceNetwork: WalletNetwork | null;
+  onSourceChange: (n: WalletNetwork) => void;
+  balances: WalletBalances;
+  /** Réseau du numéro de réception, détecté à la saisie. */
+  detectedNetwork: WalletNetwork | null;
+  detecting: boolean;
+  detectError: string | null;
+  /** Devis interréseau (null en même réseau : aucun frais, rien d'affiché). */
+  quote: WithdrawQuote | null;
+  quoteLoading: boolean;
   onClose: () => void;
   onError?: (error: string) => void;
   /** Position depuis le bas (au-dessus de la tab bar / clavier). */
@@ -32,10 +50,14 @@ interface WithdrawOverlayProps {
   isKeyboardVisible: boolean;
 }
 
+/** Hauteur de la capsule + espace : la note des frais se pose juste au-dessus. */
+const NOTE_OFFSET = 78;
+
 /**
- * Capsule de RETRAIT marchand — copie adaptée de CartPaymentOverlay.
- * Flux : idle → amount_input → network_select → input → waiting →
- * processing ("retrait en cours") → completed ("retrait effectué") / failed.
+ * Capsule de RETRAIT — copie adaptée de CartPaymentOverlay.
+ * Flux : idle → source_select (solde MTN / Orange) → amount_input → input
+ * (numéro, réseau détecté, frais interréseau) → waiting → processing
+ * ("retrait en cours") → completed ("retrait effectué") / failed.
  */
 export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
   phone,
@@ -45,8 +67,14 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
   onConfirm,
   withdrawState,
   setWithdrawState,
-  network,
-  onNetworkChange,
+  sourceNetwork,
+  onSourceChange,
+  balances,
+  detectedNetwork,
+  detecting,
+  detectError,
+  quote,
+  quoteLoading,
   onClose,
   onError,
   bottom,
@@ -64,18 +92,27 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
     }).start();
   }, [withdrawState, contentOpacity]);
 
+  const sourceBalance = sourceNetwork ? balances[balanceKey(sourceNetwork)] : 0;
+
   const handleAmountNext = () => {
     if (isKeyboardVisible) {
       Keyboard.dismiss();
       return;
     }
     const a = Number(amount);
-    if (!a || a <= 0) {
+    if (!a || a <= 0 || !Number.isInteger(a)) {
       onError?.("Veuillez saisir un montant valide");
       return;
     }
-    setWithdrawState("network_select");
+    if (a > sourceBalance) {
+      onError?.(`Solde ${networkLabel(sourceNetwork)} insuffisant : ${formatFcfa(sourceBalance)} disponibles.`);
+      return;
+    }
+    setWithdrawState("input");
   };
+
+  const crossNetwork = !!detectedNetwork && !!sourceNetwork && detectedNetwork !== sourceNetwork;
+  const blocked = detecting || !detectedNetwork || (crossNetwork && (quoteLoading || !quote));
 
   const handleConfirm = async () => {
     if (isKeyboardVisible) {
@@ -85,6 +122,14 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
     const raw = phone.trim().replace(/\s/g, "");
     if (!raw) {
       onError?.("Veuillez remplir le numéro de retrait");
+      return;
+    }
+    if (blocked) {
+      onError?.(detectError || "Réseau du numéro en cours de détection");
+      return;
+    }
+    if (crossNetwork && quote && !quote.sufficient) {
+      onError?.(`Solde ${networkLabel(sourceNetwork)} insuffisant avec les frais : ${formatFcfa(quote.totalDebited)} nécessaires, ${formatFcfa(quote.sourceBalance)} disponibles.`);
       return;
     }
     const p = raw.startsWith("237") ? raw : `237${raw}`;
@@ -97,172 +142,157 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
     }
   };
 
+  // Note au-dessus de la capsule, à la saisie du numéro : erreur de détection,
+  // ou frais interréseau. Même réseau : rien (aucun frais).
+  const note =
+    withdrawState !== "input"
+      ? null
+      : detectError
+        ? detectError
+        : crossNetwork
+          ? quoteLoading || !quote
+            ? "Calcul des frais…"
+            : `Vers ${networkLabel(detectedNetwork)} depuis ${networkLabel(sourceNetwork)} : frais ${formatFcfa(quote.fee)} · débité ${formatFcfa(quote.totalDebited)}`
+          : null;
+
   return (
-    <Animated.View style={[styles.capsule, { bottom }]}>
-      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
-      <AnimatedBorderGlow
-        active={
-          withdrawState === "waiting" ||
-          withdrawState === "processing" ||
-          withdrawState === "completed"
-        }
-        borderRadius={40}
-        strokeWidth={3}
-      />
-
-      <Animated.View style={[styles.contentRow, { opacity: contentOpacity }]}>
-        {/* AMOUNT_INPUT : saisie du montant à retirer */}
-        {withdrawState === "amount_input" && (
-          <>
-            {!isKeyboardVisible && (
-              <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
-                <Ionicons name="close" size={16} color="white" />
-              </TouchableOpacity>
-            )}
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="cash-outline"
-                size={16}
-                color="white"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.textInput}
-                placeholder="montant à retirer (FCFA)"
-                placeholderTextColor="rgba(255,255,255,0.5)"
-                keyboardType="number-pad"
-                value={amount}
-                onChangeText={onAmountChange}
-                autoFocus
-              />
-            </View>
-            <TouchableOpacity
-              style={styles.payerBtn}
-              onPress={handleAmountNext}
-            >
-              <Ionicons
-                name={
-                  isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"
-                }
-                size={16}
-                color="white"
-              />
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* NETWORK_SELECT : cancel + "Choix réseau" + chips Orange/MTN */}
-        {withdrawState === "network_select" && (
-          <>
-            <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
-              <Ionicons name="close" size={16} color="white" />
-            </TouchableOpacity>
-            <View style={styles.networkBlock}>
-              <Text style={styles.networkLabel}>Choix réseau</Text>
-              <View style={styles.chips}>
-                {(["orange", "mtn"] as const).map((net) => {
-                  const active = network === net;
-                  return (
-                    <TouchableOpacity
-                      key={net}
-                      style={[styles.chip, active && styles.chipActive]}
-                      onPress={() => {
-                        onNetworkChange(net);
-                        setWithdrawState("input");
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          active && styles.chipTextActive,
-                        ]}
-                      >
-                        {net === "orange" ? "Orange" : "MTN"}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          </>
-        )}
-
-        {/* INPUT : saisie du numéro de retrait */}
-        {withdrawState === "input" && (
-          <>
-            {!isKeyboardVisible && (
-              <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
-                <Ionicons name="close" size={16} color="white" />
-              </TouchableOpacity>
-            )}
-            <View style={styles.inputWrapper}>
-              <Ionicons
-                name="call-outline"
-                size={16}
-                color="white"
-                style={styles.inputIcon}
-              />
-              <Text style={styles.phonePrefix}>+237</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="6XXXXXXXX"
-                placeholderTextColor="rgba(255,255,255,0.5)"
-                keyboardType="phone-pad"
-                value={phone}
-                onChangeText={onPhoneChange}
-                autoFocus
-              />
-            </View>
-            <TouchableOpacity
-              style={[styles.payerBtn, isProcessing && { opacity: 0.7 }]}
-              onPress={handleConfirm}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Ionicons
-                  name={
-                    isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"
-                  }
-                  size={16}
-                  color="white"
-                />
-              )}
-            </TouchableOpacity>
-          </>
-        )}
-
-        {/* WAITING : requête en vol */}
-        {withdrawState === "waiting" && (
-          <Text style={styles.centerText}>Veuillez patienter...</Text>
-        )}
-
-        {/* PROCESSING : réponse reçue, retrait pris en compte */}
-        {withdrawState === "processing" && (
-          <Text style={styles.centerText} numberOfLines={2}>
-            Retrait en cours...
+    <>
+      {note && (
+        <Animated.View style={[styles.note, { bottom: Animated.add(bottom, NOTE_OFFSET) }]}>
+          <Text style={[styles.noteText, detectError ? styles.noteError : null]} numberOfLines={2}>
+            {note}
           </Text>
-        )}
+        </Animated.View>
+      )}
 
-        {/* COMPLETED : icône + texte sur une seule ligne */}
-        {withdrawState === "completed" && (
-          <View style={styles.completedBlock}>
-            {/* <Ionicons name="checkmark-circle" size={20} color="#10b981" /> */}
-            <Text
-              style={[
-                styles.iconTextLabel,
-                { color: "#10b981", textAlign: "center" },
-              ]}
-              numberOfLines={2}
-            >
-              Retrait réussi ! Le montant peut mettre jusqu&apos;à 24h pour
-              arriver sur votre numéro.
+      <Animated.View style={[styles.capsule, { bottom }]}>
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <AnimatedBorderGlow
+          active={withdrawState === "waiting" || withdrawState === "processing" || withdrawState === "completed"}
+          borderRadius={40}
+          strokeWidth={3}
+        />
+
+        <Animated.View style={[styles.contentRow, { opacity: contentOpacity }]}>
+          {/* SOURCE_SELECT : quel solde débiter */}
+          {withdrawState === "source_select" && (
+            <>
+              <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
+                <Ionicons name="close" size={16} color={DS.onInk} />
+              </TouchableOpacity>
+              <View style={styles.networkBlock}>
+                <Text style={styles.networkLabel}>Débiter</Text>
+                <View style={styles.chips}>
+                  {WALLET_NETWORKS.map((net) => {
+                    const active = sourceNetwork === net;
+                    return (
+                      <TouchableOpacity
+                        key={net}
+                        style={[styles.chip, active && styles.chipActive]}
+                        onPress={() => {
+                          onSourceChange(net);
+                          setWithdrawState("amount_input");
+                        }}
+                      >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]}>{networkLabel(net)}</Text>
+                        <Text style={[styles.chipAmount, active && styles.chipTextActive]}>
+                          {balances[balanceKey(net)].toLocaleString("fr-FR")} F
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* AMOUNT_INPUT : saisie du montant à recevoir */}
+          {withdrawState === "amount_input" && (
+            <>
+              {!isKeyboardVisible && (
+                <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
+                  <Ionicons name="close" size={16} color={DS.onInk} />
+                </TouchableOpacity>
+              )}
+              <View style={styles.inputWrapper}>
+                <Ionicons name="cash-outline" size={16} color={DS.onInk} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder={`montant (max ${sourceBalance.toLocaleString("fr-FR")} F)`}
+                  placeholderTextColor={DS.onInkMuted}
+                  keyboardType="number-pad"
+                  value={amount}
+                  onChangeText={onAmountChange}
+                  autoFocus
+                />
+              </View>
+              <TouchableOpacity style={styles.payerBtn} onPress={handleAmountNext}>
+                <Ionicons name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"} size={16} color={DS.onInk} />
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* INPUT : numéro de réception + réseau détecté */}
+          {withdrawState === "input" && (
+            <>
+              {!isKeyboardVisible && (
+                <TouchableOpacity style={styles.closeCircle} onPress={onClose}>
+                  <Ionicons name="close" size={16} color={DS.onInk} />
+                </TouchableOpacity>
+              )}
+              <View style={styles.inputWrapper}>
+                <Ionicons name="call-outline" size={16} color={DS.onInk} style={styles.inputIcon} />
+                <Text style={styles.phonePrefix}>+237</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="6XXXXXXXX"
+                  placeholderTextColor={DS.onInkMuted}
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={onPhoneChange}
+                  autoFocus
+                />
+                {detecting ? (
+                  <ActivityIndicator size="small" color={DS.onInk} />
+                ) : detectedNetwork ? (
+                  <Text style={styles.detected}>{networkLabel(detectedNetwork)}</Text>
+                ) : null}
+              </View>
+              <TouchableOpacity
+                style={[styles.payerBtn, (isProcessing || blocked) && styles.payerBtnDisabled]}
+                onPress={handleConfirm}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <ActivityIndicator size="small" color={DS.onInk} />
+                ) : (
+                  <Ionicons name={isKeyboardVisible ? "chevron-down" : "arrow-forward-outline"} size={16} color={DS.onInk} />
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* WAITING : requête en vol */}
+          {withdrawState === "waiting" && <Text style={styles.centerText}>Veuillez patienter...</Text>}
+
+          {/* PROCESSING : réponse reçue, retrait pris en compte */}
+          {withdrawState === "processing" && (
+            <Text style={styles.centerText} numberOfLines={2}>
+              Retrait en cours...
             </Text>
-          </View>
-        )}
+          )}
+
+          {/* COMPLETED */}
+          {withdrawState === "completed" && (
+            <View style={styles.completedBlock}>
+              <Text style={styles.completedText} numberOfLines={2}>
+                Retrait réussi ! Le montant peut mettre jusqu&apos;à 24h pour arriver sur votre numéro.
+              </Text>
+            </View>
+          )}
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
+    </>
   );
 };
 
@@ -271,14 +301,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: "96%",
     height: 70,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    backgroundColor: DS.scrimTop,
     borderRadius: 80,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     overflow: "hidden",
-    shadowColor: "#000",
+    shadowColor: DS.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 10,
@@ -286,6 +316,27 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     zIndex: 1000,
     left: "2%",
+  },
+  note: {
+    position: "absolute",
+    left: "6%",
+    right: "6%",
+    zIndex: 1001,
+    alignItems: "center",
+  },
+  noteText: {
+    backgroundColor: DS.ink,
+    color: DS.onInk,
+    fontSize: 12,
+    fontWeight: "600",
+    textAlign: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  noteError: {
+    backgroundColor: DS.dangerInk,
   },
   contentRow: {
     flex: 1,
@@ -295,45 +346,29 @@ const styles = StyleSheet.create({
   },
   centerText: {
     flex: 1,
-    color: "white",
+    color: DS.onInk,
     fontSize: 13,
     fontWeight: "600",
     textAlign: "center",
-  },
-  iconTextRow: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  iconTextLabel: {
-    fontSize: 13,
-    fontWeight: "600",
   },
   completedBlock: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
     paddingHorizontal: 24,
   },
-  completedTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  completedHint: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 10,
+  completedText: {
+    color: DS.success,
+    fontSize: 13,
+    fontWeight: "600",
     textAlign: "center",
   },
   closeCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#ef4444",
+    backgroundColor: DS.danger,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -345,7 +380,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
   },
   networkLabel: {
-    color: "rgba(255,255,255,0.7)",
+    color: DS.onInkMuted,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -354,30 +389,36 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: DS.onInkFill,
     borderWidth: 1,
     borderColor: "transparent",
+    alignItems: "center",
   },
   chipActive: {
     backgroundColor: DS.accent,
     borderColor: DS.accent,
   },
   chipText: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 13,
-    fontWeight: "600",
+    color: DS.onInkMuted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  chipAmount: {
+    color: DS.onInkMuted,
+    fontSize: 11,
+    fontWeight: "500",
   },
   chipTextActive: {
-    color: "white",
+    color: DS.onInk,
   },
   inputWrapper: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: DS.onInkFill,
     height: 45,
     borderRadius: 22.5,
     paddingHorizontal: 12,
@@ -387,17 +428,23 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   phonePrefix: {
-    color: "white",
+    color: DS.onInk,
     fontSize: 14,
     fontWeight: "600",
     marginRight: 4,
   },
   textInput: {
     flex: 1,
-    color: "white",
+    color: DS.onInk,
     fontSize: 14,
     fontWeight: "500",
     padding: 0,
+  },
+  detected: {
+    color: DS.accentOnInk,
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 6,
   },
   payerBtn: {
     flexDirection: "row",
@@ -407,5 +454,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: "center",
     minWidth: 40,
+  },
+  payerBtnDisabled: {
+    opacity: 0.5,
   },
 });

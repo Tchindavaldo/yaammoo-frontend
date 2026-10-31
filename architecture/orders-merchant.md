@@ -19,7 +19,8 @@ yaammoo/src/features/merchant/
 │   └── orderGroupKey.ts               # Clé de groupage d'une commande (client + date + créneau/zone)
 ├── services/
 │   ├── merchantService.ts             # Appels API marchand
-│   └── withdrawService.ts             # Appel POST /wallet/withdraw
+│   ├── withdrawService.ts             # POST /wallet/withdraw, GET /wallet/withdraw/quote, POST /wallet/operator/predict
+│   └── walletNetwork.ts               # Réseaux MTN / ORANGEMONEY, soldes, libellés (service pur)
 └── components/
     ├── OrderManagePanel.tsx            # Panel principal gestion commandes (onglet (tabs)/boutique)
     ├── shop/ShopOrderManagePanel.tsx   # Copie R16 pour la page entière app/shop/orders.tsx (sans navbar)
@@ -52,7 +53,7 @@ yaammoo/src/features/merchant/
     │   └── styles.ts                   # Styles partagés + TAB_BAR_HEIGHT
     ├── WalletManageModal.tsx           # Overlay plein écran portefeuille (Settings → "Portefeuille")
     ├── PorteFeuillePanel.tsx           # Panel portefeuille (barre fixe Solde+Retrait, historique jours)
-    ├── WithdrawOverlay.tsx             # Overlay retrait (saisie montant → réseau → numéro → verdict)
+    ├── WithdrawOverlay.tsx             # Overlay retrait (solde débité → montant → numéro + réseau détecté + frais → verdict)
     ├── WalletDayStatItem.tsx           # Ligne d'une journée dans l'historique portefeuille
     ├── DelegateDriverSheet.tsx         # Feuille "Qui livre ?" (Moi-même / déléguer à un livreur)
     ├── NoBoutiquePanel.tsx             # Écran si pas encore de boutique créée
@@ -567,14 +568,18 @@ et `BoutiquePickers` (pickers heure/villes, toast). `parseBoutique.ts` normalise
 
 **Chemin** : `yaammoo/src/features/merchant/components/PorteFeuillePanel.tsx`
 
-Affiche le solde global du marchand et l'historique par journée. Déclenche le flux de retrait via `useWithdraw`.
+Affiche le solde global du marchand, ses **deux soldes MTN / Orange** (`stats.balances`, sous le solde) et l'historique par journée. Déclenche le flux de retrait via `useWithdraw`.
 
-**Source de données** : `MerchantWalletContext` (stats patchées en temps réel par les événements socket `wallet.withdrawal`).
+**Source de données** : `MerchantWalletContext` (stats patchées en temps réel par les événements socket `wallet.credited` — `network` crédité — et `wallet.withdrawal` — `newBalances`).
 
 **Flux retrait** (déclenché par le bouton "Retirer") :
-1. `withdrawState` passe de `idle` → `amount_input` → `network_select` → `input`
-2. POST `withdrawService.withdraw()` → passage en `waiting` puis `processing` dès la réponse HTTP
-3. Verdict socket `wallet.withdrawal` → `completed` (fermeture auto + refresh stats après 5 s) ou `failed` (toast erreur)
+1. `source_select` : l'utilisateur choisit le **solde débité** (chips MTN / Orange avec leur montant). Aucun repli automatique.
+2. `amount_input` : montant **reçu** (max = solde choisi).
+3. `input` : numéro de réception. Le réseau est **détecté en temps réel** (`POST /wallet/operator/predict`, 450 ms après la dernière frappe, dès 9 chiffres). Interréseau uniquement : devis `GET /wallet/withdraw/quote` → note au-dessus de la capsule « frais X · débité Y ». Même réseau : rien n'est affiché (0 F).
+4. POST `withdrawService.withdraw({ amount, phone, network, sourceNetwork })` → `waiting` puis `processing` dès la réponse HTTP
+5. Verdict socket `wallet.withdrawal` → `completed` (fermeture auto après 5 s) ou `failed` (toast erreur). Les erreurs HTTP affichent `message` tel quel.
+
+Réseaux : `"MTN" | "ORANGEMONEY"`, utilitaires partagés dans `services/walletNetwork.ts` (libellés, clés de solde, normalisation). Aucun nom d'agrégateur affiché.
 
 ---
 
@@ -588,9 +593,9 @@ Gère l'ensemble de la logique retrait (états, appel API, verdict socket).
 | État | Description |
 |---|---|
 | `idle` | Overlay fermé |
-| `amount_input` | Saisie du montant |
-| `network_select` | Choix du réseau (Orange / MTN) |
-| `input` | Saisie du numéro de téléphone |
+| `source_select` | Choix du solde débité (MTN / Orange) |
+| `amount_input` | Saisie du montant reçu |
+| `input` | Numéro de réception + réseau détecté + frais interréseau |
 | `waiting` | Requête en vol — "Veuillez patienter…" |
 | `processing` | Réponse HTTP reçue (withdrawalId connu) — "Retrait en cours…" |
 | `completed` | Socket `completed` reçu — "Retrait effectué !" (fermeture auto 5 s) |
@@ -605,7 +610,7 @@ Gère l'ensemble de la logique retrait (états, appel API, verdict socket).
 **Chemin** : `yaammoo/src/features/merchant/context/MerchantWalletContext.tsx`
 
 Provider qui expose :
-- `stats` : solde + séries journalières (chargées via `walletStatsService`)
+- `stats` : solde, `balances: { mtn, orange }` + séries journalières (chargées via `walletStatsService`)
 - `loading` / `refresh` : pull-to-refresh
 - `registerWithdrawalHandler` / `unregisterWithdrawalHandler` : bus interne pour que `useWithdraw` reçoive les événements socket `wallet.withdrawal`
 

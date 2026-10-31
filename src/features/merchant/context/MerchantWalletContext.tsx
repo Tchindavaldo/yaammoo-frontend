@@ -15,6 +15,11 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import moment from "moment";
+import {
+  WalletBalances,
+  WalletNetwork,
+  balanceKey,
+} from "../services/walletNetwork";
 
 /** Payload normalisé d'un event wallet (wallet.credited / wallet.withdrawal). */
 export interface WalletEvent {
@@ -23,14 +28,20 @@ export interface WalletEvent {
   date?: string; // ISO (createdAt) ; défaut = maintenant
   /** Solde absolu après l'opération, si le backend le fournit (retrait). */
   newBalance?: number;
+  /** Soldes absolus par réseau après l'opération (retrait). */
+  newBalances?: WalletBalances;
+  /** Réseau du solde touché (gain). */
+  network?: WalletNetwork;
 }
 
 /** Event socket `wallet.withdrawal` (les 3 états d'un retrait, même withdrawalId). */
 export interface WithdrawalEvent {
   withdrawalId: string;
   status: "pending" | "completed" | "failed";
-  amount: number;
+  amount: number; // montant reçu
+  fee?: number; // frais interréseau, débités en plus
   newBalance?: number; // solde absolu après l'opération (sur completed)
+  newBalances?: WalletBalances; // soldes absolus par réseau (sur completed)
   reason?: string; // cause sur failed
   createdAt?: string;
   __eventId?: number;
@@ -130,10 +141,21 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
         series.sort((a, b) => (a.period < b.period ? 1 : -1));
       }
 
+      // Soldes par réseau : absolus si fournis (retrait), sinon delta sur le
+      // réseau crédité. Sans réseau connu, on garde l'existant.
+      let balances = prev.balances;
+      if (e.newBalances) {
+        balances = e.newBalances;
+      } else if (balances && e.network && e.type === "credit") {
+        const k = balanceKey(e.network);
+        balances = { ...balances, [k]: balances[k] + e.amount };
+      }
+
       return {
         ...prev,
         // newBalance (solde absolu fourni par le backend) prioritaire sinon delta.
         balance: e.newBalance ?? prev.balance + net,
+        balances,
         totals: {
           payin: prev.totals.payin + payin,
           payout: prev.totals.payout + payout,
@@ -158,11 +180,13 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
   const handleWithdrawalEvent = useCallback(
     (e: WithdrawalEvent) => {
       if (e.status === "completed") {
+        // Débit réel = montant reçu + frais interréseau.
         applyEvent({
           type: "debit",
-          amount: e.amount,
+          amount: e.amount + (e.fee ?? 0),
           date: e.createdAt,
           newBalance: e.newBalance,
+          newBalances: e.newBalances,
         });
       }
       // failed/pending : pas de modif du solde (le backend ne débite qu'au completed).

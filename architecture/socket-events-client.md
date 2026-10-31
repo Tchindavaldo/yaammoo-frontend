@@ -124,8 +124,8 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 > sans lui, la livraison offerte resterait invisible **au checkout** (qui lit
 > `FastFoodContext`) jusqu'au prochain `GET /fastFood/all`. Détail de la portée :
 > [`bonus.md`](bonus.md).
-| `wallet.credited` | tous champs | `MerchantWalletContext.applyEvent` (patch solde, payin) |
-| `wallet.withdrawal` | tous champs | `MerchantWalletContext.handleWithdrawalEvent` (patch solde + overlay) |
+| `wallet.credited` | tous champs, dont `network` (`MTN` \| `ORANGEMONEY`) | `MerchantWalletContext.applyEvent` (patch solde + solde du réseau, payin) — `socketHandlers/bonusWalletEvents.ts` |
+| `wallet.withdrawal` | tous champs, dont `fee`, `sourceNetwork`, `newBalances: { mtn, orange }` | `MerchantWalletContext.handleWithdrawalEvent` (patch soldes + overlay ; débit = `amount + fee`) — `socketHandlers/bonusWalletEvents.ts` |
 | `newNotification` | `{ notification }` | `NotificationContext.addFromSocket(notif)` |
 | `isRead` | `{ notificationId }` | `refreshNotifications(true)` — sync silencieux multi-device |
 | `driverLocationUpdated` | `{ data: { driverId, latitude, longitude, accuracy, speed, heading, capturedAt, orderIds[] } }` | **Hors `useSocketEvents`** : écouté par `useOrderTracking` tant que l'onglet « Suivi » est ouvert (comme `driverRatingUpdated` dans `DriverInfoTab`), filtré sur `orderIds`. Fire-and-forget : l'onglet relit `GET /driver/tracking/:orderId` à l'ouverture et au retour au premier plan |
@@ -171,6 +171,11 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 > comm -23 <(grep -oP 'socket\.on\("\K[^"]+' src/services/useSocketEvents.ts | sort -u) \
 >          <(grep -oP 'socket\.off\("\K[^"]+' src/services/useSocketEvents.ts | sort -u)
 > ```
+>
+> Les handlers sortis dans `src/services/socketHandlers/` se désabonnent eux-mêmes :
+> chaque module liste ses events (`EVENTS`) et renvoie sa fonction de cleanup,
+> appelée dans celui de `useSocketEvents`. Un event ajouté dans un module doit
+> l'être aussi dans son `EVENTS`.
 
 ## Piège connu — backends multiples
 

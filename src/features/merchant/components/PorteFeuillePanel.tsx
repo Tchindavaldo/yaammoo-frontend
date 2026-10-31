@@ -5,6 +5,7 @@ import { WithdrawOverlay } from "@/src/features/merchant/components/WithdrawOver
 import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useWithdraw";
 import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -72,8 +73,13 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     setWithdrawPhone,
     withdrawAmount,
     setWithdrawAmount,
-    withdrawNetwork,
-    setWithdrawNetwork,
+    sourceNetwork,
+    setSourceNetwork,
+    detectedNetwork,
+    detecting,
+    detectError,
+    quote,
+    quoteLoading,
     withdrawState,
     setWithdrawState,
     withdrawError,
@@ -121,7 +127,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   // le solde + la série du jour via handleWithdrawalEvent → applyEvent. Un refresh
   // mettrait loading=true → le loader natif du pull-to-refresh s'activerait tout
   // seul après réception du socket (le bug visible signalé).
-  // 🐞 En mode DEBUG_COMPLETED, on ne ferme pas (l'overlay reste visible).
+  // En mode DEBUG_COMPLETED, on ne ferme pas (l'overlay reste visible).
   useEffect(() => {
     if (DEBUG_COMPLETED) return;
     if (withdrawState === "completed") {
@@ -140,8 +146,9 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     }
   }, [withdrawError, setWithdrawError]);
 
-  // Solde global réel (fourni par le backend).
+  // Solde global réel (fourni par le backend) et ses deux soldes par réseau.
   const balance = stats?.balance ?? 0;
+  const balances = stats?.balances ?? { mtn: 0, orange: 0 };
 
   // Remonte le solde au header parent dès qu'il change.
   useEffect(() => {
@@ -150,7 +157,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
 
   // Expose l'ouverture du retrait au header (pilule "Retirer"). Une seule fois au montage.
   useEffect(() => {
-    onRegisterWithdraw?.(() => setWithdrawState("amount_input"));
+    onRegisterWithdraw?.(() => setWithdrawState("source_select"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -276,12 +283,16 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
             <Text style={styles.balanceVal}>
               {balance.toLocaleString("fr-FR")} F
             </Text>
+            <Text style={styles.subBalances}>
+              MTN {balances.mtn.toLocaleString("fr-FR")} F · Orange{" "}
+              {balances.orange.toLocaleString("fr-FR")} F
+            </Text>
           </View>
           <View style={styles.divider} />
           <TouchableOpacity
             style={styles.balanceItem}
             activeOpacity={0.7}
-            onPress={() => setWithdrawState("amount_input")}
+            onPress={() => setWithdrawState("source_select")}
           >
             <Text style={styles.balanceLbl}>Retrait</Text>
             <View style={styles.withdrawRow}>
@@ -304,8 +315,14 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
           onConfirm={handleWithdrawConfirm}
           withdrawState={withdrawState}
           setWithdrawState={setWithdrawState}
-          network={withdrawNetwork}
-          onNetworkChange={setWithdrawNetwork}
+          sourceNetwork={sourceNetwork}
+          onSourceChange={setSourceNetwork}
+          balances={balances}
+          detectedNetwork={detectedNetwork}
+          detecting={detecting}
+          detectError={detectError}
+          quote={quote}
+          quoteLoading={quoteLoading}
           onClose={resetWithdraw}
           onError={(msg) => Alert.alert("Retrait", msg)}
           isKeyboardVisible={isKeyboardVisible}
@@ -362,6 +379,12 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: Theme.colors.dark,
+  },
+  subBalances: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: "600",
+    color: DS.muted,
   },
   balanceCard: {
     backgroundColor: Theme.colors.white,

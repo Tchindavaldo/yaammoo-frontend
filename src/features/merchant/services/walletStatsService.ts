@@ -13,7 +13,9 @@ export interface WalletDayStat {
 
 export interface WalletStats {
   groupBy: string;
-  balance: number;  // solde global actuel du marchand (tout l'historique)
+  balance: number;  // solde retirable total (= mtn + orange)
+  // Deux soldes, un par réseau qui a encaissé. Absent sur un backend antérieur.
+  balances?: { mtn: number; orange: number };
   totals: { payin: number; payout: number; net: number };
   series: WalletDayStat[];
 }

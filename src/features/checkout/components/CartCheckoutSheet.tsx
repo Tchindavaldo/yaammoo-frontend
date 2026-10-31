@@ -248,7 +248,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
       setPaymentError(null);
       setIsPaymentPopupVisible(false);
     } else if (paymentState === "success") {
-      showToast("Commande créée avec succès !", "success");
+      showToast("Paiement de la commande effectué avec succès !", "success");
     } else if (paymentState === "success_created") {
       setIsPaymentPopupVisible(false);
       setPaymentState("network_select");

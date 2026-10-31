@@ -425,7 +425,7 @@ export default function OrdersScreen() {
   // Succès reçu sheet masqué : toast global, fin immédiate du parcours.
   useEffect(() => {
     if (groupedHidden && paymentState === "success") {
-      showToast("Commande créée avec succès !", "success");
+      showToast("Paiement de la commande effectué avec succès !", "success");
       endPayment();
       refresh();
     }

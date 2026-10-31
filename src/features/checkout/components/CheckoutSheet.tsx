@@ -235,7 +235,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
       setIsPaymentPopupVisible(false);
       resetCheckout();
     } else if (paymentState === "success") {
-      showToast("Commande créée avec succès !", "success");
+      showToast("Paiement de la commande effectué avec succès !", "success");
     } else if (paymentState === "success_created") {
       setIsPaymentPopupVisible(false);
       resetCheckout();

@@ -23,7 +23,6 @@ import { DS } from "@/src/theme/ds";
 
 const ACCENT = DS.accentDeep;
 /** Marge entre la carte et le bas de l'ecran (ou le haut du clavier). */
-const CARD_GAP = 24;
 const CARD_GAP_KEYBOARD = 12;
 /**
  * La carte doit toujours GARDER D'AVANCE sur le clavier, sinon il la
@@ -52,7 +51,7 @@ export function ProfileNameSheet() {
   // Carte FLOTTANTE (pas un pied) : elle garde son ecart au-dessus de la bande
   // safe-area, dont la hauteur vient de la source unique (R19).
   const band = useBottomSafeArea();
-  const cardBottom = Platform.OS === "ios" ? 8 + band : CARD_GAP + band;
+  const cardBottom = band; // collee a la bande safe-area, sans espace (R19)
 
   const [mounted, setMounted] = useState(false);
   const [variant, setVariant] = useState<MissingName>("both");

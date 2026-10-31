@@ -1,5 +1,6 @@
 import { showToast } from "@/src/services/globalToast";
 import { APP_VERSION } from "@/src/api/version";
+import { currentOtaLabel } from "@/src/services/otaTelemetry";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -315,6 +316,8 @@ export default function SettingsScreen() {
             une valeur en dur a remettre a jour manuellement. Annee courante idem. */}
         <View style={styles.versionBlock}>
           <Text style={styles.versionText}>Yaammoo v{APP_VERSION}</Text>
+          {/* Identifie l'OTA reçue : message de publication + date. */}
+          <Text style={styles.versionSubtext}>{currentOtaLabel()}</Text>
           <Text style={styles.versionSubtext}>
             © {new Date().getFullYear()} Yaammoo. Tous droits réservés.
           </Text>

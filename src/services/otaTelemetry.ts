@@ -24,13 +24,31 @@ import { Sentry } from "@/src/services/sentry";
  * message ni l'identifiant de groupe (celui d'`eas update:list`) ne sont
  * exposes au runtime — `updateId` seul ne se rapproche d'aucune sortie CLI.
  */
-function updateMessage(): string {
+export function updateMessage(): string {
   // `Manifest` est une union (nouveau format / format classique) dont une seule
   // branche porte `extra` : on passe par un acces indexe plutot que d'affiner
   // le type, la forme etant garantie par le script de publication.
   const extra = (Updates.manifest as Record<string, unknown> | undefined)
     ?.extra as { otaMessage?: string } | undefined;
   return extra?.otaMessage ?? "inconnu";
+}
+
+/**
+ * Libelle de l'update executee, affiche en bas du profil : message de la
+ * publication + date (Cameroun). Bundle du store : « version d'origine ».
+ */
+export function currentOtaLabel(): string {
+  if (Updates.isEmbeddedLaunch || !Updates.updateId) return "Version d'origine (aucune OTA)";
+  const date = Updates.createdAt
+    ? Updates.createdAt.toLocaleString("fr-FR", {
+        timeZone: "Africa/Douala",
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+  return `OTA : ${updateMessage()}${date ? ` · ${date}` : ""}`;
 }
 
 /** Update actuellement executee, posee comme tags Sentry sur TOUS les evenements. */

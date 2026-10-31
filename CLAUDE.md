@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **20 règles numérotées R1 → R20.** Toute nouvelle règle ajoutée à ce fichier
+> **21 règles numérotées R1 → R21.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -311,3 +311,7 @@ Une mise à jour OTA se publie **uniquement** via le workflow `.github/workflows
 (bundle ~90 Mo, connexion trop lente). Le workflow charge les variables EAS
 (`EXPO_PUBLIC_ORS_KEY`…). Pousser la branche d'abord, puis déclencher le workflow
 sur cette branche (`gh` absent : API GitHub `POST …/actions/workflows/eas-update.yml/dispatches`).
+
+## R21 — Plusieurs options : DEMANDER, ne rien inventer (OBLIGATOIRE)
+
+Quand une action a plusieurs options possibles (ex. workflow avec cases a cocher, mode permanent ou non, deployer ou non, quelle branche), DEMANDER a l utilisateur laquelle prendre AVANT d agir. Ne jamais choisir une option ni inventer un parametre qu il n a pas donne. Regarder comment l action a ete lancee precedemment ne suffit pas : demander.

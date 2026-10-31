@@ -58,6 +58,7 @@ export const RecapBody: React.FC<HeroProps> = ({
       <View style={styles.chipsZone}>
         <ScrollView
           horizontal
+          style={styles.chipsScroll}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsRow}
         >
@@ -116,7 +117,10 @@ const styles = StyleSheet.create({
   chipsGap: { height: 6 },
   topShade: { position: "absolute", left: 0, right: 0, top: 0, height: 80 },
   chipsZone: { flex: 1, justifyContent: "flex-end" },
-  chipsRow: { flexDirection: "row", gap: 6 },
+  chipsScroll: { flexGrow: 0 },
+  // alignItems : sinon le ScrollView horizontal étire la pastille sur toute
+  // la hauteur de `chipsZone` (flex: 1).
+  chipsRow: { flexDirection: "row", gap: 6, alignItems: "flex-end" },
   chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
   chipText: { fontSize: 11, fontWeight: "700" },
   tiles: { flexDirection: "row", gap: 6 },

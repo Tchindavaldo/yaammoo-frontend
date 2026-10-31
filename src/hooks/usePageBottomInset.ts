@@ -22,7 +22,7 @@ export const PAGE_INSET_RATIO = Platform.OS === "android" ? 1 : 1;
  * fixes, tab bar, bottom sheets) pour comparer l'alignement par captures.
  * Seul interrupteur de l'app ; `false` en production.
  */
-export const SAFE_AREA_DEBUG = false;
+export const SAFE_AREA_DEBUG = true;
 
 /** Couleur de la bande safe-area basse, appliquee partout depuis ici. */
 export const SAFE_AREA_BG = SAFE_AREA_DEBUG ? DS.accent : DS.bg;

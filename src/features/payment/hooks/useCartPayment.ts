@@ -98,7 +98,10 @@ export const useCartPayment = (amount: number) => {
         }
 
         if (response.data.status === "ussd_sent" || response.data.success === true) {
-          setUssdMessage(response.data.message);
+          // Verdict déjà reçu par socket pendant la requête (refus immédiat) : ne pas
+        // remettre l'écran en attente USSD.
+        if (paymentStateRef.current !== "waiting") return;
+        setUssdMessage(response.data.message);
           setPaymentState("ussd_sent");
         } else {
           const raw = response.data.message;

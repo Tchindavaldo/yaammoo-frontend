@@ -404,6 +404,9 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
 
       // Cas A — USSD envoyé : afficher le message du backend, écouter le socket
       if (response.data.status === 'ussd_sent' || response.data.success === true) {
+        // Verdict déjà reçu par socket pendant la requête (refus immédiat) : ne pas
+        // remettre l'écran en attente USSD.
+        if (paymentStateRef.current !== 'waiting') return;
         setUssdMessage(response.data.message);
         setPaymentState('ussd_sent');
         // Le socket commence à écouter directement dans cet état

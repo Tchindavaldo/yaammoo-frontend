@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Animated, Text, StyleSheet, View, SafeAreaView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { DS } from '@/src/theme/ds';
 
 interface ToastProps {
   message: string;
@@ -18,7 +19,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
       // Show animation
       Animated.parallel([
         Animated.spring(slideAnim, {
-          toValue: 20,
+          toValue: 4,
           useNativeDriver: true,
           tension: 20,
           friction: 4,
@@ -56,9 +57,9 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
 
   const getBackgroundColor = () => {
     switch (type) {
-      case 'success': return '#10b981';
-      case 'error': return '#ef4444';
-      default: return '#3b82f6';
+      case 'success': return DS.success;
+      case 'error': return DS.danger;
+      default: return DS.info;
     }
   };
 
@@ -91,8 +92,9 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
 
 const styles = StyleSheet.create({
   container: {
+    // Collé sous la barre d'état (SafeAreaView) : couvre l'en-tête.
     position: 'absolute',
-    top: 50,
+    top: 0,
     left: 0,
     right: 0,
     zIndex: 9999,
@@ -106,8 +108,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     gap: 10,
-    maxWidth: Dimensions.get('window').width - 40,
-    shadowColor: '#000',
+    // Presque pleine largeur : couvre aussi les éléments des bords.
+    width: Dimensions.get('window').width - 16,
+    shadowColor: DS.ink,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

@@ -51,6 +51,7 @@ export const DS = {
   // --- États ---
   success: "#1F9D55",
   danger: "#ef4444",
+  info: "#3b82f6",
   dangerInk: "#B42318",
   warning: "#F59E0B",
   backdrop: "rgba(20,20,22,0.45)",

@@ -98,9 +98,7 @@ export const useCartPayment = (amount: number) => {
         }
 
         if (response.data.status === "ussd_sent" || response.data.success === true) {
-          // Code USSD fourni par MobileWallet selon le réseau (si le PIN n'arrive pas).
-        const code = response.data.ussd_code;
-        setUssdMessage(code ? `${response.data.message} Si la demande n'arrive pas, composez ${code}.` : response.data.message);
+          setUssdMessage(response.data.message);
           setPaymentState("ussd_sent");
         } else {
           const raw = response.data.message;

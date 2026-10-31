@@ -401,9 +401,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
 
       // Cas A — USSD envoyé : afficher le message du backend, écouter le socket
       if (response.data.status === 'ussd_sent' || response.data.success === true) {
-        // Code USSD fourni par MobileWallet selon le réseau (si le PIN n'arrive pas).
-        const code = response.data.ussd_code;
-        setUssdMessage(code ? `${response.data.message} Si la demande n'arrive pas, composez ${code}.` : response.data.message);
+        setUssdMessage(response.data.message);
         setPaymentState('ussd_sent');
         // Le socket commence à écouter directement dans cet état
       } else {

@@ -17,7 +17,6 @@ import { useDriver } from "../hooks/useDriver";
 import { ApplicationEvent } from "../context/DriverContext";
 import { driverService, DriverApplication } from "../services/driverService";
 import { Toast } from "@/src/components/Toast";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 
 interface DriverMyApplicationsModalProps {
   visible: boolean;
@@ -63,7 +62,6 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
   const { registerApplicationHandler, unregisterApplicationHandler } = useDriver();
   const userId = userData?.uid;
   const [headerHeight, setHeaderHeight] = useState(70);
-  const tabBarHeight = useTabBarHeight();
   const [loading, setLoading] = useState(false);
   const [firstLoadDone, setFirstLoadDone] = useState(false);
   const [apps, setApps] = useState<DriverApplication[]>([]);
@@ -153,7 +151,7 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
         <ScrollView
           // Navbar visible par-dessus : la fin de liste s'arrete juste au-dessus
           // d'elle, safe-area comprise (source unique R19).
-          contentContainerStyle={{ paddingTop: headerHeight + 12, paddingHorizontal: 16, paddingBottom: tabBarHeight + 8 }}
+          contentContainerStyle={{ paddingTop: headerHeight + 12, paddingHorizontal: 16, paddingBottom: 8 }}
           refreshControl={
             <RefreshControl refreshing={loading} onRefresh={load} progressViewOffset={headerHeight} />
           }

@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   getThreadName,
@@ -38,7 +37,6 @@ type Screen = { name: "list" } | { name: "chat"; thread: SupportThread | null };
  * l'objet se choisit en chips en haut.
  */
 export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
-  const tabBarHeight = useTabBarHeight();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   /** Objet de la conversation courante, remonté par la vue chat pour le header. */
@@ -49,7 +47,8 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
 
   // Hauteur REELLE de la navbar (safe-area comprise, source unique R19), pour
   // caler le bouton au-dessus.
-  const bottomInset = tabBarHeight;
+  // Page entiere (app/account/*) : ShopPageFrame reserve deja la safe-area, pas de navbar.
+  const bottomInset = 0;
   // Espace réservé sous la liste = écart du bouton (16) + bouton (52) + 8.
   const listBottomPad = bottomInset + 16 + 52 + 8;
 

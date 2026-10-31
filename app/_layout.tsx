@@ -232,6 +232,7 @@ function AppContent() {
           <Stack.Screen name="(tabs)" options={{ animation: screenAnimation }} />
           {/* Pages entieres de Settings → Boutique : hors (tabs), donc sans navbar. */}
           <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
+          <Stack.Screen name="account" options={{ animation: "slide_from_right" }} />
         </Stack.Protected>
         {/* (auth) reste monté tant que (tabs) n'est PAS prêt (canEnterApp false).
             On NE met PAS authResolved ici : sinon, pendant la re-vérification auth

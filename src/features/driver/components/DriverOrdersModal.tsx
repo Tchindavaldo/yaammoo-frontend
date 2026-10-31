@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { Theme } from "@/src/theme";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useDriver } from "../hooks/useDriver";
 import { driverService, StoreOption } from "../services/driverService";
-import { DriverOrderPanel, DateOption } from "./DriverOrderPanel";
+import type { DateOption } from "./DriverOrderPanel";
+import { DriverOrdersPagePanel } from "./DriverOrdersPagePanel";
 import { DriverFilterSheet } from "./DriverFilterSheet";
 import { StickyChipsRow } from "./StickyChipsRow";
 
@@ -31,7 +31,6 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
   const { userData } = useAuth();
   // La modal est montée dans (tabs), navbar par-dessus : hauteur REELLE de la
   // navbar, safe-area comprise (source unique R19).
-  const tabBarHeight = useTabBarHeight();
   const { orders, loading, refresh, updateStatus } = useDriver();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -146,7 +145,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
       />
 
       <View style={{ flex: 1 }}>
-        <DriverOrderPanel
+        <DriverOrdersPagePanel
           orders={orders}
           loading={loading}
           onRefresh={refresh}
@@ -162,7 +161,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
 
       {/* Barre de filtres en BAS : chips boutique (nom + nb en attente) + icône sheet */}
       {showFilter && (
-        <View style={[styles.bottomBar, { bottom: tabBarHeight }]}>
+        <View style={[styles.bottomBar, { bottom: 0 }]}>
           <View style={{ flex: 1 }}>
             <StickyChipsRow
               items={[

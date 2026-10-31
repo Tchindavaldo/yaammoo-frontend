@@ -4,9 +4,6 @@ import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { UserBonusSheet } from "@/src/features/bonus/components/UserBonusSheet";
-import { DriverApplyModal } from "@/src/features/driver/components/DriverApplyModal";
-import { DriverMyApplicationsModal } from "@/src/features/driver/components/DriverMyApplicationsModal";
-import { DriverOrdersModal } from "@/src/features/driver/components/DriverOrdersModal";
 import { DeleteAccountModal } from "@/src/features/profile/components/DeleteAccountModal";
 import { LogoutModal } from "@/src/features/profile/components/LogoutModal";
 import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
@@ -18,8 +15,6 @@ import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificat
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
-import { SupportChatSheet } from "@/src/features/support/components/SupportChatSheet";
-import { UserWalletModal } from "@/src/features/wallet/components/UserWalletModal";
 import { Theme } from "@/src/theme";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -65,6 +60,13 @@ export default function SettingsScreen() {
     router.push({ pathname: "/shop/staff", params: { section: staffTab } });
     close("staffManage");
   }, [visible.staffManage, staffTab, router, close]);
+
+  // Deep-link « Mes demandes » (notif candidat) : page entière `app/account`.
+  useEffect(() => {
+    if (!visible.driverMyApps) return;
+    router.push("/account/driver-applications");
+    close("driverMyApps");
+  }, [visible.driverMyApps, router, close]);
 
   useSettingsTabBarStyle(visible.userBonus);
 
@@ -139,7 +141,7 @@ export default function SettingsScreen() {
             <SettingGridItem
               icon="wallet-outline"
               title="Portefeuille"
-              onPress={() => open("userWallet")}
+              onPress={() => router.push("/account/wallet")}
             />
           )}
         </SettingGrid>
@@ -225,18 +227,18 @@ export default function SettingsScreen() {
             <SettingGridItem
               icon="bicycle-outline"
               title="Mes livraisons"
-              onPress={() => open("driverOrders")}
+              onPress={() => router.push("/account/driver-orders")}
             />
           )}
           <SettingGridItem
             icon="document-text-outline"
             title="Mes demandes"
-            onPress={() => open("driverMyApps")}
+            onPress={() => router.push("/account/driver-applications")}
           />
           <SettingGridItem
             icon="add-circle-outline"
             title={isDriver ? "Postuler à une boutique" : "Devenir livreur"}
-            onPress={() => open("driverApply")}
+            onPress={() => router.push("/account/driver-apply")}
           />
         </SettingGrid>
         )}
@@ -284,7 +286,7 @@ export default function SettingsScreen() {
           <SettingGridItem
             icon="call-outline"
             title="Contactez-nous"
-            onPress={() => open("supportChat")}
+            onPress={() => router.push("/account/support")}
           />
         </SettingGrid>
 
@@ -325,39 +327,13 @@ export default function SettingsScreen() {
       </BlurScope>
       </BlurTarget>
 
-      {/* Boutique : gérer, menu, messages, notifications, portefeuille sont des
-          routes entières `app/shop/*` (hors (tabs), sans navbar). */}
-
-      {/* Mes activités : commandes + portefeuille user (plein écran) */}
-      <UserWalletModal
-        visible={visible.userWallet}
-        onClose={() => close("userWallet")}
-      />
-
-      {/* Contactez-nous : chat support */}
-      <SupportChatSheet
-        visible={visible.supportChat}
-        onClose={() => close("supportChat")}
-      />
+      {/* Boutique (`app/shop/*`) et compte (`app/account/*` : portefeuille,
+          support, livraison) sont des routes entières, sans navbar. */}
 
       {/* Bonus et parrainage (bottom sheet) */}
       <UserBonusSheet
         visible={visible.userBonus}
         onClose={() => close("userBonus")}
-      />
-
-      {/* Livraison (user) : postuler / gérer ses livraisons */}
-      <DriverApplyModal
-        visible={visible.driverApply}
-        onClose={() => close("driverApply")}
-      />
-      <DriverOrdersModal
-        visible={visible.driverOrders}
-        onClose={() => close("driverOrders")}
-      />
-      <DriverMyApplicationsModal
-        visible={visible.driverMyApps}
-        onClose={() => close("driverMyApps")}
       />
 
       </BlurScope>

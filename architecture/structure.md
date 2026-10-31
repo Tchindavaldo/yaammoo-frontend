@@ -50,6 +50,8 @@ app/
 │   ├── register.tsx         # Inscription
 │   └── phone.tsx            # Login WhatsApp / téléphone
 │
+├── account/                 # Pages entieres de Settings (hors Boutique), sans navbar : wallet, support,
+│                            #   driver-apply, driver-orders, driver-applications (ShopPageFrame + router.back)
 ├── (tabs)/                  # Tabs authentifiées
 │   ├── _layout.tsx
 │   ├── index.tsx            # Home (liste restaurants, feed)

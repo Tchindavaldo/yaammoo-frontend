@@ -11,7 +11,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { Theme } from "@/src/theme";
@@ -38,12 +37,12 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
 }) => {
   const { userData } = useAuth();
   const { fastFoods } = useFastFoods();
-  const tabBarHeight = useTabBarHeight();
   const [headerHeight, setHeaderHeight] = useState(70);
 
   // Hauteur REELLE de la navbar (safe-area comprise, source unique R19), pour
   // caler le bouton au-dessus.
-  const bottomInset = tabBarHeight;
+  // Page entiere (app/account/*) : ShopPageFrame reserve deja la safe-area, pas de navbar.
+  const bottomInset = 0;
   // Espace réservé sous la liste = écart du bouton (12) + bouton (52) + 8, pour
   // que le dernier item ne passe jamais sous le bouton fixe.
   const listBottomPad = bottomInset + 12 + 52 + 8;

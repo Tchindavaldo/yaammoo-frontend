@@ -164,8 +164,19 @@ export const CartGroupedDeliverySheet: React.FC<
    * Livraison incomplete : le paiement ne part pas. Le message dit CE QUI
    * manque, sinon le clic reste sans effet visible.
    */
+  // Overlay ouvert par `DeliveryTab` (un seul a la fois).
+  const [overlay, setOverlay] = React.useState<GroupedDeliveryOverlay>(null);
+  const pendingPayPhone = React.useRef<string | null>(null);
+
   const guardedConfirm = React.useCallback(
     async (payPhone: string) => {
+      // Retrait (sans livraison) : numero de contact exige. On ouvre l'overlay
+      // contact, puis le paiement reprend des que le numero est saisi.
+      if (delivery.type === "aucune" && !delivery.phone) {
+        pendingPayPhone.current = payPhone;
+        setOverlay("contact");
+        return;
+      }
       const manque =
         delivery.type === "aucune"
           ? null
@@ -185,8 +196,19 @@ export const CartGroupedDeliverySheet: React.FC<
     [delivery, handleConfirm, showError],
   );
 
-  // Overlay ouvert par `DeliveryTab` (un seul a la fois).
-  const [overlay, setOverlay] = React.useState<GroupedDeliveryOverlay>(null);
+  // Reprise du paiement apres saisie du numero de contact (retrait).
+  React.useEffect(() => {
+    const payPhone = pendingPayPhone.current;
+    if (!payPhone || !delivery.phone) return;
+    pendingPayPhone.current = null;
+    handleConfirm(payPhone);
+  }, [delivery.phone, handleConfirm]);
+
+  // Overlay ferme sans numero : on abandonne la reprise.
+  React.useEffect(() => {
+    if (overlay === null && !delivery.phone) pendingPayPhone.current = null;
+  }, [overlay, delivery.phone]);
+
 
   /**
    * Envoi en cours cote capsule du footer. Local, comme l'etait `isProcessing`

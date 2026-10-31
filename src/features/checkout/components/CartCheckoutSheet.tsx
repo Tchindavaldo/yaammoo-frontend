@@ -80,6 +80,11 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const [activeTab, setActiveTab] = useState<CheckoutStep>("detail");
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
   const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
+  // Commande SANS livraison (retrait) : le numero est exige par le backend. Sans
+  // numero, on ouvre l'overlay contact puis on reprend l'action demandee.
+  const pendingAction = useRef<null | "cart" | "buy">(null);
+  const [resumeAction, setResumeAction] = useState<null | "cart" | "buy">(null);
+  const actionsRef = useRef<{ cart?: () => void; buy?: () => void }>({});
   const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
   const [isExpressPopupVisible, setIsExpressPopupVisible] = useState(false);
   const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
@@ -262,7 +267,22 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     prefetchFastFoodDelivery(ffId).then(merge);
   }, [menu, fastFoods]);
 
+  // Reprend l'action une fois le numero saisi (delivery.phone a jour).
+  useEffect(() => {
+    if (!resumeAction || !delivery.phone) return;
+    const action = resumeAction;
+    setResumeAction(null);
+    actionsRef.current[action]?.();
+  }, [resumeAction, delivery.phone]);
+
   if (!menu) return null;
+
+  const needsPickupPhone = () =>
+    (!delivery.statut || delivery.type === "aucune") && !delivery.phone;
+  const askPhoneThen = (action: "cart" | "buy") => {
+    pendingAction.current = action;
+    setIsContactPopupVisible(true);
+  };
 
   const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
@@ -403,7 +423,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                  (elle reste dans le panier). Le sheet NE se ferme PAS — on
                  confirme par un toast pour que l'user puisse continuer à
                  éditer. */
-              onAddToCart={onSave && (async () => {
+              onAddToCart={onSave && (actionsRef.current.cart = async () => {
+                if (needsPickupPhone()) return askPhoneThen("cart");
                 const deliveryErr = validateDelivery();
                 if (deliveryErr) {
                   showError(deliveryErr);
@@ -426,7 +447,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   setIsSaving(false);
                 }
               })}
-              onBuy={() => {
+              onBuy={(actionsRef.current.buy = () => {
+                if (needsPickupPhone()) return askPhoneThen("buy");
                 const stockErr = validateStock();
                 if (stockErr) {
                   showError(stockErr);
@@ -440,7 +462,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 setPaymentState("network_select");
                 setIsPaymentPopupVisible(true);
                 setPaymentKey((prev) => prev + 1);
-              }}
+              })}
             />
             </BlurTarget>
           </Animated.View>
@@ -458,9 +480,18 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
           {isContactPopupVisible && (
             <CheckoutContactOverlay
-              onClose={() => setIsContactPopupVisible(false)}
+              onClose={() => {
+                setIsContactPopupVisible(false);
+                pendingAction.current = null;
+              }}
               phone={delivery.phone || ""}
-              onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
+              onSelectPhone={(ph) => {
+                setDelivery({ ...delivery, phone: ph });
+                if (ph && pendingAction.current) {
+                  setResumeAction(pendingAction.current);
+                  pendingAction.current = null;
+                }
+              }}
             />
           )}
 

@@ -1,5 +1,6 @@
+import { showToast } from "@/src/services/globalToast";
 import { useEffect, useRef } from "react";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 import { Commande } from "@/src/types";
 import {
   startDeliveryTracking,
@@ -38,9 +39,9 @@ export const useDeliveryTrackingSync = (orders: Commande[], loaded: boolean) => 
       .then((ok) => {
         if (ok || refusedAlerted.current) return;
         refusedAlerted.current = true;
-        Alert.alert(
-          "Localisation désactivée",
-          "Le client ne peut pas suivre la livraison. Autorisez la localisation de Yaammoo dans les réglages du téléphone.",
+        showToast(
+          "Localisation désactivée : le client ne peut pas suivre la livraison. Autorisez la localisation de Yaammoo dans les réglages du téléphone.",
+          "error",
         );
       })
       .catch((e) => console.warn("Suivi livraison impossible:", e));

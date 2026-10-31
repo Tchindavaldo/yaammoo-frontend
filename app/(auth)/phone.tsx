@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import React, { useState } from "react";
 import {
   View,
@@ -11,8 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
-} from "react-native";
+  } from "react-native";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,7 +43,7 @@ export default function PhoneAuthScreen() {
       if (numero !== "") {
         setSmsIsSend(true);
       } else {
-        Alert.alert("Erreur", "veuiller entrer le numero de telephone");
+        showToast("Veuillez entrer le numéro de téléphone", "error");
       }
     } else {
       if (verificationCode !== "") {
@@ -74,10 +74,10 @@ export default function PhoneAuthScreen() {
           }
         } catch (error: any) {
           setConnect(false);
-          Alert.alert("Erreur", "Code incorrect ou expiré");
+          showToast("Code incorrect ou expiré", "error");
         }
       } else {
-        Alert.alert("Erreur", "veuiller entrer le code envoyer");
+        showToast("Veuillez entrer le code envoyé", "error");
       }
     }
   };

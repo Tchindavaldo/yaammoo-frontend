@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { WalletDayStatItem } from "@/src/features/merchant/components/WalletDayStatItem";
 import { WalletDayStatSkeleton } from "@/src/features/merchant/components/WalletDayStatSkeleton";
@@ -9,7 +10,6 @@ import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   FlatList,
   Keyboard,
@@ -141,7 +141,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   // Toast d'erreur retrait.
   useEffect(() => {
     if (withdrawError) {
-      Alert.alert("Retrait", withdrawError);
+      showToast(withdrawError, "error");
       setWithdrawError(null);
     }
   }, [withdrawError, setWithdrawError]);
@@ -172,10 +172,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   ];
 
   const handleComingSoon = (label: string) => {
-    Alert.alert(
-      "Bientôt disponible",
-      `La fonctionnalité "${label}" arrive prochainement.`,
-    );
+    showToast(`La fonctionnalité "${label}" arrive prochainement.`, "info");
   };
 
   const listTopPad = topOffset + barHeight;
@@ -258,10 +255,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
             <TouchableOpacity
               style={styles.emptyBtn}
               onPress={() =>
-                Alert.alert(
-                  "Commandez!",
-                  "Passez votre première commande depuis l'accueil.",
-                )
+                showToast("Passez votre première commande depuis l'accueil.", "info")
               }
             >
               <Text style={styles.emptyBtnText}>Passer une commande</Text>
@@ -324,7 +318,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
           quote={quote}
           quoteLoading={quoteLoading}
           onClose={resetWithdraw}
-          onError={(msg) => Alert.alert("Retrait", msg)}
+          onError={(msg) => showToast(msg, "error")}
           isKeyboardVisible={isKeyboardVisible}
           bottom={Animated.add(keyboardHeight, isKeyboardVisible ? 5 : 92)}
         />

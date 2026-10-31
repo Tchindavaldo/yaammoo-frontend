@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **21 règles numérotées R1 → R21.** Toute nouvelle règle ajoutée à ce fichier
+> **22 règles numérotées R1 → R22.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -315,3 +315,15 @@ sur cette branche (`gh` absent : API GitHub `POST …/actions/workflows/eas-upda
 ## R21 — Plusieurs options : DEMANDER, ne rien inventer (OBLIGATOIRE)
 
 Quand une action a plusieurs options possibles (ex. workflow avec cases a cocher, mode permanent ou non, deployer ou non, quelle branche), DEMANDER a l utilisateur laquelle prendre AVANT d agir. Ne jamais choisir une option ni inventer un parametre qu il n a pas donne. Regarder comment l action a ete lancee precedemment ne suffit pas : demander.
+
+## R22 — Messages : toast GLOBAL uniquement, jamais d'alerte native (OBLIGATOIRE)
+
+Tout message affiché à l'utilisateur (succès, erreur, information) passe par le
+toast global : `showToast(message, "success" | "error" | "info")`
+(`src/services/globalToast.ts`, rendu par `GlobalToastHost` dans `app/_layout.tsx`,
+composant `src/components/Toast.tsx` : en haut, premier plan, fermeture par glissement).
+
+- **INTERDIT** : `Alert.alert(...)` (modal natif) pour afficher un message.
+- Seule exception : une vraie **confirmation à choix** (boutons Annuler / Confirmer),
+  qui n'est pas un message.
+- Un écran qui a déjà son `<Toast>` local peut le garder ; tout nouveau code appelle `showToast`.

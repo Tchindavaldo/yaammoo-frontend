@@ -1,5 +1,6 @@
+import { showToast } from "@/src/services/globalToast";
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { uploadVoiceNote } from '@/src/services/audio/uploadVoiceNote';
 import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
@@ -252,7 +253,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                     closeWithFade();
                   } catch (e) {
                     console.log('Error uploading voice note', e);
-                    Alert.alert('Note vocale', "Envoi impossible. Vérifiez votre connexion et réessayez.");
+                    showToast("Note vocale : envoi impossible. Vérifiez votre connexion et réessayez.", 'error');
                   } finally {
                     setUploading(false);
                   }

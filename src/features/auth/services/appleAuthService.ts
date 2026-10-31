@@ -1,5 +1,6 @@
+import { showToast } from "@/src/services/globalToast";
 import { OAuthProvider, signInWithCredential } from "firebase/auth";
-import { Alert, Platform, ToastAndroid } from "react-native";
+import { Platform, ToastAndroid } from "react-native";
 import * as Crypto from "expo-crypto";
 import { auth } from "@/src/services/firebase";
 import { userFirestore } from "./userFirestore";
@@ -16,7 +17,7 @@ const notifyUnavailable = (message: string) => {
   if (Platform.OS === "android") {
     ToastAndroid.show(message, ToastAndroid.LONG);
   } else {
-    Alert.alert("Apple Sign In", message);
+    showToast(message, "error");
   }
 };
 

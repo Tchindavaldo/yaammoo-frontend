@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -5,8 +6,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
-} from 'react-native';
+  } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import { WalletTransactionItem } from '@/src/features/wallet/components/WalletTransactionItem';
@@ -66,7 +66,7 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
   ];
 
   const handleComingSoon = (label: string) => {
-    Alert.alert('Bientôt disponible', `La fonctionnalité "${label}" arrive prochainement.`);
+    showToast(`La fonctionnalité "${label}" arrive prochainement.`, 'info');
   };
 
   return (
@@ -137,7 +137,7 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
             <Text style={styles.emptyTitle}>Pas de transaction</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
-              onPress={() => Alert.alert('Commandez!', 'Passez votre première commande depuis l\'accueil.')}
+              onPress={() => showToast('Passez votre première commande depuis l\'accueil.', 'info')}
             >
               <Text style={styles.emptyBtnText}>Passer une commande</Text>
             </TouchableOpacity>

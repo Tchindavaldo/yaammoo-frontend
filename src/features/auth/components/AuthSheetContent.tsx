@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -5,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -77,11 +77,11 @@ export default function AuthSheetContent() {
         setUserData(result.userData);
         return;
       } else if (result.error && result.error !== "Connexion annulée") {
-        Alert.alert("Erreur Google", result.error);
+        showToast(result.error, "error");
       }
       setGoogleLoading(false);
     } catch {
-      Alert.alert("Erreur", "Connexion Google échouée.");
+      showToast("Connexion Google échouée.", "error");
       setGoogleLoading(false);
     }
   };
@@ -96,11 +96,11 @@ export default function AuthSheetContent() {
         setUserData(result.userData);
         return;
       } else if (result.error && result.error !== "Connexion annulée") {
-        Alert.alert("Erreur Apple", result.error);
+        showToast(result.error, "error");
       }
       setAppleLoading(false);
     } catch {
-      Alert.alert("Erreur", "Connexion Apple échouée.");
+      showToast("Connexion Apple échouée.", "error");
       setAppleLoading(false);
     }
   };

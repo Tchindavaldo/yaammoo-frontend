@@ -1,9 +1,10 @@
+import { showToast } from "@/src/services/globalToast";
 import { Config } from "@/src/api/config";
 import axios from "axios";
 import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 
 /**
  * Photos du formulaire menu : sélection galerie + upload `/image/upload` avec
@@ -18,10 +19,7 @@ export const useMenuImageUpload = () => {
   const pickImage = async (index: number) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Permission refusée",
-        "Nous avons besoin d'accéder à votre galerie.",
-      );
+      showToast("Permission refusée : nous avons besoin d'accéder à votre galerie.", "error");
       return;
     }
 
@@ -172,7 +170,7 @@ export const useMenuImageUpload = () => {
         next[index] = 0;
         return next;
       });
-      Alert.alert("Erreur", `Impossible d'uploader l'image ${index + 1}`);
+      showToast(`Impossible d'uploader l'image ${index + 1}`, "error");
     } finally {
       setUploadingIdx(null);
     }

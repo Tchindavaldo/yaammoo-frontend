@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import { APP_VERSION } from "@/src/api/version";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
@@ -19,7 +20,6 @@ import { Theme } from "@/src/theme";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -76,10 +76,7 @@ export default function SettingsScreen() {
         `La section "${label}" sera disponible dans une prochaine version.`,
       );
     } else {
-      Alert.alert(
-        "Bientôt disponible",
-        `La section "${label}" sera disponible dans une prochaine version.`,
-      );
+      showToast(`La section "${label}" sera disponible dans une prochaine version.`, "info");
     }
   };
 

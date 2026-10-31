@@ -34,6 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
 import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { OtaUpdateCard } from "@/src/features/appVersion/components/OtaUpdateCard";
 import { BackgroundLocationPromptCard } from "@/src/features/location/components/BackgroundLocationPromptCard";
 import { LocationDisclosureModal } from "@/src/features/location/components/LocationDisclosureModal";
@@ -285,6 +286,8 @@ function RootLayout() {
                           {/* Divulgation avant toute popup de localisation
                               (Android, Google Play). */}
                           <LocationDisclosureModal />
+                          {/* Toast global (`showToast`) : en dernier, premier plan. */}
+                          <GlobalToastHost />
                         </AppVersionProvider>
                       </AuthGateProvider>
                     </BonusProvider>

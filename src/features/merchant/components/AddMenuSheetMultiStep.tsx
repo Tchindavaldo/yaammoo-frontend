@@ -1,9 +1,9 @@
+import { showToast } from "@/src/services/globalToast";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -216,7 +216,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         setSelectedPriceIdx(Number(err.fields[0].slice(4)));
       if (err.fields[0]?.startsWith("prix"))
         setSelectedPriceIdx(Number(err.fields[0].slice(4)));
-      Alert.alert("Validation", err.message);
+      showToast(err.message, "error");
       return;
     }
     setErrorFields([]);
@@ -274,10 +274,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       // raison métier) — le générique ne sert que de filet si l'API ne
       // renvoie rien d'exploitable.
       const backendMessage = e?.response?.data?.message || e?.message;
-      Alert.alert(
-        "Erreur",
-        backendMessage || "Impossible de sauvegarder le menu",
-      );
+      showToast(backendMessage || "Impossible de sauvegarder le menu", "error");
     } finally {
       setSubmitting(false);
     }

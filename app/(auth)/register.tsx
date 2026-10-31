@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import React, { useState } from "react";
 import {
   View,
@@ -10,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   ScrollView,
 } from "react-native";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
@@ -49,10 +49,10 @@ export default function RegisterScreen() {
   const nextStep = () => {
     if (!infos1ISCheck) {
       if (nom && prenom && birth) setInfos1ISCheck(true);
-      else Alert.alert("Erreur", "Veuillez remplir tous les champs");
+      else showToast("Veuillez remplir tous les champs", "error");
     } else if (!infos2ISCheck) {
       if (tel && email && password) setInfos2ISCheck(true);
-      else Alert.alert("Erreur", "Veuillez remplir tous les champs");
+      else showToast("Veuillez remplir tous les champs", "error");
     }
   };
 
@@ -98,7 +98,7 @@ export default function RegisterScreen() {
       setUserData(newUser as any);
     } catch (error: any) {
       setConnect(false);
-      Alert.alert("Erreur", "Impossible de créer le compte.");
+      showToast("Impossible de créer le compte.", "error");
     }
   };
 

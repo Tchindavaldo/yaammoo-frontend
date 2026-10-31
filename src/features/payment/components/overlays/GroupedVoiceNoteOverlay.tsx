@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -7,7 +8,6 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import { uploadVoiceNote } from "@/src/services/audio/uploadVoiceNote";
 import {
-  Alert,
   Animated,
   StyleSheet,
   Text,
@@ -278,9 +278,9 @@ export const GroupedVoiceNoteOverlay: React.FC<
                       closeWithFade();
                     } catch (e) {
                       console.log("Error uploading voice note", e);
-                      Alert.alert(
-                        "Note vocale",
-                        "Envoi impossible. Vérifiez votre connexion et réessayez.",
+                      showToast(
+                        "Note vocale : envoi impossible. Vérifiez votre connexion et réessayez.",
+                        "error",
                       );
                     } finally {
                       setUploading(false);

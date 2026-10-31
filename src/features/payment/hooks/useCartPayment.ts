@@ -138,7 +138,8 @@ export const useCartPayment = (amount: number) => {
       setPaymentState("success");
       setTimeout(() => {
         // La fermeture est gérée par le parent (effet sur 'success_created').
-        setPaymentState("success_created");
+        // Ignoré si le paiement a été remis à zéro entre-temps (verdict reçu sheet fermé).
+        if (paymentStateRef.current === "success") setPaymentState("success_created");
       }, 5000);
     } else {
       // Échec : pas d'état "failed" dans l'overlay → retour direct au repos

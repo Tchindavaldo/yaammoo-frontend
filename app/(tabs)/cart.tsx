@@ -45,6 +45,8 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Toast } from "@/src/components/Toast";
+import { showToast } from "@/src/services/globalToast";
+import { lockPayment, unlockPayment, reopenLockedPayment } from "@/src/services/paymentLock";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
@@ -225,6 +227,8 @@ export default function OrdersScreen() {
 
   // Livraison commune validée : écrase celle de chaque commande payée.
   const [groupedDeliveryValue, setGroupedDeliveryValue] = useState<any>(null);
+  /** Sheet groupé masqué pendant l'attente du verdict (cf. `paymentLock`). */
+  const [groupedHidden, setGroupedHidden] = useState(false);
   /** Meme valeur, lisible SYNCHRONEMENT par `confirmCartPayment`. */
   const groupedDeliveryRef = React.useRef<any>(null);
 
@@ -366,6 +370,7 @@ export default function OrdersScreen() {
     // Le parcours groupé porte le paiement dans son propre sheet : la fin du
     // paiement le referme aussi, sinon il resterait ouvert sur le succès.
     setGroupedDelivery(null);
+    setGroupedHidden(false);
     resetPayment();
   }, [resetPayment]);
 
@@ -379,6 +384,7 @@ export default function OrdersScreen() {
   const startOrder = React.useCallback(
     (groups: ReturnType<typeof groupCartOrdersByZone>) => {
       // Nom / prenom manquant : la sheet dediee passe AVANT la livraison.
+      if (reopenLockedPayment()) return;
       requireName(() => setGroupedDelivery(groups));
     },
     [requireName],
@@ -395,13 +401,35 @@ export default function OrdersScreen() {
     }
   }, [paymentState, endPayment, refresh]);
 
-  // Toast d'erreur paiement.
+  // Paiement groupé en attente de verdict : verrou global, toute ouverture
+  // (commande, « commander ») rouvre le sheet groupé tel qu'il était.
+  const groupedInFlight =
+    paymentState === "waiting" || paymentState === "ussd_sent";
+  const reopenGrouped = React.useRef(() => setGroupedHidden(false)).current;
+  useEffect(() => {
+    if (groupedInFlight) lockPayment(reopenGrouped);
+    else unlockPayment(reopenGrouped);
+  }, [groupedInFlight, reopenGrouped]);
+
+  // Toast d'erreur paiement (sheet masqué : toast global et fin du parcours).
   useEffect(() => {
     if (paymentError) {
-      setToast({ message: paymentError, type: "error" });
+      if (groupedHidden) {
+        showToast(paymentError, "error");
+        endPayment();
+      } else setToast({ message: paymentError, type: "error" });
       setPaymentError(null);
     }
-  }, [paymentError, setPaymentError]);
+  }, [paymentError, setPaymentError, groupedHidden, endPayment]);
+
+  // Succès reçu sheet masqué : toast global, fin immédiate du parcours.
+  useEffect(() => {
+    if (groupedHidden && paymentState === "success") {
+      showToast("Commande créée avec succès !", "success");
+      endPayment();
+      refresh();
+    }
+  }, [groupedHidden, paymentState, endPayment, refresh]);
 
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
@@ -791,6 +819,7 @@ export default function OrdersScreen() {
               localRank={index + 1}
               showActions
               onPress={() => {
+                if (reopenLockedPayment()) return;
                 setOrderToEdit(item);
                 setEditModalVisible(true);
               }}
@@ -922,7 +951,8 @@ export default function OrdersScreen() {
           les deux. La livraison validée est appliquée à toutes les commandes du
           lot au moment de construire les `items` du paiement. */}
       <CartGroupedDeliverySheet
-        visible={!orderToDelete && groupedDelivery !== null}
+        visible={!orderToDelete && groupedDelivery !== null && !groupedHidden}
+        onHide={() => setGroupedHidden(true)}
         groups={groupedDelivery || []}
         onSplit={() => {
           setGroupedDelivery(null);
@@ -985,6 +1015,7 @@ export default function OrdersScreen() {
           onClose={() => {
             setEditModalVisible(false);
           }}
+          onReopen={() => setEditModalVisible(true)}
           menu={synthesizedEditMenu}
           initialOrder={orderToEdit}
           isCartMode={true}

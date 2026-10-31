@@ -4,6 +4,7 @@ import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { Menu } from "@/src/types";
 import { track } from "@/src/services/analytics/analytics";
+import { reopenLockedPayment } from "@/src/services/paymentLock";
 
 type HomeToast = { message: string; type: "success" | "error" } | null;
 
@@ -30,6 +31,8 @@ export const useHomeCheckout = () => {
   const [toast, setToast] = useState<HomeToast>(null);
 
   const handleMenuClick = (menu: Menu) => {
+    // Paiement en cours (ici ou au panier) : on rouvre SON sheet, pas ce plat.
+    if (reopenLockedPayment()) return;
     track("menu_open", idsOf(menu));
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
     // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
@@ -92,6 +95,7 @@ export const useHomeCheckout = () => {
     selectedMenu,
     checkoutVisible,
     closeCheckout: () => setCheckoutVisible(false),
+    reopenCheckout: () => setCheckoutVisible(true),
     toast,
     hideToast: () => setToast(null),
     onMenuClickStable,

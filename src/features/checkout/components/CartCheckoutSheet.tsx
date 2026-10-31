@@ -1,4 +1,6 @@
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
+import { showToast } from "@/src/services/globalToast";
+import { lockPayment, unlockPayment } from "@/src/services/paymentLock";
 import React, { useState, useEffect, useRef } from "react";
 import { menuPriceDescription } from "../utils/menuPrices";
 import {
@@ -7,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  Pressable,
   Text,
   Animated,
   Dimensions,
@@ -64,6 +67,8 @@ interface CheckoutSheetProps {
   onSave?: (order: any) => Promise<{ success: boolean; message?: string }>;
   onChange?: (order: any) => void;
   isCartMode?: boolean;
+  /** Rouvre ce sheet (paiement en cours, cf. `paymentLock`). */
+  onReopen?: () => void;
 }
 
 type CheckoutStep = "detail" | "extra" | "drink" | "delivery";
@@ -77,6 +82,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   onSave,
   isCartMode,
   onChange,
+  onReopen,
 }) => {
   const [activeTab, setActiveTab] = useState<CheckoutStep>("detail");
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
@@ -220,6 +226,35 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     }
   }, [paymentState, onClose]);
 
+  // Paiement en attente de verdict : le sheet peut être fermé (toucher hors
+  // zone), le paiement continue et toute ouverture rouvre CE sheet.
+  const paymentInFlight =
+    paymentState === "waiting" || paymentState === "ussd_sent";
+  const onReopenRef = useRef(onReopen);
+  onReopenRef.current = onReopen;
+  const reopenRef = useRef<() => void>(() => onReopenRef.current?.());
+  useEffect(() => {
+    const reopen = reopenRef.current;
+    if (paymentInFlight) lockPayment(reopen);
+    else unlockPayment(reopen);
+  }, [paymentInFlight]);
+  useEffect(() => () => unlockPayment(reopenRef.current), []);
+
+  // Verdict reçu sheet FERMÉ : toast global, verrou levé, paiement refermé.
+  useEffect(() => {
+    if (visible) return;
+    if (paymentError) {
+      showToast(paymentError, "error");
+      setPaymentError(null);
+      setIsPaymentPopupVisible(false);
+    } else if (paymentState === "success") {
+      showToast("Commande créée avec succès !", "success");
+    } else if (paymentState === "success_created") {
+      setIsPaymentPopupVisible(false);
+      setPaymentState("network_select");
+    }
+  }, [visible, paymentError, paymentState]);
+
   // En cas d'erreur paiement : NE PAS fermer les overlays. On reste sur l'état
   // `input` (le toast d'erreur s'affiche, l'utilisateur peut ressaisir).
   // Seul `success_created` déclenche la fermeture (effet ci-dessus).
@@ -309,7 +344,11 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             style={[styles.backdrop, { opacity: backdropOpacity }]}
             pointerEvents="none"
           />
-          <View style={styles.dismiss} />
+          {/* Paiement en cours : toucher hors zone = retour au panier. */}
+          <Pressable
+            style={styles.dismiss}
+            onPress={paymentInFlight ? onClose : undefined}
+          />
 
           <Animated.View
             style={[

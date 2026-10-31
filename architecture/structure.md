@@ -261,6 +261,7 @@ src/
 ├── utils/formatDistance.ts      # « 850 m » / « 1,2 km » (home + suivi livraison)
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
+    ├── paymentLock.ts          # Verrou du paiement en cours : rouvre son sheet (cf. payment.md)
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
     ├── socketHandlers/         # Handlers sortis de useSocketEvents (R4) : catalogEvents (menus, boutiques),
     │                           #   bonusWalletEvents (transactions, bonus, wallet), logEvent

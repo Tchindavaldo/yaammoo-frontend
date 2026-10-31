@@ -377,6 +377,7 @@ export default function HomeScreen() {
         visible={checkout.checkoutVisible}
         onClose={checkout.closeCheckout}
         menu={checkout.selectedMenu}
+        onReopen={checkout.reopenCheckout}
         onConfirm={checkout.handleConfirmOrder}
       />
 

@@ -81,6 +81,8 @@ interface CartGroupedDeliverySheetProps {
   keyboardHeight: Animated.Value | Animated.AnimatedInterpolation<number>;
   isKeyboardVisible: boolean;
   onClose: () => void;
+  /** Paiement en cours : masque le sheet sans l'annuler (cf. `paymentLock`). */
+  onHide?: () => void;
   onError?: (message: string) => void;
 }
 
@@ -113,6 +115,7 @@ export const CartGroupedDeliverySheet: React.FC<
   onSplit,
   onValidate,
   onClose,
+  onHide,
   onError,
   phone,
   onPhoneChange,
@@ -264,7 +267,12 @@ export const CartGroupedDeliverySheet: React.FC<
    * precedente. On le repositionne aussi a l'OUVERTURE, sur les `groups` du
    * nouveau lot.
    */
+  // Paiement en attente de verdict : rouvert tel quel (étape et capsule gardées).
+  const inFlightRef = React.useRef(false);
+  inFlightRef.current =
+    paymentState === "waiting" || paymentState === "ussd_sent";
   React.useEffect(() => {
+    if (inFlightRef.current) return;
     setStep(singleOrder ? 2 : 1);
   }, [visible, singleOrder]);
 
@@ -559,7 +567,13 @@ export const CartGroupedDeliverySheet: React.FC<
         {/* Paiement parti : le tap sur le voile ne ferme plus. */}
         <Pressable
           style={StyleSheet.absoluteFill}
-          onPress={isBusy ? undefined : onClose}
+          onPress={
+            paymentState === "waiting" || paymentState === "ussd_sent"
+              ? onHide
+              : isBusy
+                ? undefined
+                : onClose
+          }
         />
       </Animated.View>
 

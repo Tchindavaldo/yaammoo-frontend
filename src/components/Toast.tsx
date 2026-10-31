@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Animated, Text, StyleSheet, View, SafeAreaView, Dimensions } from 'react-native';
+import { Animated, Text, StyleSheet, SafeAreaView, Dimensions, PanResponder, Platform } from 'react-native';
+import { FullWindowOverlay } from 'react-native-screens';
 import { Ionicons } from '@expo/vector-icons';
 import { DS } from '@/src/theme/ds';
 
@@ -13,6 +14,39 @@ interface ToastProps {
 export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, onHide }) => {
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const swipeX = useRef(new Animated.Value(0)).current;
+  const hidden = useRef(false);
+
+  // Fermeture : animation de sortie puis onHide (une seule fois).
+  const hide = (toX = 0, toY = -100) => {
+    if (hidden.current) return;
+    hidden.current = true;
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: toY, duration: 250, useNativeDriver: true }),
+      Animated.timing(swipeX, { toValue: toX, duration: 250, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 0, duration: 250, useNativeDriver: true }),
+    ]).start(() => onHide?.());
+  };
+
+  // Glisser vers le haut ou vers la droite pour fermer.
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 6 || Math.abs(g.dy) > 6,
+      onPanResponderMove: (_, g) => {
+        if (g.dx > 0) swipeX.setValue(g.dx);
+        if (g.dy < 0) slideAnim.setValue(4 + g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dx > 80) hide(Dimensions.get('window').width, 4);
+        else if (g.dy < -30) hide(0, -150);
+        else
+          Animated.parallel([
+            Animated.spring(swipeX, { toValue: 0, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 4, useNativeDriver: true }),
+          ]).start();
+      },
+    }),
+  ).current;
 
   useEffect(() => {
     if (message) {
@@ -31,23 +65,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
         }),
       ]).start();
 
-      const timer = setTimeout(() => {
-        // Hide animation
-        Animated.parallel([
-          Animated.timing(slideAnim, {
-            toValue: -100,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          if (onHide) onHide();
-        });
-      }, duration);
+      const timer = setTimeout(() => hide(), duration);
 
       return () => clearTimeout(timer);
     }
@@ -71,14 +89,15 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container} pointerEvents="none">
+  const content = (
+    <SafeAreaView style={styles.container} pointerEvents="box-none">
       <Animated.View
+        {...pan.panHandlers}
         style={[
           styles.toast,
           {
             backgroundColor: getBackgroundColor(),
-            transform: [{ translateY: slideAnim }],
+            transform: [{ translateY: slideAnim }, { translateX: swipeX }],
             opacity: opacityAnim,
           },
         ]}
@@ -88,6 +107,10 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
       </Animated.View>
     </SafeAreaView>
   );
+
+  // iOS : FullWindowOverlay = fenêtre native au-dessus de TOUT (Modals, voiles,
+  // sheets). Android : le toast est rendu en dernier, zIndex/elevation max.
+  return Platform.OS === 'ios' ? <FullWindowOverlay>{content}</FullWindowOverlay> : content;
 };
 
 const styles = StyleSheet.create({
@@ -114,7 +137,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 9999,
   },
   text: {
     color: 'white',

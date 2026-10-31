@@ -690,9 +690,13 @@ export default function OrdersScreen() {
   //
   // ⚠️ `!refreshing` exclut le pull-to-refresh : il a déjà son propre indicateur
   // natif, et le skeleton s'afficherait par-dessus, masquant le geste en cours.
+  // ⚠️ Paiement ou sheet en cours : le rafraichissement au retour dans l'app
+  // (USSD valide hors de l'app) ne doit PAS remplacer la page par le skeleton,
+  // sinon le sheet est demonte et le suivi du paiement (verdict) est perdu.
+  const flowOpen = paymentActive || editModalVisible || groupedDelivery !== null;
   if (
     (loading && orders.length === 0) ||
-    (ordersRefreshing && !refreshing) ||
+    (ordersRefreshing && !refreshing && !flowOpen) ||
     forceLoading
   ) {
     return (

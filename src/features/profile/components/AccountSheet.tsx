@@ -2,6 +2,7 @@
 // liste des comptes (courant coche), ajouter un compte, se deconnecter
 // (meme logique et loader que LogoutModal, via useLogout), annuler.
 // Pas de fermeture au tap hors de la sheet : seul « Annuler » la ferme.
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
@@ -168,6 +169,8 @@ export function AccountSheet({
           </TouchableOpacity>
         </View>
       </Animated.View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 }

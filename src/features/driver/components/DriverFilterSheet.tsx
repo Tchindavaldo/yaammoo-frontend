@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
@@ -165,6 +166,8 @@ export const DriverFilterSheet: React.FC<DriverFilterSheetProps> = ({
         </View>
         <SafeAreaDebugBand />
       </Animated.View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

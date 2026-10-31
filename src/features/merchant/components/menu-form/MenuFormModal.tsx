@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import React, { useState } from "react";
@@ -107,5 +108,7 @@ export const MenuFormModal: React.FC<{
         <SafeAreaDebugBand />
       </Animated.View>
     </View>
+    {/* Toast global au premier plan (Android). */}
+    <GlobalToastHost modal />
   </Modal>
 );

@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React from "react";
 import {
   View,
@@ -44,6 +45,8 @@ export const TimePickerOverlay: React.FC<{
         />
       </BlurView>
     </View>
+    {/* Toast global au premier plan (Android). */}
+    <GlobalToastHost modal />
   </Modal>
 );
 
@@ -157,6 +160,8 @@ export const CityPickerModal: React.FC<{
         </ScrollView>
       </BlurView>
     </View>
+    {/* Toast global au premier plan (Android). */}
+    <GlobalToastHost modal />
   </Modal>
 );
 

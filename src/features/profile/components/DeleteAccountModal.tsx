@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -153,6 +154,8 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
           </View>
         </View>
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 }

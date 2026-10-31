@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -387,6 +388,8 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
       {toast && (creating || !!roleSheet) && (
         <Toast message={toast.message} type={toast.type} onHide={() => setToast(null)} />
       )}
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
 
       <StaffConfirmDialog confirm={confirm} busy={confirmBusy} onCancel={() => setConfirm(null)} />

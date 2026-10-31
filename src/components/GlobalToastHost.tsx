@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { Toast } from "@/src/components/Toast";
-import { subscribeToast, type GlobalToastPayload } from "@/src/services/globalToast";
+import { registerToastHost, type GlobalToastPayload } from "@/src/services/globalToast";
 
-/** Hote unique du toast global (`showToast`). A monter UNE fois, en dernier. */
-export const GlobalToastHost: React.FC = () => {
+/**
+ * Hote du toast global (`showToast`). Racine : monte UNE fois dans
+ * `app/_layout.tsx`. `modal` : a poser en dernier enfant de chaque `<Modal>`
+ * (Android seulement, ne fait rien sur iOS) — cf. `services/globalToast.ts`.
+ */
+export const GlobalToastHost: React.FC<{ modal?: boolean }> = ({ modal }) => {
+  const active = !modal || Platform.OS === "android";
   const [toast, setToast] = useState<GlobalToastPayload | null>(null);
-  useEffect(() => subscribeToast(setToast), []);
+  useEffect(() => (active ? registerToastHost(setToast) : undefined), [active]);
   if (!toast) return null;
   return (
     <Toast

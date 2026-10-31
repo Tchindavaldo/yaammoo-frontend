@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { ClientDateChipsRow } from "./ClientDateChipsRow";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
@@ -414,7 +415,11 @@ export const ClientFilterSheet: React.FC<ClientFilterSheetProps> = ({
           )}
           <SafeAreaDebugBand />
         </View>
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -82,6 +83,8 @@ export function LogoutModal({ visible, onClose }: Props) {
           </View>
         </View>
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 }

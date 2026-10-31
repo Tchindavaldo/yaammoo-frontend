@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
@@ -50,6 +51,8 @@ export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel })
         </View>
       </View>
     </View>
+    {/* Toast global au premier plan (Android). */}
+    <GlobalToastHost modal />
   </Modal>
 );
 

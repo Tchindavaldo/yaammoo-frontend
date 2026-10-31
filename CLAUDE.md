@@ -327,3 +327,6 @@ composant `src/components/Toast.tsx` : en haut, premier plan, fermeture par glis
 - Seule exception : une vraie **confirmation à choix** (boutons Annuler / Confirmer),
   qui n'est pas un message.
 - Un écran qui a déjà son `<Toast>` local peut le garder ; tout nouveau code appelle `showToast`.
+- **Tout `<Modal>`** pose `<GlobalToastHost modal />` en dernier enfant : sur Android
+  une Modal est une fenêtre au-dessus de l'app, sans cet hôte le toast passerait dessous
+  (pile d'hôtes, seul le premier plan affiche ; inactif sur iOS).

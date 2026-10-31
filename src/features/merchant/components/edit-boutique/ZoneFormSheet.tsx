@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React from "react";
 import {
   View,
@@ -298,6 +299,8 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
           )}
         </View>
       </KeyboardAvoidingView>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
@@ -193,6 +194,8 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
         <Text style={styles.hint}>Appuie sur une ligne pour la copier.</Text>
         <SafeAreaDebugBand />
       </Animated.View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

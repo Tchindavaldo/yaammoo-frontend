@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { isBonusPagerAvailable } from "@/modules/bonus-pager";
 import { Toast } from "@/src/components/Toast";
 import { Theme } from "@/src/theme";
@@ -376,6 +377,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
           />
         )}
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

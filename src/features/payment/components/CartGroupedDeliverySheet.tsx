@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { AppBlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Toast } from "@/src/components/Toast";
@@ -816,6 +817,8 @@ export const CartGroupedDeliverySheet: React.FC<
         />
       )}
       </BlurScope>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

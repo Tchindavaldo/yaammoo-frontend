@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {
@@ -141,6 +142,8 @@ export const CartFilterOptionsSheet: React.FC<CartFilterOptionsSheetProps> = ({
         </ScrollView>
         <SafeAreaDebugBand />
       </Animated.View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

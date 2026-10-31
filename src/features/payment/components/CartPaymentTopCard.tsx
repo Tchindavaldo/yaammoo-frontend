@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { CartZoneFooterBar } from "@/src/features/orders/components/CartZoneFooterBar";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
@@ -334,6 +335,8 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
           {!isVariant && children}
         </Animated.View>
       </Animated.View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

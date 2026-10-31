@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
 import { MerchantStickyChipsRow as StickyChipsRow } from "./MerchantStickyChipsRow";
@@ -403,7 +404,11 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
           )}
           <SafeAreaDebugBand />
         </View>
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

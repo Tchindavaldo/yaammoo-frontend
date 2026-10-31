@@ -1,5 +1,6 @@
 // Web-specific version of MerchantOrderBottomSheet
 // react-native-maps is not supported on web, so we replace MapView with a static placeholder
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Commande } from "@/src/types";
 import { Ionicons } from '@expo/vector-icons';
 import { useVoiceNotePlayer } from '@/src/services/audio/useVoiceNote';
@@ -324,6 +325,8 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
           )}
         </Animated.View>
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 }

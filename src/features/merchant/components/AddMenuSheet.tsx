@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 // Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
@@ -144,6 +145,8 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
           <SafeAreaDebugBand />
         </View>
       </KeyboardAvoidingView>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

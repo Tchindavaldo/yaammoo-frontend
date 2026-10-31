@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -149,6 +150,8 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
           <SafeAreaDebugBand />
         </Pressable>
       </Pressable>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

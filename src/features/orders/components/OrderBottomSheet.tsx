@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Commande, FastFood } from "@/src/types";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -285,6 +286,8 @@ export const OrderBottomSheet: React.FC<Props> = ({
           <SafeAreaDebugBand />
         </Animated.View>
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

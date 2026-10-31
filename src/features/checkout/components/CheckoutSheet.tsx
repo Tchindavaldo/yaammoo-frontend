@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React, { useState, useEffect, useRef } from "react";
 import { menuPriceDescription } from "../utils/menuPrices";
 import {
@@ -551,6 +552,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
           )}
           </BlurScope>
         </View>
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
     </>
   );

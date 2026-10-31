@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
@@ -68,6 +69,8 @@ export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification
           <SafeAreaDebugBand />
         </Pressable>
       </Pressable>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

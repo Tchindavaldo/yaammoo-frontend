@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import {
   DriverProfile,
   driverService,
@@ -517,6 +518,8 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
             <View style={styles.commentModalCard}>{commentCardContent}</View>
           </Animated.View>
         </View>
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
     </View>
   );

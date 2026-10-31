@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -206,6 +207,8 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
           <SafeAreaDebugBand />
         </Animated.View>
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

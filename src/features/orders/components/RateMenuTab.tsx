@@ -1,3 +1,4 @@
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import {
   MenuStatsProfile,
   ratingService,
@@ -451,6 +452,8 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
             <View style={styles.commentModalCard}>{commentCardContent}</View>
           </Animated.View>
         </View>
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
     </View>
   );

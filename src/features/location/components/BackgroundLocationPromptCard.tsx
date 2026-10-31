@@ -37,7 +37,7 @@ const MESSAGE =
   "Dans la fenêtre suivante, choisissez « Toujours autoriser » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.";
 
 /** Ecart entre le bas de la carte et le bas visible de la barre (cf. OTA). */
-const BOTTOM_GAP = 7;
+const BOTTOM_GAP = 0;
 
 export const BackgroundLocationPromptCard = () => {
   // Bande safe-area basse : source unique (R19) ; la carte flotte au-dessus.

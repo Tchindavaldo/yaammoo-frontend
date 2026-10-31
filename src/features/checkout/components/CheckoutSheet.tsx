@@ -438,6 +438,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 pendingAction.current = null;
               }}
               phone={delivery.phone || ""}
+              pickup={!delivery.statut || delivery.type === "aucune"}
               onSelectPhone={(ph) => {
                 setDelivery({ ...delivery, phone: ph });
                 if (ph && pendingAction.current) {

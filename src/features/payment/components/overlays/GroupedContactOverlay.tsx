@@ -31,12 +31,15 @@ interface GroupedContactOverlayProps {
   onClose: () => void;
   phone: string;
   onSelectPhone?: (phone: string) => void;
+  /** Commande sans livraison (retrait) : texte adapte a la boutique. */
+  pickup?: boolean;
 }
 
 export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
   onClose,
   phone,
   onSelectPhone,
+  pickup,
 }) => {
   const insets = useSafeAreaInsets();
   const [localPhone, setLocalPhone] = React.useState(phone);
@@ -217,8 +220,9 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
             </View>
 
             <Text style={styles.helperText}>
-              Our courier will use this number to contact you upon arrival if
-              there are any issues with your delivery.
+              {pickup
+                ? "La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande."
+                : "Our courier will use this number to contact you upon arrival if there are any issues with your delivery."}
             </Text>
           </View>
         </View>

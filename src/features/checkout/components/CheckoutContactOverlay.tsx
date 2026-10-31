@@ -17,9 +17,11 @@ interface CheckoutContactOverlayProps {
   onClose: () => void;
   phone: string;
   onSelectPhone?: (phone: string) => void;
+  /** Commande sans livraison (retrait) : texte adapte a la boutique. */
+  pickup?: boolean;
 }
 
-export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone, onSelectPhone }) => {
+export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone, onSelectPhone, pickup }) => {
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
@@ -176,7 +178,9 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
             </View>
 
             <Text style={styles.helperText}>
-              Our courier will use this number to contact you upon arrival if there are any issues with your delivery.
+              {pickup
+                ? "La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande."
+                : "Our courier will use this number to contact you upon arrival if there are any issues with your delivery."}
             </Text>
           </View>
         </View>

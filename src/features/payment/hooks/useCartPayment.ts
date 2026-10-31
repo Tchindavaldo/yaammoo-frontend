@@ -98,7 +98,9 @@ export const useCartPayment = (amount: number) => {
         }
 
         if (response.data.status === "ussd_sent" || response.data.success === true) {
-          setUssdMessage(response.data.message);
+          // Code USSD fourni par MobileWallet selon le réseau (si le PIN n'arrive pas).
+        const code = response.data.ussd_code;
+        setUssdMessage(code ? `${response.data.message} Si la demande n'arrive pas, composez ${code}.` : response.data.message);
           setPaymentState("ussd_sent");
         } else {
           const raw = response.data.message;
@@ -140,7 +142,7 @@ export const useCartPayment = (amount: number) => {
     } else {
       // Échec : pas d'état "failed" dans l'overlay → retour direct au repos
       // (total). Seul le toast top affiche l'erreur.
-      setPaymentError("Paiement échoué");
+      setPaymentError(data.message || "Paiement échoué");
       setPaymentState("total");
     }
   }, []);

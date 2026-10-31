@@ -69,7 +69,7 @@ const DARK = true;
 /** Carte en haut de l'ecran ou en bas, par-dessus la barre d'onglets (essai). */
 const POSITION = "bottom" as "top" | "bottom";
 /** En bas : ecart entre le bas de la carte et le bas visible de la barre. */
-const BOTTOM_GAP = 7;
+const BOTTOM_GAP = 0;
 
 const PALETTE = DARK
   ? {

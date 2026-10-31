@@ -47,10 +47,11 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
         status: hasDelivery,
         date: d.date || new Date().toISOString().split("T")[0],
       };
+      // Numero de contact garde aussi en RETRAIT (exige par le backend).
+      if (d.phone) base.phone = d.phone;
       if (hasDelivery) {
         if (d.type) base.type = d.type;
         if (d.location) base.location = d.location;
-        if (d.phone) base.phone = d.phone;
         if (d.voiceNoteUri) base.voiceNoteUri = d.voiceNoteUri;
         if (d.record) base.record = d.record;
         if (d.note) base.note = d.note;

@@ -587,7 +587,9 @@ export default function OrdersScreen() {
    * `expressLieu` / `hour`).
    */
   const toOrderDelivery = (d: any) => {
-    if (!d || d.type === "aucune") return { status: false, type: "aucune" };
+    // Retrait : le numero de contact est exige par le backend.
+    if (!d || d.type === "aucune")
+      return { status: false, type: "aucune", ...(d?.phone && { phone: d.phone }) };
     const express = d.type === "express";
     return {
       status: true,

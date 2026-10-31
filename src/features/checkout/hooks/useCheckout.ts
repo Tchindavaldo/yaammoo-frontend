@@ -232,12 +232,15 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       date: delivery.date || new Date().toISOString().split("T")[0],
     };
 
+    // Numero de contact envoye aussi en RETRAIT : exige par le backend
+    // (validateOrder : `delivery.phone` requis pour une commande en retrait).
+    if (delivery.phone) deliveryData.phone = delivery.phone;
+
     if (hasDelivery && finalDeliveryType) {
       deliveryData.type = finalDeliveryType;
       // Prix de livraison unique (le backend connaît le type via `type`).
       deliveryData.prix = prices.deliveryPrice;
       if (delivery.address) deliveryData.location = delivery.address;
-      if (delivery.phone) deliveryData.phone = delivery.phone;
       if (delivery.voiceNoteUri) deliveryData.voiceNoteUri = delivery.voiceNoteUri;
       if (delivery.note) deliveryData.note = delivery.note;
 

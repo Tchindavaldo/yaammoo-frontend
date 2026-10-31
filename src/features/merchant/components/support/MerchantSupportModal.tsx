@@ -33,10 +33,27 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const { userData } = useAuth();
-  const { threads, loading, upsert } = useMerchantSupportThreads(
+  const { threads: realThreads, loading, upsert } = useMerchantSupportThreads(
     userData?.fastFoodId,
     visible
   );
+  // TEMPORAIRE (verification visuelle du bas de liste) : fils de demo quand la
+  // boutique n'a aucun message. A RETIRER (DEMO_THREADS = false).
+  const DEMO_THREADS = true;
+  const threads =
+    DEMO_THREADS && realThreads.length === 0
+      ? Array.from({ length: 12 }, (_, i) => ({
+          id: `demo-${i}`,
+          topic: (["question", "probleme", "assistance", "suggestion", "discussion"] as const)[i % 5],
+          client: { id: `demo-client-${i}`, nom: `Client démo ${i + 1}` },
+          title: "Demande de démonstration",
+          status: "open" as const,
+          unreadCount: 0,
+          supportUnreadCount: i % 3 === 0 ? 1 : 0,
+          updatedAt: new Date(Date.now() - i * 3600_000).toISOString(),
+          lastMessage: "Message de démonstration pour vérifier le bas de la liste.",
+        }))
+      : realThreads;
 
   // Page entière hors (tabs) (`app/shop/messages.tsx`) : plus de navbar, seule la safe-area basse compte.
   // La safe-area est déjà réservée par ShopPageFrame : rien à ajouter ici.

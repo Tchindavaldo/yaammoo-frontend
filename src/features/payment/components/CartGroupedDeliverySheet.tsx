@@ -493,6 +493,11 @@ export const CartGroupedDeliverySheet: React.FC<
    * incomplete, et le seul message venait de `guardedConfirm`, bien trop tard.
    */
   const goNext = React.useCallback(() => {
+    // Retrait : seul le numero de contact est exige (la boutique joint le client).
+    if (step === 3 && delivery.type === "aucune" && !delivery.phone) {
+      showError("Indiquez un numéro de contact pour que la boutique puisse vous joindre");
+      return;
+    }
     if (step === 3 && delivery.type !== "aucune") {
       const manque = !delivery.address
         ? "Indiquez le lieu de livraison"

@@ -164,7 +164,8 @@ export const CartDeliverySegmentStep: React.FC<
       recapLabel: "Lieu",
       value: "Récupérer sur place",
       filled: true,
-      onPress: onOpenLocation,
+      // Retrait : rien a choisir, la card n'ouvre pas l'overlay du lieu.
+      onPress: () => {},
     });
   }
 

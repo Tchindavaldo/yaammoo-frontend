@@ -45,6 +45,7 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Toast } from "@/src/components/Toast";
+import { PaymentErrorToast } from "@/src/features/payment/components/PaymentErrorToast";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
@@ -963,13 +964,11 @@ export default function OrdersScreen() {
       />
 
       {toast && (
-        <Toast
-          key={toast.message}
-          message={toast.message}
-          type={toast.type}
-          duration={toast.type === "error" ? 10000 : undefined}
-          onHide={() => setToast(null)}
-        />
+        toast.type === "error" ? (
+          <PaymentErrorToast key={toast.message} message={toast.message} onHide={() => setToast(null)} />
+        ) : (
+          <Toast key={toast.message} message={toast.message} type={toast.type} onHide={() => setToast(null)} />
+        )
       )}
 
       {orderToEdit && (

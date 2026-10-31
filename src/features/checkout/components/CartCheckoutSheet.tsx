@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSheetInsets } from "../hooks/useSheetInsets";
 import { Toast } from "../../../components/Toast";
+import { PaymentErrorToast } from "@/src/features/payment/components/PaymentErrorToast";
 import { Ionicons } from "@expo/vector-icons";
 import { Menu } from "@/src/types";
 import { useCheckout } from "../hooks/useCheckout";
@@ -556,11 +557,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
           {/* Toast d'erreur paiement : DANS le Modal pour s'afficher au 1er plan
             (au-dessus du voile noir), pas masqué dessous. */}
           {paymentError && (
-            <Toast
+            <PaymentErrorToast
               key={paymentError}
               message={paymentError}
-              type="error"
-              duration={10000}
               onHide={() => setPaymentError(null)}
             />
           )}

@@ -429,7 +429,13 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     }
   }, [userData, paymentNetwork, prices.displayTotal, createOrder]);
 
+  // Verdict pris en compte SEULEMENT si un paiement est en attente : un verdict
+  // tardif (paiement précédent annulé, rejeu au reconnect) affichait un toast
+  // « Paiement échoué » parasite avant le vrai message.
+  const paymentStateRef = useRef(paymentState);
+  paymentStateRef.current = paymentState;
   const handlePaymentVerdict = useCallback((data: any) => {
+    if (paymentStateRef.current !== 'waiting' && paymentStateRef.current !== 'ussd_sent') return;
     if (data.status === 'successful') {
       // Paiement réussi → afficher "Création commande en cours" pendant 5s
       setPaymentState('success');

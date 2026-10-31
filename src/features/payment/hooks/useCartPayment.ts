@@ -124,7 +124,13 @@ export const useCartPayment = (amount: number) => {
 
 
   // Verdict reçu via socket (payment.settled).
+  // Verdict pris en compte SEULEMENT si un paiement est en attente : un verdict
+  // tardif (paiement précédent annulé, rejeu au reconnect) affichait un toast
+  // « Paiement échoué » parasite avant le vrai message.
+  const paymentStateRef = useRef(paymentState);
+  paymentStateRef.current = paymentState;
   const handlePaymentVerdict = useCallback((data: any) => {
+    if (paymentStateRef.current !== "waiting" && paymentStateRef.current !== "ussd_sent") return;
     if (data.status === "successful") {
       setPaymentState("success");
       setTimeout(() => {

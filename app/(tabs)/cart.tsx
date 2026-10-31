@@ -964,8 +964,10 @@ export default function OrdersScreen() {
 
       {toast && (
         <Toast
+          key={toast.message}
           message={toast.message}
           type={toast.type}
+          duration={toast.type === "error" ? 10000 : undefined}
           onHide={() => setToast(null)}
         />
       )}

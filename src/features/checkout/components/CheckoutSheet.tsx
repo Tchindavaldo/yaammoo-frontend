@@ -507,9 +507,10 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             (au-dessus du voile noir), pas masqué dessous. */}
           {paymentError && (
             <Toast
+              key={paymentError}
               message={paymentError}
               type="error"
-              duration={7000}
+              duration={10000}
               onHide={() => setPaymentError(null)}
             />
           )}

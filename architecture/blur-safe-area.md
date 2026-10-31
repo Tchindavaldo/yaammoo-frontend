@@ -171,7 +171,7 @@ Sheets traités :
 | Détail notification | `notifications/components/NotificationDetailSheet.tsx` |
 | Ajout menu | `merchant/components/AddMenuSheet.tsx`, `AddMenuSheetMultiStep.tsx` |
 | Zone de livraison (+ time picker) | `merchant/components/edit-boutique/ZoneFormSheet.tsx` |
-| Nom / prénom manquant (home) | `profile/components/ProfileNameSheet.tsx` — carte flottante `bottom: 24 + insets.bottom`, montée au clavier par translation (`edgeToEdgeEnabled` ne redimensionne pas la fenêtre), rendue dans `app/(tabs)/_layout.tsx` au-dessus de la tab bar pour que le flou couvre tout l'écran (iOS seulement : `disableAndroidBlur`, voile noir sur Android toutes versions). Bas iOS : `8 + insets.bottom × TAB_BAR_INSET_RATIO` — cf. [profile-name-sheet.md](./profile-name-sheet.md) |
+| Nom / prénom manquant (home) | `profile/components/ProfileNameSheet.tsx` — carte flottante `bottom: bande` (collée, écart 0), montée au clavier par translation (`edgeToEdgeEnabled` ne redimensionne pas la fenêtre), rendue dans `app/(tabs)/_layout.tsx` au-dessus de la tab bar pour que le flou couvre tout l'écran (iOS seulement : `disableAndroidBlur`, voile noir sur Android toutes versions). — cf. [profile-name-sheet.md](./profile-name-sheet.md) |
 
 Non concernés : les panneaux plein écran des settings (`MenuManageModal`,
 `WalletManageModal`, `UserOrdersModal`, `UserWalletModal`, `DriverManageModal`),
@@ -269,7 +269,7 @@ iOS 1 / Android 1). Tout en dérive — plus aucun ratio ailleurs :
 | Pages entières (hors `(tabs)`) | `ShopPageFrame` / `usePageBottomInset()` |
 | Pieds fixes | `useFooterBottomInset()` |
 | Tous les `<Modal>` ancrés en bas (filtres, détail commande, bonus, zones, auth, paiement groupé…) | `useSheetSafeInsets()` |
-| Cartes flottantes (nom manquant, mise à jour) | `useBottomSafeArea()` + leur écart propre |
+| Cartes flottantes (nom manquant, mise à jour) | `useBottomSafeArea()`, collées à la bande (écart 0) |
 
 Règles appliquées partout :
 - Sheet / pied qui touche le bas : `paddingBottom` = la bande, **sans constante

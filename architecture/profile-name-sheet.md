@@ -42,8 +42,8 @@ Validation : `PUT /user/:uid` (`userFirestore.updateUser`) puis
 - Fond : flou sur iOS ; **voile noir sur Android, toutes versions**
   (`disableAndroidBlur`) — le carrousel de bannières bouge derrière et le flou
   Android crashe dans ce cas (cf. [blur-safe-area.md](./blur-safe-area.md)).
-- Safe-area : `bottom` = `8 + insets.bottom × TAB_BAR_INSET_RATIO` sur iOS
-  (sinon trop haute), `24 + insets.bottom` sur Android.
+- Safe-area : `bottom` = la bande (`useBottomSafeArea()`), collée, sans écart,
+  sur iOS et Android.
 
 ## Clavier
 

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  StyleSheet,
   Pressable,
   Text,
   Animated,
@@ -584,6 +585,12 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             />
           )}
 
+          {/* Carte récap + capsule : glissent AVEC le sheet (fermeture hors
+              zone / réouverture d'un paiement en cours), jamais de vide dessous. */}
+          <Animated.View
+            pointerEvents="box-none"
+            style={[StyleSheet.absoluteFill, { transform: [{ translateY: sheetTranslate }] }]}
+          >
           <CheckoutPaymentTopOverlay
             visible={isPaymentPopupVisible}
             menu={menu}
@@ -616,6 +623,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             onError={setPaymentError}
             onConfirm={handlePaymentConfirm}
           />
+          </Animated.View>
 
           {sheetToast && (
             <Toast

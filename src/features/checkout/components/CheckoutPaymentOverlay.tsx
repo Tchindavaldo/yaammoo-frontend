@@ -63,7 +63,9 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
 
   const insets = useSheetInsets();
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
-  const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
+  // Monté DÉJÀ visible (réouverture d'un paiement en cours) : pas d'entrée
+  // propre, la capsule suit le glissement du sheet.
+  const slideAnim = React.useRef(new Animated.Value(visible ? 0 : 300)).current; // Entry/Exit animation
   // Fondu du contenu lors d'un changement d'étape (input → waiting → ussd_sent…).
   const contentOpacity = React.useRef(new Animated.Value(1)).current;
 

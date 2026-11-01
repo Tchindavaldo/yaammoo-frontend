@@ -182,7 +182,9 @@ export const CheckoutPaymentTopOverlay: React.FC<
   network = "orange",
   onNetworkChange,
 }) => {
-  const anim = React.useRef(new Animated.Value(0)).current; // 0 = caché, 1 = visible
+  // Monté DÉJÀ visible (réouverture d'un paiement en cours) : aucune entrée
+  // propre, la carte suit le glissement du sheet.
+  const anim = React.useRef(new Animated.Value(visible ? 1 : 0)).current; // 0 = caché, 1 = visible
   // Reste monté tant que l'animation de sortie n'est pas terminée.
   const insets = useSheetInsets();
   const [mounted, setMounted] = React.useState(visible);

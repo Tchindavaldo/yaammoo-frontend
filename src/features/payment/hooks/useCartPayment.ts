@@ -117,7 +117,8 @@ export const useCartPayment = (amount: number) => {
         let message = Array.isArray(raw)
           ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ")
           : raw;
-        message = message || data?.error || error.message || "Erreur paiement";
+        // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
+      message = message || data?.error || (error.response ? "Service momentanément indisponible. Réessayez dans un instant." : "Connexion impossible. Vérifiez votre réseau et réessayez.");
         setPaymentError(message);
         setPaymentState("input");
       }

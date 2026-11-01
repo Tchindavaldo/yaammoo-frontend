@@ -18,6 +18,7 @@ import moment from "moment";
 import {
   WalletBalances,
   WalletNetwork,
+  WalletBreakdown,
   balanceKey,
 } from "../services/walletNetwork";
 
@@ -32,14 +33,20 @@ export interface WalletEvent {
   newBalances?: WalletBalances;
   /** Réseau du solde touché (gain). */
   network?: WalletNetwork;
+  /** Part du gain réservée aux frais de retrait (gain). */
+  kioskFee?: number;
+  /** Découpage absolu après l'opération (retrait). */
+  newBreakdown?: WalletBreakdown;
 }
 
 /** Event socket `wallet.withdrawal` (les 3 états d'un retrait, même withdrawalId). */
 export interface WithdrawalEvent {
   withdrawalId: string;
   status: "pending" | "completed" | "failed";
-  amount: number; // montant reçu
+  amount: number; // espèces touchées chez l'agent
+  kioskFee?: number; // frais kiosque, envoyés en plus au téléphone
   fee?: number; // frais interréseau, débités en plus
+  newBreakdown?: WalletBreakdown; // découpage absolu (sur completed)
   newBalance?: number; // solde absolu après l'opération (sur completed)
   newBalances?: WalletBalances; // soldes absolus par réseau (sur completed)
   reason?: string; // cause sur failed
@@ -150,12 +157,26 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
         const k = balanceKey(e.network);
         balances = { ...balances, [k]: balances[k] + e.amount };
       }
+      // Découpage commandes / frais : absolu (retrait) ou delta (gain).
+      let breakdown = prev.breakdown;
+      if (e.newBreakdown) {
+        breakdown = e.newBreakdown;
+      } else if (breakdown && e.network && e.type === "credit") {
+        const k = balanceKey(e.network);
+        const fees = Math.min(e.amount, Math.max(0, e.kioskFee ?? 0));
+        const p = breakdown[k];
+        breakdown = {
+          ...breakdown,
+          [k]: { orders: p.orders + e.amount - fees, fees: p.fees + fees, total: p.total + e.amount },
+        };
+      }
 
       return {
         ...prev,
         // newBalance (solde absolu fourni par le backend) prioritaire sinon delta.
         balance: e.newBalance ?? prev.balance + net,
         balances,
+        breakdown,
         totals: {
           payin: prev.totals.payin + payin,
           payout: prev.totals.payout + payout,
@@ -183,10 +204,11 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
         // Débit réel = montant reçu + frais interréseau.
         applyEvent({
           type: "debit",
-          amount: e.amount + (e.fee ?? 0),
+          amount: e.amount + (e.kioskFee ?? 0) + (e.fee ?? 0),
           date: e.createdAt,
           newBalance: e.newBalance,
           newBalances: e.newBalances,
+          newBreakdown: e.newBreakdown,
         });
       }
       // failed/pending : pas de modif du solde (le backend ne débite qu'au completed).

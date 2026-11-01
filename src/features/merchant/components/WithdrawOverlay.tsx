@@ -112,7 +112,7 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
   };
 
   const crossNetwork = !!detectedNetwork && !!sourceNetwork && detectedNetwork !== sourceNetwork;
-  const blocked = detecting || !detectedNetwork || (crossNetwork && (quoteLoading || !quote));
+  const blocked = detecting || !detectedNetwork || quoteLoading || !quote;
 
   const handleConfirm = async () => {
     if (isKeyboardVisible) {
@@ -128,7 +128,7 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
       onError?.(detectError || "Réseau du numéro en cours de détection");
       return;
     }
-    if (crossNetwork && quote && !quote.sufficient) {
+    if (quote && !quote.sufficient) {
       onError?.(`Solde ${networkLabel(sourceNetwork)} insuffisant avec les frais : ${formatFcfa(quote.totalDebited)} nécessaires, ${formatFcfa(quote.sourceBalance)} disponibles.`);
       return;
     }
@@ -143,17 +143,17 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
   };
 
   // Note au-dessus de la capsule, à la saisie du numéro : erreur de détection,
-  // ou frais interréseau. Même réseau : rien (aucun frais).
+  // ou montant envoyé (espèces + frais de retrait) et, en interréseau, frais en plus.
   const note =
-    withdrawState !== "input"
+    withdrawState !== "input" || !detectedNetwork
       ? null
       : detectError
         ? detectError
-        : crossNetwork
-          ? quoteLoading || !quote
-            ? "Calcul des frais…"
-            : `Vers ${networkLabel(detectedNetwork)} depuis ${networkLabel(sourceNetwork)} : frais ${formatFcfa(quote.fee)} · débité ${formatFcfa(quote.totalDebited)}`
-          : null;
+        : quoteLoading || !quote
+          ? "Calcul des frais…"
+          : `Envoyé ${formatFcfa(quote.sentAmount ?? quote.amount)} (dont ${formatFcfa(quote.kioskFee ?? 0)} de frais de retrait)` +
+            (crossNetwork ? ` · frais ${networkLabel(sourceNetwork)} → ${networkLabel(detectedNetwork)} ${formatFcfa(quote.fee)}` : "") +
+            ` · débité ${formatFcfa(quote.totalDebited)}`;
 
   return (
     <>

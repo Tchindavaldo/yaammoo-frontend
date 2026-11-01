@@ -4,7 +4,7 @@ import { auth } from '@/src/services/firebase';
 import type { WalletNetwork } from './walletNetwork';
 
 interface WithdrawPayload {
-  amount: number;              // montant REÇU sur le numéro de réception
+  amount: number;              // espèces voulues (envoyé = amount + frais kiosque)
   phone: string;
   network: WalletNetwork;      // réseau du numéro de réception (détecté)
   sourceNetwork: WalletNetwork; // solde débité, choisi par l'utilisateur
@@ -13,9 +13,11 @@ interface WithdrawPayload {
 
 /** Devis renvoyé par GET /wallet/withdraw/quote. */
 export interface WithdrawQuote {
-  amount: number;
+  amount: number;       // espèces voulues
+  kioskFee?: number;    // frais de retrait kiosque (réseau de réception)
+  sentAmount?: number;  // envoyé au téléphone = amount + kioskFee
   fee: number;          // 0 même réseau ; frais interréseau sinon
-  totalDebited: number; // amount + fee
+  totalDebited: number; // sentAmount + fee
   sourceBalance: number;
   sufficient: boolean;
   maxAmount: number;    // plus gros montant recevable depuis ce solde

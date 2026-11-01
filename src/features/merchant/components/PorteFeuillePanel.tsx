@@ -7,6 +7,7 @@ import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useW
 import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
+import { WalletBreakdownRow } from "./WalletBreakdownRow";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -297,6 +298,8 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
             </View>
           </TouchableOpacity>
         </View>
+        {/* Par réseau : commandes + frais de retrait = total. */}
+        {stats?.breakdown && <WalletBreakdownRow breakdown={stats.breakdown} />}
       </View>
 
       {/* Overlay de RETRAIT (copie adaptée du paiement panier) */}

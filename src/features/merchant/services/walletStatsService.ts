@@ -16,6 +16,8 @@ export interface WalletStats {
   balance: number;  // solde retirable total (= mtn + orange)
   // Deux soldes, un par réseau qui a encaissé. Absent sur un backend antérieur.
   balances?: { mtn: number; orange: number };
+  // Découpage commandes / frais de retrait par réseau. Absent sur un backend antérieur.
+  breakdown?: import("./walletNetwork").WalletBreakdown;
   totals: { payin: number; payout: number; net: number };
   series: WalletDayStat[];
 }

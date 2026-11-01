@@ -3,6 +3,7 @@ import { withAck } from "../socketAck";
 import { logEvent } from "./logEvent";
 import {
   toBalances,
+  toBreakdown,
   toWalletNetwork,
 } from "../../features/merchant/services/walletNetwork";
 
@@ -144,6 +145,7 @@ export const registerBonusWalletEvents = (
       amount: Number(data?.amount) || 0,
       date: data?.createdAt,
       network: toWalletNetwork(data?.network),
+      kioskFee: Number(data?.kioskFee) || 0,
     });
   }));
   // wallet.withdrawal : retrait (3 états, même withdrawalId) → patch solde + overlay.
@@ -154,7 +156,9 @@ export const registerBonusWalletEvents = (
       withdrawalId: data?.withdrawalId,
       status: data?.status,
       amount: Number(data?.amount) || 0,
+      kioskFee: Number(data?.kioskFee) || 0,
       fee: Number(data?.fee) || 0,
+      newBreakdown: toBreakdown(data?.newBreakdown),
       newBalance:
         typeof data?.newBalance === "number" ? data.newBalance : undefined,
       newBalances: toBalances(data?.newBalances),

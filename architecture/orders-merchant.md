@@ -53,6 +53,7 @@ yaammoo/src/features/merchant/
     │   └── styles.ts                   # Styles partagés + TAB_BAR_HEIGHT
     ├── WalletManageModal.tsx           # Overlay plein écran portefeuille (Settings → "Portefeuille")
     ├── PorteFeuillePanel.tsx           # Panel portefeuille (barre fixe Solde+Retrait, historique jours)
+    ├── WalletBreakdownRow.tsx          # Découpage MTN / Orange : commandes + frais de retrait = total
     ├── WithdrawOverlay.tsx             # Overlay retrait (solde débité → montant → numéro + réseau détecté + frais → verdict)
     ├── WalletDayStatItem.tsx           # Ligne d'une journée dans l'historique portefeuille
     ├── DelegateDriverSheet.tsx         # Feuille "Qui livre ?" (Moi-même / déléguer à un livreur)
@@ -569,6 +570,10 @@ et `BoutiquePickers` (pickers heure/villes, toast). `parseBoutique.ts` normalise
 **Chemin** : `yaammoo/src/features/merchant/components/PorteFeuillePanel.tsx`
 
 Affiche le solde global du marchand, ses **deux soldes MTN / Orange** (`stats.balances`, sous le solde) et l'historique par journée. Déclenche le flux de retrait via `useWithdraw`.
+
+Sous la barre Solde/Retrait, `WalletBreakdownRow` détaille chaque réseau : **commandes** (plats + courses), **frais de retrait** (réserve kiosque), **total** (`stats.breakdown`, patché par `kioskFee` des gains et `newBreakdown` des retraits).
+
+Retrait : le montant saisi = **espèces voulues** ; le devis (toujours demandé) affiche l'envoyé (montant + frais de retrait 1,2 % + 4), les frais interréseau éventuels et le débité.
 
 **Source de données** : `MerchantWalletContext` (stats patchées en temps réel par les événements socket `wallet.credited` — `network` crédité — et `wallet.withdrawal` — `newBalances`).
 

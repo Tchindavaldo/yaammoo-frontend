@@ -13,6 +13,27 @@ export interface WalletBalances {
 
 export const WALLET_NETWORKS: WalletNetwork[] = ["MTN", "ORANGEMONEY"];
 
+/** Découpage d'un solde : commandes (plats + courses) + réserve de frais de retrait. */
+export interface BalancePart {
+  orders: number;
+  fees: number;
+  total: number;
+}
+export type WalletBreakdown = Record<keyof WalletBalances, BalancePart>;
+
+/** `{ mtn, orange }` de BalancePart, ou undefined si absent / mal formé. */
+export const toBreakdown = (raw: any): WalletBreakdown | undefined => {
+  const part = (p: any): BalancePart | undefined => {
+    const orders = Number(p?.orders);
+    const fees = Number(p?.fees);
+    const total = Number(p?.total);
+    return [orders, fees, total].every(Number.isFinite) ? { orders, fees, total } : undefined;
+  };
+  const mtn = part(raw?.mtn);
+  const orange = part(raw?.orange);
+  return mtn && orange ? { mtn, orange } : undefined;
+};
+
 /** Libellé affiché (aucun nom d'agrégateur, jamais). */
 export const networkLabel = (n?: WalletNetwork | null) =>
   n === "ORANGEMONEY" ? "Orange" : n === "MTN" ? "MTN" : "";

@@ -100,10 +100,10 @@ export const useWithdraw = () => {
     return () => clearTimeout(timer);
   }, [withdrawPhone, withdrawState]);
 
-  // ── Frais : seulement en interréseau ───────────────────────────────────
+  // ── Frais : kiosque toujours, interréseau en plus si réseaux différents ──
   useEffect(() => {
     const amount = Number(withdrawAmount);
-    if (!detectedNetwork || !sourceNetwork || !amount || detectedNetwork === sourceNetwork) {
+    if (!detectedNetwork || !sourceNetwork || !amount) {
       setQuote(null);
       setQuoteLoading(false);
       return;

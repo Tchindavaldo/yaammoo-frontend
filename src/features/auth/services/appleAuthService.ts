@@ -27,7 +27,7 @@ const notifyUnavailable = (message: string) => {
  */
 export async function handleAppleSignIn(): Promise<AppleSignInResult> {
   if (Platform.OS !== "ios") {
-    const msg = "Sign in with Apple est disponible uniquement sur iOS.";
+    const msg = "La connexion avec Apple est disponible uniquement sur iOS.";
     console.warn(`🍎 [AppleAuth] ${msg}`);
     notifyUnavailable(msg);
     return { success: false, isNewUser: false, error: msg };
@@ -38,7 +38,7 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
 
     const isAvailable = await AppleAuthentication.isAvailableAsync();
     if (!isAvailable) {
-      const msg = "Sign in with Apple non disponible sur cet appareil.";
+      const msg = "La connexion avec Apple n'est pas disponible sur cet appareil.";
       console.warn(`🍎 [AppleAuth] ${msg}`);
       notifyUnavailable(msg);
       return { success: false, isNewUser: false, error: msg };
@@ -65,7 +65,7 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
 
     if (!credential.identityToken) {
       console.error("❌ [AppleAuth] Identity token Apple manquant");
-      return { success: false, isNewUser: false, error: "Identity token Apple manquant" };
+      return { success: false, isNewUser: false, error: "Jeton d'identité Apple manquant" };
     }
 
     console.log("🍎 [AppleAuth] Étape 2: Connexion Firebase");

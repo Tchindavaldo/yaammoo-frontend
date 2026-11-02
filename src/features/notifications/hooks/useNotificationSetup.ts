@@ -119,7 +119,7 @@ export const useNotificationSetup = () => {
 
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("high_priority_channel", {
-        name: "high_priority_channel",
+        name: "Notifications importantes",
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",

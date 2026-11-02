@@ -23,7 +23,7 @@ export const PriceChip: React.FC<PriceChipProps> = ({ isActive, label, price, on
         {label}
       </Text>
       <Text style={[styles.sizePrice, styles.textDark, isActive && { color: DS.accent }]}>
-        {price > 0 ? `${price} F` : 'no ref'}
+        {price > 0 ? `${price} F` : 'Prix non défini'}
       </Text>
     </TouchableOpacity>
   );

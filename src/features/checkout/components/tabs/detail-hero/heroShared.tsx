@@ -59,7 +59,7 @@ export interface HeroProps {
 /** Prix d'une ligne de `prices[]` (index 1-based), formate comme l'ancien `PriceChip`. */
 export const formatSizePrice = (menu: Menu, index: number) => {
   const price = menuPriceAt(menu, index)?.price || 0;
-  return price > 0 ? `${price} F` : "no ref";
+  return price > 0 ? `${price} F` : "Prix non défini";
 };
 
 /**

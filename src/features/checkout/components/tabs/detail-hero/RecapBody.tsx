@@ -55,7 +55,7 @@ export const RecapBody: React.FC<HeroProps> = ({
         name={menu.titre}
         status={priceDescription || t("Disponible")}
         bigNum={amount(total.value)}
-        bigLabel="total FCFA"
+        bigLabel={t("total FCFA")}
       />
 
       <View style={styles.chipsZone}>

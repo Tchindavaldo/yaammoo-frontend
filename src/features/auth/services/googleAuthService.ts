@@ -165,7 +165,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
         success: false,
         isNewUser: false,
         error:
-          "Un compte existe déjà avec cet email. Utilisez email/mot de passe.",
+          t("Un compte existe déjà avec cet email. Utilisez email/mot de passe."),
       };
     } else if (error.code === "auth/network-request-failed") {
       return {

@@ -154,7 +154,7 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
                 {m.label}
               </Text>
               <Text style={styles.modeSub} numberOfLines={1}>
-                {active ? `${m.count} cmd · ${m.sub}` : m.sub}
+                {active ? t("{{a}} cmd · {{b}}", { a: m.count, b: m.sub }) : m.sub}
               </Text>
               <Text
                 style={[styles.modeFee, !active && styles.modeFeeOff]}

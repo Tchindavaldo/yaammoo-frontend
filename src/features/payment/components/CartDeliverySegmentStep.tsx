@@ -180,7 +180,7 @@ export const CartDeliverySegmentStep: React.FC<
       key: "express",
       icon: "flash",
       label: tr("Zone express"),
-      recapLabel: "Zone express",
+      recapLabel: tr("Zone express"),
       value: delivery.expressLieu || tr("À remplir"),
       filled: !!delivery.expressLieu,
       onPress: hasExpressZones ? onOpenExpress : () => {},

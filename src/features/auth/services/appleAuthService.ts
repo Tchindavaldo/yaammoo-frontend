@@ -28,7 +28,7 @@ const notifyUnavailable = (message: string) => {
  */
 export async function handleAppleSignIn(): Promise<AppleSignInResult> {
   if (Platform.OS !== "ios") {
-    const msg = "La connexion avec Apple est disponible uniquement sur iOS.";
+    const msg = t("La connexion avec Apple est disponible uniquement sur iOS.");
     console.warn(`🍎 [AppleAuth] ${msg}`);
     notifyUnavailable(msg);
     return { success: false, isNewUser: false, error: msg };

@@ -81,7 +81,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
           ) : (
             <>
               <Ionicons name="save-outline" size={16} color="white" />
-              <Text style={styles.btnText}>save</Text>
+              <Text style={styles.btnText}>Enregistrer</Text>
             </>
           )}
         </TouchableOpacity>

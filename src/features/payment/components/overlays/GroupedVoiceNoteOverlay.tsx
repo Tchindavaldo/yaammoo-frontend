@@ -207,7 +207,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                   <Text style={styles.timerLarge}>{formatTime(timer)}</Text>
                   <View style={styles.recordingBadge}>
                     <View style={styles.redDot} />
-                    <Text style={styles.recordingLabel}>RECORDING</Text>
+                    <Text style={styles.recordingLabel}>ENREGISTREMENT</Text>
                   </View>
                 </View>
 

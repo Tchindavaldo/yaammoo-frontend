@@ -90,10 +90,10 @@ export const UNLOCK_QUIET_MS = 350;
 export const isBannerItem = (item: any) => item?.__banner === true;
 
 export const CATEGORIES = [
-  { name: "All", icon: "grid-outline" },
-  { name: "Fast Food", icon: "fast-food-outline" },
+  { name: "Tout", icon: "grid-outline" },
+  { name: "Fast-food", icon: "fast-food-outline" },
   { name: "Pizza", icon: "pizza-outline" },
   { name: "Burger", icon: "nutrition-outline" },
-  { name: "Drinks", icon: "beer-outline" },
-  { name: "Rice", icon: "restaurant-outline" },
+  { name: "Boissons", icon: "beer-outline" },
+  { name: "Riz", icon: "restaurant-outline" },
 ];

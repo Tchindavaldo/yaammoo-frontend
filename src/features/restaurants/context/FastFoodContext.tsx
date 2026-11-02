@@ -179,7 +179,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     clearDeliveryOfferForBonus,
   } = useFastFoodSocketUpdates(setFastFoods);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState("Tout");
 
   // ⚠️ La recherche courante est lue via une REF, pas via la dependance d'un
   // `useCallback`. Sinon `refresh` et `loadMore` changent de reference a chaque

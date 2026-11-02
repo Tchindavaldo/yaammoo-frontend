@@ -377,13 +377,13 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 >
                   <TabChip
                     isActive={activeTab === "detail"}
-                    label="Details"
+                    label="Détails"
                     icon="information-circle-outline"
                     onPress={() => setActiveTab("detail")}
                   />
                   <TabChip
                     isActive={activeTab === "drink"}
-                    label="Drinks"
+                    label="Boissons"
                     icon="wine-outline"
                     onPress={() => setActiveTab("drink")}
                   />
@@ -395,7 +395,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   />
                   <TabChip
                     isActive={activeTab === "delivery"}
-                    label="Delivery"
+                    label="Livraison"
                     icon="bicycle-outline"
                     onPress={() => setActiveTab("delivery")}
                   />

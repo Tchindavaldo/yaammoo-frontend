@@ -63,7 +63,7 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
         {isLoading ? (
           <Loader size={20} color="white" />
         ) : (
-          <Text style={styles.btnText}>add To Cart</Text>
+          <Text style={styles.btnText}>Ajouter au panier</Text>
         )}
       </TouchableOpacity>
 

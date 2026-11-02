@@ -1,3 +1,4 @@
+import { showToast } from "@/src/services/globalToast";
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -106,7 +107,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       // Écran de divulgation avant la popup système (Android, Google Play).
       const status = await requestForegroundLocation('address');
       if (status !== 'granted') {
-        alert('Permission to access location was denied');
+        showToast("Accès à la position refusé", "error");
         setIsLocating(false);
         return;
       }
@@ -117,7 +118,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
       setLocalAddress(coords);
     } catch (error) {
-      alert('Error fetching location or timeout. Using last known if available.');
+      showToast("Position introuvable : la dernière position connue sera utilisée si possible.", "error");
       // Try a less accurate but faster fix as fallback
       try {
         const last = await Location.getLastKnownPositionAsync({});
@@ -188,7 +189,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="location-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Delivery Address</Text>
+              <Text style={styles.headerTitle}>Adresse de livraison</Text>
               <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
                 <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
               </TouchableOpacity>
@@ -200,7 +201,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
 
           <View style={styles.inputContainer}>
             <View style={styles.addressBox}>
-              <Text style={styles.addressText}>{localAddress || '(Send Live GPS Location)'}</Text>
+              <Text style={styles.addressText}>{localAddress || '(Envoyer ma position GPS)'}</Text>
                 <TextInput 
                   style={styles.textInput}
                   placeholder="Note (ex: Porte bleue, 2ème étage...)"
@@ -238,7 +239,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
               onPress={handleGetLocation}
             >
               <Ionicons name="locate-outline" size={18} color="#334155" />
-              <Text style={styles.gpsBtnText}>Send Live GPS</Text>
+              <Text style={styles.gpsBtnText}>Envoyer ma position GPS</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 

@@ -116,7 +116,7 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
     console.log("🍎 [AppleAuth] Étape 5: Récupération données backend");
     const createdUserData = await userFirestore.getUser(firebaseUser);
     if (!createdUserData) {
-      throw new Error("Failed to retrieve created Apple user");
+      throw new Error("Impossible de récupérer le compte Apple créé");
     }
 
     console.log("✅ [AppleAuth] Utilisateur créé");

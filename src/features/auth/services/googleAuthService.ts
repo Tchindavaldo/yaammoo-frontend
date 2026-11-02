@@ -133,7 +133,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     // Fetch the user data from API to get server data
     const createdUserData = await userFirestore.getUser(firebaseUser);
     if (!createdUserData) {
-      throw new Error("Failed to retrieve created user data");
+      throw new Error("Impossible de récupérer les données du compte créé");
     }
 
     console.log("✅ [GoogleAuth] Utilisateur créé avec succès");

@@ -134,7 +134,7 @@ export default function RegisterScreen() {
                 <View style={styles.rowTitle}>
                   <Text style={styles.row1Label}>
                     <Text style={{ fontSize: 30, fontWeight: "300" }}>
-                      Welcome to
+                      Bienvenue sur
                     </Text>
                     {"\n"}
                     Rudavo{"\n"}

@@ -141,7 +141,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="call-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Contact Number</Text>
+              <Text style={styles.headerTitle}>Numéro de contact</Text>
               <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
                 <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
               </TouchableOpacity>
@@ -180,7 +180,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
             <Text style={styles.helperText}>
               {pickup
                 ? "La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande."
-                : "Our courier will use this number to contact you upon arrival if there are any issues with your delivery."}
+                : "Le livreur utilisera ce numéro pour vous joindre à son arrivée en cas de souci avec votre livraison."}
             </Text>
           </View>
         </View>

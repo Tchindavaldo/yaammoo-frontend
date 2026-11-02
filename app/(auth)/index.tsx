@@ -208,7 +208,7 @@ export default function WelcomeScreen() {
             activeOpacity={0.85}
             onPress={onGetStarted}
           >
-            <Text style={styles.btnText}>Get started</Text>
+            <Text style={styles.btnText}>Commencer</Text>
             <Svg width={14} height={14} viewBox="0 0 14 14">
               <Path
                 d="M2 7h10M8 3l4 4-4 4"

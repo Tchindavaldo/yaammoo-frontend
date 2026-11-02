@@ -76,7 +76,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
   async function startRecording() {
     try {
       if (!(await recorder.start())) {
-        alert('Permission to access microphone is required!');
+        showToast("L'accès au micro est nécessaire.", "error");
         return;
       }
       setPhase('recording');
@@ -163,7 +163,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="mic-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Delivery Instruction</Text>
+              <Text style={styles.headerTitle}>Consigne de livraison</Text>
             </View>
             <TouchableOpacity onPress={closeWithFade} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#94a3b8" />
@@ -176,7 +176,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                 <TouchableOpacity style={styles.micCircleBig} onPress={startRecording}>
                   <Ionicons name="mic" size={36} color="white" />
                 </TouchableOpacity>
-                <Text style={styles.instructionText}>Tap to start recording voice instruction</Text>
+                <Text style={styles.instructionText}>Appuyez pour enregistrer une consigne vocale</Text>
               </View>
             )}
 
@@ -258,7 +258,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                     setUploading(false);
                   }
                 }}>
-                  <Text style={styles.validateBtnText}>{uploading ? 'Envoi...' : 'Save Instruction'}</Text>
+                  <Text style={styles.validateBtnText}>{uploading ? 'Envoi...' : 'Enregistrer la consigne'}</Text>
                 </TouchableOpacity>
               </View>
             )}

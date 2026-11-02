@@ -294,7 +294,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
       {/* Zone basse (sélection du type) — prix dynamique depuis la période */}
       <View style={localStyles.bottomZone}>
         <View style={[styles.sectionHeader, localStyles.sectionHeader]}>
-          <Text style={styles.sectionHeaderText}>Select Type</Text>
+          <Text style={styles.sectionHeaderText}>Type de livraison</Text>
         </View>
 
         <View style={[styles.deliveryTypeGrid, localStyles.deliveryTypeGrid]}>
@@ -439,7 +439,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                   delivery.type === "aucune" && { color: DS.accent },
                 ]}
               >
-                No rush
+                Sans urgence
               </Text>
             </View>
           </TouchableOpacity>

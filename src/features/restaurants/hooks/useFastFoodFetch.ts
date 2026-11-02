@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Config } from "@/src/api/config";
 import { trackHomePage } from "@/src/services/analytics/homePages";
 import { trackBootStep } from "@/src/services/bootTelemetry";

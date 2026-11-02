@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React from 'react';
 import { Modal, View, Text, StyleSheet, Pressable } from 'react-native';

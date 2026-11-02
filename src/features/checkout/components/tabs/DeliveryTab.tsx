@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { DeliveryOffer, Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";

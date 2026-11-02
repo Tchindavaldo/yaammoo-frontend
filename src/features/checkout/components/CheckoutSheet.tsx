@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { showToast } from "@/src/services/globalToast";
 import { lockPayment, unlockPayment } from "@/src/services/paymentLock";

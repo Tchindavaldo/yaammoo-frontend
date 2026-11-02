@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { TabHeader } from "@/src/components/molecules/TabHeader";

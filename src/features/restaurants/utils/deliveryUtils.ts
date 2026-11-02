@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { t, useLanguage } from "@/src/i18n";

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Bottom sheet « Mes comptes » (maquette « 2 comptes · menu ouvert ») :
 // liste des comptes (courant coche), ajouter un compte, se deconnecter
 // (meme logique et loader que LogoutModal, via useLogout), annuler.

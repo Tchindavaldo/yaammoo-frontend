@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Commande, FastFood } from "@/src/types";
 import React, { useState } from "react";
 import {

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Theme } from "@/src/theme";

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { socketService } from "@/src/services/socket";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supportService } from "../services/supportService";

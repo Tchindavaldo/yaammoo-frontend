@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import * as Location from "expo-location";
 import { useCallback, useState } from "react";
 import { Platform } from "react-native";

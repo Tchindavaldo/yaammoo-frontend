@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Comptes affiches par la pastille du header Settings et sa sheet.
 // Pour l'instant : uniquement le compte connecte (pas de stockage multi-compte).
 // Brancher ici la liste des comptes memorises quand elle existera.

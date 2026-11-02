@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import type { Bonus, BonusRequestStatus } from "../types/bonus.types";
 import { useBonusEligibility } from "./useBonusEligibility";

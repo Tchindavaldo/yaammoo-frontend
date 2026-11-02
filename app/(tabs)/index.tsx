@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Toast } from "@/src/components/Toast";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";

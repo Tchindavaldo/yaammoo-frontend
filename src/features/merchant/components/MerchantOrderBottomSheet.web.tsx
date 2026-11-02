@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Web-specific version of MerchantOrderBottomSheet
 // react-native-maps is not supported on web, so we replace MapView with a static placeholder
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { TabHeader } from "@/src/components/molecules/TabHeader";

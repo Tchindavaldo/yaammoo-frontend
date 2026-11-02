@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";

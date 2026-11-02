@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Pastille claire du header Settings (fond blanc, filet gris, comme les tuiles) :
 // 1 compte → icone personne + chevron ; 2 comptes → 2 avatars empiles ;
 // plus de 2 → 2 avatars + « +n ». Ouvre AccountSheet.

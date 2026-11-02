@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import type { DeliveryOffer, FastFood } from "@/src/types";
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { normalizeFastFood, normalizeMenu } from "../utils/normalizeFastFood";

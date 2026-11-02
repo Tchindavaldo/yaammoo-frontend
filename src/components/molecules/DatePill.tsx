@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
 import { DS, HEADER_GRADIENT } from "@/src/theme/ds";
 import React, { useState } from "react";

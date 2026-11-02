@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState } from "react";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";

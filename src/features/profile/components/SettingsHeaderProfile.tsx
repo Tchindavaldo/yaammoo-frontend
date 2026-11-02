@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Contenu du TabHeader de Settings (maquette D, sans titre ni bouton d'edition) :
 // avatar, nom + badge Marchand, contact, pastille comptes a droite.
 import { useAuth } from "@/src/features/auth/context/AuthContext";

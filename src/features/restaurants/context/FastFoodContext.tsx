@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { onNetworkRestored } from "@/src/services/network";

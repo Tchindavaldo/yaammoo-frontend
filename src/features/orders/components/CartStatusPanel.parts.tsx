@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { orderGroupKey } from "@/src/features/merchant/utils/orderGroupKey";
 import { DS } from "@/src/theme/ds";
 import { Commande } from "@/src/types";

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { BroadcastPlan, BroadcastQuota } from "../../types/broadcast.types";

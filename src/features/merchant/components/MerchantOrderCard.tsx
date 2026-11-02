@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { Commande } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";

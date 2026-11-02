@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { BonusPagerView } from "@/modules/bonus-pager";
 import { Theme } from "@/src/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";

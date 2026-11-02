@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";

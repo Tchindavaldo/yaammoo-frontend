@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { showToast } from "@/src/services/globalToast";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Loader } from "@/src/components/Loader";

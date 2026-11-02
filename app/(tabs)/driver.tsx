@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState, useMemo } from "react";
 import { View, Text, StyleSheet as RNStyleSheet } from "react-native";
 import { useAuth } from "@/src/features/auth/context/AuthContext";

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // ============================================================================
 // useBonusFlyer — téléchargement du flyer d'un bonus `status_view`
 // ----------------------------------------------------------------------------

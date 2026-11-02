@@ -89,7 +89,7 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
     ├── HLPerfMonitor.swift         # Sonde TestFlight : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
     ├── HLPreheater.swift           # Rangees sous l'ecran creees au repos avant le 1er scroll (liste allongee par le bas)
-    ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLTheme.swift
+    ├── HLFooterCell.swift · HLPrimitives.swift · HLModels.swift · HLStrings.swift · HLTheme.swift
 ```
 
 - **Sonde de fluidité (`onDiagnostics`, TestFlight et debug seulement)** :
@@ -227,7 +227,7 @@ modules/home-list/android/
     ├── HLViews.kt                  # HLBox (mise en page manuelle), HLLabel (texte dessine), squelettes, degrade
     ├── HLText.kt                   # Fragments de texte (polices, couleurs, icones Ionicons, espaces)
     ├── HLImage.kt                  # Glide (meme moteur qu'expo-image), photo floutee d'avance des barres v4/v5
-    ├── HLPreheater.kt · HLPerfMonitor.kt · HLModels.kt · HLTheme.kt
+    ├── HLPreheater.kt · HLPerfMonitor.kt · HLModels.kt · HLStrings.kt · HLTheme.kt
 ```
 
 - **Micro-pause des premières boutiques traitée dès le départ** (leçon iOS) :

@@ -111,6 +111,17 @@ export type HomeListRowsUpdate = {
  * `live` : flou systeme recalcule a chaque image par iOS.
  * `baked` : photo de la carte floutee une fois, affichee comme une image.
  */
+/** Textes affiches par le natif, traduits par `t()` (cf. `HLStrings`). */
+export type HomeListLabels = {
+  statusOpen: string;
+  delivery: string;
+  deliveryLower: string;
+  deliveredIn: string;
+  reviews: string;
+  next: string;
+  available: string;
+};
+
 export type HomeListBlurMode = "live" | "baked";
 
 export type HomeListViewProps = ViewProps & {
@@ -137,6 +148,11 @@ export type HomeListViewProps = ViewProps & {
    * de hauteur (0 = coupe). Ignore par une build qui ne l'embarque pas.
    */
   preheatScreens: number;
+  /**
+   * Textes traduits (header boutique, cartes) : changement de langue a chaud.
+   * Ignore par une build anterieure, qui garde ses textes francais.
+   */
+  labels: HomeListLabels;
   onMenuPress: (e: Event<{ shopId: string; menuId: string }>) => void;
   onBannerPress: (e: Event<{ id: string }>) => void;
   onEndReached: (e: Event<Record<string, never>>) => void;

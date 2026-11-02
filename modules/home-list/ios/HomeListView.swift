@@ -248,8 +248,13 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
 
   // MARK: - Application des props
 
+  /// Langue changee (`HLStrings`) : reconfigurer toutes les rangees au prochain `applyProps`.
+  var relabel = false
+
   /** Appele a chaque lot de props (`OnViewDidUpdateProps`) et apres `updateRows`. */
   func applyProps() {
+    let relabelNow = relabel
+    relabel = false
     var next: [HLRowContent] = shops.map { .shop($0) }
     // Fantomes : en queue quand une page suit, ou seuls pendant la premiere page.
     if (hasMore && !shops.isEmpty) || (shops.isEmpty && listLoading) {
@@ -281,7 +286,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     let fresh = snap
     let kept = { (item: Item) in old.indexOfItem(item) != nil && fresh.indexOfItem(item) != nil }
     var changed: [Item] = []
-    for (pos, content) in next.enumerated() where pos < previous.count && previous[pos] != content {
+    for (pos, content) in next.enumerated() where pos < previous.count && (relabelNow || previous[pos] != content) {
       let item = Item.row(position: pos, design: content.design)
       if kept(item) { changed.append(item) }
     }

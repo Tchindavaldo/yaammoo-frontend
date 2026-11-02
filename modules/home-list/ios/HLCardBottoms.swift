@@ -43,7 +43,7 @@ final class HLFlashBadge: UIView {
 
 /** Colonne « Prochaine » / « Livraison HH:MM » des barres 4 et 5. */
 private func HLNextLabel() -> NSAttributedString {
-  HLRun("Prochaine", HLFont.w700(10), HLColor.deliveryLabel, kern: 0.8)
+  HLRun(HLStrings.next, HLFont.w700(10), HLColor.deliveryLabel, kern: 0.8)
 }
 
 // MARK: - Variant 7
@@ -59,7 +59,7 @@ final class HLV7BottomZone: UIView {
     isUserInteractionEnabled = false
     nextLabel.font = HLFont.w800(11)
     nextLabel.textColor = UIColor(white: 1, alpha: 0.7)
-    nextLabel.text = "Prochaine"
+    nextLabel.text = HLStrings.next
     delivery.font = HLFont.w900(11)
     delivery.textColor = .white
     [nextLabel,delivery, fee].forEach(addSubview)
@@ -68,7 +68,8 @@ final class HLV7BottomZone: UIView {
   required init?(coder: NSCoder) { fatalError("init(coder:) non supporte") }
 
   func configure(deliveryTime: String, feeLabel: String) {
-    delivery.text = "livraison · \(deliveryTime)"
+    nextLabel.text = HLStrings.next
+    delivery.text = "\(HLStrings.deliveryLower) · \(deliveryTime)"
     fee.label.text = feeLabel
     setNeedsLayout()
   }
@@ -126,10 +127,10 @@ final class HLStockDeliveryBar: UIView {
       // `gap: 5` entre le nombre et « disponible » : crenage sur le DERNIER
       // chiffre seulement (un `kern` sur tout le nombre ecartait « 3 9 »).
       HLKerned(HLRun("\(stock)", HLFont.w700(13), .black), 5),
-      HLRun("disponible", HLFont.w700(13), .black),
+      HLRun(HLStrings.available, HLFont.w700(13), .black),
     ])
     stockRatio = min(max(CGFloat(stock) / 100, 0), 1)
-    delivery.text = "Livraison \(deliveryTime)"
+    delivery.text = "\(HLStrings.delivery) \(deliveryTime)"
     badge.refresh()
     setNeedsLayout()
   }
@@ -181,7 +182,7 @@ final class HLV5BottomBar: UIView {
   required init?(coder: NSCoder) { fatalError("init(coder:) non supporte") }
 
   func configure(deliveryTime: String, feeLabel: String) {
-    delivery.text = "Livraison \(deliveryTime)"
+    delivery.text = "\(HLStrings.delivery) \(deliveryTime)"
     fee.label.text = feeLabel
     badge.refresh()
     setNeedsLayout()

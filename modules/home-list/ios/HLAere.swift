@@ -188,23 +188,23 @@ enum HLAereMeta {
   static func texts(design: Int, _ m: HLMenu)
     -> (NSAttributedString, NSAttributedString?, NSAttributedString, NSAttributedString?) {
     let title = HLRun(m.title, HLFont.w900(13), HLAereColor.ink)
-    let votes = design == 7 ? "(\(m.votes))" : "(\(m.votes) avis)"
+    let votes = design == 7 ? "(\(m.votes))" : "(\(m.votes) \(HLStrings.reviews))"
     let rating = HLText([
       HLKerned(HLIcons.attributed("star", size: design == 7 ? 11 : 12, color: HLColor.starYellow), 4),
       HLKerned(HLRun(m.rating, HLFont.w700(11), HLAereColor.ink), 4),
       HLRun(votes, HLFont.w600(11), HLAereColor.muted),
     ])
     var fee = [
-      HLRun("Livraison ", HLFont.w700(11), HLAereColor.text2),
+      HLRun("\(HLStrings.delivery) ", HLFont.w700(11), HLAereColor.text2),
       HLRun(m.feeText, HLFont.w800(11), m.feeFree ? HLColor.accent : HLAereColor.ink),
     ]
     let eta = HLRun(m.eta, HLFont.w900(11), HLAereColor.ink)
     switch design {
     case 4:
-      let right = HLText([HLRun("Livré en ", HLFont.w700(11), HLAereColor.text2), eta])
+      let right = HLText([HLRun("\(HLStrings.deliveredIn) ", HLFont.w700(11), HLAereColor.text2), eta])
       return (title, rating, HLText(fee), right)
     case 5:
-      fee += [HLRun(" · Livré en ", HLFont.w700(11), HLAereColor.text2), eta]
+      fee += [HLRun(" · \(HLStrings.deliveredIn) ", HLFont.w700(11), HLAereColor.text2), eta]
       return (title, rating, HLText(fee), nil)
     default:
       fee += [HLRun(" · ", HLFont.w700(11), HLAereColor.text2), eta]

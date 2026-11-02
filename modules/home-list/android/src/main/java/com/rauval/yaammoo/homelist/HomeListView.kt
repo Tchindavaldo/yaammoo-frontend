@@ -238,8 +238,13 @@ class HomeListView(context: Context, appContext: AppContext) :
     applyProps()
   }
 
+  /** Langue changee (`HLStrings`) : reconfigurer toutes les rangees au prochain `applyProps`. */
+  var relabel = false
+
   /** Appele a chaque lot de props (`OnViewDidUpdateProps`) et apres `updateRows`. */
   fun applyProps() {
+    val relabelNow = relabel
+    relabel = false
     val next = ArrayList<HLRowContent>(shops.size + ghostCount)
     shops.forEach { next.add(HLRowContent.Shop(it)) }
     // Fantomes : en queue quand une page suit, ou seuls pendant la premiere page.
@@ -271,7 +276,7 @@ class HomeListView(context: Context, appContext: AppContext) :
         val same = when (val item = newItems[n]) {
           HLItem.Banner -> !bannersChanged
           HLItem.Footer -> false
-          is HLItem.Row -> item.position < previous.size && previous[item.position] == next[item.position]
+          is HLItem.Row -> !relabelNow && item.position < previous.size && previous[item.position] == next[item.position]
         }
         if (!same && newItems[n] is HLItem.Row) reconfigured++
         return same

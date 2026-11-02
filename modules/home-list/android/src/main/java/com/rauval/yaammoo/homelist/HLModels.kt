@@ -87,6 +87,17 @@ class HLFontsRecord : Record {
   @Field var w900: String? = null
 }
 
+/** Textes traduits venus du JS (prop `labels`, cf. `HLStrings`). */
+class HLLabelsRecord : Record {
+  @Field var statusOpen: String = "Ouvert"
+  @Field var delivery: String = "Livraison"
+  @Field var deliveryLower: String = "livraison"
+  @Field var deliveredIn: String = "Livré en"
+  @Field var reviews: String = "avis"
+  @Field var next: String = "Prochaine"
+  @Field var available: String = "disponible"
+}
+
 // Modeles internes : comparables (egalite structurelle), pour ne reconfigurer
 // que ce qui a change.
 

@@ -62,7 +62,7 @@ final class HLMerchantHeaderView: UIView {
     content.addSubview(statusDot)
     statusLabel.font = HLFont.w800(10)
     statusLabel.textColor = HLColor.green
-    statusLabel.text = "Ouvert"
+    statusLabel.text = HLStrings.statusOpen
     content.addSubview(statusLabel)
 
     for bg in [ordersChipBg, votesChipBg] {
@@ -113,10 +113,10 @@ final class HLMerchantHeaderView: UIView {
         HLKerned(HLIcons.attributed("star", size: 13, color: HLColor.starYellow), 3),
         HLRun(shop.ratingText, HLFont.w800(13), HLAereColor.ink),
       ])
-      aereReviews.attributedText = HLRun("\(shop.votes) avis", HLFont.w700(10), HLAereColor.text2)
+      aereReviews.attributedText = HLRun("\(shop.votes) \(HLStrings.reviews)", HLFont.w700(10), HLAereColor.text2)
       // `MerchantHeader.tsx` : « Livraison » gris, valeur en accent.
       aereDelivery.attributedText = shop.deliveryLabel.isEmpty ? nil : HLText([
-        HLRun("Livraison ", HLFont.w700(10), HLColor.muted),
+        HLRun("\(HLStrings.delivery) ", HLFont.w700(10), HLColor.muted),
         HLRun(shop.deliveryLabel, HLFont.w800(10), HLColor.accent),
       ])
       setNeedsLayout()
@@ -137,7 +137,7 @@ final class HLMerchantHeaderView: UIView {
   }
 
   private func statusText(_ distance: String) -> NSAttributedString {
-    var runs = [HLRun("Ouvert", HLFont.w800(10), HLColor.green)]
+    var runs = [HLRun(HLStrings.statusOpen, HLFont.w800(10), HLColor.green)]
     if !distance.isEmpty {
       runs.append(HLRun(" · \(distance)", HLFont.w700(10), HLColor.muted))
     }

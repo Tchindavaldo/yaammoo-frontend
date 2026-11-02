@@ -22,7 +22,7 @@ fun hlFeePill(context: Context): HLLabel = HLLabel(context).apply {
 
 /** Colonne « Prochaine » des barres 4 et 5 (espacement des lettres 0,8). */
 private fun nextLabelText(): CharSequence =
-  HLRuns().run("Prochaine", 700, 10f, HLColor.deliveryLabel, kern = 0.8f).build()
+  HLRuns().run(HLStrings.next, 700, 10f, HLColor.deliveryLabel, kern = 0.8f).build()
 
 /**
  Barre floutee du bas des cartes 4 et 5 (`BlurView intensity=60 tint=light` +
@@ -81,7 +81,7 @@ class HLFlashBadge(context: Context) : HLBox(context) {
 class HLV7BottomZone(context: Context) : HLBox(context) {
   private val nextLabel = HLLabel(context).apply {
     setFont(800, 11f, HLColor.white(0.7f))
-    text = "Prochaine"
+    text = HLStrings.next
   }
   private val delivery = HLLabel(context).apply { setFont(900, 11f, Color.WHITE) }
   private val fee = hlFeePill(context)
@@ -100,7 +100,8 @@ class HLV7BottomZone(context: Context) : HLBox(context) {
   }
 
   fun configure(deliveryTime: String, feeLabel: String) {
-    delivery.text = "livraison · $deliveryTime"
+    nextLabel.text = HLStrings.next
+    delivery.text = "${HLStrings.deliveryLower} · $deliveryTime"
     fee.text = feeLabel
     relayout()
   }
@@ -160,10 +161,10 @@ class HLStockDeliveryBar(context: Context) : HLBox(context) {
     // `gap: 5` entre le nombre et « disponible ».
     stockLabel.text = HLRuns()
       .run("$stock", 700, 13f, Color.BLACK).gap(5f)
-      .run("disponible", 700, 13f, Color.BLACK)
+      .run(HLStrings.available, 700, 13f, Color.BLACK)
       .build()
     stockRatio = (stock / 100f).coerceIn(0f, 1f)
-    delivery.text = "Livraison $deliveryTime"
+    delivery.text = "${HLStrings.delivery} $deliveryTime"
     badge.refresh()
     blur.content.relayout()
   }
@@ -199,7 +200,7 @@ class HLV5BottomBar(context: Context) : HLBox(context) {
   }
 
   fun configure(deliveryTime: String, feeLabel: String) {
-    delivery.text = "Livraison $deliveryTime"
+    delivery.text = "${HLStrings.delivery} $deliveryTime"
     fee.text = feeLabel
     badge.refresh()
     blur.content.relayout()

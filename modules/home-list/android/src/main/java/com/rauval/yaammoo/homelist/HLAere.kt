@@ -179,23 +179,23 @@ class HLAereMetaTexts(
 
 fun hlAereMeta(design: Int, m: HLMenu): HLAereMetaTexts {
   val title = HLRuns().run(m.title, 900, 13f, HLAereColor.ink).build()
-  val votes = if (design == 7) "(${m.votes})" else "(${m.votes} avis)"
+  val votes = if (design == 7) "(${m.votes})" else "(${m.votes} ${HLStrings.reviews})"
   val rating = HLRuns()
     .icon("star", if (design == 7) 11f else 12f, HLColor.starYellow).gap(4f)
     .run(m.rating, 700, 11f, HLAereColor.ink).gap(4f)
     .run(votes, 600, 11f, HLAereColor.muted)
     .build()
   val fee = HLRuns()
-    .run("Livraison ", 700, 11f, HLAereColor.text2)
+    .run("${HLStrings.delivery} ", 700, 11f, HLAereColor.text2)
     .run(m.feeText, 800, 11f, if (m.feeFree) HLColor.accent else HLAereColor.ink)
   return when (design) {
     4 -> HLAereMetaTexts(
       title, rating, fee.build(),
-      HLRuns().run("Livré en ", 700, 11f, HLAereColor.text2).run(m.eta, 900, 11f, HLAereColor.ink).build(),
+      HLRuns().run("${HLStrings.deliveredIn} ", 700, 11f, HLAereColor.text2).run(m.eta, 900, 11f, HLAereColor.ink).build(),
     )
     5 -> HLAereMetaTexts(
       title, rating,
-      fee.run(" · Livré en ", 700, 11f, HLAereColor.text2).run(m.eta, 900, 11f, HLAereColor.ink).build(),
+      fee.run(" · ${HLStrings.deliveredIn} ", 700, 11f, HLAereColor.text2).run(m.eta, 900, 11f, HLAereColor.ink).build(),
       null,
     )
     else -> HLAereMetaTexts(

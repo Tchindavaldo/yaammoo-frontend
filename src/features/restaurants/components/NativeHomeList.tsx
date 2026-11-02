@@ -6,6 +6,7 @@ import {
   type HomeListFonts,
   type HomeListHandle,
   type HomeListIcons,
+  type HomeListLabels,
   type HomeListNativeHandle,
   type HomeListRow,
 } from "@/modules/home-list";
@@ -115,6 +116,17 @@ const FONTS: HomeListFonts = {
   w800: fontFor(800),
   w900: fontFor(900),
 };
+
+/** Textes du natif (header boutique, cartes), relus a chaque rendu : langue a chaud. */
+const labelsFor = (): HomeListLabels => ({
+  statusOpen: tr("Ouvert"),
+  delivery: tr("Livraison"),
+  deliveryLower: tr("livraison"),
+  deliveredIn: tr("Livré en"),
+  reviews: tr("avis"),
+  next: tr("Prochaine"),
+  available: tr("disponible"),
+});
 
 /** Frais de la ligne sous la carte du variant 4 (`ItemMeta`). */
 const metaFeeLabelFor = (i: number) =>
@@ -255,6 +267,7 @@ export const NativeHomeList: React.FC<Props> = ({
   onEdgeChange,
 }) => {
   const i18nLang = useLanguage();
+  const labels = useMemo(labelsFor, [i18nLang]);
   // L'heure de prochaine livraison avance avec le temps : recalcul chaque
   // minute et au retour au premier plan (comme `useNextDeliveryTime`).
   const [minute, setMinute] = useState(0);
@@ -390,6 +403,7 @@ export const NativeHomeList: React.FC<Props> = ({
       refreshing={refreshing}
       icons={ICONS}
       fonts={FONTS}
+      labels={labels}
       cardBlurMode={CARD_BLUR_MODE}
       bannerAutoplay={BANNER_AUTOPLAY}
       homeDesign={HOME_DESIGN === "aere" ? "aere" : "actuel"}

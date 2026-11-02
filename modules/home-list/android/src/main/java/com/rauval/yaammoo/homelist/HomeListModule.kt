@@ -73,6 +73,12 @@ class HomeListModule : Module() {
         HLDesign.aere = design == "aere"
       }
 
+      // Textes traduits (t() cote JS) : a chaque changement de langue, toutes
+      // les rangees sont reconfigurees.
+      Prop("labels") { view: HomeListView, labels: HLLabelsRecord ->
+        if (HLStrings.apply(labels)) view.relabel = true
+      }
+
       OnViewDidUpdateProps { view: HomeListView ->
         view.applyProps()
       }

@@ -57,7 +57,7 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
     nameLabel.setFont(700, 14f, HLColor.dark)
     statusDot.background = roundedBackground(HLColor.green, 3f)
     statusLabel.setFont(800, 10f, HLColor.green)
-    statusLabel.text = "Ouvert"
+    statusLabel.text = HLStrings.statusOpen
     for (chip in listOf(ordersChip, votesChip)) {
       chip.background = roundedBackground(HLColor.chip, 8f)
       chip.insets = floatArrayOf(5f, 2f, 5f, 2f)
@@ -147,11 +147,11 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
         .icon("star", 13f, HLColor.starYellow).gap(3f)
         .run(shop.ratingText, 800, 13f, HLAereColor.ink)
         .build()
-      aereReviews.text = HLRuns().run("${shop.votes} avis", 700, 10f, HLAereColor.text2).build()
+      aereReviews.text = HLRuns().run("${shop.votes} ${HLStrings.reviews}", 700, 10f, HLAereColor.text2).build()
       // `MerchantHeader.tsx` : « Livraison » gris, valeur en accent.
       aereDelivery.text = if (showDelivery) {
         HLRuns()
-          .run("Livraison ", 700, 10f, HLColor.muted)
+          .run("${HLStrings.delivery} ", 700, 10f, HLColor.muted)
           .run(shop.deliveryLabel, 800, 10f, HLColor.accent)
           .build()
       } else {
@@ -173,7 +173,7 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
   }
 
   private fun statusText(distance: String): CharSequence {
-    val runs = HLRuns().run("Ouvert", 800, 10f, HLColor.green)
+    val runs = HLRuns().run(HLStrings.statusOpen, 800, 10f, HLColor.green)
     if (distance.isNotEmpty()) runs.run(" · $distance", 700, 10f, HLColor.muted)
     return runs.build()
   }

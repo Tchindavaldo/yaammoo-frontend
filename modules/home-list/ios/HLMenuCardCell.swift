@@ -197,20 +197,20 @@ final class HLMenuCardCell: UICollectionViewCell {
       titleRight.attributedText = HLText([
         HLKerned(HLIcons.attributed("star", size: 12, color: HLColor.starYellow), 4),
         HLKerned(HLRun(m.rating, HLFont.w700(11), .black), 4),
-        HLRun("(\(m.votes) avis)", HLFont.w600(11), HLColor.metaMuted),
+        HLRun("(\(m.votes) \(HLStrings.reviews))", HLFont.w600(11), HLColor.metaMuted),
       ])
       lineLeft.attributedText = HLText([
-        HLRun("Livraison ", HLFont.w700(11), HLColor.metaText),
+        HLRun("\(HLStrings.delivery) ", HLFont.w700(11), HLColor.metaText),
         HLRun(m.metaFeeLabel, HLFont.w900(11), orange),
       ])
       lineRight.attributedText = HLText([
-        HLRun("Livré en ", HLFont.w600(11), HLColor.v4TimeText),
+        HLRun("\(HLStrings.deliveredIn) ", HLFont.w600(11), HLColor.v4TimeText),
         HLRun("15min", HLFont.w900(13), HLColor.metaTitle),
       ])
     case 5:
       titleRight.attributedText = HLRun("\(m.stock)", HLFont.w700(11), .black)
       lineLeft.attributedText = HLText([
-        HLRun("Livré en ", HLFont.w700(11), HLColor.metaText),
+        HLRun("\(HLStrings.deliveredIn) ", HLFont.w700(11), HLColor.metaText),
         HLRun("30min", HLFont.w900(11), orange),
       ])
       lineRight.attributedText = HLText([
@@ -220,7 +220,7 @@ final class HLMenuCardCell: UICollectionViewCell {
     default:
       titleRight.attributedText = HLRun("\(m.stock)", HLFont.w700(11), .black)
       lineLeft.attributedText = HLText([
-        HLRun("Livré en ", HLFont.w700(11), HLColor.metaText),
+        HLRun("\(HLStrings.deliveredIn) ", HLFont.w700(11), HLColor.metaText),
         HLRun("30min", HLFont.w900(11), orange),
       ])
       lineRight.attributedText = nil

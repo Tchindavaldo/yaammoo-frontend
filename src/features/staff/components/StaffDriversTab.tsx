@@ -11,7 +11,7 @@ import { useStaffDriverProfiles } from "../hooks/useStaffDriverProfiles";
 import { DEFAULT_DIAL, formatPhone, initialsOf, personName, timeAgo } from "../utils/staffFormat";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   applications: DriverApplication[];
@@ -52,6 +52,7 @@ export const StaffDriversTab: React.FC<Props> = ({
   onDecide,
   onRemove,
 }) => {
+  useLanguage();
   const profiles = useStaffDriverProfiles(drivers);
 
   if (!loaded) {

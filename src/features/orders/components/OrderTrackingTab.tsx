@@ -14,7 +14,7 @@ import { useOrderTracking } from "../hooks/useOrderTracking";
 import { useTrackingRoute } from "../hooks/useTrackingRoute";
 import { estimateArrival, formatAgo, formatClock } from "../utils/trackingEta";
 import OrderTrackingMap from "./OrderTrackingMap";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Onglet « Suivi » du détail client (`OrderBottomSheet`), visible pendant la
@@ -28,6 +28,7 @@ import { t as tr } from "@/src/i18n";
 const TICK_MS = 15 * 1000;
 
 export function OrderTrackingTab({ order }: { order: Commande }) {
+  useLanguage();
   const hasDriver = !!order.driverId;
   const { driver, destination, loading, error, retry } = useOrderTracking(
     order.id,

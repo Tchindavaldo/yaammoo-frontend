@@ -3,7 +3,7 @@ import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Boisson de la BOUTIQUE (backend `fastfoods.drinks`, migration 062).
@@ -22,6 +22,7 @@ export interface ShopDrink {
  * Écriture = liste COMPLÈTE via `POST /fastfood/:id` (`drinks`).
  */
 export const useShopDrinks = () => {
+  useLanguage();
   const { userData } = useAuth();
   const fastFoodId = userData?.fastFoodId;
   const [drinks, setDrinks] = useState<ShopDrink[]>([]);

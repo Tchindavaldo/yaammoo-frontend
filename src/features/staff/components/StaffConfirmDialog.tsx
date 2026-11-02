@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface StaffConfirm {
   title: string;
@@ -19,7 +19,9 @@ interface Props {
 }
 
 /** Confirmation d'une action destructive (retirer un membre, un livreur, supprimer un rôle). */
-export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel }) => (
+export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel }) => {
+  useLanguage();
+  return (
   <Modal visible={!!confirm} transparent animationType="fade" onRequestClose={onCancel}>
     <View style={styles.backdrop}>
       <View style={styles.card}>
@@ -56,6 +58,7 @@ export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel })
     <GlobalToastHost modal />
   </Modal>
 );
+};
 
 const styles = StyleSheet.create({
   backdrop: {

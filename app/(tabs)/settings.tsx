@@ -30,7 +30,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
-import { LANGUAGES, getLanguage, t } from "@/src/i18n";
+import { LANGUAGES, getLanguage, t, useLanguage } from "@/src/i18n";
 
 // Sections desactivees pour l'instant (repasser a true pour les reafficher).
 // Une section dont aucun item n'est affiche est masquee avec son titre.
@@ -38,6 +38,7 @@ const SHOW_ACTIVITIES = false;
 const SHOW_DELIVERY = true;
 
 export default function SettingsScreen() {
+  useLanguage();
   const { userData } = useAuth();
   // isDriver dérivé de driverId (pas de userData.isDriver qui peut être
   // incohérent selon le cache côté web).

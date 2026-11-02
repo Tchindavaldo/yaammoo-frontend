@@ -9,7 +9,7 @@ import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import { IS_AERE } from "./designs/item/config";
 import { useShopDeliveryLabel } from "../utils/deliveryUtils";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MerchantHeaderProps {
   name: string;
@@ -49,6 +49,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   deliveryHours,
   orderLeadTime = 0,
 }) => {
+  useLanguage();
   const distance = formatDistanceKm(distanceKm);
   const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime);
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec

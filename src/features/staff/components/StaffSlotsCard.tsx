@@ -4,7 +4,7 @@ import Svg, { Circle } from "react-native-svg";
 import type { StaffPlan } from "../types/staff.types";
 import { plural } from "../utils/staffFormat";
 import { capsLabel, ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const SIZE = 88;
 const STROKE = 9;
@@ -70,6 +70,7 @@ const SlotsRing = ({ used, limit }: { used: number; limit: number }) => {
  * libres, plan, et barre des places de livreur.
  */
 export const StaffSlotsCard: React.FC<Props> = ({ plan, members, drivers }) => {
+  useLanguage();
   const free = Math.max(plan.memberLimit - members, 0);
   const driverRatio = plan.driverLimit > 0 ? Math.min(drivers / plan.driverLimit, 1) : 0;
 

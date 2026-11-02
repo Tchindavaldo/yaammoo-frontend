@@ -13,7 +13,7 @@ import {
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { DriverOrderCard } from "./DriverOrderCard";
 import { GroupStatusCounts } from "./GroupStatusCounts";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 // Barre de chips « boutique » de la modal, posée sur la navbar (tabs).
 const CHIPS_BAR_HEIGHT = 64;
@@ -56,6 +56,7 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
   storeFilter = null,
   periodFilter = null,
 }) => {
+  const i18nLang = useLanguage();
   const tabBarHeight = useTabBarHeight();
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>("express");
   const [groupSubTab, setGroupSubTab] = useState<
@@ -178,7 +179,7 @@ export const DriverOrderPanel: React.FC<DriverOrderPanelProps> = ({
         userGroups: groupByUser(ords),
       })),
     };
-  }, [dateFilteredOrders]);
+  }, [dateFilteredOrders, i18nLang]);
 
   const renderUserGroup = (group: Commande[]) => (
     <DriverOrderCard

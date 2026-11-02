@@ -3,7 +3,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MapComponentProps {
   region: {
@@ -20,6 +20,7 @@ interface MapComponentProps {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ region, coords, deliveryType }) => {
+  useLanguage();
   const isNoDelivery = deliveryType === 'surplace' || !deliveryType;
 
   if (isNoDelivery) {

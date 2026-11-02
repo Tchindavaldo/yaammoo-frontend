@@ -5,13 +5,14 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Platform } from "react-native";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Photos du formulaire menu : sélection galerie + upload `/image/upload` avec
  * progression par emplacement. Extrait de `AddMenuSheetMultiStep` (R4).
  */
 export const useMenuImageUpload = () => {
+  useLanguage();
   const [images, setImages] = useState<string[]>([]);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState([0, 0, 0]);

@@ -15,7 +15,7 @@ import {
   CityPickerModal,
   BoutiqueToast,
 } from "./create-boutique/BoutiquePickers";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CreateBoutiquePanelProps {
   onCancel: () => void;
@@ -34,6 +34,7 @@ interface CreateBoutiquePanelProps {
 export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
   onCancel,
 }) => {
+  useLanguage();
   // Rendu dans (tabs)/boutique, navbar par-dessus : hauteur REELLE de la
   // navbar, safe-area comprise (source unique R19).
   const tabBarHeight = useTabBarHeight();

@@ -3,13 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Menu } from '@/src/types';
 import { Theme } from '../../../theme';
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MenuItemProps {
   menu: Menu;
 }
 
 export const MenuItem: React.FC<MenuItemProps> = ({ menu }) => {
+  useLanguage();
   return (
     <TouchableOpacity style={styles.container} activeOpacity={0.7}>
       <Image

@@ -15,7 +15,7 @@ import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 import { verifyBonusCode } from "../services/verifyBonusCode";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -61,6 +61,7 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
+  useLanguage();
   const insets = useSheetInsets();
   const sheetHeight = SHEET_HEIGHT + insets.bottom;
 

@@ -41,7 +41,7 @@ import {
 } from "@/src/services/analytics/shopImpressions";
 import { homePageOf } from "@/src/services/analytics/homePages";
 import { track } from "@/src/services/analytics/analytics";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Boutique « vue » : visible a 50 % au moins (meme seuil que la liste native). */
 const SHOP_VIEWABILITY = { itemVisiblePercentThreshold: 50 };
@@ -57,6 +57,7 @@ const seenBanners = new Set<string>();
  * Voir architecture/restaurants.md.
  */
 export default function HomeScreen() {
+  useLanguage();
   const onLayoutRootView = useHideSplash();
   const { ensureProfileRefreshed } = useAuth();
   const { unreadCount, ensureLoaded: ensureNotificationsLoaded } =

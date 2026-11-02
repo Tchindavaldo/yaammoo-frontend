@@ -20,7 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 type FilterType = "all" | "credit" | "debit" | "transfer";
 
@@ -45,6 +45,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   onRegisterWithdraw,
   topOffset = 0,
 }) => {
+  useLanguage();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
   // Hauteur mesurée de la barre fixe (solde + retrait) pour décaler la liste.
   const [barHeight, setBarHeight] = useState(0);

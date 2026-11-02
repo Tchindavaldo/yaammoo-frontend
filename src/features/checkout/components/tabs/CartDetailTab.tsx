@@ -10,7 +10,7 @@ import {
   SOFT_ACCENT,
 } from "./detail-hero/heroShared";
 import { CartRecapBody } from "./cart-detail-hero/CartRecapBody";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Espace libre sous la section, avant le footer. */
 const FOOTER_SPACE = 80;
@@ -43,6 +43,7 @@ export const CartDetailTab: React.FC<CartDetailTabProps> = ({
   deliveryPrice,
   isDeliveryFree,
 }) => {
+  useLanguage();
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) =>
     setWidth(e.nativeEvent.layout.width);

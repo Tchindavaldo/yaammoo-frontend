@@ -20,7 +20,7 @@ import {
   onUpdateDownloaded,
 } from "../services/otaNotice";
 import { DS } from "@/src/theme/ds";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Carte de mise a jour OTA, montee une seule fois a la racine de l'app (comme
@@ -51,16 +51,18 @@ const CONTENT: Record<
   downloaded: {
     icon: "arrow-down",
     tint: DS.accent,
-    title: tr("Mise à jour téléchargée"),
-    message:
-      tr("De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter."),
+    get title() { return tr("Mise à jour téléchargée"); },
+    get message() {
+      return tr("De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter.");
+    },
   },
   applied: {
     icon: "checkmark",
     tint: "#12a150",
-    title: tr("Application à jour"),
-    message:
-      tr("Les dernières améliorations sont installées. Vous profitez dès maintenant de la version la plus récente."),
+    get title() { return tr("Application à jour"); },
+    get message() {
+      return tr("Les dernières améliorations sont installées. Vous profitez dès maintenant de la version la plus récente.");
+    },
   },
 };
 
@@ -115,6 +117,7 @@ const TRACK_INSET = 18;
 const DEV_PREVIEW = false;
 
 export const OtaUpdateCard = () => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   // Bande safe-area basse : source unique (R19) ; la carte flotte au-dessus.
   const band = useBottomSafeArea();

@@ -4,7 +4,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { CartZoneGroup } from "../utils/groupCartOrders";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartZoneFooterBarProps {
   /** Groupes actuellement affichés : un seul si une zone est isolée. */
@@ -34,6 +34,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
   onPay,
   inlineHeader = false,
 }) => {
+  useLanguage();
   if (groups.length === 0) return null;
 
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);

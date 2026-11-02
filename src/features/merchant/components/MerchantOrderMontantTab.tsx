@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const CURRENCY = "XAF";
 
@@ -104,17 +104,17 @@ export function computeGrandTotal(orders: Commande[]): number {
 
 /** Chip d'état d'une commande : libellé court + couleurs. */
 const STATUS_CHIP: Record<string, { label: string; bg: string; fg: string }> = {
-  pending: { label: t("En attente"), bg: "#FEF3C7", fg: "#92400E" },
-  processing: { label: t("En cours"), bg: "#DBEAFE", fg: "#1E40AF" },
-  active: { label: t("En cours"), bg: "#DBEAFE", fg: "#1E40AF" },
-  in_progress: { label: t("En cours"), bg: "#DBEAFE", fg: "#1E40AF" },
-  finished: { label: t("Prête"), bg: "#DCFCE7", fg: "#166534" },
-  completed: { label: t("Prête"), bg: "#DCFCE7", fg: "#166534" },
-  done: { label: t("Prête"), bg: "#DCFCE7", fg: "#166534" },
-  delivering: { label: t("En livraison"), bg: "#FFEDD5", fg: "#9A3412" },
-  delivered: { label: t("Livrée"), bg: "#E5E7EB", fg: "#374151" },
-  cancelByUser: { label: t("Annulée"), bg: "#FEE2E2", fg: "#991B1B" },
-  cancelByFastFood: { label: t("Annulée"), bg: "#FEE2E2", fg: "#991B1B" },
+  pending: { get label() { return t("En attente"); }, bg: "#FEF3C7", fg: "#92400E" },
+  processing: { get label() { return t("En cours"); }, bg: "#DBEAFE", fg: "#1E40AF" },
+  active: { get label() { return t("En cours"); }, bg: "#DBEAFE", fg: "#1E40AF" },
+  in_progress: { get label() { return t("En cours"); }, bg: "#DBEAFE", fg: "#1E40AF" },
+  finished: { get label() { return t("Prête"); }, bg: "#DCFCE7", fg: "#166534" },
+  completed: { get label() { return t("Prête"); }, bg: "#DCFCE7", fg: "#166534" },
+  done: { get label() { return t("Prête"); }, bg: "#DCFCE7", fg: "#166534" },
+  delivering: { get label() { return t("En livraison"); }, bg: "#FFEDD5", fg: "#9A3412" },
+  delivered: { get label() { return t("Livrée"); }, bg: "#E5E7EB", fg: "#374151" },
+  cancelByUser: { get label() { return t("Annulée"); }, bg: "#FEE2E2", fg: "#991B1B" },
+  cancelByFastFood: { get label() { return t("Annulée"); }, bg: "#FEE2E2", fg: "#991B1B" },
 };
 
 type Group = {
@@ -131,6 +131,7 @@ type Props = {
 };
 
 export function MontantTab({ orders }: Props) {
+  useLanguage();
   // Regroupe par deliveryGroupId. Une commande sans groupe forme son propre bloc.
   const groups = useMemo(() => buildDeliveryGroups(orders), [orders]);
 

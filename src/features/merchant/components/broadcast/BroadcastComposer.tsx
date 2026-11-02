@@ -22,7 +22,7 @@ import type {
 import { BroadcastAudiencePicker } from "./BroadcastAudiencePicker";
 import { BroadcastPreview } from "./BroadcastPreview";
 import { BC, capsLabel } from "./broadcastTheme";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 const TITLE_MAX = 50;
 const BODY_MAX = 150;
@@ -60,6 +60,7 @@ export const BroadcastComposer: React.FC<Props> = ({
   onSend,
   onClose,
 }) => {
+  useLanguage();
   const [title, setTitle] = useState(initial.title);
   const [body, setBody] = useState(initial.body);
   const [bodyOn, setBodyOn] = useState(!!initial.body);

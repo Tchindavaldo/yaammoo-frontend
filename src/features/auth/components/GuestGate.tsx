@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "@/src/theme";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * GuestGate — protège un écran entièrement lié au compte (panier, profil…).
@@ -26,6 +26,7 @@ export function GuestGate({
   subtitle: string;
   children: React.ReactNode;
 }) {
+  useLanguage();
   const { isSignedIn, requireAuth } = useAuthGate();
   const insets = useSafeAreaInsets();
 

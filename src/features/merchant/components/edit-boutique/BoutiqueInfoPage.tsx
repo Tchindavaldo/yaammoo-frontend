@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { styles } from "./styles";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface BoutiqueInfoPageProps {
   image: string;
@@ -85,7 +85,9 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   loading,
   onSubmit,
   keyboardOffset = 0,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View style={{ flex: 1 }}>
     {/* Pas de KeyboardAvoidingView : sa hauteur animee ferait bouger le
         space-between ci-dessous. Le ScrollView natif (keyboardShouldPersistTaps)
@@ -400,3 +402,4 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
     </TouchableOpacity>
   </View>
 );
+};

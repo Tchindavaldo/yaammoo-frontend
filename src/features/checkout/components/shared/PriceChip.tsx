@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text } from 'react-native';
 import { styles } from '../CheckoutSheet.styles';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface PriceChipProps {
   isActive: boolean;
@@ -12,6 +12,7 @@ interface PriceChipProps {
 }
 
 export const PriceChip: React.FC<PriceChipProps> = ({ isActive, label, price, onPress }) => {
+  useLanguage();
   return (
     <TouchableOpacity 
       style={[

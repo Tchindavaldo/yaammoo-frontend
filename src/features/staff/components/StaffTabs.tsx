@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { StaffTab } from "../types/staff.types";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   tab: StaffTab;
@@ -14,7 +14,9 @@ interface Props {
 }
 
 /** Sélecteur Équipe / Livreurs (contrôle segmenté de la maquette). */
-export const StaffTabs: React.FC<Props> = ({ tab, onChange, members, drivers, pending }) => (
+export const StaffTabs: React.FC<Props> = ({ tab, onChange, members, drivers, pending }) => {
+  useLanguage();
+  return (
   <View style={styles.track} accessibilityRole="tablist">
     <Segment on={tab === "team"} onPress={() => onChange("team")} label={t("Équipe")} count={members} />
     <Segment
@@ -26,6 +28,7 @@ export const StaffTabs: React.FC<Props> = ({ tab, onChange, members, drivers, pe
     />
   </View>
 );
+};
 
 const Segment = ({
   on,

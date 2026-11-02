@@ -6,7 +6,7 @@ import { getBonusDescriptor } from "../config/bonusRegistry";
 import type { Bonus } from "../types/bonus.types";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
 import { GALLERY_CARD_W, GALLERY_RADIUS } from "./gallery.constants";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface BonusGalleryCardProps {
   bonus: Bonus;
@@ -35,6 +35,7 @@ const BonusGalleryCardBase = ({
   activeTextColor,
   onPress,
 }: BonusGalleryCardProps) => {
+  useLanguage();
   const desc = getBonusDescriptor(bonus.type);
   // Couleur pleine du bonus, appliquée UNIQUEMENT quand la carte est centrée.
   // Le passage couleur ↔ neutre suit `scrollX` en TEMPS RÉEL (comme la barre) :

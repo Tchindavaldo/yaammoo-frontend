@@ -16,28 +16,28 @@ export const getThreadName = (thread: SupportThread): string =>
 
 /** Libellé affiché pour le statut d'un fil. */
 export const SUPPORT_STATUS_LABEL: Record<SupportThreadStatus, string> = {
-  open: tr("En cours"),
-  pending: tr("En attente"),
-  closed: tr("Résolu"),
+  get open() { return tr("En cours"); },
+  get pending() { return tr("En attente"); },
+  get closed() { return tr("Résolu"); },
 };
 
 /** Sujets proposés en chips en haut d'un nouveau chat. */
 export const SUPPORT_TOPICS: SupportTopicDescriptor[] = [
   {
     id: "question",
-    label: tr("Question"),
+    get label() { return tr("Question"); },
     icon: "help-circle-outline",
     color: Theme.colors.info,
   },
   {
     id: "probleme",
-    label: tr("Problème"),
+    get label() { return tr("Problème"); },
     icon: "alert-circle-outline",
     color: Theme.colors.danger,
   },
   {
     id: "assistance",
-    label: tr("Assistance"),
+    get label() { return tr("Assistance"); },
     icon: "hand-left-outline",
     color: Theme.colors.primary,
   },
@@ -49,7 +49,7 @@ export const SUPPORT_TOPICS: SupportTopicDescriptor[] = [
   },
   {
     id: "discussion",
-    label: tr("Discussion"),
+    get label() { return tr("Discussion"); },
     icon: "chatbubbles-outline",
     color: Theme.colors.secondary,
   },

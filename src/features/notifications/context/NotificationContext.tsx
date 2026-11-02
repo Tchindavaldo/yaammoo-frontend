@@ -5,7 +5,7 @@ import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { storage } from "../../../utils/storage";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface Notification {
   id: string;
@@ -63,6 +63,7 @@ export const isNotifRead = (n: Notification, userId?: string) => {
 };
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);

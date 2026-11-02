@@ -17,7 +17,7 @@ import type {
   BonusClaimStatus,
 } from "../types/bonus.types";
 import { DEFAULT_BONUSES, USE_DEFAULT_BONUSES } from "../config/defaultBonuses";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
 
@@ -78,6 +78,7 @@ export const normalizeBonus = (raw: any): Bonus => ({
 });
 
 export const useBonus = () => {
+  useLanguage();
   const { userData } = useAuth();
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
   // `true` dès le départ : le premier fetch part au montage, sans ça la page

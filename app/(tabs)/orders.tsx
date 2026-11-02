@@ -7,7 +7,7 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { CartStatusPanel } from "@/src/features/orders/components/CartStatusPanel";
 import { DS } from "@/src/theme/ds";
 import { useLocalSearchParams } from "expo-router";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const STATUSES = ["pending", "active", "finished", "delivered"] as const;
 
@@ -16,6 +16,7 @@ const STATUSES = ["pending", "active", "finished", "delivered"] as const;
  * La page Boutique (marchand) n'a plus d'onglet : Profil → Boutique → Commandes.
  */
 export default function OrdersScreen() {
+  useLanguage();
   const { isSignedIn } = useAuthGate();
   const [headerHeight, setHeaderHeight] = useState(70);
   // Deep-link `?section=` (notifications, home) : statut ouvert au montage.

@@ -3,7 +3,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -37,7 +37,9 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
   fraisGroupes,
   onGroup,
   onSplit,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <>
     <Text style={styles.question}>
       {t("Une seule livraison pour tout, ou des livraisons différentes ?")}
@@ -109,3 +111,4 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
     </TouchableOpacity>
   </>
 );
+};

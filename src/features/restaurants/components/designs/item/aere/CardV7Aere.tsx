@@ -6,7 +6,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CardVariantProps, SKELETON_SIZES } from "../config";
 import { DELIVERY_ETA, feeText, isStockLow, stockParts, stockRatio } from "./labels";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Design 7 aere (HOME_DESIGN = "aere") : petite carte sous degrade sombre,
@@ -17,6 +17,7 @@ const FALLBACK = require("@/assets/images/burger1-nobackground1.webp");
 const SIZE = SKELETON_SIZES[7];
 
 export const CardV7Aere: React.FC<CardVariantProps> = ({ menu, onPress, isLast, stock, price }) => {
+  useLanguage();
   const { value, unit } = stockParts(stock);
   return (
     <TouchableOpacity
@@ -69,7 +70,9 @@ export const V7AereMeta: React.FC<{
   rating: number;
   votes: number;
   deliveryFeeLabel: string;
-}> = ({ title, rating, votes, deliveryFeeLabel }) => (
+}> = ({ title, rating, votes, deliveryFeeLabel }) => {
+  useLanguage();
+  return (
   <>
     <View style={styles.row}>
       <Text style={styles.metaTitle} numberOfLines={1}>
@@ -92,6 +95,7 @@ export const V7AereMeta: React.FC<{
     </Text>
   </>
 );
+};
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

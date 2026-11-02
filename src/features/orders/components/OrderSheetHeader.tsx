@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * En-tête du détail client (`OrderBottomSheet`) : avatar de la boutique +
@@ -45,6 +45,7 @@ export function OrderSheetHeader({
   onSelectOrder,
   panHandlers,
 }: Props) {
+  useLanguage();
   const hasMultiple = !!allOrders && allOrders.length > 1;
 
   // ─── Chips « Cmd » : compteur de débordement « +N » ───────────────────────

@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import MerchantOrderBottomSheet from "../../merchant/components/MerchantOrderBottomSheet";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Hauteur fixe d'une carte livreur (alignée sur la carte marchand). */
 export const LIVREUR_CARD_HEIGHT = 94.33;
@@ -38,6 +38,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
   allOrders,
   onUpdateStatus,
 }) => {
+  useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 

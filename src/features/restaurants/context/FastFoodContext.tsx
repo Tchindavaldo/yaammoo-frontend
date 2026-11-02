@@ -16,7 +16,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 // ⚠️ `prefetchHomeImages` n'est PLUS appele. Chaque carte monte desormais son
 // image des son rendu (cf. DesignItem) : le prechargement faisait donc DOUBLON.
 // Les deux mecanismes se disputaient la bande passante, les requetes
@@ -134,6 +134,7 @@ const FastFoodContext = createContext<FastFoodContextType | undefined>(
 export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const i18nLang = useLanguage();
   // `user` (Firebase User) plutôt que `userData` : c'est lui qui porte le token,
   // et il devient disponible dès la restauration de session.
   // `loading` : Firebase n'a pas encore tranche sur la session. Tant qu'il est
@@ -181,6 +182,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   } = useFastFoodSocketUpdates(setFastFoods);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(t("Tout"));
+  // Langue changee : les noms de categories changent, on revient sur « Tout ».
+  const [categoryLang, setCategoryLang] = useState(i18nLang);
+  if (categoryLang !== i18nLang) {
+    setCategoryLang(i18nLang);
+    setSelectedCategory(t("Tout"));
+  }
 
   // ⚠️ La recherche courante est lue via une REF, pas via la dependance d'un
   // `useCallback`. Sinon `refresh` et `loadMore` changent de reference a chaque

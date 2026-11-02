@@ -22,7 +22,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const { width, height } = Dimensions.get("window");
 
@@ -30,6 +30,7 @@ const { width, height } = Dimensions.get("window");
  * RECTIFICATION REGISTER - FLOU INTENSE ET ALIGNEMENT BOUTONS
  */
 export default function RegisterScreen() {
+  useLanguage();
   const router = useRouter();
   const { setUserData } = useAuth();
 

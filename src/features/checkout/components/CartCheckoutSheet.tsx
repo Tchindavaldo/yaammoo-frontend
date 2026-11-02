@@ -53,7 +53,7 @@ import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
 import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
 import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
 import { extractPeriodDate } from "../utils/periodDate";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -86,6 +86,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   onChange,
   onReopen,
 }) => {
+  useLanguage();
   const [activeTab, setActiveTab] = useState<CheckoutStep>("detail");
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
   const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);

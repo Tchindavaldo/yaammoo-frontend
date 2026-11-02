@@ -13,7 +13,7 @@ import {
 import { AUTH_SHEET_HEIGHT } from "../constants";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Capsule flottante de saisie du flux email — COPIE DEDIEE de
@@ -109,6 +109,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
   onChangePassword,
   onClose,
 }) => {
+  useLanguage();
   const [mounted, setMounted] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   // Gouttiere basse de la sheet = bande safe-area (source unique, R19).

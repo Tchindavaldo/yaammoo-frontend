@@ -2,8 +2,8 @@ import i18next from "i18next";
 import moment from "moment";
 import "moment/locale/fr";
 import * as SecureStore from "expo-secure-store";
-import * as Updates from "expo-updates";
-import { DevSettings, Platform } from "react-native";
+import { useSyncExternalStore } from "react";
+import { Platform } from "react-native";
 import en from "./locales/en.json";
 import fr from "./locales/fr.json";
 
@@ -15,8 +15,9 @@ import fr from "./locales/fr.json";
  *   toucher au code : `"Ajouter au panier": "Mettre au panier"`).
  *
  * Initialisation SYNCHRONE (choix lu via SecureStore.getItem) : `t()` est juste
- * des le premier import, y compris dans les constantes de module. Changer de
- * langue enregistre le choix puis recharge l'app.
+ * des le premier import. Changer de langue se fait A CHAUD, sans recharger
+ * l'app : chaque composant qui affiche un texte traduit appelle `useLanguage()`
+ * et se re-rend quand la langue change (etat, navigation et scroll conserves).
  */
 export type AppLanguage = "fr" | "en";
 
@@ -90,18 +91,30 @@ export function dateLocale(): string {
   return getLanguage() === "en" ? "en-GB" : "fr-FR";
 }
 
-/** Enregistre la langue puis recharge l'app pour l'appliquer partout. */
+const listeners = new Set<() => void>();
+
+function subscribeLanguage(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
+ * Abonne le composant a la langue : il se re-rend quand elle change.
+ * A appeler en tete de tout composant / hook qui affiche un texte traduit.
+ * La valeur renvoyee sert de dependance aux `useMemo` / `useCallback` qui
+ * calculent un texte traduit.
+ */
+export function useLanguage(): AppLanguage {
+  return useSyncExternalStore(subscribeLanguage, getLanguage, getLanguage);
+}
+
+/** Enregistre la langue et l'applique a chaud a toute l'app (sans recharger). */
 export async function setLanguage(lang: AppLanguage): Promise<void> {
   if (lang === getLanguage()) return;
   writeStored(lang);
+  moment.locale(lang);
   await i18next.changeLanguage(lang);
-  if (Platform.OS === "web") {
-    globalThis.location?.reload();
-    return;
-  }
-  try {
-    await Updates.reloadAsync();
-  } catch {
-    DevSettings.reload();
-  }
+  listeners.forEach((listener) => listener());
 }

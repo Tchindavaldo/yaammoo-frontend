@@ -18,7 +18,7 @@ import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow
 import type { CartPaymentState } from "../hooks/useCartPayment";
 import { GROUPED_SHEET_HEIGHT } from "./CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * COPIE DEDIEE et AUTONOME de la capsule flottante du parcours groupe
@@ -76,6 +76,7 @@ export const CartGroupedDetailCapsule: React.FC<
   isKeyboardVisible,
   translateY,
 }) => {
+  useLanguage();
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const insets = useSafeAreaInsets();

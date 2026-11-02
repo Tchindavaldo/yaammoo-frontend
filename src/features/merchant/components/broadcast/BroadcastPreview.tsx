@@ -3,7 +3,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { BroadcastShop } from "../../types/broadcast.types";
 import { BC } from "./broadcastTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const APP_LOGO = require("@/assets/images/logo.png");
 
@@ -21,6 +21,7 @@ interface Props {
  * boutique en en-tête, titre saisi puis message. Boutique sans photo : logo de l'app.
  */
 export const BroadcastPreview: React.FC<Props> = ({ shop, title, body, imageUri }) => {
+  useLanguage();
   const hasTitle = title.trim().length > 0;
   const hasBody = body.trim().length > 0;
   const shopName = shop?.name.trim() || "";

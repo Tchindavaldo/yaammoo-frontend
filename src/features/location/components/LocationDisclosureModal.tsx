@@ -9,7 +9,7 @@ import {
   LocationPurpose,
   onLocationDisclosureRequest,
 } from "../services/locationPermission";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Écran de divulgation affiché JUSTE AVANT la popup système de localisation
@@ -34,34 +34,43 @@ type Disclosure = {
 const DISCLOSURES: Record<LocationPurpose, Disclosure> = {
   nearby: {
     icon: "location",
-    title: t("Votre position, pour les boutiques proches"),
-    message:
-      t("Yaammoo collecte la position de votre téléphone lorsque vous utilisez l'application, pour afficher les boutiques proches de vous et leur distance, et vous envoyer les offres des boutiques de votre ville. Elle est enregistrée sur nos serveurs et n'est pas collectée quand l'application est fermée."),
+    get title() {
+      return t("Votre position, pour les boutiques proches");
+    },
+    get message() {
+      return t("Yaammoo collecte la position de votre téléphone lorsque vous utilisez l'application, pour afficher les boutiques proches de vous et leur distance, et vous envoyer les offres des boutiques de votre ville. Elle est enregistrée sur nos serveurs et n'est pas collectée quand l'application est fermée.");
+    },
   },
   address: {
     icon: "navigate",
-    title: t("Votre position, pour la livraison"),
-    message:
-      t("Yaammoo utilise la position actuelle de votre téléphone pour remplir l'adresse de livraison de cette commande. Elle est transmise à la boutique et au livreur pour vous livrer."),
+    get title() { return t("Votre position, pour la livraison"); },
+    get message() {
+      return t("Yaammoo utilise la position actuelle de votre téléphone pour remplir l'adresse de livraison de cette commande. Elle est transmise à la boutique et au livreur pour vous livrer.");
+    },
   },
   shop: {
     icon: "storefront",
-    title: t("Position de votre boutique"),
-    message:
-      t("Yaammoo utilise la position actuelle de votre téléphone pour enregistrer l'emplacement de votre boutique. Les clients voient la distance qui les sépare de votre boutique."),
+    get title() { return t("Position de votre boutique"); },
+    get message() {
+      return t("Yaammoo utilise la position actuelle de votre téléphone pour enregistrer l'emplacement de votre boutique. Les clients voient la distance qui les sépare de votre boutique.");
+    },
   },
   delivery: {
     icon: "bicycle",
-    title: t("Partage de votre position pendant la livraison"),
-    message:
-      t("Pendant vos courses, Yaammoo collecte votre position, y compris quand l'application est en arrière-plan ou l'écran éteint, et la partage en temps réel avec le client pour qu'il suive sa commande. Une notification reste affichée tant que le partage est actif ; il s'arrête à la fin de la course."),
+    get title() {
+      return t("Partage de votre position pendant la livraison");
+    },
+    get message() {
+      return t("Pendant vos courses, Yaammoo collecte votre position, y compris quand l'application est en arrière-plan ou l'écran éteint, et la partage en temps réel avec le client pour qu'il suive sa commande. Une notification reste affichée tant que le partage est actif ; il s'arrête à la fin de la course.");
+    },
   },
 };
 
-const SETTINGS_NOTE =
+const settingsNote = (): string =>
   t("Vous pourrez changer ce choix à tout moment dans les réglages du téléphone.");
 
 export const LocationDisclosureModal = () => {
+  useLanguage();
   const [purpose, setPurpose] = useState<LocationPurpose | null>(null);
   const answerRef = useRef<((accepted: boolean) => void) | null>(null);
 
@@ -106,7 +115,7 @@ export const LocationDisclosureModal = () => {
             </View>
             <Text style={styles.title}>{content.title}</Text>
             <Text style={styles.message}>{content.message}</Text>
-            <Text style={styles.note}>{SETTINGS_NOTE}</Text>
+            <Text style={styles.note}>{settingsNote()}</Text>
 
             <View style={styles.actions}>
               <Pressable

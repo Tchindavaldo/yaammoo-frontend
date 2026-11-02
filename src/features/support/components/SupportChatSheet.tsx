@@ -21,7 +21,7 @@ import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportChatView } from "./SupportChatView";
 import { SupportThreadRow } from "./SupportThreadRow";
 import { SupportThreadsSkeleton } from "./SupportThreadsSkeleton";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -38,6 +38,7 @@ type Screen = { name: "list" } | { name: "chat"; thread: SupportThread | null };
  * l'objet se choisit en chips en haut.
  */
 export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
+  useLanguage();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   /** Objet de la conversation courante, remonté par la vue chat pour le header. */

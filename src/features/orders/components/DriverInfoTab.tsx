@@ -27,7 +27,7 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Même hauteur de référence que CheckoutContactOverlay (base du blur + container).
 const SHEET_H = 384;
@@ -50,6 +50,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
   order,
   allowRating = true,
 }) => {
+  useLanguage();
   const rawDriverId = (order as any).driverId as string | undefined;
   // Le marchand se livre lui-même quand driverId === fastFoodId (ou absent).
   const isMerchantDelivery = !rawDriverId || rawDriverId === order.fastFoodId;

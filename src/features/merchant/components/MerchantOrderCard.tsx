@@ -21,7 +21,7 @@ import {
   computeItemsTotal,
 } from "./MerchantOrderMontantTab";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
 export const MERCHANT_CARD_HEIGHT = 94.33;
@@ -80,6 +80,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   onValidateOne,
   isForceLaunched = false,
 }) => {
+  useLanguage();
   const [modalVisible, setModalVisible] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLaunchedLocal, setIsLaunchedLocal] = useState(false);

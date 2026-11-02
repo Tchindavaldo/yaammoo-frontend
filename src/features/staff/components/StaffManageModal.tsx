@@ -23,7 +23,7 @@ import { StaffTabs } from "./StaffTabs";
 import { ORPHAN_KEY, StaffTeamHead, StaffTeamTab } from "./StaffTeamTab";
 import { StaffRoleMembersSheet } from "./StaffRoleMembersSheet";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const FAB_HEIGHT = 54;
 
@@ -44,6 +44,7 @@ type RoleSheetState = { role: StaffRole | null; forCreate: boolean } | null;
  * Page entière dans un <Modal> plein écran : couvre header et tab bar.
  */
 export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab = "team" }) => {
+  useLanguage();
   const [toast, setToast] = useState<ToastState>(null);
   const onLoadError = useCallback(
     () => setToast({ message: t("Impossible de charger le personnel"), type: "error" }),

@@ -6,7 +6,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CardVariantProps, SKELETON_SIZES, V4_BACKGROUNDS } from "../config";
 import { DELIVERY_ETA, feeText, isStockLow, stockParts, stockRatio } from "./labels";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Design 4 aere (HOME_DESIGN = "aere") : photo plein cadre sous degrade
@@ -24,6 +24,7 @@ export const CardV4Aere: React.FC<CardVariantProps> = ({
   stock,
   price,
 }) => {
+  useLanguage();
   const source = menu.image ? { uri: menu.image } : V4_BACKGROUNDS[index % V4_BACKGROUNDS.length];
   const { value, unit } = stockParts(stock);
   const filled = Math.ceil(stockRatio(stock) * SEGMENTS);
@@ -77,7 +78,9 @@ export const V4AereMeta: React.FC<{
   rating: number;
   votes: number;
   deliveryFeeLabel: string;
-}> = ({ title, rating, votes, deliveryFeeLabel }) => (
+}> = ({ title, rating, votes, deliveryFeeLabel }) => {
+  useLanguage();
+  return (
   <>
     <View style={styles.row}>
       <Text style={styles.metaTitle} numberOfLines={1}>
@@ -104,6 +107,7 @@ export const V4AereMeta: React.FC<{
     </View>
   </>
 );
+};
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

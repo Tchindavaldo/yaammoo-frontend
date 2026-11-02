@@ -17,7 +17,7 @@ import { useSheetAnimation } from "./useSheetAnimation";
 import { zoneListStyles as st } from "./ZoneListSheet.styles";
 import { ZoneBanner } from "./ZoneBanner";
 import { ZoneSlotGrid } from "./ZoneSlotGrid";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface ZoneListSheetProps {
   visible: boolean;
@@ -51,6 +51,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
   selectedLieu,
   onSelect,
 }) => {
+  const i18nLang = useLanguage();
   const insets = useSafeAreaInsets();
   const { mounted, backdropOpacity, translateY } = useSheetAnimation(visible);
   const [index, setIndex] = useState(0);
@@ -88,7 +89,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
           : t("Non desservi"),
       slots,
     };
-  }, [current]);
+  }, [current, i18nLang]);
 
   if (!mounted) return null;
 

@@ -11,7 +11,7 @@ import type { DateOption } from "./DriverOrderPanel";
 import { DriverOrdersPagePanel } from "./DriverOrdersPagePanel";
 import { DriverFilterSheet } from "./DriverFilterSheet";
 import { StickyChipsRow } from "./StickyChipsRow";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 
 interface DriverOrdersModalProps {
@@ -29,6 +29,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
   visible,
   onClose,
 }) => {
+  const i18nLang = useLanguage();
   const { userData } = useAuth();
   // La modal est montée dans (tabs), navbar par-dessus : hauteur REELLE de la
   // navbar, safe-area comprise (source unique R19).
@@ -58,7 +59,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
     if (stores.length > 0) return stores;
     const ids = [...new Set(orders.map((o) => o.fastFoodId).filter(Boolean))];
     return ids.map((id) => ({ id, nom: t("Boutique {{a}}", { a: id.slice(0, 4) }) }));
-  }, [stores, orders]);
+  }, [stores, orders, i18nLang]);
 
   const getOrderDateISO = (dateStr: string | undefined): string => {
     if (!dateStr) return todayISO;
@@ -127,7 +128,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
       day: "numeric",
       month: "long",
     });
-  }, [activeDate, todayISO]);
+  }, [activeDate, todayISO, i18nLang]);
 
   const subtitle = `${dateLabel} · ${pendingCount} cmd`;
   const showFilter = derivedStores.length > 1;

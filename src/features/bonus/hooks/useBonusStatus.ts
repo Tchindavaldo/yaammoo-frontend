@@ -1,7 +1,7 @@
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import type { Bonus, BonusRequestStatus } from "../types/bonus.types";
 import { useBonusEligibility } from "./useBonusEligibility";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface BonusStatus {
   isInactive: boolean;
@@ -26,6 +26,7 @@ export const useBonusStatus = (
   /** Statut optimiste local, prioritaire sur celui du backend. */
   optimisticPending = false,
 ): BonusStatus => {
+  useLanguage();
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
 

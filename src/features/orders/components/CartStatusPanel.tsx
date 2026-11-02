@@ -41,7 +41,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Hauteur de la barre de filtres du bas (meme gabarit que le marchand). */
 const FILTER_BAR_HEIGHT = 54;
@@ -60,6 +60,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   bottomOffset = 0,
   initialStatus = "pending",
 }) => {
+  const i18nLang = useLanguage();
   const {
     pending,
     active,
@@ -167,7 +168,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         entry!.counts.finished += 1;
     });
     return Array.from(map.values());
-  }, [pending, active, finished, delivered, fastFoods, fetchedFfInfos, activeDateISO]);
+  }, [pending, active, finished, delivered, fastFoods, fetchedFfInfos, activeDateISO, i18nLang]);
 
   // Sélection obligatoire : par défaut le premier fastfood de la liste. On
   // re-sélectionne aussi si le fastfood courant disparaît (changement d'onglet).
@@ -199,7 +200,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           selectedPeriods.length === 0 || selectedPeriods.includes(periodKeyOf(o))
         );
       }),
-    [selectedDate, statusList, selectedFastFoodId, selectedPeriods],
+    [selectedDate, statusList, selectedFastFoodId, selectedPeriods, i18nLang],
   );
 
   // Aplatissement des données → FlatList
@@ -269,7 +270,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           return null;
       }
     },
-    [groupSubTab, fastFoods],
+    [groupSubTab, fastFoods, i18nLang],
   );
 
   const keyExtractor = useCallback((item: FlatItem) => item.key, []);

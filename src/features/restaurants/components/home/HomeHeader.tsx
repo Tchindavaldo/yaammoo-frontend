@@ -4,7 +4,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useCurrentPlaceLabel } from "@/src/features/location/hooks/useCurrentPlaceLabel";
 import { RestaurantHeader } from "../RestaurantHeader";
 import { CATEGORIES } from "../../utils/homeListConfig";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   unreadCount: number;
@@ -30,6 +30,7 @@ export const HomeHeader: React.FC<Props> = ({
   selectedCategory,
   onCategorySelect,
 }) => {
+  useLanguage();
   const { user, userData } = useAuth();
   const router = useRouter();
   const placeLabel = useCurrentPlaceLabel();

@@ -4,7 +4,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getMerchantTopicDescriptor } from "../../data/merchantSupport.constants";
 import type { MerchantSupportThread } from "../../types/merchantSupport.types";
-import { dateLocale } from "@/src/i18n";
+import { dateLocale, useLanguage } from "@/src/i18n";
 
 /** Date courte : « 14:05 » aujourd'hui, « 28 juil. » au-delà. */
 const formatDate = (iso: string) => {
@@ -25,6 +25,7 @@ export const MerchantSupportThreadRow: React.FC<Props> = ({
   thread,
   onPress,
 }) => {
+  useLanguage();
   const topic = getMerchantTopicDescriptor(thread.topic);
   return (
     <Pressable style={styles.row} onPress={() => onPress(thread)}>

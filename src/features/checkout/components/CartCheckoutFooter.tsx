@@ -5,7 +5,7 @@ import { useSheetInsets } from "../hooks/useSheetInsets";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Loader } from "../../../components/Loader";
 import { styles } from "./CartCheckoutSheet.styles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CheckoutFooterProps {
   total: number;
@@ -29,6 +29,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
   onAddToCart,
   isSaving,
 }) => {
+  useLanguage();
   const busy = isLoading || isSaving;
   const insets = useSheetInsets();
 

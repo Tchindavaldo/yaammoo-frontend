@@ -4,7 +4,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "../CheckoutSheet.styles";
 import { DS } from "@/src/theme/ds";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface DeliveryTabProps {
   delivery: Livraison;
@@ -33,6 +33,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   deliveryOffer,
   pickupAllowed,
 }) => {
+  useLanguage();
   const isLocationFilled = !!delivery.address;
   const isPeriodFilled = !!delivery.hour;
   const isContactFilled = !!delivery.phone;

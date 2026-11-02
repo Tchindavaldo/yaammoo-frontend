@@ -15,7 +15,7 @@ import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportChatView } from "./MerchantSupportChatView";
 import { MerchantSupportThreadRow } from "./MerchantSupportThreadRow";
 import { MerchantSupportThreadsSkeleton } from "./MerchantSupportThreadsSkeleton";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -31,6 +31,7 @@ type Screen = { name: "list" } | { name: "chat"; thread: MerchantSupportThread }
  * clients et y répond ; elle n'en crée jamais — pas de bouton « Nouveau chat ».
  */
 export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
+  useLanguage();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const { userData } = useAuth();

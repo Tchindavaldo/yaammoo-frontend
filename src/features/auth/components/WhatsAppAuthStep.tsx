@@ -12,7 +12,7 @@ import {
   isInvalidCode,
   isRateLimited,
 } from "../services/whatsappAuthService";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Authentification WhatsApp — etapes « numero » puis « code ».
@@ -69,6 +69,7 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
   onResend,
   onBack,
 }) => {
+  useLanguage();
   const [step, setStep] = React.useState<"phone" | "code">("phone");
   const [phone, setPhone] = React.useState("");
   const [code, setCode] = React.useState("");

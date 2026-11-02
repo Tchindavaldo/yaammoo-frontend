@@ -4,7 +4,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { Transaction } from '@/src/types';
 import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 import { useLazyFetch } from '@/src/hooks/useLazyFetch';
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface WalletContextType {
   transactions: Transaction[];
@@ -23,6 +23,7 @@ interface WalletContextType {
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
 
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);

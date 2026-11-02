@@ -5,7 +5,7 @@ import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { MenuManagePanel } from "@/src/features/merchant/components/MenuManagePanel";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MenuManageModalProps {
   visible: boolean;
@@ -17,6 +17,7 @@ interface MenuManageModalProps {
  * Rendu par la route `app/shop/menu.tsx` : page entière hors (tabs), sans navbar.
  */
 export const MenuManageModal: React.FC<MenuManageModalProps> = ({ visible, onClose }) => {
+  useLanguage();
   const { menus, loading, refresh, addMenu } = useMerchant();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [openAddMenu, setOpenAddMenu] = useState<(() => void) | null>(null);

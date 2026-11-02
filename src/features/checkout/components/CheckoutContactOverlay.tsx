@@ -6,7 +6,7 @@ import { Loader } from '../../../components/Loader';
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -23,6 +23,7 @@ interface CheckoutContactOverlayProps {
 }
 
 export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone, onSelectPhone, pickup }) => {
+  useLanguage();
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);

@@ -8,7 +8,7 @@ import { StaffPrimaryButton } from "./StaffPrimaryButton";
 import { StaffPage } from "./StaffPage";
 import { StaffSwitch } from "./StaffSwitch";
 import { capsLabel, ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   roles: StaffRole[];
@@ -41,6 +41,7 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
   onEditRole,
   onClose,
 }) => {
+  useLanguage();
   const [phone, setPhone] = useState("");
   const [phoneFocus, setPhoneFocus] = useState(false);
   const [prenom, setPrenom] = useState("");

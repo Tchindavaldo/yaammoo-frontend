@@ -19,7 +19,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // L'overlay recouvre EXACTEMENT le sheet groupe. La card, elle, est retrecie par
 // le `paddingVertical` du conteneur (respiration en haut et en bas).
@@ -35,6 +35,7 @@ type RecordingStatus = "idle" | "recording" | "recorded" | "playing";
 export const GroupedVoiceNoteOverlay: React.FC<
   GroupedVoiceNoteOverlayProps
 > = ({ onClose, onSave }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   // Phase de l'enregistrement ; « playing » est deduit du lecteur.
   const [phase, setPhase] = useState<Exclude<RecordingStatus, "playing">>(

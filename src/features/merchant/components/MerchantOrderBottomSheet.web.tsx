@@ -19,7 +19,7 @@ import {
   View,
 } from 'react-native';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -132,6 +132,7 @@ function buildUser(order: Commande): DeliveryUser {
 }
 
 export default function MerchantOrderBottomSheet({ order, visible, onClose, allOrders }: Props) {
+  useLanguage();
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const translateY = useRef(new Animated.Value(SHEET_HEIGHT)).current;
@@ -334,6 +335,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
 
 // Web map placeholder — uses Google Maps link instead of native MapView
 function WebMapPlaceholder({ addr, onPress }: { addr: string; onPress: () => void }) {
+  useLanguage();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -356,6 +358,7 @@ function WebMapPlaceholder({ addr, onPress }: { addr: string; onPress: () => voi
 }
 
 function LivraisonTab({ user }: { user: DeliveryUser }) {
+  useLanguage();
   // expo-audio : lecteur libere par le hook au demontage.
   const voice = useVoiceNotePlayer(user.voiceNoteUri);
   const isPlaying = voice.playing;
@@ -451,6 +454,7 @@ function CommandesTab({
   zone: string;
   deliveryPrice: number;
 }) {
+  useLanguage();
   const hasDelivery = deliveryPrice > 0 || !!zone;
   return (
     <View style={styles.infoCard}>

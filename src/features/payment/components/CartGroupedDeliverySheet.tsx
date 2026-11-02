@@ -36,7 +36,7 @@ import { CartGroupedDetailCapsule } from "./CartGroupedDetailCapsule";
 import { CartGroupedPaymentBody } from "./CartGroupedPaymentBody";
 import { CartPaymentOverlay } from "./CartPaymentOverlay";
 import { C, styles as sheetStyles } from "./CartPaymentSheet.styles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Hauteur de la capsule flottante (`CartPaymentOverlay.styles.capsule`). */
 const CAPSULE_HEIGHT = 70;
@@ -129,6 +129,7 @@ export const CartGroupedDeliverySheet: React.FC<
   keyboardHeight,
   isKeyboardVisible,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
 
   /**

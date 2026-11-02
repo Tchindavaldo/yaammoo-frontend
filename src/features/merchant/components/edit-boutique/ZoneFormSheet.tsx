@@ -21,7 +21,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { hourToDate, type Zone } from "./parseBoutique";
 import { DS } from "@/src/theme/ds";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface ZoneFormSheetProps {
   visible: boolean;
@@ -70,6 +70,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
   onSave,
   fallbackHour,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const hr = activeHour || newHour;
   const { mounted, backdropOpacity, translateY } = useSheetAnimation(visible);

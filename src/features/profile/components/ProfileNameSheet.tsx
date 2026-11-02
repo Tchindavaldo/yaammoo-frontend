@@ -20,7 +20,7 @@ import { MissingName } from "../utils/missingName";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const ACCENT = DS.accentDeep;
 /** Marge entre la carte et le bas de l'ecran (ou le haut du clavier). */
@@ -34,7 +34,7 @@ const CARD_GAP_KEYBOARD = 12;
 const KEYBOARD_ANIM_MS = 220;
 const KEYBOARD_LEAD = 0.75;
 const KEYBOARD_EASING = Easing.out(Easing.quad);
-const TITLE = t("Complétez vos informations");
+const title = (): string => t("Complétez vos informations");
 
 /**
  * Carte flottante du home qui demande le prenom et/ou le nom manquant.
@@ -46,6 +46,7 @@ const TITLE = t("Complétez vos informations");
  * la fenetre).
  */
 export function ProfileNameSheet() {
+  useLanguage();
   const { visible, missing, saving, error, dismiss, submit } =
     useProfileNameSheet();
   const { userData } = useAuth();
@@ -237,7 +238,7 @@ export function ProfileNameSheet() {
             <Ionicons name="person-outline" size={24} color={ACCENT} />
           </View>
           <View style={styles.headerText}>
-            <Text style={styles.title}>{TITLE}</Text>
+            <Text style={styles.title}>{title()}</Text>
             <Text style={styles.subtitle}>
               {t("Pour que le restaurant et le livreur t'identifient.")}
             </Text>

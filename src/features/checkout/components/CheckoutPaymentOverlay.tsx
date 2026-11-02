@@ -16,7 +16,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Loader } from "../../../components/Loader";
 import { AnimatedBorderGlow } from "./AnimatedBorderGlow";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const SHEET_HEIGHT = 384;
@@ -53,6 +53,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
   ussdMessage,
   onError,
 }) => {
+  useLanguage();
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);

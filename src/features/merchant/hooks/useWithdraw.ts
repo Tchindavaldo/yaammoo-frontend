@@ -6,7 +6,7 @@ import {
   useMerchantWallet,
   WithdrawalEvent,
 } from "../context/MerchantWalletContext";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export type WithdrawState =
   | "idle"
@@ -39,6 +39,7 @@ const digitsOf = (phone: string) => phone.replace(/\D/g, "").replace(/^237/, "")
 export const DEBUG_COMPLETED = false;
 
 export const useWithdraw = () => {
+  useLanguage();
   const { userData } = useAuth();
   const { registerWithdrawalHandler, unregisterWithdrawalHandler } =
     useMerchantWallet();

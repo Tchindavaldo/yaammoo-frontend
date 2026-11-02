@@ -17,7 +17,7 @@ import { useDriver } from "../hooks/useDriver";
 import { ApplicationEvent } from "../context/DriverContext";
 import { driverService, DriverApplication } from "../services/driverService";
 import { Toast } from "@/src/components/Toast";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface DriverMyApplicationsModalProps {
   visible: boolean;
@@ -28,9 +28,9 @@ const STATUS_META: Record<
   DriverApplication["status"],
   { label: string; color: string; icon: any }
 > = {
-  pending: { label: tr("En attente"), color: "#d97706", icon: "time-outline" },
-  accepted: { label: tr("Acceptée"), color: "#16a34a", icon: "checkmark-circle" },
-  refused: { label: tr("Refusée"), color: Theme.colors.danger, icon: "close-circle" },
+  pending: { get label() { return tr("En attente"); }, color: "#d97706", icon: "time-outline" },
+  accepted: { get label() { return tr("Acceptée"); }, color: "#16a34a", icon: "checkmark-circle" },
+  refused: { get label() { return tr("Refusée"); }, color: Theme.colors.danger, icon: "close-circle" },
 };
 
 // Dédup par fastFoodId : ne garde qu'UNE demande par boutique (la plus récente).
@@ -59,6 +59,7 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
   visible,
   onClose,
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const { registerApplicationHandler, unregisterApplicationHandler } = useDriver();
   const userId = userData?.uid;

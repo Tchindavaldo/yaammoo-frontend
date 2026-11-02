@@ -8,7 +8,7 @@ import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportBubble } from "./MerchantSupportBubble";
 import { MerchantSupportComposer } from "./MerchantSupportComposer";
 import { MerchantSupportMessagesSkeleton } from "./MerchantSupportMessagesSkeleton";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   thread: MerchantSupportThread;
@@ -31,6 +31,7 @@ export const MerchantSupportChatView: React.FC<Props> = ({
   bottomInset = 0,
   onThreadUpdated,
 }) => {
+  useLanguage();
   const [draft, setDraft] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);

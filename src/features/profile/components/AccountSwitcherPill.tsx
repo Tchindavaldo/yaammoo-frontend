@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { AccountEntry } from "../hooks/useAccounts";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const MAX_AVATARS = 2;
 // Initiale orange pour le compte courant, grise pour les suivants.
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export function AccountSwitcherPill({ accounts, onPress }: Props) {
+  useLanguage();
   const shown = accounts.slice(0, MAX_AVATARS);
   const rest = accounts.length - shown.length;
 

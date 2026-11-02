@@ -46,7 +46,7 @@ import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
 import { extractPeriodDate } from "../utils/periodDate";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { SHEET_BLUR_TARGET } from "./sheetBlurTarget";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -66,6 +66,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   onConfirm,
   onReopen,
 }) => {
+  useLanguage();
   const [activeTab, setActiveTab] = useState<CheckoutStep>("detail");
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
   const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);

@@ -22,7 +22,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { Users, UsersInfos } from "@/src/types";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const { width, height } = Dimensions.get("window");
 
@@ -30,6 +30,7 @@ const { width, height } = Dimensions.get("window");
  * EXACT MIGRATION OF auth-with-number.page.html / auth-with-number.page.scss
  */
 export default function PhoneAuthScreen() {
+  useLanguage();
   const router = useRouter();
   const { setUserData } = useAuth();
   const { loading, verifyCode } = usePhoneAuth();

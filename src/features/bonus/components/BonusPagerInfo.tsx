@@ -7,7 +7,7 @@ import type { Bonus } from "../types/bonus.types";
 // Fonctions pures partagées avec le pied de page natif (`NativeBonusPager`).
 import { remainingUses, statusOf } from "../utils/bonusPagerItem";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface BonusPagerInfoProps {
   bonuses: Bonus[];
@@ -119,6 +119,7 @@ const FadeStack = ({
  * seulement s'ils diffèrent ; jauge remplie de 0 (1er) à plein (dernier).
  */
 export const BonusPagerInfo = ({ bonuses, scrollX }: BonusPagerInfoProps) => {
+  useLanguage();
   const n = bonuses.length;
   if (!n) return <View style={styles.wrap} />;
   const descs = bonuses.map((b) => getBonusDescriptor(b.type));

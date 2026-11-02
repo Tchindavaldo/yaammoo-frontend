@@ -14,7 +14,7 @@ import {
 import { CardBottom } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const V6_BG = ["#fef4f0", "#f0f4fe", "#f0fef4", "#fef0fa", "#f4f0fe", "#fefaf0"];
 const V6_ACCENT = [DS.accentDeep, "#0984e3", "#00b894", "#e84393", "#6c5ce7", "#e17055"];
@@ -29,6 +29,7 @@ export const CardV6: React.FC<CardVariantProps> = ({
   price,
   deliveryTime,
 }) => {
+  useLanguage();
   const bg = USE_VARIABLE_BACKGROUNDS ? V6_BG[index % V6_BG.length] : V6_BG[0];
   const accent = USE_VARIABLE_BACKGROUNDS
     ? V6_ACCENT[index % V6_ACCENT.length]

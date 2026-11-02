@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { DraftItem } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Extras du plat : ligne label + chips scrollables, puis ligne d'édition
@@ -15,6 +15,7 @@ export const MenuExtrasEditor: React.FC<{
   extras: DraftItem[];
   setExtras: (next: DraftItem[]) => void;
 }> = ({ extras, setExtras }) => {
+  useLanguage();
   // editIdx = null => on crée un nouvel item ; sinon on édite l'item validé à cet index.
   const [draft, setDraft] = useState({ name: "", prix: "" });
   const [editIdx, setEditIdx] = useState<number | null>(null);

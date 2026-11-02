@@ -5,7 +5,7 @@ import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { PorteFeuillePanel } from "@/src/features/merchant/components/PorteFeuillePanel";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface WalletManageModalProps {
   visible: boolean;
@@ -17,6 +17,7 @@ interface WalletManageModalProps {
  * Rendu par la route `app/shop/wallet.tsx` : page entière hors (tabs), sans navbar.
  */
 export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, onClose }) => {
+  useLanguage();
   const { refresh } = useMerchant();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [walletBalance, setWalletBalance] = useState(0);

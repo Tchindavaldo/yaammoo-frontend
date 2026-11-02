@@ -5,7 +5,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Onglet « Livraison » du détail client (`OrderBottomSheet`) : créneau,
@@ -13,6 +13,7 @@ import { t } from "@/src/i18n";
  * message vocal. Sorti d'`OrderBottomSheet` (R4), rendu inchangé.
  */
 export function OrderLivraisonTab({ order }: { order: Commande }) {
+  useLanguage();
   // expo-audio : lecteur libere par le hook au demontage.
   const voice = useVoiceNotePlayer(order.delivery?.voiceNoteUri);
   const isPlaying = voice.playing;
@@ -109,6 +110,7 @@ export function OrderLivraisonTab({ order }: { order: Commande }) {
 
 /** Carte droite : s'adapte au type (vélo, sur place, express, programmée). */
 function DeliveryStateCard({ order }: { order: Commande }) {
+  useLanguage();
   const isSurPlace = !order.delivery?.status;
   const isExpress = order.delivery?.type === "express";
   const isDelivering = order.status === "delivering";

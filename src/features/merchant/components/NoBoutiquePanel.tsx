@@ -5,7 +5,7 @@ import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { CreateBoutiquePanel } from "./CreateBoutiquePanel";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Écran affiché quand l'utilisateur n'a pas encore de boutique. Présente un
@@ -13,6 +13,7 @@ import { t } from "@/src/i18n";
  * de création (`CreateBoutiquePanel`) coiffé du header global.
  */
 export const NoBoutiquePanel = () => {
+  useLanguage();
   // Hauteur REELLE de la navbar, safe-area comprise (source unique R19).
   const tabBarHeight = useTabBarHeight();
   const [creating, setCreating] = useState(false);

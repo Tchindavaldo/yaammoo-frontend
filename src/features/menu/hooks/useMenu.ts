@@ -3,9 +3,10 @@ import axios from 'axios';
 import { Config } from '../../../api/config';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Menu } from '@/src/types';
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export const useMenu = () => {
+    useLanguage();
     const { userData } = useAuth();
     const [menus, setMenus] = useState<Menu[]>([]);
     const [loading, setLoading] = useState(false);

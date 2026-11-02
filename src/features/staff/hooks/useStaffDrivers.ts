@@ -7,7 +7,7 @@ import {
   type DriverApplication,
   type DriverInfo,
 } from "@/src/features/driver/services/driverService";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // Construit un DriverInfo (forme « Mes livreurs ») depuis une demande
 // acceptée, pour l'ajouter EN LOCAL sans refetch.
@@ -48,6 +48,7 @@ export type DriverActionResult = { ok: true } | { ok: false; message: string };
  * Reprend la logique de l'ancien écran « Livreurs ».
  */
 export const useStaffDrivers = (active: boolean, onLoadError: () => void) => {
+  useLanguage();
   const { userData } = useAuth();
   const { registerApplicationHandler, unregisterApplicationHandler } = useDriver();
   const fastFoodId = userData?.fastFoodId;

@@ -6,7 +6,7 @@ import type {
   SupportThread,
   SupportTopic,
 } from "../types/support.types";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Options {
   userId?: string;
@@ -27,6 +27,7 @@ export const useSupportConversation = ({
   thread,
   onThreadUpdated,
 }: Options) => {
+  useLanguage();
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);

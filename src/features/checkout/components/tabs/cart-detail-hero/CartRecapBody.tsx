@@ -10,7 +10,7 @@ import { amount, PALETTE } from "../detail-hero/recapTiles";
 import { CartBanner, CartHeroImages, CartTile } from "./cartRecapTiles";
 import { DS } from "@/src/theme/ds";
 import { menuPriceOptions } from "../../../utils/menuPrices";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Recap photo du checkout PANIER — copie dediee (R16) de
@@ -27,6 +27,7 @@ export const CartRecapBody: React.FC<HeroProps> = ({
   recap,
   width,
 }) => {
+  useLanguage();
   const p = PALETTE;
   const totalIndex = recap.length - 1;
   const total = recap[totalIndex];

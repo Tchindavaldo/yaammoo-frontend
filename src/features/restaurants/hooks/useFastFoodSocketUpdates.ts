@@ -1,6 +1,7 @@
 import type { DeliveryOffer, FastFood } from "@/src/types";
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { normalizeFastFood, normalizeMenu } from "../utils/normalizeFastFood";
+import { useLanguage } from "@/src/i18n";
 
 /**
  * Injection directe des payloads socket dans la liste du home, sans refetch.
@@ -10,6 +11,7 @@ import { normalizeFastFood, normalizeMenu } from "../utils/normalizeFastFood";
 export function useFastFoodSocketUpdates(
   setFastFoods: Dispatch<SetStateAction<FastFood[]>>,
 ) {
+  useLanguage();
   // ── Injection socket : upsert/remove sur le state local, sans requête ──
   const upsertMenuFromSocket = useCallback(
     (rawMenu: any) => {

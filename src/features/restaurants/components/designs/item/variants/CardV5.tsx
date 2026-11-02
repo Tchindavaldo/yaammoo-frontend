@@ -19,7 +19,7 @@ import {
 import { DarkBottomShade, V5BottomBar } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const IS_ANDROID = Platform.OS === "android";
 
@@ -36,6 +36,7 @@ export const CardV5: React.FC<CardVariantProps> = ({
   deliveryTime,
   deliveryFeeLabel,
 }) => {
+  useLanguage();
   const accent = USE_VARIABLE_BACKGROUNDS
     ? V5_ACCENTS[index % V5_ACCENTS.length]
     : V5_ACCENTS[0];

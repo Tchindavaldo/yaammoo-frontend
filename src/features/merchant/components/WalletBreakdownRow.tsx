@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { DS } from "@/src/theme/ds";
 import { WalletBreakdown, WalletBalances } from "../services/walletNetwork";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Découpage des deux soldes du portefeuille (MTN / Orange) :
@@ -16,7 +16,9 @@ const COLUMNS: { key: keyof WalletBalances; label: string }[] = [
   { key: "orange", label: "Orange" },
 ];
 
-export const WalletBreakdownRow: React.FC<{ breakdown: WalletBreakdown }> = ({ breakdown }) => (
+export const WalletBreakdownRow: React.FC<{ breakdown: WalletBreakdown }> = ({ breakdown }) => {
+  useLanguage();
+  return (
   <View style={styles.row}>
     {COLUMNS.map(({ key, label }) => {
       const p = breakdown[key];
@@ -40,6 +42,7 @@ export const WalletBreakdownRow: React.FC<{ breakdown: WalletBreakdown }> = ({ b
     })}
   </View>
 );
+};
 
 const styles = StyleSheet.create({
   row: {

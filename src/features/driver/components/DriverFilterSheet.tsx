@@ -18,7 +18,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { StoreOption } from "../services/driverService";
 import { DateOption } from "./DriverOrderPanel";
 import { StickyChipsRow } from "./StickyChipsRow";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Filtre période : "express", ou un créneau horaire précis (ex. "12h"), ou null. */
 export type PeriodFilter = string | null;
@@ -62,6 +62,7 @@ export const DriverFilterSheet: React.FC<DriverFilterSheetProps> = ({
   periodFilter,
   onSelectPeriod,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const activeDate = selectedDate ?? todayISO;
 

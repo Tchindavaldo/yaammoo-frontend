@@ -7,7 +7,7 @@ import { Commande } from "@/src/types";
 import { sanitizeOrder } from "../utils/sanitizeOrder";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useLazyFetch } from "@/src/hooks/useLazyFetch";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Cache des commandes, pour un badge panier juste des la premiere frame. */
 const ORDERS_CACHE_KEY = "orders_cache";
@@ -51,6 +51,7 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [orders, setOrders] = useState<Commande[]>([]);
   const [loading, setLoading] = useState(false);

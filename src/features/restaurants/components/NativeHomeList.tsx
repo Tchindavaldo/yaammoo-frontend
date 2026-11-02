@@ -37,7 +37,7 @@ import {
 } from "../utils/nativeListDiagnostics";
 import { setVisibleShops } from "@/src/services/analytics/shopImpressions";
 import { homePageOf } from "@/src/services/analytics/homePages";
-import { t as tr } from "@/src/i18n";
+import { getLanguage, t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Pont JS de la liste NATIVE du home (`modules/home-list`, iOS et Android).
@@ -179,7 +179,8 @@ const toRow = (
  * heure de livraison n'ont pas change. Une rangee inchangee garde donc la meme
  * reference, et `updateRows` n'envoie au natif que ce qui a reellement bouge.
  */
-const rowCache = new WeakMap<FastFood, HomeListRow>();
+// `lang` : une ligne en cache ne sert que dans la langue ou elle a ete faite.
+const rowCache = new WeakMap<FastFood, { row: HomeListRow; lang: string }>();
 
 const rowFor = (ff: FastFood): HomeListRow => {
   const f = ff as any;
@@ -187,16 +188,18 @@ const rowFor = (ff: FastFood): HomeListRow => {
   // En-tete : prochain creneau periodique / express / rien (MerchantHeader).
   const deliveryLabel =
     getShopDeliveryLabel(f?.deliveryHours, f?.orderLeadTime ?? 0) ?? "";
+  const lang = getLanguage();
   const cached = rowCache.get(ff);
   if (
     cached &&
-    cached.deliveryTime === deliveryTime &&
-    cached.deliveryLabel === deliveryLabel
+    cached.lang === lang &&
+    cached.row.deliveryTime === deliveryTime &&
+    cached.row.deliveryLabel === deliveryLabel
   ) {
-    return cached;
+    return cached.row;
   }
   const row = toRow(ff, deliveryTime, deliveryLabel);
-  rowCache.set(ff, row);
+  rowCache.set(ff, { row, lang });
   return row;
 };
 
@@ -250,6 +253,7 @@ export const NativeHomeList: React.FC<Props> = ({
   onBannerPress,
   onEdgeChange,
 }) => {
+  const i18nLang = useLanguage();
   // L'heure de prochaine livraison avance avec le temps : recalcul chaque
   // minute et au retour au premier plan (comme `useNextDeliveryTime`).
   const [minute, setMinute] = useState(0);
@@ -274,7 +278,7 @@ export const NativeHomeList: React.FC<Props> = ({
   const rows = useMemo(
     () => fastFoods.map(rowFor),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fastFoods, minute],
+    [fastFoods, minute, i18nLang],
   );
 
   // Vue native : `updateRows` en interne, seul `scrollToTop` expose au home.

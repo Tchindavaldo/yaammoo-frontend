@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   /**
@@ -38,6 +38,7 @@ export const OtherDatesNotice: React.FC<Props> = ({
   onPress,
   inset = true,
 }) => {
+  useLanguage();
   if (pastCount === 0 && futureCount === 0) return null;
 
   return (

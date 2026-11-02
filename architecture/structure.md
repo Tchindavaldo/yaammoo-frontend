@@ -327,7 +327,7 @@ AuthProvider
 
 ```
 src/i18n/
-├── index.ts            # i18next (init synchrone), t(), setLanguage() (recharge l'app), dateLocale()
+├── index.ts            # i18next (init synchrone), t(), useLanguage(), setLanguage() (à chaud), dateLocale()
 └── locales/
     ├── en.json         # traduction anglaise (clé = texte français)
     └── fr.json         # surcharges françaises

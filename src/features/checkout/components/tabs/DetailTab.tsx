@@ -7,7 +7,7 @@ import { PriceChip } from '../shared/PriceChip';
 import { ImageSlider } from '../shared/ImageSlider';
 import { styles } from '../CheckoutSheet.styles';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface DetailTabProps {
   menu: Menu;
@@ -30,6 +30,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
   deliveryPrice,
   isDeliveryFree
 }) => {
+  useLanguage();
   // Livraison offerte : le total affiché n'inclut PAS la livraison, et la ligne
   // Livraison affiche « Gratuit ». La requête garde le vrai prix (côté hook).
   const totalDisplay = isDeliveryFree

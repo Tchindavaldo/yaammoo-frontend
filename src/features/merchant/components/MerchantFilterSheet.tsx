@@ -18,7 +18,7 @@ import {
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { DateOption } from "./OrderManagePanel";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /** Filtre période : "express", "surplace", ou un créneau horaire précis (ex. "12h"). */
 export type PeriodKey = string;
@@ -94,6 +94,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
   selectedStatus,
   onSelectStatus,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const activeDate = selectedDate ?? todayISO;
   // Sous-sheet des créneaux horaires (ouvert par la card « Créneaux horaires »).

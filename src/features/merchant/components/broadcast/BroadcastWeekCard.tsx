@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 import type { BroadcastPlan, BroadcastQuota } from "../../types/broadcast.types";
 import { monthLabel } from "../../utils/broadcastQuota";
 import { BC, capsLabel } from "./broadcastTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
 const BAR_MAX = 40;
@@ -19,6 +19,7 @@ interface Props {
  * envois du jour), limites du plan toujours visibles, reste de la semaine.
  */
 export const BroadcastWeekCard: React.FC<Props> = ({ plan, quota, now }) => {
+  useLanguage();
   const weekPct = Math.round((quota.weekLeft / plan.weekLimit) * 100);
 
   return (

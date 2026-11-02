@@ -17,7 +17,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Theme } from "@/src/theme";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { driverService, DriverInfo } from "@/src/features/driver/services/driverService";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface DelegateDriverSheetProps {
   visible: boolean;
@@ -45,6 +45,7 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
   onSelfDeliver,
   onDelegate,
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const insets = useSafeAreaInsets();
   const fastFoodId = userData?.fastFoodId;

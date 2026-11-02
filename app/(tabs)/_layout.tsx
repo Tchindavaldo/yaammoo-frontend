@@ -15,8 +15,9 @@ import { useColorScheme } from "@/src/hooks/use-color-scheme";
 import { TAB_BAR_ITEM_HEIGHT } from "@/src/hooks/useTabBarHeight";
 import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 export default function TabLayout() {
+  useLanguage();
   const colorScheme = useColorScheme();
 
   // Style unique de la navbar, partage avec les ecrans qui l'ajustent.

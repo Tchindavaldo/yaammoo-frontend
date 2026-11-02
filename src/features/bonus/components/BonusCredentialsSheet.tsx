@@ -16,7 +16,7 @@ import {
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { Bonus } from "../types/bonus.types";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface BonusCredentialsSheetProps {
   visible: boolean;
@@ -50,6 +50,7 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
   color,
   title,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   // Valeur copiée en dernier (null = aucune) — feedback éphémère de 2 s.
   const [copied, setCopied] = useState<string | null>(null);

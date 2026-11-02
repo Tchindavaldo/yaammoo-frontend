@@ -5,7 +5,7 @@ import {
   getOrderDateISO,
   periodKeyOf,
 } from "@/src/features/orders/components/CartStatusPanel.parts";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Params {
   /** Commandes du statut actif. */
@@ -33,6 +33,7 @@ export const useClientFilterOptions = ({
   todayISO,
   activeDateISO,
 }: Params) => {
+  const i18nLang = useLanguage();
   /** Commandes du statut actif, filtrées sur le fastfood sélectionné. */
   const scopedOrders = useMemo(
     () =>
@@ -52,7 +53,7 @@ export const useClientFilterOptions = ({
         isos.filter((d) => d < todayISO).sort().reverse(),
       ),
     };
-  }, [scopedOrders, todayISO]);
+  }, [scopedOrders, todayISO, i18nLang]);
 
   /** Périodes de la date active, avec leur nombre de commandes. */
   const availablePeriods = useMemo(() => {
@@ -81,7 +82,7 @@ export const useClientFilterOptions = ({
       },
       ...slots.map((k) => ({ key: k, label: k, count: counts[k] })),
     ];
-  }, [scopedOrders, activeDateISO]);
+  }, [scopedOrders, activeDateISO, i18nLang]);
 
   const allPeriodsCount = useMemo(
     () => availablePeriods.reduce((acc, p) => acc + p.count, 0),

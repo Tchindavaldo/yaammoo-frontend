@@ -7,13 +7,14 @@ import { StyleSheet, Text, View } from "react-native";
 import { useAccounts } from "../hooks/useAccounts";
 import { AccountSheet } from "./AccountSheet";
 import { AccountSwitcherPill } from "./AccountSwitcherPill";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   onAddAccount: () => void;
 }
 
 export function SettingsHeaderProfile({ onAddAccount }: Props) {
+  useLanguage();
   const { user, userData } = useAuth();
   const accounts = useAccounts();
   const [sheetOpen, setSheetOpen] = useState(false);

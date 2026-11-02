@@ -6,7 +6,7 @@ import { DS, Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
 import { useNotifications } from '../hooks/useNotifications';
 import { getNotificationIcon } from '../utils/notificationRouting';
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -37,6 +37,7 @@ const formatWhen = (value: string | number | Date): string => {
  * aligné sur le texte.
  */
 export const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onPress }) => {
+  useLanguage();
   const { isRead } = useNotifications();
   const read = isRead(notification);
   const title = notification.title || notification.titre || 'Notification';

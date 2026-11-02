@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -24,6 +24,7 @@ interface Props {
  * le loader à zéro.
  */
 export function LogoutModal({ visible, onClose }: Props) {
+  useLanguage();
   // Logique (push-token/remove, signOut, loader jusqu'au démontage) : useLogout.
   const { isLoggingOut, logout: confirm } = useLogout();
 

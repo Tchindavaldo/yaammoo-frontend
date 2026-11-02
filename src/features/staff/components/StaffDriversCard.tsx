@@ -5,7 +5,7 @@ import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { initialsOf, personName, plural } from "../utils/staffFormat";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const MAX_STACK = 4;
 
@@ -19,7 +19,9 @@ interface Props {
  * Carte « Livreurs » en bas de l'onglet Équipe : les livreurs rejoignent le
  * personnel, un appui ouvre l'onglet Livreurs (demandes et équipe).
  */
-export const StaffDriversCard: React.FC<Props> = ({ drivers, pending, onPress }) => (
+export const StaffDriversCard: React.FC<Props> = ({ drivers, pending, onPress }) => {
+  useLanguage();
+  return (
   <Pressable
     onPress={onPress}
     style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}
@@ -67,6 +69,7 @@ export const StaffDriversCard: React.FC<Props> = ({ drivers, pending, onPress })
     </View>
   </Pressable>
 );
+};
 
 const styles = StyleSheet.create({
   card: {

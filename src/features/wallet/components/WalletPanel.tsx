@@ -12,7 +12,7 @@ import { Theme } from '@/src/theme';
 import { WalletTransactionItem } from '@/src/features/wallet/components/WalletTransactionItem';
 import { useWallet } from '@/src/features/wallet/context/WalletContext';
 import { WalletTransactionSkeleton } from '@/src/features/wallet/components/WalletTransactionSkeleton';
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 type FilterType = 'all' | 'credit' | 'debit' | 'transfer';
 
@@ -28,6 +28,7 @@ interface WalletPanelProps {
 }
 
 export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOffset = 0 }) => {
+  useLanguage();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const { transactions, loading, refresh, ensureLoaded, loaded } = useWallet();
 

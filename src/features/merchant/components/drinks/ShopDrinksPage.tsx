@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { ShopDrinkRow } from "./ShopDrinkRow";
 import { useShopDrinks } from "./useShopDrinks";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Settings → Boutique → « Boissons » (route `app/shop/drinks.tsx`).
@@ -24,6 +24,7 @@ import { t as tr } from "@/src/i18n";
  * avec tous les plats par défaut, ou restreinte à certains plats.
  */
 export const ShopDrinksPage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  useLanguage();
   const { menus, ensureLoaded } = useMerchant();
   const { drinks, loading, saving, dirty, update, save } = useShopDrinks();
   const footerInset = useFooterBottomInset();

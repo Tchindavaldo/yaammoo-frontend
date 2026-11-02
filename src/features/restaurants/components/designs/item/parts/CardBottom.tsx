@@ -5,19 +5,22 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CARD_BOTTOM_STYLE } from "../config";
 import { sharedStyles as styles } from "../styles/sharedStyles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Pastille des frais de livraison (« gratuit », « 300F »…) : fond accent, texte blanc gras. */
 export const DeliveryFeePill: React.FC<{ label: string; accent: string }> = ({
   label,
   accent,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View style={[styles.deliveryFeePill, { backgroundColor: accent }]}>
     <Text style={[styles.deliveryFeePillText, { color: "#fff", fontWeight: "800" }]}>
       {t(label)}
     </Text>
   </View>
 );
+};
 
 /**
  * ANDROID — ombre interne noire legere en bas de carte (pas de degrade), posee
@@ -54,6 +57,7 @@ const StockDeliveryBar: React.FC<{
   stockLabel = t("disponible"),
   dark = false,
 }) => {
+  useLanguage();
   const ink = dark ? "#fff" : "#000";
   return (
     <BlurView
@@ -108,7 +112,9 @@ const V7BottomZone: React.FC<{
   accent: string;
   deliveryTime: string;
   deliveryFeeLabel: string;
-}> = ({ accent, deliveryTime, deliveryFeeLabel }) => (
+}> = ({ accent, deliveryTime, deliveryFeeLabel }) => {
+  useLanguage();
+  return (
   <View style={styles.v7BottomZone}>
     <View style={styles.v7LiveRow}>
       <Text style={styles.v7LiveMeta}>{t("Prochaine")}</Text>
@@ -119,6 +125,7 @@ const V7BottomZone: React.FC<{
     </View>
   </View>
 );
+};
 
 /** Bas interne commun des cartes, pilote par `CARD_BOTTOM_STYLE`. */
 export const CardBottom: React.FC<{
@@ -143,6 +150,7 @@ export const CardBottom: React.FC<{
   deliveryFeeLabel = "gratuit",
   dark = false,
 }) => {
+  useLanguage();
   // Mode "blur2" : ancienne barre stock + livraison, sauf le 7 qui garde
   // sa propre zone.
   if (CARD_BOTTOM_STYLE === "blur2") {
@@ -215,6 +223,7 @@ export const V5BottomBar: React.FC<{
   deliveryFeeLabel: string;
   dark?: boolean;
 }> = ({ accent, deliveryTime, deliveryFeeLabel, dark = false }) => {
+  useLanguage();
   const ink = dark ? "#fff" : "black";
   return (
     <BlurView

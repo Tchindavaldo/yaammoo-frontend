@@ -13,7 +13,7 @@ import type {
   BroadcastShop,
   BroadcastState,
 } from "../types/broadcast.types";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Résultat d'un envoi : `message` = raison du refus (quota, audience…). */
 export type BroadcastSendResult = { ok: true } | { ok: false; message: string };
@@ -25,6 +25,7 @@ export type BroadcastSendResult = { ok: true } | { ok: false; message: string };
  * @param onLoadError appelé si le chargement échoue (l'écran affiche un toast).
  */
 export const useBroadcast = (active: boolean, onLoadError: () => void) => {
+  useLanguage();
   const { userData } = useAuth();
   const fastFoodId = userData?.fastFoodId;
 

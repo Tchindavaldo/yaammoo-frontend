@@ -18,28 +18,28 @@ export interface PermissionMeta {
 
 /** Clés du backend (`staffPermissions.js`) et leur rendu. */
 export const PERMISSION_CATALOG: PermissionMeta[] = [
-  { key: "orders.validate", label: t("Valider les commandes"), short: t("Valider"), icon: "checkmark-circle-outline", group: "orders" },
-  { key: "orders.finish", label: t("Marquer une commande prête"), short: t("Marquer prête"), icon: "restaurant-outline", group: "orders" },
-  { key: "orders.deliver", label: t("Livrer, assigner un livreur"), short: t("Livrer"), icon: "bicycle-outline", group: "orders" },
-  { key: "orders.cancel", label: t("Annuler une commande"), short: t("Annuler"), icon: "close-circle-outline", group: "orders" },
-  { key: "menus.manage", label: t("Gérer les menus"), short: t("Menus"), icon: "reader-outline", group: "shop" },
-  { key: "fastfood.update", label: t("Modifier la boutique"), short: t("Boutique"), icon: "storefront-outline", group: "shop" },
-  { key: "notifications.send", label: t("Envoyer des notifications"), short: "Notifications", icon: "megaphone-outline", group: "shop" },
-  { key: "support.reply", label: t("Répondre aux clients"), short: t("Messagerie"), icon: "chatbubble-outline", group: "shop" },
+  { key: "orders.validate", get label() { return t("Valider les commandes"); }, get short() { return t("Valider"); }, icon: "checkmark-circle-outline", group: "orders" },
+  { key: "orders.finish", get label() { return t("Marquer une commande prête"); }, get short() { return t("Marquer prête"); }, icon: "restaurant-outline", group: "orders" },
+  { key: "orders.deliver", get label() { return t("Livrer, assigner un livreur"); }, get short() { return t("Livrer"); }, icon: "bicycle-outline", group: "orders" },
+  { key: "orders.cancel", get label() { return t("Annuler une commande"); }, get short() { return t("Annuler"); }, icon: "close-circle-outline", group: "orders" },
+  { key: "menus.manage", get label() { return t("Gérer les menus"); }, get short() { return t("Menus"); }, icon: "reader-outline", group: "shop" },
+  { key: "fastfood.update", get label() { return t("Modifier la boutique"); }, get short() { return t("Boutique"); }, icon: "storefront-outline", group: "shop" },
+  { key: "notifications.send", get label() { return t("Envoyer des notifications"); }, short: "Notifications", icon: "megaphone-outline", group: "shop" },
+  { key: "support.reply", get label() { return t("Répondre aux clients"); }, get short() { return t("Messagerie"); }, icon: "chatbubble-outline", group: "shop" },
   {
     key: "staff.manage",
-    label: t("Gérer le personnel"),
-    short: t("Personnel"),
+    get label() { return t("Gérer le personnel"); },
+    get short() { return t("Personnel"); },
     icon: "shield-checkmark-outline",
     group: "team",
-    hint: t("Donne accès à cet écran"),
+    get hint() { return t("Donne accès à cet écran"); },
   },
 ];
 
 export const PERMISSION_GROUPS: { key: PermissionGroup; label: string }[] = [
-  { key: "orders", label: t("COMMANDES") },
-  { key: "shop", label: t("BOUTIQUE") },
-  { key: "team", label: t("ÉQUIPE") },
+  { key: "orders", get label() { return t("COMMANDES"); } },
+  { key: "shop", get label() { return t("BOUTIQUE"); } },
+  { key: "team", get label() { return t("ÉQUIPE"); } },
 ];
 
 /**

@@ -25,9 +25,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export default function NotificationsScreen() {
+  const i18nLang = useLanguage();
   const {
     notifications,
     loading,
@@ -49,7 +50,7 @@ export default function NotificationsScreen() {
   const unreadCount = notifications.filter((n) => !isReadFlag(n)).length;
   const sections = useMemo(
     () => groupNotificationsByDate(notifications),
-    [notifications],
+    [notifications, i18nLang],
   );
 
   const handleNotifPress = (notif: Notification) => {

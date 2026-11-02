@@ -7,7 +7,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from '@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -28,6 +28,7 @@ const formatDate = (iso?: string) => {
 };
 
 export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification, onClose, onAction }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   if (!notification) return null;
   const title = notification.title || notification.titre || 'Notification';

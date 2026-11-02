@@ -12,7 +12,7 @@ import { parseDeliveryHours, hourToDate } from "./parseBoutique";
 import { useToast } from "./useToast";
 import { useEntryAnimation } from "./useEntryAnimation";
 import { useShopPosition } from "./useShopPosition";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export type { Zone } from "./parseBoutique";
 
@@ -30,6 +30,7 @@ export const useEditBoutique = ({
   onClose: () => void;
   onSuccess?: () => void;
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);

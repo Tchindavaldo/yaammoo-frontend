@@ -15,7 +15,7 @@ import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
 
 import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Écran d'information avant la popup système « Toujours » (localisation
@@ -29,18 +29,19 @@ import { t } from "@/src/i18n";
  * demandes de `useUserLocationSync` via `backgroundPrompt`.
  */
 
-const TITLE = t("Suivez vos livraisons en direct");
+const title = (): string => t("Suivez vos livraisons en direct");
 /**
  * iOS seulement : Android n'a plus la permission « Toujours » (refusée par
  * Google Play), `useUserLocationSync` ne l'y demande jamais.
  */
-const MESSAGE =
+const message = (): string =>
   t("Dans la fenêtre suivante, choisissez « Toujours autoriser » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.");
 
 /** Ecart entre le bas de la carte et le bas visible de la barre (cf. OTA). */
 const BOTTOM_GAP = 0;
 
 export const BackgroundLocationPromptCard = () => {
+  useLanguage();
   // Bande safe-area basse : source unique (R19) ; la carte flotte au-dessus.
   const band = useBottomSafeArea();
   const [visible, setVisible] = useState(false);
@@ -138,8 +139,8 @@ export const BackgroundLocationPromptCard = () => {
             </View>
           </View>
           <View style={styles.texts}>
-            <Text style={styles.title}>{TITLE}</Text>
-            <Text style={styles.message}>{MESSAGE}</Text>
+            <Text style={styles.title}>{title()}</Text>
+            <Text style={styles.message}>{message()}</Text>
           </View>
         </View>
 

@@ -5,7 +5,7 @@ import { memberInitials, plural } from "../utils/staffFormat";
 import { grantedOf, isFullAccess, type PermissionMeta } from "../utils/staffPermissions";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const MAX_STACK = 4;
 const MAX_CHIPS = 3;
@@ -43,6 +43,7 @@ export const StaffRoleCard: React.FC<Props> = ({
   catalog,
   onPress,
 }) => {
+  useLanguage();
   const permissions = role?.permissions || [];
   const dark = isFullAccess(permissions, catalog);
   const granted = grantedOf(permissions, catalog);

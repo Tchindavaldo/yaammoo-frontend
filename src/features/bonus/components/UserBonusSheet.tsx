@@ -34,7 +34,7 @@ import { BonusPagerInfo } from "./BonusPagerInfo";
 import { BonusEmptyState, BonusSkeleton } from "./BonusStates";
 import { GALLERY_GAP, galleryWindow } from "./gallery.constants";
 import { NativeBonusPager } from "./NativeBonusPager";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface UserBonusSheetProps {
   visible: boolean;
@@ -62,6 +62,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   visible,
   onClose,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
   const [toast, setToast] = useState<{

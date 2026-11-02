@@ -19,7 +19,7 @@ import {
   type CartPaymentVariant,
 } from "./CartPaymentVariants";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -94,6 +94,7 @@ const FilterContent: React.FC<{
   onConfirm,
   onError,
 }) => {
+  useLanguage();
   // Variantes de comparaison : autonomes (champ numero inclus), rendues telles
   // quelles. Le design ACTUEL reste le cas par defaut et n'est pas touche.
   if (variant !== "actuel" && groups && groups.length > 0) {

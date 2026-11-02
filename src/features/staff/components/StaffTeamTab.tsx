@@ -7,7 +7,7 @@ import type { PermissionMeta } from "../utils/staffPermissions";
 import { StaffDriversCard } from "./StaffDriversCard";
 import { StaffRoleCard } from "./StaffRoleCard";
 import { capsLabel, ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Clé de la feuille « Sans rôle ». */
 export const ORPHAN_KEY = "__orphans__";
@@ -27,7 +27,9 @@ interface Props {
 }
 
 /** Ligne « Rôles de la boutique » + « Nouveau rôle », fixe au-dessus de la liste. */
-export const StaffTeamHead: React.FC<{ onNewRole: () => void }> = ({ onNewRole }) => (
+export const StaffTeamHead: React.FC<{ onNewRole: () => void }> = ({ onNewRole }) => {
+  useLanguage();
+  return (
   <View style={styles.head}>
     <Text style={capsLabel}>{t("RÔLES DE LA BOUTIQUE")}</Text>
     <Pressable onPress={onNewRole} hitSlop={8} style={styles.link} accessibilityRole="button">
@@ -36,6 +38,7 @@ export const StaffTeamHead: React.FC<{ onNewRole: () => void }> = ({ onNewRole }
     </Pressable>
   </View>
 );
+};
 
 /**
  * Onglet Équipe : une carte par rôle (qui l'occupe, ce qu'il permet), les
@@ -53,6 +56,7 @@ export const StaffTeamTab: React.FC<Props> = ({
   onNewRole,
   onOpenDrivers,
 }) => {
+  useLanguage();
   const empty = roles.length === 0 && orphans.length === 0;
 
   return (

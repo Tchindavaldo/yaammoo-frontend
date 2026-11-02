@@ -31,7 +31,7 @@ function getCompressor(): CompressorModule | null {
   return compressorModule;
 }
 import type { Bonus } from "../types/bonus.types";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
 
@@ -113,6 +113,7 @@ export const useBonusFlyer = (
    */
   applyClaimPayload?: (payload: ClaimPayload) => void,
 ) => {
+  useLanguage();
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   // Absent de la map = aucun envoi en cours pour ce bonus.
   const [uploading, setUploading] = useState<Record<string, UploadState>>({});

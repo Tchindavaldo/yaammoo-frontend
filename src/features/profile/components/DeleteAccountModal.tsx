@@ -12,9 +12,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
-const REQUIRED_CONFIRM = tr("SUPPRIMER");
+const requiredConfirm = (): string => tr("SUPPRIMER");
 
 interface Props {
   visible: boolean;
@@ -27,6 +27,7 @@ interface Props {
  * n'est plus connecté, ce qui remet saisie / loader / erreur à zéro.
  */
 export function DeleteAccountModal({ visible, onClose }: Props) {
+  useLanguage();
   const { userData, deleteAccount } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -43,7 +44,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
     }
   }
 
-  const canConfirm = confirmText.trim().toUpperCase() === REQUIRED_CONFIRM;
+  const canConfirm = confirmText.trim().toUpperCase() === requiredConfirm();
 
   const cancel = () => {
     if (isDeleting) return;
@@ -53,7 +54,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
   };
 
   const confirm = async () => {
-    // Le bouton "Supprimer" est déjà disabled tant que le texte ≠ REQUIRED_CONFIRM,
+    // Le bouton "Supprimer" est déjà disabled tant que le texte ≠ requiredConfirm(),
     // donc pas de re-validation ici (et plus d'Alert native).
     setIsDeleting(true);
     setError(null);
@@ -104,7 +105,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
             {userData?.isMarchand ? tr("• Votre boutique et menus\n") : ""}
             {"\n"}{tr("Pour confirmer, tapez")}{" "}
             <Text style={{ fontWeight: "700", color: Theme.colors.danger }}>
-              {REQUIRED_CONFIRM}
+              {requiredConfirm()}
             </Text>{" "}
             {tr("ci-dessous.")}
           </Text>
@@ -116,7 +117,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
               setConfirmText(t);
               if (error) setError(null);
             }}
-            placeholder={REQUIRED_CONFIRM}
+            placeholder={requiredConfirm()}
             placeholderTextColor={Theme.colors.gray[300]}
             autoCapitalize="characters"
             autoCorrect={false}

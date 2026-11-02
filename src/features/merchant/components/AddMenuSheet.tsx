@@ -7,7 +7,7 @@ import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface AddMenuSheetProps {
   visible: boolean;
@@ -17,6 +17,7 @@ interface AddMenuSheetProps {
 }
 
 export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, onSave, loading }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState({
     titre: '',

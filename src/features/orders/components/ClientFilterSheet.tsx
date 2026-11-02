@@ -23,7 +23,7 @@ import {
   PeriodTile,
   Row,
 } from "./ClientFilterSheet.parts";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /** Date sélectionnable dans le sheet (propre au client, non partagé). */
 export interface DateOption {
@@ -105,6 +105,7 @@ export const ClientFilterSheet: React.FC<ClientFilterSheetProps> = ({
   selectedStatus,
   onSelectStatus,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const activeDate = selectedDate ?? todayISO;
   // Sous-sheet des créneaux horaires (ouvert par la card « Créneaux horaires »).

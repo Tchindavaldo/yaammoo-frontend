@@ -8,9 +8,10 @@ import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { menuPriceOptions } from "../utils/menuPrices";
 import { computeCheckoutPrices } from "../utils/checkoutPrices";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
+  useLanguage();
   const { userData, user } = useAuth();
   const registerPaymentHandler = useCallback(
     (handler: (data: any) => void) => socketService.registerPaymentHandler(handler),

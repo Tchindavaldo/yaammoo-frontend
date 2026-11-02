@@ -91,10 +91,10 @@ export const UNLOCK_QUIET_MS = 350;
 export const isBannerItem = (item: any) => item?.__banner === true;
 
 export const CATEGORIES = [
-  { name: t("Tout"), icon: "grid-outline" },
-  { name: t("Fast-food"), icon: "fast-food-outline" },
+  { get name() { return t("Tout"); }, icon: "grid-outline" },
+  { get name() { return t("Fast-food"); }, icon: "fast-food-outline" },
   { name: "Pizza", icon: "pizza-outline" },
   { name: "Burger", icon: "nutrition-outline" },
-  { name: t("Boissons"), icon: "beer-outline" },
-  { name: t("Riz"), icon: "restaurant-outline" },
+  { get name() { return t("Boissons"); }, icon: "beer-outline" },
+  { get name() { return t("Riz"); }, icon: "restaurant-outline" },
 ];

@@ -2,7 +2,7 @@ import * as Location from "expo-location";
 import { useCallback, useState } from "react";
 import { Platform } from "react-native";
 import { requestForegroundLocation } from "@/src/features/location/services/locationPermission";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export type ShopPosition = { latitude: number; longitude: number };
 
@@ -15,6 +15,7 @@ export type ShopPosition = { latitude: number; longitude: number };
 export const useShopPosition = (
   onError: (message: string) => void,
 ) => {
+  useLanguage();
   const [shopPosition, setShopPosition] = useState<ShopPosition | null>(null);
   const [locating, setLocating] = useState(false);
 

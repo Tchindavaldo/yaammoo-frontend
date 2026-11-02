@@ -4,6 +4,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SUPPORT_TOPICS } from "../data/support.constants";
 import type { SupportTopic } from "../types/support.types";
+import { useLanguage } from "@/src/i18n";
 
 interface Props {
   /** Sujet actif, `null` tant que l'utilisateur n'a rien choisi. */
@@ -15,7 +16,9 @@ interface Props {
  * Chips « objet de la discussion » d'un nouveau chat. Une fois l'objet choisi,
  * la rangée disparaît : l'objet est repris dans le header.
  */
-export const SupportTopicChips: React.FC<Props> = ({ value, onChange }) => (
+export const SupportTopicChips: React.FC<Props> = ({ value, onChange }) => {
+  useLanguage();
+  return (
   <View style={styles.row}>
     {SUPPORT_TOPICS.map((t) => {
       const active = t.id === value;
@@ -44,6 +47,7 @@ export const SupportTopicChips: React.FC<Props> = ({ value, onChange }) => (
     })}
   </View>
 );
+};
 
 const styles = StyleSheet.create({
   row: {

@@ -12,7 +12,7 @@ import { useNotificationContext } from "../context/NotificationContext";
 import { getNotificationRoute } from "../utils/notificationRouting";
 import { auth } from "@/src/services/firebase";
 import { getDeviceId } from "../services/deviceId";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -30,6 +30,7 @@ const routeFromData = (data: any): string => {
 };
 
 export const useNotificationSetup = () => {
+  useLanguage();
   const { userData, setUserData } = useAuth();
   const router = useRouter();
   // refresh n'est plus déclenché automatiquement — seul le pull-to-refresh manuel le déclenche.

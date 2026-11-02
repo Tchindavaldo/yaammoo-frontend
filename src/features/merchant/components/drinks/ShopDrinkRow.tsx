@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ShopDrink } from "./useShopDrinks";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   drink: ShopDrink;
@@ -18,6 +18,7 @@ interface Props {
  * lesquels elle est proposée (« Tous les plats » par défaut, ou une sélection).
  */
 export const ShopDrinkRow: React.FC<Props> = ({ drink, menus, onChange, onEdit, onDelete }) => {
+  useLanguage();
   const [open, setOpen] = useState(false);
   const allMenus = drink.menuIds === null;
   const scopeLabel = allMenus

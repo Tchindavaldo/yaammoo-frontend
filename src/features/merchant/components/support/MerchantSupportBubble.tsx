@@ -2,7 +2,7 @@ import { Theme } from "@/src/theme";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { MerchantSupportMessage } from "../../types/merchantSupport.types";
-import { dateLocale } from "@/src/i18n";
+import { dateLocale, useLanguage } from "@/src/i18n";
 
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString(dateLocale(), {
@@ -17,6 +17,7 @@ const formatTime = (iso: string) =>
 export const MerchantSupportBubble: React.FC<{
   message: MerchantSupportMessage;
 }> = ({ message }) => {
+  useLanguage();
   const mine = message.author === "support";
   return (
     <View style={[styles.row, mine ? styles.rowMine : styles.rowTheirs]}>

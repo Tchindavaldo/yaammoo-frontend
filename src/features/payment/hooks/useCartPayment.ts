@@ -5,7 +5,7 @@ import { socketService } from "../../../services/socket";
 import { useAuth } from "../../auth/context/AuthContext";
 import { REVIEW_STEP_MS } from "../constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export type CartPaymentState =
   | "total"
@@ -23,6 +23,7 @@ export type CartPaymentState =
  * Reproduit la même logique API (/transaction) + verdict socket.
  */
 export const useCartPayment = (amount: number) => {
+  useLanguage();
   const { userData } = useAuth();
 
   const [paymentPhone, setPaymentPhone] = useState("");

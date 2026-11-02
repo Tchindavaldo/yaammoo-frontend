@@ -19,7 +19,7 @@ const BASE = () => `${Config.apiUrl}/staff`;
  * attendant qu'il les serve (même rôle que `FREE_PLAN` des notifications).
  */
 export const STAFF_FREE_PLAN: StaffPlan = {
-  label: t("Gratuit"),
+  get label() { return t("Gratuit"); },
   memberLimit: 8,
   driverLimit: 5,
 };

@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { BroadcastItem } from "../../types/broadcast.types";
 import { audienceLabel } from "./BroadcastAudiencePicker";
 import { BC, capsLabel } from "./broadcastTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Gabarit d'une ligne selon le nombre d'envois affichés (2, 3, 4 et plus). */
 export interface RowLayout {
@@ -67,7 +67,9 @@ export const BroadcastHistoryRow: React.FC<Props> = ({
   open,
   onToggle,
   onReuse,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View
     style={[
       styles.row,
@@ -117,6 +119,7 @@ export const BroadcastHistoryRow: React.FC<Props> = ({
     )}
   </View>
 );
+};
 
 const styles = StyleSheet.create({
   row: { backgroundColor: BC.surface, overflow: "hidden" },

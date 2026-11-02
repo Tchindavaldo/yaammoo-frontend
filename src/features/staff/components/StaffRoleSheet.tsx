@@ -7,7 +7,7 @@ import { StaffPrimaryButton } from "./StaffPrimaryButton";
 import { StaffPage } from "./StaffPage";
 import { StaffSwitch } from "./StaffSwitch";
 import { capsLabel, ST } from "./staffTheme";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 const NAME_MAX = 40;
 
@@ -27,6 +27,7 @@ interface Props {
  * interrupteur par permission, groupées Commandes / Boutique / Équipe.
  */
 export const StaffRoleSheet: React.FC<Props> = ({ role, roles, catalog, saving, onSave, onClose }) => {
+  useLanguage();
   const [name, setName] = useState(role?.name || "");
   const [focus, setFocus] = useState(false);
   const [perms, setPerms] = useState<string[]>(role?.permissions || []);

@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Filtre fastfood du panier — duplication autonome du filtre haut de la page
@@ -88,6 +88,7 @@ const FastFoodPill = React.memo(function FastFoodPill({
   onLayout?: (x: number, width: number) => void;
   onPress?: () => void;
 }) {
+  useLanguage();
   return (
     <TouchableOpacity
       activeOpacity={0.8}

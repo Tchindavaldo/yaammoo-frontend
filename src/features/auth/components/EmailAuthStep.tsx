@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
 import { AuthFieldCapsule } from "./AuthFieldCapsule";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Connexion / inscription par email — DESIGN D'ORIGINE conserve.
@@ -56,6 +56,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
   onToggleMode,
   onBack,
 }) => {
+  useLanguage();
   const [field, setField] = React.useState<Field>(null);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");

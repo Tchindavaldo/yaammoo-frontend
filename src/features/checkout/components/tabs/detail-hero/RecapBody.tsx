@@ -10,7 +10,7 @@ import {
 import { amount, Banner, PALETTE, Tile } from "./recapTiles";
 import { DS } from "@/src/theme/ds";
 import { menuPriceOptions } from "../../../utils/menuPrices";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Design « recap photo » : la photo remplit toute la section ; par-dessus,
@@ -26,6 +26,7 @@ export const RecapBody: React.FC<HeroProps> = ({
   recap,
   width,
 }) => {
+  useLanguage();
   const p = PALETTE;
   const totalIndex = recap.length - 1;
   const total = recap[totalIndex];

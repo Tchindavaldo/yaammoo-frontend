@@ -4,7 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   canAskAgain: boolean;
@@ -22,7 +22,9 @@ export const HomeLocationBanner: React.FC<Props> = ({
   canAskAgain,
   requesting,
   onEnable,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View style={styles.card}>
     <View style={styles.iconWrap}>
       <Ionicons name="location" size={18} color={DS.accent} />
@@ -51,6 +53,7 @@ export const HomeLocationBanner: React.FC<Props> = ({
     </TouchableOpacity>
   </View>
 );
+};
 
 const styles = StyleSheet.create({
   card: {

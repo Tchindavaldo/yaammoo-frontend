@@ -9,7 +9,7 @@ import {
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
 import { useToast } from "./useToast";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export type { Zone } from "./parseBoutique";
 
@@ -25,6 +25,7 @@ export type { Zone } from "./parseBoutique";
  *    sur le user, la ou l'edition PUT une boutique deja connue.
  */
 export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
+  useLanguage();
   const { userData, setUserData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(70);

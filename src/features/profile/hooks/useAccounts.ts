@@ -3,7 +3,7 @@
 // Brancher ici la liste des comptes memorises quand elle existera.
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useMemo } from "react";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface AccountEntry {
   id: string;
@@ -15,6 +15,7 @@ export interface AccountEntry {
 }
 
 export function useAccounts(): AccountEntry[] {
+  const i18nLang = useLanguage();
   const { user, userData } = useAuth();
 
   return useMemo(() => {
@@ -39,5 +40,5 @@ export function useAccounts(): AccountEntry[] {
         current: true,
       },
     ];
-  }, [user, userData]);
+  }, [user, userData, i18nLang]);
 }

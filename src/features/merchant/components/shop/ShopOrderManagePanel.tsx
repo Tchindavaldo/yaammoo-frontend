@@ -32,7 +32,7 @@ import { MerchantOrderSkeleton } from "../MerchantOrderSkeleton";
 import { OtherDatesNotice } from "../OtherDatesNotice";
 import { DS } from "@/src/theme/ds";
 import { useFooterBottomInset } from "@/src/hooks/usePageBottomInset";
-import { t as tr, dateLocale } from "@/src/i18n";
+import { t as tr, dateLocale, useLanguage } from "@/src/i18n";
 
 /*
  * Copie dédiée de OrderManagePanel pour la page entière « Commandes »
@@ -86,6 +86,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
   onStatusChange,
   topOffset = 0,
 }) => {
+  const i18nLang = useLanguage();
   /**
    * Vrai uniquement quand le rafraichissement vient du GESTE de l'utilisateur.
    *
@@ -355,7 +356,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
       },
       ...slots.map((s) => ({ key: s, label: s, count: counts[s] })),
     ];
-  }, [filteredOrders, selectedDate]);
+  }, [filteredOrders, selectedDate, i18nLang]);
 
   // Total de la date active (toutes périodes) pour le libellé « Toutes les périodes ».
   const allPeriodsCount = useMemo(
@@ -543,7 +544,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
         userGroups: groupByUser(orders),
       })),
     };
-  }, [dateFilteredOrders, selectedStatus]);
+  }, [dateFilteredOrders, selectedStatus, i18nLang]);
 
   const renderUserGroup = (orders: Commande[], groupId?: string) => {
     const isForced = groupId ? launchedGroups[groupId] : false;

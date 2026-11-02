@@ -5,7 +5,7 @@ import type { StaffMember } from "../types/staff.types";
 import { formatPhone, memberInitials, memberName } from "../utils/staffFormat";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   member: StaffMember;
@@ -19,6 +19,7 @@ interface Props {
  * statut (invitation en attente / accès coupé) à la place du chevron.
  */
 export const StaffMemberRow: React.FC<Props> = ({ member, tone = "light", onPress }) => {
+  useLanguage();
   const dark = tone === "dark";
   const suspended = !member.active;
   const invited = !suspended && !member.userId;

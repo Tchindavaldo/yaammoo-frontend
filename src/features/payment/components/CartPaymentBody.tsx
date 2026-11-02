@@ -2,7 +2,7 @@ import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders"
 import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { C, styles } from "./CartPaymentSheet.styles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -43,6 +43,7 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
   grouped,
   groupedLivraison,
 }) => {
+  const i18nLang = useLanguage();
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);
   const articles = groups.reduce((s, g) => s + g.articles, 0);
 
@@ -127,7 +128,7 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
         ...acc.aucune,
       },
     ];
-  }, [groups]);
+  }, [groups, i18nLang]);
 
   return (
     <ScrollView

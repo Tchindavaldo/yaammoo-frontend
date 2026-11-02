@@ -4,7 +4,7 @@ import { Animated, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { onNetworkStateChange } from "@/src/services/network";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Bandeau hors-ligne, monte une seule fois a la racine de l'app.
@@ -18,6 +18,7 @@ import { t } from "@/src/i18n";
  * page des ecrans quand il apparait ou disparait.
  */
 export const OfflineBanner = () => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [offline, setOffline] = useState(false);
   // `visible` reste vrai pendant l'animation de sortie, pour ne pas demonter la

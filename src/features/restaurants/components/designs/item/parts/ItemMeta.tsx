@@ -15,7 +15,7 @@ const AERE_META: Record<number, typeof V4AereMeta> = {
 };
 import { sharedStyles as styles } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Bloc d'infos rendu SOUS la carte, hors de celle-ci : nom du menu, livraison
@@ -38,6 +38,7 @@ export const ItemMeta: React.FC<{
   orderLeadTime = 0,
   index = 0,
 }) => {
+  useLanguage();
   const rating = (menu as any)?.rating ?? 4.5;
   const votes = (menu as any)?.votes ?? 0;
   // Appel conserve : le hook fait partie de l'ordre des hooks du composant.

@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Commande } from "@/src/types";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Décompte par statut de livraison d'un groupe, affiché dans l'en-tête de groupe
@@ -12,6 +12,7 @@ import { t } from "@/src/i18n";
 export const GroupStatusCounts: React.FC<{ orders: Commande[] }> = ({
   orders,
 }) => {
+  useLanguage();
   let attente = 0;
   let cours = 0;
   let termine = 0;

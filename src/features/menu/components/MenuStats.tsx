@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Theme } from '../../../theme';
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MenuStatsProps {
   total: number;
@@ -11,6 +11,7 @@ interface MenuStatsProps {
 }
 
 export const MenuStats: React.FC<MenuStatsProps> = ({ total, available, unavailable, date }) => {
+  useLanguage();
   return (
     <View style={styles.container}>
       <Text style={styles.date}>{date}</Text>

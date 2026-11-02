@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import type { BroadcastPlan, BroadcastQuota } from "../../types/broadcast.types";
 import { untilMidnight } from "../../utils/broadcastQuota";
 import { BC, capsLabel } from "./broadcastTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   plan: BroadcastPlan;
@@ -14,6 +14,7 @@ interface Props {
 
 /** Deux tuiles : reste du jour (sombre, une capsule par envoi) et compte à rebours. */
 export const BroadcastQuotaTiles: React.FC<Props> = ({ plan, quota, now }) => {
+  useLanguage();
   const reset = untilMidnight(now);
 
   return (

@@ -21,7 +21,7 @@ import {
   filterChipIcons,
   filterChipLabels,
 } from "./CartFilterChipsRow";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartFilterOptionsSheetProps {
   visible: boolean;
@@ -46,6 +46,7 @@ export const CartFilterOptionsSheet: React.FC<CartFilterOptionsSheetProps> = ({
   onSelect,
   onClose,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
 
   // Backdrop en fondu + sheet qui glisse (même animation que CartFilterSheet).

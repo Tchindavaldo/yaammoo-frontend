@@ -17,7 +17,7 @@ import {
 import { BonusProgressBar } from "./BonusProgressBar";
 import { BonusUsageRing } from "./BonusUsageRing";
 import { ClaimRowSlide } from "./ClaimRowSlide";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface BonusCardProps {
   bonus: Bonus;
@@ -60,9 +60,9 @@ const issuerText = (bonus: Bonus): string => bonus.fastFoodName || "yaammoo";
 
 /** Suffixe de période affiché après le compteur : "sur le mois", etc. */
 const PERIOD_LABEL: Record<string, string> = {
-  day: t("sur le jour"),
-  week: t("sur la semaine"),
-  month: t("sur le mois"),
+  get day() { return t("sur le jour"); },
+  get week() { return t("sur la semaine"); },
+  get month() { return t("sur le mois"); },
 };
 
 /** Formate une date ISO en "12 juil.", ou "—" si absente/invalide. */
@@ -141,6 +141,7 @@ export const BonusCard: React.FC<BonusCardProps> = ({
   arming,
   onBlocked,
 }) => {
+  useLanguage();
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
   const periodLabel = bonus.criteria?.period

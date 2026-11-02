@@ -7,7 +7,7 @@ import { grantedOf, isFullAccess, type PermissionMeta } from "../utils/staffPerm
 import { StaffMemberRow } from "./StaffMemberRow";
 import { StaffSheet } from "./StaffSheet";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const MAX_PERMS = 3;
 
@@ -35,6 +35,7 @@ export const StaffRoleMembersSheet: React.FC<Props> = ({
   onDelete,
   onClose,
 }) => {
+  useLanguage();
   const permissions = role?.permissions || [];
   const full = isFullAccess(permissions, catalog);
   const granted = grantedOf(permissions, catalog);

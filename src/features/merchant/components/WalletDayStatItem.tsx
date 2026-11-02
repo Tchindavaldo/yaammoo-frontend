@@ -4,13 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import moment from 'moment';
 import { WalletDayStat } from '@/src/features/merchant/services/walletStatsService';
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface WalletDayStatItemProps {
   stat: WalletDayStat;
 }
 
 export const WalletDayStatItem: React.FC<WalletDayStatItemProps> = ({ stat }) => {
+  useLanguage();
   const hasActivity = stat.count > 0;
 
   return (

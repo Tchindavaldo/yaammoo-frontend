@@ -4,7 +4,7 @@ import { Animated, Text, TouchableOpacity, View } from "react-native";
 import type { ZoneHourEntry } from "./groupZones";
 import { zoneListStyles as st } from "./ZoneListSheet.styles";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface ZoneSlotGridProps {
   lieu: string;
@@ -39,6 +39,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
   fmt,
   toNumber,
 }) => {
+  useLanguage();
   const [page, setPage] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
 

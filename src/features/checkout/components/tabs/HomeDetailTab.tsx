@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { styles } from "../CheckoutSheet.styles";
 import { HomeDetailHero } from "./HomeDetailHero";
 import { MUTED, RecapCell, SOFT_ACCENT } from "./detail-hero/heroShared";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Onglet Detail du checkout HOME — copie dediee de `DetailTab` (R16), qui
@@ -40,6 +40,7 @@ export const HomeDetailTab: React.FC<HomeDetailTabProps> = ({
   deliveryPrice,
   isDeliveryFree,
 }) => {
+  useLanguage();
   // Livraison offerte : le total affiche n'inclut PAS la livraison, et la ligne
   // Livraison affiche « Gratuit ». La requete garde le vrai prix (cote hook).
   const totalDisplay = isDeliveryFree

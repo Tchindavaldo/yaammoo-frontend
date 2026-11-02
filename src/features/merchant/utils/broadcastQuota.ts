@@ -5,7 +5,7 @@ import type {
 } from "../types/broadcast.types";
 import { t as tr } from "@/src/i18n";
 
-const MONTHS = [
+const monthNames = (): string[] => [
   tr("Janvier"), tr("Février"), tr("Mars"), tr("Avril"), tr("Mai"), tr("Juin"),
   tr("Juillet"), tr("Août"), tr("Septembre"), tr("Octobre"), tr("Novembre"), tr("Décembre"),
 ];
@@ -50,7 +50,7 @@ export const untilMidnight = (now: Date): { h: number; m: string } => {
   return { h: Math.floor(mins / 60), m: String(mins % 60).padStart(2, "0") };
 };
 
-export const monthLabel = (now: Date): string => MONTHS[now.getMonth()];
+export const monthLabel = (now: Date): string => monthNames()[now.getMonth()];
 
 /** Étiquette courte d'un envoi : « AUJOURD'HUI · 11:40 », « HIER · 18:04 », « IL Y A 3 J ». */
 export const sentLabel = (sentAt: string, now: Date): string => {

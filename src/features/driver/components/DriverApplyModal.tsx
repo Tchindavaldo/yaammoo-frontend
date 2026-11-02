@@ -18,7 +18,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { driverService, StoreOption } from "../services/driverService";
 import { Toast } from "@/src/components/Toast";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface DriverApplyModalProps {
   visible: boolean;
@@ -36,6 +36,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
   visible,
   onClose,
 }) => {
+  const i18nLang = useLanguage();
   const { userData } = useAuth();
   const { fastFoods } = useFastFoods();
   const [headerHeight, setHeaderHeight] = useState(70);
@@ -60,7 +61,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
   // Liste locale (home) mappée en StoreOption pour un rendu uniforme.
   const localStores: StoreOption[] = useMemo(
     () => fastFoods.map((f) => ({ id: f.id, nom: f.nom || (f as any).name || tr("Boutique") })),
-    [fastFoods],
+    [fastFoods, i18nLang],
   );
 
   // Recherche serveur debouncée dès qu'on tape (sinon on montre le local).

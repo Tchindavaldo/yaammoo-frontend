@@ -6,7 +6,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { computeGrandTotal } from "../../merchant/components/MerchantOrderMontantTab";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartOrderCardProps {
   order: Commande;
@@ -52,6 +52,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
     localRank,
     onPress,
   }) => {
+    useLanguage();
     const priceStyle = [styles.summaryPrice, darkPrice && { color: "#111827" }];
     if (allOrders && allOrders.length > 0) {
       const orderCount = allOrders.length;

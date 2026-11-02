@@ -25,7 +25,7 @@ import { MenuPricesEditor } from "./menu-form/MenuPricesEditor";
 import { MenuExtrasEditor } from "./menu-form/MenuExtrasEditor";
 import { MenuStockAvailability } from "./menu-form/MenuStockAvailability";
 import { MenuPhotoSlots } from "./menu-form/MenuPhotoSlots";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 type Step = "nameImage" | "details" | "recap";
 
@@ -82,6 +82,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   existingMenu,
   embedded = false,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<Step>("nameImage");
   const {

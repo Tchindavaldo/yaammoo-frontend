@@ -9,7 +9,7 @@ import {
   GHOST_MIN_VISIBLE,
 } from "./GhostZoneTable";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface DeliveryZoneListProps {
   groups: ZoneGroup[];
@@ -30,6 +30,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
   selectedLieu,
   onSelect,
 }) => {
+  useLanguage();
   // Hauteurs mesurees : on comble le vide restant avec un tableau fantome
   // (lignes vides) tant que le contenu ne declenche pas le scroll.
   const [viewportH, setViewportH] = useState(0);

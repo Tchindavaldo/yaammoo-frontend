@@ -4,7 +4,7 @@ import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface OrderHeaderProps {
   activeTab: string;
@@ -13,6 +13,7 @@ interface OrderHeaderProps {
 }
 
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange, counts }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const tabs = [
     { id: 'cart', label: t("Mon pannier"), icon: 'cart-outline', count: counts.cart },

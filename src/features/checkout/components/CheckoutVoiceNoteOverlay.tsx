@@ -8,7 +8,7 @@ import { useVoiceNotePlayer, useVoiceNoteRecorder } from '@/src/services/audio/u
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -23,6 +23,7 @@ interface CheckoutVoiceNoteOverlayProps {
 type RecordingStatus = 'idle' | 'recording' | 'recorded' | 'playing';
 
 export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> = ({ onClose, onSave }) => {
+  useLanguage();
   // Phase de l'enregistrement ; « playing » est deduit du lecteur.
   const [phase, setPhase] = useState<Exclude<RecordingStatus, 'playing'>>('idle');
   const [timer, setTimer] = useState(0);

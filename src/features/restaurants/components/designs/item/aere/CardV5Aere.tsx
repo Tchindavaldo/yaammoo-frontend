@@ -5,7 +5,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CardVariantProps, SKELETON_SIZES, V5_BACKGROUNDS } from "../config";
 import { DELIVERY_ETA, feeText, isStockLow, stockLabel, stockRatio } from "./labels";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Design 5 aere (HOME_DESIGN = "aere") : photo plein cadre, prix en haut,
@@ -22,6 +22,7 @@ export const CardV5Aere: React.FC<CardVariantProps> = ({
   stock,
   price,
 }) => {
+  useLanguage();
   const source = menu.image ? { uri: menu.image } : V5_BACKGROUNDS[index % V5_BACKGROUNDS.length];
   const low = isStockLow(stock);
   return (
@@ -64,7 +65,9 @@ export const V5AereMeta: React.FC<{
   rating: number;
   votes: number;
   deliveryFeeLabel: string;
-}> = ({ title, rating, votes, deliveryFeeLabel }) => (
+}> = ({ title, rating, votes, deliveryFeeLabel }) => {
+  useLanguage();
+  return (
   <>
     <View style={styles.row}>
       <Text style={styles.metaTitle} numberOfLines={1}>
@@ -87,6 +90,7 @@ export const V5AereMeta: React.FC<{
     </Text>
   </>
 );
+};
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

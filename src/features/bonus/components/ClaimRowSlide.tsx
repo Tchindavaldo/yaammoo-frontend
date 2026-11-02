@@ -18,7 +18,7 @@ import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
 import { BonusCredentialsSheet } from "./BonusCredentialsSheet";
 import { BonusUsageRing } from "./BonusUsageRing";
 import { claimDescOf, claimIconOf, claimTitleOf } from "./claimRowText";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface ClaimRowSlideProps {
   bonus: Bonus;
@@ -76,6 +76,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
   arming = false,
   onBlocked,
 }) => {
+  useLanguage();
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
   // Valeur copiée en dernier (null = aucune) — feedback éphémère de 2 s.

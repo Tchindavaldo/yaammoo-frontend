@@ -18,6 +18,7 @@ import {
   userBackgroundSupported,
 } from "../tasks/backgroundLocationTask";
 import { buildLocationPayload } from "../utils/buildLocationPayload";
+import { useLanguage } from "@/src/i18n";
 
 /** Dernier envoi réussi (ms), partagé entre sessions. */
 const LAST_SENT_KEY = "user_location_last_sent";
@@ -75,6 +76,7 @@ const ensureBackgroundTracking = async () => {
  * (`useLocationAccess`), sans rien bloquer.
  */
 export const useUserLocationSync = (isSignedIn: boolean) => {
+  useLanguage();
   const running = useRef(false);
 
   const capture = useCallback(async (source: LocationSource, force = false) => {

@@ -20,7 +20,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { GroupedValidateRow } from "./GroupedValidateRow";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 /** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
@@ -70,6 +70,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup,
   // c'est donc ici qu'on l'amene et qu'on retarde la fermeture le temps de

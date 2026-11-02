@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { OrderItem } from './MerchantOrderBottomSheet';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 // Ic\u00F4nes align\u00E9es sur le bottom sheet du home (checkout/tabs/DetailTab).
 const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -19,7 +19,7 @@ const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 const ITEM_LABEL: Record<string, string> = {
   menu: 'Menu',
   extra: 'Extra',
-  drink: t('Boisson'),
+  get drink() { return t('Boisson'); },
 };
 
 // Devise
@@ -61,6 +61,7 @@ export function CommandesTab({
   onValidate,
   validating = false,
 }: Props) {
+  useLanguage();
   const hasDelivery = deliveryPrice > 0 || !!zone || deliveryOffered || deliveryGrouped;
   // Offert prime sur le groupé : le client ne paie rien dans les deux cas, mais
   // « Offert » porte l'info commerciale (bonus / campagne).

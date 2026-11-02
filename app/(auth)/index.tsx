@@ -32,7 +32,7 @@ import Svg, {
   Stop,
   RadialGradient as SvgRadialGradient,
 } from "react-native-svg";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -64,6 +64,7 @@ function Doodle({
 }
 
 export default function WelcomeScreen() {
+  useLanguage();
   const router = useRouter();
 
   // Cet ecran ne cache JAMAIS le splash. Depuis l'acces invite, la destination

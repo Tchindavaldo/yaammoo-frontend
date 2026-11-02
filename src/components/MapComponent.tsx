@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MapComponentProps {
   region: any;
@@ -12,6 +12,7 @@ interface MapComponentProps {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ address, region, coords, deliveryType }) => {
+  useLanguage();
   const isNoDelivery = deliveryType === 'surplace' || !deliveryType;
 
   if (isNoDelivery) {

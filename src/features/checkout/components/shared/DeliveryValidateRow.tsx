@@ -10,7 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { DeliveryOffer } from "@/src/types";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Ligne unique en bas des overlays de sélection de livraison (Période / Express).
@@ -60,6 +60,7 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
   bonusApplied,
   verifying,
 }) => {
+  useLanguage();
   const offerActive = !!deliveryOffer?.active;
   const isFree = offerActive || bonusApplied;
   const issuer = deliveryOffer ? offerIssuer(deliveryOffer) : "Bonus";

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { DriverOrderCard } from "./DriverOrderCard";
 import { GroupStatusCounts } from "./GroupStatusCounts";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 // Barre de chips « boutique » de la modal, posée sur la navbar (tabs).
 const CHIPS_BAR_HEIGHT = 64;
@@ -56,6 +56,7 @@ export const DriverOrdersPagePanel: React.FC<DriverOrderPanelProps> = ({
   storeFilter = null,
   periodFilter = null,
 }) => {
+  const i18nLang = useLanguage();
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>("express");
   const [groupSubTab, setGroupSubTab] = useState<
     Record<string, "en_attente" | "en_cours" | "termine">
@@ -177,7 +178,7 @@ export const DriverOrdersPagePanel: React.FC<DriverOrderPanelProps> = ({
         userGroups: groupByUser(ords),
       })),
     };
-  }, [dateFilteredOrders]);
+  }, [dateFilteredOrders, i18nLang]);
 
   const renderUserGroup = (group: Commande[]) => (
     <DriverOrderCard

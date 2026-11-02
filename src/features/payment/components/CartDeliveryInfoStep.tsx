@@ -4,7 +4,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface CartDeliveryInfoStepProps {
   /**
@@ -45,6 +45,7 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
   onOpenExpress,
   onOpenVoiceNote,
 }) => {
+  useLanguage();
   const isExpress = delivery.type === "express";
 
   /**

@@ -16,7 +16,7 @@ import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import { CartPaymentState } from "../hooks/useCartPayment";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartPaymentOverlayProps {
   phone: string;
@@ -83,6 +83,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
   autoFocus = false,
   blurFallbackStyle,
 }) => {
+  useLanguage();
   const [isProcessing, setIsProcessing] = React.useState(false);
   // Fondu du contenu lors d'un changement d'étape.
   const contentOpacity = React.useRef(new Animated.Value(1)).current;

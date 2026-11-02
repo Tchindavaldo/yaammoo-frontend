@@ -24,7 +24,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Même hauteur de référence que CheckoutContactOverlay (base du blur + container).
@@ -52,6 +52,7 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
   menuName,
   menuImage,
 }) => {
+  useLanguage();
   const [profile, setProfile] = useState<MenuStatsProfile | null>(null);
   const [loading, setLoading] = useState(true);
 

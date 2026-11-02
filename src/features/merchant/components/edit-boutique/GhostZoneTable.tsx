@@ -3,7 +3,7 @@ import React from "react";
 import { Text, View } from "react-native";
 import { colHeader } from "./DeliveryZoneList";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Hauteur d'une ligne vide du tableau fantome (plus compacte qu'une ligne
  *  reelle : on en affiche ainsi davantage dans le meme espace libre). */
@@ -17,7 +17,9 @@ export const GHOST_MIN_VISIBLE = 40;
  * Card fantome : meme gabarit qu'une zone reelle (bandeau + en-tete de
  * colonnes + lignes), en pointilles et sans contenu. Comble l'espace libre.
  */
-export const GhostTable: React.FC<{ rows: number }> = ({ rows }) => (
+export const GhostTable: React.FC<{ rows: number }> = ({ rows }) => {
+  useLanguage();
+  return (
   <View
     style={{
       borderRadius: 14,
@@ -93,6 +95,7 @@ export const GhostTable: React.FC<{ rows: number }> = ({ rows }) => (
     </View>
   </View>
 );
+};
 
 /** Barre grise tenant lieu de valeur dans une cellule fantome. */
 const GhostCell: React.FC<{ align: "left" | "right" }> = ({ align }) => (

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
 import { Commande } from '@/src/types';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface OrderCardProps {
   order: Commande;
@@ -19,6 +19,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onUpdateQuantity,
   showActions = true 
 }) => {
+  useLanguage();
   const [activePanel, setActivePanel] = useState<'menu' | 'extra' | 'drink'>('menu');
   
   const isPending = order.status === 'pendingToBuy';

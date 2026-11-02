@@ -5,7 +5,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import type { GroupedDeliveryType } from "./CartDeliveryTypeStep";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -98,6 +98,7 @@ export const CartDeliverySegmentStep: React.FC<
   pickupAllowed,
   onNetworkChange,
 }) => {
+  useLanguage();
   const type = (delivery.type || "express") as GroupedDeliveryType;
   const show = (s: "group" | "type" | "infos" | "montants" | "recap") =>
     section === "all" || section === s;

@@ -3,7 +3,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Types de livraison proposes pour la course commune. */
 export type GroupedDeliveryType = "express" | "standard" | "aucune";
@@ -38,6 +38,7 @@ export const CartDeliveryTypeStep: React.FC<CartDeliveryTypeStepProps> = ({
   onNext,
   onBack,
 }) => {
+  useLanguage();
   const options: {
     key: GroupedDeliveryType;
     icon: keyof typeof Ionicons.glyphMap;

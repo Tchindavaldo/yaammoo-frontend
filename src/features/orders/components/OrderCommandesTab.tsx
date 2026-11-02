@@ -4,7 +4,7 @@ import React from "react";
 import { ScrollView, Text, View } from "react-native";
 import { DS } from "@/src/theme/ds";
 import { OrderItem } from "../utils/buildOrderItems";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Onglet « Commandes » du détail client (`OrderBottomSheet`) : plat, extras,
@@ -22,7 +22,7 @@ const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 const ITEM_LABEL: Record<string, string> = {
   menu: "Menu",
   extra: "Extra",
-  drink: t("Boisson"),
+  get drink() { return t("Boisson"); },
 };
 
 const CURRENCY = "XAF";
@@ -44,6 +44,7 @@ export function OrderCommandesTab({
   /** La commande partage son deliveryGroupId avec au moins une autre du sheet. */
   deliveryGrouped?: boolean;
 }) {
+  useLanguage();
   const hasDelivery =
     deliveryPrice > 0 || !!zone || deliveryOffered || deliveryGrouped;
   // Offert prime sur le groupé : le client ne paie rien dans les deux cas, mais

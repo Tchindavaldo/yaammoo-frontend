@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useSheetInsets } from "../hooks/useSheetInsets";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -90,6 +90,7 @@ const PriceRecap: React.FC<{
   deliveryPrice: number;
   isDeliveryFree?: boolean;
 }> = ({ menuPrice, drinksPrice, extrasPrice, deliveryPrice, isDeliveryFree }) => {
+  useLanguage();
   const rows: {
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
@@ -130,6 +131,7 @@ const ActionArea: React.FC<{
   network: "orange" | "mtn";
   onNetworkChange?: (network: "orange" | "mtn") => void;
 }> = ({ network, onNetworkChange }) => {
+  useLanguage();
   // Pour l'instant : uniquement la sélection du réseau.
   return (
     <View style={styles.actionArea}>
@@ -183,6 +185,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
   network = "orange",
   onNetworkChange,
 }) => {
+  useLanguage();
   // Monté DÉJÀ visible (réouverture d'un paiement en cours) : aucune entrée
   // propre, la carte suit le glissement du sheet.
   const anim = React.useRef(new Animated.Value(visible ? 1 : 0)).current; // 0 = caché, 1 = visible

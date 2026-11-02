@@ -8,7 +8,7 @@ import { CardVariantProps, SHOW_BOTTOM_BAR } from "../config";
 import { CardBottom } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Chip prix blanc en haut-gauche, positionne en absolu. */
 const cornerPrice = (top: number, left: number) => [
@@ -121,7 +121,9 @@ export const CardV2: React.FC<CardVariantProps> = ({
   stock,
   price,
   deliveryTime,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <TouchableOpacity
     style={[styles.v2Card, isLast && { marginRight: 0 }]}
     onPress={onPress}
@@ -161,6 +163,7 @@ export const CardV2: React.FC<CardVariantProps> = ({
     )}
   </TouchableOpacity>
 );
+};
 
 /** DESIGN 3 : COMPACT GEM. */
 export const CardV3: React.FC<CardVariantProps> = ({
@@ -170,7 +173,9 @@ export const CardV3: React.FC<CardVariantProps> = ({
   stock,
   price,
   deliveryTime,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <TouchableOpacity
     style={[styles.v3Card, isLast && { marginRight: 0 }]}
     onPress={onPress}
@@ -209,6 +214,7 @@ export const CardV3: React.FC<CardVariantProps> = ({
     )}
   </TouchableOpacity>
 );
+};
 
 const styles = StyleSheet.create({
   // --- DESIGN 1 ---

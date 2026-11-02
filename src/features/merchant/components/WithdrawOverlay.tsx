@@ -23,7 +23,7 @@ import {
   networkLabel,
 } from "../services/walletNetwork";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface WithdrawOverlayProps {
   phone: string;
@@ -81,6 +81,7 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
   bottom,
   isKeyboardVisible,
 }) => {
+  useLanguage();
   const [isProcessing, setIsProcessing] = React.useState(false);
   const contentOpacity = React.useRef(new Animated.Value(1)).current;
 

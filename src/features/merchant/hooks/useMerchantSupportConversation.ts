@@ -5,7 +5,7 @@ import type {
   MerchantSupportMessage,
   MerchantSupportThread,
 } from "../types/merchantSupport.types";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Options {
   /** Compte marchand connecté ; sans lui aucune réponse n'est possible. */
@@ -24,6 +24,7 @@ export const useMerchantSupportConversation = ({
   thread,
   onThreadUpdated,
 }: Options) => {
+  useLanguage();
   const [messages, setMessages] = useState<MerchantSupportMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);

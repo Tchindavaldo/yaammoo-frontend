@@ -15,7 +15,7 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { openStorePage } from "@/src/features/appVersion/services/storeLinks";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   onUpdatePress?: () => void;
@@ -40,6 +40,7 @@ export default function ForceUpdateScreen({
   mandatory = true,
   onDismiss,
 }: Props) {
+  useLanguage();
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,

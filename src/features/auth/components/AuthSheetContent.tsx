@@ -27,9 +27,10 @@ import {
   requestPhoneCode,
   verifyPhoneCode,
 } from "@/src/features/auth/services/whatsappAuthService";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 export default function AuthSheetContent() {
+  useLanguage();
   const { user, userData, setUserData } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);

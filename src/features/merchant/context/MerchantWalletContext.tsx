@@ -21,6 +21,7 @@ import {
   WalletBreakdown,
   balanceKey,
 } from "../services/walletNetwork";
+import { useLanguage } from "@/src/i18n";
 
 /** Payload normalisé d'un event wallet (wallet.credited / wallet.withdrawal). */
 export interface WalletEvent {
@@ -80,6 +81,7 @@ const MerchantWalletContext = createContext<MerchantWalletContextType | undefine
 export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [stats, setStats] = useState<WalletStats | null>(null);
   const [loading, setLoading] = useState(false);

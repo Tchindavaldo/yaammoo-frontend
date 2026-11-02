@@ -53,7 +53,7 @@ import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartGroupedDeliverySheet } from "@/src/features/payment/components/CartGroupedDeliverySheet";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 if (
   Platform.OS === "android" &&
@@ -63,6 +63,7 @@ if (
 }
 
 export default function OrdersScreen() {
+  const i18nLang = useLanguage();
   const {
     loading,
     // Renommé : `refreshing` est déjà pris par le pull-to-refresh local.
@@ -132,7 +133,7 @@ export default function OrdersScreen() {
       entry.total = computeCartTotal(ordersByFf.get(ffId) || []);
     });
     return Array.from(map.values());
-  }, [pendingToBuy, fastFoods, fetchedFfInfos]);
+  }, [pendingToBuy, fastFoods, fetchedFfInfos, i18nLang]);
 
   // Creneaux et zones express des boutiques du panier chargees d'avance : a
   // l'ouverture d'un sheet de livraison, la card « Zone » est deja la. Sans ce
@@ -169,7 +170,7 @@ export default function OrdersScreen() {
   // Commandes regroupées par zone + créneau : une card de tableau par groupe.
   const zoneGroups = useMemo(
     () => groupCartOrdersByZone(visibleCartOrders),
-    [visibleCartOrders],
+    [visibleCartOrders, i18nLang],
   );
 
   // Groupe (zone) en cours de paiement via "Tout payer" du pied de tableau.
@@ -567,7 +568,7 @@ export default function OrdersScreen() {
   // et au paiement (la liste, elle, est désormais plate).
   const displayedZoneGroups = useMemo(
     () => groupCartOrdersByZone(filteredCartOrders),
-    [filteredCartOrders],
+    [filteredCartOrders, i18nLang],
   );
 
   // For testing: force loader to persist

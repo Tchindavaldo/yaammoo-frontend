@@ -11,7 +11,7 @@ import { ShopOrderManagePanel } from '@/src/features/merchant/components/shop/Sh
 import { ShopPageFrame } from '@/src/features/merchant/components/shop/ShopPageFrame';
 import { ActivityIndicator } from '@/src/components/CustomActivityIndicator';
 import { Toast } from '@/src/components/Toast';
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 /**
  * Settings → Boutique → « Commandes » : page entière hors (tabs), sans navbar.
@@ -19,6 +19,7 @@ import { t, dateLocale } from "@/src/i18n";
  * son panel dédié `ShopOrderManagePanel` et dans `ShopPageFrame` (safe-area).
  */
 export default function ShopOrdersScreen() {
+  const i18nLang = useLanguage();
   const router = useRouter();
   const { loading: authLoading } = useAuth();
   const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder, ensureLoaded } = useMerchant();
@@ -44,7 +45,7 @@ export default function ShopOrdersScreen() {
       month: 'long',
       year: 'numeric',
     });
-  }, [selectedDate, todayISO]);
+  }, [selectedDate, todayISO, i18nLang]);
 
   const handleUpdateStatus = async (id: string, status: string) => {
     const ok = await updateStatus(id, status);

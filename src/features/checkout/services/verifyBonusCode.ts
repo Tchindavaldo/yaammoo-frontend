@@ -25,10 +25,12 @@ export interface VerifyBonusResult {
 
 /** Messages par défaut si le backend n'en fournit pas pour la raison donnée. */
 const REASON_MESSAGES: Record<string, string> = {
-  code_not_found: t("Code bonus introuvable."),
-  expired: t("Ce code bonus a expiré."),
-  exhausted: t("Ce code bonus a déjà été utilisé."),
-  wrong_fastfood: t("Ce code ne s'applique pas à cette boutique."),
+  get code_not_found() { return t("Code bonus introuvable."); },
+  get expired() { return t("Ce code bonus a expiré."); },
+  get exhausted() { return t("Ce code bonus a déjà été utilisé."); },
+  get wrong_fastfood() {
+    return t("Ce code ne s'applique pas à cette boutique.");
+  },
 };
 
 export const verifyBonusCode = async (

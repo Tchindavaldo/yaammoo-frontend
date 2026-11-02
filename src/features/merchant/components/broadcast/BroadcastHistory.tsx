@@ -15,7 +15,7 @@ import type { BroadcastItem } from "../../types/broadcast.types";
 import { sentLabel } from "../../utils/broadcastQuota";
 import { BroadcastHistoryRow, audienceSummary, rowLayoutFor } from "./BroadcastHistoryRow";
 import { BC, capsLabel } from "./broadcastTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   items: BroadcastItem[];
@@ -31,6 +31,7 @@ interface Props {
  * hauteur ; au-delà, lignes compactes et la page défile.
  */
 export const BroadcastHistory: React.FC<Props> = ({ items, now, loading, onReuse, style }) => {
+  useLanguage();
   const [openId, setOpenId] = useState<string | null>(null);
   const count = items.length;
 
@@ -89,7 +90,9 @@ const HeroCard: React.FC<{ item: BroadcastItem; when: string; onReuse: () => voi
   item,
   when,
   onReuse,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View style={styles.hero}>
     <View style={styles.heroPhoto}>
       {item.imageUrl ? (
@@ -129,6 +132,7 @@ const HeroCard: React.FC<{ item: BroadcastItem; when: string; onReuse: () => voi
     </View>
   </View>
 );
+};
 
 const styles = StyleSheet.create({
   zone: { gap: 8 },

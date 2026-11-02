@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   onClose: () => void;
@@ -32,6 +32,7 @@ interface Props {
  * composeur de notifications).
  */
 export const StaffSheet: React.FC<Props> = ({ onClose, full = false, header, footer, children }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
   const [enter] = useState(() => new Animated.Value(0));

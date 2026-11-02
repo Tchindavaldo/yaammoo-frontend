@@ -16,7 +16,7 @@ import {
   CityPickerModal,
   BoutiqueToast,
 } from "./edit-boutique/BoutiquePickers";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface EditBoutiquePanelProps {
   visible: boolean;
@@ -33,6 +33,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   onClose,
   onSuccess,
 }) => {
+  useLanguage();
   const footerInset = useFooterBottomInset();
   const s = useEditBoutique({ visible, onClose, onSuccess });
   // Sheet de consultation des zones, ouvrable depuis la page 1.

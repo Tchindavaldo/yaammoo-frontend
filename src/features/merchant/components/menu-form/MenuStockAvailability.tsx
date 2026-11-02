@@ -4,7 +4,7 @@ import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Availability } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Disponibilité du plat (Disponible / Indisponible) + stock (chiffres + stepper). */
 export const MenuStockAvailability: React.FC<{
@@ -12,7 +12,9 @@ export const MenuStockAvailability: React.FC<{
   setAvailability: (v: Availability) => void;
   stock: string;
   setStock: (v: string) => void;
-}> = ({ availability, setAvailability, stock, setStock }) => (
+}> = ({ availability, setAvailability, stock, setStock }) => {
+  useLanguage();
+  return (
   <>
       {/* Ligne 1 : disponibilité (Disponible / Indisponible côte à côte) */}
       <Text
@@ -127,3 +129,4 @@ export const MenuStockAvailability: React.FC<{
       </View>
   </>
 );
+};

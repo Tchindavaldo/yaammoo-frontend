@@ -9,7 +9,7 @@ import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import { DeliveryUser } from './MerchantOrderBottomSheet';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 // ─── InfoCard ──────────────────────────────────────────────────────────────────
 export function InfoCard({
@@ -58,6 +58,7 @@ function Waveform({ active, progress = 0 }: { active?: boolean; progress?: numbe
 
 // ─── LivraisonTab ──────────────────────────────────────────────────────────────
 export function LivraisonTab({ user }: { user: DeliveryUser }) {
+  useLanguage();
   // expo-audio : lecteur libere par le hook au demontage.
   const voice = useVoiceNotePlayer(user.voiceNoteUri);
   const isPlaying = voice.playing;

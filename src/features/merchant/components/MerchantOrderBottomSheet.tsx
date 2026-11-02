@@ -17,7 +17,7 @@ import { MontantTab } from './MerchantOrderMontantTab';
 import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
 import { DS } from "@/src/theme/ds";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // iOS aligne sur le sheet client (450) ; Android garde 490.
 const SHEET_HEIGHT = Platform.OS === 'ios' ? 450 : 490;
@@ -168,6 +168,7 @@ function buildUser(order: Commande): DeliveryUser {
 export default function MerchantOrderBottomSheet({
   order, visible, onClose, allOrders, groupPool, onValidate, canValidate = false,
 }: Props) {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);

@@ -19,7 +19,7 @@ import {
 import Svg, { G, Path } from "react-native-svg";
 import { AddMenuSheetMultiStep } from "./AddMenuSheetMultiStep";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MenuManagePanelProps {
   menus: any[];
@@ -40,6 +40,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
   onRegisterAddMenu,
   topOffset = 0,
 }) => {
+  useLanguage();
   const [barHeight, setBarHeight] = useState(0);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [editingMenu, setEditingMenu] = useState<any>(null);

@@ -19,7 +19,7 @@ import {
 } from "react-native";
 import type { AccountEntry } from "../hooks/useAccounts";
 import { useLogout } from "../hooks/useLogout";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AVATAR_BG = [DS.accent, DS.text2];
 
@@ -38,6 +38,7 @@ export function AccountSheet({
   onSelect,
   onAddAccount,
 }: Props) {
+  useLanguage();
   const insets = useSheetSafeInsets();
   const { isLoggingOut, logout } = useLogout();
 

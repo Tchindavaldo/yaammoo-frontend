@@ -24,7 +24,7 @@ import { OrderSheetHeader } from "./OrderSheetHeader";
 import { OrderSheetTab, OrderSheetTabBar } from "./OrderSheetTabBar";
 import { OrderTrackingTab } from "./OrderTrackingTab";
 import { RateMenuTab } from "./RateMenuTab";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // `OrderItem` reste importable d'ici (type historique du sheet).
 export type { OrderItem } from "../utils/buildOrderItems";
@@ -53,6 +53,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
   boutique,
   allOrders,
 }) => {
+  const i18nLang = useLanguage();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<OrderSheetTab>("livraison");
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
@@ -87,7 +88,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
         { key: "livreur" as const, label: tr("Livreur"), show: showDriverTab },
         { key: "noter" as const, label: tr("Noter"), show: showRateTab },
       ].filter((t) => t.show),
-    [showMontantTab, showTrackingTab, showDriverTab, showRateTab],
+    [showMontantTab, showTrackingTab, showDriverTab, showRateTab, i18nLang],
   );
 
   // Livraison offerte (bonus/campagne couvert par le fastfood) ou mutualisée sur
@@ -104,7 +105,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
       (o: any) => o.deliveryGroupId === currentGroupId,
     ).length > 1;
 
-  const items = useMemo(() => buildOrderItems(selectedOrder), [selectedOrder]);
+  const items = useMemo(() => buildOrderItems(selectedOrder), [selectedOrder, i18nLang]);
 
   useEffect(() => {
     if (isVisible && order) {

@@ -10,7 +10,7 @@ import type {
   StaffRoleDraft,
 } from "../types/staff.types";
 import { buildCatalog, PERMISSION_CATALOG, type PermissionMeta } from "../utils/staffPermissions";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Membres, rôles et catalogue de permissions de la boutique, et leurs
@@ -19,6 +19,7 @@ import { t } from "@/src/i18n";
  * @param onLoadError appelé si le chargement échoue (l'écran affiche un toast).
  */
 export const useStaff = (active: boolean, onLoadError: () => void) => {
+  useLanguage();
   const { userData } = useAuth();
   const fastFoodId = userData?.fastFoodId;
 

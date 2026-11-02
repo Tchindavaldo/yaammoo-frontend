@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { FastFood } from '@/src/types';
 import { Theme } from '../../../theme';
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface RestaurantCardProps {
   restaurant: FastFood;
@@ -11,6 +11,7 @@ interface RestaurantCardProps {
 }
 
 export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPress }) => {
+  useLanguage();
   return (
     <TouchableOpacity 
       style={styles.container} 

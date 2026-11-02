@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Variantes de design du contenu du sheet de paiement.
@@ -44,6 +44,7 @@ const TINT = { orange: DS.accent, mtn: "#f5b301" } as const;
 
 /** Montants agrégés + libellés de destination, communs aux trois variantes. */
 const useRecap = (groups: CartZoneGroup[]) => {
+  useLanguage();
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);
   const articles = groups.reduce((s, g) => s + g.articles, 0);
   const course = groups.reduce((s, g) => s + g.livraison, 0);
@@ -90,6 +91,7 @@ const PhoneField: React.FC<{
   tint: string;
   tone?: "filled" | "outlined";
 }> = ({ phone, onPhoneChange, onConfirm, onError, tint, tone = "filled" }) => {
+  useLanguage();
   const submit = () => {
     if (!phone.trim()) {
       onError?.(t("Saisissez le numéro de paiement"));
@@ -145,6 +147,7 @@ export const PaymentVariantTicket: React.FC<VariantProps> = ({
   onConfirm,
   onError,
 }) => {
+  useLanguage();
   const { cmd, articles, course, total, zone, type, heure } = useRecap(groups);
 
   return (
@@ -232,6 +235,7 @@ export const PaymentVariantCard: React.FC<VariantProps> = ({
   onConfirm,
   onError,
 }) => {
+  useLanguage();
   const { cmd, articles, course, total, zone, type, heure } = useRecap(groups);
   const tint = TINT[network];
 
@@ -312,6 +316,7 @@ export const PaymentVariantColonnes: React.FC<VariantProps> = ({
   onConfirm,
   onError,
 }) => {
+  useLanguage();
   const { cmd, articles, course, total, zone, type, heure } = useRecap(groups);
 
   return (

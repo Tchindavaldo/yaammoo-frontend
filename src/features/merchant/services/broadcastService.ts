@@ -15,7 +15,7 @@ const AUDIENCES: BroadcastAudience[] = ["customers", "city", "all"];
 /** Plan appliqué tant que le backend n'a pas répondu (même valeurs que son repli). */
 export const FREE_PLAN: BroadcastPlan = {
   key: "free",
-  label: t("Gratuit"),
+  get label() { return t("Gratuit"); },
   dayLimit: 3,
   weekLimit: 10,
   audiences: AUDIENCES,

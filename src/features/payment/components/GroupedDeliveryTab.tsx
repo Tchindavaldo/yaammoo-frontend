@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface GroupedDeliveryTabProps {
   delivery: Livraison;
@@ -38,6 +38,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
   availableHours,
   deliveryOffer,
 }) => {
+  useLanguage();
   const isLocationFilled = !!delivery.address;
   const isPeriodFilled = !!delivery.hour;
   const isContactFilled = !!delivery.phone;

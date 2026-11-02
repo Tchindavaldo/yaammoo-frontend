@@ -5,7 +5,7 @@ import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet
 import { Menu } from "@/src/types";
 import { track } from "@/src/services/analytics/analytics";
 import { reopenLockedPayment } from "@/src/services/paymentLock";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 type HomeToast = { message: string; type: "success" | "error" } | null;
 
@@ -23,6 +23,7 @@ const idsOf = (menu: Menu | null) => {
  * de la commande et toast de résultat. L'écran rend la sheet et le toast.
  */
 export const useHomeCheckout = () => {
+  useLanguage();
   const { requireAuth } = useAuthGate();
   const requireName = useRequireName();
   const { addOrder } = useOrders();

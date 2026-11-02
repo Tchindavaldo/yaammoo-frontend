@@ -17,7 +17,7 @@ import { MAX_SERVER_LIMIT } from "../utils/homeClientSettings";
 import { normalizeFastFood } from "../utils/normalizeFastFood";
 import type { FastFoodHomeSettings } from "./useFastFoodHomeSettings";
 import type { FastFoodPagination } from "./useFastFoodPagination";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Requetes du catalogue (`GET /fastFood/all`), extraites de `FastFoodContext` :
@@ -47,6 +47,7 @@ interface Params {
 }
 
 export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params) {
+  useLanguage();
   const {
     fastFoodsLenRef,
     pumpLenRef,

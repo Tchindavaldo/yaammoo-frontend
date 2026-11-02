@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Extrait le string "HH:MM" depuis un item du nouveau format ou le retourne tel quel.
@@ -118,6 +118,7 @@ export const useOrderCountdown = (
   deliveryHours?: any[],
   orderLeadTime: number = 0,
 ): string | null => {
+  useLanguage();
   const [left, setLeft] = useState(() =>
     getOrderCutoffMinutes(deliveryHours, orderLeadTime),
   );

@@ -14,7 +14,7 @@ import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
 import { Config } from "@/src/api/config";
 import { sinceBoot } from "@/src/utils/bootClock";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface AuthContextType {
   user: User | null;
@@ -34,6 +34,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<Users | null>(null);
   const [loading, setLoading] = useState(true);

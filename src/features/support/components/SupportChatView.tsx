@@ -9,7 +9,7 @@ import { SupportComposer } from "./SupportComposer";
 import { SupportMessageBubble } from "./SupportMessageBubble";
 import { SupportMessagesSkeleton } from "./SupportMessagesSkeleton";
 import { SupportTopicChips } from "./SupportTopicChips";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   /** `null` = nouveau chat : l'objet reste à choisir. */
@@ -42,6 +42,7 @@ export const SupportChatView: React.FC<Props> = ({
   onTopicChange,
   onThreadUpdated,
 }) => {
+  useLanguage();
   const [topic, setTopic] = useState<SupportTopic | null>(thread?.topic ?? null);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<ScrollView>(null);

@@ -14,10 +14,11 @@ import {
 } from "@/src/features/driver/components/DriverOrderPanel";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Toast } from "@/src/components/Toast";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 // Page LIVREUR = commandes déléguées uniquement (lancer / terminer / détails).
 export default function DriverScreen() {
+  const i18nLang = useLanguage();
   const { userData, loading: authLoading } = useAuth();
   const { isSignedIn } = useAuthGate();
   const { orders, loading: driverLoading, refresh, updateStatus } = useDriver();
@@ -41,7 +42,7 @@ export default function DriverScreen() {
       month: "long",
       year: "numeric",
     });
-  }, [selectedDate, todayISO]);
+  }, [selectedDate, todayISO, i18nLang]);
 
   const showToast = (
     message: string,

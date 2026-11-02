@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "@/src/theme";
 import { MenuDraft, namedItems, validPrices } from "./MenuDraft.types";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const ORANGE = Theme.colors.primary;
 
@@ -17,6 +17,7 @@ const ORANGE = Theme.colors.primary;
  * + 2 noms résumés, jamais de liste.
  */
 export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
+  useLanguage();
   const extras = namedItems(draft.extras);
   const prices = validPrices(draft);
   // N prix : 3 tuiles max, la 3e résume le reste (« +N »).

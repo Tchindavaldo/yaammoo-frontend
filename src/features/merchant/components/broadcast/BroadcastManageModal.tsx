@@ -18,7 +18,7 @@ import { BroadcastHistory } from "./BroadcastHistory";
 import { BroadcastQuotaTiles } from "./BroadcastQuotaTiles";
 import { BroadcastWeekCard } from "./BroadcastWeekCard";
 import { BC } from "./broadcastTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const FAB_HEIGHT = 56;
 
@@ -39,6 +39,7 @@ type ToastState = { message: string; type: "success" | "error" } | null;
  * aux clients. Rendu par la route `app/shop/notifications.tsx` (hors (tabs), sans navbar).
  */
 export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
+  useLanguage();
   const [toast, setToast] = useState<ToastState>(null);
   const onLoadError = useCallback(
     () => setToast({ message: t("Impossible de charger vos notifications"), type: "error" }),

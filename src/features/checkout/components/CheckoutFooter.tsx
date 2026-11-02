@@ -5,7 +5,7 @@ import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './CheckoutSheet.styles';
 import { Loader } from '../../../components/Loader';
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CheckoutFooterProps {
   total: number;
@@ -24,6 +24,7 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
   onBuy,
   isLoading,
 }) => {
+  useLanguage();
   const insets = useSheetInsets();
 
   return (

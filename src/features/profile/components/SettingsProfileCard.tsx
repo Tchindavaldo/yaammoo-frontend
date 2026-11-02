@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   onEditPress: () => void;
@@ -16,6 +16,7 @@ interface Props {
  * Marchand, bouton d'édition. Posé en absolu au-dessus de la liste qui défile.
  */
 export function SettingsProfileCard({ onEditPress }: Props) {
+  useLanguage();
   const { user, userData } = useAuth();
   const insets = useSafeAreaInsets();
 

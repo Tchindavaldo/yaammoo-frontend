@@ -16,11 +16,12 @@ import { OrderManagePanel } from '@/src/features/merchant/components/OrderManage
 import { NoBoutiquePanel } from '@/src/features/merchant/components/NoBoutiquePanel';
 import { ActivityIndicator } from '@/src/components/CustomActivityIndicator';
 import { Toast } from '@/src/components/Toast';
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 // La page boutique = COMMANDES uniquement. Menu et Portefeuille sont gérés
 // depuis Settings (modals). Les statuts se changent via les chips du panel.
 export default function BoutiqueScreen() {
+  const i18nLang = useLanguage();
   const { userData, loading: authLoading } = useAuth();
   const { isSignedIn } = useAuthGate();
   const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder, ensureLoaded } = useMerchant();
@@ -53,7 +54,7 @@ export default function BoutiqueScreen() {
       month: 'long',
       year: 'numeric',
     });
-  }, [selectedDate, todayISO]);
+  }, [selectedDate, todayISO, i18nLang]);
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToast({ message, type });

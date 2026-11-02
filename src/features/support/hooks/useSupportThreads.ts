@@ -2,7 +2,7 @@ import { socketService } from "@/src/services/socket";
 import { useCallback, useEffect, useState } from "react";
 import { supportService } from "../services/supportService";
 import type { SupportThread } from "../types/support.types";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Fils support du client : chargement HTTP + mise à jour temps réel.
@@ -11,6 +11,7 @@ import { t as tr } from "@/src/i18n";
  * jour ; on remplace l'entrée correspondante plutôt que de recharger la liste.
  */
 export const useSupportThreads = (userId?: string, enabled = true) => {
+  useLanguage();
   const [threads, setThreads] = useState<SupportThread[]>([]);
   // `true` d'entrée : le premier rendu précède le `refresh` de l'effet, et un
   // `false` initial ferait clignoter l'état vide avant le squelette.

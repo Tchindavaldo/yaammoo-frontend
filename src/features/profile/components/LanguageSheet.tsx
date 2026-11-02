@@ -1,11 +1,10 @@
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
-import { AppLanguage, LANGUAGES, getLanguage, setLanguage, t } from "@/src/i18n";
+import { AppLanguage, LANGUAGES, setLanguage, t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React from "react";
 import {
-  ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
@@ -21,21 +20,16 @@ interface Props {
 
 /**
  * Bottom sheet de Settings : choix de la langue (Français / English).
- * Choisir une autre langue l'enregistre puis recharge l'app (src/i18n).
+ * Choisir une langue l'applique a chaud a toute l'app, sans la recharger
+ * (src/i18n), puis ferme le sheet.
  */
 export function LanguageSheet({ visible, onClose }: Props) {
   const insets = useSheetSafeInsets();
-  const current = getLanguage();
-  const [pending, setPending] = useState<AppLanguage | null>(null);
+  const current = useLanguage();
 
   const choose = (code: AppLanguage) => {
-    if (pending) return;
-    if (code === current) {
-      onClose();
-      return;
-    }
-    setPending(code);
     setLanguage(code);
+    onClose();
   };
 
   return (
@@ -58,12 +52,9 @@ export function LanguageSheet({ visible, onClose }: Props) {
               style={[styles.row, active && styles.rowActive]}
               onPress={() => choose(code)}
               activeOpacity={0.7}
-              disabled={!!pending}
             >
               <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
-              {pending === code ? (
-                <ActivityIndicator color={DS.accent} size="small" />
-              ) : active ? (
+              {active ? (
                 <Ionicons name="checkmark-circle" size={22} color={DS.accent} />
               ) : null}
             </TouchableOpacity>

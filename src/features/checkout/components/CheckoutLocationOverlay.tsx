@@ -9,7 +9,7 @@ import { requestForegroundLocation } from '@/src/features/location/services/loca
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -25,6 +25,7 @@ interface CheckoutLocationOverlayProps {
 }
 
 export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = ({ onClose, address, note, onSave }) => {
+  useLanguage();
   const [localAddress, setLocalAddress] = React.useState(address);
   const [localNote, setLocalNote] = React.useState(note);
   const [isSaving, setIsSaving] = React.useState(false);

@@ -6,7 +6,7 @@ import {
   startDeliveryTracking,
   stopDeliveryTracking,
 } from "../tasks/backgroundLocationTask";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 const isDelivering = (o: Commande) =>
   (o.status || "").toLowerCase() === "delivering";
@@ -25,6 +25,7 @@ const isDelivering = (o: Commande) =>
  *   signifie pas « aucune course » et couperait un suivi en cours.
  */
 export const useDeliveryTrackingSync = (orders: Commande[], loaded: boolean) => {
+  useLanguage();
   const active = loaded && orders.some(isDelivering);
   const refusedAlerted = useRef(false);
 

@@ -11,7 +11,7 @@
 // ============================================================================
 import { useMemo } from "react";
 import type { Bonus } from "../types/bonus.types";
-import { t, dateLocale } from "@/src/i18n";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 export type CampaignPhase =
   /** Téléchargement pas encore ouvert (downloadDate à venir). */
@@ -181,4 +181,7 @@ export const computeCampaignPhase = (
 
 /** Phase de campagne du bonus — recalculée si le bonus change. */
 export const useCampaignPhase = (bonus: Bonus): CampaignInfo =>
-  useMemo(() => computeCampaignPhase(bonus), [bonus]);
+  {
+  const i18nLang = useLanguage();
+  return useMemo(() => computeCampaignPhase(bonus), [bonus, i18nLang]);
+};

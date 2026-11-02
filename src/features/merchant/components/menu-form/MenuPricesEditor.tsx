@@ -5,7 +5,7 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-nativ
 import { DraftPrice } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
 import { DESC_MAX, DESC_MIN } from "./menuFormConstants";
-import { t as tr } from "@/src/i18n";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Prix du plat en nombre VARIABLE : un onglet par prix (« Prix 1 * », « Prix 2 »…),
@@ -22,7 +22,7 @@ interface Props {
   clearError: (field: string) => void;
 }
 
-const PLACEHOLDERS = [
+const placeholders = (): string[][] => [
   ["2000", tr("Ex: 1 Burger + 1 Frites + 1 Boisson")],
   ["3500", tr("Ex: 2 Burgers + 2 Frites + 2 Boissons")],
   ["5000", tr("Ex: Seau de 8 pièces + frites")],
@@ -37,12 +37,13 @@ export const MenuPricesEditor: React.FC<Props> = ({
   focusProps,
   clearError,
 }) => {
+  useLanguage();
   // Hauteur auto de la description (par prix) : suit le contenu, plafonnée.
   const [descHeights, setDescHeights] = useState<number[]>([]);
   // Hauteur mesurée de l'input prix → hauteur min de la description (même ligne).
   const [priceColH, setPriceColH] = useState(0);
   const current = prices[selectedIdx] || { price: "", description: "" };
-  const [pricePh, descPh] = PLACEHOLDERS[Math.min(selectedIdx, 2)];
+  const [pricePh, descPh] = placeholders()[Math.min(selectedIdx, 2)];
 
   const update = (patch: Partial<DraftPrice>) => {
     const next = [...prices];

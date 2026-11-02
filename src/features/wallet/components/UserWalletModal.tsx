@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { WalletPanel } from "@/src/features/wallet/components/WalletPanel";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface UserWalletModalProps {
   visible: boolean;
@@ -17,6 +17,7 @@ interface UserWalletModalProps {
  * Réutilise le WalletPanel user (différent du PorteFeuillePanel marchand).
  */
 export const UserWalletModal: React.FC<UserWalletModalProps> = ({ visible, onClose }) => {
+  useLanguage();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [walletBalance, setWalletBalance] = useState(0);
 

@@ -10,7 +10,7 @@ import {
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Theme } from "@/src/theme";
 import { homeStyles as styles } from "./homeScreenStyles";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 type OnLayout = (event: LayoutChangeEvent) => void;
 
@@ -18,7 +18,9 @@ type OnLayout = (event: LayoutChangeEvent) => void;
  * Écran de chargement plein du home — RÉSERVÉ au tout premier affichage (la
  * condition vit dans l'écran : voir la garde `!searchQuery`).
  */
-export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }) => (
+export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }) => {
+  useLanguage();
+  return (
   <SafeAreaView style={styles.container} onLayout={onLayout}>
     <View style={styles.centered}>
       <ActivityIndicator size="large" color={Theme.colors.primary} />
@@ -26,6 +28,7 @@ export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }
     </View>
   </SafeAreaView>
 );
+};
 
 /**
  * Échec du chargement initial : la page entière est remplacée par un message
@@ -36,7 +39,9 @@ export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }
 export const HomeErrorScreen: React.FC<{ onLayout: OnLayout; onRetry: () => void }> = ({
   onLayout,
   onRetry,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <SafeAreaView style={styles.container} onLayout={onLayout}>
     <View style={styles.centered}>
       <Ionicons name="cloud-offline-outline" size={54} color={Theme.colors.gray[300]} />
@@ -51,3 +56,4 @@ export const HomeErrorScreen: React.FC<{ onLayout: OnLayout; onRetry: () => void
     </View>
   </SafeAreaView>
 );
+};

@@ -8,7 +8,7 @@ import { StaffAvatar } from "./StaffAvatar";
 import { StaffSheet } from "./StaffSheet";
 import { StaffSwitch } from "./StaffSwitch";
 import { capsLabel, ST } from "./staffTheme";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   member: StaffMember;
@@ -46,6 +46,7 @@ export const StaffMemberSheet: React.FC<Props> = ({
   onRemove,
   onClose,
 }) => {
+  useLanguage();
   const [pickRole, setPickRole] = useState(false);
   const [showDenied, setShowDenied] = useState(false);
 

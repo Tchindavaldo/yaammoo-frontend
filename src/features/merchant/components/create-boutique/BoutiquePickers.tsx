@@ -15,14 +15,16 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { CAMEROON_CITIES } from "./constants";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Overlay iOS-like contenant un DateTimePicker "time". */
 export const TimePickerOverlay: React.FC<{
   value: Date;
   onChange: (d: Date) => void;
   onDone: () => void;
-}> = ({ value, onChange, onDone }) => (
+}> = ({ value, onChange, onDone }) => {
+  useLanguage();
+  return (
   <Modal transparent={true} visible={true} animationType="fade">
     <View style={styles.modalOverlay}>
       <BlurView
@@ -50,6 +52,7 @@ export const TimePickerOverlay: React.FC<{
     <GlobalToastHost modal />
   </Modal>
 );
+};
 
 /** Selecteur multiple des villes de livraison, avec recherche. */
 export const CityPickerModal: React.FC<{
@@ -58,7 +61,9 @@ export const CityPickerModal: React.FC<{
   selectedCities: string[];
   setSelectedCities: (fn: (prev: string[]) => string[]) => void;
   onDone: () => void;
-}> = ({ search, setSearch, selectedCities, setSelectedCities, onDone }) => (
+}> = ({ search, setSearch, selectedCities, setSelectedCities, onDone }) => {
+  useLanguage();
+  return (
   <Modal transparent={true} visible={true} animationType="fade">
     <View style={styles.modalOverlay}>
       <BlurView
@@ -165,6 +170,7 @@ export const CityPickerModal: React.FC<{
     <GlobalToastHost modal />
   </Modal>
 );
+};
 
 /** Toast global (succes / erreur) anime depuis le haut. */
 export const BoutiqueToast: React.FC<{

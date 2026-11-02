@@ -17,7 +17,7 @@ import { menuPriceAt } from "../../../utils/menuPrices";
  * (`HeroV1`). La section a une hauteur FIXE (SECTION_HEIGHT) : le footer ne
  * bouge pas.
  */
-export const HERO_HEIGHT = 159;
+export const HERO_HEIGHT = 175;
 export const HERO_MARGIN_BOTTOM = 8;
 /** Hauteur de l'ancienne rangee recap (gridBtn : 10 + 18 + 4 + 16 + 15 + 10). */
 export const RECAP_HEIGHT = 73;

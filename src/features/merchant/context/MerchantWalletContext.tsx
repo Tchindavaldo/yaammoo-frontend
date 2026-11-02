@@ -49,7 +49,8 @@ export interface WithdrawalEvent {
   newBreakdown?: WalletBreakdown; // découpage absolu (sur completed)
   newBalance?: number; // solde absolu après l'opération (sur completed)
   newBalances?: WalletBalances; // soldes absolus par réseau (sur completed)
-  reason?: string; // cause sur failed
+  reason?: string; // statut brut sur failed (failed/cancelled)
+  message?: string; // message exact MobileWallet à afficher sur failed
   createdAt?: string;
   __eventId?: number;
 }

@@ -163,6 +163,7 @@ export const registerBonusWalletEvents = (
         typeof data?.newBalance === "number" ? data.newBalance : undefined,
       newBalances: toBalances(data?.newBalances),
       reason: data?.reason,
+      message: data?.message ?? undefined,
       createdAt: data?.createdAt,
     });
   }));

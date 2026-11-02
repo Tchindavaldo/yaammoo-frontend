@@ -192,7 +192,7 @@ export const useWithdraw = () => {
       if (e.status === "completed") {
         setWithdrawState("completed");
       } else if (e.status === "failed") {
-        setWithdrawError(e.reason || "Retrait échoué");
+        setWithdrawError(e.message || "Retrait échoué");
         setWithdrawState("idle");
       }
       // pending : on reste en "processing".

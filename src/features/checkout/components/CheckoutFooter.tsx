@@ -63,7 +63,10 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
         {isLoading ? (
           <Loader size={20} color="white" />
         ) : (
-          <Text style={styles.btnText}>Panier</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Ionicons name="add" size={16} color="white" />
+            <Text style={styles.btnText}>Panier</Text>
+          </View>
         )}
       </TouchableOpacity>
 

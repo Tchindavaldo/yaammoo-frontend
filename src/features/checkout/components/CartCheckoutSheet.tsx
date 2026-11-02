@@ -242,10 +242,16 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   useEffect(() => () => unlockPayment(reopenRef.current), []);
 
   // Verdict reçu sheet FERMÉ : toast global, verrou levé, paiement refermé.
+  // Erreur déjà affichée par le toast du sheet ouvert : pas de 2e toast à la fermeture.
+  const shownErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (visible && paymentError) shownErrorRef.current = paymentError;
+  }, [visible, paymentError]);
   useEffect(() => {
     if (visible) return;
     if (paymentError) {
-      showToast(paymentError, "error");
+      if (shownErrorRef.current !== paymentError) showToast(paymentError, "error");
+      shownErrorRef.current = null;
       setPaymentError(null);
       setIsPaymentPopupVisible(false);
     } else if (paymentState === "success") {

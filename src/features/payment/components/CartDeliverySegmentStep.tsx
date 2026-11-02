@@ -431,7 +431,7 @@ export const CartDeliverySegmentStep: React.FC<
                   <View style={styles.amountSep} />
                   <View>
                     <Text style={styles.choiceTitle} numberOfLines={1}>
-                      Course
+                      {tr("Course")}
                     </Text>
                     <Text style={styles.choiceSub} numberOfLines={1}>
                       {type === "aucune"

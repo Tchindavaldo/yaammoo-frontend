@@ -70,7 +70,7 @@ export const StaffRoleCard: React.FC<Props> = ({
             </View>
           ) : (
             <Text style={styles.count}>
-              {granted.length} / {catalog.length} permission{granted.length > 1 ? "s" : ""}
+              {t("{{a}} / {{b}} permission{{c}}", { a: granted.length, b: catalog.length, c: granted.length > 1 ? "s" : "" })}
             </Text>
           )}
         </View>

@@ -57,10 +57,10 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
    */
   const headerParts = (() => {
     if (groups.length > 1)
-      return { mode: "ZONES", zone: `${groups.length} zones` };
+      return { mode: "ZONES", zone: t("{{a}} zones", { a: groups.length }) };
     const g = groups[0];
     if (g.type !== "express" && g.type !== "time")
-      return { mode: "SUR PLACE", zone: g.zone.toUpperCase() };
+      return { mode: t("SUR PLACE"), zone: g.zone.toUpperCase() };
     return {
       mode: [t("LIVRAISON"), g.type === "express" ? "EXPRESS" : g.heure]
         .filter(Boolean)
@@ -122,13 +122,13 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
             >
               {livraison > 0 ? fmt(livraison) : isPickupOnly ? "0 F" : t("Offerte")}
             </Text>
-            <Text style={footLabel}>COURSE</Text>
+            <Text style={footLabel}>{t("COURSE")}</Text>
           </View>
           <View style={styles.sep} />
 
           <View style={{ gap: 3, flexDirection: colDirection }}>
             <Text style={footValue}>{fmt(articles)}</Text>
-            <Text style={footLabel}>{cmd} CMD</Text>
+            <Text style={footLabel}>{t("{{a}} CMD", { a: cmd })}</Text>
           </View>
 
           <View style={styles.sep} />
@@ -164,7 +164,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
             style={styles.payBtn}
           >
             <Ionicons name="card-outline" size={14} color="#fff" />
-            <Text style={styles.payText}>commander</Text>
+            <Text style={styles.payText}>{t("commander")}</Text>
           </TouchableOpacity>
         )}
       </View>

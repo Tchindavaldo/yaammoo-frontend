@@ -217,7 +217,7 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
           bouton d'action. */}
       <Text style={styles.headerText}>
         {isPhone
-          ? "Un code vous sera envoyé sur WhatsApp"
+          ? t("Un code vous sera envoyé sur WhatsApp")
           : t("Code à {{a}} chiffres envoyé au {{b}} {{c}}", { a: CODE_LENGTH, b: DIAL_CODE, c: phone })}
       </Text>
 

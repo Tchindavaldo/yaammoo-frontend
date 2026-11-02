@@ -16,6 +16,7 @@ import { OrderManagePanel } from '@/src/features/merchant/components/OrderManage
 import { NoBoutiquePanel } from '@/src/features/merchant/components/NoBoutiquePanel';
 import { ActivityIndicator } from '@/src/components/CustomActivityIndicator';
 import { Toast } from '@/src/components/Toast';
+import { t, dateLocale } from "@/src/i18n";
 
 // La page boutique = COMMANDES uniquement. Menu et Portefeuille sont gérés
 // depuis Settings (modals). Les statuts se changent via les chips du panel.
@@ -38,15 +39,15 @@ export default function BoutiqueScreen() {
 
   // Onglet de statut actif + nb de commandes affichées, pour la pilule du header.
   const [statusInfo, setStatusInfo] = useState<{ label: string; count: number; amount: number }>(
-    { label: 'En Attente', count: 0, amount: 0 },
+    { label: t("En Attente"), count: 0, amount: 0 },
   );
 
   const todayISO = new Date().toISOString().substring(0, 10);
 
   const selectedDateLabel = useMemo(() => {
     const iso = selectedDate ?? todayISO;
-    if (iso === todayISO) return "Aujourd'hui";
-    return new Date(iso).toLocaleDateString('fr-FR', {
+    if (iso === todayISO) return t("Aujourd'hui");
+    return new Date(iso).toLocaleDateString(dateLocale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
@@ -61,11 +62,11 @@ export default function BoutiqueScreen() {
   const handleUpdateStatus = async (id: string, status: string) => {
     const ok = await updateStatus(id, status);
     if (status === 'delivering') {
-      ok ? showToast('🚲 Livraison lancée !', 'success') : showToast('Erreur lors du lancement', 'error');
+      ok ? showToast(t("🚲 Livraison lancée !"), 'success') : showToast(t("Erreur lors du lancement"), 'error');
     } else if (status === 'processing') {
-      ok ? showToast('✅ Commande acceptée', 'success') : showToast('Erreur lors de la mise à jour', 'error');
+      ok ? showToast(t("✅ Commande acceptée"), 'success') : showToast(t("Erreur lors de la mise à jour"), 'error');
     } else if (status === 'finished') {
-      ok ? showToast('✅ Commande terminée', 'success') : showToast('Erreur lors de la mise à jour', 'error');
+      ok ? showToast(t("✅ Commande terminée"), 'success') : showToast(t("Erreur lors de la mise à jour"), 'error');
     }
   };
 
@@ -77,8 +78,8 @@ export default function BoutiqueScreen() {
     return (
       <GuestGate
         icon="storefront-outline"
-        title="Votre boutique"
-        subtitle="Connectez-vous pour créer et gérer votre boutique marchand."
+        title={t("Votre boutique")}
+        subtitle={t("Connectez-vous pour créer et gérer votre boutique marchand.")}
       >
         {null}
       </GuestGate>
@@ -98,7 +99,7 @@ export default function BoutiqueScreen() {
       return (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={styles.loadingText}>Chargement de votre boutique...</Text>
+          <Text style={styles.loadingText}>{t("Chargement de votre boutique...")}</Text>
         </View>
       );
     }
@@ -122,7 +123,7 @@ export default function BoutiqueScreen() {
     <View style={styles.container}>
       <BlurScope>
       <TabHeader
-        title="Boutique"
+        title={t("Boutique")}
         subtitle={selectedDateLabel}
         right={
           <HeaderPill

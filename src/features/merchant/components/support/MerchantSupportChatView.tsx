@@ -8,6 +8,7 @@ import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportBubble } from "./MerchantSupportBubble";
 import { MerchantSupportComposer } from "./MerchantSupportComposer";
 import { MerchantSupportMessagesSkeleton } from "./MerchantSupportMessagesSkeleton";
+import { t } from "@/src/i18n";
 
 interface Props {
   thread: MerchantSupportThread;
@@ -84,9 +85,9 @@ export const MerchantSupportChatView: React.FC<Props> = ({
           <View style={styles.empty}>
             {/* Le cas « en chargement » est pris par le squelette au-dessus :
                 ici le fil est bel et bien vide. */}
-            <Text style={styles.emptyTitle}>Aucun message</Text>
+            <Text style={styles.emptyTitle}>{t("Aucun message")}</Text>
             <Text style={styles.emptyText}>
-              Répondez au client pour démarrer la discussion.
+              {t("Répondez au client pour démarrer la discussion.")}
             </Text>
           </View>
         ) : (

@@ -2,6 +2,7 @@ import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
 import type { WalletNetwork } from './walletNetwork';
+import { t } from "@/src/i18n";
 
 interface WithdrawPayload {
   amount: number;              // espèces voulues (envoyé = amount + frais kiosque)
@@ -26,7 +27,7 @@ export interface WithdrawQuote {
 
 const authHeaders = async () => {
   const currentUser = auth.currentUser;
-  if (!currentUser) throw new Error('Aucun utilisateur connecté');
+  if (!currentUser) throw new Error(t("Aucun utilisateur connecté"));
   const idToken = await currentUser.getIdToken();
   return { Authorization: `Bearer ${idToken}` };
 };

@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { t } from "@/src/i18n";
 
 type FilterType = "all" | "credit" | "debit" | "transfer";
 
@@ -166,14 +167,14 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   const series = stats?.series ?? [];
 
   const filters: { key: FilterType; label: string; icon: string }[] = [
-    { key: "all", label: "Historique", icon: "time-outline" },
-    { key: "credit", label: "Dépôt", icon: "cash-outline" },
-    { key: "debit", label: "Retrait", icon: "arrow-back-circle-outline" },
-    { key: "transfer", label: "Transfert", icon: "arrow-redo-circle-outline" },
+    { key: "all", label: t("Historique"), icon: "time-outline" },
+    { key: "credit", label: t("Dépôt"), icon: "cash-outline" },
+    { key: "debit", label: t("Retrait"), icon: "arrow-back-circle-outline" },
+    { key: "transfer", label: t("Transfert"), icon: "arrow-redo-circle-outline" },
   ];
 
   const handleComingSoon = (label: string) => {
-    showToast(`La fonctionnalité "${label}" arrive prochainement.`, "info");
+    showToast(t("La fonctionnalité \"{{a}}\" arrive prochainement.", { a: label }), "info");
   };
 
   const listTopPad = topOffset + barHeight;
@@ -252,14 +253,14 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
               size={60}
               color={Theme.colors.gray[200]}
             />
-            <Text style={styles.emptyTitle}>Pas d&apos;activité</Text>
+            <Text style={styles.emptyTitle}>{t("Pas d'activité")}</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
               onPress={() =>
-                showToast("Passez votre première commande depuis l'accueil.", "info")
+                showToast(t("Passez votre première commande depuis l'accueil."), "info")
               }
             >
-              <Text style={styles.emptyBtnText}>Passer une commande</Text>
+              <Text style={styles.emptyBtnText}>{t("Passer une commande")}</Text>
             </TouchableOpacity>
           </View>
           )
@@ -274,12 +275,12 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
       >
         <View style={styles.balanceRow}>
           <View style={styles.balanceItem}>
-            <Text style={styles.balanceLbl}>Solde</Text>
+            <Text style={styles.balanceLbl}>{t("Solde")}</Text>
             <Text style={styles.balanceVal}>
               {balance.toLocaleString("fr-FR")} F
             </Text>
             <Text style={styles.subBalances}>
-              MTN {balances.mtn.toLocaleString("fr-FR")} F · Orange{" "}
+              MTN {balances.mtn.toLocaleString("fr-FR")} {t("F · Orange")}{" "}
               {balances.orange.toLocaleString("fr-FR")} F
             </Text>
           </View>
@@ -289,10 +290,10 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
             activeOpacity={0.7}
             onPress={() => setWithdrawState("source_select")}
           >
-            <Text style={styles.balanceLbl}>Retrait</Text>
+            <Text style={styles.balanceLbl}>{t("Retrait")}</Text>
             <View style={styles.withdrawRow}>
               <Text style={[styles.balanceVal, { color: Theme.colors.primary }]}>
-                Retirer
+                {t("Retirer")}
               </Text>
               <Ionicons name="arrow-up-circle" size={20} color={Theme.colors.primary} />
             </View>

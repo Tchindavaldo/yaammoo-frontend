@@ -7,6 +7,7 @@ import type {
   BroadcastShop,
   BroadcastState,
 } from "../types/broadcast.types";
+import { t } from "@/src/i18n";
 
 const BASE = () => `${Config.apiUrl}/notification/broadcast`;
 const AUDIENCES: BroadcastAudience[] = ["customers", "city", "all"];
@@ -14,7 +15,7 @@ const AUDIENCES: BroadcastAudience[] = ["customers", "city", "all"];
 /** Plan appliqué tant que le backend n'a pas répondu (même valeurs que son repli). */
 export const FREE_PLAN: BroadcastPlan = {
   key: "free",
-  label: "Gratuit",
+  label: t("Gratuit"),
   dayLimit: 3,
   weekLimit: 10,
   audiences: AUDIENCES,
@@ -91,7 +92,7 @@ export const broadcastService = {
   ): Promise<BroadcastItem> {
     const res = await axios.post(`${BASE()}/${fastFoodId}`, payload);
     const item = normalizeItem(res.data?.data);
-    if (!item) throw new Error("Réponse d'envoi invalide");
+    if (!item) throw new Error(t("Réponse d'envoi invalide"));
     return item;
   },
 };

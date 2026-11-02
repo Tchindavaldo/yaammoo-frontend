@@ -8,6 +8,7 @@ import { useVoiceNotePlayer, useVoiceNoteRecorder } from '@/src/services/audio/u
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
+import { t as tr } from "@/src/i18n";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -76,7 +77,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
   async function startRecording() {
     try {
       if (!(await recorder.start())) {
-        showToast("L'accès au micro est nécessaire.", "error");
+        showToast(tr("L'accès au micro est nécessaire."), "error");
         return;
       }
       setPhase('recording');
@@ -163,7 +164,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="mic-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Consigne de livraison</Text>
+              <Text style={styles.headerTitle}>{tr("Consigne de livraison")}</Text>
             </View>
             <TouchableOpacity onPress={closeWithFade} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#94a3b8" />
@@ -176,7 +177,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                 <TouchableOpacity style={styles.micCircleBig} onPress={startRecording}>
                   <Ionicons name="mic" size={36} color="white" />
                 </TouchableOpacity>
-                <Text style={styles.instructionText}>Appuyez pour enregistrer une consigne vocale</Text>
+                <Text style={styles.instructionText}>{tr("Appuyez pour enregistrer une consigne vocale")}</Text>
               </View>
             )}
 
@@ -198,7 +199,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                   <Text style={styles.timerLarge}>{formatTime(timer)}</Text>
                   <View style={styles.recordingBadge}>
                     <View style={styles.redDot} />
-                    <Text style={styles.recordingLabel}>ENREGISTREMENT</Text>
+                    <Text style={styles.recordingLabel}>{tr("ENREGISTREMENT")}</Text>
                   </View>
                 </View>
 
@@ -253,12 +254,12 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                     closeWithFade();
                   } catch (e) {
                     console.log('Error uploading voice note', e);
-                    showToast("Note vocale : envoi impossible. Vérifiez votre connexion et réessayez.", 'error');
+                    showToast(tr("Note vocale : envoi impossible. Vérifiez votre connexion et réessayez."), 'error');
                   } finally {
                     setUploading(false);
                   }
                 }}>
-                  <Text style={styles.validateBtnText}>{uploading ? 'Envoi...' : 'Enregistrer la consigne'}</Text>
+                  <Text style={styles.validateBtnText}>{uploading ? tr("Envoi...") : tr("Enregistrer la consigne")}</Text>
                 </TouchableOpacity>
               </View>
             )}

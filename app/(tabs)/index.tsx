@@ -41,6 +41,7 @@ import {
 } from "@/src/services/analytics/shopImpressions";
 import { homePageOf } from "@/src/services/analytics/homePages";
 import { track } from "@/src/services/analytics/analytics";
+import { t } from "@/src/i18n";
 
 /** Boutique « vue » : visible a 50 % au moins (meme seuil que la liste native). */
 const SHOP_VIEWABILITY = { itemVisiblePercentThreshold: 50 };
@@ -267,10 +268,10 @@ export default function HomeScreen() {
               footerText={
                 fastFoods.length === 0 && !loading
                   ? searchQuery
-                    ? `Aucun restaurant trouvé pour "${searchQuery}"`
-                    : "Aucun restaurant disponible pour le moment"
+                    ? t("Aucun restaurant trouvé pour \"{{a}}\"", { a: searchQuery })
+                    : t("Aucun restaurant disponible pour le moment")
                   : !hasMore && !loading && fastFoods.length > 0
-                    ? "Vous avez vu toutes les boutiques"
+                    ? t("Vous avez vu toutes les boutiques")
                     : null
               }
               footerIsEmpty={fastFoods.length === 0 && !loading}

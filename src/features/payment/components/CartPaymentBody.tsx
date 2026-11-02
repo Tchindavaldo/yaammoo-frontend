@@ -2,6 +2,7 @@ import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders"
 import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { C, styles } from "./CartPaymentSheet.styles";
+import { t } from "@/src/i18n";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -60,8 +61,8 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
           key: "grouped",
           // Tout en retrait : rien a livrer, on l'affiche tel quel a 0 F.
           label: groups.every((g) => g.type !== "express" && g.type !== "time")
-            ? "Récupérer sur place"
-            : "Livraison",
+            ? t("Récupérer sur place")
+            : t("Livraison"),
           frais: groupedLivraison ?? 0,
         },
       ]
@@ -69,16 +70,16 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
         const n = g.entries.length;
         if (g.type === "express" || g.type === "time") {
           const quand =
-            g.type === "express" ? "Express" : g.heure || "Programmée";
+            g.type === "express" ? "Express" : g.heure || t("Programmée");
           return {
             key: g.key,
-            label: `Livraison · ${quand} · ${g.zone}`,
+            label: t("Livraison · {{a}} · {{b}}", { a: quand, b: g.zone }),
             frais: g.livraison,
           };
         }
         return {
           key: g.key,
-          label: `récupérer à la boutique · ${n} cmd`,
+          label: t("récupérer à la boutique · {{a}} cmd", { a: n }),
           frais: g.livraison,
         };
       });
@@ -111,18 +112,18 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
       },
       {
         key: "time" as const,
-        label: "À l'heure",
+        label: t("À l'heure"),
         // Heure du créneau si une seule est payée, sinon libellé générique.
         sub:
           groups.filter((g) => g.type === "time" && g.heure).length === 1
             ? groups.find((g) => g.type === "time" && g.heure)!.heure!
-            : "Programmée",
+            : t("Programmée"),
         ...acc.time,
       },
       {
         key: "aucune" as const,
-        label: "Sur place",
-        sub: "Je récupère",
+        label: t("Sur place"),
+        sub: t("Je récupère"),
         ...acc.aucune,
       },
     ];
@@ -157,7 +158,7 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
                 style={[styles.modeFee, !active && styles.modeFeeOff]}
                 numberOfLines={1}
               >
-                {!active ? "—" : m.frais > 0 ? `${fmt(m.frais)} F` : "Gratuit"}
+                {!active ? "—" : m.frais > 0 ? `${fmt(m.frais)} F` : t("Gratuit")}
               </Text>
             </View>
           );
@@ -168,9 +169,9 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
       <View style={[styles.recap, styles.labelSpaced]}>
         <View style={styles.recapRow}>
           <Text style={styles.recapLabel}>
-            Total commande{" "}
+            {t("Total commande")}{" "}
             <Text style={styles.recapLabelDim}>
-              ({cmd} commande{cmd > 1 ? "s" : ""})
+              ({cmd} {t("commande")}{cmd > 1 ? "s" : ""})
             </Text>
           </Text>
           <Text style={styles.recapValue}>{fmt(articles)} F</Text>
@@ -183,18 +184,18 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
               {r.label}
             </Text>
             <Text style={[styles.recapValue, r.frais === 0 && { color: C.ok }]}>
-              {r.frais > 0 ? `${fmt(r.frais)} F` : "Offerte"}
+              {r.frais > 0 ? `${fmt(r.frais)} F` : t("Offerte")}
             </Text>
           </View>
         ))}
         <View style={styles.dash} />
         <View style={styles.recapRow}>
-          <Text style={styles.totalLabel}>Total à payer</Text>
+          <Text style={styles.totalLabel}>{t("Total à payer")}</Text>
           <Text style={styles.totalValue}>{fmt(totalAmount)} FCFA</Text>
         </View>
       </View>
 
-      <Text style={[styles.label, styles.labelSpaced]}>MOYEN DE PAIEMENT</Text>
+      <Text style={[styles.label, styles.labelSpaced]}>{t("MOYEN DE PAIEMENT")}</Text>
       <View style={styles.pays}>
         {(
           [

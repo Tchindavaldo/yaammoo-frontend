@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Config } from '../../../api/config';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Menu } from '@/src/types';
+import { t } from "@/src/i18n";
 
 export const useMenu = () => {
     const { userData } = useAuth();
@@ -33,7 +34,7 @@ export const useMenu = () => {
             }
         } catch (err: any) {
             console.error('Error fetching menu:', err);
-            setError('Erreur lors de la récupération des menus');
+            setError(t("Erreur lors de la récupération des menus"));
         } finally {
             setLoading(false);
         }

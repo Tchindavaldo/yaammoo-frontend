@@ -5,6 +5,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CardVariantProps, SKELETON_SIZES, V5_BACKGROUNDS } from "../config";
 import { DELIVERY_ETA, feeText, isStockLow, stockLabel, stockRatio } from "./labels";
+import { t } from "@/src/i18n";
 
 /**
  * Design 5 aere (HOME_DESIGN = "aere") : photo plein cadre, prix en haut,
@@ -72,16 +73,16 @@ export const V5AereMeta: React.FC<{
       <View style={styles.flex} />
       <Ionicons name="star" size={12} color={DS.star} />
       <Text style={[styles.metaText, { color: DS.ink }]}>{rating}</Text>
-      <Text style={styles.metaMuted}>({votes} avis)</Text>
+      <Text style={styles.metaMuted}>({votes} {t("avis)")}</Text>
     </View>
     <Text style={styles.metaText} numberOfLines={1}>
-      Livraison{" "}
+      {t("Livraison")}{" "}
       <Text
         style={{ fontWeight: "800", color: deliveryFeeLabel === "gratuit" ? DS.accentDeep : DS.ink }}
       >
         {feeText(deliveryFeeLabel)}
       </Text>
-      {" · Livré en "}
+      {t(" · Livré en ")}
       <Text style={{ fontWeight: "900", color: DS.ink }}>{DELIVERY_ETA}</Text>
     </Text>
   </>

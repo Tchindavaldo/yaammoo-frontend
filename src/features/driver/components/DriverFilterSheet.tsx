@@ -18,6 +18,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { StoreOption } from "../services/driverService";
 import { DateOption } from "./DriverOrderPanel";
 import { StickyChipsRow } from "./StickyChipsRow";
+import { t } from "@/src/i18n";
 
 /** Filtre période : "express", ou un créneau horaire précis (ex. "12h"), ou null. */
 export type PeriodFilter = string | null;
@@ -117,12 +118,12 @@ export const DriverFilterSheet: React.FC<DriverFilterSheetProps> = ({
       >
         {/* ── Dates (haut, FIXE, horizontal, sticky) ── */}
         {dates.length === 0 ? (
-          <Text style={styles.emptyDates}>Aucune date disponible</Text>
+          <Text style={styles.emptyDates}>{t("Aucune date disponible")}</Text>
         ) : (
           <StickyChipsRow
             items={dates.map((d) => ({
               key: d.iso,
-              label: d.iso === todayISO ? "Aujourd'hui" : d.label,
+              label: d.iso === todayISO ? t("Aujourd'hui") : d.label,
             }))}
             activeKey={activeDate}
             onSelect={(iso) => onSelectDate(iso === todayISO ? null : iso)}
@@ -136,7 +137,7 @@ export const DriverFilterSheet: React.FC<DriverFilterSheetProps> = ({
         >
           <Row
             icon="grid-outline"
-            label="Toutes les boutiques"
+            label={t("Toutes les boutiques")}
             active={storeFilter === null}
             onPress={() => onSelectStore(null)}
           />
@@ -156,7 +157,7 @@ export const DriverFilterSheet: React.FC<DriverFilterSheetProps> = ({
         <View style={styles.periodBar}>
           <StickyChipsRow
             items={[
-              { key: "__all__", label: "Toutes" },
+              { key: "__all__", label: t("Toutes") },
               { key: "express", label: "Express" },
               ...periods.map((p) => ({ key: p, label: p })),
             ]}

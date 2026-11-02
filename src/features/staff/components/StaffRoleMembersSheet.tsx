@@ -7,6 +7,7 @@ import { grantedOf, isFullAccess, type PermissionMeta } from "../utils/staffPerm
 import { StaffMemberRow } from "./StaffMemberRow";
 import { StaffSheet } from "./StaffSheet";
 import { ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 const MAX_PERMS = 3;
 
@@ -38,9 +39,9 @@ export const StaffRoleMembersSheet: React.FC<Props> = ({
   const full = isFullAccess(permissions, catalog);
   const granted = grantedOf(permissions, catalog);
   const summary = full
-    ? "Accès complet"
+    ? t("Accès complet")
     : granted.length === 0
-      ? "Aucune permission"
+      ? t("Aucune permission")
       : granted
           .slice(0, MAX_PERMS)
           .map((p) => p.short)
@@ -49,13 +50,13 @@ export const StaffRoleMembersSheet: React.FC<Props> = ({
   const header = (
     <View style={styles.header}>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.title} numberOfLines={1}>{role?.name || "Sans rôle"}</Text>
-        <Text style={styles.sub}>{plural(members.length, "membre")}</Text>
+        <Text style={styles.title} numberOfLines={1}>{role?.name || t("Sans rôle")}</Text>
+        <Text style={styles.sub}>{plural(members.length, t("membre"))}</Text>
       </View>
       {onEdit && (
         <Pressable onPress={onEdit} hitSlop={8} style={styles.edit} accessibilityRole="button">
           <Ionicons name="options-outline" size={15} color={ST.ink} />
-          <Text style={styles.editText}>Modifier</Text>
+          <Text style={styles.editText}>{t("Modifier")}</Text>
         </Pressable>
       )}
     </View>
@@ -65,7 +66,7 @@ export const StaffRoleMembersSheet: React.FC<Props> = ({
     <StaffSheet onClose={onClose} header={header}>
       <View style={styles.group}>
         <View style={styles.groupHead}>
-          <Text style={styles.groupName}>Membres</Text>
+          <Text style={styles.groupName}>{t("Membres")}</Text>
           <Text style={[styles.groupSummary, full && styles.groupSummaryFull]} numberOfLines={1}>
             {summary}
           </Text>
@@ -75,11 +76,11 @@ export const StaffRoleMembersSheet: React.FC<Props> = ({
         ))}
         {members.length === 0 && (
           <View style={styles.emptyRow}>
-            <Text style={styles.emptyText}>Aucun membre</Text>
+            <Text style={styles.emptyText}>{t("Aucun membre")}</Text>
             {onDelete && (
               <Pressable onPress={onDelete} hitSlop={8} style={styles.delete} accessibilityRole="button">
                 <Ionicons name="trash-outline" size={15} color={ST.danger} />
-                <Text style={styles.deleteText}>Supprimer le rôle</Text>
+                <Text style={styles.deleteText}>{t("Supprimer le rôle")}</Text>
               </Pressable>
             )}
           </View>

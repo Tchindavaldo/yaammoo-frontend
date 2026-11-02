@@ -5,6 +5,7 @@ import type { StaffMember } from "../types/staff.types";
 import { formatPhone, memberInitials, memberName } from "../utils/staffFormat";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 interface Props {
   member: StaffMember;
@@ -22,9 +23,9 @@ export const StaffMemberRow: React.FC<Props> = ({ member, tone = "light", onPres
   const suspended = !member.active;
   const invited = !suspended && !member.userId;
   const sub = suspended
-    ? "Accès suspendu"
+    ? t("Accès suspendu")
     : invited
-      ? "Pas encore connecté"
+      ? t("Pas encore connecté")
       : formatPhone(member.phoneNumber);
 
   return (
@@ -55,12 +56,12 @@ export const StaffMemberRow: React.FC<Props> = ({ member, tone = "light", onPres
       </View>
       {suspended ? (
         <View style={[styles.chip, { backgroundColor: dark ? "rgba(255,255,255,0.14)" : ST.track }]}>
-          <Text style={[styles.chipText, { color: dark ? "#fff" : ST.text2 }]}>Accès coupé</Text>
+          <Text style={[styles.chipText, { color: dark ? "#fff" : ST.text2 }]}>{t("Accès coupé")}</Text>
         </View>
       ) : invited ? (
         <View style={[styles.chip, { backgroundColor: dark ? "rgba(236,73,19,0.2)" : ST.accentTint }]}>
           <Text style={[styles.chipText, { color: dark ? ST.accentOnInk : ST.accentText }]}>
-            Invitation
+            {t("Invitation")}
           </Text>
         </View>
       ) : (

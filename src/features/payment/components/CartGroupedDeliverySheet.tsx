@@ -36,6 +36,7 @@ import { CartGroupedDetailCapsule } from "./CartGroupedDetailCapsule";
 import { CartGroupedPaymentBody } from "./CartGroupedPaymentBody";
 import { CartPaymentOverlay } from "./CartPaymentOverlay";
 import { C, styles as sheetStyles } from "./CartPaymentSheet.styles";
+import { t } from "@/src/i18n";
 
 /** Hauteur de la capsule flottante (`CartPaymentOverlay.styles.capsule`). */
 const CAPSULE_HEIGHT = 70;
@@ -185,11 +186,11 @@ export const CartGroupedDeliverySheet: React.FC<
         delivery.type === "aucune"
           ? null
           : !delivery.address
-            ? "Indiquez le lieu de livraison"
+            ? t("Indiquez le lieu de livraison")
             : !delivery.phone
-              ? "Indiquez un numéro de contact"
+              ? t("Indiquez un numéro de contact")
               : delivery.type === "standard" && !delivery.hour
-                ? "Choisissez un créneau horaire"
+                ? t("Choisissez un créneau horaire")
                 : null;
       if (manque) {
         showError(manque);
@@ -229,7 +230,7 @@ export const CartGroupedDeliverySheet: React.FC<
   const handlePay = React.useCallback(async () => {
     const p = phone.trim();
     if (!p) {
-      showError("Veuillez remplir le numéro de paiement");
+      showError(t("Veuillez remplir le numéro de paiement"));
       return;
     }
     try {
@@ -504,20 +505,20 @@ export const CartGroupedDeliverySheet: React.FC<
   const goNext = React.useCallback(() => {
     // Retrait : seul le numero de contact est exige (la boutique joint le client).
     if (step === 3 && delivery.type === "aucune" && !delivery.phone) {
-      showError("Indiquez un numéro de contact pour que la boutique puisse vous joindre");
+      showError(t("Indiquez un numéro de contact pour que la boutique puisse vous joindre"));
       return;
     }
     if (step === 3 && delivery.type !== "aucune") {
       const manque = !delivery.address
-        ? "Indiquez le lieu de livraison"
+        ? t("Indiquez le lieu de livraison")
         : !delivery.phone
-          ? "Indiquez un numéro de contact"
+          ? t("Indiquez un numéro de contact")
           : delivery.type === "standard" && !delivery.hour
-            ? "Choisissez un créneau horaire"
+            ? t("Choisissez un créneau horaire")
             : delivery.type === "express" &&
                 hasExpressZones &&
                 !delivery.expressLieu
-              ? "Choisissez une zone express"
+              ? t("Choisissez une zone express")
               : null;
       if (manque) {
         showError(manque);
@@ -640,7 +641,7 @@ export const CartGroupedDeliverySheet: React.FC<
                 onPress={goNext}
                 activeOpacity={0.9}
               >
-                <Text style={styles.primaryBtnLabel}>Continuer</Text>
+                <Text style={styles.primaryBtnLabel}>{t("Continuer")}</Text>
               </TouchableOpacity>
             ) : (
               /* DERNIERE page : la capsule PREND LA PLACE du bouton, comme
@@ -664,7 +665,7 @@ export const CartGroupedDeliverySheet: React.FC<
                   ]}
                   numberOfLines={1}
                 >
-                  {phone || "Numéro de paiement"}
+                  {phone || t("Numéro de paiement")}
                 </Text>
                 <TouchableOpacity
                   style={styles.payCapsuleBtn}

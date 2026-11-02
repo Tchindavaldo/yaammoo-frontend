@@ -46,6 +46,7 @@ import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
 import { extractPeriodDate } from "../utils/periodDate";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { SHEET_BLUR_TARGET } from "./sheetBlurTarget";
+import { t } from "@/src/i18n";
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -241,7 +242,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
       setIsPaymentPopupVisible(false);
       resetCheckout();
     } else if (paymentState === "success") {
-      showToast("Paiement de la commande effectué avec succès !", "success");
+      showToast(t("Paiement de la commande effectué avec succès !"), "success");
     } else if (paymentState === "success_created") {
       setIsPaymentPopupVisible(false);
       resetCheckout();
@@ -378,13 +379,13 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 >
                   <TabChip
                     isActive={activeTab === "detail"}
-                    label="Détails"
+                    label={t("Détails")}
                     icon="information-circle-outline"
                     onPress={() => setActiveTab("detail")}
                   />
                   <TabChip
                     isActive={activeTab === "drink"}
-                    label="Boissons"
+                    label={t("Boissons")}
                     icon="wine-outline"
                     onPress={() => setActiveTab("drink")}
                   />
@@ -396,7 +397,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   />
                   <TabChip
                     isActive={activeTab === "delivery"}
-                    label="Livraison"
+                    label={t("Livraison")}
                     icon="bicycle-outline"
                     onPress={() => setActiveTab("delivery")}
                   />

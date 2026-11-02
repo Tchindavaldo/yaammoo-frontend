@@ -15,6 +15,7 @@ import {
   CityPickerModal,
   BoutiqueToast,
 } from "./create-boutique/BoutiquePickers";
+import { t } from "@/src/i18n";
 
 interface CreateBoutiquePanelProps {
   onCancel: () => void;
@@ -104,11 +105,11 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
       />
 
       <TabHeader
-        title="Créer ma boutique"
-        subtitle="Informations du fast-food"
+        title={t("Créer ma boutique")}
+        subtitle={t("Informations du fast-food")}
         right={
           <HeaderPill
-            label="Retour"
+            label={t("Retour")}
             icon="arrow-back-outline"
             onPress={onCancel}
           />

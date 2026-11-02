@@ -2,6 +2,7 @@ import { socketService } from "@/src/services/socket";
 import { useCallback, useEffect, useState } from "react";
 import { merchantSupportService } from "../services/merchantSupportService";
 import type { MerchantSupportThread } from "../types/merchantSupport.types";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Fils reçus par la boutique : chargement HTTP + temps réel.
@@ -32,7 +33,7 @@ export const useMerchantSupportThreads = (
       setThreads(await merchantSupportService.getThreads(fastFoodId));
     } catch (e: any) {
       console.error("useMerchantSupportThreads:", e?.message || e);
-      setError("Impossible de charger les discussions");
+      setError(tr("Impossible de charger les discussions"));
     } finally {
       setLoading(false);
     }

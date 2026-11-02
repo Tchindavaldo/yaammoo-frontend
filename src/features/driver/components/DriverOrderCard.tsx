@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import MerchantOrderBottomSheet from "../../merchant/components/MerchantOrderBottomSheet";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /** Hauteur fixe d'une carte livreur (alignée sur la carte marchand). */
 export const LIVREUR_CARD_HEIGHT = 94.33;
@@ -59,7 +60,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
   const customerLastName = u?.lastName || "";
   const nameToUse = u
     ? `${customerFirstName} ${customerLastName}`.trim()
-    : "Client Inconnu";
+    : t("Client Inconnu");
   const initials = (
     u ? `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}` : "??"
   ).toUpperCase();
@@ -69,7 +70,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
   const deliveryColor = isExpress ? DS.accent : "#2563eb";
   const orderCount = group.length;
   const addressStr =
-    order.delivery?.location || order.delivery?.address || "Adresse non spécifiée";
+    order.delivery?.location || order.delivery?.address || t("Adresse non spécifiée");
 
   return (
     <View style={styles.wrapper}>
@@ -108,7 +109,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
             ) : isDelivered ? (
               <View style={styles.deliveredBadge}>
                 <Ionicons name="checkmark-done" size={14} color="#16a34a" />
-                <Text style={styles.deliveredText}>Livré</Text>
+                <Text style={styles.deliveredText}>{t("Livré")}</Text>
               </View>
             ) : isDelivering ? (
               <TouchableOpacity
@@ -116,7 +117,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
                 onPress={() => handleUpdateStatus("delivered")}
               >
                 <Ionicons name="checkmark-done" size={14} color="white" />
-                <Text style={styles.finishBtnText}>Terminer</Text>
+                <Text style={styles.finishBtnText}>{t("Terminer")}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -124,7 +125,7 @@ export const DriverOrderCard: React.FC<DriverOrderCardProps> = ({
                 onPress={() => handleUpdateStatus("delivering")}
               >
                 <Ionicons name="bicycle-outline" size={14} color="white" />
-                <Text style={styles.launchBtnText}>Lancer</Text>
+                <Text style={styles.launchBtnText}>{t("Lancer")}</Text>
               </TouchableOpacity>
             )}
           </View>

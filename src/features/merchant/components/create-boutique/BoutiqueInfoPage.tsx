@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { styles } from "./styles";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Page unique du formulaire de CREATION de boutique.
@@ -115,12 +116,12 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           )}
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Nom Boutique</Text>
+          <Text style={styles.floatingLabel}>{t("Nom Boutique")}</Text>
           <TextInput
             style={[styles.glassInput, { borderRadius: 20 }]}
             value={name}
             onChangeText={setName}
-            placeholder="Entrer le nom de votre boutique"
+            placeholder={t("Entrer le nom de votre boutique")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -129,7 +130,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       {/* Heures ouverture/fermeture sur une ligne */}
       <View style={[styles.formRow, { marginTop: 16, gap: 6 }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Ouverture</Text>
+          <Text style={styles.floatingLabel}>{t("Ouverture")}</Text>
           <TouchableOpacity
             style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]}
             onPress={onOpenTimePress}
@@ -138,7 +139,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           </TouchableOpacity>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Fermeture</Text>
+          <Text style={styles.floatingLabel}>{t("Fermeture")}</Text>
           <TouchableOpacity
             style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]}
             onPress={onCloseTimePress}
@@ -157,7 +158,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
             value={number}
             onChangeText={setNumber}
             keyboardType="numeric"
-            placeholder="Orange Money"
+            placeholder={t("Orange Money")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -168,7 +169,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
             value={momoNumber}
             onChangeText={setMomoNumber}
             keyboardType="numeric"
-            placeholder="MTN Mobile Money"
+            placeholder={t("MTN Mobile Money")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -188,30 +189,30 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       {/* Délai livraison + jours en avance sur une ligne */}
       <View style={[styles.formRow, { marginTop: 16, gap: 10 }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Délai livraison (minutes)</Text>
+          <Text style={styles.floatingLabel}>{t("Délai livraison (minutes)")}</Text>
           <Text style={styles.helperText}>
-            Temps limite pour commander avant le créneau (ex: 30 = bloqué 30 min avant)
+            {t("Temps limite pour commander avant le créneau (ex: 30 = bloqué 30 min avant)")}
           </Text>
           <TextInput
             style={[styles.glassInput, { borderRadius: 20 }]}
             value={orderLeadTime}
             onChangeText={setOrderLeadTime}
             keyboardType="numeric"
-            placeholder="ex: 30"
+            placeholder={t("ex: 30")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Jours en avance</Text>
+          <Text style={styles.floatingLabel}>{t("Jours en avance")}</Text>
           <Text style={styles.helperText}>
-            Nombre de jours réservables à l'avance (ex: 3 = aujourd'hui à après-demain)
+            {t("Nombre de jours réservables à l'avance (ex: 3 = aujourd'hui à après-demain)")}
           </Text>
           <TextInput
             style={[styles.glassInput, { borderRadius: 20 }]}
             value={advanceDays}
             onChangeText={setAdvanceDays}
             keyboardType="numeric"
-            placeholder="ex: 3"
+            placeholder={t("ex: 3")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -221,7 +222,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       <View style={[styles.formRow, { marginTop: 16, gap: 10 }]}>
         <View style={[styles.inputGroup, { flex: 1, marginTop: 0 }]}>
           <Text style={styles.floatingLabel}>
-            Localisation
+            {t("Localisation")}
             {selectedCities.length > 0 ? ` (${selectedCities.length})` : ""}
           </Text>
           <TouchableOpacity
@@ -242,7 +243,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               </Text>
             ) : (
               <Text style={{ color: "#cbd5e1", fontSize: 14 }}>
-                Sélectionner les villes de livraison
+                {t("Sélectionner les villes de livraison")}
               </Text>
             )}
           </TouchableOpacity>
@@ -250,7 +251,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
 
         <View style={{ width: 120 }}>
           <Text style={styles.floatingLabel} numberOfLines={2}>
-            Zone de livraison
+            {t("Zone de livraison")}
           </Text>
           <View style={{ flexDirection: "row", gap: 8, minHeight: 46 }}>
             <TouchableOpacity
@@ -327,7 +328,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               flexShrink: 1,
             }}
           >
-            Le client peut passer à la boutique récupérer la commande
+            {t("Le client peut passer à la boutique récupérer la commande")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -346,7 +347,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       ) : (
         <>
           <Ionicons name="storefront-outline" size={18} color="white" />
-          <Text style={styles.updateBtnText}>Créer ma boutique</Text>
+          <Text style={styles.updateBtnText}>{t("Créer ma boutique")}</Text>
         </>
       )}
     </TouchableOpacity>

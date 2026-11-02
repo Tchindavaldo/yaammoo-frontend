@@ -8,6 +8,7 @@ import { HeroBanner } from "../components/HeroBanner";
 import { homeStyles as styles } from "../components/home/homeScreenStyles";
 import { designNumberFor } from "../utils/designCycle";
 import { isBannerItem } from "../utils/homeListConfig";
+import { t } from "@/src/i18n";
 
 interface Params {
   banners: AppBanner[];
@@ -48,8 +49,8 @@ export const useHomeListRenderers = ({
           />
           <Text style={styles.emptyText}>
             {searchQuery
-              ? `Aucun restaurant trouvé pour "${searchQuery}"`
-              : "Aucun restaurant disponible pour le moment"}
+              ? t("Aucun restaurant trouvé pour \"{{a}}\"", { a: searchQuery })
+              : t("Aucun restaurant disponible pour le moment")}
           </Text>
         </View>
       );
@@ -58,7 +59,7 @@ export const useHomeListRenderers = ({
       return (
         <View style={styles.footerEnd}>
           <Text style={styles.footerEndText}>
-            Vous avez vu toutes les boutiques
+            {t("Vous avez vu toutes les boutiques")}
           </Text>
         </View>
       );

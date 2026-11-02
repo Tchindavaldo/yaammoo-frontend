@@ -22,6 +22,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 /** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
@@ -164,7 +165,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
       // Écran de divulgation avant la popup système (Android, Google Play).
       const status = await requestForegroundLocation("address");
       if (status !== "granted") {
-        showToast("Accès à la position refusé", "error");
+        showToast(t("Accès à la position refusé"), "error");
         setIsLocating(false);
         return;
       }
@@ -175,7 +176,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
       const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
       setLocalAddress(coords);
     } catch {
-      showToast("Position introuvable : la dernière position connue sera utilisée si possible.", "error");
+      showToast(t("Position introuvable : la dernière position connue sera utilisée si possible."), "error");
       // Try a less accurate but faster fix as fallback
       try {
         const last = await Location.getLastKnownPositionAsync({});
@@ -195,11 +196,11 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
       return;
     }
     if (!localAddress.trim()) {
-      setValidationError("Envoyez votre GPS ou saisissez une adresse");
+      setValidationError(t("Envoyez votre GPS ou saisissez une adresse"));
       return;
     }
     if (!localNote.trim()) {
-      setValidationError("Ajoutez une note (ex: Porte bleue, 2ème étage)");
+      setValidationError(t("Ajoutez une note (ex: Porte bleue, 2ème étage)"));
       return;
     }
     setValidationError(null);
@@ -257,7 +258,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="location-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Adresse de livraison</Text>
+              <Text style={styles.headerTitle}>{t("Adresse de livraison")}</Text>
               <TouchableOpacity
                 onPress={() => Keyboard.dismiss()}
                 style={styles.keyboardSmallBtn}
@@ -277,11 +278,11 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
           <View style={styles.inputContainer}>
             <View style={styles.addressBox}>
               <Text style={styles.addressText}>
-                {localAddress || "(Envoyer ma position GPS)"}
+                {localAddress || t("(Envoyer ma position GPS)")}
               </Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="Note (ex: Porte bleue, 2ème étage...)"
+                placeholder={t("Note (ex: Porte bleue, 2ème étage...)")}
                 placeholderTextColor="#94a3b8"
                 multiline
                 textAlignVertical="top"
@@ -301,7 +302,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
                 >
                   <Loader size={40} color={DS.accent} />
                   <Text style={styles.locatingText}>
-                    Récupération de votre position actuelle...
+                    {t("Récupération de votre position actuelle...")}
                   </Text>
                 </BlurView>
               )}
@@ -322,7 +323,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
 
             <TouchableOpacity style={styles.gpsBtn} onPress={handleGetLocation}>
               <Ionicons name="locate-outline" size={18} color="#334155" />
-              <Text style={styles.gpsBtnText}>Envoyer ma position GPS</Text>
+              <Text style={styles.gpsBtnText}>{t("Envoyer ma position GPS")}</Text>
             </TouchableOpacity>
 
             {/* NOTE VOCALE, a gauche du bouton de validation : elle n'a plus
@@ -340,7 +341,7 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
                 onLongPress={() => {
                   if (!recording && hasVoiceNote) onVoiceNoteChange(null);
                 }}
-                accessibilityLabel="Enregistrer une note vocale"
+                accessibilityLabel={t("Enregistrer une note vocale")}
               >
                 <Ionicons
                   name={

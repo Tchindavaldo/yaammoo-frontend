@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { FastFood } from '@/src/types';
 import { Theme } from '../../../theme';
+import { t } from "@/src/i18n";
 
 interface RestaurantCardProps {
   restaurant: FastFood;
@@ -24,7 +25,7 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onPr
       />
       <View style={styles.info}>
         <Text style={styles.name}>{restaurant.nom}</Text>
-        <Text style={styles.details}>{restaurant.menu?.length || 0} menus disponibles</Text>
+        <Text style={styles.details}>{restaurant.menu?.length || 0} {t("menus disponibles")}</Text>
       </View>
     </TouchableOpacity>
   );

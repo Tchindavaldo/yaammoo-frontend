@@ -8,6 +8,7 @@ import { CardVariantProps, SHOW_BOTTOM_BAR } from "../config";
 import { CardBottom } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /** Chip prix blanc en haut-gauche, positionne en absolu. */
 const cornerPrice = (top: number, left: number) => [
@@ -134,7 +135,7 @@ export const CardV2: React.FC<CardVariantProps> = ({
       <View style={styles.v2DispoPulse} />
       <Text style={styles.v2DispoText}>
         <Text style={{ color: "#4faa71ff", fontWeight: "900" }}>{stock}</Text>
-        <Text style={{ color: "#666" }}> En Stock</Text>
+        <Text style={{ color: "#666" }}> {t("En Stock")}</Text>
       </Text>
     </View>
     <View style={styles.v2ImgWrap}>
@@ -186,7 +187,7 @@ export const CardV3: React.FC<CardVariantProps> = ({
     />
     <View style={styles.v3StockTextRow}>
       <View style={styles.v3StockDot} />
-      <Text style={styles.v3StockTxt}>{stock} en stock</Text>
+      <Text style={styles.v3StockTxt}>{stock} {t("en stock")}</Text>
     </View>
     <View style={styles.v3HeroZone}>
       <Image

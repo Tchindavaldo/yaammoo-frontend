@@ -14,6 +14,7 @@ import { useOrderTracking } from "../hooks/useOrderTracking";
 import { useTrackingRoute } from "../hooks/useTrackingRoute";
 import { estimateArrival, formatAgo, formatClock } from "../utils/trackingEta";
 import OrderTrackingMap from "./OrderTrackingMap";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Onglet « Suivi » du détail client (`OrderBottomSheet`), visible pendant la
@@ -46,9 +47,9 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
       <View style={styles.container}>
         <View style={[styles.mapCard, styles.center]}>
           <Ionicons name="storefront-outline" size={28} color={DS.faint} />
-          <Text style={styles.emptyTitle}>La boutique livre elle-même</Text>
+          <Text style={styles.emptyTitle}>{tr("La boutique livre elle-même")}</Text>
           <Text style={styles.emptyText}>
-            Le suivi en direct est disponible avec les livreurs Yaammoo.
+            {tr("Le suivi en direct est disponible avec les livreurs Yaammoo.")}
           </Text>
         </View>
       </View>
@@ -77,9 +78,9 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
         ) : error && !driver ? (
           <View style={styles.center}>
             <Ionicons name="cloud-offline-outline" size={26} color={DS.faint} />
-            <Text style={styles.emptyTitle}>Suivi indisponible</Text>
+            <Text style={styles.emptyTitle}>{tr("Suivi indisponible")}</Text>
             <TouchableOpacity onPress={retry} style={styles.retry}>
-              <Text style={styles.retryText}>Réessayer</Text>
+              <Text style={styles.retryText}>{tr("Réessayer")}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -98,8 +99,8 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
               />
               <Text style={styles.badgeText}>
                 {driver
-                  ? `Position ${formatAgo(driver.capturedAt, now)}`
-                  : "En attente de la position du livreur…"}
+                  ? tr("Position {{a}}", { a: formatAgo(driver.capturedAt, now) })
+                  : tr("En attente de la position du livreur…")}
               </Text>
             </View>
           </>
@@ -109,15 +110,15 @@ export function OrderTrackingTab({ order }: { order: Commande }) {
       <View style={styles.row}>
         <InfoTile
           icon="time-outline"
-          label="Arrivée estimée"
+          label={tr("Arrivée estimée")}
           value={eta ? formatClock(eta.arrivalAt) : "—"}
-          hint={eta ? `dans ${eta.minutes} min` : undefined}
+          hint={eta ? tr("dans {{a}} min", { a: eta.minutes }) : undefined}
         />
         <InfoTile
           icon="navigate-outline"
-          label="Distance"
+          label={tr("Distance")}
           value={eta ? (formatDistanceKm(eta.distanceKm) ?? "—") : "—"}
-          hint={eta ? (route ? "par la route" : "environ, par la route") : undefined}
+          hint={eta ? (route ? tr("par la route") : tr("environ, par la route")) : undefined}
         />
       </View>
     </View>

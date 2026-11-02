@@ -9,6 +9,7 @@ import type {
   StaffRole,
   StaffRoleDraft,
 } from "../types/staff.types";
+import { t } from "@/src/i18n";
 
 const BASE = () => `${Config.apiUrl}/staff`;
 
@@ -18,7 +19,7 @@ const BASE = () => `${Config.apiUrl}/staff`;
  * attendant qu'il les serve (même rôle que `FREE_PLAN` des notifications).
  */
 export const STAFF_FREE_PLAN: StaffPlan = {
-  label: "Gratuit",
+  label: t("Gratuit"),
   memberLimit: 8,
   driverLimit: 5,
 };
@@ -90,7 +91,7 @@ export const staffService = {
   async createMember(fastFoodId: string, draft: StaffMemberDraft): Promise<StaffMember> {
     const res = await axios.post(`${BASE()}/${fastFoodId}/members`, draft);
     const member = normalizeMember(res.data?.data);
-    if (!member) throw new Error("Réponse de création invalide");
+    if (!member) throw new Error(t("Réponse de création invalide"));
     return member;
   },
 
@@ -102,7 +103,7 @@ export const staffService = {
   ): Promise<StaffMember> {
     const res = await axios.patch(`${BASE()}/${fastFoodId}/members/${memberId}`, patch);
     const member = normalizeMember(res.data?.data);
-    if (!member) throw new Error("Réponse de modification invalide");
+    if (!member) throw new Error(t("Réponse de modification invalide"));
     return member;
   },
 
@@ -113,14 +114,14 @@ export const staffService = {
   async createRole(fastFoodId: string, draft: StaffRoleDraft): Promise<StaffRole> {
     const res = await axios.post(`${BASE()}/${fastFoodId}/roles`, draft);
     const role = normalizeRole(res.data?.data);
-    if (!role) throw new Error("Réponse de création invalide");
+    if (!role) throw new Error(t("Réponse de création invalide"));
     return role;
   },
 
   async updateRole(fastFoodId: string, roleId: string, draft: StaffRoleDraft): Promise<StaffRole> {
     const res = await axios.patch(`${BASE()}/${fastFoodId}/roles/${roleId}`, draft);
     const role = normalizeRole(res.data?.data);
-    if (!role) throw new Error("Réponse de modification invalide");
+    if (!role) throw new Error(t("Réponse de modification invalide"));
     return role;
   },
 

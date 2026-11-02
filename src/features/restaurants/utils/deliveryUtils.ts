@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
+import { t } from "@/src/i18n";
 
 /**
  * Extrait le string "HH:MM" depuis un item du nouveau format ou le retourne tel quel.
@@ -106,7 +107,7 @@ export const formatCountdown = (minutes: number): string => {
   const m = minutes % 60;
   if (h === 0) return `${m}min`;
   if (m === 0) return `${h}h`;
-  return `${h}h ${m}min`;
+  return t("{{a}}h {{b}}min", { a: h, b: m });
 };
 
 /**

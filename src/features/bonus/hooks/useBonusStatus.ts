@@ -1,6 +1,7 @@
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import type { Bonus, BonusRequestStatus } from "../types/bonus.types";
 import { useBonusEligibility } from "./useBonusEligibility";
+import { t } from "@/src/i18n";
 
 export interface BonusStatus {
   isInactive: boolean;
@@ -40,16 +41,16 @@ export const useBonusStatus = (
     !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
 
   const label = isInactive
-    ? "Inactif"
+    ? t("Inactif")
     : isRedeemed
-      ? "Utilisé"
+      ? t("Utilisé")
       : isApproved
-        ? "Validé"
+        ? t("Validé")
         : isPending
-          ? "En attente"
+          ? t("En attente")
           : isEligible
-            ? "Éligible"
-            : "Non éligible";
+            ? t("Éligible")
+            : t("Non éligible");
 
   // Teinte UNIFORME : quel que soit l'état, on garde la couleur du bonus.
   // (plus de code couleur par statut — indigo/violet/vert/orange/rouge retirés).

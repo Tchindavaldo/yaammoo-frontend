@@ -17,6 +17,7 @@ import { useDriver } from "../hooks/useDriver";
 import { ApplicationEvent } from "../context/DriverContext";
 import { driverService, DriverApplication } from "../services/driverService";
 import { Toast } from "@/src/components/Toast";
+import { t as tr } from "@/src/i18n";
 
 interface DriverMyApplicationsModalProps {
   visible: boolean;
@@ -27,9 +28,9 @@ const STATUS_META: Record<
   DriverApplication["status"],
   { label: string; color: string; icon: any }
 > = {
-  pending: { label: "En attente", color: "#d97706", icon: "time-outline" },
-  accepted: { label: "Acceptée", color: "#16a34a", icon: "checkmark-circle" },
-  refused: { label: "Refusée", color: Theme.colors.danger, icon: "close-circle" },
+  pending: { label: tr("En attente"), color: "#d97706", icon: "time-outline" },
+  accepted: { label: tr("Acceptée"), color: "#16a34a", icon: "checkmark-circle" },
+  refused: { label: tr("Refusée"), color: Theme.colors.danger, icon: "close-circle" },
 };
 
 // Dédup par fastFoodId : ne garde qu'UNE demande par boutique (la plus récente).
@@ -74,7 +75,7 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
     try {
       setApps(dedupeByStore(await driverService.getMyApplications(userId)));
     } catch {
-      setToast({ message: "Erreur de chargement", type: "error" });
+      setToast({ message: tr("Erreur de chargement"), type: "error" });
     } finally {
       setLoading(false);
       setFirstLoadDone(true);
@@ -121,9 +122,9 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
           a.fastFoodId === app.fastFoodId ? { ...a, status: "pending" } : a,
         ),
       );
-      setToast({ message: "Demande relancée ✅", type: "success" });
+      setToast({ message: tr("Demande relancée ✅"), type: "success" });
     } catch {
-      setToast({ message: "Échec de la relance", type: "error" });
+      setToast({ message: tr("Échec de la relance"), type: "error" });
     } finally {
       setRelaunching((p) => ({ ...p, [app.id]: false }));
     }
@@ -136,16 +137,16 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Mes demandes"
-        subtitle="Demandes de livraison"
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        title={tr("Mes demandes")}
+        subtitle={tr("Demandes de livraison")}
+        right={<HeaderPill label={tr("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 
       {!firstLoadDone ? (
         <View style={[styles.loader, { paddingTop: headerHeight }]}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={styles.loaderText}>Chargement de vos demandes…</Text>
+          <Text style={styles.loaderText}>{tr("Chargement de vos demandes…")}</Text>
         </View>
       ) : (
         <ScrollView
@@ -159,7 +160,7 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
           {apps.length === 0 ? (
             <View style={styles.empty}>
               <Ionicons name="document-text-outline" size={48} color={Theme.colors.gray[300]} />
-              <Text style={styles.emptyText}>Aucune demande envoyée</Text>
+              <Text style={styles.emptyText}>{tr("Aucune demande envoyée")}</Text>
             </View>
           ) : (
             apps.map((app) => {
@@ -171,7 +172,7 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.storeName} numberOfLines={1}>
-                      {app.fastFoodName || "Boutique"}
+                      {app.fastFoodName || tr("Boutique")}
                     </Text>
                     <View style={[styles.badge, { backgroundColor: meta.color + "18" }]}>
                       <Ionicons name={meta.icon} size={12} color={meta.color} />
@@ -185,7 +186,7 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
                     ) : (
                       <TouchableOpacity style={styles.relaunchBtn} onPress={() => relaunch(app)}>
                         <Ionicons name="refresh" size={14} color="#fff" />
-                        <Text style={styles.relaunchText}>Relancer</Text>
+                        <Text style={styles.relaunchText}>{tr("Relancer")}</Text>
                       </TouchableOpacity>
                     ))}
                 </View>

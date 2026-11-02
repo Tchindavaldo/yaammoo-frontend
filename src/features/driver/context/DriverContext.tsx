@@ -11,6 +11,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { Commande } from "@/src/types";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useDeliveryTrackingSync } from "../../location/hooks/useDeliveryTrackingSync";
+import { t } from "@/src/i18n";
 
 /** Event socket sur une demande de livraison (création / décision / retrait). */
 export type ApplicationEvent =
@@ -74,7 +75,7 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoaded(true);
       } catch (err) {
         console.error("Driver fetch error:", err);
-        setError("Erreur lors du chargement des commandes déléguées");
+        setError(t("Erreur lors du chargement des commandes déléguées"));
       } finally {
         if (showLoading) setLoading(false);
       }

@@ -25,6 +25,7 @@ import { MenuPricesEditor } from "./menu-form/MenuPricesEditor";
 import { MenuExtrasEditor } from "./menu-form/MenuExtrasEditor";
 import { MenuStockAvailability } from "./menu-form/MenuStockAvailability";
 import { MenuPhotoSlots } from "./menu-form/MenuPhotoSlots";
+import { t as tr } from "@/src/i18n";
 
 type Step = "nameImage" | "details" | "recap";
 
@@ -175,23 +176,23 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const validate = (): { message: string; fields: string[] } | null => {
     if (step === "nameImage") {
       if (!nom.trim())
-        return { message: "Le nom ne doit pas être vide", fields: ["nom"] };
+        return { message: tr("Le nom ne doit pas être vide"), fields: ["nom"] };
       // Obligation des 3 photos : il faut 3 images réellement uploadées (URLs).
       // En modification, les images existantes sont déjà dans uploadedUrls/images.
       const uploadedCount = uploadedUrls.filter(Boolean).length;
       if (uploadedCount < 3)
         return {
-          message: "Vous devez ajouter 3 photos du menu",
+          message: tr("Vous devez ajouter 3 photos du menu"),
           fields: ["images"],
         };
       // Chaque prix renseigné doit avoir sa description ; le 1er est obligatoire.
       for (let i = 0; i < prices.length; i++) {
         const p = prices[i];
         if (i === 0 && !p.price)
-          return { message: "Le prix 1 ne doit pas être vide", fields: ["prix0"] };
+          return { message: tr("Le prix 1 ne doit pas être vide"), fields: ["prix0"] };
         if (p.price && !p.description.trim())
           return {
-            message: `La description du prix ${i + 1} ne doit pas être vide`,
+            message: tr("La description du prix {{a}} ne doit pas être vide", { a: i + 1 }),
             fields: [`desc${i}`],
           };
       }
@@ -200,7 +201,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     if (step === "details") {
       if (stock.trim() === "" || isNaN(Number(stock)))
         return {
-          message: "Le stock du menu doit être un nombre",
+          message: tr("Le stock du menu doit être un nombre"),
           fields: ["stock"],
         };
     }
@@ -274,16 +275,16 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       // raison métier) — le générique ne sert que de filet si l'API ne
       // renvoie rien d'exploitable.
       const backendMessage = e?.response?.data?.message || e?.message;
-      showToast(backendMessage || "Impossible de sauvegarder le menu", "error");
+      showToast(backendMessage || tr("Impossible de sauvegarder le menu"), "error");
     } finally {
       setSubmitting(false);
     }
   };
 
   const stepTitles: Record<Step, string> = {
-    nameImage: "Nom, prix et photos",
-    details: "Extras, stock et statut",
-    recap: "Récapitulatif",
+    nameImage: tr("Nom, prix et photos"),
+    details: tr("Extras, stock et statut"),
+    recap: tr("Récapitulatif"),
   };
 
   const totalSteps = STEPS.length;
@@ -303,7 +304,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         <View style={styles.header}>
           <View>
             {isModification && (
-              <Text style={styles.title}>Modifier le menu</Text>
+              <Text style={styles.title}>{tr("Modifier le menu")}</Text>
             )}
             <Text style={styles.subtitle}>{stepTitles[step]}</Text>
           </View>
@@ -339,14 +340,14 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
             Pressable : un tap dans le vide ferme le clavier (sortie de la description). */}
           {step === "nameImage" && (
             <DismissKeyboardWrapper>
-              <Text style={styles.fieldLabel}>Nom du menu</Text>
+              <Text style={styles.fieldLabel}>{tr("Nom du menu")}</Text>
               <TextInput
                 style={[
                   styles.input,
                   styles.inputCompact,
                   ...fieldStyle("nom"),
                 ]}
-                placeholder="Ex: Burger Spécial Maison"
+                placeholder={tr("Ex: Burger Spécial Maison")}
                 value={nom}
                 onChangeText={(t) => {
                   setNom(t);
@@ -438,9 +439,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
             <Text style={styles.nextBtnText}>
               {step === "recap"
                 ? isModification
-                  ? "Modifier"
-                  : "Créer le menu"
-                : "Suivant"}
+                  ? tr("Modifier")
+                  : tr("Créer le menu")
+                : tr("Suivant")}
             </Text>
           )}
         </TouchableOpacity>

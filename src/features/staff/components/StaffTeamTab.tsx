@@ -7,6 +7,7 @@ import type { PermissionMeta } from "../utils/staffPermissions";
 import { StaffDriversCard } from "./StaffDriversCard";
 import { StaffRoleCard } from "./StaffRoleCard";
 import { capsLabel, ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 /** Clé de la feuille « Sans rôle ». */
 export const ORPHAN_KEY = "__orphans__";
@@ -28,10 +29,10 @@ interface Props {
 /** Ligne « Rôles de la boutique » + « Nouveau rôle », fixe au-dessus de la liste. */
 export const StaffTeamHead: React.FC<{ onNewRole: () => void }> = ({ onNewRole }) => (
   <View style={styles.head}>
-    <Text style={capsLabel}>RÔLES DE LA BOUTIQUE</Text>
+    <Text style={capsLabel}>{t("RÔLES DE LA BOUTIQUE")}</Text>
     <Pressable onPress={onNewRole} hitSlop={8} style={styles.link} accessibilityRole="button">
       <Ionicons name="add" size={16} color={ST.accentText} />
-      <Text style={styles.linkText}>Nouveau rôle</Text>
+      <Text style={styles.linkText}>{t("Nouveau rôle")}</Text>
     </Pressable>
   </View>
 );
@@ -65,12 +66,12 @@ export const StaffTeamTab: React.FC<Props> = ({
           <View style={styles.emptyIcon}>
             <Ionicons name="people-outline" size={22} color={ST.accentText} />
           </View>
-          <Text style={styles.emptyTitle}>Aucun rôle pour l’instant</Text>
+          <Text style={styles.emptyTitle}>{t("Aucun rôle pour l’instant")}</Text>
           <Text style={styles.emptyText}>
-            Créez un rôle (Caisse, Cuisine…) avec ses permissions, puis ajoutez vos employés.
+            {t("Créez un rôle (Caisse, Cuisine…) avec ses permissions, puis ajoutez vos employés.")}
           </Text>
           <Pressable onPress={onNewRole} style={styles.emptyBtn} accessibilityRole="button">
-            <Text style={styles.emptyBtnText}>Créer un rôle</Text>
+            <Text style={styles.emptyBtnText}>{t("Créer un rôle")}</Text>
           </Pressable>
         </View>
       ) : (

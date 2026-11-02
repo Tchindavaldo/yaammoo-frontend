@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { DriverOrderCard } from "./DriverOrderCard";
 import { GroupStatusCounts } from "./GroupStatusCounts";
+import { t, dateLocale } from "@/src/i18n";
 
 // Barre de chips « boutique » de la modal, posée sur la navbar (tabs).
 const CHIPS_BAR_HEIGHT = 64;
@@ -80,7 +81,7 @@ export const DriverOrdersPagePanel: React.FC<DriverOrderPanelProps> = ({
 
   const formatDateLabel = (iso: string): string => {
     try {
-      return new Date(iso).toLocaleDateString("fr-FR", {
+      return new Date(iso).toLocaleDateString(dateLocale(), {
         day: "numeric",
         month: "long",
       });
@@ -97,7 +98,7 @@ export const DriverOrdersPagePanel: React.FC<DriverOrderPanelProps> = ({
     const d = (o as any).delivery;
     if (periodFilter === "express") return d?.type === "express";
     // Créneau précis : compare au slot dérivé (même logique que le groupement).
-    const slot = d?.type === "express" ? "express" : d?.time || d?.hour || "À définir";
+    const slot = d?.type === "express" ? "express" : d?.time || d?.hour || t("À définir");
     return slot === periodFilter;
   };
 
@@ -152,7 +153,7 @@ export const DriverOrdersPagePanel: React.FC<DriverOrderPanelProps> = ({
       if (d?.type === "express") {
         express.push(o);
       } else {
-        const slot = d?.time || d?.hour || "À définir";
+        const slot = d?.time || d?.hour || t("À définir");
         if (!scheduled[slot]) scheduled[slot] = [];
         scheduled[slot].push(o);
       }
@@ -254,19 +255,19 @@ export const DriverOrdersPagePanel: React.FC<DriverOrderPanelProps> = ({
     return (
       <View style={{ marginTop: 4 }}>
         <View style={styles.subTabRow}>
-          {renderSubTab("en_attente", "En attente", enAttenteOrders.length)}
-          {renderSubTab("en_cours", "En cours", enCoursOrders.length)}
-          {renderSubTab("termine", "Terminé", termineOrders.length)}
+          {renderSubTab("en_attente", t("En attente"), enAttenteOrders.length)}
+          {renderSubTab("en_cours", t("En cours"), enCoursOrders.length)}
+          {renderSubTab("termine", t("Terminé"), termineOrders.length)}
         </View>
 
         {activeGroups.length === 0 ? (
           <View style={styles.subTabEmpty}>
             <Text style={styles.subTabEmptyText}>
               {activeSubTab === "en_cours"
-                ? "Aucune livraison en cours"
+                ? t("Aucune livraison en cours")
                 : activeSubTab === "termine"
-                  ? "Aucune livraison terminée"
-                  : "Aucune commande en attente"}
+                  ? t("Aucune livraison terminée")
+                  : t("Aucune commande en attente")}
             </Text>
           </View>
         ) : (
@@ -305,7 +306,7 @@ export const DriverOrdersPagePanel: React.FC<DriverOrderPanelProps> = ({
         {!hasContent ? (
           <View style={styles.emptyState}>
             <Ionicons name="bicycle-outline" size={50} color="#D3D1C7" />
-            <Text style={styles.emptyText}>Aucune commande à livrer</Text>
+            <Text style={styles.emptyText}>{t("Aucune commande à livrer")}</Text>
           </View>
         ) : (
           <View>

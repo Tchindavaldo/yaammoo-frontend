@@ -15,6 +15,7 @@ import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
 
 import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
+import { t } from "@/src/i18n";
 
 /**
  * Écran d'information avant la popup système « Toujours » (localisation
@@ -28,13 +29,13 @@ import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
  * demandes de `useUserLocationSync` via `backgroundPrompt`.
  */
 
-const TITLE = "Suivez vos livraisons en direct";
+const TITLE = t("Suivez vos livraisons en direct");
 /**
  * iOS seulement : Android n'a plus la permission « Toujours » (refusée par
  * Google Play), `useUserLocationSync` ne l'y demande jamais.
  */
 const MESSAGE =
-  "Dans la fenêtre suivante, choisissez « Toujours autoriser » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.";
+  t("Dans la fenêtre suivante, choisissez « Toujours autoriser » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.");
 
 /** Ecart entre le bas de la carte et le bas visible de la barre (cf. OTA). */
 const BOTTOM_GAP = 0;
@@ -152,7 +153,7 @@ export const BackgroundLocationPromptCard = () => {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.laterText}>Plus tard</Text>
+            <Text style={styles.laterText}>{t("Plus tard")}</Text>
           </Pressable>
           <Pressable
             onPress={() => answer(true)}
@@ -163,7 +164,7 @@ export const BackgroundLocationPromptCard = () => {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.continueText}>Continuer</Text>
+            <Text style={styles.continueText}>{t("Continuer")}</Text>
           </Pressable>
         </View>
       </Animated.View>

@@ -1,3 +1,4 @@
+import { t } from "@/src/i18n";
 /**
  * Libelles et seuils communs aux cartes aerees (4 / 5 / 7). Fonctions pures,
  * reprises telles quelles par la liste native (`NativeHomeList` les envoie
@@ -5,7 +6,7 @@
  */
 
 /** Frais en toutes lettres apres « Livraison » (« gratuite », « 300F »). */
-export const feeText = (label: string) => (label === "gratuit" ? "gratuite" : label);
+export const feeText = (label: string) => (label === "gratuit" ? t("gratuite") : label);
 
 /** Delai de livraison affiche (maquette) : le meme sur toutes les cartes. */
 export const DELIVERY_ETA = "30min";
@@ -24,11 +25,11 @@ export const stockRatio = (stock: number) =>
 
 /** Stock en 2 morceaux (valeur mise en avant + unite), meme libelle partout. */
 export const stockParts = (stock: number) => {
-  if (stock <= 0) return { value: "Épuisé", unit: "" };
-  const unit = stock > 1 ? "plats" : "plat";
+  if (stock <= 0) return { value: t("Épuisé"), unit: "" };
+  const unit = stock > 1 ? t("plats") : t("plat");
   return isStockLow(stock)
-    ? { value: `Plus que ${stock}`, unit }
-    : { value: `${stock}`, unit: `${unit} dispo` };
+    ? { value: t("Plus que {{a}}", { a: stock }), unit }
+    : { value: `${stock}`, unit: t("{{a}} dispo", { a: unit }) };
 };
 
 export const stockLabel = (stock: number) => {

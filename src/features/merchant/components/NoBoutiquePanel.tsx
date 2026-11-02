@@ -5,6 +5,7 @@ import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { CreateBoutiquePanel } from "./CreateBoutiquePanel";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Écran affiché quand l'utilisateur n'a pas encore de boutique. Présente un
@@ -40,18 +41,17 @@ export const NoBoutiquePanel = () => {
       {/* Titre et Description */}
       <View style={styles.textCtn}>
         <Text style={styles.titre}>
-          Créez votre boutique et{"\n"}recevez vos commandes
+          {t("Créez votre boutique et")}{"\n"}{t("recevez vos commandes")}
         </Text>
         <Text style={styles.description}>
-          Gérez facilement vos commandes, vos livraisons{"\n"}et vos
-          transactions avec votre Boutique
+          {t("Gérez facilement vos commandes, vos livraisons")}{"\n"}{t("et vos transactions avec votre Boutique")}
         </Text>
       </View>
 
       {/* Bouton */}
       <View style={styles.ctnBtn}>
         <TouchableOpacity style={styles.mainBtn} onPress={() => setCreating(true)}>
-          <Text style={styles.mainBtnText}>Continuer</Text>
+          <Text style={styles.mainBtnText}>{t("Continuer")}</Text>
         </TouchableOpacity>
       </View>
     </View>

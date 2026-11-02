@@ -12,6 +12,7 @@ import { auth } from "@/src/services/firebase";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { getMissingName, MissingName } from "../utils/missingName";
+import { t as tr } from "@/src/i18n";
 
 /** Delai apres l'arrivee sur le home, le temps que l'ecran s'affiche. */
 const ARRIVAL_DELAY_MS = 700;
@@ -118,7 +119,7 @@ export const ProfileNameProvider: React.FC<{ children: React.ReactNode }> = ({
         if (action) setTimeout(action, 250);
       } catch (e) {
         console.error("❌ [ProfileNameSheet] Mise a jour du nom echouee:", e);
-        setError("Enregistrement impossible. Vérifie ta connexion.");
+        setError(tr("Enregistrement impossible. Vérifie ta connexion."));
       } finally {
         setSaving(false);
       }

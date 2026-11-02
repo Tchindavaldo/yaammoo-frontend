@@ -6,6 +6,7 @@ import { Commande, FastFood } from "@/src/types";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { computeGrandTotal } from "../../merchant/components/MerchantOrderMontantTab";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface ClientOrderCardProps {
   order: Commande;
@@ -39,7 +40,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
     const priceStyle = [styles.summaryPrice, darkPrice && { color: "#111827" }];
     if (allOrders && allOrders.length > 0) {
       const orderCount = allOrders.length;
-      const ffName = fastFood?.nom || fastFood?.name || "Boutique";
+      const ffName = fastFood?.nom || fastFood?.name || t("Boutique");
       const initials = ffName.substring(0, 2).toUpperCase();
       const ffImage = fastFood?.logo || fastFood?.coverImage;
 
@@ -47,7 +48,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
       const isAnyDelivering = allOrders.some(
         (o) => (o.status || "").toLowerCase() === "delivering",
       );
-      const addressStr = order.delivery?.location || "Sur place";
+      const addressStr = order.delivery?.location || t("Sur place");
 
       // On calcule le prix total de toutes les commandes du groupe
       const totalPriceGroup = allOrders.reduce(
@@ -144,12 +145,12 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
     const buildGroupLabel = (n: number) => {
       const plural = n > 1 ? "s" : "";
       const d = order.delivery as any;
-      if (d?.status !== true) return `${n} cmd · pas de livraison`;
-      if (d?.type === "express") return `${n} cmd livraison express`;
+      if (d?.status !== true) return t("{{a}} cmd · pas de livraison", { a: n });
+      if (d?.type === "express") return t("{{a}} cmd livraison express", { a: n });
       const time = d?.time || d?.hour;
       return time
-        ? `${n} cmd livrée${plural} à ${time}`
-        : `${n} cmd livrée${plural}`;
+        ? t("{{a}} cmd livrée{{b}} à {{c}}", { a: n, b: plural, c: time })
+        : t("{{a}} cmd livrée{{b}}", { a: n, b: plural });
     };
 
     /**
@@ -158,10 +159,10 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
      */
     const deliverySuffix = (() => {
       const d = order.delivery as any;
-      if (d?.status !== true) return "pas de livraison";
-      if (d?.type === "express") return "livraison express";
+      if (d?.status !== true) return t("pas de livraison");
+      if (d?.type === "express") return t("livraison express");
       const time = d?.time || d?.hour;
-      return time ? `livrée à ${time}` : "livrée";
+      return time ? t("livrée à {{a}}", { a: time }) : t("livrée");
     })();
 
     const menuImage =
@@ -238,7 +239,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
                     ? ` ${buildGroupLabel(groupedOrders.length)}`
                     : pickedCount > 0
                       ? ` ${buildGroupLabel(1)}`
-                      : ` ${quantity} plat${quantity > 1 ? "s" : ""} · ${deliverySuffix}`}
+                      : t(" {{a}} plat{{b}} · {{c}}", { a: quantity, b: quantity > 1 ? "s" : "", c: deliverySuffix })}
                 </Text>
               </View>
               {isDelivering && (
@@ -259,7 +260,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
                 <View style={[styles.smallChip, chipTint]}>
                   <Ionicons name="beer-outline" size={14} color="black" />
                   <Text style={[styles.chipText, { color: "black" }]}>
-                    Boisson +{drinksActiveCount}
+                    {t("Boisson +")}{drinksActiveCount}
                   </Text>
                 </View>
               </View>
@@ -287,7 +288,7 @@ export const ClientOrderCard = React.memo<ClientOrderCardProps>(
                   <View style={styles.rankContainer}>
                     <Ionicons name="trophy-outline" size={14} color="#ccc" />
                     <Text style={styles.rankText}>
-                      {status === "pending" ? "En attente" : "En cours"} •{" "}
+                      {status === "pending" ? t("En attente") : t("En cours")} •{" "}
                       {order.rank}
                     </Text>
                   </View>

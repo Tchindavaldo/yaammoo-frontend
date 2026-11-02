@@ -16,6 +16,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { t } from "@/src/i18n";
 // ⚠️ `prefetchHomeImages` n'est PLUS appele. Chaque carte monte desormais son
 // image des son rendu (cf. DesignItem) : le prechargement faisait donc DOUBLON.
 // Les deux mecanismes se disputaient la bande passante, les requetes
@@ -179,7 +180,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     clearDeliveryOfferForBonus,
   } = useFastFoodSocketUpdates(setFastFoods);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tout");
+  const [selectedCategory, setSelectedCategory] = useState(t("Tout"));
 
   // ⚠️ La recherche courante est lue via une REF, pas via la dependance d'un
   // `useCallback`. Sinon `refresh` et `loadMore` changent de reference a chaque

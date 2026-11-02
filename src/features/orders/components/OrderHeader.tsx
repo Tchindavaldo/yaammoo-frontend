@@ -4,6 +4,7 @@ import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Theme } from '../../../theme';
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface OrderHeaderProps {
   activeTab: string;
@@ -14,10 +15,10 @@ interface OrderHeaderProps {
 export const OrderHeader: React.FC<OrderHeaderProps> = ({ activeTab, onTabChange, counts }) => {
   const insets = useSafeAreaInsets();
   const tabs = [
-    { id: 'cart', label: 'Mon pannier', icon: 'cart-outline', count: counts.cart },
-    { id: 'status', label: 'Etat des commandes', icon: 'checkmark-circle-outline', count: counts.status },
-    { id: 'bonus', label: 'Mes Bonus', icon: 'gift-outline', count: counts.bonus },
-    { id: 'wallet', label: 'Mon portefeuille', icon: 'wallet-outline', count: counts.wallet ?? 0 },
+    { id: 'cart', label: t("Mon pannier"), icon: 'cart-outline', count: counts.cart },
+    { id: 'status', label: t("Etat des commandes"), icon: 'checkmark-circle-outline', count: counts.status },
+    { id: 'bonus', label: t("Mes Bonus"), icon: 'gift-outline', count: counts.bonus },
+    { id: 'wallet', label: t("Mon portefeuille"), icon: 'wallet-outline', count: counts.wallet ?? 0 },
   ];
 
   return (

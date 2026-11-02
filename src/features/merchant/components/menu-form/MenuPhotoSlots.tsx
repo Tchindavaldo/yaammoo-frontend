@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ActivityIndicator, Image, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./AddMenuSheet.styles";
+import { t } from "@/src/i18n";
 
 /** Les 3 emplacements photo du plat (aperçu + progression d'upload). */
 export const MenuPhotoSlots: React.FC<{
@@ -15,7 +16,7 @@ export const MenuPhotoSlots: React.FC<{
     <Text
       style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}
     >
-      Photos du plat (3 requises)
+      {t("Photos du plat (3 requises)")}
     </Text>
     <View style={styles.imageRow}>
       {[0, 1, 2].map((idx) => (
@@ -52,7 +53,7 @@ export const MenuPhotoSlots: React.FC<{
                 color={Theme.colors.gray[400]}
               />
               <Text style={styles.imagePlaceholderText}>
-                Photo {idx + 1}
+                {t("Photo")} {idx + 1}
               </Text>
             </View>
           )}

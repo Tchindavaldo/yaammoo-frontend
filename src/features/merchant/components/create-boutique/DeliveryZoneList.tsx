@@ -9,6 +9,7 @@ import {
   GHOST_MIN_VISIBLE,
 } from "./GhostZoneTable";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface DeliveryZoneListProps {
   groups: ZoneGroup[];
@@ -67,7 +68,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
               paddingVertical: 10,
             }}
           >
-            Aucune zone renseignée
+            {t("Aucune zone renseignée")}
           </Text>
         ) : (
           groups.map((g, gi) => (
@@ -130,9 +131,9 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                     borderBottomColor: DS.slate100,
                   }}
                 >
-                  <Text style={colHeader}>Heure</Text>
+                  <Text style={colHeader}>{t("Heure")}</Text>
                   <Text style={[colHeader, { textAlign: "right" }]}>
-                    Périod.
+                    {t("Périod.")}
                   </Text>
                   <Text style={[colHeader, { textAlign: "right" }]}>
                     Express

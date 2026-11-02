@@ -13,6 +13,7 @@ import type {
   BroadcastShop,
   BroadcastState,
 } from "../types/broadcast.types";
+import { t } from "@/src/i18n";
 
 /** Résultat d'un envoi : `message` = raison du refus (quota, audience…). */
 export type BroadcastSendResult = { ok: true } | { ok: false; message: string };
@@ -89,7 +90,7 @@ export const useBroadcast = (active: boolean, onLoadError: () => void) => {
   /** Upload l'image locale si besoin, envoie, puis place l'envoi en tête. */
   const send = useCallback(
     async (draft: BroadcastDraft): Promise<BroadcastSendResult> => {
-      if (!fastFoodId || sending) return { ok: false, message: "Envoi indisponible" };
+      if (!fastFoodId || sending) return { ok: false, message: t("Envoi indisponible") };
       setSending(true);
       try {
         let imageUrl: string | undefined;
@@ -109,7 +110,7 @@ export const useBroadcast = (active: boolean, onLoadError: () => void) => {
         return { ok: true };
       } catch (error) {
         console.error("Error sending broadcast:", error);
-        return { ok: false, message: broadcastErrorMessage(error, "Envoi impossible, réessayez") };
+        return { ok: false, message: broadcastErrorMessage(error, t("Envoi impossible, réessayez")) };
       } finally {
         setSending(false);
       }

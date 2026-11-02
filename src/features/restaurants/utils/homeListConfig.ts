@@ -1,4 +1,5 @@
 import { HOME_CLIENT_SETTINGS_FALLBACK } from "./homeClientSettings";
+import { t } from "@/src/i18n";
 
 // Réglages de la liste du home (`app/(tabs)/index.tsx`). Extraits tels quels
 // de l'écran : chaque valeur a été mesurée, voir architecture/restaurants.md.
@@ -90,10 +91,10 @@ export const UNLOCK_QUIET_MS = 350;
 export const isBannerItem = (item: any) => item?.__banner === true;
 
 export const CATEGORIES = [
-  { name: "Tout", icon: "grid-outline" },
-  { name: "Fast-food", icon: "fast-food-outline" },
+  { name: t("Tout"), icon: "grid-outline" },
+  { name: t("Fast-food"), icon: "fast-food-outline" },
   { name: "Pizza", icon: "pizza-outline" },
   { name: "Burger", icon: "nutrition-outline" },
-  { name: "Boissons", icon: "beer-outline" },
-  { name: "Riz", icon: "restaurant-outline" },
+  { name: t("Boissons"), icon: "beer-outline" },
+  { name: t("Riz"), icon: "restaurant-outline" },
 ];

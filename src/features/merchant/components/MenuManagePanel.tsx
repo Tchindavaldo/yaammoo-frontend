@@ -19,6 +19,7 @@ import {
 import Svg, { G, Path } from "react-native-svg";
 import { AddMenuSheetMultiStep } from "./AddMenuSheetMultiStep";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface MenuManagePanelProps {
   menus: any[];
@@ -155,7 +156,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     } catch (error) {
       setUpdatingId(null);
       spinAnim.stopAnimation();
-      alert("Erreur: Impossible d'effectuer cette action");
+      alert(t("Erreur: Impossible d'effectuer cette action"));
     }
   };
 
@@ -239,7 +240,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                 <View style={[styles.menuInfoChip]}>
                   <Ionicons name="pricetag-outline" size={13} color="#9ca3af" />
                   <Text style={styles.menuInfoChipText}>
-                    {`${item.prices?.length || 1} prix`}
+                    {t("{{a}} prix", { a: item.prices?.length || 1 })}
                   </Text>
                 </View>
                 <View
@@ -255,7 +256,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                   <Text
                     style={[styles.menuInfoChipText, { color: statusColor }]}
                   >
-                    {isAvailable ? "Disponible" : "Indisponible"}
+                    {isAvailable ? t("Disponible") : t("Indisponible")}
                   </Text>
                 </View>
               </View>
@@ -266,7 +267,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                 onPress={() => startEdit(item)}
               >
                 <Ionicons name="create-outline" size={15} color="white" />
-                <Text style={styles.menuActionBtnText}>Modifier</Text>
+                <Text style={styles.menuActionBtnText}>{t("Modifier")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -282,8 +283,8 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
     label: string;
     icon: string;
   }[] = [
-    { key: "available", label: "Disponible", icon: "checkmark-circle-outline" },
-    { key: "unavailable", label: "Indisponible", icon: "close-circle-outline" },
+    { key: "available", label: t("Disponible"), icon: "checkmark-circle-outline" },
+    { key: "unavailable", label: t("Indisponible"), icon: "close-circle-outline" },
   ];
 
   // Barre fixe (stats + chips) calée sous le header de page, style OrderManagePanel.
@@ -297,16 +298,16 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
         <View style={styles.statBox}>
           <View style={styles.statValRow}>
             <Text style={styles.statVal}>{stats.available}</Text>
-            <Text style={styles.statUnit}>plat</Text>
+            <Text style={styles.statUnit}>{t("plat")}</Text>
           </View>
-          <Text style={styles.statLbl}>Menu disponible</Text>
+          <Text style={styles.statLbl}>{t("Menu disponible")}</Text>
         </View>
         <View style={styles.statBox}>
           <View style={styles.statValRow}>
             <Text style={styles.statVal}>{stats.unavailable}</Text>
-            <Text style={styles.statUnit}>plat</Text>
+            <Text style={styles.statUnit}>{t("plat")}</Text>
           </View>
-          <Text style={styles.statLbl}>Menu indisponible</Text>
+          <Text style={styles.statLbl}>{t("Menu indisponible")}</Text>
         </View>
       </View>
 
@@ -348,7 +349,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
           }}
         >
           <Ionicons name="add-circle" size={15} color="white" />
-          <Text style={styles.addBtnText}>Ajouter</Text>
+          <Text style={styles.addBtnText}>{t("Ajouter")}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -383,13 +384,13 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
               />
               <Text style={styles.emptyText}>
                 {view === "unavailable"
-                  ? "Aucun plat indisponible"
-                  : "Aucun plat disponible"}
+                  ? t("Aucun plat indisponible")
+                  : t("Aucun plat disponible")}
               </Text>
               <Text style={styles.emptySubText}>
                 {menus.length === 0
-                  ? "Créez votre premier menu"
-                  : "Aucun plat dans cette catégorie"}
+                  ? t("Créez votre premier menu")
+                  : t("Aucun plat dans cette catégorie")}
               </Text>
             </View>
           }
@@ -434,8 +435,8 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                   <View style={[styles.cfnTitleChip]}>
                     <Text style={styles.cfnTitleText}>
                       {confirmActionType === "delete"
-                        ? "Voulez vous vraiment supprimer ?"
-                        : "Changer la disponibilité ?"}
+                        ? t("Voulez vous vraiment supprimer ?")
+                        : t("Changer la disponibilité ?")}
                     </Text>
                   </View>
                 </View>
@@ -483,10 +484,10 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                     >
                       <Text style={styles.cfnChipText}>
                         {confirmActionType === "delete"
-                          ? "Supprimer"
+                          ? t("Supprimer")
                           : confirmActionType === "available"
-                            ? "Disponible"
-                            : "Indisponible"}
+                            ? t("Disponible")
+                            : t("Indisponible")}
                       </Text>
                       <Ionicons
                         name={
@@ -504,7 +505,7 @@ export const MenuManagePanel: React.FC<MenuManagePanelProps> = ({
                       ]}
                       onPress={closeConfirmModal}
                     >
-                      <Text style={styles.cfnChipText}>Annuler</Text>
+                      <Text style={styles.cfnChipText}>{t("Annuler")}</Text>
                       <Ionicons
                         name="close-circle-outline"
                         size={14}

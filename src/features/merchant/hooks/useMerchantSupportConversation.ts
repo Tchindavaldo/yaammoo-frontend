@@ -5,6 +5,7 @@ import type {
   MerchantSupportMessage,
   MerchantSupportThread,
 } from "../types/merchantSupport.types";
+import { t } from "@/src/i18n";
 
 interface Options {
   /** Compte marchand connecté ; sans lui aucune réponse n'est possible. */
@@ -41,7 +42,7 @@ export const useMerchantSupportConversation = ({
       })
       .catch((e) => {
         console.error("useMerchantSupportConversation:", e?.message || e);
-        if (!cancelled) setError("Impossible de charger les messages");
+        if (!cancelled) setError(t("Impossible de charger les messages"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -95,7 +96,7 @@ export const useMerchantSupportConversation = ({
         return true;
       } catch (e: any) {
         console.error("useMerchantSupportConversation send:", e?.message || e);
-        setError("Message non envoyé, réessayez");
+        setError(t("Message non envoyé, réessayez"));
         return false;
       } finally {
         setSending(false);

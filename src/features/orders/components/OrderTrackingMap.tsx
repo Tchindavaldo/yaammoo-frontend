@@ -3,6 +3,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { DS } from "@/src/theme/ds";
 import type { LatLng } from "../services/orderTrackingService";
+import { t } from "@/src/i18n";
 
 /**
  * Web : `react-native-maps` n'existe pas. Même rôle que le repli web de
@@ -18,7 +19,7 @@ type Props = {
 const OrderTrackingMap: React.FC<Props> = () => (
   <View style={styles.box}>
     <Ionicons name="map-outline" size={26} color={DS.faint} />
-    <Text style={styles.text}>Carte disponible dans l'application</Text>
+    <Text style={styles.text}>{t("Carte disponible dans l'application")}</Text>
   </View>
 );
 

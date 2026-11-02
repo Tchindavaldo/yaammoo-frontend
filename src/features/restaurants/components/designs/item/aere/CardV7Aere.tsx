@@ -6,6 +6,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CardVariantProps, SKELETON_SIZES } from "../config";
 import { DELIVERY_ETA, feeText, isStockLow, stockParts, stockRatio } from "./labels";
+import { t } from "@/src/i18n";
 
 /**
  * Design 7 aere (HOME_DESIGN = "aere") : petite carte sous degrade sombre,
@@ -80,7 +81,7 @@ export const V7AereMeta: React.FC<{
       <Text style={styles.metaMuted}>({votes})</Text>
     </View>
     <Text style={styles.metaText} numberOfLines={1}>
-      Livraison{" "}
+      {t("Livraison")}{" "}
       <Text
         style={{ fontWeight: "800", color: deliveryFeeLabel === "gratuit" ? DS.accentDeep : DS.ink }}
       >

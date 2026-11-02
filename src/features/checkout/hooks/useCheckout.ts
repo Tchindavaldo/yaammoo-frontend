@@ -8,6 +8,7 @@ import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { menuPriceOptions } from "../utils/menuPrices";
 import { computeCheckoutPrices } from "../utils/checkoutPrices";
+import { t } from "@/src/i18n";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
   const { userData, user } = useAuth();
@@ -326,16 +327,16 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     if (!menu) return null;
     const menuStock = (menu as any).stock;
     if (typeof menuStock !== 'number') return null;
-    if (menuStock < quantity) return `Stock insuffisant. Disponible : ${menuStock}`;
+    if (menuStock < quantity) return t("Stock insuffisant. Disponible : {{a}}", { a: menuStock });
     return null;
   }, [menu, quantity]);
 
   const validateDelivery = useCallback((): string | null => {
     const type = delivery.type;
     if (!delivery.statut || type === 'aucune') return null;
-    if (!delivery.address) return "Adresse de livraison requise";
-    if (!delivery.phone) return "Numéro de contact requis";
-    if (type === 'standard' && !delivery.hour) return "Période de livraison requise";
+    if (!delivery.address) return t("Adresse de livraison requise");
+    if (!delivery.phone) return t("Numéro de contact requis");
+    if (type === 'standard' && !delivery.hour) return t("Période de livraison requise");
     // Express : exiger le choix d'une zone SI des zones express sont disponibles
     // (le prix vient exclusivement de la zone choisie, pas d'un défaut).
     if (type === 'express') {
@@ -347,7 +348,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
             h && typeof h === 'object' && h.express && h.expressZones?.length > 0,
         );
       if (hasExpressZones && !delivery.expressLieu) {
-        return "Zone de livraison express requise";
+        return t("Zone de livraison express requise");
       }
     }
     return null;
@@ -357,7 +358,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
 
   const handlePaymentConfirm = useCallback(async (phone: string) => {
     if (!userData || !phone) {
-      setPaymentError('Numéro de paiement requis');
+      setPaymentError(t("Numéro de paiement requis"));
       return;
     }
 
@@ -393,7 +394,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       // synchrone — aucun paiement réel, aucun verdict socket à attendre. On
       // déroule donc les étapes nous-mêmes pour montrer le parcours complet.
       if (response.data.appleReviewMode === true) {
-        setUssdMessage('Vérification du paiement...');
+        setUssdMessage(t("Vérification du paiement..."));
         setPaymentState('ussd_sent');
         reviewTimers.current.push(
           setTimeout(() => setPaymentState('success'), REVIEW_STEP_MS),
@@ -414,8 +415,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
         // Cas C — validation backend échouée : message est un tableau [{ field, message }]
         const raw = response.data.message;
         const message = Array.isArray(raw)
-          ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || 'Erreur paiement'
-          : raw || 'Erreur paiement';
+          ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || t("Erreur paiement")
+          : raw || t("Erreur paiement");
         // Le délai d'attente est déjà inclus dans le message du backend.
         setPaymentError(message);
         setPaymentState('input');
@@ -427,7 +428,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
         ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
         : raw;
       // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
-      message = message || data?.error || (error.response ? 'Service momentanément indisponible. Réessayez dans un instant.' : 'Connexion impossible. Vérifiez votre réseau et réessayez.');
+      message = message || data?.error || (error.response ? t("Service momentanément indisponible. Réessayez dans un instant.") : t("Connexion impossible. Vérifiez votre réseau et réessayez."));
       // Le délai d'attente est déjà inclus dans le message du backend.
       console.log('Payment error details:', data);
       // Erreur → afficher le Toast et revenir à l'input (overlays restent ouverts).
@@ -456,7 +457,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     } else {
       // Échec : pas d'état "failed" dans l'overlay → retour direct à l'input.
       // Seul le toast top affiche l'erreur.
-      setPaymentError(data.message || 'Paiement échoué');
+      setPaymentError(data.message || t("Paiement échoué"));
       setPaymentState('input');
     }
   }, []);

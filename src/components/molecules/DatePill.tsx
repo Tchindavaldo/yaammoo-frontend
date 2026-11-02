@@ -2,6 +2,7 @@ import { Theme } from "@/src/theme";
 import { DS, HEADER_GRADIENT } from "@/src/theme/ds";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { t } from "@/src/i18n";
 
 export interface DatePillOption {
   iso: string;
@@ -77,7 +78,7 @@ export const DatePill: React.FC<DatePillProps> = ({
           onPress={() => setExpanded(false)}
           activeOpacity={0.7}
         >
-          <Text style={styles.moreText}>×</Text>
+          <Text style={styles.moreText}>{t("×")}</Text>
         </TouchableOpacity>
       )}
     </View>

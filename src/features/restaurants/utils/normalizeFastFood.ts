@@ -1,3 +1,4 @@
+import { t } from "@/src/i18n";
 // ── Normalisation (partagée entre le fetch HTTP et l'injection socket) ──
 //
 // Fonctions pures, extraites telles quelles de `FastFoodContext` : utilisees
@@ -12,7 +13,7 @@ export const normalizeMenu = (m: any) => {
     (m.images && m.images.length > 0 ? m.images[0] : null);
   return {
     ...m,
-    titre: m.titre || m.name || "Produit",
+    titre: m.titre || m.name || t("Produit"),
     prix1: m.prix1 || (m.prices && m.prices[0] ? m.prices[0].price : 0),
     prix2: m.prix2 || (m.prices && m.prices[1] ? m.prices[1].price : 0),
     prix3: m.prix3 || (m.prices && m.prices[2] ? m.prices[2].price : 0),

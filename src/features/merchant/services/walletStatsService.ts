@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
+import { t } from "@/src/i18n";
 
 /** Une ligne par jour renvoyée par /wallet/stats (groupBy=day). */
 export interface WalletDayStat {
@@ -31,7 +32,7 @@ export const walletStatsService = {
    */
   async getStats(period: StatsPeriod = 'month'): Promise<WalletStats> {
     const currentUser = auth.currentUser;
-    if (!currentUser) throw new Error('Aucun utilisateur connecté');
+    if (!currentUser) throw new Error(t("Aucun utilisateur connecté"));
 
     const idToken = await currentUser.getIdToken();
     const response = await axios.get(`${Config.apiUrl}/wallet/stats`, {

@@ -7,6 +7,7 @@ import { PriceChip } from '../shared/PriceChip';
 import { ImageSlider } from '../shared/ImageSlider';
 import { styles } from '../CheckoutSheet.styles';
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface DetailTabProps {
   menu: Menu;
@@ -62,7 +63,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
           <PriceChip
             key={opt.index}
             isActive={selectedPriceIndex === opt.index}
-            label={opt.description || `Prix ${opt.index}`}
+            label={opt.description || t("Prix {{a}}", { a: opt.index })}
             price={opt.price}
             onPress={() => setSelectedPriceIndex(opt.index)}
           />
@@ -74,7 +75,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         <View style={styles.gridBtn}>
           <Ionicons name="fast-food-outline" size={18} color={DS.accent} />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>Menu</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>{t("Menu")}</Text>
             <Text style={styles.gridSubText}>{menuPrice} FCFA</Text>
           </View>
         </View>
@@ -82,7 +83,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         <View style={styles.gridBtn}>
           <Ionicons name="wine-outline" size={18} color={DS.accent} />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>Boisson</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>{t("Boisson")}</Text>
             <Text style={styles.gridSubText}>{drinksPrice} FCFA</Text>
           </View>
         </View>
@@ -98,9 +99,9 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         <View style={styles.gridBtn}>
           <Ionicons name="bicycle-outline" size={18} color={isDeliveryFree || deliveryPrice > 0 ? DS.accent : "#94a3b8"} />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>Livraison</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>{t("Livraison")}</Text>
             {isDeliveryFree ? (
-              <Text style={[styles.gridSubText, { fontWeight: 'bold', color: DS.accent }]}>Gratuit</Text>
+              <Text style={[styles.gridSubText, { fontWeight: 'bold', color: DS.accent }]}>{t("Gratuit")}</Text>
             ) : (
               <Text style={styles.gridSubText}>{deliveryPrice} FCFA</Text>
             )}
@@ -110,7 +111,7 @@ export const DetailTab: React.FC<DetailTabProps> = ({
         <View style={[styles.gridBtn, { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottomWidth: 0 }]}>
           <Ionicons name="wallet-outline" size={18} color={DS.accent} />
           <View style={styles.gridTextCenter}>
-            <Text style={[styles.gridTitle, styles.textDark]}>Total</Text>
+            <Text style={[styles.gridTitle, styles.textDark]}>{t("Total")}</Text>
             <Text style={[styles.gridSubText, { fontWeight: 'bold', color: DS.accent }]}>
               {totalDisplay} FCFA
             </Text>

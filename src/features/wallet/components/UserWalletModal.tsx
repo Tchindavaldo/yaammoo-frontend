@@ -3,6 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { WalletPanel } from "@/src/features/wallet/components/WalletPanel";
+import { t } from "@/src/i18n";
 
 interface UserWalletModalProps {
   visible: boolean;
@@ -26,9 +27,9 @@ export const UserWalletModal: React.FC<UserWalletModalProps> = ({ visible, onClo
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Portefeuille"
+        title={t("Portefeuille")}
         subtitle={`${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`}
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        right={<HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 

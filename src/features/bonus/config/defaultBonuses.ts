@@ -13,6 +13,7 @@
 // ⚠️ Données de démo : à retirer / vider une fois de vrais bonus créés.
 // ============================================================================
 import type { Bonus } from "../types/bonus.types";
+import { t } from "@/src/i18n";
 
 /** Passer à false pour désactiver totalement le fallback de démo. */
 export const USE_DEFAULT_BONUSES = true;
@@ -57,8 +58,8 @@ export const DEFAULT_BONUSES: Bonus[] = [
     id: "mock-inactive",
     createdAt: daysAgo(30),
     type: "free_delivery",
-    name: "Livraison offerte",
-    description: "Livraison gratuite offerte sur 10 jours.",
+    name: t("Livraison offerte"),
+    description: t("Livraison gratuite offerte sur 10 jours."),
     criteria: { kind: "order_count", period: "week", target: 3 },
     fastFoodId: "ff-mama-africa",
     fastFoodName: "Chez Mama Africa",
@@ -83,8 +84,8 @@ export const DEFAULT_BONUSES: Bonus[] = [
     id: "mock-not-eligible",
     createdAt: daysAgo(45),
     type: "free_meal",
-    name: "Repas gratuit",
-    description: "Passe 100 commandes et reçois un repas offert.",
+    name: t("Repas gratuit"),
+    description: t("Passe 100 commandes et reçois un repas offert."),
     // Palier volontairement élevé (démo) : reste non-éligible quel que soit
     // le nombre réel de commandes du compte de test.
     criteria: { kind: "order_count", period: "month", target: 100 },
@@ -111,8 +112,8 @@ export const DEFAULT_BONUSES: Bonus[] = [
     id: "mock-eligible",
     createdAt: daysAgo(30),
     type: "discount",
-    name: "Bonus de bienvenue",
-    description: "1000 FCFA offerts pour ta première commande.",
+    name: t("Bonus de bienvenue"),
+    description: t("1000 FCFA offerts pour ta première commande."),
     criteria: { kind: "welcome" },
     fastFoodId: null,
     fastFoodName: "yaammoo",
@@ -137,8 +138,8 @@ export const DEFAULT_BONUSES: Bonus[] = [
     id: "mock-pending",
     createdAt: daysAgo(20),
     type: "discount",
-    name: "-20 % fidélité",
-    description: "-20 % sur ta commande dès 5 cmd de fidélité.",
+    name: t("-20 % fidélité"),
+    description: t("-20 % sur ta commande dès 5 cmd de fidélité."),
     criteria: { kind: "order_count", period: "month", target: 5 },
     fastFoodId: "ff-burger-palace",
     fastFoodName: "Burger Palace",
@@ -163,8 +164,8 @@ export const DEFAULT_BONUSES: Bonus[] = [
     id: "mock-approved",
     createdAt: daysAgo(60),
     type: "netflix",
-    name: "1 mois Netflix offert",
-    description: "1 mois de Netflix offert dès 50 000 FCFA dépensés sur un mois.",
+    name: t("1 mois Netflix offert"),
+    description: t("1 mois de Netflix offert dès 50 000 FCFA dépensés sur un mois."),
     criteria: { kind: "amount_spent", period: "month", target: 50000 },
     fastFoodId: null,
     fastFoodName: "yaammoo",
@@ -189,8 +190,8 @@ export const DEFAULT_BONUSES: Bonus[] = [
     id: "mock-redeemed",
     createdAt: daysAgo(120),
     type: "free_delivery",
-    name: "Livraison offerte",
-    description: "Livraison gratuite offerte sur 10 jours.",
+    name: t("Livraison offerte"),
+    description: t("Livraison gratuite offerte sur 10 jours."),
     criteria: { kind: "order_count", period: "week", target: 3 },
     fastFoodId: "ff-mama-africa",
     fastFoodName: "Chez Mama Africa",

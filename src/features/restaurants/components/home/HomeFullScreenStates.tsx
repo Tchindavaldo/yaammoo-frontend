@@ -10,6 +10,7 @@ import {
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Theme } from "@/src/theme";
 import { homeStyles as styles } from "./homeScreenStyles";
+import { t } from "@/src/i18n";
 
 type OnLayout = (event: LayoutChangeEvent) => void;
 
@@ -21,7 +22,7 @@ export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }
   <SafeAreaView style={styles.container} onLayout={onLayout}>
     <View style={styles.centered}>
       <ActivityIndicator size="large" color={Theme.colors.primary} />
-      <Text style={styles.loadingText}>Recherche des meilleurs plats...</Text>
+      <Text style={styles.loadingText}>{t("Recherche des meilleurs plats...")}</Text>
     </View>
   </SafeAreaView>
 );
@@ -39,13 +40,13 @@ export const HomeErrorScreen: React.FC<{ onLayout: OnLayout; onRetry: () => void
   <SafeAreaView style={styles.container} onLayout={onLayout}>
     <View style={styles.centered}>
       <Ionicons name="cloud-offline-outline" size={54} color={Theme.colors.gray[300]} />
-      <Text style={styles.errorTitle}>Connexion indisponible</Text>
+      <Text style={styles.errorTitle}>{t("Connexion indisponible")}</Text>
       <Text style={styles.errorText}>
-        Impossible de charger le contenu. Vérifiez votre connexion.
+        {t("Impossible de charger le contenu. Vérifiez votre connexion.")}
       </Text>
       <TouchableOpacity style={styles.retryBtn} activeOpacity={0.8} onPress={onRetry}>
         <Ionicons name="refresh" size={17} color={Theme.colors.white} />
-        <Text style={styles.retryText}>Réessayer</Text>
+        <Text style={styles.retryText}>{t("Réessayer")}</Text>
       </TouchableOpacity>
     </View>
   </SafeAreaView>

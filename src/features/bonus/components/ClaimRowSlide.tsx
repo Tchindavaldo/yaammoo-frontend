@@ -18,6 +18,7 @@ import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
 import { BonusCredentialsSheet } from "./BonusCredentialsSheet";
 import { BonusUsageRing } from "./BonusUsageRing";
 import { claimDescOf, claimIconOf, claimTitleOf } from "./claimRowText";
+import { t } from "@/src/i18n";
 
 export interface ClaimRowSlideProps {
   bonus: Bonus;
@@ -129,7 +130,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
   const fields: { label?: string; value: string }[] = cred
     ? [
         { label: "Email", value: cred.login },
-        { label: "Mot de passe", value: cred.password },
+        { label: t("Mot de passe"), value: cred.password },
       ]
     : bonus.code
       ? [{ value: bonus.code }]
@@ -207,7 +208,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
             >
               <Ionicons name="person-outline" size={14} color={d.color} />
               <Text style={[styles.btnGhostText, { color: d.color }]}>
-                Profil
+                {t("Profil")}
               </Text>
             </TouchableOpacity>
           )}
@@ -223,7 +224,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
             }}
             activeOpacity={0.85}
           >
-            <Text style={styles.btnText}>Compte</Text>
+            <Text style={styles.btnText}>{t("Compte")}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -242,7 +243,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
           onPress={() => handleCopy(fields[0].value)}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnText}>{copied ? "Copié !" : "Copier"}</Text>
+          <Text style={styles.btnText}>{copied ? t("Copié !") : t("Copier")}</Text>
         </TouchableOpacity>
       );
     }
@@ -273,7 +274,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
                   { color: armed ? LIGHT : d.color },
                 ]}
               >
-                {armed ? "Désactiver" : "Activer"}
+                {armed ? t("Désactiver") : t("Activer")}
               </Text>
             </>
           )}
@@ -283,7 +284,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
           onPress={() => handleCopy(fields[0].value)}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnText}>{copied ? "Copié !" : "Copier"}</Text>
+          <Text style={styles.btnText}>{copied ? t("Copié !") : t("Copier")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -291,7 +292,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
 
   const claimAction = (): React.ReactNode => {
     if (inactiveWithReward) return rewardButtons();
-    if (isInactive) return infoButton("Bientôt");
+    if (isInactive) return infoButton(t("Bientôt"));
     // UTILISÉ : s'il reste un code / des identifiants à consulter, on affiche
     // les boutons de délivrance (Activer/Copier ou Profil/Compte) plutôt que le
     // seul anneau. Sinon, l'anneau nb/nb résume l'usage.
@@ -307,7 +308,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
       if (!cred && fields.length === 0) return null;
       return rewardButtons();
     }
-    if (isPending) return infoButton("En attente");
+    if (isPending) return infoButton(t("En attente"));
     // Le bouton reste actif après un premier téléchargement : le user peut
     // retélécharger le flyer autant de fois qu'il veut (downloadCount suit).
     // Hors période, il reste cliquable mais explique le refus par un toast
@@ -338,7 +339,7 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
             <ActivityIndicator color={LIGHT} size="small" />
           ) : (
             <Text style={styles.btnText}>
-              {isUpload ? "Envoyer" : "Télécharger"}
+              {isUpload ? t("Envoyer") : t("Télécharger")}
             </Text>
           )}
         </TouchableOpacity>
@@ -355,13 +356,13 @@ const ClaimRowSlideBase: React.FC<ClaimRowSlideProps> = ({
           {claimStatus === "posting" ? (
             <ActivityIndicator color={LIGHT} size="small" />
           ) : (
-            <Text style={styles.btnText}>Réclamer</Text>
+            <Text style={styles.btnText}>{t("Réclamer")}</Text>
           )}
         </TouchableOpacity>
       );
     }
     // Non éligible : bouton informatif verrouillé.
-    return infoButton("Verrouillé");
+    return infoButton(t("Verrouillé"));
   };
 
   const action = claimAction();

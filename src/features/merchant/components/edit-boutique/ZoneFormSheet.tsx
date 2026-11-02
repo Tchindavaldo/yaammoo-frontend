@@ -21,6 +21,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { hourToDate, type Zone } from "./parseBoutique";
 import { DS } from "@/src/theme/ds";
+import { t as tr } from "@/src/i18n";
 
 interface ZoneFormSheetProps {
   visible: boolean;
@@ -116,7 +117,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
               <Text
                 style={{ fontSize: 16, fontWeight: "bold", color: "#0f172a" }}
               >
-                {activeHour ? "Modifier" : "Ajouter"} une adresse
+                {activeHour ? tr("Modifier") : tr("Ajouter")} {tr("une adresse")}
               </Text>
               <TouchableOpacity
                 onPress={onClose}
@@ -143,7 +144,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
               {/* Cocher périodique / express */}
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <ModeCheckbox
-                  label="Périodique"
+                  label={tr("Périodique")}
                   checked={formPeriodic}
                   onPress={() => setFormPeriodic((v) => !v)}
                 />
@@ -158,7 +159,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
               <View style={[styles.inputGroup, { marginTop: 14 }]}>
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <View style={{ flex: 1.2 }}>
-                    <Text style={styles.floatingLabel}>Heure</Text>
+                    <Text style={styles.floatingLabel}>{tr("Heure")}</Text>
                     <TouchableOpacity
                       style={[
                         styles.glassInput,
@@ -177,7 +178,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                     </TouchableOpacity>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.floatingLabel}>Périodique</Text>
+                    <Text style={styles.floatingLabel}>{tr("Périodique")}</Text>
                     <TextInput
                       style={[styles.glassInput, { borderRadius: 20 }]}
                       value={periodicDraft.prix}
@@ -185,7 +186,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                         setPeriodicDraft({ ...periodicDraft, prix: t })
                       }
                       keyboardType="numeric"
-                      placeholder="Prix"
+                      placeholder={tr("Prix")}
                       placeholderTextColor="#cbd5e1"
                       editable={formPeriodic}
                     />
@@ -199,7 +200,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                         setExpressDraft({ ...expressDraft, prix: t })
                       }
                       keyboardType="numeric"
-                      placeholder="Prix"
+                      placeholder={tr("Prix")}
                       placeholderTextColor="#cbd5e1"
                       editable={formExpress}
                     />
@@ -209,7 +210,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
 
               {/* Localisation + boutons delete/valider */}
               <View style={[styles.inputGroup, { marginTop: 14 }]}>
-                <Text style={styles.floatingLabel}>Localisation</Text>
+                <Text style={styles.floatingLabel}>{tr("Localisation")}</Text>
                 <View style={styles.editRow}>
                   <TextInput
                     style={[
@@ -222,7 +223,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                       setPeriodicDraft({ ...periodicDraft, lieu: t });
                       setExpressDraft({ ...expressDraft, lieu: t });
                     }}
-                    placeholder="Zone / quartier"
+                    placeholder={tr("Zone / quartier")}
                     placeholderTextColor="#cbd5e1"
                   />
                   <TouchableOpacity style={styles.actionBtn} onPress={onDelete}>
@@ -271,7 +272,7 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                   }}
                 >
                   <Text style={{ color: DS.accent, fontWeight: "bold" }}>
-                    Sélectionner
+                    {tr("Sélectionner")}
                   </Text>
                 </TouchableOpacity>
                 <DateTimePicker

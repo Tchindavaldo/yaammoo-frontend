@@ -6,6 +6,7 @@ import {
   startDeliveryTracking,
   stopDeliveryTracking,
 } from "../tasks/backgroundLocationTask";
+import { t } from "@/src/i18n";
 
 const isDelivering = (o: Commande) =>
   (o.status || "").toLowerCase() === "delivering";
@@ -40,7 +41,7 @@ export const useDeliveryTrackingSync = (orders: Commande[], loaded: boolean) => 
         if (ok || refusedAlerted.current) return;
         refusedAlerted.current = true;
         showToast(
-          "Localisation désactivée : le client ne peut pas suivre la livraison. Autorisez la localisation de Yaammoo dans les réglages du téléphone.",
+          t("Localisation désactivée : le client ne peut pas suivre la livraison. Autorisez la localisation de Yaammoo dans les réglages du téléphone."),
           "error",
         );
       })

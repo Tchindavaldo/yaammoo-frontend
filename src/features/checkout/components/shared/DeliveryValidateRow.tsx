@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { DeliveryOffer } from "@/src/types";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Ligne unique en bas des overlays de sélection de livraison (Période / Express).
@@ -44,7 +45,7 @@ interface DeliveryValidateRowProps {
 }
 
 const offerIssuer = (offer: DeliveryOffer): string =>
-  offer.reason === "campaign" ? "Promo yaammoo" : offer.bonusName || "Bonus";
+  offer.reason === "campaign" ? t("Promo yaammoo") : offer.bonusName || "Bonus";
 
 export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
   hasSelection,
@@ -72,7 +73,7 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
   const codeInput = (
     <TextInput
       style={styles.codeInput}
-      placeholder="Code bonus (optionnel)"
+      placeholder={t("Code bonus (optionnel)")}
       placeholderTextColor="#94a3b8"
       autoCapitalize="characters"
       value={bonusCode}
@@ -94,10 +95,10 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
         </View>
         <View style={styles.infoTextCol}>
           <Text style={[styles.infoTitle, { color: ACCENT }]} numberOfLines={1}>
-            Livraison offerte
+            {t("Livraison offerte")}
           </Text>
           <Text style={styles.infoSub} numberOfLines={1}>
-            Par {issuer}
+            {t("Par")} {issuer}
           </Text>
         </View>
       </View>
@@ -110,13 +111,13 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
         </View>
         <View style={styles.infoTextCol}>
           <Text style={styles.infoTitle} numberOfLines={1}>
-            {selectedLabel || "Sélectionnez une zone"}
+            {selectedLabel || t("Sélectionnez une zone")}
           </Text>
           <Text
             style={[styles.infoSub, selectedPrice ? styles.infoPrice : null]}
             numberOfLines={1}
           >
-            {selectedPrice ? `${selectedPrice} F · livraison` : "Aucune sélection"}
+            {selectedPrice ? t("{{a}} F · livraison", { a: selectedPrice }) : t("Aucune sélection")}
           </Text>
         </View>
       </View>
@@ -136,7 +137,7 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
           <TouchableOpacity
             style={[styles.codeBtn, codeInputOpen && styles.codeBtnActive]}
             onPress={onToggleCodeInput}
-            accessibilityLabel="Saisir un code bonus"
+            accessibilityLabel={t("Saisir un code bonus")}
           >
             <Ionicons
               name="pricetag-outline"
@@ -153,7 +154,7 @@ export const DeliveryValidateRow: React.FC<DeliveryValidateRowProps> = ({
           {verifying ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
-            <Text style={styles.validateText}>VALIDER</Text>
+            <Text style={styles.validateText}>{t("VALIDER")}</Text>
           )}
         </TouchableOpacity>
       </View>

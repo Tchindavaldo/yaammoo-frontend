@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { AccountEntry } from "../hooks/useAccounts";
+import { t } from "@/src/i18n";
 
 const MAX_AVATARS = 2;
 // Initiale orange pour le compte courant, grise pour les suivants.
@@ -26,7 +27,7 @@ export function AccountSwitcherPill({ accounts, onPress }: Props) {
       onPress={onPress}
       activeOpacity={0.8}
       accessibilityRole="button"
-      accessibilityLabel="Comptes"
+      accessibilityLabel={t("Comptes")}
     >
       {accounts.length <= 1 ? (
         <Ionicons name="person-outline" size={18} color={DS.ink} />

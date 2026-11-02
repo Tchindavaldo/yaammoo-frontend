@@ -4,6 +4,7 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { Transaction } from '@/src/types';
 import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 import { useLazyFetch } from '@/src/hooks/useLazyFetch';
+import { t as tr } from "@/src/i18n";
 
 interface WalletContextType {
   transactions: Transaction[];
@@ -41,7 +42,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return true;
     } catch (err) {
       console.error('Wallet fetch error:', err);
-      setError('Erreur lors du chargement du portefeuille');
+      setError(tr("Erreur lors du chargement du portefeuille"));
       // `false` rearme `useLazyFetch` : revenir sur l'ecran relancera le
       // chargement au lieu de rester bloque sur l'erreur.
       return false;

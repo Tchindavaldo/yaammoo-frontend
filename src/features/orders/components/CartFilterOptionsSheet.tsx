@@ -21,6 +21,7 @@ import {
   filterChipIcons,
   filterChipLabels,
 } from "./CartFilterChipsRow";
+import { t } from "@/src/i18n";
 
 interface CartFilterOptionsSheetProps {
   visible: boolean;
@@ -117,7 +118,7 @@ export const CartFilterOptionsSheet: React.FC<CartFilterOptionsSheetProps> = ({
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={{ gap: 8 }}>
             <CartFilterOptionRow
-              option={{ key: "__all__", label: "Toutes", count: total }}
+              option={{ key: "__all__", label: t("Toutes"), count: total }}
               active={selected === null}
               onPress={() => {
                 onSelect(null);
@@ -136,7 +137,7 @@ export const CartFilterOptionsSheet: React.FC<CartFilterOptionsSheetProps> = ({
               />
             ))}
             {options.length === 0 && (
-              <Text style={styles.empty}>Aucune valeur disponible</Text>
+              <Text style={styles.empty}>{t("Aucune valeur disponible")}</Text>
             )}
           </View>
         </ScrollView>

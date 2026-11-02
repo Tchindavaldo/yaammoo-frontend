@@ -15,6 +15,7 @@ import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportChatView } from "./MerchantSupportChatView";
 import { MerchantSupportThreadRow } from "./MerchantSupportThreadRow";
 import { MerchantSupportThreadsSkeleton } from "./MerchantSupportThreadsSkeleton";
+import { t as tr } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -45,13 +46,13 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
       ? Array.from({ length: 12 }, (_, i) => ({
           id: `demo-${i}`,
           topic: (["question", "probleme", "assistance", "suggestion", "discussion"] as const)[i % 5],
-          client: { id: `demo-client-${i}`, nom: `Client démo ${i + 1}` },
-          title: "Demande de démonstration",
+          client: { id: `demo-client-${i}`, nom: tr("Client démo {{a}}", { a: i + 1 }) },
+          title: tr("Demande de démonstration"),
           status: "open" as const,
           unreadCount: 0,
           supportUnreadCount: i % 3 === 0 ? 1 : 0,
           updatedAt: new Date(Date.now() - i * 3600_000).toISOString(),
-          lastMessage: "Message de démonstration pour vérifier le bas de la liste.",
+          lastMessage: tr("Message de démonstration pour vérifier le bas de la liste."),
         }))
       : realThreads;
 
@@ -78,10 +79,10 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
         MERCHANT_SUPPORT_STATUS_LABEL[thread.status]
       }`
     : loading
-      ? "Chargement…"
+      ? tr("Chargement…")
       : unread > 0
-        ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
-        : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
+        ? tr("{{a}} message{{b}} non lu{{c}}", { a: unread, b: unread > 1 ? "s" : "", c: unread > 1 ? "s" : "" })
+        : tr("{{a}} discussion{{b}}", { a: threads.length, b: threads.length > 1 ? "s" : "" });
 
   return (
     <View style={styles.overlay}>
@@ -92,7 +93,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
         subtitle={subtitle}
         right={
           <HeaderPill
-            label="Retour"
+            label={tr("Retour")}
             icon="arrow-back-outline"
             onPress={() => (inChat ? setScreen({ name: "list" }) : onClose())}
           />
@@ -136,7 +137,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
               style={[styles.flex, { marginTop: headerHeight + 6 }]}
               contentContainerStyle={{ paddingBottom: bottomInset + 8 }}
             >
-              <Text style={styles.section}>Discussions reçues</Text>
+              <Text style={styles.section}>{tr("Discussions reçues")}</Text>
               {threads.length === 0 ? (
                 <View style={styles.empty}>
                   <Ionicons
@@ -145,7 +146,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
                     color={Theme.colors.gray[400]}
                   />
                   <Text style={styles.emptyText}>
-                    Aucun message de vos clients pour le moment.
+                    {tr("Aucun message de vos clients pour le moment.")}
                   </Text>
                 </View>
               ) : (

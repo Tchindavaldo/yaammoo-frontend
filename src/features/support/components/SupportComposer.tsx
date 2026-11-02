@@ -2,6 +2,7 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { t } from "@/src/i18n";
 
 interface Props {
   value: string;
@@ -18,7 +19,7 @@ export const SupportComposer: React.FC<Props> = ({
   value,
   onChangeText,
   onSend,
-  placeholder = "Écrire un message…",
+  placeholder = t("Écrire un message…"),
   disabled = false,
   onBlockedPress,
 }) => {

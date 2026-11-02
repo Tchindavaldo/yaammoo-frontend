@@ -5,6 +5,7 @@ import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { PorteFeuillePanel } from "@/src/features/merchant/components/PorteFeuillePanel";
+import { t } from "@/src/i18n";
 
 interface WalletManageModalProps {
   visible: boolean;
@@ -30,10 +31,10 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Portefeuille"
+        title={t("Portefeuille")}
         subtitle={`${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XAF`}
         right={
-          <HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />
+          <HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />
         }
         onHeightChange={setHeaderHeight}
       />

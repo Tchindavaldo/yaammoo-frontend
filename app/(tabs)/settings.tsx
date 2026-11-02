@@ -8,6 +8,7 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { UserBonusSheet } from "@/src/features/bonus/components/UserBonusSheet";
 import { DeleteAccountModal } from "@/src/features/profile/components/DeleteAccountModal";
 import { LogoutModal } from "@/src/features/profile/components/LogoutModal";
+import { LanguageSheet } from "@/src/features/profile/components/LanguageSheet";
 import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
 import { SettingGridItem } from "@/src/features/profile/components/SettingGridItem";
 import { SettingGridSwitch } from "@/src/features/profile/components/SettingGridSwitch";
@@ -29,6 +30,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { LANGUAGES, getLanguage, t } from "@/src/i18n";
 
 // Sections desactivees pour l'instant (repasser a true pour les reafficher).
 // Une section dont aucun item n'est affiche est masquee avec son titre.
@@ -45,6 +47,7 @@ export default function SettingsScreen() {
   const { appleReviewMode } = useFastFoods();
   const { notifEnabled, handleNotifToggle } = useNotificationSwitch();
   const [darkMode, setDarkMode] = useState(false);
+  const [languageVisible, setLanguageVisible] = useState(false);
   // Sous-pages (modals / sheets) : deep-link, reset au tap onglet et au logout.
   const { visible, open, close, staffTab } = useSettingsSubScreens(isSignedIn);
   const insets = useSafeAreaInsets();
@@ -74,10 +77,10 @@ export default function SettingsScreen() {
   const handleComingSoon = (label: string) => {
     if (Platform.OS === "web") {
       window.alert(
-        `La section "${label}" sera disponible dans une prochaine version.`,
+        t("La section \"{{a}}\" sera disponible dans une prochaine version.", { a: t(label) }),
       );
     } else {
-      showToast(`La section "${label}" sera disponible dans une prochaine version.`, "info");
+      showToast(t("La section \"{{a}}\" sera disponible dans une prochaine version.", { a: t(label) }), "info");
     }
   };
 
@@ -86,8 +89,8 @@ export default function SettingsScreen() {
     return (
       <GuestGate
         icon="person-circle-outline"
-        title="Votre profil"
-        subtitle="Connectez-vous pour gérer votre compte, vos commandes et vos paramètres."
+        title={t("Votre profil")}
+        subtitle={t("Connectez-vous pour gérer votre compte, vos commandes et vos paramètres.")}
       >
         {null}
       </GuestGate>
@@ -106,7 +109,7 @@ export default function SettingsScreen() {
       {/* Header Profil Fixe et Flouté */}
       <TabHeader onHeightChange={setHeaderHeight}>
         <SettingsHeaderProfile
-          onAddAccount={() => handleComingSoon("Ajouter un compte")}
+          onAddAccount={() => handleComingSoon(t("Ajouter un compte"))}
         />
       </TabHeader>
 
@@ -125,40 +128,40 @@ export default function SettingsScreen() {
         }}
       >
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
-        <SettingGrid title="Mes activités">
+        <SettingGrid title={t("Mes activités")}>
           {/* Les commandes du client sont l'onglet « Commandes » de la navbar :
               sans boutique, la tuile propose d'en créer une. */}
           {SHOW_ACTIVITIES && !isMerchant && (
             <SettingGridItem
               icon="storefront-outline"
-              title="Créer ma boutique"
+              title={t("Créer ma boutique")}
               onPress={() => router.push("/(tabs)/boutique")}
             />
           )}
           {SHOW_ACTIVITIES && !appleReviewMode && (
             <SettingGridItem
               icon="wallet-outline"
-              title="Portefeuille"
+              title={t("Portefeuille")}
               onPress={() => router.push("/account/wallet")}
             />
           )}
         </SettingGrid>
 
         {/* Compte */}
-        <SettingGrid title="Compte">
+        <SettingGrid title={t("Compte")}>
           <SettingGridItem
             icon="person-outline"
-            title="Mon profil"
-            onPress={() => handleComingSoon("Mon profil")}
+            title={t("Mon profil")}
+            onPress={() => handleComingSoon(t("Mon profil"))}
           />
           <SettingGridItem
             icon="key-outline"
-            title="Sécurité"
+            title={t("Sécurité")}
             onPress={() => handleComingSoon("Sécurité")}
           />
           <SettingGridItem
             icon="gift-outline"
-            title="Bonus"
+            title={t("Bonus")}
             onPress={() => open("userBonus")}
           />
         </SettingGrid>
@@ -166,11 +169,11 @@ export default function SettingsScreen() {
         {/* Boutique - only show for merchants (AVANT Livraison) */}
         {isMerchant && (
           <>
-            <SettingGrid title="Boutique">
+            <SettingGrid title={t("Boutique")}>
               {/* Commandes reçues par la boutique (page marchand). */}
               <SettingGridItem
                 icon="receipt-outline"
-                title="Commandes"
+                title={t("Commandes")}
                 onPress={() => router.push("/shop/orders")}
               />
               <SettingGridItem
@@ -180,23 +183,23 @@ export default function SettingsScreen() {
               />
               <SettingGridItem
                 icon="restaurant-outline"
-                title="Menu"
+                title={t("Menu")}
                 onPress={() => router.push("/shop/menu")}
               />
               {/* Boissons de la boutique (proposées avec tous les plats ou certains). */}
               <SettingGridItem
                 icon="wine-outline"
-                title="Boissons"
+                title={t("Boissons")}
                 onPress={() => router.push("/shop/drinks")}
               />
               <SettingGridItem
                 icon="people-outline"
-                title="Personnel"
+                title={t("Personnel")}
                 onPress={() => open("staffManage")}
               />
               <SettingGridItem
                 icon="chatbubbles-outline"
-                title="Messages"
+                title={t("Messages")}
                 onPress={() => router.push("/shop/messages")}
               />
               <SettingGridItem
@@ -207,7 +210,7 @@ export default function SettingsScreen() {
               {!appleReviewMode && (
                 <SettingGridItem
                   icon="wallet-outline"
-                  title="Portefeuille boutique"
+                  title={t("Portefeuille boutique")}
                   onPress={() => router.push("/shop/wallet")}
                 />
               )}
@@ -218,24 +221,24 @@ export default function SettingsScreen() {
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
         {/* Masquee pour un marchand. */}
         {SHOW_DELIVERY && !isMerchant && (
-        <SettingGrid title="Livraison">
+        <SettingGrid title={t("Livraison")}>
           {/* Un livreur peut servir plusieurs boutiques → toujours pouvoir
               postuler ailleurs, même déjà livreur. */}
           {isDriver && (
             <SettingGridItem
               icon="bicycle-outline"
-              title="Mes livraisons"
+              title={t("Mes livraisons")}
               onPress={() => router.push("/account/driver-orders")}
             />
           )}
           <SettingGridItem
             icon="document-text-outline"
-            title="Mes demandes"
+            title={t("Mes demandes")}
             onPress={() => router.push("/account/driver-applications")}
           />
           <SettingGridItem
             icon="add-circle-outline"
-            title={isDriver ? "Postuler à une boutique" : "Devenir livreur"}
+            title={isDriver ? t("Postuler à une boutique") : t("Devenir livreur")}
             onPress={() => router.push("/account/driver-apply")}
           />
         </SettingGrid>
@@ -243,7 +246,7 @@ export default function SettingsScreen() {
 
         {/* Préférences */}
         {/* 1 colonne : une tuile par ligne, icone et libelle cote a cote. */}
-        <SettingGrid title="Préférences" columns={1}>
+        <SettingGrid title={t("Préférences")} columns={1}>
           <SettingGridSwitch
             icon="notifications-outline"
             title="Notifications"
@@ -252,61 +255,61 @@ export default function SettingsScreen() {
           />
           <SettingGridSwitch
             icon="moon-outline"
-            title="Mode sombre"
+            title={t("Mode sombre")}
             value={darkMode}
             onValueChange={setDarkMode}
           />
           <SettingGridItem
             icon="language-outline"
-            title="Langue"
-            hint="Français"
-            onPress={() => handleComingSoon("Langue")}
+            title={t("Langue")}
+            hint={LANGUAGES.find((l) => l.code === getLanguage())?.label}
+            onPress={() => setLanguageVisible(true)}
           />
         </SettingGrid>
 
         {/* Aide */}
-        <SettingGrid title="Aide">
+        <SettingGrid title={t("Aide")}>
           <SettingGridItem
             icon="help-circle-outline"
-            title="Assistance"
+            title={t("Assistance")}
             onPress={() => handleComingSoon("Assistance")}
           />
           <SettingGridItem
             icon="chatbox-outline"
-            title="Signaler un problème"
-            onPress={() => handleComingSoon("Signaler un problème")}
+            title={t("Signaler un problème")}
+            onPress={() => handleComingSoon(t("Signaler un problème"))}
           />
           <SettingGridItem
             icon="flag-outline"
-            title="Faire une suggestion"
-            onPress={() => handleComingSoon("Faire une suggestion")}
+            title={t("Faire une suggestion")}
+            onPress={() => handleComingSoon(t("Faire une suggestion"))}
           />
           <SettingGridItem
             icon="call-outline"
-            title="Contactez-nous"
+            title={t("Contactez-nous")}
             onPress={() => router.push("/account/support")}
           />
         </SettingGrid>
 
         {/* Legal */}
-        <SettingGrid title="Légal">
+        <SettingGrid title={t("Légal")}>
           <SettingGridItem
             icon="document-text-outline"
-            title="Politique & Conditions"
-            onPress={() => handleComingSoon("Politique & Conditions")}
+            title={t("Politique & Conditions")}
+            onPress={() => handleComingSoon(t("Politique & Conditions"))}
           />
           <SettingGridItem
             icon="lock-closed-outline"
-            title="Confidentialité"
+            title={t("Confidentialité")}
             onPress={() => handleComingSoon("Confidentialité")}
           />
         </SettingGrid>
 
         {/* Zone de danger */}
-        <SettingGrid title="Zone de danger">
+        <SettingGrid title={t("Zone de danger")}>
           <SettingGridItem
             icon="trash-outline"
-            title="Supprimer mon compte"
+            title={t("Supprimer mon compte")}
             tone="danger"
             onPress={() => open("deleteAccount")}
           />
@@ -319,7 +322,7 @@ export default function SettingsScreen() {
           {/* Identifie l'OTA reçue : message de publication + date. */}
           <Text style={styles.versionSubtext}>{currentOtaLabel()}</Text>
           <Text style={styles.versionSubtext}>
-            © {new Date().getFullYear()} Yaammoo. Tous droits réservés.
+            © {new Date().getFullYear()} {t("Yaammoo. Tous droits réservés.")}
           </Text>
         </View>
       </ScrollView>
@@ -344,6 +347,7 @@ export default function SettingsScreen() {
         onClose={() => close("deleteAccount")}
       />
       <LogoutModal visible={visible.logout} onClose={() => close("logout")} />
+      <LanguageSheet visible={languageVisible} onClose={() => setLanguageVisible(false)} />
     </View>
   );
 }

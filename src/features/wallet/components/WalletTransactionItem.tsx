@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import { Transaction } from '@/src/types';
 import moment from 'moment';
+import { t } from "@/src/i18n";
 
 interface WalletTransactionItemProps {
   transaction: Transaction;
@@ -29,7 +30,7 @@ export const WalletTransactionItem: React.FC<WalletTransactionItemProps> = ({ tr
         <Text style={[styles.amount, { color: isCredit ? Theme.colors.success : Theme.colors.danger }]}>
           {isCredit ? '+' : '-'}{transaction.amount} F
         </Text>
-        <Text style={styles.payBy}>via {transaction.payBy}</Text>
+        <Text style={styles.payBy}>{t("via")} {transaction.payBy}</Text>
       </View>
     </View>
   );

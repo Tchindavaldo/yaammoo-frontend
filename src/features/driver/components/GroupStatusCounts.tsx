@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Commande } from "@/src/types";
+import { t } from "@/src/i18n";
 
 /**
  * Décompte par statut de livraison d'un groupe, affiché dans l'en-tête de groupe
@@ -24,17 +25,17 @@ export const GroupStatusCounts: React.FC<{ orders: Commande[] }> = ({
     <View style={styles.row}>
       {attente > 0 && (
         <View style={[styles.pill, styles.pillAttente]}>
-          <Text style={[styles.pillText, styles.textAttente]}>{attente} attente</Text>
+          <Text style={[styles.pillText, styles.textAttente]}>{attente} {t("attente")}</Text>
         </View>
       )}
       {cours > 0 && (
         <View style={[styles.pill, styles.pillCours]}>
-          <Text style={[styles.pillText, styles.textCours]}>{cours} en cours</Text>
+          <Text style={[styles.pillText, styles.textCours]}>{cours} {t("en cours")}</Text>
         </View>
       )}
       {termine > 0 && (
         <View style={[styles.pill, styles.pillTermine]}>
-          <Text style={[styles.pillText, styles.textTermine]}>{termine} terminé</Text>
+          <Text style={[styles.pillText, styles.textTermine]}>{termine} {t("terminé")}</Text>
         </View>
       )}
     </View>

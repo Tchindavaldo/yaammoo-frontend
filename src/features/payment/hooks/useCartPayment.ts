@@ -5,6 +5,7 @@ import { socketService } from "../../../services/socket";
 import { useAuth } from "../../auth/context/AuthContext";
 import { REVIEW_STEP_MS } from "../constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
+import { t } from "@/src/i18n";
 
 export type CartPaymentState =
   | "total"
@@ -60,7 +61,7 @@ export const useCartPayment = (amount: number) => {
   const handlePaymentConfirm = useCallback(
     async (phone: string, items: any[] = [], amountOverride?: number) => {
       if (!userData || !phone) {
-        setPaymentError("Numéro de paiement requis");
+        setPaymentError(t("Numéro de paiement requis"));
         return;
       }
       setPaymentError(null);
@@ -88,7 +89,7 @@ export const useCartPayment = (amount: number) => {
         // synchrone — aucun paiement réel, aucun verdict socket à attendre. On
         // déroule donc les étapes nous-mêmes pour montrer le parcours complet.
         if (response.data.appleReviewMode === true) {
-          setUssdMessage("Vérification du paiement...");
+          setUssdMessage(t("Vérification du paiement..."));
           setPaymentState("ussd_sent");
           reviewTimers.current.push(
             setTimeout(() => setPaymentState("success"), REVIEW_STEP_MS),
@@ -106,8 +107,8 @@ export const useCartPayment = (amount: number) => {
         } else {
           const raw = response.data.message;
           const message = Array.isArray(raw)
-            ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ") || "Erreur paiement"
-            : raw || "Erreur paiement";
+            ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ") || t("Erreur paiement")
+            : raw || t("Erreur paiement");
           setPaymentError(message);
           setPaymentState("input");
         }
@@ -118,7 +119,7 @@ export const useCartPayment = (amount: number) => {
           ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ")
           : raw;
         // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
-      message = message || data?.error || (error.response ? "Service momentanément indisponible. Réessayez dans un instant." : "Connexion impossible. Vérifiez votre réseau et réessayez.");
+      message = message || data?.error || (error.response ? t("Service momentanément indisponible. Réessayez dans un instant.") : t("Connexion impossible. Vérifiez votre réseau et réessayez."));
         setPaymentError(message);
         setPaymentState("input");
       }
@@ -145,7 +146,7 @@ export const useCartPayment = (amount: number) => {
     } else {
       // Échec : pas d'état "failed" dans l'overlay → retour direct au repos
       // (total). Seul le toast top affiche l'erreur.
-      setPaymentError(data.message || "Paiement échoué");
+      setPaymentError(data.message || t("Paiement échoué"));
       setPaymentState("total");
     }
   }, []);

@@ -7,6 +7,7 @@ import { StaffPrimaryButton } from "./StaffPrimaryButton";
 import { StaffPage } from "./StaffPage";
 import { StaffSwitch } from "./StaffSwitch";
 import { capsLabel, ST } from "./staffTheme";
+import { t as tr } from "@/src/i18n";
 
 const NAME_MAX = 40;
 
@@ -50,16 +51,16 @@ export const StaffRoleSheet: React.FC<Props> = ({ role, roles, catalog, saving, 
     <StaffPage
       header={
         <View style={styles.head}>
-          <Pressable onPress={onClose} hitSlop={10} style={styles.roundBtn} accessibilityLabel="Retour">
+          <Pressable onPress={onClose} hitSlop={10} style={styles.roundBtn} accessibilityLabel={tr("Retour")}>
             <Ionicons name="chevron-back" size={18} color={ST.ink} />
           </Pressable>
-          <Text style={styles.title}>{role ? "Modifier le rôle" : "Nouveau rôle"}</Text>
+          <Text style={styles.title}>{role ? tr("Modifier le rôle") : tr("Nouveau rôle")}</Text>
           <View style={styles.roundSpacer} />
         </View>
       }
       footer={
         <StaffPrimaryButton
-          label="Enregistrer le rôle"
+          label={tr("Enregistrer le rôle")}
           badge={known}
           onPress={save}
           disabled={!canSave}
@@ -68,19 +69,19 @@ export const StaffRoleSheet: React.FC<Props> = ({ role, roles, catalog, saving, 
       }
     >
       <View style={styles.field}>
-        <Text style={styles.label}>Nom du rôle</Text>
+        <Text style={styles.label}>{tr("Nom du rôle")}</Text>
         <TextInput
           value={name}
           onChangeText={(t) => setName(t.slice(0, NAME_MAX))}
           onFocus={() => setFocus(true)}
           onBlur={() => setFocus(false)}
-          placeholder="Caisse, Cuisine, Gérant…"
+          placeholder={tr("Caisse, Cuisine, Gérant…")}
           placeholderTextColor={ST.faint}
           maxLength={NAME_MAX}
           style={[styles.input, focus && styles.focused, duplicate && styles.errored]}
-          accessibilityLabel="Nom du rôle"
+          accessibilityLabel={tr("Nom du rôle")}
         />
-        {duplicate && <Text style={styles.error}>Un rôle porte déjà ce nom.</Text>}
+        {duplicate && <Text style={styles.error}>{tr("Un rôle porte déjà ce nom.")}</Text>}
       </View>
 
       <ScrollView
@@ -89,12 +90,12 @@ export const StaffRoleSheet: React.FC<Props> = ({ role, roles, catalog, saving, 
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.presets}
       >
-        <Text style={styles.presetLabel}>Partir de</Text>
+        <Text style={styles.presetLabel}>{tr("Partir de")}</Text>
         {others.map((r) => (
           <Preset key={r.id} label={r.name} onPress={() => setPerms(r.permissions)} />
         ))}
-        <Preset label="Tout" onPress={() => setPerms(catalog.map((c) => c.key))} />
-        <Preset label="Rien" onPress={() => setPerms([])} />
+        <Preset label={tr("Tout")} onPress={() => setPerms(catalog.map((c) => c.key))} />
+        <Preset label={tr("Rien")} onPress={() => setPerms([])} />
       </ScrollView>
 
       {PERMISSION_GROUPS.map((g) => {

@@ -15,6 +15,7 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { openStorePage } from "@/src/features/appVersion/services/storeLinks";
+import { t } from "@/src/i18n";
 
 interface Props {
   onUpdatePress?: () => void;
@@ -75,12 +76,12 @@ export default function ForceUpdateScreen({
       </View>
 
       <Text style={styles.title}>
-        {mandatory ? "Mise à jour requise" : "Nouvelle version disponible"}
+        {mandatory ? t("Mise à jour requise") : t("Nouvelle version disponible")}
       </Text>
       <Text style={styles.subtitle}>
         {mandatory
-          ? `Une nouvelle version de yaammoo est nécessaire pour continuer.\nMets à jour l'application pour poursuivre.`
-          : `Une nouvelle version de yaammoo est disponible.\nMets à jour pour profiter des dernières améliorations.`}
+          ? t("Une nouvelle version de yaammoo est nécessaire pour continuer.\nMets à jour l'application pour poursuivre.")
+          : t("Une nouvelle version de yaammoo est disponible.\nMets à jour pour profiter des dernières améliorations.")}
       </Text>
 
       <TouchableOpacity
@@ -92,7 +93,7 @@ export default function ForceUpdateScreen({
         {opening ? (
           <ActivityIndicator color="#ffffff" />
         ) : (
-          <Text style={styles.btnText}>Mettre à jour</Text>
+          <Text style={styles.btnText}>{t("Mettre à jour")}</Text>
         )}
       </TouchableOpacity>
 
@@ -103,7 +104,7 @@ export default function ForceUpdateScreen({
           onPress={onDismiss}
           disabled={opening}
         >
-          <Text style={styles.laterText}>Plus tard</Text>
+          <Text style={styles.laterText}>{t("Plus tard")}</Text>
         </TouchableOpacity>
       )}
     </View>

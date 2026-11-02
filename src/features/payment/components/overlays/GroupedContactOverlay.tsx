@@ -18,6 +18,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 /** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
@@ -172,7 +173,7 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="call-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Numéro de contact</Text>
+              <Text style={styles.headerTitle}>{t("Numéro de contact")}</Text>
               <TouchableOpacity
                 onPress={() => Keyboard.dismiss()}
                 style={styles.keyboardSmallBtn}
@@ -221,8 +222,8 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
 
             <Text style={styles.helperText}>
               {pickup
-                ? "La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande."
-                : "Le livreur utilisera ce numéro pour vous joindre à son arrivée en cas de souci avec votre livraison."}
+                ? t("La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande.")
+                : t("Le livreur utilisera ce numéro pour vous joindre à son arrivée en cas de souci avec votre livraison.")}
             </Text>
           </View>
         </View>

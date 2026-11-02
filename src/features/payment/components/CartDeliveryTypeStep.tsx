@@ -3,6 +3,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
+import { t } from "@/src/i18n";
 
 /** Types de livraison proposes pour la course commune. */
 export type GroupedDeliveryType = "express" | "standard" | "aucune";
@@ -46,27 +47,27 @@ export const CartDeliveryTypeStep: React.FC<CartDeliveryTypeStepProps> = ({
     {
       key: "express",
       icon: "flash-outline",
-      title: "Livraison express",
-      sub: "Livré dès que terminée",
+      title: t("Livraison express"),
+      sub: t("Livré dès que terminée"),
     },
     {
       key: "standard",
       icon: "time-outline",
-      title: "Livraison à l'heure",
-      sub: "Vous choisissez le créneau",
+      title: t("Livraison à l'heure"),
+      sub: t("Vous choisissez le créneau"),
     },
     {
       key: "aucune",
       icon: "storefront-outline",
-      title: "Aucune livraison",
-      sub: `Vous récupérez vos ${cmd} commande${cmd > 1 ? "s" : ""}`,
+      title: t("Aucune livraison"),
+      sub: t("Vous récupérez vos {{a}} commande{{b}}", { a: cmd, b: cmd > 1 ? "s" : "" }),
     },
   ];
 
   return (
     <>
       <Text style={styles.question}>
-        Comment souhaitez-vous être livré pour cette course ?
+        {t("Comment souhaitez-vous être livré pour cette course ?")}
       </Text>
 
       <View style={styles.cards}>
@@ -101,11 +102,11 @@ export const CartDeliveryTypeStep: React.FC<CartDeliveryTypeStepProps> = ({
         onPress={onNext}
         activeOpacity={0.85}
       >
-        <Text style={styles.primaryBtnLabel}>Continuer</Text>
+        <Text style={styles.primaryBtnLabel}>{t("Continuer")}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.linkBtn} onPress={onBack} activeOpacity={0.7}>
-        <Text style={styles.linkBtnLabel}>Revenir au choix du groupage</Text>
+        <Text style={styles.linkBtnLabel}>{t("Revenir au choix du groupage")}</Text>
       </TouchableOpacity>
     </>
   );

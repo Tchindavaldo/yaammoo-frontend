@@ -19,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -71,7 +72,7 @@ function buildItems(order: Commande): OrderItem[] {
   const menuPrice = order.menu?.prices?.[priceIdx]?.price || order.menu?.prices?.[0]?.price || (order.menu as any)?.prix1 || 0;
   
   items.push({
-    name: order.menu?.titre || order.menu?.name || "Menu principal",
+    name: order.menu?.titre || order.menu?.name || t("Menu principal"),
     qty: order.quantity || order.quantite || 1,
     price: `${menuPrice * (order.quantity || order.quantite || 1)} XAF`,
     unitPrice: menuPrice,
@@ -107,22 +108,22 @@ function buildUser(order: Commande): DeliveryUser {
   return {
     initials,
     name: `${customerFirstName} ${customerLastName}`.trim(),
-    addr: order.delivery?.location || (order as any).livraison?.address || "Adresse non spécifiée",
+    addr: order.delivery?.location || (order as any).livraison?.address || t("Adresse non spécifiée"),
     avColor: theme.bg,
     avTextColor: theme.text,
     badgeColor: theme.badge,
     orderCount: (order as any).rank || 1,
     rating: 4,
-    phone: order.delivery?.phone || (order as any).livraison?.phone || order.userData?.phoneNumber?.toString() || "Non fourni",
+    phone: order.delivery?.phone || (order as any).livraison?.phone || order.userData?.phoneNumber?.toString() || t("Non fourni"),
     creneau: !order.delivery?.status
-      ? "Sur place"
+      ? t("Sur place")
       : order.delivery?.type === 'express'
         ? "Express"
-        : `Période (${order.delivery?.time || (order as any).livraison?.hour || "Dès que possible"})`,
+        : t("Période ({{a}})", { a: order.delivery?.time || (order as any).livraison?.hour || t("Dès que possible") }),
     duration: !order.delivery?.status
-      ? "Immédiat"
+      ? t("Immédiat")
       : order.delivery?.type === 'express' ? "15-20 min" : "30-45 min",
-    note: order.delivery?.note || (order as any).livraison?.note || "Aucune note de livraison.",
+    note: order.delivery?.note || (order as any).livraison?.note || t("Aucune note de livraison."),
     voiceNoteUri: order.delivery?.voiceNoteUri || (order as any).livraison?.voiceNoteUri || "",
     zone: (order.delivery as any)?.zone || (order as any).livraison?.zone || "",
     deliveryPrice: Number((order.delivery as any)?.prix) || 0,
@@ -233,7 +234,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{user.name}</Text>
                 <Text style={styles.userAddr} numberOfLines={1}>
-                  {user.zone ? `Zone de livraison : ${user.zone}` : user.addr}
+                  {user.zone ? t("Zone de livraison : {{a}}", { a: user.zone }) : user.addr}
                 </Text>
               </View>
             </View>
@@ -248,7 +249,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
               onPress={() => setTab('livraison')}
             >
               <Text style={[styles.tabText, tab === 'livraison' && styles.tabTextActive]}>
-                Livraison
+                {t("Livraison")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -256,7 +257,7 @@ export default function MerchantOrderBottomSheet({ order, visible, onClose, allO
               onPress={() => setTab('commandes')}
             >
               <Text style={[styles.tabText, tab === 'commandes' && styles.tabTextActive]}>
-                Commandes
+                {t("Commandes")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -348,7 +349,7 @@ function WebMapPlaceholder({ addr, onPress }: { addr: string; onPress: () => voi
       <Text style={styles.mapLabel} numberOfLines={1}>{addr}</Text>
       <View style={styles.webMapTag}>
         <Ionicons name="map-outline" size={10} color="#6B7280" />
-        <Text style={styles.webMapTagText}>Ouvrir Maps</Text>
+        <Text style={styles.webMapTagText}>{t("Ouvrir Maps")}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -393,10 +394,10 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, height: 110 }}>
         <View style={{ width: '42%', gap: 8 }}>
           <View style={{ flex: 1 }}>
-            <InfoCard label="Créneau" value={user.creneau} compact />
+            <InfoCard label={t("Créneau")} value={user.creneau} compact />
           </View>
           <View style={{ flex: 1 }}>
-            <InfoCard label="Téléphone" value={user.phone} small compact />
+            <InfoCard label={t("Téléphone")} value={user.phone} small compact />
           </View>
         </View>
 
@@ -406,13 +407,13 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
       </View>
 
       <View style={[styles.infoCard, { marginTop: 12, padding: 12 }]}>
-        <Text style={styles.infoLabel}>Note de livraison</Text>
+        <Text style={styles.infoLabel}>{t("Note de livraison")}</Text>
         <Text style={styles.infoValSm}>{user.note}</Text>
       </View>
 
       {user.voiceNoteUri ? (
         <>
-          <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>Message vocal</Text>
+          <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>{t("Message vocal")}</Text>
           <TouchableOpacity
             style={styles.voiceBar}
             activeOpacity={0.7}
@@ -431,8 +432,8 @@ function LivraisonTab({ user }: { user: DeliveryUser }) {
         </>
       ) : (
         <View style={[styles.infoCard, { marginTop: 12, padding: 12, opacity: 0.5 }]}>
-          <Text style={styles.infoLabel}>Message vocal</Text>
-          <Text style={styles.infoValSm}>Aucun message vocal</Text>
+          <Text style={styles.infoLabel}>{t("Message vocal")}</Text>
+          <Text style={styles.infoValSm}>{t("Aucun message vocal")}</Text>
         </View>
       )}
     </>
@@ -472,14 +473,14 @@ function CommandesTab({
             <Text style={{ fontSize: 12 }}>🛵</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cmdName}>Livraison</Text>
+            <Text style={styles.cmdName}>{t("Livraison")}</Text>
             {zone ? <Text style={styles.cmdZone}>{zone}</Text> : null}
           </View>
           <Text style={styles.cmdPrice}>{deliveryPrice} XAF</Text>
         </View>
       )}
       <View style={styles.cmdTotal}>
-        <Text style={styles.cmdTotalLabel}>Total</Text>
+        <Text style={styles.cmdTotalLabel}>{t("Total")}</Text>
         <Text style={styles.cmdTotalVal}>
           {total} XAF
         </Text>

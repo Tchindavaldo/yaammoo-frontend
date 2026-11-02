@@ -5,6 +5,7 @@ import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { initialsOf, personName, plural } from "../utils/staffFormat";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 const MAX_STACK = 4;
 
@@ -23,16 +24,16 @@ export const StaffDriversCard: React.FC<Props> = ({ drivers, pending, onPress })
     onPress={onPress}
     style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}
     accessibilityRole="button"
-    accessibilityLabel="Livreurs"
+    accessibilityLabel={t("Livreurs")}
   >
     <View style={styles.row}>
       <View style={styles.title}>
         <Ionicons name="bicycle-outline" size={20} color={ST.ink} />
-        <Text style={styles.name}>Livreurs</Text>
+        <Text style={styles.name}>{t("Livreurs")}</Text>
       </View>
       {pending > 0 && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{plural(pending, "demande")}</Text>
+          <Text style={styles.badgeText}>{plural(pending, t("demande"))}</Text>
         </View>
       )}
     </View>
@@ -53,7 +54,7 @@ export const StaffDriversCard: React.FC<Props> = ({ drivers, pending, onPress })
         </View>
       )}
       <Text style={styles.peopleText}>
-        {drivers.length > 0 ? plural(drivers.length, "livreur actif", "livreurs actifs") : "Aucun livreur"}
+        {drivers.length > 0 ? plural(drivers.length, t("livreur actif"), t("livreurs actifs")) : t("Aucun livreur")}
       </Text>
       <View style={{ flex: 1 }} />
       <Ionicons name="chevron-forward" size={16} color={ST.faint} />
@@ -61,7 +62,7 @@ export const StaffDriversCard: React.FC<Props> = ({ drivers, pending, onPress })
 
     <View style={styles.chips}>
       <View style={styles.chip}>
-        <Text style={styles.chipText}>Commandes déléguées</Text>
+        <Text style={styles.chipText}>{t("Commandes déléguées")}</Text>
       </View>
     </View>
   </Pressable>

@@ -18,6 +18,7 @@ import { BroadcastHistory } from "./BroadcastHistory";
 import { BroadcastQuotaTiles } from "./BroadcastQuotaTiles";
 import { BroadcastWeekCard } from "./BroadcastWeekCard";
 import { BC } from "./broadcastTheme";
+import { t } from "@/src/i18n";
 
 const FAB_HEIGHT = 56;
 
@@ -40,7 +41,7 @@ type ToastState = { message: string; type: "success" | "error" } | null;
 export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
   const [toast, setToast] = useState<ToastState>(null);
   const onLoadError = useCallback(
-    () => setToast({ message: "Impossible de charger vos notifications", type: "error" }),
+    () => setToast({ message: t("Impossible de charger vos notifications"), type: "error" }),
     [],
   );
   const { plan, cities, items, shop, loaded, refreshing, sending, refresh, send } = useBroadcast(
@@ -85,7 +86,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
 
   const openComposer = (from?: BroadcastItem) => {
     if (!canWrite) {
-      setToast({ message: "Quota du jour atteint", type: "error" });
+      setToast({ message: t("Quota du jour atteint"), type: "error" });
       return;
     }
     // Un envoi réutilisé garde son audience si le plan la permet encore.
@@ -103,7 +104,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
     const result = await send(d);
     setToast(
       result.ok
-        ? { message: "Notification envoyée", type: "success" }
+        ? { message: t("Notification envoyée"), type: "success" }
         : { message: result.message, type: "error" },
     );
     return result.ok;
@@ -115,8 +116,8 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
 
       <TabHeader
         title="Notifications"
-        subtitle={`${quota.dayLeft} restante${quota.dayLeft > 1 ? "s" : ""} aujourd’hui`}
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        subtitle={t("{{a}} restante{{b}} aujourd’hui", { a: quota.dayLeft, b: quota.dayLeft > 1 ? "s" : "" })}
+        right={<HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 
@@ -158,7 +159,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
         >
           <Ionicons name="create-outline" size={18} color={canWrite ? "#fff" : "#8A8A90"} />
           <Text style={[styles.fabText, { color: canWrite ? "#fff" : "#8A8A90" }]}>
-            {canWrite ? "Écrire une notification" : "Quota du jour atteint"}
+            {canWrite ? t("Écrire une notification") : t("Quota du jour atteint")}
           </Text>
         </Pressable>
       </View>

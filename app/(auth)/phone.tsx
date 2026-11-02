@@ -22,6 +22,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { Users, UsersInfos } from "@/src/types";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const { width, height } = Dimensions.get("window");
 
@@ -43,7 +44,7 @@ export default function PhoneAuthScreen() {
       if (numero !== "") {
         setSmsIsSend(true);
       } else {
-        showToast("Veuillez entrer le numéro de téléphone", "error");
+        showToast(t("Veuillez entrer le numéro de téléphone"), "error");
       }
     } else {
       if (verificationCode !== "") {
@@ -74,10 +75,10 @@ export default function PhoneAuthScreen() {
           }
         } catch (error: any) {
           setConnect(false);
-          showToast("Code incorrect ou expiré", "error");
+          showToast(t("Code incorrect ou expiré"), "error");
         }
       } else {
-        showToast("Veuillez entrer le code envoyé", "error");
+        showToast(t("Veuillez entrer le code envoyé"), "error");
       }
     }
   };
@@ -114,8 +115,8 @@ export default function PhoneAuthScreen() {
                 <View style={[styles.ionRow, styles.rowTitle]}>
                   <Text style={styles.titleText}>
                     {smsIsSend
-                      ? "verification du code"
-                      : "connexion via numero de telephone"}
+                      ? t("verification du code")
+                      : t("connexion via numero de telephone")}
                   </Text>
                 </View>
 
@@ -124,7 +125,7 @@ export default function PhoneAuthScreen() {
                   <Text style={{ color: "white", fontSize: 13 }}>
                     {smsIsSend
                       ? "code"
-                      : "veuiller entrer votre numero de telephone et valider le captcha qui sera afficher"}
+                      : t("veuiller entrer votre numero de telephone et valider le captcha qui sera afficher")}
                   </Text>
                 </View>
 
@@ -142,7 +143,7 @@ export default function PhoneAuthScreen() {
                         <Text style={styles.prefix}>+237</Text>
                         <TextInput
                           style={[styles.ionInput, { paddingLeft: 60 }]}
-                          placeholder="Entrer votre numero de telephone"
+                          placeholder={t("Entrer votre numero de telephone")}
                           placeholderTextColor="#a3a3a3"
                           value={numero}
                           onChangeText={setNumero}
@@ -152,7 +153,7 @@ export default function PhoneAuthScreen() {
                     ) : (
                       <TextInput
                         style={styles.ionInput}
-                        placeholder="Entrer le code envoyer au numero"
+                        placeholder={t("Entrer le code envoyer au numero")}
                         placeholderTextColor="#a3a3a3"
                         value={verificationCode}
                         onChangeText={setVerificationCode}

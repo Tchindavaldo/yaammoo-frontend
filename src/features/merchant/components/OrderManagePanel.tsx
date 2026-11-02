@@ -32,6 +32,7 @@ import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
 import { MerchantOrderSkeleton } from "./MerchantOrderSkeleton";
 import { OtherDatesNotice } from "./OtherDatesNotice";
 import { DS } from "@/src/theme/ds";
+import { t as tr, dateLocale } from "@/src/i18n";
 
 // Hauteur de la barre de filtres fixée au-dessus de la navbar.
 const FILTER_BAR_HEIGHT = 54;
@@ -190,7 +191,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const formatDateLabel = (iso: string): string => {
     try {
       const d = new Date(iso);
-      return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      return d.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" });
     } catch {
       return iso;
     }
@@ -299,7 +300,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     const d = (o as any).delivery;
     if (d?.status !== true) return "surplace";
     if (d?.type === "express") return "express";
-    return d?.time || "À définir";
+    return d?.time || tr("À définir");
   };
 
   const dateFilteredOrders = useMemo(() => {
@@ -337,12 +338,12 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     return [
       {
         key: "express",
-        label: "Livraison express",
+        label: tr("Livraison express"),
         count: counts.express || 0,
       },
       {
         key: "surplace",
-        label: "Récupérer\nsur place",
+        label: tr("Récupérer\nsur place"),
         count: counts.surplace || 0,
       },
       ...slots.map((s) => ({ key: s, label: s, count: counts[s] })),
@@ -401,10 +402,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
   const emptyLabel =
     selectedStatus === "pending"
-      ? "Aucune commande en attente"
+      ? tr("Aucune commande en attente")
       : selectedStatus === "proccess"
-        ? "Aucune commande en cours"
-        : "Aucune commande terminée";
+        ? tr("Aucune commande en cours")
+        : tr("Aucune commande terminée");
 
   // Badges des chips de statut : ils comptent les commandes de la DATE ACTIVE,
   // TOUTES périodes confondues (express + sur place + créneaux) — pas le total
@@ -477,9 +478,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   }, [orders]);
 
   const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
-    { key: "pending", label: "En Attente", icon: "time-outline" },
-    { key: "proccess", label: "En cours", icon: "restaurant-outline" },
-    { key: "finish", label: "Terminées", icon: "checkmark-done-outline" },
+    { key: "pending", label: tr("En Attente"), icon: "time-outline" },
+    { key: "proccess", label: tr("En cours"), icon: "restaurant-outline" },
+    { key: "finish", label: tr("Terminées"), icon: "checkmark-done-outline" },
   ];
 
   // Remonte au header « N cmd <statut> ». On compte les commandes RÉELLEMENT
@@ -510,7 +511,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
       if (d?.type === "express") {
         express.push(o);
       } else {
-        const slot = d?.time || "À définir";
+        const slot = d?.time || tr("À définir");
         if (!scheduled[slot]) scheduled[slot] = [];
         scheduled[slot].push(o);
       }
@@ -649,9 +650,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
       <View style={{ marginTop: 4 }}>
         {/* Sous-tabs En attente / En cours / Terminé */}
         <View style={styles.subTabRow}>
-          {renderSubTab("en_attente", "En attente", enAttenteOrders.length)}
-          {renderSubTab("en_cours", "En cours", enCoursOrders.length)}
-          {renderSubTab("termine", "Terminé", deliveredOrders.length)}
+          {renderSubTab("en_attente", tr("En attente"), enAttenteOrders.length)}
+          {renderSubTab("en_cours", tr("En cours"), enCoursOrders.length)}
+          {renderSubTab("termine", tr("Terminé"), deliveredOrders.length)}
         </View>
 
         {/* Liste des commandes du sous-tab actif */}
@@ -659,10 +660,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           <View style={styles.subTabEmpty}>
             <Text style={styles.subTabEmptyText}>
               {activeSubTab === "en_cours"
-                ? "Aucune livraison en cours"
+                ? tr("Aucune livraison en cours")
                 : activeSubTab === "termine"
-                  ? "Aucune livraison terminée"
-                  : "Aucune commande en attente"}
+                  ? tr("Aucune livraison terminée")
+                  : tr("Aucune commande en attente")}
             </Text>
           </View>
         ) : (
@@ -743,7 +744,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
               cmd
             </Text>
           </View>
-          <Text style={styles.statLbl}>Commandes effectue</Text>
+          <Text style={styles.statLbl}>{tr("Commandes effectue")}</Text>
         </View>
         <View style={styles.statBox}>
           <View style={{ flexDirection: "row", alignItems: "baseline" }}>
@@ -759,7 +760,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
               fcfa
             </Text>
           </View>
-          <Text style={styles.statLbl}>Montant Total</Text>
+          <Text style={styles.statLbl}>{tr("Montant Total")}</Text>
         </View>
       </View>
     </View>
@@ -844,7 +845,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                 size={50}
                 color="#D3D1C7"
               />
-              <Text style={styles.emptyText}>Aucune commande terminée</Text>
+              <Text style={styles.emptyText}>{tr("Aucune commande terminée")}</Text>
             </View>
           ) : (
             deliveryData && (
@@ -897,7 +898,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                                 styles.btnLaunchGroupTextLaunched,
                             ]}
                           >
-                            {launchingGroups["express"] ? "..." : "Lancer tout"}
+                            {launchingGroups["express"] ? "..." : tr("Lancer tout")}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -928,10 +929,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                           size={12}
                           color="#888780"
                         />
-                        <Text style={styles.groupTitle}>Sur place</Text>
+                        <Text style={styles.groupTitle}>{tr("Sur place")}</Text>
                         <View style={styles.groupCountBadge}>
                           <Text style={styles.groupCountText}>
-                            {deliveryData.surplaceGroups.length} commande
+                            {deliveryData.surplaceGroups.length} {tr("commande")}
                             {deliveryData.surplaceGroups.length > 1 ? "s" : ""}
                           </Text>
                         </View>
@@ -993,7 +994,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
                                 isLaunched && styles.btnLaunchGroupTextLaunched,
                               ]}
                             >
-                              {launchingGroups[groupId] ? "..." : "Lancer tout"}
+                              {launchingGroups[groupId] ? "..." : tr("Lancer tout")}
                             </Text>
                           </TouchableOpacity>
                         )}

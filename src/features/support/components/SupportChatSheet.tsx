@@ -21,6 +21,7 @@ import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportChatView } from "./SupportChatView";
 import { SupportThreadRow } from "./SupportThreadRow";
 import { SupportThreadsSkeleton } from "./SupportThreadsSkeleton";
+import { t as tr } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -76,21 +77,21 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
     ? thread
       ? getThreadName(thread)
       : SUPPORT_DEFAULT_NAME
-    : "Contactez-nous";
+    : tr("Contactez-nous");
   // En conversation, le sous-titre porte le seul objet de la discussion. Sur un
   // fil existant on prend l'objet du fil : `chatTopic` n'est remonté qu'après le
   // rendu de la vue chat, et l'invite « Choisissez… » clignoterait entre-temps.
   const topicForHeader = chatTopic ?? thread?.topic ?? null;
   const chatSubtitle = topicForHeader
     ? getTopicDescriptor(topicForHeader).label
-    : "Choisissez l'objet de votre demande";
+    : tr("Choisissez l'objet de votre demande");
   const subtitle = inChat
     ? chatSubtitle
     : loading
-      ? "Chargement…"
+      ? tr("Chargement…")
       : unread > 0
-        ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
-        : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
+        ? tr("{{a}} message{{b}} non lu{{c}}", { a: unread, b: unread > 1 ? "s" : "", c: unread > 1 ? "s" : "" })
+        : tr("{{a}} discussion{{b}}", { a: threads.length, b: threads.length > 1 ? "s" : "" });
 
   return (
     <View style={styles.overlay}>
@@ -101,7 +102,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
         subtitle={subtitle}
         right={
           <HeaderPill
-            label="Retour"
+            label={tr("Retour")}
             icon="arrow-back-outline"
             onPress={() => (inChat ? setScreen({ name: "list" }) : onClose())}
           />
@@ -144,7 +145,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
                 style={[styles.flex, { marginTop: headerHeight + 6 }]}
                 contentContainerStyle={{ paddingBottom: listBottomPad }}
               >
-                <Text style={styles.section}>Vos discussions</Text>
+                <Text style={styles.section}>{tr("Vos discussions")}</Text>
                 {threads.length === 0 ? (
                   <View style={styles.empty}>
                     <Ionicons
@@ -153,7 +154,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
                       color={Theme.colors.gray[400]}
                     />
                     <Text style={styles.emptyText}>
-                      Aucune discussion pour le moment.
+                      {tr("Aucune discussion pour le moment.")}
                     </Text>
                   </View>
                 ) : (
@@ -173,7 +174,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
               onPress={() => setScreen({ name: "chat", thread: null })}
             >
               <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.newChatText}>Nouveau chat</Text>
+              <Text style={styles.newChatText}>{tr("Nouveau chat")}</Text>
             </TouchableOpacity>
           </>
         )}

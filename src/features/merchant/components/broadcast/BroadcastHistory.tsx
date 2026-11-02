@@ -15,6 +15,7 @@ import type { BroadcastItem } from "../../types/broadcast.types";
 import { sentLabel } from "../../utils/broadcastQuota";
 import { BroadcastHistoryRow, audienceSummary, rowLayoutFor } from "./BroadcastHistoryRow";
 import { BC, capsLabel } from "./broadcastTheme";
+import { t } from "@/src/i18n";
 
 interface Props {
   items: BroadcastItem[];
@@ -42,7 +43,7 @@ export const BroadcastHistory: React.FC<Props> = ({ items, now, loading, onReuse
     <View style={[styles.zone, style]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
-          {count === 1 ? "Dernière envoyée" : "Dernières envoyées"}
+          {count === 1 ? t("Dernière envoyée") : t("Dernières envoyées")}
         </Text>
         <Text style={capsLabel}>{count}</Text>
       </View>
@@ -53,8 +54,8 @@ export const BroadcastHistory: React.FC<Props> = ({ items, now, loading, onReuse
             <ActivityIndicator color={BC.muted} />
           ) : (
             <>
-              <Text style={styles.emptyTitle}>Aucune notification envoyée</Text>
-              <Text style={styles.emptyText}>Vos envois apparaîtront ici.</Text>
+              <Text style={styles.emptyTitle}>{t("Aucune notification envoyée")}</Text>
+              <Text style={styles.emptyText}>{t("Vos envois apparaîtront ici.")}</Text>
             </>
           )}
         </View>
@@ -115,7 +116,7 @@ const HeroCard: React.FC<{ item: BroadcastItem; when: string; onReuse: () => voi
           {item.title}
         </Text>
         <Text style={styles.heroDesc} numberOfLines={2}>
-          {item.body || "Sans message"}
+          {item.body || t("Sans message")}
         </Text>
       </View>
       <Pressable
@@ -123,7 +124,7 @@ const HeroCard: React.FC<{ item: BroadcastItem; when: string; onReuse: () => voi
         style={({ pressed }) => [styles.reuse, pressed && { opacity: 0.7 }]}
         accessibilityRole="button"
       >
-        <Text style={styles.reuseText}>Réutiliser</Text>
+        <Text style={styles.reuseText}>{t("Réutiliser")}</Text>
       </Pressable>
     </View>
   </View>

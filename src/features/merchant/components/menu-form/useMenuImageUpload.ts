@@ -5,6 +5,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Platform } from "react-native";
+import { t } from "@/src/i18n";
 
 /**
  * Photos du formulaire menu : sélection galerie + upload `/image/upload` avec
@@ -19,7 +20,7 @@ export const useMenuImageUpload = () => {
   const pickImage = async (index: number) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      showToast("Permission refusée : nous avons besoin d'accéder à votre galerie.", "error");
+      showToast(t("Permission refusée : nous avons besoin d'accéder à votre galerie."), "error");
       return;
     }
 
@@ -170,7 +171,7 @@ export const useMenuImageUpload = () => {
         next[index] = 0;
         return next;
       });
-      showToast(`Impossible d'uploader l'image ${index + 1}`, "error");
+      showToast(t("Impossible d'uploader l'image {{a}}", { a: index + 1 }), "error");
     } finally {
       setUploadingIdx(null);
     }

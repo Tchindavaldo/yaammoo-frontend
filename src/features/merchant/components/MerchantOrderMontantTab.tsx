@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const CURRENCY = "XAF";
 
@@ -42,9 +43,9 @@ export function computeItemsTotal(order: Commande): number {
 /** Libellé du mode de livraison d'un groupe : heure (période) ou Express. */
 export function deliveryLabel(order: Commande): string {
   const d = order.delivery as any;
-  if (d?.status !== true) return "Sur place";
+  if (d?.status !== true) return t("Sur place");
   if (d?.type === "express") return "Express";
-  return d?.time || "Période";
+  return d?.time || t("Période");
 }
 
 /**
@@ -103,17 +104,17 @@ export function computeGrandTotal(orders: Commande[]): number {
 
 /** Chip d'état d'une commande : libellé court + couleurs. */
 const STATUS_CHIP: Record<string, { label: string; bg: string; fg: string }> = {
-  pending: { label: "En attente", bg: "#FEF3C7", fg: "#92400E" },
-  processing: { label: "En cours", bg: "#DBEAFE", fg: "#1E40AF" },
-  active: { label: "En cours", bg: "#DBEAFE", fg: "#1E40AF" },
-  in_progress: { label: "En cours", bg: "#DBEAFE", fg: "#1E40AF" },
-  finished: { label: "Prête", bg: "#DCFCE7", fg: "#166534" },
-  completed: { label: "Prête", bg: "#DCFCE7", fg: "#166534" },
-  done: { label: "Prête", bg: "#DCFCE7", fg: "#166534" },
-  delivering: { label: "En livraison", bg: "#FFEDD5", fg: "#9A3412" },
-  delivered: { label: "Livrée", bg: "#E5E7EB", fg: "#374151" },
-  cancelByUser: { label: "Annulée", bg: "#FEE2E2", fg: "#991B1B" },
-  cancelByFastFood: { label: "Annulée", bg: "#FEE2E2", fg: "#991B1B" },
+  pending: { label: t("En attente"), bg: "#FEF3C7", fg: "#92400E" },
+  processing: { label: t("En cours"), bg: "#DBEAFE", fg: "#1E40AF" },
+  active: { label: t("En cours"), bg: "#DBEAFE", fg: "#1E40AF" },
+  in_progress: { label: t("En cours"), bg: "#DBEAFE", fg: "#1E40AF" },
+  finished: { label: t("Prête"), bg: "#DCFCE7", fg: "#166534" },
+  completed: { label: t("Prête"), bg: "#DCFCE7", fg: "#166534" },
+  done: { label: t("Prête"), bg: "#DCFCE7", fg: "#166534" },
+  delivering: { label: t("En livraison"), bg: "#FFEDD5", fg: "#9A3412" },
+  delivered: { label: t("Livrée"), bg: "#E5E7EB", fg: "#374151" },
+  cancelByUser: { label: t("Annulée"), bg: "#FEE2E2", fg: "#991B1B" },
+  cancelByFastFood: { label: t("Annulée"), bg: "#FEE2E2", fg: "#991B1B" },
 };
 
 type Group = {
@@ -136,7 +137,7 @@ export function MontantTab({ orders }: Props) {
   if (orders.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>Aucun montant à afficher</Text>
+        <Text style={styles.emptyText}>{t("Aucun montant à afficher")}</Text>
       </View>
     );
   }
@@ -245,7 +246,7 @@ export function MontantTab({ orders }: Props) {
                         )}
                       </View>
                       <Text style={styles.itemSub}>
-                        Plat + extras + boissons
+                        {t("Plat + extras + boissons")}
                       </Text>
                     </View>
                     <Text style={styles.itemPrice}>
@@ -266,7 +267,7 @@ export function MontantTab({ orders }: Props) {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.itemName}>
-                        Livraison {deliveryLabel(billedOrder || g.orders[0])}
+                        {t("Livraison")} {deliveryLabel(billedOrder || g.orders[0])}
                       </Text>
                       {zone ? <Text style={styles.itemSub}>{zone}</Text> : null}
                     </View>
@@ -277,10 +278,10 @@ export function MontantTab({ orders }: Props) {
                       ]}
                     >
                       {offered
-                        ? "Offert"
+                        ? t("Offert")
                         : billedOrder
                           ? `${coursePrice} ${CURRENCY}`
-                          : "Non facturée"}
+                          : t("Non facturée")}
                     </Text>
                   </View>
                 )}
@@ -295,7 +296,7 @@ export function MontantTab({ orders }: Props) {
             condition `groups.length > 1` masquait alors le total. */}
         {orders.length > 0 && (
           <View style={styles.grandTotalRow}>
-            <Text style={styles.grandTotalLabel}>Total général</Text>
+            <Text style={styles.grandTotalLabel}>{t("Total général")}</Text>
             <Text style={styles.grandTotalVal}>
               {grandTotal} {CURRENCY}
             </Text>

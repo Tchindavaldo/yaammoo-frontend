@@ -17,6 +17,7 @@ import {
 import { BonusProgressBar } from "./BonusProgressBar";
 import { BonusUsageRing } from "./BonusUsageRing";
 import { ClaimRowSlide } from "./ClaimRowSlide";
+import { t, dateLocale } from "@/src/i18n";
 
 interface BonusCardProps {
   bonus: Bonus;
@@ -59,9 +60,9 @@ const issuerText = (bonus: Bonus): string => bonus.fastFoodName || "yaammoo";
 
 /** Suffixe de période affiché après le compteur : "sur le mois", etc. */
 const PERIOD_LABEL: Record<string, string> = {
-  day: "sur le jour",
-  week: "sur la semaine",
-  month: "sur le mois",
+  day: t("sur le jour"),
+  week: t("sur la semaine"),
+  month: t("sur le mois"),
 };
 
 /** Formate une date ISO en "12 juil.", ou "—" si absente/invalide. */
@@ -69,7 +70,7 @@ const fmtDate = (iso?: string | null) => {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+  return d.toLocaleDateString(dateLocale(), { day: "2-digit", month: "short" });
 };
 
 /** Infos d'utilisation du code (faites / restantes) si un plafond est défini. */
@@ -85,7 +86,7 @@ const usageInfo = (bonus: Bonus) => {
 };
 
 /** Formate une date en mois seul ("juil."). */
-const fmtMonth = (d: Date) => d.toLocaleDateString("fr-FR", { month: "short" });
+const fmtMonth = (d: Date) => d.toLocaleDateString(dateLocale(), { month: "short" });
 
 /**
  * Date de début affichée : `startsAt` (jour + mois) s'il existe. Sinon dates
@@ -118,7 +119,7 @@ const durationText = (bonus: Bonus) => {
   if (!bonus.claimDuration) return "—";
   const d = bonus.claimDuration;
   if (d < 31) return `${d} j`;
-  return `${Math.round(d / 30)} mois`;
+  return t("{{a}} mois", { a: Math.round(d / 30) });
 };
 
 /**
@@ -160,18 +161,18 @@ export const BonusCard: React.FC<BonusCardProps> = ({
   const u = usageInfo(bonus);
 
   const statusText = isInactive
-    ? "Inactif"
+    ? t("Inactif")
     : isRedeemed
       ? u
-        ? `Utilisé ${u.used}/${u.limit}`
-        : "Utilisé"
+        ? t("Utilisé {{a}}/{{b}}", { a: u.used, b: u.limit })
+        : t("Utilisé")
       : isApproved
-        ? "Validé"
+        ? t("Validé")
         : isPending
-          ? "En attente"
+          ? t("En attente")
           : isEligible
-            ? "Éligible"
-            : "Non éligible";
+            ? t("Éligible")
+            : t("Non éligible");
 
   // Teinte UNIFORME : la pilule de statut prend toujours la couleur du bonus,
   // quel que soit l'état (plus de couleur dédiée par statut).
@@ -227,16 +228,16 @@ export const BonusCard: React.FC<BonusCardProps> = ({
             <Text style={styles.progressText}>
               {p.unit === "FCFA"
                 ? `${fmt(p.current)} / ${fmt(p.target)} FCFA`
-                : `${p.current} / ${p.target} commandes payées`}
+                : t("{{a}} / {{b}} commandes payées", { a: p.current, b: p.target })}
               {periodLabel ? ` · ${periodLabel}` : ""}
             </Text>
           )}
         </View>
 
         <View style={styles.infoRow}>
-          <Info label="Début" value={fmtStartDate(bonus)} />
-          <Info label="Fin" value={fmtEndDate(bonus)} />
-          <Info label="Durée" value={durationText(bonus)} />
+          <Info label={t("Début")} value={fmtStartDate(bonus)} />
+          <Info label={t("Fin")} value={fmtEndDate(bonus)} />
+          <Info label={t("Durée")} value={durationText(bonus)} />
           {u && (
             <BonusUsageRing
               used={u.remaining}

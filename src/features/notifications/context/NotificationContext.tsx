@@ -5,6 +5,7 @@ import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { storage } from "../../../utils/storage";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
+import { t } from "@/src/i18n";
 
 export interface Notification {
   id: string;
@@ -163,7 +164,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       }
     } catch (err: any) {
       console.error("Error fetching notifications:", err);
-      if (!quiet) setError("Erreur lors de la récupération des notifications");
+      if (!quiet) setError(t("Erreur lors de la récupération des notifications"));
     } finally {
       if (!quiet) setLoading(false);
     }

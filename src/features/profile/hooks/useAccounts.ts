@@ -3,6 +3,7 @@
 // Brancher ici la liste des comptes memorises quand elle existera.
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useMemo } from "react";
+import { t } from "@/src/i18n";
 
 export interface AccountEntry {
   id: string;
@@ -22,7 +23,7 @@ export function useAccounts(): AccountEntry[] {
     const nom =
       [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(" ") ||
       firebaseName ||
-      "Utilisateur";
+      t("Utilisateur");
     const contact =
       userData?.infos.email ||
       user?.email ||

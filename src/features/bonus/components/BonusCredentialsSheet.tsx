@@ -16,6 +16,7 @@ import {
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { Bonus } from "../types/bonus.types";
+import { t } from "@/src/i18n";
 
 interface BonusCredentialsSheetProps {
   visible: boolean;
@@ -97,12 +98,12 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
   const profileRows: Row[] = credentials.profile
     ? [
         {
-          label: "Profil",
+          label: t("Profil"),
           value: credentials.profile.name,
           icon: "person-outline",
         },
         {
-          label: "Code du profil",
+          label: t("Code du profil"),
           value: credentials.profile.code,
           icon: "keypad-outline",
         },
@@ -112,7 +113,7 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
   const accountRows: Row[] = [
     { label: "Email", value: credentials.login, icon: "mail-outline" },
     {
-      label: "Mot de passe",
+      label: t("Mot de passe"),
       value: credentials.password,
       icon: "lock-closed-outline",
     },
@@ -154,7 +155,7 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.title}>
-              {section === "profile" ? "Ton profil" : "Tes identifiants"}
+              {section === "profile" ? t("Ton profil") : t("Tes identifiants")}
             </Text>
             {!!title && (
               <Text style={styles.subtitle} numberOfLines={1}>
@@ -191,7 +192,7 @@ export const BonusCredentialsSheet: React.FC<BonusCredentialsSheetProps> = ({
           </TouchableOpacity>
         ))}
 
-        <Text style={styles.hint}>Appuie sur une ligne pour la copier.</Text>
+        <Text style={styles.hint}>{t("Appuie sur une ligne pour la copier.")}</Text>
         <SafeAreaDebugBand />
       </Animated.View>
       {/* Toast global au premier plan (Android). */}

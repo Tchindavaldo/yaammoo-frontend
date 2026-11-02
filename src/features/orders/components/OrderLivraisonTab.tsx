@@ -5,6 +5,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Onglet « Livraison » du détail client (`OrderBottomSheet`) : créneau,
@@ -35,20 +36,20 @@ export function OrderLivraisonTab({ order }: { order: Commande }) {
         <View style={{ width: "42%", gap: 8 }}>
           <View style={{ flex: 1 }}>
             <InfoCard
-              label="Créneau"
+              label={t("Créneau")}
               value={
                 !order.delivery?.status
-                  ? "Sur place"
+                  ? t("Sur place")
                   : order.delivery?.type === "express"
                     ? "Express"
-                    : `Période (${order.delivery?.time || "Dès que possible"})`
+                    : t("Période ({{a}})", { a: order.delivery?.time || t("Dès que possible") })
               }
               compact
             />
           </View>
           <View style={{ flex: 1 }}>
             <InfoCard
-              label="Téléphone"
+              label={t("Téléphone")}
               value={order.delivery?.phone || "—"}
               small
               compact
@@ -62,16 +63,16 @@ export function OrderLivraisonTab({ order }: { order: Commande }) {
       </View>
 
       <View style={[styles.infoCard, { marginTop: 12, padding: 12 }]}>
-        <Text style={styles.infoLabel}>Note de livraison</Text>
+        <Text style={styles.infoLabel}>{t("Note de livraison")}</Text>
         <Text style={styles.infoValSm}>
-          {order.delivery?.note || "Aucune note."}
+          {order.delivery?.note || t("Aucune note.")}
         </Text>
       </View>
 
       {order.delivery?.voiceNoteUri ? (
         <>
           <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>
-            Message vocal
+            {t("Message vocal")}
           </Text>
           <TouchableOpacity
             style={styles.voiceBar}
@@ -98,8 +99,8 @@ export function OrderLivraisonTab({ order }: { order: Commande }) {
             { marginTop: 12, padding: 12, opacity: 0.5 },
           ]}
         >
-          <Text style={styles.infoLabel}>Message vocal</Text>
-          <Text style={styles.infoValSm}>Aucun message vocal</Text>
+          <Text style={styles.infoLabel}>{t("Message vocal")}</Text>
+          <Text style={styles.infoValSm}>{t("Aucun message vocal")}</Text>
         </View>
       )}
     </>
@@ -118,7 +119,7 @@ function DeliveryStateCard({ order }: { order: Commande }) {
       <View style={box}>
         <BikeAnimation />
         <Text style={{ fontSize: 12, fontWeight: "600", color: "#27500A" }}>
-          Livraison en cours...
+          {t("Livraison en cours...")}
         </Text>
       </View>
     );
@@ -129,7 +130,7 @@ function DeliveryStateCard({ order }: { order: Commande }) {
       <View style={box}>
         <Ionicons name="storefront-outline" size={28} color="#6B7280" />
         <Text style={{ fontSize: 12, fontWeight: "600", color: "#6B7280" }}>
-          Sur place
+          {t("Sur place")}
         </Text>
       </View>
     );
@@ -152,7 +153,7 @@ function DeliveryStateCard({ order }: { order: Commande }) {
     <View style={box}>
       <Ionicons name="time-outline" size={26} color="#2563eb" />
       <Text style={{ fontSize: 11, fontWeight: "600", color: "#2563eb" }}>
-        {order.delivery?.time || "Dès que possible"}
+        {order.delivery?.time || t("Dès que possible")}
       </Text>
       <Text style={{ fontSize: 10, color: "#9CA3AF" }}>30-45 min</Text>
     </View>

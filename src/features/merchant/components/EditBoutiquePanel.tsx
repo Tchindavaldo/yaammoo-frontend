@@ -16,6 +16,7 @@ import {
   CityPickerModal,
   BoutiqueToast,
 } from "./edit-boutique/BoutiquePickers";
+import { t } from "@/src/i18n";
 
 interface EditBoutiquePanelProps {
   visible: boolean;
@@ -105,11 +106,11 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
       />
 
       <TabHeader
-        title="Gérer ma boutique"
-        subtitle="Informations du fast-food"
+        title={t("Gérer ma boutique")}
+        subtitle={t("Informations du fast-food")}
         right={
           <HeaderPill
-            label="Retour"
+            label={t("Retour")}
             icon="arrow-back-outline"
             onPress={s.closeModal}
           />
@@ -135,7 +136,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
           {s.loadingData ? (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="large" color={Theme.colors.primary} />
-              <Text style={styles.loaderText}>Chargement de la boutique…</Text>
+              <Text style={styles.loaderText}>{t("Chargement de la boutique…")}</Text>
             </View>
           ) : (
             <BoutiqueInfoPage

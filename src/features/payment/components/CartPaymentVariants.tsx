@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Variantes de design du contenu du sheet de paiement.
@@ -50,14 +51,14 @@ const useRecap = (groups: CartZoneGroup[]) => {
 
   const multi = groups.length > 1;
   const g = groups[0];
-  const zone = multi ? `${groups.length} zones` : g?.zone || "";
+  const zone = multi ? t("{{a}} zones", { a: groups.length }) : g?.zone || "";
   const type = multi
-    ? "livraisons"
+    ? t("livraisons")
     : g?.type === "express"
       ? "express"
       : g?.type === "time"
-        ? "créneau"
-        : "sur place";
+        ? t("créneau")
+        : t("sur place");
   const heure = multi ? "" : g?.type === "time" ? g?.heure || "" : "";
 
   return { cmd, articles, course, total, zone, type, heure };
@@ -91,7 +92,7 @@ const PhoneField: React.FC<{
 }> = ({ phone, onPhoneChange, onConfirm, onError, tint, tone = "filled" }) => {
   const submit = () => {
     if (!phone.trim()) {
-      onError?.("Saisissez le numéro de paiement");
+      onError?.(t("Saisissez le numéro de paiement"));
       return;
     }
     onConfirm();
@@ -104,7 +105,7 @@ const PhoneField: React.FC<{
         style={s.input}
         value={phone}
         onChangeText={onPhoneChange}
-        placeholder="numéro de paiement"
+        placeholder={t("numéro de paiement")}
         placeholderTextColor="#b6c0cc"
         keyboardType="number-pad"
         returnKeyType="done"
@@ -124,7 +125,7 @@ const PhoneField: React.FC<{
           onPress={submit}
           activeOpacity={0.85}
         >
-          <Text style={s.payWideText}>payer</Text>
+          <Text style={s.payWideText}>{t("payer")}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -158,17 +159,17 @@ export const PaymentVariantTicket: React.FC<VariantProps> = ({
         />
 
         <View style={s.ticketLine}>
-          <Text style={s.ticketLabel}>{cmd} commandes</Text>
+          <Text style={s.ticketLabel}>{cmd} {t("commandes")}</Text>
           <Text style={s.ticketValue}>{fmt(articles)}</Text>
         </View>
         <View style={s.ticketLine}>
-          <Text style={s.ticketLabel}>Livraison</Text>
+          <Text style={s.ticketLabel}>{t("Livraison")}</Text>
           <Text style={[s.ticketValue, course === 0 && s.free]}>
-            {course > 0 ? fmt(course) : "Offerte"}
+            {course > 0 ? fmt(course) : t("Offerte")}
           </Text>
         </View>
         <View style={[s.ticketLine, { marginTop: 4 }]}>
-          <Text style={s.ticketTotalLabel}>À PAYER</Text>
+          <Text style={s.ticketTotalLabel}>{t("À PAYER")}</Text>
           <Text style={s.ticketTotal}>{fmt(total)}</Text>
         </View>
       </View>
@@ -240,7 +241,7 @@ export const PaymentVariantCard: React.FC<VariantProps> = ({
         {/* Bandeau colore : le montant a payer, impossible a manquer. */}
         <View style={[s.cardHead, { backgroundColor: tint }]}>
           <View style={{ flex: 1 }}>
-            <Text style={s.cardHeadLabel}>TOTAL À PAYER</Text>
+            <Text style={s.cardHeadLabel}>{t("TOTAL À PAYER")}</Text>
             <Destination
               zone={zone}
               type={type}
@@ -253,13 +254,13 @@ export const PaymentVariantCard: React.FC<VariantProps> = ({
 
         <View style={s.cardBody}>
           <View style={s.cardLine}>
-            <Text style={s.cardLabel}>{cmd} commandes</Text>
+            <Text style={s.cardLabel}>{cmd} {t("commandes")}</Text>
             <Text style={s.cardValue}>{fmt(articles)}</Text>
           </View>
           <View style={s.cardLine}>
-            <Text style={s.cardLabel}>Livraison</Text>
+            <Text style={s.cardLabel}>{t("Livraison")}</Text>
             <Text style={[s.cardValue, course === 0 && s.free]}>
-              {course > 0 ? fmt(course) : "Offerte"}
+              {course > 0 ? fmt(course) : t("Offerte")}
             </Text>
           </View>
         </View>
@@ -320,7 +321,7 @@ export const PaymentVariantColonnes: React.FC<VariantProps> = ({
             destination ferme le bloc. */}
         <View style={s.splitLeft}>
           <Text style={s.splitTotal}>{fmt(total)}</Text>
-          <Text style={s.splitLabel}>TOTAL À PAYER</Text>
+          <Text style={s.splitLabel}>{t("TOTAL À PAYER")}</Text>
 
           <View style={s.splitLines}>
             <View style={s.splitLine}>
@@ -328,9 +329,9 @@ export const PaymentVariantColonnes: React.FC<VariantProps> = ({
               <Text style={s.splitLineValue}>{fmt(articles)}</Text>
             </View>
             <View style={s.splitLine}>
-              <Text style={s.splitLineLabel}>Livraison</Text>
+              <Text style={s.splitLineLabel}>{t("Livraison")}</Text>
               <Text style={[s.splitLineValue, course === 0 && s.free]}>
-                {course > 0 ? fmt(course) : "Offerte"}
+                {course > 0 ? fmt(course) : t("Offerte")}
               </Text>
             </View>
           </View>

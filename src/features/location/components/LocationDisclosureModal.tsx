@@ -9,6 +9,7 @@ import {
   LocationPurpose,
   onLocationDisclosureRequest,
 } from "../services/locationPermission";
+import { t } from "@/src/i18n";
 
 /**
  * Écran de divulgation affiché JUSTE AVANT la popup système de localisation
@@ -33,32 +34,32 @@ type Disclosure = {
 const DISCLOSURES: Record<LocationPurpose, Disclosure> = {
   nearby: {
     icon: "location",
-    title: "Votre position, pour les boutiques proches",
+    title: t("Votre position, pour les boutiques proches"),
     message:
-      "Yaammoo collecte la position de votre téléphone lorsque vous utilisez l'application, pour afficher les boutiques proches de vous et leur distance, et vous envoyer les offres des boutiques de votre ville. Elle est enregistrée sur nos serveurs et n'est pas collectée quand l'application est fermée.",
+      t("Yaammoo collecte la position de votre téléphone lorsque vous utilisez l'application, pour afficher les boutiques proches de vous et leur distance, et vous envoyer les offres des boutiques de votre ville. Elle est enregistrée sur nos serveurs et n'est pas collectée quand l'application est fermée."),
   },
   address: {
     icon: "navigate",
-    title: "Votre position, pour la livraison",
+    title: t("Votre position, pour la livraison"),
     message:
-      "Yaammoo utilise la position actuelle de votre téléphone pour remplir l'adresse de livraison de cette commande. Elle est transmise à la boutique et au livreur pour vous livrer.",
+      t("Yaammoo utilise la position actuelle de votre téléphone pour remplir l'adresse de livraison de cette commande. Elle est transmise à la boutique et au livreur pour vous livrer."),
   },
   shop: {
     icon: "storefront",
-    title: "Position de votre boutique",
+    title: t("Position de votre boutique"),
     message:
-      "Yaammoo utilise la position actuelle de votre téléphone pour enregistrer l'emplacement de votre boutique. Les clients voient la distance qui les sépare de votre boutique.",
+      t("Yaammoo utilise la position actuelle de votre téléphone pour enregistrer l'emplacement de votre boutique. Les clients voient la distance qui les sépare de votre boutique."),
   },
   delivery: {
     icon: "bicycle",
-    title: "Partage de votre position pendant la livraison",
+    title: t("Partage de votre position pendant la livraison"),
     message:
-      "Pendant vos courses, Yaammoo collecte votre position, y compris quand l'application est en arrière-plan ou l'écran éteint, et la partage en temps réel avec le client pour qu'il suive sa commande. Une notification reste affichée tant que le partage est actif ; il s'arrête à la fin de la course.",
+      t("Pendant vos courses, Yaammoo collecte votre position, y compris quand l'application est en arrière-plan ou l'écran éteint, et la partage en temps réel avec le client pour qu'il suive sa commande. Une notification reste affichée tant que le partage est actif ; il s'arrête à la fin de la course."),
   },
 };
 
 const SETTINGS_NOTE =
-  "Vous pourrez changer ce choix à tout moment dans les réglages du téléphone.";
+  t("Vous pourrez changer ce choix à tout moment dans les réglages du téléphone.");
 
 export const LocationDisclosureModal = () => {
   const [purpose, setPurpose] = useState<LocationPurpose | null>(null);
@@ -117,7 +118,7 @@ export const LocationDisclosureModal = () => {
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.btnLaterText}>Non merci</Text>
+                <Text style={styles.btnLaterText}>{t("Non merci")}</Text>
               </Pressable>
               <Pressable
                 onPress={() => answer(true)}
@@ -128,7 +129,7 @@ export const LocationDisclosureModal = () => {
                   pressed && styles.pressed,
                 ]}
               >
-                <Text style={styles.btnContinueText}>Continuer</Text>
+                <Text style={styles.btnContinueText}>{t("Continuer")}</Text>
               </Pressable>
             </View>
           </View>

@@ -15,6 +15,7 @@ import { useColorScheme } from "@/src/hooks/use-color-scheme";
 import { TAB_BAR_ITEM_HEIGHT } from "@/src/hooks/useTabBarHeight";
 import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
@@ -64,7 +65,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="index"
             options={{
-              tabBarLabel: "Accueil",
+              tabBarLabel: t("Accueil"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   size={focused ? 22 : 20}
@@ -77,7 +78,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="cart"
             options={{
-              tabBarLabel: "Panier",
+              tabBarLabel: t("Panier"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   size={focused ? 22 : 20}
@@ -94,7 +95,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="orders"
             options={{
-              tabBarLabel: "Commandes",
+              tabBarLabel: t("Commandes"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   size={focused ? 22 : 20}
@@ -122,7 +123,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="notifications"
             options={{
-              tabBarLabel: "Notifications",
+              tabBarLabel: t("Notifications"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   size={focused ? 22 : 20}
@@ -135,7 +136,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="settings"
             options={{
-              tabBarLabel: "Profil",
+              tabBarLabel: t("Profil"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   size={focused ? 22 : 20}

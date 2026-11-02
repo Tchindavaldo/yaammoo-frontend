@@ -12,6 +12,7 @@ import { Theme } from '@/src/theme';
 import { WalletTransactionItem } from '@/src/features/wallet/components/WalletTransactionItem';
 import { useWallet } from '@/src/features/wallet/context/WalletContext';
 import { WalletTransactionSkeleton } from '@/src/features/wallet/components/WalletTransactionSkeleton';
+import { t as tr } from "@/src/i18n";
 
 type FilterType = 'all' | 'credit' | 'debit' | 'transfer';
 
@@ -59,14 +60,14 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
   });
 
   const filters: { key: FilterType; label: string; icon: string }[] = [
-    { key: 'all', label: 'Historique', icon: 'time-outline' },
-    { key: 'credit', label: 'Dépôt', icon: 'cash-outline' },
-    { key: 'debit', label: 'Retrait', icon: 'arrow-back-circle-outline' },
-    { key: 'transfer', label: 'Transfert', icon: 'arrow-redo-circle-outline' },
+    { key: 'all', label: tr("Historique"), icon: 'time-outline' },
+    { key: 'credit', label: tr("Dépôt"), icon: 'cash-outline' },
+    { key: 'debit', label: tr("Retrait"), icon: 'arrow-back-circle-outline' },
+    { key: 'transfer', label: tr("Transfert"), icon: 'arrow-redo-circle-outline' },
   ];
 
   const handleComingSoon = (label: string) => {
-    showToast(`La fonctionnalité "${label}" arrive prochainement.`, 'info');
+    showToast(tr("La fonctionnalité \"{{a}}\" arrive prochainement.", { a: label }), 'info');
   };
 
   return (
@@ -134,12 +135,12 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
           ) : (
           <View style={styles.emptyState}>
             <Ionicons name="receipt-outline" size={60} color={Theme.colors.gray[200]} />
-            <Text style={styles.emptyTitle}>Pas de transaction</Text>
+            <Text style={styles.emptyTitle}>{tr("Pas de transaction")}</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
-              onPress={() => showToast('Passez votre première commande depuis l\'accueil.', 'info')}
+              onPress={() => showToast(tr("Passez votre première commande depuis l'accueil."), 'info')}
             >
-              <Text style={styles.emptyBtnText}>Passer une commande</Text>
+              <Text style={styles.emptyBtnText}>{tr("Passer une commande")}</Text>
             </TouchableOpacity>
           </View>
           )

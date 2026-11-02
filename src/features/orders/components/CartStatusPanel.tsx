@@ -41,6 +41,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { t } from "@/src/i18n";
 
 /** Hauteur de la barre de filtres du bas (meme gabarit que le marchand). */
 const FILTER_BAR_HEIGHT = 54;
@@ -147,7 +148,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         const fetched = fetchedFfInfos[ffId];
         entry = {
           id: ffId,
-          name: ff?.nom || ff?.name || fetched?.name || "Boutique",
+          name: ff?.nom || ff?.name || fetched?.name || t("Boutique"),
           // `image` est déjà normalisé (photo du fastfood, sinon 1er plat).
           image: ff?.image || ff?.logo || ff?.coverImage || fetched?.image,
           orderCount: 0,
@@ -260,7 +261,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
                 color={Theme.colors.gray[200]}
               />
               <Text style={styles.emptyText}>
-                Aucune commande pour cette date
+                {t("Aucune commande pour cette date")}
               </Text>
             </View>
           );
@@ -383,11 +384,11 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         <View style={{ flex: 1 }}>
           <StickyChipsRow
             items={[
-              { key: "pending", label: "En Attente", count: chipCounts.pending },
-              { key: "active", label: "En cours", count: chipCounts.active },
+              { key: "pending", label: t("En Attente"), count: chipCounts.pending },
+              { key: "active", label: t("En cours"), count: chipCounts.active },
               {
                 key: "finished",
-                label: "Terminées",
+                label: t("Terminées"),
                 count: chipCounts.finished,
               },
             ]}
@@ -436,9 +437,9 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         pastUntreated={activeStatus !== "finished"}
         // Statuts rendus DANS le sheet, comme côté marchand.
         statusTabs={[
-          { key: "pending", label: "En Attente", count: chipCounts.pending },
-          { key: "active", label: "En cours", count: chipCounts.active },
-          { key: "finished", label: "Terminées", count: chipCounts.finished },
+          { key: "pending", label: t("En Attente"), count: chipCounts.pending },
+          { key: "active", label: t("En cours"), count: chipCounts.active },
+          { key: "finished", label: t("Terminées"), count: chipCounts.finished },
         ]}
         selectedStatus={activeStatus}
         onSelectStatus={(k) => setActiveStatus(k as any)}

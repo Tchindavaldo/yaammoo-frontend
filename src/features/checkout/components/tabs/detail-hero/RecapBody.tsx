@@ -10,6 +10,7 @@ import {
 import { amount, Banner, PALETTE, Tile } from "./recapTiles";
 import { DS } from "@/src/theme/ds";
 import { menuPriceOptions } from "../../../utils/menuPrices";
+import { t } from "@/src/i18n";
 
 /**
  * Design « recap photo » : la photo remplit toute la section ; par-dessus,
@@ -50,7 +51,7 @@ export const RecapBody: React.FC<HeroProps> = ({
 
       <Banner
         name={menu.titre}
-        status={priceDescription || "Disponible"}
+        status={priceDescription || t("Disponible")}
         bigNum={amount(total.value)}
         bigLabel="total FCFA"
       />
@@ -64,7 +65,7 @@ export const RecapBody: React.FC<HeroProps> = ({
         >
         {sizes.map(({ index }) => {
           const on = selectedPriceIndex === index;
-          const name = single ? "Prix" : `Prix ${index}`;
+          const name = single ? t("Prix") : t("Prix {{a}}", { a: index });
           return (
             <TouchableOpacity
               key={index}
@@ -89,14 +90,14 @@ export const RecapBody: React.FC<HeroProps> = ({
       <View style={styles.chipsGap} />
       <View style={styles.tiles}>
         {cells.map((cell) => {
-          const free = amount(cell.value) === "Gratuit";
+          const free = amount(cell.value) === t("Gratuit");
           return (
             <Tile
               key={cell.title}
               icon={cell.icon}
               count={free ? "0" : amount(cell.value)}
               title={cell.title}
-              sub={free ? "Gratuit" : "FCFA"}
+              sub={free ? t("Gratuit") : "FCFA"}
               onPress={cell.onPress}
             />
           );

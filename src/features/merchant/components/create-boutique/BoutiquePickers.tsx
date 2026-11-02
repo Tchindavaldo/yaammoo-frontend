@@ -15,6 +15,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { CAMEROON_CITIES } from "./constants";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /** Overlay iOS-like contenant un DateTimePicker "time". */
 export const TimePickerOverlay: React.FC<{
@@ -33,7 +34,7 @@ export const TimePickerOverlay: React.FC<{
         pointerEvents="auto"
       >
         <TouchableOpacity style={styles.iosPickerDone} onPress={onDone}>
-          <Text style={{ color: "white", fontWeight: "bold" }}>Terminer</Text>
+          <Text style={{ color: "white", fontWeight: "bold" }}>{t("Terminer")}</Text>
         </TouchableOpacity>
         <DateTimePicker
           value={value}
@@ -84,11 +85,11 @@ export const CityPickerModal: React.FC<{
             }}
           >
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Villes de livraison
+              {t("Villes de livraison")}
             </Text>
             <TouchableOpacity onPress={onDone}>
               <Text style={{ color: DS.accent, fontWeight: "bold" }}>
-                Terminer
+                {t("Terminer")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -105,7 +106,7 @@ export const CityPickerModal: React.FC<{
             }}
             value={search}
             onChangeText={setSearch}
-            placeholder="Rechercher une ville…"
+            placeholder={t("Rechercher une ville…")}
             placeholderTextColor="#94a3b8"
           />
         </View>

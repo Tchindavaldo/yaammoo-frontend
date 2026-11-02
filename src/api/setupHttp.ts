@@ -6,10 +6,11 @@ import {
   startNetworkWatch,
   trackInFlight,
 } from "@/src/services/network";
+import { t } from "@/src/i18n";
 
 /** Code porte par l'erreur hors-ligne, pour que l'UI la distingue d'un 500. */
 export const OFFLINE_CODE = "ERR_OFFLINE";
-export const OFFLINE_MESSAGE = "Pas de connexion Internet";
+export const OFFLINE_MESSAGE = t("Pas de connexion Internet");
 
 /**
  * Configure les headers globaux envoyés à CHAQUE requête backend.

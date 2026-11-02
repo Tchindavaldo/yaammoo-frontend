@@ -11,6 +11,7 @@ import type { DateOption } from "./DriverOrderPanel";
 import { DriverOrdersPagePanel } from "./DriverOrdersPagePanel";
 import { DriverFilterSheet } from "./DriverFilterSheet";
 import { StickyChipsRow } from "./StickyChipsRow";
+import { t, dateLocale } from "@/src/i18n";
 
 
 interface DriverOrdersModalProps {
@@ -56,7 +57,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
   const derivedStores = useMemo(() => {
     if (stores.length > 0) return stores;
     const ids = [...new Set(orders.map((o) => o.fastFoodId).filter(Boolean))];
-    return ids.map((id) => ({ id, nom: `Boutique ${id.slice(0, 4)}` }));
+    return ids.map((id) => ({ id, nom: t("Boutique {{a}}", { a: id.slice(0, 4) }) }));
   }, [stores, orders]);
 
   const getOrderDateISO = (dateStr: string | undefined): string => {
@@ -121,8 +122,8 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
   );
 
   const dateLabel = useMemo(() => {
-    if (activeDate === todayISO) return "Aujourd'hui";
-    return new Date(activeDate).toLocaleDateString("fr-FR", {
+    if (activeDate === todayISO) return t("Aujourd'hui");
+    return new Date(activeDate).toLocaleDateString(dateLocale(), {
       day: "numeric",
       month: "long",
     });
@@ -138,9 +139,9 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Mes livraisons"
+        title={t("Mes livraisons")}
         subtitle={subtitle}
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        right={<HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 
@@ -165,7 +166,7 @@ export const DriverOrdersModal: React.FC<DriverOrdersModalProps> = ({
           <View style={{ flex: 1 }}>
             <StickyChipsRow
               items={[
-                { key: "__all__", label: "Toutes" },
+                { key: "__all__", label: t("Toutes") },
                 ...derivedStores.map((s) => ({
                   key: s.id,
                   label: s.nom,

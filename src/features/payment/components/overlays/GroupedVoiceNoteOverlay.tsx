@@ -19,6 +19,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t as tr } from "@/src/i18n";
 
 // L'overlay recouvre EXACTEMENT le sheet groupe. La card, elle, est retrecie par
 // le `paddingVertical` du conteneur (respiration en haut et en bas).
@@ -93,7 +94,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
   async function startRecording() {
     try {
       if (!(await recorder.start())) {
-        showToast("L'accès au micro est nécessaire.", "error");
+        showToast(tr("L'accès au micro est nécessaire."), "error");
         return;
       }
       setPhase("recording");
@@ -167,7 +168,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="mic-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Consigne de livraison</Text>
+              <Text style={styles.headerTitle}>{tr("Consigne de livraison")}</Text>
             </View>
             <TouchableOpacity onPress={closeWithFade} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#94a3b8" />
@@ -184,7 +185,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                   <Ionicons name="mic" size={36} color="white" />
                 </TouchableOpacity>
                 <Text style={styles.instructionText}>
-                  Appuyez pour enregistrer une consigne vocale
+                  {tr("Appuyez pour enregistrer une consigne vocale")}
                 </Text>
               </View>
             )}
@@ -207,7 +208,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                   <Text style={styles.timerLarge}>{formatTime(timer)}</Text>
                   <View style={styles.recordingBadge}>
                     <View style={styles.redDot} />
-                    <Text style={styles.recordingLabel}>ENREGISTREMENT</Text>
+                    <Text style={styles.recordingLabel}>{tr("ENREGISTREMENT")}</Text>
                   </View>
                 </View>
 
@@ -279,7 +280,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                     } catch (e) {
                       console.log("Error uploading voice note", e);
                       showToast(
-                        "Note vocale : envoi impossible. Vérifiez votre connexion et réessayez.",
+                        tr("Note vocale : envoi impossible. Vérifiez votre connexion et réessayez."),
                         "error",
                       );
                     } finally {
@@ -288,7 +289,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                   }}
                 >
                   <Text style={styles.validateBtnText}>
-                    {uploading ? "Envoi..." : "Enregistrer la consigne"}
+                    {uploading ? tr("Envoi...") : tr("Enregistrer la consigne")}
                   </Text>
                 </TouchableOpacity>
               </View>

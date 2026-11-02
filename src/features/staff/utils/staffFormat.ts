@@ -1,4 +1,5 @@
 import type { StaffMember } from "../types/staff.types";
+import { t as tr, dateLocale } from "@/src/i18n";
 
 /** Indicatif par défaut du champ téléphone (Cameroun). */
 export const DEFAULT_DIAL = "+237";
@@ -57,12 +58,12 @@ export const timeAgo = (iso?: string, now = new Date()): string => {
   const t = new Date(iso);
   if (Number.isNaN(t.getTime())) return "";
   const min = Math.floor((now.getTime() - t.getTime()) / 60000);
-  if (min < 1) return "À l’instant";
-  if (min < 60) return `Il y a ${min} min`;
+  if (min < 1) return tr("À l’instant");
+  if (min < 60) return tr("Il y a {{a}} min", { a: min });
   const h = Math.floor(min / 60);
-  if (h < 24) return `Il y a ${h} h`;
-  if (h < 48) return "Hier";
-  return t.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  if (h < 24) return tr("Il y a {{a}} h", { a: h });
+  if (h < 48) return tr("Hier");
+  return t.toLocaleDateString(dateLocale(), { day: "numeric", month: "short" });
 };
 
 /** Nom d'un livreur ou candidat (`infos` du backend) : nom, sinon email, sinon « Utilisateur ». */
@@ -70,5 +71,5 @@ export const personName = (infos?: { prenom?: string; nom?: string; email?: stri
   const name = [infos?.prenom, infos?.nom].filter(Boolean).join(" ");
   if (name) return name;
   if (infos?.email) return infos.email.split("@")[0];
-  return "Utilisateur";
+  return tr("Utilisateur");
 };

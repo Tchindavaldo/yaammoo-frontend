@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /** Les trois axes de filtrage du panier. */
 export type CartFilterKind = "zone" | "periode" | "heure";
@@ -21,9 +22,9 @@ interface CartFilterChipsRowProps {
 }
 
 const LABELS: Record<CartFilterKind, string> = {
-  zone: "Zone de livraison",
-  periode: "Période",
-  heure: "Heure",
+  zone: t("Zone de livraison"),
+  periode: t("Période"),
+  heure: t("Heure"),
 };
 
 const ICONS: Record<CartFilterKind, keyof typeof Ionicons.glyphMap> = {
@@ -115,8 +116,8 @@ export const CartFilterChipsRow: React.FC<CartFilterChipsRowProps> = ({
                 heure se suffisent a elles-memes (« Express », « 12h »). */}
             {!active
               ? LABELS[c.kind]
-              : c.kind === "zone" && c.value !== "Retrait en boutique"
-                ? `Zone ${c.value}`
+              : c.kind === "zone" && c.value !== t("Retrait en boutique")
+                ? t("Zone {{a}}", { a: c.value })
                 : c.value}
           </Text>
 

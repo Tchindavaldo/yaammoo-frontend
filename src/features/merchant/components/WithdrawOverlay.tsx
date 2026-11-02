@@ -23,6 +23,7 @@ import {
   networkLabel,
 } from "../services/walletNetwork";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface WithdrawOverlayProps {
   phone: string;
@@ -101,11 +102,11 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
     }
     const a = Number(amount);
     if (!a || a <= 0 || !Number.isInteger(a)) {
-      onError?.("Veuillez saisir un montant valide");
+      onError?.(t("Veuillez saisir un montant valide"));
       return;
     }
     if (a > sourceBalance) {
-      onError?.(`Solde ${networkLabel(sourceNetwork)} insuffisant : ${formatFcfa(sourceBalance)} disponibles.`);
+      onError?.(t("Solde {{a}} insuffisant : {{b}} disponibles.", { a: networkLabel(sourceNetwork), b: formatFcfa(sourceBalance) }));
       return;
     }
     setWithdrawState("input");
@@ -121,15 +122,15 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
     }
     const raw = phone.trim().replace(/\s/g, "");
     if (!raw) {
-      onError?.("Veuillez remplir le numéro de retrait");
+      onError?.(t("Veuillez remplir le numéro de retrait"));
       return;
     }
     if (blocked) {
-      onError?.(detectError || "Réseau du numéro en cours de détection");
+      onError?.(detectError || t("Réseau du numéro en cours de détection"));
       return;
     }
     if (quote && !quote.sufficient) {
-      onError?.(`Solde ${networkLabel(sourceNetwork)} insuffisant avec les frais : ${formatFcfa(quote.totalDebited)} nécessaires, ${formatFcfa(quote.sourceBalance)} disponibles.`);
+      onError?.(t("Solde {{a}} insuffisant avec les frais : {{b}} nécessaires, {{c}} disponibles.", { a: networkLabel(sourceNetwork), b: formatFcfa(quote.totalDebited), c: formatFcfa(quote.sourceBalance) }));
       return;
     }
     const p = raw.startsWith("237") ? raw : `237${raw}`;
@@ -150,10 +151,10 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
       : detectError
         ? detectError
         : quoteLoading || !quote
-          ? "Calcul des frais…"
-          : `Envoyé ${formatFcfa(quote.sentAmount ?? quote.amount)} (dont ${formatFcfa(quote.kioskFee ?? 0)} de frais de retrait)` +
-            (crossNetwork ? ` · frais ${networkLabel(sourceNetwork)} → ${networkLabel(detectedNetwork)} ${formatFcfa(quote.fee)}` : "") +
-            ` · débité ${formatFcfa(quote.totalDebited)}`;
+          ? t("Calcul des frais…")
+          : t("Envoyé {{a}} (dont {{b}} de frais de retrait)", { a: formatFcfa(quote.sentAmount ?? quote.amount), b: formatFcfa(quote.kioskFee ?? 0) }) +
+            (crossNetwork ? t(" · frais {{a}} → {{b}} {{c}}", { a: networkLabel(sourceNetwork), b: networkLabel(detectedNetwork), c: formatFcfa(quote.fee) }) : "") +
+            t(" · débité {{a}}", { a: formatFcfa(quote.totalDebited) });
 
   return (
     <>
@@ -181,7 +182,7 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
                 <Ionicons name="close" size={16} color={DS.onInk} />
               </TouchableOpacity>
               <View style={styles.networkBlock}>
-                <Text style={styles.networkLabel}>Débiter</Text>
+                <Text style={styles.networkLabel}>{t("Débiter")}</Text>
                 <View style={styles.chips}>
                   {WALLET_NETWORKS.map((net) => {
                     const active = sourceNetwork === net;
@@ -218,7 +219,7 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
                 <Ionicons name="cash-outline" size={16} color={DS.onInk} style={styles.inputIcon} />
                 <TextInput
                   style={styles.textInput}
-                  placeholder={`montant (max ${sourceBalance.toLocaleString("fr-FR")} F)`}
+                  placeholder={t("montant (max {{a}} F)", { a: sourceBalance.toLocaleString("fr-FR") })}
                   placeholderTextColor={DS.onInkMuted}
                   keyboardType="number-pad"
                   value={amount}
@@ -273,12 +274,12 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
           )}
 
           {/* WAITING : requête en vol */}
-          {withdrawState === "waiting" && <Text style={styles.centerText}>Veuillez patienter...</Text>}
+          {withdrawState === "waiting" && <Text style={styles.centerText}>{t("Veuillez patienter...")}</Text>}
 
           {/* PROCESSING : réponse reçue, retrait pris en compte */}
           {withdrawState === "processing" && (
             <Text style={styles.centerText} numberOfLines={2}>
-              Retrait en cours...
+              {t("Retrait en cours...")}
             </Text>
           )}
 
@@ -286,7 +287,7 @@ export const WithdrawOverlay: React.FC<WithdrawOverlayProps> = ({
           {withdrawState === "completed" && (
             <View style={styles.completedBlock}>
               <Text style={styles.completedText} numberOfLines={2}>
-                Retrait réussi ! Le montant peut mettre jusqu&apos;à 24h pour arriver sur votre numéro.
+                {t("Retrait réussi ! Le montant peut mettre jusqu'à 24h pour arriver sur votre numéro.")}
               </Text>
             </View>
           )}

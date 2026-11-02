@@ -6,6 +6,7 @@ import { getBonusDescriptor } from "../config/bonusRegistry";
 import type { Bonus } from "../types/bonus.types";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
 import { GALLERY_CARD_W, GALLERY_RADIUS } from "./gallery.constants";
+import { t } from "@/src/i18n";
 
 interface BonusGalleryCardProps {
   bonus: Bonus;
@@ -88,7 +89,7 @@ const BonusGalleryCardBase = ({
           ]}
           numberOfLines={1}
         >
-          Bonus {position + 1}
+          {t("Bonus")} {position + 1}
         </Text>
         <Animated.View style={styles.galleryBar}>
           <Animated.View

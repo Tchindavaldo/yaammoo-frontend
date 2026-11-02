@@ -17,6 +17,7 @@ import { MAX_SERVER_LIMIT } from "../utils/homeClientSettings";
 import { normalizeFastFood } from "../utils/normalizeFastFood";
 import type { FastFoodHomeSettings } from "./useFastFoodHomeSettings";
 import type { FastFoodPagination } from "./useFastFoodPagination";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Requetes du catalogue (`GET /fastFood/all`), extraites de `FastFoodContext` :
@@ -84,7 +85,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
     if (hasLoadedOnce) return;
     const t = setTimeout(() => {
       console.log("[boot] catalogue sans reponse, on entre dans la home");
-      setError("Connection internet indisponible, vérifiez votre réseau");
+      setError(tr("Connection internet indisponible, vérifiez votre réseau"));
       setHasLoadedOnce(true);
     }, BOOT_GIVE_UP_MS);
     return () => clearTimeout(t);
@@ -271,7 +272,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
     } catch (err: any) {
       if (guarded && myRun !== runIdRef.current) return;
       console.error("Error fetching fast foods:", err);
-      setError("Connection internet indisponible, vérifiez votre réseau");
+      setError(tr("Connection internet indisponible, vérifiez votre réseau"));
       // Echec d'une page suivante : rien ne s'insera, le prochain bas
       // pourra reessayer au lieu de rester verrouille. Le loader s'eteint
       // tout de suite (aucun layout a attendre).

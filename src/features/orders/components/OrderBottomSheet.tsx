@@ -24,6 +24,7 @@ import { OrderSheetHeader } from "./OrderSheetHeader";
 import { OrderSheetTab, OrderSheetTabBar } from "./OrderSheetTabBar";
 import { OrderTrackingTab } from "./OrderTrackingTab";
 import { RateMenuTab } from "./RateMenuTab";
+import { t as tr } from "@/src/i18n";
 
 // `OrderItem` reste importable d'ici (type historique du sheet).
 export type { OrderItem } from "../utils/buildOrderItems";
@@ -79,12 +80,12 @@ export const OrderBottomSheet: React.FC<Props> = ({
   const tabs = useMemo(
     () =>
       [
-        { key: "livraison" as const, label: "Livraison", show: true },
-        { key: "commandes" as const, label: "Commandes", show: true },
-        { key: "montant" as const, label: "Montant", show: showMontantTab },
-        { key: "suivi" as const, label: "Suivi", show: showTrackingTab },
-        { key: "livreur" as const, label: "Livreur", show: showDriverTab },
-        { key: "noter" as const, label: "Noter", show: showRateTab },
+        { key: "livraison" as const, label: tr("Livraison"), show: true },
+        { key: "commandes" as const, label: tr("Commandes"), show: true },
+        { key: "montant" as const, label: tr("Montant"), show: showMontantTab },
+        { key: "suivi" as const, label: tr("Suivi"), show: showTrackingTab },
+        { key: "livreur" as const, label: tr("Livreur"), show: showDriverTab },
+        { key: "noter" as const, label: tr("Noter"), show: showRateTab },
       ].filter((t) => t.show),
     [showMontantTab, showTrackingTab, showDriverTab, showRateTab],
   );
@@ -198,7 +199,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
             menuName={
               selectedOrder?.menu?.titre ||
               selectedOrder?.menu?.name ||
-              "ce plat"
+              tr("ce plat")
             }
             menuImage={
               selectedOrder?.menu?.image ||

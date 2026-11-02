@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "@/src/theme";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * GuestGate — protège un écran entièrement lié au compte (panier, profil…).
@@ -43,7 +44,7 @@ export function GuestGate({
           activeOpacity={0.85}
           onPress={() => requireAuth()}
         >
-          <Text style={styles.btnText}>Se connecter</Text>
+          <Text style={styles.btnText}>{t("Se connecter")}</Text>
           <Ionicons name="arrow-forward" size={16} color="#fff" />
         </TouchableOpacity>
       </View>

@@ -5,6 +5,7 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-nativ
 import { DraftPrice } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
 import { DESC_MAX, DESC_MIN } from "./menuFormConstants";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Prix du plat en nombre VARIABLE : un onglet par prix (« Prix 1 * », « Prix 2 »…),
@@ -22,9 +23,9 @@ interface Props {
 }
 
 const PLACEHOLDERS = [
-  ["2000", "Ex: 1 Burger + 1 Frites + 1 Boisson"],
-  ["3500", "Ex: 2 Burgers + 2 Frites + 2 Boissons"],
-  ["5000", "Ex: Seau de 8 pièces + frites"],
+  ["2000", tr("Ex: 1 Burger + 1 Frites + 1 Boisson")],
+  ["3500", tr("Ex: 2 Burgers + 2 Frites + 2 Boissons")],
+  ["5000", tr("Ex: Seau de 8 pièces + frites")],
 ];
 
 export const MenuPricesEditor: React.FC<Props> = ({
@@ -66,8 +67,8 @@ export const MenuPricesEditor: React.FC<Props> = ({
       <View style={[styles.priceHeaderRow, { marginTop: Theme.spacing.lg }]}>
         <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
           {selectedIdx === 0
-            ? "Prix 1 (obligatoire)"
-            : `Prix ${selectedIdx + 1} (optionnel)`}
+            ? tr("Prix 1 (obligatoire)")
+            : tr("Prix {{a}} (optionnel)", { a: selectedIdx + 1 })}
         </Text>
         <ScrollView
           horizontal
@@ -88,7 +89,7 @@ export const MenuPricesEditor: React.FC<Props> = ({
                   selectedIdx === idx && styles.priceTabTextActive,
                 ]}
               >
-                {idx === 0 ? "Prix 1 *" : `Prix ${idx + 1}`}
+                {idx === 0 ? tr("Prix 1 *") : tr("Prix {{a}}", { a: idx + 1 })}
               </Text>
             </TouchableOpacity>
           ))}

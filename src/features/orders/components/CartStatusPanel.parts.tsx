@@ -3,6 +3,7 @@ import { DS } from "@/src/theme/ds";
 import { Commande } from "@/src/types";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { t, dateLocale } from "@/src/i18n";
 
 /**
  * Helpers et sous-composants de `CartStatusPanel` (page « État des commandes »
@@ -45,9 +46,9 @@ export const GroupSubTabs = React.memo(function GroupSubTabs({
   };
   return (
     <View style={styles.subTabRow}>
-      {tab("attente", "En attente", counts.attente)}
-      {tab("cours", "En cours", counts.cours)}
-      {tab("termine", "Terminé", counts.termine)}
+      {tab("attente", t("En attente"), counts.attente)}
+      {tab("cours", t("En cours"), counts.cours)}
+      {tab("termine", t("Terminé"), counts.termine)}
     </View>
   );
 });
@@ -146,7 +147,7 @@ export const periodKeyOf = (o: any): string => {
   const d = o?.delivery;
   if (d?.status !== true) return "surplace";
   if (d?.type === "express") return "express";
-  return d?.time || "À définir";
+  return d?.time || t("À définir");
 };
 
 /** ISO (YYYY-MM-DD) de la date de livraison d'une commande. */
@@ -158,7 +159,7 @@ export const getOrderDateISO = (o: any): string => {
 /** Libellé d'un chip de date : « 10 juin ». */
 export const formatDateLabel = (iso: string) => {
   try {
-    return new Date(iso).toLocaleDateString("fr-FR", {
+    return new Date(iso).toLocaleDateString(dateLocale(), {
       day: "numeric",
       month: "long",
     });

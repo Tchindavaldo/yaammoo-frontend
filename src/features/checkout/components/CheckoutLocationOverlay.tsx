@@ -9,6 +9,7 @@ import { requestForegroundLocation } from '@/src/features/location/services/loca
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -107,7 +108,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       // Écran de divulgation avant la popup système (Android, Google Play).
       const status = await requestForegroundLocation('address');
       if (status !== 'granted') {
-        showToast("Accès à la position refusé", "error");
+        showToast(t("Accès à la position refusé"), "error");
         setIsLocating(false);
         return;
       }
@@ -118,7 +119,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
       setLocalAddress(coords);
     } catch (error) {
-      showToast("Position introuvable : la dernière position connue sera utilisée si possible.", "error");
+      showToast(t("Position introuvable : la dernière position connue sera utilisée si possible."), "error");
       // Try a less accurate but faster fix as fallback
       try {
         const last = await Location.getLastKnownPositionAsync({});
@@ -138,11 +139,11 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       return;
     }
     if (!localAddress.trim()) {
-      setValidationError("Envoyez votre GPS ou saisissez une adresse");
+      setValidationError(t("Envoyez votre GPS ou saisissez une adresse"));
       return;
     }
     if (!localNote.trim()) {
-      setValidationError("Ajoutez une note (ex: Porte bleue, 2ème étage)");
+      setValidationError(t("Ajoutez une note (ex: Porte bleue, 2ème étage)"));
       return;
     }
     setValidationError(null);
@@ -189,7 +190,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="location-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Adresse de livraison</Text>
+              <Text style={styles.headerTitle}>{t("Adresse de livraison")}</Text>
               <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
                 <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
               </TouchableOpacity>
@@ -201,10 +202,10 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
 
           <View style={styles.inputContainer}>
             <View style={styles.addressBox}>
-              <Text style={styles.addressText}>{localAddress || '(Envoyer ma position GPS)'}</Text>
+              <Text style={styles.addressText}>{localAddress || t("(Envoyer ma position GPS)")}</Text>
                 <TextInput 
                   style={styles.textInput}
-                  placeholder="Note (ex: Porte bleue, 2ème étage...)"
+                  placeholder={t("Note (ex: Porte bleue, 2ème étage...)")}
                   placeholderTextColor="#94a3b8"
                   multiline
                   textAlignVertical="top"
@@ -223,7 +224,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
                   style={styles.locatingOverlay}
                 >
                     <Loader size={40} color={DS.accent} />
-                    <Text style={styles.locatingText}>Récupération de votre position actuelle...</Text>
+                    <Text style={styles.locatingText}>{t("Récupération de votre position actuelle...")}</Text>
                   </BlurView>
                 )}
             </View>
@@ -239,7 +240,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
               onPress={handleGetLocation}
             >
               <Ionicons name="locate-outline" size={18} color="#334155" />
-              <Text style={styles.gpsBtnText}>Envoyer ma position GPS</Text>
+              <Text style={styles.gpsBtnText}>{t("Envoyer ma position GPS")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 

@@ -19,6 +19,7 @@ import {
 } from "react-native";
 import type { AccountEntry } from "../hooks/useAccounts";
 import { useLogout } from "../hooks/useLogout";
+import { t } from "@/src/i18n";
 
 const AVATAR_BG = [DS.accent, DS.text2];
 
@@ -96,7 +97,7 @@ export function AccountSheet({
       >
         <View style={styles.handle} />
         <Text style={styles.title}>
-          {accounts.length > 1 ? "Mes comptes" : "Mon compte"}
+          {accounts.length > 1 ? t("Mes comptes") : t("Mon compte")}
         </Text>
 
         {accounts.map((a, i) => (
@@ -120,7 +121,7 @@ export function AccountSheet({
                 {a.nom}
               </Text>
               <Text style={styles.sub} numberOfLines={1}>
-                {[a.isMarchand ? "Marchand" : "", a.contact]
+                {[a.isMarchand ? t("Marchand") : "", a.contact]
                   .filter(Boolean)
                   .join(" · ")}
               </Text>
@@ -140,7 +141,7 @@ export function AccountSheet({
           <View style={[styles.avatar, styles.addAvatar]}>
             <Ionicons name="add" size={18} color={DS.muted} />
           </View>
-          <Text style={styles.name}>Ajouter un compte</Text>
+          <Text style={styles.name}>{t("Ajouter un compte")}</Text>
         </TouchableOpacity>
 
         <View style={styles.actions}>
@@ -150,7 +151,7 @@ export function AccountSheet({
             disabled={isLoggingOut}
             activeOpacity={0.7}
           >
-            <Text style={styles.cancelText}>Annuler</Text>
+            <Text style={styles.cancelText}>{t("Annuler")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.btn, styles.logout]}
@@ -163,7 +164,7 @@ export function AccountSheet({
             ) : (
               <>
                 <Ionicons name="exit-outline" size={18} color={DS.dangerInk} />
-                <Text style={styles.logoutText}>Se déconnecter</Text>
+                <Text style={styles.logoutText}>{t("Se déconnecter")}</Text>
               </>
             )}
           </TouchableOpacity>

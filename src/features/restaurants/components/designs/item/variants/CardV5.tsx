@@ -19,6 +19,7 @@ import {
 import { DarkBottomShade, V5BottomBar } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const IS_ANDROID = Platform.OS === "android";
 
@@ -75,7 +76,7 @@ export const CardV5: React.FC<CardVariantProps> = ({
           <View style={styles.v5TopRow}>
             <View style={styles.v5DeliveryStrip1}>
               <Text style={[shared.v5DeliveryTime, { color: accent }]}>
-                {stock} En Stock
+                {stock} {t("En Stock")}
               </Text>
             </View>
             <View style={[styles.v5PriceChip, { backgroundColor: accent }]}>
@@ -104,9 +105,9 @@ export const CardV5: React.FC<CardVariantProps> = ({
               <Ionicons name="flash" size={10} color={accent} />
             </View>
             <View>
-              <Text style={shared.v5DeliveryLabel}>Prochaine</Text>
+              <Text style={shared.v5DeliveryLabel}>{t("Prochaine")}</Text>
               <Text style={[shared.v5DeliveryTime, { color: accent }]}>
-                Livraison {deliveryTime} · {deliveryFeeLabel}
+                {t("Livraison")} {deliveryTime} · {deliveryFeeLabel}
               </Text>
             </View>
           </View>

@@ -53,6 +53,7 @@ import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartGroupedDeliverySheet } from "@/src/features/payment/components/CartGroupedDeliverySheet";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 if (
   Platform.OS === "android" &&
@@ -116,7 +117,7 @@ export default function OrdersScreen() {
         const fetched = fetchedFfInfos[ffId];
         entry = {
           id: ffId,
-          name: ff?.nom || ff?.name || fetched?.name || "Boutique",
+          name: ff?.nom || ff?.name || fetched?.name || t("Boutique"),
           image: ff?.image || ff?.logo || ff?.coverImage || fetched?.image,
           orderCount: 0,
           total: 0,
@@ -425,7 +426,7 @@ export default function OrdersScreen() {
   // Succès reçu sheet masqué : toast global, fin immédiate du parcours.
   useEffect(() => {
     if (groupedHidden && paymentState === "success") {
-      showToast("Paiement de la commande effectué avec succès !", "success");
+      showToast(t("Paiement de la commande effectué avec succès !"), "success");
       endPayment();
       refresh();
     }
@@ -468,16 +469,16 @@ export default function OrdersScreen() {
   /** Libellé de période d'une commande : "Express" / "Créneau" / "Sur place". */
   const periodeOf = (o: any) =>
     o?.delivery?.status !== true
-      ? "Sur place"
+      ? t("Sur place")
       : o?.delivery?.type === "express"
         ? "Express"
-        : "Créneau";
+        : t("Créneau");
 
   /** Zone de livraison, "Retrait en boutique" à défaut. */
   const zoneOf = (o: any) =>
     o?.delivery?.status === true
-      ? o?.delivery?.zone || o?.delivery?.location || "Zone inconnue"
-      : "Retrait en boutique";
+      ? o?.delivery?.zone || o?.delivery?.location || t("Zone inconnue")
+      : t("Retrait en boutique");
 
   /** Créneau horaire, `null` hors livraison programmée. */
   const heureOf = (o: any): string | null =>
@@ -579,9 +580,9 @@ export default function OrdersScreen() {
       const success = await deleteOrder(orderToDelete);
       if (success) {
         setOrderToDelete(null);
-        setToast({ message: "Article supprimé du panier", type: "success" });
+        setToast({ message: t("Article supprimé du panier"), type: "success" });
       } else {
-        setToast({ message: "Erreur lors de la suppression", type: "error" });
+        setToast({ message: t("Erreur lors de la suppression"), type: "error" });
       }
     } finally {
       setIsSubmitting(false);
@@ -598,12 +599,12 @@ export default function OrdersScreen() {
       const d = order.delivery as any;
       if (!d || !d.status || d.type === "aucune") continue;
       const menuName =
-        (order.menu as any)?.name || (order.menu as any)?.titre || "Commande";
-      if (!d.location) return `"${menuName}" : adresse de livraison requise`;
+        (order.menu as any)?.name || (order.menu as any)?.titre || t("Commande");
+      if (!d.location) return t("\"{{a}}\" : adresse de livraison requise", { a: menuName });
       if (!d.phone && !order.userData?.phoneNumber)
-        return `"${menuName}" : numéro de contact requis`;
+        return t("\"{{a}}\" : numéro de contact requis", { a: menuName });
       if (d.type === "time" && !d.time)
-        return `"${menuName}" : période de livraison requise`;
+        return t("\"{{a}}\" : période de livraison requise", { a: menuName });
     }
     return null;
   };
@@ -694,8 +695,8 @@ export default function OrdersScreen() {
     return (
       <GuestGate
         icon="cart-outline"
-        title="Votre panier vous attend"
-        subtitle="Connectez-vous pour ajouter des plats à votre panier et passer commande."
+        title={t("Votre panier vous attend")}
+        subtitle={t("Connectez-vous pour ajouter des plats à votre panier et passer commande.")}
       >
         {null}
       </GuestGate>
@@ -731,8 +732,8 @@ export default function OrdersScreen() {
       <View style={styles.container}>
         <BlurScope>
           <TabHeader
-            title="Mon panier"
-            subtitle="Chargement..."
+            title={t("Mon panier")}
+            subtitle={t("Chargement...")}
             onHeightChange={setHeaderHeight}
           />
           <BlurTarget style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
@@ -752,7 +753,7 @@ export default function OrdersScreen() {
   const headerRight =
     pendingToBuy.length > 0 && !orderToDelete ? (
       <HeaderPill
-        label="Tout commander"
+        label={t("Tout commander")}
         icon="card-outline"
         onPress={() => startOrder(displayedZoneGroups)}
       />
@@ -765,7 +766,7 @@ export default function OrdersScreen() {
           ne doivent pas viser la liste. */}
       <BlurScope>
       <TabHeader
-        title="Mon panier"
+        title={t("Mon panier")}
         subtitle={headerSubtitle}
         right={headerRight}
         onHeightChange={setHeaderHeight}
@@ -861,8 +862,8 @@ export default function OrdersScreen() {
               />
               <Text style={styles.emptyText}>
                 {zoneGroups.length > 0
-                  ? "Aucune commande pour ce filtre"
-                  : "Votre panier est vide"}
+                  ? t("Aucune commande pour ce filtre")
+                  : t("Votre panier est vide")}
               </Text>
             </View>
           }
@@ -922,7 +923,7 @@ export default function OrdersScreen() {
               FCFA
             </Text>
             <Text style={styles.deleteMsg}>
-              Voulez-vous vraiment supprimer ?
+              {t("Voulez-vous vraiment supprimer ?")}
             </Text>
           </View>
           <TouchableOpacity
@@ -958,7 +959,7 @@ export default function OrdersScreen() {
           setGroupedDelivery(null);
           setToast({
             message:
-              "Utilisez les filtres pour isoler les commandes à livrer dans la même zone et le même créneau, ou validez-les individuellement.",
+              t("Utilisez les filtres pour isoler les commandes à livrer dans la même zone et le même créneau, ou validez-les individuellement."),
             type: "success",
           });
         }}
@@ -1031,7 +1032,7 @@ export default function OrdersScreen() {
             ]);
             if (result.success) {
               setToast({
-                message: "Commande validée avec succès",
+                message: t("Commande validée avec succès"),
                 type: "success",
               });
               setEditModalVisible(false);

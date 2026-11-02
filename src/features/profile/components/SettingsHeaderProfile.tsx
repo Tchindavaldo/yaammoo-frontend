@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useAccounts } from "../hooks/useAccounts";
 import { AccountSheet } from "./AccountSheet";
 import { AccountSwitcherPill } from "./AccountSwitcherPill";
+import { t } from "@/src/i18n";
 
 interface Props {
   onAddAccount: () => void;
@@ -25,7 +26,7 @@ export function SettingsHeaderProfile({ onAddAccount }: Props) {
   const nomComplet =
     [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(" ") ||
     firebaseName ||
-    "Utilisateur";
+    t("Utilisateur");
   const contact =
     userData?.infos.email ||
     user?.email ||
@@ -45,7 +46,7 @@ export function SettingsHeaderProfile({ onAddAccount }: Props) {
             </Text>
             {userData?.isMarchand && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>Marchand</Text>
+                <Text style={styles.badgeText}>{t("Marchand")}</Text>
               </View>
             )}
           </View>

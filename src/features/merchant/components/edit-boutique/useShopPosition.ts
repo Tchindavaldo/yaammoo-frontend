@@ -2,6 +2,7 @@ import * as Location from "expo-location";
 import { useCallback, useState } from "react";
 import { Platform } from "react-native";
 import { requestForegroundLocation } from "@/src/features/location/services/locationPermission";
+import { t } from "@/src/i18n";
 
 export type ShopPosition = { latitude: number; longitude: number };
 
@@ -30,7 +31,7 @@ export const useShopPosition = (
 
   const captureShopPosition = useCallback(async () => {
     if (Platform.OS === "web") {
-      onError("Disponible dans l'application mobile");
+      onError(t("Disponible dans l'application mobile"));
       return;
     }
     setLocating(true);
@@ -38,7 +39,7 @@ export const useShopPosition = (
       // Écran de divulgation avant la popup système (Android, Google Play).
       const status = await requestForegroundLocation("shop");
       if (status !== "granted") {
-        onError("Autorisez la localisation dans les réglages du téléphone");
+        onError(t("Autorisez la localisation dans les réglages du téléphone"));
         return;
       }
       const pos = await Location.getCurrentPositionAsync({
@@ -50,7 +51,7 @@ export const useShopPosition = (
       });
     } catch (e) {
       console.warn("Position de la boutique impossible:", e);
-      onError("Position introuvable, réessayez à l'extérieur");
+      onError(t("Position introuvable, réessayez à l'extérieur"));
     } finally {
       setLocating(false);
     }

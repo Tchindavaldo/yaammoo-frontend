@@ -9,6 +9,7 @@ import { SupportComposer } from "./SupportComposer";
 import { SupportMessageBubble } from "./SupportMessageBubble";
 import { SupportMessagesSkeleton } from "./SupportMessagesSkeleton";
 import { SupportTopicChips } from "./SupportTopicChips";
+import { t } from "@/src/i18n";
 
 interface Props {
   /** `null` = nouveau chat : l'objet reste à choisir. */
@@ -109,13 +110,13 @@ export const SupportChatView: React.FC<Props> = ({
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>
               {topic
-                ? "Décrivez votre demande"
-                : "Comment pouvons-nous vous aider ?"}
+                ? t("Décrivez votre demande")
+                : t("Comment pouvons-nous vous aider ?")}
             </Text>
             <Text style={styles.emptyText}>
               {topic
-                ? "Notre équipe vous répond dans les meilleurs délais."
-                : "Choisissez l'objet de votre discussion pour démarrer."}
+                ? t("Notre équipe vous répond dans les meilleurs délais.")
+                : t("Choisissez l'objet de votre discussion pour démarrer.")}
             </Text>
           </View>
         ) : (
@@ -135,13 +136,13 @@ export const SupportChatView: React.FC<Props> = ({
           onSend={send}
           disabled={!topic || sending}
           placeholder={
-            topic ? "Écrire un message…" : "Sélectionnez d'abord un objet"
+            topic ? t("Écrire un message…") : t("Sélectionnez d'abord un objet")
           }
           onBlockedPress={() =>
             setToast(
               topic
-                ? "Envoi en cours…"
-                : "Vous devez d'abord sélectionner un objet"
+                ? t("Envoi en cours…")
+                : t("Vous devez d'abord sélectionner un objet")
             )
           }
         />

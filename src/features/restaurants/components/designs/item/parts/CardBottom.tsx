@@ -5,6 +5,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CARD_BOTTOM_STYLE } from "../config";
 import { sharedStyles as styles } from "../styles/sharedStyles";
+import { t } from "@/src/i18n";
 
 /** Pastille des frais de livraison (« gratuit », « 300F »…) : fond accent, texte blanc gras. */
 export const DeliveryFeePill: React.FC<{ label: string; accent: string }> = ({
@@ -13,7 +14,7 @@ export const DeliveryFeePill: React.FC<{ label: string; accent: string }> = ({
 }) => (
   <View style={[styles.deliveryFeePill, { backgroundColor: accent }]}>
     <Text style={[styles.deliveryFeePillText, { color: "#fff", fontWeight: "800" }]}>
-      {label}
+      {t(label)}
     </Text>
   </View>
 );
@@ -50,7 +51,7 @@ const StockDeliveryBar: React.FC<{
   deliveryTime,
   stock,
   hideStock = false,
-  stockLabel = "disponible",
+  stockLabel = t("disponible"),
   dark = false,
 }) => {
   const ink = dark ? "#fff" : "#000";
@@ -90,10 +91,10 @@ const StockDeliveryBar: React.FC<{
             <Text
               style={[styles.v5DeliveryLabel, { fontSize: 10 }, dark && { color: ink }]}
             >
-              Prochaine
+              {t("Prochaine")}
             </Text>
             <Text style={[styles.v5DeliveryTime, { color: ink, fontSize: 11 }]}>
-              Livraison {deliveryTime}
+              {t("Livraison")} {deliveryTime}
             </Text>
           </View>
         </View>
@@ -110,10 +111,10 @@ const V7BottomZone: React.FC<{
 }> = ({ accent, deliveryTime, deliveryFeeLabel }) => (
   <View style={styles.v7BottomZone}>
     <View style={styles.v7LiveRow}>
-      <Text style={styles.v7LiveMeta}>Prochaine</Text>
+      <Text style={styles.v7LiveMeta}>{t("Prochaine")}</Text>
     </View>
     <View style={styles.v7DeliveryRow}>
-      <Text style={styles.v7LiveHour}>livraison · {deliveryTime}</Text>
+      <Text style={styles.v7LiveHour}>{t("livraison ·")} {deliveryTime}</Text>
       <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
     </View>
   </View>
@@ -138,7 +139,7 @@ export const CardBottom: React.FC<{
   stock,
   withBackground = true,
   hideStock = false,
-  stockLabel = "disponible",
+  stockLabel = t("disponible"),
   deliveryFeeLabel = "gratuit",
   dark = false,
 }) => {
@@ -190,9 +191,9 @@ export const CardBottom: React.FC<{
             },
           ]}
         >
-          <Text style={[styles.v7LiveMeta, { color: "#000" }]}>Prochaine</Text>
+          <Text style={[styles.v7LiveMeta, { color: "#000" }]}>{t("Prochaine")}</Text>
           <Text style={[styles.v7LiveHour, { color: "#000" }]}>
-            livraison · <Text style={{ color: accent }}>{deliveryTime}</Text>
+            {t("livraison ·")} <Text style={{ color: accent }}>{deliveryTime}</Text>
           </Text>
           <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
         </View>
@@ -234,12 +235,12 @@ export const V5BottomBar: React.FC<{
         <Text
           style={[styles.v5DeliveryLabel, { fontSize: 10 }, dark && { color: ink }]}
         >
-          Prochaine
+          {t("Prochaine")}
         </Text>
         <Text style={[styles.v5DeliveryTime, { color: ink, fontSize: 11 }]}>
           <View style={styles.v5DeliveryFeeRow}>
             <Text style={[styles.v5DeliveryTime, { color: ink, fontSize: 11 }]}>
-              Livraison {deliveryTime}
+              {t("Livraison")} {deliveryTime}
             </Text>
             <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
           </View>

@@ -37,6 +37,7 @@ import {
 } from "../utils/nativeListDiagnostics";
 import { setVisibleShops } from "@/src/services/analytics/shopImpressions";
 import { homePageOf } from "@/src/services/analytics/homePages";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Pont JS de la liste NATIVE du home (`modules/home-list`, iOS et Android).
@@ -116,7 +117,7 @@ const FONTS: HomeListFonts = {
 
 /** Frais de la ligne sous la carte du variant 4 (`ItemMeta`). */
 const metaFeeLabelFor = (i: number) =>
-  i % 3 === 0 ? "gratuite" : i % 3 === 1 ? "300F" : "1000F";
+  i % 3 === 0 ? tr("gratuite") : i % 3 === 1 ? "300F" : "1000F";
 
 const menuIdOf = (ff: FastFood, m: any, i: number) => String(m?.id ?? `${ff.id}_${i}`);
 

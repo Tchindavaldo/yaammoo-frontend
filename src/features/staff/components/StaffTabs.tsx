@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { StaffTab } from "../types/staff.types";
 import { ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 interface Props {
   tab: StaffTab;
@@ -15,11 +16,11 @@ interface Props {
 /** Sélecteur Équipe / Livreurs (contrôle segmenté de la maquette). */
 export const StaffTabs: React.FC<Props> = ({ tab, onChange, members, drivers, pending }) => (
   <View style={styles.track} accessibilityRole="tablist">
-    <Segment on={tab === "team"} onPress={() => onChange("team")} label="Équipe" count={members} />
+    <Segment on={tab === "team"} onPress={() => onChange("team")} label={t("Équipe")} count={members} />
     <Segment
       on={tab === "drivers"}
       onPress={() => onChange("drivers")}
-      label="Livreurs"
+      label={t("Livreurs")}
       count={pending > 0 ? undefined : drivers}
       badge={pending > 0 ? pending : undefined}
     />

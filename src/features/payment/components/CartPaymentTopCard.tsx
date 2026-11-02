@@ -19,6 +19,7 @@ import {
   type CartPaymentVariant,
 } from "./CartPaymentVariants";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -127,7 +128,7 @@ const FilterContent: React.FC<{
           checkout. */}
       <View style={styles.actionArea}>
         <Text style={styles.actionTitle}>
-          Sélectionnez le réseau utilisé pour le paiement
+          {t("Sélectionnez le réseau utilisé pour le paiement")}
         </Text>
         <View style={styles.networkRow}>
           {(["orange", "mtn"] as const).map((net) => {

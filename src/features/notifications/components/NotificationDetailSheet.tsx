@@ -7,6 +7,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from '@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
+import { t } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -19,10 +20,10 @@ const formatDate = (iso?: string) => {
   if (!iso) return '';
   const d = new Date(iso);
   const diffMin = Math.floor((Date.now() - d.getTime()) / 60000);
-  if (diffMin < 1) return "À l'instant";
-  if (diffMin < 60) return `il y a ${diffMin} min`;
+  if (diffMin < 1) return t("À l'instant");
+  if (diffMin < 60) return t("il y a {{a}} min", { a: diffMin });
   const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `il y a ${diffH} h`;
+  if (diffH < 24) return t("il y a {{a}} h", { a: diffH });
   return d.toLocaleDateString();
 };
 
@@ -52,7 +53,7 @@ export const NotificationDetailSheet: React.FC<Props> = ({ visible, notification
             {(hasOrderAction || hasShopAction) && (
               <Pressable style={styles.chip} onPress={() => onAction(notification)}>
                 <Text style={styles.chipText}>
-                  {hasShopAction ? 'Voir la boutique' : 'Voir la commande'}
+                  {hasShopAction ? t("Voir la boutique") : t("Voir la commande")}
                 </Text>
               </Pressable>
             )}

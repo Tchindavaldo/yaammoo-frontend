@@ -6,6 +6,7 @@ import {
   useMerchantWallet,
   WithdrawalEvent,
 } from "../context/MerchantWalletContext";
+import { t } from "@/src/i18n";
 
 export type WithdrawState =
   | "idle"
@@ -92,7 +93,7 @@ export const useWithdraw = () => {
         setDetectedNetwork(res?.network ?? null);
       } catch (error: any) {
         if (seq !== predictSeq.current) return;
-        setDetectError(error?.response?.data?.message || "Opérateur non reconnu");
+        setDetectError(error?.response?.data?.message || t("Opérateur non reconnu"));
       } finally {
         if (seq === predictSeq.current) setDetecting(false);
       }
@@ -118,7 +119,7 @@ export const useWithdraw = () => {
       .catch((error: any) => {
         if (seq !== quoteSeq.current) return;
         setQuote(null);
-        setWithdrawError(error?.response?.data?.message || "Frais de retrait indisponibles");
+        setWithdrawError(error?.response?.data?.message || t("Frais de retrait indisponibles"));
       })
       .finally(() => {
         if (seq === quoteSeq.current) setQuoteLoading(false);
@@ -130,19 +131,19 @@ export const useWithdraw = () => {
     async (phone: string) => {
       const amount = Number(withdrawAmount);
       if (!userData || !phone) {
-        setWithdrawError("Numéro de retrait requis");
+        setWithdrawError(t("Numéro de retrait requis"));
         return;
       }
       if (!amount || amount <= 0) {
-        setWithdrawError("Montant de retrait invalide");
+        setWithdrawError(t("Montant de retrait invalide"));
         return;
       }
       if (!sourceNetwork) {
-        setWithdrawError("Choisissez le solde à débiter");
+        setWithdrawError(t("Choisissez le solde à débiter"));
         return;
       }
       if (!detectedNetwork) {
-        setWithdrawError(detectError || "Réseau du numéro non détecté");
+        setWithdrawError(detectError || t("Réseau du numéro non détecté"));
         return;
       }
       setWithdrawError(null);
@@ -160,7 +161,7 @@ export const useWithdraw = () => {
 
         const data = res?.data ?? res;
         if (res?.success === false) {
-          setWithdrawError(res?.message || "Échec du retrait");
+          setWithdrawError(res?.message || t("Échec du retrait"));
           setWithdrawState("input");
           return;
         }
@@ -170,7 +171,7 @@ export const useWithdraw = () => {
         setWithdrawState("processing");
       } catch (error: any) {
         const body = error.response?.data;
-        const message = body?.message || body?.error || error.message || "Échec du retrait";
+        const message = body?.message || body?.error || error.message || t("Échec du retrait");
         console.log(`[Retrait] ❌ refus : ${message}`);
         setWithdrawError(message);
         setWithdrawState("input");
@@ -192,7 +193,7 @@ export const useWithdraw = () => {
       if (e.status === "completed") {
         setWithdrawState("completed");
       } else if (e.status === "failed") {
-        setWithdrawError(e.message || "Retrait échoué");
+        setWithdrawError(e.message || t("Retrait échoué"));
         setWithdrawState("idle");
       }
       // pending : on reste en "processing".

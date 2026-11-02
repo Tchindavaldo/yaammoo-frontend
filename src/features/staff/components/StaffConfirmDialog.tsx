@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 export interface StaffConfirm {
   title: string;
@@ -34,7 +35,7 @@ export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel })
             style={[styles.btn, { backgroundColor: ST.surface }]}
             accessibilityRole="button"
           >
-            <Text style={[styles.btnText, { color: ST.ink }]}>Annuler</Text>
+            <Text style={[styles.btnText, { color: ST.ink }]}>{t("Annuler")}</Text>
           </Pressable>
           <Pressable
             onPress={confirm?.onConfirm}

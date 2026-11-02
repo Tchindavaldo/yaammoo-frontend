@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import moment from 'moment';
 import { WalletDayStat } from '@/src/features/merchant/services/walletStatsService';
+import { t } from "@/src/i18n";
 
 interface WalletDayStatItemProps {
   stat: WalletDayStat;
@@ -20,7 +21,7 @@ export const WalletDayStatItem: React.FC<WalletDayStatItemProps> = ({ stat }) =>
       <View style={styles.details}>
         <Text style={styles.day}>{moment(stat.period).format('dddd DD MMM YYYY')}</Text>
         <Text style={styles.count}>
-          {stat.count} transaction{stat.count > 1 ? 's' : ''}
+          {stat.count} {t("transaction")}{stat.count > 1 ? 's' : ''}
         </Text>
       </View>
       <View style={styles.amountContainer}>
@@ -28,7 +29,7 @@ export const WalletDayStatItem: React.FC<WalletDayStatItemProps> = ({ stat }) =>
           {stat.net.toLocaleString('fr-FR')} F
         </Text>
         {stat.payout > 0 && (
-          <Text style={styles.payout}>-{stat.payout.toLocaleString('fr-FR')} retrait</Text>
+          <Text style={styles.payout}>-{stat.payout.toLocaleString('fr-FR')} {t("retrait")}</Text>
         )}
       </View>
     </View>

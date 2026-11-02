@@ -10,6 +10,7 @@ import {
   SOFT_ACCENT,
 } from "./detail-hero/heroShared";
 import { CartRecapBody } from "./cart-detail-hero/CartRecapBody";
+import { t } from "@/src/i18n";
 
 /** Espace libre sous la section, avant le footer. */
 const FOOTER_SPACE = 80;
@@ -56,10 +57,10 @@ export const CartDetailTab: React.FC<CartDetailTabProps> = ({
     menuPriceDescription(menu, selectedPriceIndex);
 
   const recap: RecapCell[] = [
-    { icon: "fast-food-outline", title: "Menu", value: `${menuPrice} FCFA` },
+    { icon: "fast-food-outline", title: t("Menu"), value: `${menuPrice} FCFA` },
     {
       icon: "wine-outline",
-      title: "Boisson",
+      title: t("Boisson"),
       value: `${drinksPrice} FCFA`,
       onPress: () => onOpenTab("drink"),
     },
@@ -72,14 +73,14 @@ export const CartDetailTab: React.FC<CartDetailTabProps> = ({
     {
       icon: "bicycle-outline",
       iconColor: isDeliveryFree || deliveryPrice > 0 ? SOFT_ACCENT : MUTED,
-      title: "Livraison",
-      value: isDeliveryFree ? "Gratuit" : `${deliveryPrice} FCFA`,
+      title: t("Livraison"),
+      value: isDeliveryFree ? t("Gratuit") : `${deliveryPrice} FCFA`,
       strong: isDeliveryFree,
       onPress: () => onOpenTab("delivery"),
     },
     {
       icon: "wallet-outline",
-      title: "Total",
+      title: t("Total"),
       value: `${totalDisplay} FCFA`,
       strong: true,
     },

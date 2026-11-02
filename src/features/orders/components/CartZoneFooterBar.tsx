@@ -4,6 +4,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { CartZoneGroup } from "../utils/groupCartOrders";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface CartZoneFooterBarProps {
   /** Groupes actuellement affichés : un seul si une zone est isolée. */
@@ -59,7 +60,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
     if (g.type !== "express" && g.type !== "time")
       return { mode: "SUR PLACE", zone: g.zone.toUpperCase() };
     return {
-      mode: ["LIVRAISON", g.type === "express" ? "EXPRESS" : g.heure]
+      mode: [t("LIVRAISON"), g.type === "express" ? "EXPRESS" : g.heure]
         .filter(Boolean)
         .join(" · "),
       zone: g.zone.toUpperCase(),
@@ -117,7 +118,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
                     : { color: "#16a34a", fontSize: 11 },
               ]}
             >
-              {livraison > 0 ? fmt(livraison) : isPickupOnly ? "0 F" : "Offerte"}
+              {livraison > 0 ? fmt(livraison) : isPickupOnly ? "0 F" : t("Offerte")}
             </Text>
             <Text style={footLabel}>COURSE</Text>
           </View>
@@ -132,7 +133,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
 
           <View style={{ gap: 3, flexDirection: colDirection }}>
             <Text style={footValue}>{fmt(total)}</Text>
-            <Text style={footLabel}>TOTAL</Text>
+            <Text style={footLabel}>{t("TOTAL")}</Text>
           </View>
         </View>
 

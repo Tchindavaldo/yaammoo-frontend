@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { t } from "@/src/i18n";
 
 interface Props {
   onEditPress: () => void;
@@ -26,7 +27,7 @@ export function SettingsProfileCard({ onEditPress }: Props) {
   const nomComplet =
     [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(" ") ||
     firebaseName ||
-    "Utilisateur";
+    t("Utilisateur");
   const contact =
     userData?.infos.email ||
     user?.email ||
@@ -55,7 +56,7 @@ export function SettingsProfileCard({ onEditPress }: Props) {
         {userData?.isMarchand && (
           <View style={styles.merchantBadge}>
             <Ionicons name="storefront-outline" size={12} color="white" />
-            <Text style={styles.merchantBadgeText}>Marchand</Text>
+            <Text style={styles.merchantBadgeText}>{t("Marchand")}</Text>
           </View>
         )}
       </View>

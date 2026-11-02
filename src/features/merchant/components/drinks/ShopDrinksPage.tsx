@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { ShopDrinkRow } from "./ShopDrinkRow";
 import { useShopDrinks } from "./useShopDrinks";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Settings → Boutique → « Boissons » (route `app/shop/drinks.tsx`).
@@ -37,7 +38,7 @@ export const ShopDrinksPage: React.FC<{ onClose: () => void }> = ({ onClose }) =
 
   const menuOptions = menus.map((m: any) => ({
     id: m.id || m._id,
-    name: m.name || m.titre || "Plat",
+    name: m.name || m.titre || tr("Plat"),
   }));
 
   const resetDraft = () => {
@@ -60,9 +61,9 @@ export const ShopDrinksPage: React.FC<{ onClose: () => void }> = ({ onClose }) =
   return (
     <View style={styles.root}>
       <TabHeader
-        title="Boissons"
-        subtitle={`${drinks.length} boisson${drinks.length > 1 ? "s" : ""} en boutique`}
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        title={tr("Boissons")}
+        subtitle={tr("{{a}} boisson{{b}} en boutique", { a: drinks.length, b: drinks.length > 1 ? "s" : "" })}
+        right={<HeaderPill label={tr("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 
@@ -72,19 +73,19 @@ export const ShopDrinksPage: React.FC<{ onClose: () => void }> = ({ onClose }) =
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.label}>
-          {editIdx === null ? "Ajouter une boisson" : "Modifier la boisson"}
+          {editIdx === null ? tr("Ajouter une boisson") : tr("Modifier la boisson")}
         </Text>
         <View style={styles.editRow}>
           <TextInput
             style={[styles.input, { flex: 1 }]}
-            placeholder="Nom de la boisson"
+            placeholder={tr("Nom de la boisson")}
             placeholderTextColor={DS.faint}
             value={draft.name}
             onChangeText={(t) => setDraft({ ...draft, name: t })}
           />
           <TextInput
             style={[styles.input, styles.priceInput]}
-            placeholder="Prix"
+            placeholder={tr("Prix")}
             placeholderTextColor={DS.faint}
             keyboardType="numeric"
             value={draft.prix}
@@ -104,7 +105,7 @@ export const ShopDrinksPage: React.FC<{ onClose: () => void }> = ({ onClose }) =
           <ActivityIndicator color={DS.accent} style={{ marginTop: 24 }} />
         ) : drinks.length === 0 ? (
           <Text style={styles.empty}>
-            Aucune boisson. Une boisson ajoutée est proposée avec tous vos plats.
+            {tr("Aucune boisson. Une boisson ajoutée est proposée avec tous vos plats.")}
           </Text>
         ) : (
           <View style={styles.list}>
@@ -137,7 +138,7 @@ export const ShopDrinksPage: React.FC<{ onClose: () => void }> = ({ onClose }) =
           {saving ? (
             <ActivityIndicator color={DS.onInk} />
           ) : (
-            <Text style={styles.saveText}>Enregistrer</Text>
+            <Text style={styles.saveText}>{tr("Enregistrer")}</Text>
           )}
         </TouchableOpacity>
       </View>

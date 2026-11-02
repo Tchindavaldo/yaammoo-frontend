@@ -9,6 +9,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "@/src/theme";
 import type { Bonus } from "../types/bonus.types";
+import { t as tr } from "@/src/i18n";
 
 export interface BonusDescriptor {
   /** Nom d'icône Ionicons. */
@@ -32,19 +33,19 @@ const REGISTRY: Record<string, BonusDescriptor> = {
     icon: "bicycle",
     color: "#2563eb",
     gradient: ["#3b82f6", "#1d4ed8"],
-    label: "Livraison gratuite",
+    label: tr("Livraison gratuite"),
   },
   free_meal: {
     icon: "fast-food",
     color: "#f59e0b",
     gradient: ["#fbbf24", "#d97706"],
-    label: "Repas gratuit",
+    label: tr("Repas gratuit"),
   },
   discount: {
     icon: "pricetag",
     color: "#16a34a",
     gradient: ["#22c55e", "#15803d"],
-    label: "Réduction",
+    label: tr("Réduction"),
   },
 };
 
@@ -53,7 +54,7 @@ const DEFAULT_DESCRIPTOR: BonusDescriptor = {
   icon: "gift",
   color: Theme.colors.primary,
   gradient: [Theme.colors.primary, "#c73a0f"],
-  label: "Bonus",
+  label: tr("Bonus"),
 };
 
 /** Retourne le descripteur d'un type, ou le descripteur par défaut si inconnu. */

@@ -7,6 +7,7 @@ import type { Bonus } from "../types/bonus.types";
 // Fonctions pures partagées avec le pied de page natif (`NativeBonusPager`).
 import { remainingUses, statusOf } from "../utils/bonusPagerItem";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
+import { t } from "@/src/i18n";
 
 interface BonusPagerInfoProps {
   bonuses: Bonus[];
@@ -177,7 +178,7 @@ export const BonusPagerInfo = ({ bonuses, scrollX }: BonusPagerInfoProps) => {
               {bonuses[i].fastFoodName || "yaammoo"}
               {remaining !== null && (
                 <Text style={styles.remaining}>
-                  {"  "}· {remaining} restante{remaining > 1 ? "s" : ""}
+                  {"  "}· {remaining} {t("restante")}{remaining > 1 ? "s" : ""}
                 </Text>
               )}
             </Text>

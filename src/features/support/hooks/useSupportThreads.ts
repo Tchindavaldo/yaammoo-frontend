@@ -2,6 +2,7 @@ import { socketService } from "@/src/services/socket";
 import { useCallback, useEffect, useState } from "react";
 import { supportService } from "../services/supportService";
 import type { SupportThread } from "../types/support.types";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Fils support du client : chargement HTTP + mise à jour temps réel.
@@ -29,7 +30,7 @@ export const useSupportThreads = (userId?: string, enabled = true) => {
       setThreads(await supportService.getThreads(userId));
     } catch (e: any) {
       console.error("useSupportThreads:", e?.message || e);
-      setError("Impossible de charger vos discussions");
+      setError(tr("Impossible de charger vos discussions"));
     } finally {
       setLoading(false);
     }

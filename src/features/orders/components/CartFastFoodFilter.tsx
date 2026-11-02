@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Filtre fastfood du panier — duplication autonome du filtre haut de la page
@@ -125,7 +126,7 @@ const FastFoodPill = React.memo(function FastFoodPill({
             {item.orderCount}{" "}
             {compactMeta
               ? "cmd"
-              : `commande${item.orderCount > 1 ? "s" : ""}`}
+              : t("commande{{a}}", { a: item.orderCount > 1 ? "s" : "" })}
           </Text>
           <Text style={styles.ffTotal} numberOfLines={1}>
             {fmtAmount(item.total)}

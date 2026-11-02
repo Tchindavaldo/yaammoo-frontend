@@ -7,6 +7,7 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { CartStatusPanel } from "@/src/features/orders/components/CartStatusPanel";
 import { DS } from "@/src/theme/ds";
 import { useLocalSearchParams } from "expo-router";
+import { t } from "@/src/i18n";
 
 const STATUSES = ["pending", "active", "finished", "delivered"] as const;
 
@@ -27,8 +28,8 @@ export default function OrdersScreen() {
     return (
       <GuestGate
         icon="receipt-outline"
-        title="Vos commandes"
-        subtitle="Connectez-vous pour suivre l'état de vos commandes."
+        title={t("Vos commandes")}
+        subtitle={t("Connectez-vous pour suivre l'état de vos commandes.")}
       >
         {null}
       </GuestGate>
@@ -38,7 +39,7 @@ export default function OrdersScreen() {
   return (
     <View style={styles.container}>
       <BlurScope>
-        <TabHeader title="Commandes" onHeightChange={setHeaderHeight} />
+        <TabHeader title={t("Commandes")} onHeightChange={setHeaderHeight} />
         {/* Cible du flou du header (Android). */}
         <BlurTarget style={styles.container}>
           {/* key : un nouveau `section` remonte le panel sur ce statut. */}

@@ -21,6 +21,7 @@ import {
   computeItemsTotal,
 } from "./MerchantOrderMontantTab";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /** Hauteur fixe d'une carte commande (mesurée ~94.33) → sert au snap de la liste. */
 export const MERCHANT_CARD_HEIGHT = 94.33;
@@ -178,7 +179,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const customerLastName = u?.lastName || "";
     const nameToUse = u
       ? `${customerFirstName} ${customerLastName}`.trim()
-      : "Client Inconnu";
+      : t("Client Inconnu");
     const initials = (
       u
         ? `${customerFirstName[0]}${customerLastName ? customerLastName[0] : ""}`
@@ -192,7 +193,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     const deliveryColor = isExpress ? DS.accent : "#2563eb";
 
     const orderCount = allOrders.length;
-    const addressStr = order.delivery?.location || "Adresse non spécifiée";
+    const addressStr = order.delivery?.location || t("Adresse non spécifiée");
     const isGroupDelivering = isDelivering || isLaunched;
     // Commande confiée à un livreur (driverId posé) : le marchand ne livre pas
     // lui-même → chip "Délégué" (le livreur gère lancement + fin de course).
@@ -259,7 +260,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 // Livrée : badge non cliquable (aucune action possible).
                 <View style={styles.deliveredBadge}>
                   <Ionicons name="checkmark-done" size={14} color="#16a34a" />
-                  <Text style={styles.deliveredText}>Livré</Text>
+                  <Text style={styles.deliveredText}>{t("Livré")}</Text>
                 </View>
               ) : isUpdating ? (
                 <ActivityIndicator size="small" color={DS.accent} />
@@ -267,7 +268,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 // Confiée à un livreur : badge "Délégué" (le livreur gère la course).
                 <View style={styles.delegatedBadge}>
                   <Ionicons name="person-outline" size={12} color="#2563eb" />
-                  <Text style={styles.delegatedText}>Délégué</Text>
+                  <Text style={styles.delegatedText}>{t("Délégué")}</Text>
                 </View>
               ) : isSelfDelivering ? (
                 // Le marchand livre lui-même : chip "Terminer" pour clôturer.
@@ -277,7 +278,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                   onPress={() => handleUpdateStatus("delivered")}
                 >
                   <Ionicons name="checkmark-done" size={14} color="white" />
-                  <Text style={styles.finishBtnText}>Terminer</Text>
+                  <Text style={styles.finishBtnText}>{t("Terminer")}</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
@@ -286,7 +287,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                   onPress={() => setDelegateVisible(true)}
                 >
                   <Ionicons name="bicycle-outline" size={14} color="white" />
-                  <Text style={styles.summaryValidateBtnText}>Lancer</Text>
+                  <Text style={styles.summaryValidateBtnText}>{t("Lancer")}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -338,12 +339,12 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const buildGroupLabel = (n: number) => {
     const plural = n > 1 ? "s" : "";
     const d = order.delivery as any;
-    if (d?.status !== true) return `${n} cmd · pas de livraison`;
-    if (d?.type === "express") return `${n} cmd livraison express`;
+    if (d?.status !== true) return t("{{a}} cmd · pas de livraison", { a: n });
+    if (d?.type === "express") return t("{{a}} cmd livraison express", { a: n });
     const time = d?.time || d?.hour;
     return time
-      ? `${n} cmd livrée${plural} à ${time}`
-      : `${n} cmd livrée${plural}`;
+      ? t("{{a}} cmd livrée{{b}} à {{c}}", { a: n, b: plural, c: time })
+      : t("{{a}} cmd livrée{{b}}", { a: n, b: plural });
   };
 
   /**
@@ -353,10 +354,10 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
    */
   const deliverySuffix = (() => {
     const d = order.delivery as any;
-    if (d?.status !== true) return "pas de livraison";
-    if (d?.type === "express") return "livraison express";
+    if (d?.status !== true) return t("pas de livraison");
+    if (d?.type === "express") return t("livraison express");
     const time = d?.time || d?.hour;
-    return time ? `livrée à ${time}` : "livrée";
+    return time ? t("livrée à {{a}}", { a: time }) : t("livrée");
   })();
   const userRank = (order as any).rank || 1;
   const menuImage =
@@ -435,7 +436,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                   ? ` ${buildGroupLabel(groupedOrders.length)}`
                   : pickedCount > 0
                     ? ` ${buildGroupLabel(1)}`
-                    : ` ${quantity} plat${quantity > 1 ? "s" : ""} · ${deliverySuffix}`}
+                    : t(" {{a}} plat{{b}} · {{c}}", { a: quantity, b: quantity > 1 ? "s" : "", c: deliverySuffix })}
               </Text>
             </View>
             <View style={styles.rankContainer}>
@@ -458,7 +459,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
               <View style={[styles.smallChip, chipTint]}>
                 <Ionicons name="beer-outline" size={14} color="black" />
                 <Text style={[styles.chipText, { color: "black" }]}>
-                  Boisson +{drinksCount}
+                  {t("Boisson +")}{drinksCount}
                 </Text>
               </View>
             </View>
@@ -472,7 +473,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 }
               >
                 <Ionicons name="checkmark-circle" size={16} color="white" />
-                <Text style={styles.summaryValidateBtnText}>Valider</Text>
+                <Text style={styles.summaryValidateBtnText}>{t("Valider")}</Text>
               </TouchableOpacity>
             )}
           </View>

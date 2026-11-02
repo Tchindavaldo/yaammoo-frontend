@@ -20,6 +20,7 @@ import {
   onUpdateDownloaded,
 } from "../services/otaNotice";
 import { DS } from "@/src/theme/ds";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Carte de mise a jour OTA, montee une seule fois a la racine de l'app (comme
@@ -50,16 +51,16 @@ const CONTENT: Record<
   downloaded: {
     icon: "arrow-down",
     tint: DS.accent,
-    title: "Mise à jour téléchargée",
+    title: tr("Mise à jour téléchargée"),
     message:
-      "De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter.",
+      tr("De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter."),
   },
   applied: {
     icon: "checkmark",
     tint: "#12a150",
-    title: "Application à jour",
+    title: tr("Application à jour"),
     message:
-      "Les dernières améliorations sont installées. Vous profitez dès maintenant de la version la plus récente.",
+      tr("Les dernières améliorations sont installées. Vous profitez dès maintenant de la version la plus récente."),
   },
 };
 
@@ -282,7 +283,7 @@ export const OtaUpdateCard = () => {
           onPress={hide}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Fermer"
+          accessibilityLabel={tr("Fermer")}
           style={({ pressed }) => [
             styles.close,
             pressed && styles.closePressed,

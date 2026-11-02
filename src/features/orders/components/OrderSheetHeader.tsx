@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * En-tête du détail client (`OrderBottomSheet`) : avatar de la boutique +
@@ -71,7 +72,7 @@ export function OrderSheetHeader({
           </View>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.userName}>{boutique?.nom || "Boutique"}</Text>
+          <Text style={styles.userName}>{boutique?.nom || t("Boutique")}</Text>
           {hasMultiple ? (
             /* Multi-commandes : chips Cmd 1/2/3… à la place de l'adresse. */
             <View style={styles.cmdRow}>
@@ -116,7 +117,7 @@ export function OrderSheetHeader({
             </View>
           ) : (
             <Text style={styles.userAddr} numberOfLines={1}>
-              {selectedOrder?.delivery?.location || "Sur place"}
+              {selectedOrder?.delivery?.location || t("Sur place")}
             </Text>
           )}
         </View>

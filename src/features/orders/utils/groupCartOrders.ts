@@ -1,4 +1,5 @@
 import { deliveryGroupKey } from "@/src/features/checkout/utils/cartDeliveryTotal";
+import { t } from "@/src/i18n";
 
 type AnyOrder = Record<string, any>;
 
@@ -33,7 +34,7 @@ const deliveryOf = (order: AnyOrder): AnyOrder | null =>
   order?.delivery || order?.livraison || null;
 
 const titreOf = (order: AnyOrder): string =>
-  order?.menu?.titre || order?.menu?.name || "Commande";
+  order?.menu?.titre || order?.menu?.name || t("Commande");
 
 /**
  * Regroupe les commandes du panier par TYPE de livraison + ZONE + heure, sans
@@ -62,8 +63,8 @@ export const groupCartOrdersByZone = (orders: AnyOrder[]): CartZoneGroup[] => {
 
     const type = hasDelivery ? String(d.type) : "aucune";
     const zone = hasDelivery
-      ? d.zone || d.expressLieu || d.location || "Zone non renseignée"
-      : "Retrait en boutique";
+      ? d.zone || d.expressLieu || d.location || t("Zone non renseignée")
+      : t("Retrait en boutique");
     const heure =
       hasDelivery && type !== "express" ? d.time || d.hour || null : null;
 

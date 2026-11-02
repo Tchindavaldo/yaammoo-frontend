@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ShopDrink } from "./useShopDrinks";
+import { t } from "@/src/i18n";
 
 interface Props {
   drink: ShopDrink;
@@ -20,8 +21,8 @@ export const ShopDrinkRow: React.FC<Props> = ({ drink, menus, onChange, onEdit, 
   const [open, setOpen] = useState(false);
   const allMenus = drink.menuIds === null;
   const scopeLabel = allMenus
-    ? "Tous les plats"
-    : `${drink.menuIds!.length} plat${drink.menuIds!.length > 1 ? "s" : ""}`;
+    ? t("Tous les plats")
+    : t("{{a}} plat{{b}}", { a: drink.menuIds!.length, b: drink.menuIds!.length > 1 ? "s" : "" });
 
   const toggleMenu = (id: string) => {
     const current = drink.menuIds || [];
@@ -43,7 +44,7 @@ export const ShopDrinkRow: React.FC<Props> = ({ drink, menus, onChange, onEdit, 
           onPress={() => onChange({ ...drink, status: !drink.status })}
         >
           <Text style={[styles.pillText, { color: drink.status ? DS.success : DS.danger }]}>
-            {drink.status ? "Disponible" : "Rupture"}
+            {drink.status ? t("Disponible") : t("Rupture")}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconBtn} onPress={onDelete}>
@@ -63,7 +64,7 @@ export const ShopDrinkRow: React.FC<Props> = ({ drink, menus, onChange, onEdit, 
             style={[styles.chip, allMenus && styles.chipOn]}
             onPress={() => onChange({ ...drink, menuIds: allMenus ? [] : null })}
           >
-            <Text style={[styles.chipText, allMenus && styles.chipTextOn]}>Tous les plats</Text>
+            <Text style={[styles.chipText, allMenus && styles.chipTextOn]}>{t("Tous les plats")}</Text>
           </TouchableOpacity>
           {menus.map((m) => {
             const on = !allMenus && drink.menuIds!.includes(m.id);

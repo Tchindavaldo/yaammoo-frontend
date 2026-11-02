@@ -24,6 +24,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Même hauteur de référence que CheckoutContactOverlay (base du blur + container).
@@ -218,7 +219,7 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
     return (
       <View style={styles.centered}>
         <Ionicons name="fast-food-outline" size={28} color="#9CA3AF" />
-        <Text style={styles.muted}>Plat indisponible</Text>
+        <Text style={styles.muted}>{t("Plat indisponible")}</Text>
       </View>
     );
   }
@@ -236,9 +237,9 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
   // - Pas encore de commande livrée sur ce plat
   let infoMessage: string | null = null;
   if (profile.scope === "self") {
-    infoMessage = "Vous ne pouvez pas noter votre propre plat";
+    infoMessage = t("Vous ne pouvez pas noter votre propre plat");
   } else if (!profile.canRate && !profile.hasRated) {
-    infoMessage = "Notez le plat après réception";
+    infoMessage = t("Notez le plat après réception");
   }
 
   const canRate = !!profile.canRate;
@@ -260,7 +261,7 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
             size={20}
             color="#94a3b8"
           />
-          <Text style={styles.commentInlineTitle}>Commentaire</Text>
+          <Text style={styles.commentInlineTitle}>{t("Commentaire")}</Text>
           <TouchableOpacity
             onPress={() => Keyboard.dismiss()}
             style={styles.keyboardSmallBtn}
@@ -277,7 +278,7 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
       </View>
       <TextInput
         style={styles.commentModalInput}
-        placeholder="Votre commentaire…"
+        placeholder={t("Votre commentaire…")}
         placeholderTextColor="#9CA3AF"
         value={comment}
         onChangeText={setComment}
@@ -290,7 +291,7 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
         onPress={closeCommentOverlay}
       >
         <Ionicons name="checkmark" size={18} color="#fff" />
-        <Text style={styles.commentValidateText}>Valider</Text>
+        <Text style={styles.commentValidateText}>{t("Valider")}</Text>
       </TouchableOpacity>
     </>
   );
@@ -303,11 +304,11 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
       >
         <View style={{ width: "42%", gap: 8 }}>
           <View style={{ flex: 1 }}>
-            <InfoCard label="Plat" value={name} compact />
+            <InfoCard label={t("Plat")} value={name} compact />
           </View>
           <View style={{ flex: 1 }}>
             <InfoCard
-              label="Note"
+              label={t("Note")}
               value={
                 profile.ratingAvg != null
                   ? `★ ${profile.ratingAvg.toFixed(1)}`
@@ -338,13 +339,13 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
 
       {/* ── Bloc bas : 3 cards stats INDIVIDUELLES (titre sur 2 lignes + chiffre) ── */}
       <View style={styles.statsCardsRow}>
-        <StatCard title={"Total\nplat"} value={totalOrders} label="commandes" />
+        <StatCard title={t("Total\nplat")} value={totalOrders} label={t("commandes")} />
         <StatCard
-          title={"Mes Cmd\nlivrées"}
+          title={t("Mes Cmd\nlivrées")}
           value={myTotalOrders}
-          label="commandes"
+          label={t("commandes")}
         />
-        <StatCard title={"Nombre\nvote"} value={ratingCount} label="avis" />
+        <StatCard title={t("Nombre\nvote")} value={ratingCount} label={t("avis")} />
       </View>
 
       {/* Message info (auto-notation, pas encore livré) */}
@@ -363,14 +364,14 @@ export const RateMenuTab: React.FC<RateMenuTabProps> = ({
       {alreadyRated && !isModifying ? (
         <View style={[styles.infoCard, styles.ratedCard]}>
           <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
-          <Text style={styles.ratedText}>Vous avez noté ce plat</Text>
+          <Text style={styles.ratedText}>{t("Vous avez noté ce plat")}</Text>
           <TouchableOpacity style={styles.modifyBtn} onPress={handleModify}>
             <Ionicons
               name="pencil-outline"
               size={16}
               color={Theme.colors.primary}
             />
-            <Text style={styles.modifyBtnText}>Modifier</Text>
+            <Text style={styles.modifyBtnText}>{t("Modifier")}</Text>
           </TouchableOpacity>
         </View>
       ) : showRateFormModify || showRateBtn ? (

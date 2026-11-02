@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { t } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -54,9 +55,9 @@ export function LogoutModal({ visible, onClose }: Props) {
               color={Theme.colors.danger}
             />
           </View>
-          <Text style={styles.title}>Déconnexion</Text>
+          <Text style={styles.title}>{t("Déconnexion")}</Text>
           <Text style={styles.message}>
-            Êtes-vous sûr de vouloir vous déconnecter ?
+            {t("Êtes-vous sûr de vouloir vous déconnecter ?")}
           </Text>
 
           <View style={styles.actions}>
@@ -66,7 +67,7 @@ export function LogoutModal({ visible, onClose }: Props) {
               disabled={isLoggingOut}
               activeOpacity={0.7}
             >
-              <Text style={styles.btnCancelText}>Annuler</Text>
+              <Text style={styles.btnCancelText}>{t("Annuler")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.btn, styles.btnDanger]}
@@ -77,7 +78,7 @@ export function LogoutModal({ visible, onClose }: Props) {
               {isLoggingOut ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.btnDangerText}>Déconnecter</Text>
+                <Text style={styles.btnDangerText}>{t("Déconnecter")}</Text>
               )}
             </TouchableOpacity>
           </View>

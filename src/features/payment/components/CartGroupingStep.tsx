@@ -3,6 +3,7 @@ import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
+import { t } from "@/src/i18n";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -39,7 +40,7 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
 }) => (
   <>
     <Text style={styles.question}>
-      Une seule livraison pour tout, ou des livraisons différentes ?
+      {t("Une seule livraison pour tout, ou des livraisons différentes ?")}
     </Text>
 
     <View style={styles.cards}>
@@ -51,8 +52,8 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
           <View style={{ flex: 1 }}>
             <Text style={styles.cardTitle}>{fastFoodName}</Text>
             <Text style={styles.cardSub}>
-              {deliveryCount} livraison{deliveryCount > 1 ? "s" : ""} différente
-              {deliveryCount > 1 ? "s" : ""} pour ce fastfood
+              {deliveryCount} {t("livraison")}{deliveryCount > 1 ? "s" : ""} {t("différente")}
+              {deliveryCount > 1 ? "s" : ""} {t("pour ce fastfood")}
             </Text>
           </View>
         </View>
@@ -63,9 +64,9 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
           <Ionicons name="cube-outline" size={17} color={C.accent} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>1 course, 1 livreur</Text>
+          <Text style={styles.cardTitle}>{t("1 course, 1 livreur")}</Text>
           <Text style={styles.cardSub}>
-            Vos {cmd} commande{cmd > 1 ? "s" : ""} voyagent ensemble
+            {t("Vos")} {cmd} {t("commande")}{cmd > 1 ? "s" : ""} {t("voyagent ensemble")}
           </Text>
         </View>
       </View>
@@ -75,9 +76,9 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
           <Ionicons name="time-outline" size={17} color={C.accent} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Frais de livraison uniques</Text>
+          <Text style={styles.cardTitle}>{t("Frais de livraison uniques")}</Text>
           <Text style={styles.cardSub}>
-            {fmt(fraisGroupes)} F au lieu de {fmt(fraisSepares)} F
+            {fmt(fraisGroupes)} {t("F au lieu de")} {fmt(fraisSepares)} F
           </Text>
         </View>
       </View>
@@ -90,7 +91,7 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
       onPress={onGroup}
       activeOpacity={0.85}
     >
-      <Text style={styles.primaryBtnLabel}>Tout livrer ensemble</Text>
+      <Text style={styles.primaryBtnLabel}>{t("Tout livrer ensemble")}</Text>
     </TouchableOpacity>
     {/*
     <Text style={styles.hint}>
@@ -103,7 +104,7 @@ export const CartGroupingStep: React.FC<CartGroupingStepProps> = ({
       activeOpacity={0.7}
     >
       <Text style={styles.linkBtnLabel}>
-        J&apos;ai besoin de livraisons séparées
+        {t("J'ai besoin de livraisons séparées")}
       </Text>
     </TouchableOpacity>
   </>

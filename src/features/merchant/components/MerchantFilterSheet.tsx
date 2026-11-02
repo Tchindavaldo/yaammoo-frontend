@@ -18,6 +18,7 @@ import {
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { DateOption } from "./OrderManagePanel";
+import { t as tr } from "@/src/i18n";
 
 /** Filtre période : "express", "surplace", ou un créneau horaire précis (ex. "12h"). */
 export type PeriodKey = string;
@@ -151,16 +152,16 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
   // Récap affiché à la place de la liste de dates quand « Aujourd'hui » est
   // choisi : toujours les 4 entrées, `0` compris, quel que soit le statut.
   const todaySummary = [
-    { key: "all", label: "commande", count: allPeriodsCount },
+    { key: "all", label: tr("commande"), count: allPeriodsCount },
     {
       key: "express",
       label: "express",
       count: periods.find((p) => p.key === "express")?.count ?? 0,
     },
-    { key: "slots", label: "créneaux", count: slotCount },
+    { key: "slots", label: tr("créneaux"), count: slotCount },
     {
       key: "surplace",
-      label: "sur place",
+      label: tr("sur place"),
       count: periods.find((p) => p.key === "surplace")?.count ?? 0,
     },
   ];
@@ -263,7 +264,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
                 Le sous-sheet lui-même est toujours rendu plus bas, intact. */}
             <DateScopeCard
               icon="time-outline"
-              label="Créneaux horaires"
+              label={tr("Créneaux horaires")}
               count={slotCount}
               active={anySlotSelected}
               onPress={() =>
@@ -283,7 +284,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
             {/* Sélectionne directement le jour même (pas un lot de dates). */}
             <DateScopeCard
               icon="today-outline"
-              label="cmd reçu Aujourd'hui"
+              label={tr("cmd reçu Aujourd'hui")}
               count={todayOrdersCount}
               active={dateScope === "today"}
               onPress={() => {
@@ -293,7 +294,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
             />
             <DateScopeCard
               icon="calendar-outline"
-              label={"Cmd futur\nnon traitées"}
+              label={tr("Cmd futur\nnon traitées")}
               count={futureOrdersCount}
               active={dateScope === "future"}
               onPress={() => setDateScope("future")}
@@ -302,7 +303,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
               icon="time-outline"
               // Libellé FIGÉ : il ne doit pas changer selon l'onglet de statut
               // (`pastUntreated`), au même titre que le compteur de la card.
-              label="Cmd passées non traitées"
+              label={tr("Cmd passées non traitées")}
               count={pastOrdersCount}
               active={dateScope === "past"}
               onPress={() => setDateScope("past")}
@@ -355,7 +356,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
                     style={[styles.dateChip, styles.dateChipEmpty]}
                   >
                     <Text style={styles.dateChipEmptyText} numberOfLines={1}>
-                      Aucune
+                      {tr("Aucune")}
                     </Text>
                   </View>
                 ))}
@@ -379,14 +380,14 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
         />
         <View style={[styles.slotSheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.slotHeader}>
-            <Text style={styles.slotTitle}>Créneaux horaires</Text>
+            <Text style={styles.slotTitle}>{tr("Créneaux horaires")}</Text>
             <TouchableOpacity onPress={() => setSlotsOpen(false)}>
               <Ionicons name="close" size={22} color="#888780" />
             </TouchableOpacity>
           </View>
 
           {slotPeriods.length === 0 ? (
-            <Text style={styles.empty}>Aucun créneau sur cette date</Text>
+            <Text style={styles.empty}>{tr("Aucun créneau sur cette date")}</Text>
           ) : (
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.grid}>

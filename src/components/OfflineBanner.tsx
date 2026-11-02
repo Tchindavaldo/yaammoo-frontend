@@ -4,6 +4,7 @@ import { Animated, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { onNetworkStateChange } from "@/src/services/network";
+import { t } from "@/src/i18n";
 
 /**
  * Bandeau hors-ligne, monte une seule fois a la racine de l'app.
@@ -60,7 +61,7 @@ export const OfflineBanner = () => {
       ]}
     >
       <Ionicons name="cloud-offline-outline" size={16} color="white" />
-      <Text style={styles.text}>Pas de connexion Internet</Text>
+      <Text style={styles.text}>{t("Pas de connexion Internet")}</Text>
     </Animated.View>
   );
 };

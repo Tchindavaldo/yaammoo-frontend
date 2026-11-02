@@ -6,6 +6,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { CardVariantProps, SKELETON_SIZES, V4_BACKGROUNDS } from "../config";
 import { DELIVERY_ETA, feeText, isStockLow, stockParts, stockRatio } from "./labels";
+import { t } from "@/src/i18n";
 
 /**
  * Design 4 aere (HOME_DESIGN = "aere") : photo plein cadre sous degrade
@@ -85,11 +86,11 @@ export const V4AereMeta: React.FC<{
       <View style={styles.flex} />
       <Ionicons name="star" size={12} color={DS.star} />
       <Text style={[styles.metaText, { color: DS.ink }]}>{rating}</Text>
-      <Text style={styles.metaMuted}>({votes} avis)</Text>
+      <Text style={styles.metaMuted}>({votes} {t("avis)")}</Text>
     </View>
     <View style={styles.row}>
       <Text style={styles.metaText}>
-        Livraison{" "}
+        {t("Livraison")}{" "}
         <Text
           style={{ fontWeight: "800", color: deliveryFeeLabel === "gratuit" ? DS.accentDeep : DS.ink }}
         >
@@ -98,7 +99,7 @@ export const V4AereMeta: React.FC<{
       </Text>
       <View style={styles.flex} />
       <Text style={styles.metaText}>
-        Livré en <Text style={{ color: DS.ink, fontWeight: "900" }}>{DELIVERY_ETA}</Text>
+        {t("Livré en")} <Text style={{ color: DS.ink, fontWeight: "900" }}>{DELIVERY_ETA}</Text>
       </Text>
     </View>
   </>

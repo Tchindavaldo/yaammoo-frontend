@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { capsLabel, ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 const SIZE = 88;
 const STROKE = 9;
@@ -17,9 +18,9 @@ interface Props {
 }
 
 const PARTS = [
-  { key: "roles", label: "Rôles", color: ST.ink },
-  { key: "members", label: "Membres", color: ST.accent },
-  { key: "drivers", label: "Livreurs", color: ST.faint },
+  { key: "roles", label: t("Rôles"), color: ST.ink },
+  { key: "members", label: t("Membres"), color: ST.accent },
+  { key: "drivers", label: t("Livreurs"), color: ST.faint },
 ] as const;
 
 /**
@@ -62,13 +63,13 @@ export const StaffSummaryCard: React.FC<Props> = ({ ownerName, roles, members, d
         </View>
         <View style={styles.ringCenter} pointerEvents="none">
           <Text style={styles.ringValue}>{members + drivers}</Text>
-          <Text style={[capsLabel, styles.ringCaption]}>ÉQUIPE</Text>
+          <Text style={[capsLabel, styles.ringCaption]}>{t("ÉQUIPE")}</Text>
         </View>
       </View>
 
       <View style={styles.body}>
         <View style={{ gap: 2 }}>
-          <Text style={styles.caption}>Gérant · accès complet</Text>
+          <Text style={styles.caption}>{t("Gérant · accès complet")}</Text>
           <Text style={styles.title} numberOfLines={1}>{ownerName}</Text>
         </View>
         <View style={styles.legend}>

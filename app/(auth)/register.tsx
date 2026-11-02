@@ -22,6 +22,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const { width, height } = Dimensions.get("window");
 
@@ -49,10 +50,10 @@ export default function RegisterScreen() {
   const nextStep = () => {
     if (!infos1ISCheck) {
       if (nom && prenom && birth) setInfos1ISCheck(true);
-      else showToast("Veuillez remplir tous les champs", "error");
+      else showToast(t("Veuillez remplir tous les champs"), "error");
     } else if (!infos2ISCheck) {
       if (tel && email && password) setInfos2ISCheck(true);
-      else showToast("Veuillez remplir tous les champs", "error");
+      else showToast(t("Veuillez remplir tous les champs"), "error");
     }
   };
 
@@ -98,7 +99,7 @@ export default function RegisterScreen() {
       setUserData(newUser as any);
     } catch (error: any) {
       setConnect(false);
-      showToast("Impossible de créer le compte.", "error");
+      showToast(t("Impossible de créer le compte."), "error");
     }
   };
 
@@ -134,7 +135,7 @@ export default function RegisterScreen() {
                 <View style={styles.rowTitle}>
                   <Text style={styles.row1Label}>
                     <Text style={{ fontSize: 30, fontWeight: "300" }}>
-                      Bienvenue sur
+                      {t("Bienvenue sur")}
                     </Text>
                     {"\n"}
                     Rudavo{"\n"}
@@ -145,7 +146,7 @@ export default function RegisterScreen() {
                 {/* Row 2: Inscription */}
                 <View style={styles.row2}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.labelConnexion}>Inscription</Text>
+                    <Text style={styles.labelConnexion}>{t("Inscription")}</Text>
                   </View>
                   <View style={styles.colOtherConnectWrapper}>
                     <TouchableOpacity style={styles.socialIconBtn}>
@@ -176,7 +177,7 @@ export default function RegisterScreen() {
                       />
                       <TextInput
                         style={styles.ionInput}
-                        placeholder="Entrer votre nom"
+                        placeholder={t("Entrer votre nom")}
                         placeholderTextColor="#a3a3a3"
                         value={nom}
                         onChangeText={setNom}
@@ -191,7 +192,7 @@ export default function RegisterScreen() {
                       />
                       <TextInput
                         style={styles.ionInput}
-                        placeholder="Entrer votre prenom"
+                        placeholder={t("Entrer votre prenom")}
                         placeholderTextColor="#a3a3a3"
                         value={prenom}
                         onChangeText={setPrenom}
@@ -206,7 +207,7 @@ export default function RegisterScreen() {
                       />
                       <TextInput
                         style={styles.ionInput}
-                        placeholder="Entrer votre date de naissance"
+                        placeholder={t("Entrer votre date de naissance")}
                         placeholderTextColor="#a3a3a3"
                         value={birth}
                         onChangeText={setBirth}
@@ -226,7 +227,7 @@ export default function RegisterScreen() {
                       />
                       <TextInput
                         style={styles.ionInput}
-                        placeholder="Entrer votre numero"
+                        placeholder={t("Entrer votre numero")}
                         placeholderTextColor="#a3a3a3"
                         value={tel}
                         onChangeText={setTel}
@@ -242,7 +243,7 @@ export default function RegisterScreen() {
                       />
                       <TextInput
                         style={styles.ionInput}
-                        placeholder="Entrer votre mot de Email"
+                        placeholder={t("Entrer votre mot de Email")}
                         placeholderTextColor="#a3a3a3"
                         value={email}
                         onChangeText={setEmail}
@@ -258,7 +259,7 @@ export default function RegisterScreen() {
                       />
                       <TextInput
                         style={styles.ionInput}
-                        placeholder="Entrer votre mot de passe"
+                        placeholder={t("Entrer votre mot de passe")}
                         placeholderTextColor="#a3a3a3"
                         value={password}
                         onChangeText={setPassword}
@@ -295,11 +296,10 @@ export default function RegisterScreen() {
                           <Ionicons name="checkmark" size={16} color="white" />
                         )}
                       </View>
-                      <Text style={styles.merchantLabel}>compte marchant</Text>
+                      <Text style={styles.merchantLabel}>{t("compte marchant")}</Text>
                     </TouchableOpacity>
                     <Text style={styles.merchantDesc}>
-                      veiller cocher cette case si vous posseder un Fast Food et
-                      souhaiter la digitaliser sur notre platform
+                      {t("veiller cocher cette case si vous posseder un Fast Food et souhaiter la digitaliser sur notre platform")}
                     </Text>
                   </View>
                 )}
@@ -333,11 +333,11 @@ export default function RegisterScreen() {
                 {/* Footer */}
                 <View style={styles.rowFooter}>
                   <Text style={{ color: "white", fontSize: 13 }}>
-                    Vous avez deja un compte ?{" "}
+                    {t("Vous avez deja un compte ?")}{" "}
                   </Text>
                   <TouchableOpacity onPress={() => router.replace("/(auth)")}>
                     <View style={styles.ionChip}>
-                      <Text style={styles.chipText}>Connecter-Vous</Text>
+                      <Text style={styles.chipText}>{t("Connecter-Vous")}</Text>
                     </View>
                   </TouchableOpacity>
                 </View>

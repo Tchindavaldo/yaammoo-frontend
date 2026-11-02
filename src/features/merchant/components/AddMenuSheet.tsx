@@ -7,6 +7,7 @@ import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
 import { Menu } from '@/src/types';
+import { t as tr } from "@/src/i18n";
 
 interface AddMenuSheetProps {
   visible: boolean;
@@ -52,7 +53,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
       >
         <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Nouveau Menu</Text>
+            <Text style={styles.title}>{tr("Nouveau Menu")}</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={Theme.colors.gray[400]} />
             </TouchableOpacity>
@@ -60,10 +61,10 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
 
           <ScrollView style={styles.content}>
             <View style={styles.section}>
-              <Text style={styles.label}>Nom du menu</Text>
+              <Text style={styles.label}>{tr("Nom du menu")}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Ex: Burger Spécial"
+                placeholder={tr("Ex: Burger Spécial")}
                 value={form.titre}
                 onChangeText={(t) => setForm({ ...form, titre: t })}
               />
@@ -71,7 +72,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
 
             <View style={styles.row}>
               <View style={[styles.section, { flex: 1 }]}>
-                <Text style={styles.label}>Prix 1</Text>
+                <Text style={styles.label}>{tr("Prix 1")}</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="2000"
@@ -81,10 +82,10 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
                 />
               </View>
               <View style={[styles.section, { flex: 2 }]}>
-                <Text style={styles.label}>Option 1</Text>
+                <Text style={styles.label}>{tr("Option 1")}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Petit"
+                  placeholder={tr("Petit")}
                   value={form.optionPrix1}
                   onChangeText={(t) => setForm({ ...form, optionPrix1: t })}
                 />
@@ -93,7 +94,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
 
             <View style={styles.row}>
               <View style={[styles.section, { flex: 1 }]}>
-                <Text style={styles.label}>Prix 2</Text>
+                <Text style={styles.label}>{tr("Prix 2")}</Text>
                 <TextInput
                   style={styles.input}
                   placeholder="3500"
@@ -103,10 +104,10 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
                 />
               </View>
               <View style={[styles.section, { flex: 2 }]}>
-                <Text style={styles.label}>Option 2</Text>
+                <Text style={styles.label}>{tr("Option 2")}</Text>
                 <TextInput
                   style={styles.input}
-                  placeholder="Moyen"
+                  placeholder={tr("Moyen")}
                   value={form.optionPrix2}
                   onChangeText={(t) => setForm({ ...form, optionPrix2: t })}
                 />
@@ -114,7 +115,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.label}>Statut</Text>
+              <Text style={styles.label}>{tr("Statut")}</Text>
               <View style={styles.statusRow}>
                 {['Disponible', 'Rupture'].map((s) => (
                   <TouchableOpacity
@@ -138,7 +139,7 @@ export const AddMenuSheet: React.FC<AddMenuSheetProps> = ({ visible, onClose, on
               {loading ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text style={styles.saveBtnText}>Créer le menu</Text>
+                <Text style={styles.saveBtnText}>{tr("Créer le menu")}</Text>
               )}
             </TouchableOpacity>
           </View>

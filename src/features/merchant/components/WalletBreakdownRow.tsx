@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { DS } from "@/src/theme/ds";
 import { WalletBreakdown, WalletBalances } from "../services/walletNetwork";
+import { t } from "@/src/i18n";
 
 /**
  * Découpage des deux soldes du portefeuille (MTN / Orange) :
@@ -23,15 +24,15 @@ export const WalletBreakdownRow: React.FC<{ breakdown: WalletBreakdown }> = ({ b
         <View key={key} style={styles.col}>
           <Text style={styles.title}>{label}</Text>
           <View style={styles.line}>
-            <Text style={styles.lbl}>Commandes</Text>
+            <Text style={styles.lbl}>{t("Commandes")}</Text>
             <Text style={styles.val}>{fmt(p.orders)}</Text>
           </View>
           <View style={styles.line}>
-            <Text style={styles.lbl}>Frais de retrait</Text>
+            <Text style={styles.lbl}>{t("Frais de retrait")}</Text>
             <Text style={styles.val}>{fmt(p.fees)}</Text>
           </View>
           <View style={[styles.line, styles.totalLine]}>
-            <Text style={styles.totalLbl}>Total</Text>
+            <Text style={styles.totalLbl}>{t("Total")}</Text>
             <Text style={styles.totalVal}>{fmt(p.total)}</Text>
           </View>
         </View>

@@ -4,6 +4,7 @@ import React from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { Availability } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
+import { t } from "@/src/i18n";
 
 /** Disponibilité du plat (Disponible / Indisponible) + stock (chiffres + stepper). */
 export const MenuStockAvailability: React.FC<{
@@ -17,19 +18,19 @@ export const MenuStockAvailability: React.FC<{
       <Text
         style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}
       >
-        Disponibilité
+        {t("Disponibilité")}
       </Text>
       <View style={styles.availRow}>
         {(
           [
             {
               key: "available",
-              label: "Disponible",
+              label: t("Disponible"),
               color: Theme.colors.success,
             },
             {
               key: "unavailable",
-              label: "Indisponible",
+              label: t("Indisponible"),
               color: Theme.colors.danger,
             },
           ] as const
@@ -62,7 +63,7 @@ export const MenuStockAvailability: React.FC<{
 
       {/* Ligne 2 : stock — chiffres horizontaux scrollables + gros chiffre + -/+ */}
       <View style={styles.stockSection}>
-        <Text style={styles.fieldLabel}>Stock disponible</Text>
+        <Text style={styles.fieldLabel}>{t("Stock disponible")}</Text>
         <View style={styles.stockSectionHead}>
           {/* Chiffres horizontaux scrollables, puis le stepper */}
           <ScrollView

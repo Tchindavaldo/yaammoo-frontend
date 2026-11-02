@@ -5,6 +5,7 @@ import * as Crypto from "expo-crypto";
 import { auth } from "@/src/services/firebase";
 import { userFirestore } from "./userFirestore";
 import { Users, UsersInfos } from "@/src/types";
+import { t } from "@/src/i18n";
 
 export interface AppleSignInResult {
   success: boolean;
@@ -38,7 +39,7 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
 
     const isAvailable = await AppleAuthentication.isAvailableAsync();
     if (!isAvailable) {
-      const msg = "La connexion avec Apple n'est pas disponible sur cet appareil.";
+      const msg = t("La connexion avec Apple n'est pas disponible sur cet appareil.");
       console.warn(`🍎 [AppleAuth] ${msg}`);
       notifyUnavailable(msg);
       return { success: false, isNewUser: false, error: msg };
@@ -65,7 +66,7 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
 
     if (!credential.identityToken) {
       console.error("❌ [AppleAuth] Identity token Apple manquant");
-      return { success: false, isNewUser: false, error: "Jeton d'identité Apple manquant" };
+      return { success: false, isNewUser: false, error: t("Jeton d'identité Apple manquant") };
     }
 
     console.log("🍎 [AppleAuth] Étape 2: Connexion Firebase");
@@ -116,7 +117,7 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
     console.log("🍎 [AppleAuth] Étape 5: Récupération données backend");
     const createdUserData = await userFirestore.getUser(firebaseUser);
     if (!createdUserData) {
-      throw new Error("Impossible de récupérer le compte Apple créé");
+      throw new Error(t("Impossible de récupérer le compte Apple créé"));
     }
 
     console.log("✅ [AppleAuth] Utilisateur créé");
@@ -125,26 +126,26 @@ export async function handleAppleSignIn(): Promise<AppleSignInResult> {
     console.error("❌ [AppleAuth] Erreur:", error);
 
     if (error.code === "ERR_REQUEST_CANCELED" || error.code === "ERR_CANCELED") {
-      return { success: false, isNewUser: false, error: "Connexion annulée" };
+      return { success: false, isNewUser: false, error: t("Connexion annulée") };
     }
     if (error.code === "auth/account-exists-with-different-credential") {
       return {
         success: false,
         isNewUser: false,
-        error: "Un compte existe déjà avec cet email.",
+        error: t("Un compte existe déjà avec cet email."),
       };
     }
     if (error.code === "auth/network-request-failed") {
       return {
         success: false,
         isNewUser: false,
-        error: "Erreur réseau. Vérifiez votre connexion.",
+        error: t("Erreur réseau. Vérifiez votre connexion."),
       };
     }
     return {
       success: false,
       isNewUser: false,
-      error: error?.message || "Erreur de connexion Apple",
+      error: error?.message || t("Erreur de connexion Apple"),
     };
   }
 }

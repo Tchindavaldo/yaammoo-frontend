@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { DraftItem } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
+import { t as tr } from "@/src/i18n";
 
 /**
  * Extras du plat : ligne label + chips scrollables, puis ligne d'édition
@@ -77,7 +78,7 @@ export const MenuExtrasEditor: React.FC<{
               </Text>
               {items.length > 0 && (
                 <Text style={styles.itemCountText}>
-                  ×{items.length}
+                  {tr("×")}{items.length}
                 </Text>
               )}
               {items.length > 0 && (
@@ -131,7 +132,7 @@ export const MenuExtrasEditor: React.FC<{
                   styles.itemInputCompact,
                   styles.descCol,
                 ]}
-                placeholder="Nom de l'extra"
+                placeholder={tr("Nom de l'extra")}
                 value={sec.draft.name}
                 onChangeText={(t) =>
                   sec.setDraft({ ...sec.draft, name: t })
@@ -143,7 +144,7 @@ export const MenuExtrasEditor: React.FC<{
                   styles.itemInputCompact,
                   styles.priceCol,
                 ]}
-                placeholder="Prix"
+                placeholder={tr("Prix")}
                 keyboardType="numeric"
                 value={sec.draft.prix}
                 onChangeText={(t) =>

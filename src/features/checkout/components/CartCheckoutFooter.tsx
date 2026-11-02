@@ -5,6 +5,7 @@ import { useSheetInsets } from "../hooks/useSheetInsets";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Loader } from "../../../components/Loader";
 import { styles } from "./CartCheckoutSheet.styles";
+import { t } from "@/src/i18n";
 
 interface CheckoutFooterProps {
   total: number;
@@ -81,7 +82,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
           ) : (
             <>
               <Ionicons name="save-outline" size={16} color="white" />
-              <Text style={styles.btnText}>Enregistrer</Text>
+              <Text style={styles.btnText}>{t("Enregistrer")}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -97,7 +98,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
         ) : (
           <>
             <Ionicons name="checkmark-circle-outline" size={16} color="white" />
-            <Text style={styles.btnText}>Valider</Text>
+            <Text style={styles.btnText}>{t("Valider")}</Text>
           </>
         )}
       </TouchableOpacity>

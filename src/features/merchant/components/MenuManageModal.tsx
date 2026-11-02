@@ -5,6 +5,7 @@ import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { MenuManagePanel } from "@/src/features/merchant/components/MenuManagePanel";
+import { t } from "@/src/i18n";
 
 interface MenuManageModalProps {
   visible: boolean;
@@ -36,10 +37,10 @@ export const MenuManageModal: React.FC<MenuManageModalProps> = ({ visible, onClo
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Gestion menu"
-        subtitle={`${available} plat${available > 1 ? "s" : ""} disponible${available > 1 ? "s" : ""}`}
+        title={t("Gestion menu")}
+        subtitle={t("{{a}} plat{{b}} disponible{{c}}", { a: available, b: available > 1 ? "s" : "", c: available > 1 ? "s" : "" })}
         right={
-          <HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />
+          <HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />
         }
         onHeightChange={setHeaderHeight}
       />

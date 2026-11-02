@@ -13,6 +13,7 @@ import {
 import { AUTH_SHEET_HEIGHT } from "../constants";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Capsule flottante de saisie du flux email — COPIE DEDIEE de
@@ -477,7 +478,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                       // Inactif, l'email remonte au-dessus du cadre.
                       isPwd ? styles.fieldOffTop : styles.fieldActive,
                     ]}
-                    placeholder={isPwd ? "" : "Adresse email"}
+                    placeholder={isPwd ? "" : t("Adresse email")}
                     placeholderTextColor="rgba(255,255,255,0.5)"
                     value={email}
                     onChangeText={(v) => {
@@ -521,7 +522,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                       // Inactif, le mot de passe descend sous le cadre.
                       isPwd ? styles.fieldActive : styles.fieldOffBottom,
                     ]}
-                    placeholder={isPwd ? "Mot de passe" : ""}
+                    placeholder={isPwd ? t("Mot de passe") : ""}
                     placeholderTextColor="rgba(255,255,255,0.5)"
                     value={password}
                     onChangeText={(v) => {

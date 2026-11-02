@@ -3,6 +3,7 @@ import React from "react";
 import { Text, View } from "react-native";
 import { colHeader } from "./DeliveryZoneList";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /** Hauteur d'une ligne vide du tableau fantome (plus compacte qu'une ligne
  *  reelle : on en affiche ainsi davantage dans le meme espace libre). */
@@ -63,9 +64,9 @@ export const GhostTable: React.FC<{ rows: number }> = ({ rows }) => (
           borderBottomColor: "#e2e8f0",
         }}
       >
-        <Text style={[colHeader, { color: "#94a3b8" }]}>Heure</Text>
+        <Text style={[colHeader, { color: "#94a3b8" }]}>{t("Heure")}</Text>
         <Text style={[colHeader, { color: "#94a3b8", textAlign: "right" }]}>
-          Périod.
+          {t("Périod.")}
         </Text>
         <Text style={[colHeader, { color: "#94a3b8", textAlign: "right" }]}>
           Express

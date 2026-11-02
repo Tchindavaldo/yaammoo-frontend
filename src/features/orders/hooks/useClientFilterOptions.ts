@@ -5,6 +5,7 @@ import {
   getOrderDateISO,
   periodKeyOf,
 } from "@/src/features/orders/components/CartStatusPanel.parts";
+import { t } from "@/src/i18n";
 
 interface Params {
   /** Commandes du statut actif. */
@@ -70,12 +71,12 @@ export const useClientFilterOptions = ({
     return [
       {
         key: "express",
-        label: "Livraison express",
+        label: t("Livraison express"),
         count: counts.express || 0,
       },
       {
         key: "surplace",
-        label: "Récupérer\nsur place",
+        label: t("Récupérer\nsur place"),
         count: counts.surplace || 0,
       },
       ...slots.map((k) => ({ key: k, label: k, count: counts[k] })),

@@ -11,6 +11,7 @@ import { useStaffDriverProfiles } from "../hooks/useStaffDriverProfiles";
 import { DEFAULT_DIAL, formatPhone, initialsOf, personName, timeAgo } from "../utils/staffFormat";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 interface Props {
   applications: DriverApplication[];
@@ -33,9 +34,9 @@ const contactOf = (infos?: UserInfos) => {
 const statsLine = (p: DriverProfile) => {
   const rating = p.ratingCount
     ? (p.ratingAvg ?? 0).toFixed(1).replace(".", ",")
-    : "Pas encore noté";
+    : t("Pas encore noté");
   const n = p.stats?.delivered ?? 0;
-  return `${rating} · ${n} livrée${n > 1 ? "s" : ""}`;
+  return t("{{a}} · {{b}} livrée{{c}}", { a: rating, b: n, c: n > 1 ? "s" : "" });
 };
 
 /**
@@ -65,13 +66,13 @@ export const StaffDriversTab: React.FC<Props> = ({
     <>
       <View style={[styles.block, { backgroundColor: ST.accentWash }]}>
         <View style={styles.blockHead}>
-          <Text style={styles.blockTitle}>Demandes reçues</Text>
+          <Text style={styles.blockTitle}>{t("Demandes reçues")}</Text>
           {applications.length > 0 && (
-            <Text style={styles.blockHint}>{applications.length} en attente</Text>
+            <Text style={styles.blockHint}>{applications.length} {t("en attente")}</Text>
           )}
         </View>
         {applications.length === 0 ? (
-          <Text style={styles.empty}>Aucune demande en attente</Text>
+          <Text style={styles.empty}>{t("Aucune demande en attente")}</Text>
         ) : (
           applications.map((app) => {
             const name = personName(app.user?.infos);
@@ -92,7 +93,7 @@ export const StaffDriversTab: React.FC<Props> = ({
                       onPress={() => onDecide(app, "refused")}
                       style={styles.roundBtn}
                       accessibilityRole="button"
-                      accessibilityLabel={`Refuser ${name}`}
+                      accessibilityLabel={t("Refuser {{a}}", { a: name })}
                     >
                       <Ionicons name="close" size={16} color={ST.ink} />
                     </Pressable>
@@ -100,9 +101,9 @@ export const StaffDriversTab: React.FC<Props> = ({
                       onPress={() => onDecide(app, "accepted")}
                       style={styles.acceptBtn}
                       accessibilityRole="button"
-                      accessibilityLabel={`Accepter ${name}`}
+                      accessibilityLabel={t("Accepter {{a}}", { a: name })}
                     >
-                      <Text style={styles.acceptText}>Accepter</Text>
+                      <Text style={styles.acceptText}>{t("Accepter")}</Text>
                     </Pressable>
                   </>
                 )}
@@ -114,13 +115,13 @@ export const StaffDriversTab: React.FC<Props> = ({
 
       <View style={[styles.block, { backgroundColor: ST.surface }]}>
         <View style={styles.blockHead}>
-          <Text style={styles.blockTitle}>Mes livreurs</Text>
+          <Text style={styles.blockTitle}>{t("Mes livreurs")}</Text>
           <Text style={[styles.blockHint, { color: ST.muted, fontWeight: "600" }]}>
-            Commandes déléguées
+            {t("Commandes déléguées")}
           </Text>
         </View>
         {drivers.length === 0 ? (
-          <Text style={styles.empty}>Aucun livreur pour le moment</Text>
+          <Text style={styles.empty}>{t("Aucun livreur pour le moment")}</Text>
         ) : (
           drivers.map((d) => {
             const name = personName(d.infos);
@@ -144,16 +145,16 @@ export const StaffDriversTab: React.FC<Props> = ({
                     onPress={() => onRemove(d)}
                     style={styles.chip}
                     accessibilityRole="button"
-                    accessibilityLabel={`${name}, en course. Retirer`}
+                    accessibilityLabel={t("{{a}}, en course. Retirer", { a: name })}
                   >
-                    <Text style={styles.chipText}>En course</Text>
+                    <Text style={styles.chipText}>{t("En course")}</Text>
                   </Pressable>
                 ) : (
                   <Pressable
                     onPress={() => onRemove(d)}
                     style={styles.roundBtn}
                     accessibilityRole="button"
-                    accessibilityLabel={`Retirer ${name}`}
+                    accessibilityLabel={t("Retirer {{a}}", { a: name })}
                   >
                     <Ionicons name="trash-outline" size={16} color={ST.danger} />
                   </Pressable>

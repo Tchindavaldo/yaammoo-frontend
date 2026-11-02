@@ -4,6 +4,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useCurrentPlaceLabel } from "@/src/features/location/hooks/useCurrentPlaceLabel";
 import { RestaurantHeader } from "../RestaurantHeader";
 import { CATEGORIES } from "../../utils/homeListConfig";
+import { t } from "@/src/i18n";
 
 interface Props {
   unreadCount: number;
@@ -38,7 +39,7 @@ export const HomeHeader: React.FC<Props> = ({
       userName={
         [userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(" ") ||
         user?.displayName ||
-        "Utilisateur"
+        t("Utilisateur")
       }
       userPhoto={(userData as any)?.photoUrl || (userData as any)?.photo || ""}
       location={placeLabel}

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Platform } from "react-native";
 import { Config } from "@/src/api/config";
+import { t } from "@/src/i18n";
 
 /**
  * Envoie une note vocale (fichier local m4a) au backend et renvoie son URL
@@ -26,6 +27,6 @@ export async function uploadVoiceNote(uri: string): Promise<string> {
     headers: { "Content-Type": "multipart/form-data" },
   });
   const url: string = response.data?.data || "";
-  if (!url) throw new Error("URL de la note vocale absente de la reponse");
+  if (!url) throw new Error(t("URL de la note vocale absente de la reponse"));
   return url;
 }

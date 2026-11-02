@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Config } from "@/src/api/config";
 import { DeliveryOffer } from "@/src/types";
+import { t } from "@/src/i18n";
 
 /**
  * Vérification d'un code bonus AVANT commande — `POST /bonus/verify`.
@@ -24,10 +25,10 @@ export interface VerifyBonusResult {
 
 /** Messages par défaut si le backend n'en fournit pas pour la raison donnée. */
 const REASON_MESSAGES: Record<string, string> = {
-  code_not_found: "Code bonus introuvable.",
-  expired: "Ce code bonus a expiré.",
-  exhausted: "Ce code bonus a déjà été utilisé.",
-  wrong_fastfood: "Ce code ne s'applique pas à cette boutique.",
+  code_not_found: t("Code bonus introuvable."),
+  expired: t("Ce code bonus a expiré."),
+  exhausted: t("Ce code bonus a déjà été utilisé."),
+  wrong_fastfood: t("Ce code ne s'applique pas à cette boutique."),
 };
 
 export const verifyBonusCode = async (
@@ -48,7 +49,7 @@ export const verifyBonusCode = async (
         valid: false,
         reason: data.reason,
         message:
-          message || REASON_MESSAGES[data.reason] || "Code bonus invalide.",
+          message || REASON_MESSAGES[data.reason] || t("Code bonus invalide."),
       };
     }
 
@@ -68,7 +69,7 @@ export const verifyBonusCode = async (
     return {
       valid: false,
       reason: "request_failed",
-      message: message || "Vérification du code impossible. Réessayez.",
+      message: message || t("Vérification du code impossible. Réessayez."),
     };
   }
 };

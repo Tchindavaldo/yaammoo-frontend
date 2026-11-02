@@ -32,6 +32,7 @@ import Svg, {
   Stop,
   RadialGradient as SvgRadialGradient,
 } from "react-native-svg";
+import { t } from "@/src/i18n";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -200,7 +201,7 @@ export default function WelcomeScreen() {
         {/* Content: headline + button */}
         <View style={styles.content}>
           <Text style={styles.headline}>
-            Quick{"\n"}Bites, Fast{"\n"}Delivery!
+            Quick{"\n"}{t("Bites, Fast")}{"\n"}Delivery!
           </Text>
 
           <TouchableOpacity
@@ -208,7 +209,7 @@ export default function WelcomeScreen() {
             activeOpacity={0.85}
             onPress={onGetStarted}
           >
-            <Text style={styles.btnText}>Commencer</Text>
+            <Text style={styles.btnText}>{t("Commencer")}</Text>
             <Svg width={14} height={14} viewBox="0 0 14 14">
               <Path
                 d="M2 7h10M8 3l4 4-4 4"

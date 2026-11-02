@@ -12,6 +12,7 @@ import { useNotificationContext } from "../context/NotificationContext";
 import { getNotificationRoute } from "../utils/notificationRouting";
 import { auth } from "@/src/services/firebase";
 import { getDeviceId } from "../services/deviceId";
+import { t } from "@/src/i18n";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -119,7 +120,7 @@ export const useNotificationSetup = () => {
 
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("high_priority_channel", {
-        name: "Notifications importantes",
+        name: t("Notifications importantes"),
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",

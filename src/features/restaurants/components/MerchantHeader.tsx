@@ -9,6 +9,7 @@ import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import { IS_AERE } from "./designs/item/config";
 import { useShopDeliveryLabel } from "../utils/deliveryUtils";
+import { t } from "@/src/i18n";
 
 interface MerchantHeaderProps {
   name: string;
@@ -192,7 +193,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             <View style={styles.statusRow}>
               <View style={[styles.statusDot, { backgroundColor: isOpen ? '#00b894' : '#d63031' }]} />
               <Text style={[styles.statusText, { color: isOpen ? '#00b894' : '#d63031' }]}>
-                {isOpen ? 'Ouvert' : 'Fermé'}
+                {isOpen ? t("Ouvert") : t("Fermé")}
               </Text>
               {distance ? (
                 <Text style={styles.distanceText}>· {distance}</Text>
@@ -208,12 +209,12 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
               <Ionicons name="star" size={13} color={DS.star} />
               <Text style={styles.aereScore}>{rating.toFixed(1)}/5</Text>
               <View style={styles.aereReviews}>
-                <Text style={styles.aereReviewsText}>{reviewCount} avis</Text>
+                <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
               </View>
             </View>
             {delivery ? (
               <Text style={styles.aereDelivery}>
-                Livraison <Text style={styles.aereDeliveryValue}>{delivery}</Text>
+                {t("Livraison")} <Text style={styles.aereDeliveryValue}>{delivery}</Text>
               </Text>
             ) : null}
           </View>

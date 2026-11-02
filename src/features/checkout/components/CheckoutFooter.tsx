@@ -5,6 +5,7 @@ import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './CheckoutSheet.styles';
 import { Loader } from '../../../components/Loader';
+import { t } from "@/src/i18n";
 
 interface CheckoutFooterProps {
   total: number;
@@ -65,14 +66,14 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
         ) : (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Ionicons name="add" size={16} color="white" />
-            <Text style={styles.btnText}>Panier</Text>
+            <Text style={styles.btnText}>{t("Panier")}</Text>
           </View>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.buyBtn} onPress={onBuy}>
         <Ionicons name="cart-outline" size={16} color="white" />
-        <Text style={styles.btnText}>Acheter</Text>
+        <Text style={styles.btnText}>{t("Acheter")}</Text>
       </TouchableOpacity>
     </View>
   );

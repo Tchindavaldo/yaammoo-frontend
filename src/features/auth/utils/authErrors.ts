@@ -1,41 +1,42 @@
+import { t } from "@/src/i18n";
 export const getAuthErrorMessage = (errorCode: string): string => {
     switch (errorCode) {
         case 'auth/invalid-email':
-            return "L'e-mail doit avoir une syntaxe valide.";
+            return t("L'e-mail doit avoir une syntaxe valide.");
         case 'email-not-verified':
-            return 'Email non vérifié. Cliquez sur le lien envoyé à votre compte pour vérifier et valider votre email';
+            return t("Email non vérifié. Cliquez sur le lien envoyé à votre compte pour vérifier et valider votre email");
         case 'auth/email-already-in-use':
-            return "L'adresse e-mail est déjà utilisée par un autre compte.";
+            return t("L'adresse e-mail est déjà utilisée par un autre compte.");
         case 'auth/weak-password':
-            return 'Le mot de passe est trop faible.';
+            return t("Le mot de passe est trop faible.");
         case 'auth/wrong-password':
-            return 'Le mot de passe est incorrect.';
+            return t("Le mot de passe est incorrect.");
         case 'auth/missing-password':
-            return 'Le mot de passe ne doit pas être vide.';
+            return t("Le mot de passe ne doit pas être vide.");
         case 'auth/user-not-found':
-            return 'Aucun utilisateur ne correspond à ces identifiants.';
+            return t("Aucun utilisateur ne correspond à ces identifiants.");
         case 'auth/too-many-requests':
-            return 'Trop de requêtes ont été envoyées, veuillez réessayer plus tard.';
+            return t("Trop de requêtes ont été envoyées, veuillez réessayer plus tard.");
         case 'auth/operation-not-allowed':
-            return "Cette opération n'est pas autorisée pour ce type de compte.";
+            return t("Cette opération n'est pas autorisée pour ce type de compte.");
         case 'auth/user-disabled':
-            return "L'utilisateur a été désactivé.";
+            return t("L'utilisateur a été désactivé.");
         case 'auth/account-exists-with-different-credential':
-            return 'Le compte existe déjà avec un identifiant différent.';
+            return t("Le compte existe déjà avec un identifiant différent.");
         case 'auth/requires-recent-login':
-            return "L'opération nécessite une connexion récente de l'utilisateur.";
+            return t("L'opération nécessite une connexion récente de l'utilisateur.");
         case 'auth/invalid-verification-code':
-            return 'Le code de vérification est incorrect.';
+            return t("Le code de vérification est incorrect.");
         case 'auth/invalid-phone-number':
-            return 'Numéro de téléphone incorrect.';
+            return t("Numéro de téléphone incorrect.");
         case 'auth/code-expired':
-            return 'Le code de vérification a expiré. Renvoyez à nouveau le code.';
+            return t("Le code de vérification a expiré. Renvoyez à nouveau le code.");
         case 'auth/invalid-verification-id':
-            return "L'ID de vérification est incorrect.";
+            return t("L'ID de vérification est incorrect.");
         case 'auth/network-request-failed':
         case 'auth/internal-error':
-            return 'Connexion internet indisponible.';
+            return t("Connexion internet indisponible.");
         default:
-            return 'Une erreur est survenue.';
+            return t("Une erreur est survenue.");
     }
 };

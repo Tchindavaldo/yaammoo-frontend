@@ -14,6 +14,7 @@ import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
 import { Config } from "@/src/api/config";
 import { sinceBoot } from "@/src/utils/bootClock";
+import { t } from "@/src/i18n";
 
 interface AuthContextType {
   user: User | null;
@@ -168,7 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteAccount = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      throw new Error("Aucun utilisateur connecté");
+      throw new Error(t("Aucun utilisateur connecté"));
     }
 
     const idToken = await currentUser.getIdToken();
@@ -183,7 +184,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     if (!response.data?.success) {
-      throw new Error(response.data?.error || response.data?.message || "Échec de la suppression");
+      throw new Error(response.data?.error || response.data?.message || t("Échec de la suppression"));
     }
 
     console.log("✅ [AuthContext] Compte supprimé côté serveur");

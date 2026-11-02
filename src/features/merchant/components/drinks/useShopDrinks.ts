@@ -3,6 +3,7 @@ import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
+import { t } from "@/src/i18n";
 
 /**
  * Boisson de la BOUTIQUE (backend `fastfoods.drinks`, migration 062).
@@ -37,7 +38,7 @@ export const useShopDrinks = () => {
       setDirty(false);
     } catch (e: any) {
       console.error("[useShopDrinks] chargement:", e?.message);
-      showToast("Impossible de charger les boissons de la boutique", "error");
+      showToast(t("Impossible de charger les boissons de la boutique"), "error");
     } finally {
       setLoading(false);
     }
@@ -60,11 +61,11 @@ export const useShopDrinks = () => {
       const res = await axios.post(`${Config.apiUrl}/fastfood/${fastFoodId}`, { drinks });
       setDrinks(res.data?.data?.drinks || drinks);
       setDirty(false);
-      showToast("Boissons enregistrées", "success");
+      showToast(t("Boissons enregistrées"), "success");
     } catch (e: any) {
       const message = e?.response?.data?.message || e?.message;
       console.error("[useShopDrinks] enregistrement:", message);
-      showToast(message || "Impossible d'enregistrer les boissons", "error");
+      showToast(message || t("Impossible d'enregistrer les boissons"), "error");
     } finally {
       setSaving(false);
     }

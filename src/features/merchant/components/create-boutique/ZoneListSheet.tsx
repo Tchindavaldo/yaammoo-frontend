@@ -17,6 +17,7 @@ import { useSheetAnimation } from "./useSheetAnimation";
 import { zoneListStyles as st } from "./ZoneListSheet.styles";
 import { ZoneBanner } from "./ZoneBanner";
 import { ZoneSlotGrid } from "./ZoneSlotGrid";
+import { t } from "@/src/i18n";
 
 interface ZoneListSheetProps {
   visible: boolean;
@@ -83,8 +84,8 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
       expressPrice: expressLo !== null ? fmt(expressLo) : "—",
       expressNote:
         expressLo !== null
-          ? `${expressPrices.length} heure${expressPrices.length > 1 ? "s" : ""}`
-          : "Non desservi",
+          ? t("{{a}} heure{{b}}", { a: expressPrices.length, b: expressPrices.length > 1 ? "s" : "" })
+          : t("Non desservi"),
       slots,
     };
   }, [current]);
@@ -108,7 +109,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
           ]}
         >
           <View style={st.header}>
-            <Text style={st.title}>Vos adresses et heures de livraison</Text>
+            <Text style={st.title}>{t("Vos adresses et heures de livraison")}</Text>
             <TouchableOpacity onPress={onClose} style={st.closeBtn}>
               <Ionicons name="close" size={20} color="#64748b" />
             </TouchableOpacity>
@@ -118,7 +119,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
               pour que les deux sheets ouvrent a la meme taille. */}
           <View style={st.body}>
           {!current || !view ? (
-            <Text style={st.empty}>Aucune zone de livraison enregistrée.</Text>
+            <Text style={st.empty}>{t("Aucune zone de livraison enregistrée.")}</Text>
           ) : (
             <>
               {/* Une seule zone : pas de chips a faire defiler, on nomme
@@ -129,7 +130,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
                   return (
                     <ZoneBanner
                       lieu={current.lieu}
-                      sub="Votre unique zone de livraison"
+                      sub={t("Votre unique zone de livraison")}
                     />
                   );
 
@@ -141,7 +142,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
                         <ZoneBanner
                           key={g.lieu}
                           lieu={g.lieu}
-                          sub={`${g.hours.length} horaire${g.hours.length > 1 ? "s" : ""}`}
+                          sub={t("{{a}} horaire{{b}}", { a: g.hours.length, b: g.hours.length > 1 ? "s" : "" })}
                           compact={true}
                           // A 3, la place manque pour l'icone de localisation.
                           hidePin={groups.length === 3}
@@ -199,7 +200,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
               </View>
 
               <Text style={st.footer}>
-                {current.lieu} · touchez un créneau pour le modifier
+                {current.lieu} {t("· touchez un créneau pour le modifier")}
               </Text>
             </>
           )}

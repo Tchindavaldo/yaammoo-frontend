@@ -17,6 +17,7 @@ une **grille de tuiles par section**, séparées visuellement.
 | `src/features/profile/components/SettingsProfileCard.tsx` | Ancien en-tête (plus monté) |
 | `src/features/profile/components/DeleteAccountModal.tsx` | Modal « Supprimer mon compte » : saisie `SUPPRIMER`, loader, erreur inline |
 | `src/features/profile/components/LogoutModal.tsx` | Modal de confirmation de déconnexion (+ `push-token/remove` best-effort) |
+| `src/features/profile/components/LanguageSheet.tsx` | Bottom sheet de la tuile **Langue** (Français / English), voir `i18n.md` |
 | `src/features/profile/hooks/useSettingsSubScreens.ts` | Visibilité des sous-pages (`visible` / `open` / `close`), deep-link `?section=`, reset au tap onglet et à la déconnexion |
 | `src/features/profile/hooks/useNotificationSwitch.ts` | Switch Notifications : permission OS + token du device synced en BD, relu au focus |
 | `src/features/profile/hooks/useSettingsTabBarStyle.ts` | Ombre de la tab bar atténuée tant que la sheet Bonus est ouverte |

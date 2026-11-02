@@ -18,6 +18,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { driverService, StoreOption } from "../services/driverService";
 import { Toast } from "@/src/components/Toast";
+import { t as tr } from "@/src/i18n";
 
 interface DriverApplyModalProps {
   visible: boolean;
@@ -58,7 +59,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
 
   // Liste locale (home) mappée en StoreOption pour un rendu uniforme.
   const localStores: StoreOption[] = useMemo(
-    () => fastFoods.map((f) => ({ id: f.id, nom: f.nom || (f as any).name || "Boutique" })),
+    () => fastFoods.map((f) => ({ id: f.id, nom: f.nom || (f as any).name || tr("Boutique") })),
     [fastFoods],
   );
 
@@ -96,12 +97,12 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
     try {
       await driverService.apply(userData.uid, selectedIds);
       setToast({
-        message: `Demande${selectedIds.length > 1 ? "s" : ""} envoyée${selectedIds.length > 1 ? "s" : ""} ✅`,
+        message: tr("Demande{{a}} envoyée{{b}} ✅", { a: selectedIds.length > 1 ? "s" : "", b: selectedIds.length > 1 ? "s" : "" }),
         type: "success",
       });
       setTimeout(onClose, 900);
     } catch {
-      setToast({ message: "Échec de l'envoi de la demande", type: "error" });
+      setToast({ message: tr("Échec de l'envoi de la demande"), type: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -114,13 +115,13 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Devenir livreur"
+        title={tr("Devenir livreur")}
         subtitle={
           selectedIds.length > 0
-            ? `${selectedIds.length} boutique${selectedIds.length > 1 ? "s" : ""} sélectionnée${selectedIds.length > 1 ? "s" : ""}`
-            : "Choisissez vos boutiques"
+            ? tr("{{a}} boutique{{b}} sélectionnée{{c}}", { a: selectedIds.length, b: selectedIds.length > 1 ? "s" : "", c: selectedIds.length > 1 ? "s" : "" })
+            : tr("Choisissez vos boutiques")
         }
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        right={<HeaderPill label={tr("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 
@@ -129,7 +130,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
           <Ionicons name="search-outline" size={18} color={Theme.colors.gray[400]} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Rechercher une boutique…"
+            placeholder={tr("Rechercher une boutique…")}
             placeholderTextColor={Theme.colors.gray[400]}
             value={query}
             onChangeText={setQuery}
@@ -140,7 +141,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
         {/* Hint : la liste par défaut (locale) n'est pas exhaustive. */}
         {!isSearching && (
           <Text style={styles.hint}>
-            Tapez pour rechercher toutes les boutiques
+            {tr("Tapez pour rechercher toutes les boutiques")}
           </Text>
         )}
 
@@ -176,7 +177,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
           }}
           ListEmptyComponent={
             searching ? null : (
-              <Text style={styles.empty}>Aucune boutique trouvée</Text>
+              <Text style={styles.empty}>{tr("Aucune boutique trouvée")}</Text>
             )
           }
         />
@@ -204,7 +205,7 @@ export const DriverApplyModal: React.FC<DriverApplyModalProps> = ({
             <ActivityIndicator color="#fff" size="small" />
           ) : (
             <Text style={styles.submitText}>
-              Envoyer {selectedIds.length > 0 ? `(${selectedIds.length})` : "ma demande"}
+              {tr("Envoyer")} {selectedIds.length > 0 ? `(${selectedIds.length})` : tr("ma demande")}
             </Text>
           )}
         </TouchableOpacity>

@@ -6,6 +6,7 @@ import { Loader } from '../../../components/Loader';
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -141,7 +142,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="call-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Numéro de contact</Text>
+              <Text style={styles.headerTitle}>{t("Numéro de contact")}</Text>
               <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
                 <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
               </TouchableOpacity>
@@ -179,8 +180,8 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
 
             <Text style={styles.helperText}>
               {pickup
-                ? "La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande."
-                : "Le livreur utilisera ce numéro pour vous joindre à son arrivée en cas de souci avec votre livraison."}
+                ? t("La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande.")
+                : t("Le livreur utilisera ce numéro pour vous joindre à son arrivée en cas de souci avec votre livraison.")}
             </Text>
           </View>
         </View>

@@ -5,6 +5,7 @@ import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet
 import { Menu } from "@/src/types";
 import { track } from "@/src/services/analytics/analytics";
 import { reopenLockedPayment } from "@/src/services/paymentLock";
+import { t } from "@/src/i18n";
 
 type HomeToast = { message: string; type: "success" | "error" } | null;
 
@@ -76,17 +77,17 @@ export const useHomeCheckout = () => {
         }
         showToast(
           order.status === "pending"
-            ? "Commande envoyée au marchand !"
-            : "Article ajouté au panier !",
+            ? t("Commande envoyée au marchand !")
+            : t("Article ajouté au panier !"),
           "success",
         );
         return true;
       } else {
-        showToast(result.message || "Une erreur est survenue.", "error");
+        showToast(result.message || t("Une erreur est survenue."), "error");
         return false;
       }
     } catch {
-      showToast("Une erreur est survenue.", "error");
+      showToast(t("Une erreur est survenue."), "error");
       return false;
     }
   };

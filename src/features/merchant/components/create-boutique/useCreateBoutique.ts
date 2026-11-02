@@ -9,6 +9,7 @@ import {
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
 import { useToast } from "./useToast";
+import { t } from "@/src/i18n";
 
 export type { Zone } from "./parseBoutique";
 
@@ -167,13 +168,13 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      showToast("Erreur lors de la sélection de l'image", "error");
+      showToast(t("Erreur lors de la sélection de l'image"), "error");
     }
   };
 
   const handleCreate = async () => {
     if (!name.trim()) {
-      showToast("Le champ \"Nom Boutique\" n'est pas rempli", "error");
+      showToast(t("Le champ \"Nom Boutique\" n'est pas rempli"), "error");
       return;
     }
 
@@ -217,15 +218,15 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
             isMarchand: true,
           });
         }
-        showToast("Votre boutique a été créée avec succès !", "success", 2000);
+        showToast(t("Votre boutique a été créée avec succès !"), "success", 2000);
       } else {
-        showToast("Impossible de créer la boutique", "error");
+        showToast(t("Impossible de créer la boutique"), "error");
       }
     } catch (error: any) {
       console.error("Error creating boutique:", error);
       const errorMessage =
         error?.response?.data?.error ||
-        "Une erreur est survenue lors de la création";
+        t("Une erreur est survenue lors de la création");
       showToast(errorMessage, "error");
     } finally {
       setLoading(false);

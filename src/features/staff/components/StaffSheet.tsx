@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ST } from "./staffTheme";
+import { t } from "@/src/i18n";
 
 interface Props {
   onClose: () => void;
@@ -71,7 +72,7 @@ export const StaffSheet: React.FC<Props> = ({ onClose, full = false, header, foo
         <Pressable
           style={[StyleSheet.absoluteFill, styles.backdrop]}
           onPress={() => (keyboard > 0 ? Keyboard.dismiss() : onClose())}
-          accessibilityLabel="Fermer"
+          accessibilityLabel={t("Fermer")}
         />
       </Animated.View>
 

@@ -4,6 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 interface Props {
   canAskAgain: boolean;
@@ -27,11 +28,11 @@ export const HomeLocationBanner: React.FC<Props> = ({
       <Ionicons name="location" size={18} color={DS.accent} />
     </View>
     <View style={styles.texts}>
-      <Text style={styles.title}>Localisation désactivée</Text>
+      <Text style={styles.title}>{t("Localisation désactivée")}</Text>
       <Text style={styles.text} numberOfLines={2}>
         {canAskAgain
-          ? "Activez-la pour voir les boutiques qui livrent autour de vous."
-          : "Autorisez-la dans les réglages pour voir les boutiques autour de vous."}
+          ? t("Activez-la pour voir les boutiques qui livrent autour de vous.")
+          : t("Autorisez-la dans les réglages pour voir les boutiques autour de vous.")}
       </Text>
     </View>
     <TouchableOpacity
@@ -44,7 +45,7 @@ export const HomeLocationBanner: React.FC<Props> = ({
         <ActivityIndicator size="small" color={DS.onInk} />
       ) : (
         <Text style={styles.btnText}>
-          {canAskAgain ? "Activer" : "Réglages"}
+          {canAskAgain ? t("Activer") : t("Réglages")}
         </Text>
       )}
     </TouchableOpacity>

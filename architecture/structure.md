@@ -322,3 +322,15 @@ AuthProvider
 - Les **contexts** sont toujours fournis au niveau `app/_layout.tsx`.
 - Les **types globaux** (Commande, Menu…) vivent dans `src/types/`.
 - Les **types locaux à une feature** vivent dans le dossier de la feature.
+
+## src/i18n/ — langues
+
+```
+src/i18n/
+├── index.ts            # i18next (init synchrone), t(), setLanguage() (recharge l'app), dateLocale()
+└── locales/
+    ├── en.json         # traduction anglaise (clé = texte français)
+    └── fr.json         # surcharges françaises
+```
+
+Détail : [i18n.md](./i18n.md).

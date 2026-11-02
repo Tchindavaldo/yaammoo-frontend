@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSheetInsets } from "../hooks/useSheetInsets";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -95,12 +96,12 @@ const PriceRecap: React.FC<{
     value: number;
     free?: boolean;
   }[] = [
-    { icon: "fast-food-outline", label: "Menu", value: menuPrice },
-    { icon: "wine-outline", label: "Boisson", value: drinksPrice },
+    { icon: "fast-food-outline", label: t("Menu"), value: menuPrice },
+    { icon: "wine-outline", label: t("Boisson"), value: drinksPrice },
     { icon: "add-circle-outline", label: "Extras", value: extrasPrice },
     {
       icon: "bicycle-outline",
-      label: "Livraison",
+      label: t("Livraison"),
       value: deliveryPrice,
       free: isDeliveryFree,
     },
@@ -112,7 +113,7 @@ const PriceRecap: React.FC<{
           <Ionicons name={r.icon} size={16} color={DS.accent} />
           <Text style={styles.recapLabel}>{r.label}</Text>
           {r.free ? (
-            <Text style={[styles.recapValue, styles.recapFree]}>Gratuit</Text>
+            <Text style={[styles.recapValue, styles.recapFree]}>{t("Gratuit")}</Text>
           ) : (
             <Text style={styles.recapValue}>{r.value} F</Text>
           )}
@@ -133,7 +134,7 @@ const ActionArea: React.FC<{
   return (
     <View style={styles.actionArea}>
       <Text style={styles.actionTitle}>
-        Sélectionnez le réseau utilisé pour le paiement
+        {t("Sélectionnez le réseau utilisé pour le paiement")}
       </Text>
       <View style={styles.networkRow}>
         {(["orange", "mtn"] as const).map((net) => {
@@ -269,7 +270,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
 
           {/* Total affiché à part, plus grand */}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total à payer</Text>
+            <Text style={styles.totalLabel}>{t("Total à payer")}</Text>
             <Text style={styles.totalValue}>{total} FCFA</Text>
           </View>
 

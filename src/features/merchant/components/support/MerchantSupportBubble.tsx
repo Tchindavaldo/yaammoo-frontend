@@ -2,9 +2,10 @@ import { Theme } from "@/src/theme";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { MerchantSupportMessage } from "../../types/merchantSupport.types";
+import { dateLocale } from "@/src/i18n";
 
 const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("fr-FR", {
+  new Date(iso).toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit",
   });

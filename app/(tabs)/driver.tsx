@@ -14,6 +14,7 @@ import {
 } from "@/src/features/driver/components/DriverOrderPanel";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Toast } from "@/src/components/Toast";
+import { t, dateLocale } from "@/src/i18n";
 
 // Page LIVREUR = commandes déléguées uniquement (lancer / terminer / détails).
 export default function DriverScreen() {
@@ -33,8 +34,8 @@ export default function DriverScreen() {
 
   const selectedDateLabel = useMemo(() => {
     const iso = selectedDate ?? todayISO;
-    if (iso === todayISO) return "Aujourd'hui";
-    return new Date(iso).toLocaleDateString("fr-FR", {
+    if (iso === todayISO) return t("Aujourd'hui");
+    return new Date(iso).toLocaleDateString(dateLocale(), {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -51,12 +52,12 @@ export default function DriverScreen() {
     const ok = await updateStatus(id, status);
     if (status === "delivering") {
       ok
-        ? showToast("🚲 Livraison lancée !", "success")
-        : showToast("Erreur lors du lancement", "error");
+        ? showToast(t("🚲 Livraison lancée !"), "success")
+        : showToast(t("Erreur lors du lancement"), "error");
     } else if (status === "delivered") {
       ok
-        ? showToast("✅ Livraison terminée", "success")
-        : showToast("Erreur lors de la mise à jour", "error");
+        ? showToast(t("✅ Livraison terminée"), "success")
+        : showToast(t("Erreur lors de la mise à jour"), "error");
     }
   };
 
@@ -66,8 +67,8 @@ export default function DriverScreen() {
     return (
       <GuestGate
         icon="bicycle-outline"
-        title="Mes livraisons"
-        subtitle="Connectez-vous pour accéder à vos commandes déléguées."
+        title={t("Mes livraisons")}
+        subtitle={t("Connectez-vous pour accéder à vos commandes déléguées.")}
       >
         {null}
       </GuestGate>
@@ -79,7 +80,7 @@ export default function DriverScreen() {
       return (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
-          <Text style={styles.loadingText}>Chargement de vos livraisons...</Text>
+          <Text style={styles.loadingText}>{t("Chargement de vos livraisons...")}</Text>
         </View>
       );
     }
@@ -102,7 +103,7 @@ export default function DriverScreen() {
     <View style={styles.container}>
       <BlurScope>
       <TabHeader
-        title="Livraisons"
+        title={t("Livraisons")}
         subtitle={selectedDateLabel}
         right={
           <DatePill

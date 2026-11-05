@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **22 règles numérotées R1 → R22.** Toute nouvelle règle ajoutée à ce fichier
+> **23 règles numérotées R1 → R23.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -330,3 +330,26 @@ composant `src/components/Toast.tsx` : en haut, premier plan, fermeture par glis
 - **Tout `<Modal>`** pose `<GlobalToastHost modal />` en dernier enfant : sur Android
   une Modal est une fenêtre au-dessus de l'app, sans cet hôte le toast passerait dessous
   (pile d'hôtes, seul le premier plan affiche ; inactif sur iOS).
+
+## R23 — ARGENT : relecture OBLIGATOIRE, aucun chiffre de mémoire (OBLIGATOIRE)
+
+**Yaammoo manipule de l'argent réel.** Une erreur de chiffre = un marchand mal
+payé, de l'argent perdu, un litige.
+
+1. **Source** : [`architecture/money-rules.md`](./architecture/money-rules.md),
+   copie du fichier backend (à resynchroniser à chaque changement côté backend).
+   Le frontend n'est **jamais** la vérité de l'argent : il affiche ce que le
+   backend renvoie, et tout montant envoyé est recalculé côté serveur.
+2. **Aucun chiffre d'argent de mémoire.** Un chiffre non vérifié est annoncé
+   comme tel.
+3. **Appliqué par le harness** (hooks `.claude/hooks/`) :
+   - `money-context.sh` (UserPromptSubmit) réinjecte `money-rules.md` à CHAQUE
+     message qui parle d'argent ;
+   - `require-money-rules.sh` (PreToolUse) BLOQUE toute modification d'un
+     fichier d'argent (`src/features/wallet|checkout|payment|cart|bonus/`…),
+     toute écriture SQL sur une table d'argent et tout déploiement si
+     `money-rules.md` n'a pas été relu (Read) dans les 15 dernières minutes ;
+   - `money-read-marker.sh` (PostToolUse) note la relecture ;
+   - `install-money-guard.sh` (SessionStart) installe le mod `money-guard`
+     (dépôt backend, `claude-mods/`) : règles dans le prompt système à chaque
+     tour + blocage en double.

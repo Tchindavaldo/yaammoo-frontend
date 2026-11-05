@@ -37,9 +37,9 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
         title={t("Portefeuille")}
         subtitle={`${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XAF`}
         right={
-          // Choix temporaire de la présentation des cartes (maquettes B, C, D, F).
+          // Choix temporaire de la présentation des cartes (maquettes C et G).
           <View style={styles.variants}>
-            {([1, 2, 3, 4] as WalletCardsVariant[]).map((v) => (
+            {([1, 2] as WalletCardsVariant[]).map((v) => (
               <TouchableOpacity
                 key={v}
                 onPress={() => setVariant(v)}

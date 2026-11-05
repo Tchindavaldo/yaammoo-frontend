@@ -12,12 +12,15 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
       /(?:settings|cart)\?section=(pending|active|finished|delivered)/,
     );
     if (legacy) return `/(tabs)/orders?section=${legacy[1]}`;
+    // Nouvelle commande (→ marchand) : page Commandes de la boutique (Profil),
+    // pas l'onglet Commandes du client.
+    if (/boutique/.test(String(rawRoute))) return "/shop/orders";
     return rawRoute.startsWith("/") ? rawRoute : `/(tabs)/${rawRoute}`;
   }
   // Minuscules : le push `bonus.activation_changed` envoie `type: "Bonus"`.
   switch (String(notif.type ?? "").toLowerCase()) {
     case "order_new":
-      return "/(tabs)/boutique";
+      return "/shop/orders";
     case "order_cancel_by_user":
     case "order_cancel_by_merchant":
       return "/(tabs)/notifications";

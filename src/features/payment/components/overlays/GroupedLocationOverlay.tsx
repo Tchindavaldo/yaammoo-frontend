@@ -197,12 +197,9 @@ export const GroupedLocationOverlay: React.FC<GroupedLocationOverlayProps> = ({
       Keyboard.dismiss();
       return;
     }
-    if (!localAddress.trim()) {
+    // GPS OU adresse écrite : l'un des deux suffit.
+    if (!localAddress.trim() && !localNote.trim()) {
       setValidationError(t("Envoyez votre GPS ou saisissez une adresse"));
-      return;
-    }
-    if (!localNote.trim()) {
-      setValidationError(t("Ajoutez une note (ex: Porte bleue, 2ème étage)"));
       return;
     }
     setValidationError(null);

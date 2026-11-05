@@ -336,7 +336,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
   const validateDelivery = useCallback((): string | null => {
     const type = delivery.type;
     if (!delivery.statut || type === 'aucune') return null;
-    if (!delivery.address) return t("Adresse de livraison requise");
+    if (!delivery.address && !delivery.note) return t("Adresse de livraison requise");
     if (!delivery.phone) return t("Numéro de contact requis");
     if (type === 'standard' && !delivery.hour) return t("Période de livraison requise");
     // Express : exiger le choix d'une zone SI des zones express sont disponibles

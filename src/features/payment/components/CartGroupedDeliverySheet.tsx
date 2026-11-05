@@ -187,7 +187,7 @@ export const CartGroupedDeliverySheet: React.FC<
       const manque =
         delivery.type === "aucune"
           ? null
-          : !delivery.address
+          : !delivery.address && !delivery.note
             ? t("Indiquez le lieu de livraison")
             : !delivery.phone
               ? t("Indiquez un numéro de contact")
@@ -511,7 +511,7 @@ export const CartGroupedDeliverySheet: React.FC<
       return;
     }
     if (step === 3 && delivery.type !== "aucune") {
-      const manque = !delivery.address
+      const manque = !delivery.address && !delivery.note
         ? t("Indiquez le lieu de livraison")
         : !delivery.phone
           ? t("Indiquez un numéro de contact")

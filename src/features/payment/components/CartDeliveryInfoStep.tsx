@@ -69,7 +69,7 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
       icon: "location-outline",
       title: t("Lieu de livraison"),
       value: delivery.address || t("Où vous livrer ?"),
-      filled: !!delivery.address,
+      filled: !!(delivery.address || delivery.note),
       onPress: onOpenLocation,
     });
   }

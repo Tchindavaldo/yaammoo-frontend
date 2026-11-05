@@ -40,7 +40,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
   deliveryOffer,
 }) => {
   useLanguage();
-  const isLocationFilled = !!delivery.address;
+  const isLocationFilled = !!(delivery.address || delivery.note);
   const isPeriodFilled = !!delivery.hour;
   const isContactFilled = !!delivery.phone;
   const isVoiceNoteFilled = !!delivery.voiceNoteUri;

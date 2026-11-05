@@ -155,7 +155,7 @@ export const CartDeliverySegmentStep: React.FC<
       label: tr("Lieu"),
       recapLabel: tr("Lieu de livraison"),
       value: delivery.address || tr("À remplir"),
-      filled: !!delivery.address,
+      filled: !!(delivery.address || delivery.note),
       onPress: onOpenLocation,
     });
   } else {

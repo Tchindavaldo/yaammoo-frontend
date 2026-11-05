@@ -8,7 +8,7 @@ import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useW
 import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
-import { WalletBreakdownRow } from "./WalletBreakdownRow";
+import { WalletNetworkCards, WalletCardsVariant } from "./WalletNetworkCards";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -38,6 +38,8 @@ interface PorteFeuilleProps {
   onRegisterWithdraw?: (open: () => void) => void;
   /** Hauteur du header de page : la liste scrolle dessous (effet blur du header). */
   topOffset?: number;
+  /** Présentation des cartes MTN / Orange (choisie dans le header). */
+  cardsVariant?: WalletCardsVariant;
 }
 
 export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
@@ -45,6 +47,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   onBalanceChange,
   onRegisterWithdraw,
   topOffset = 0,
+  cardsVariant = 1,
 }) => {
   useLanguage();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
@@ -275,35 +278,27 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         style={[styles.fixedBar, { top: topOffset }]}
         onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
       >
-        <View style={styles.balanceRow}>
-          <View style={styles.balanceItem}>
-            <Text style={styles.balanceLbl}>{t("Solde")}</Text>
-            <Text style={styles.balanceVal}>
-              {balance.toLocaleString("fr-FR")} F
-            </Text>
-            <Text style={styles.subBalances}>
-              MTN {balances.mtn.toLocaleString("fr-FR")} {t("F · Orange")}{" "}
-              {balances.orange.toLocaleString("fr-FR")} F
-            </Text>
-          </View>
-          <View style={styles.divider} />
-          <TouchableOpacity
-            style={styles.balanceItem}
-            activeOpacity={0.7}
-            onPress={() => setWithdrawState("source_select")}
-          >
-            <Text style={styles.balanceLbl}>{t("Retrait")}</Text>
-            <View style={styles.withdrawRow}>
-              <Text style={[styles.balanceVal, { color: Theme.colors.primary }]}>
-                {t("Retirer")}
-              </Text>
-              <Ionicons name="arrow-up-circle" size={20} color={Theme.colors.primary} />
-            </View>
-          </TouchableOpacity>
-        </View>
-        {/* Par réseau : commandes + frais de retrait = total. */}
-        {stats?.breakdown && <WalletBreakdownRow breakdown={stats.breakdown} />}
+        {/* Par réseau : commandes + frais de retrait = total (le solde global
+            est dans le sous-titre du header). */}
+        {stats?.breakdown && (
+          <WalletNetworkCards breakdown={stats.breakdown} variant={cardsVariant} />
+        )}
       </View>
+      </BlurScope>
+
+      {/* Bouton de retrait fixe en bas (ShopPageFrame réserve la safe-area). */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.withdrawBtn}
+          activeOpacity={0.85}
+          onPress={() => setWithdrawState("source_select")}
+        >
+          <Ionicons name="arrow-up" size={20} color={DS.onInk} />
+          <Text style={styles.withdrawBtnText}>{t("Faire un retrait")}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <BlurScope>
 
       {/* Overlay de RETRAIT (copie adaptée du paiement panier) */}
       {withdrawState !== "idle" && (
@@ -349,42 +344,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.gray[100],
   },
-  balanceRow: {
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: DS.bg,
+    borderTopWidth: 1,
+    borderTopColor: DS.line,
+  },
+  withdrawBtn: {
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: DS.accent,
     flexDirection: "row",
     alignItems: "center",
-    padding: Theme.spacing.lg,
-    gap: Theme.spacing.lg,
+    justifyContent: "center",
+    gap: 8,
   },
-  balanceItem: {
-    flex: 1,
-  },
-  withdrawRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  divider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Theme.colors.gray[200],
-  },
-  balanceLbl: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  balanceVal: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: Theme.colors.dark,
-  },
-  subBalances: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: "600",
-    color: DS.muted,
+  withdrawBtnText: {
+    color: DS.onInk,
+    fontSize: 16,
+    fontWeight: "700",
   },
   balanceCard: {
     backgroundColor: Theme.colors.white,

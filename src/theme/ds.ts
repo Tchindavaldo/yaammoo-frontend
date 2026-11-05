@@ -41,10 +41,6 @@ export const DS = {
   accentTint: "rgba(236,73,19,0.1)",
   accentWash: "rgba(236,73,19,0.07)",
   accentOnInk: "#FF9A70",
-  // Fonds des logos Mobile Money (portefeuille marchand).
-  mtnBlue: "#004F71",
-  orangeMoneyBg: "#FFE3CC",
-
   // --- Texte et traits sur fond sombre (`ink`) : cartes flottantes ---
   onInk: "#FFFFFF",
   onInkMuted: "rgba(255,255,255,0.68)",

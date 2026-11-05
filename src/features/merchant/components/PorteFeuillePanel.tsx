@@ -8,7 +8,7 @@ import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useW
 import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
-import { WalletNetworkCards, WalletCardsVariant } from "./WalletNetworkCards";
+import { WalletNetworkCards } from "./WalletNetworkCards";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -38,8 +38,6 @@ interface PorteFeuilleProps {
   onRegisterWithdraw?: (open: () => void) => void;
   /** Hauteur du header de page : la liste scrolle dessous (effet blur du header). */
   topOffset?: number;
-  /** Présentation des cartes MTN / Orange (choisie dans le header). */
-  cardsVariant?: WalletCardsVariant;
 }
 
 export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
@@ -47,7 +45,6 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   onBalanceChange,
   onRegisterWithdraw,
   topOffset = 0,
-  cardsVariant = 1,
 }) => {
   useLanguage();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
@@ -281,7 +278,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         {/* Par réseau : commandes + frais de retrait = total (le solde global
             est dans le sous-titre du header). */}
         {stats?.breakdown && (
-          <WalletNetworkCards breakdown={stats.breakdown} variant={cardsVariant} />
+          <WalletNetworkCards breakdown={stats.breakdown} />
         )}
       </View>
       </BlurScope>

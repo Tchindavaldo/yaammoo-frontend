@@ -1,10 +1,10 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { DS } from "@/src/theme";
 import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
-import { WalletCardsVariant } from "@/src/features/merchant/components/WalletNetworkCards";
+import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { PorteFeuillePanel } from "@/src/features/merchant/components/PorteFeuillePanel";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -23,7 +23,6 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
   const [headerHeight, setHeaderHeight] = useState(70);
   const [walletBalance, setWalletBalance] = useState(0);
   const [openWithdraw, setOpenWithdraw] = useState<(() => void) | null>(null);
-  const [variant, setVariant] = useState<WalletCardsVariant>(1);
 
   if (!visible) return null;
 
@@ -37,18 +36,7 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
         title={t("Portefeuille")}
         subtitle={`${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XAF`}
         right={
-          // Choix temporaire de la présentation des cartes (maquettes C et G).
-          <View style={styles.variants}>
-            {([1, 2] as WalletCardsVariant[]).map((v) => (
-              <TouchableOpacity
-                key={v}
-                onPress={() => setVariant(v)}
-                style={[styles.variantBtn, variant === v && styles.variantBtnOn]}
-              >
-                <Text style={[styles.variantTxt, variant === v && styles.variantTxtOn]}>{v}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />
         }
         onHeightChange={setHeaderHeight}
       />
@@ -58,7 +46,6 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
           onRefresh={refresh}
           onBalanceChange={setWalletBalance}
           onRegisterWithdraw={(fn) => setOpenWithdraw(() => fn)}
-          cardsVariant={variant}
         />
       </View>
     </View>
@@ -77,16 +64,4 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: DS.bg,
   },
-  variants: { flexDirection: "row", gap: 6 },
-  variantBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: DS.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  variantBtnOn: { backgroundColor: DS.accent },
-  variantTxt: { fontSize: 12, fontWeight: "700", color: DS.ink },
-  variantTxtOn: { color: DS.onInk },
 });

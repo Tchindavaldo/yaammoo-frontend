@@ -49,12 +49,11 @@ jobs:
 
       # Le gradle.properties du HOME prime sur celui du projet genere :
       # - memoire : 2 Go par defaut → OutOfMemoryError Metaspace sur R8 ;
-      # - ABIs : x86/x86_64 ne servent qu'aux emulateurs, les retirer divise
-      #   environ par deux la compilation native.
+      # Toutes les ABIs (armeabi-v7a, arm64-v8a, x86, x86_64) : x86 pour les emulateurs.
       - run: |
           mkdir -p ~/.gradle
           echo "org.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError" >> ~/.gradle/gradle.properties
-          echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> ~/.gradle/gradle.properties
+          echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64" >> ~/.gradle/gradle.properties
 
       # Le profil `production` charge les variables EAS `production`
       # (EXPO_PUBLIC_*), `.env` etant absent du runner.
@@ -75,4 +74,6 @@ jobs:
           packageName: com.rauval.yaammoo
           releaseFiles: app.aab
           track: ${{ inputs.track }}
+          # Notes de version fixes (R24 CLAUDE.md) : distribution/whatsnew/whatsnew-fr-FR
+          whatsNewDirectory: distribution/whatsnew
           status: completed

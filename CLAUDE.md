@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **23 règles numérotées R1 → R23.** Toute nouvelle règle ajoutée à ce fichier
+> **24 règles numérotées R1 → R24.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -353,3 +353,13 @@ payé, de l'argent perdu, un litige.
    - `install-money-guard.sh` (SessionStart) installe le mod `money-guard`
      (dépôt backend, `claude-mods/`) : règles dans le prompt système à chaque
      tour + blocage en double.
+
+## R24 — Build Android Play Store : notes de version FIXES (OBLIGATOIRE)
+
+Le build de production passe par `.github/workflows/android-release.yml`
+(toutes les ABIs, x86 inclus pour les émulateurs). Chaque soumission porte
+TOUJOURS ce message « Nouveautés », sans le changer :
+
+> Corrections de bugs, améliorations de la stabilité et de l'interface utilisateur.
+
+Il vit dans `distribution/whatsnew/whatsnew-fr-FR` (lu par le workflow).

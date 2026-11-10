@@ -59,6 +59,32 @@ export const toBalances = (raw: any): WalletBalances | undefined => {
   return { mtn, orange };
 };
 
+/** Milliers separes par un espace : 12500 -> "12 500". */
+export const groupThousands = (n: number | string) =>
+  String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+/** Montant court : "7 412 F". */
+export const formatF = (n: number) => `${groupThousands(n)} F`;
+
+/** Numero camerounais sans indicatif : "677123456" -> "6 77 12 34 56". */
+export const localDigits = (phone?: string | null) =>
+  String(phone ?? "").replace(/\D/g, "").replace(/^237(?=\d{9}$)/, "");
+
+export const formatPhone = (phone?: string | null) => {
+  const d = localDigits(phone);
+  return d.length === 9
+    ? `${d[0]} ${d.slice(1, 3)} ${d.slice(3, 5)} ${d.slice(5, 7)} ${d.slice(7)}`
+    : d;
+};
+
+/** Taux en pourcentage, virgule decimale : 1.3 -> "1,3", 1 -> "1". */
+export const formatPercent = (p: number) =>
+  String(Math.round((Number(p) || 0) * 100) / 100).replace(".", ",");
+
+/** Nom du compte mobile money d'un reseau. */
+export const walletLabel = (n?: WalletNetwork | null) =>
+  n === "ORANGEMONEY" ? "Orange Money" : n === "MTN" ? "MTN MoMo" : "";
+
 /** Montant FCFA lisible : 12 500. */
 export const formatFcfa = (n: number) =>
   `${Math.round(Number(n) || 0)

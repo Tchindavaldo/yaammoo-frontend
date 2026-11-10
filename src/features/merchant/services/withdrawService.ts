@@ -25,6 +25,9 @@ export interface WithdrawQuote {
   sameNetwork: boolean;
 }
 
+/** Numéro de réception par réseau (9 chiffres, sans indicatif). */
+export type PayoutNumbers = Partial<Record<WalletNetwork, string>>;
+
 const authHeaders = async () => {
   const currentUser = auth.currentUser;
   if (!currentUser) throw new Error(t("Aucun utilisateur connecté"));
@@ -54,13 +57,20 @@ export const withdrawService = {
     return response.data.data;
   },
 
-  /** Réseau d'un numéro saisi (relais backend, clé MobileWallet côté serveur). */
-  async predictOperator(phone: string): Promise<{ phone: string | null; network: WalletNetwork }> {
-    const response = await axios.post(
-      `${Config.apiUrl}/wallet/operator/predict`,
-      { phone },
-      { headers: await authHeaders() },
-    );
-    return response.data.data;
+  /**
+   * Numéros de réception configurés dans les informations de la boutique
+   * (`GET /fastfood/:id`) : `momoNumber` pour MTN, `number` pour Orange Money.
+   * Numéro absent ou vide → clé absente (carte vide dans la feuille).
+   */
+  async getPayoutNumbers(fastFoodId: string): Promise<PayoutNumbers> {
+    const response = await axios.get(`${Config.apiUrl}/fastfood/${fastFoodId}`, {
+      headers: { "ngrok-skip-browser-warning": "true" },
+    });
+    const data = response.data?.data ?? {};
+    const clean = (v: unknown) => {
+      const d = String(v ?? "").replace(/\D/g, "").replace(/^237(?=\d{9}$)/, "");
+      return d.length >= 9 ? d : undefined;
+    };
+    return { MTN: clean(data.momoNumber), ORANGEMONEY: clean(data.number) };
   },
 };

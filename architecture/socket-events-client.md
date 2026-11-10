@@ -136,8 +136,8 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 > le solde + la série du jour en local. Seul cas de refetch : si `stats===null`
 > (boot non abouti), `applyEvent` appelle `refresh(false)` **silencieux** (sans
 > `setLoading`) pour ne pas activer le loader natif du pull-to-refresh de
-> `PorteFeuillePanel`. Après un retrait `completed`, l'overlay se ferme **sans**
-> `refreshAll()` (le socket a déjà tout patché). Aucun autre contexte
+> `PorteFeuillePanel`. Après un retrait `completed`, la feuille affiche la réussite et se ferme
+> au bouton « Fermer », **sans** `refreshAll()` (le socket a déjà tout patché). Aucun autre contexte
 > (`Order`, `Merchant`, `Wallet` client, `FastFood`, `Notification`) ne touche
 > `setLoading` dans ses handlers `*FromSocket`.
 

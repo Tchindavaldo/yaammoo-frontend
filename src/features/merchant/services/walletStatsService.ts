@@ -21,6 +21,11 @@ export interface WalletStats {
   breakdown?: import("./walletNetwork").WalletBreakdown;
   totals: { payin: number; payout: number; net: number };
   series: WalletDayStat[];
+  /**
+   * Taux interréseau indicatif (%) par réseau de RÉCEPTION, affiché sur les
+   * cartes de numéro du retrait. Absent sur un backend antérieur.
+   */
+  withdrawFeePercent?: { mtn: number; orange: number };
 }
 
 type StatsPeriod = 'week' | 'month';

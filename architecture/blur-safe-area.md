@@ -296,8 +296,9 @@ fine (Menu, Notifications, filtres, détail commande).
 Sheets marchand passés à `useSheetSafeInsets` (importé sous l'alias
 `useSafeAreaInsets`, seul `bottom` change) : `MerchantFilterSheet`,
 `DelegateDriverSheet`, `MerchantOrderBottomSheet`, `AddMenuSheetMultiStep`,
-`edit-boutique/ZoneFormSheet`, `edit-boutique/ZoneListSheet`. Les calques
-rendus DANS une page (`WithdrawOverlay`, `BroadcastComposer`) n'ont rien à
+`edit-boutique/ZoneFormSheet`, `edit-boutique/ZoneListSheet`,
+`withdraw/WithdrawSheet`. Les calques
+rendus DANS une page (`BroadcastComposer`) n'ont rien à
 ajouter : `ShopPageFrame` a déjà réservé la safe-area.
 
 ### Pages entières sans navbar (`app/shop/*`)

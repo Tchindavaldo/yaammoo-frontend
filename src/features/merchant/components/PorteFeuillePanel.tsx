@@ -3,8 +3,8 @@ import { showToast } from "@/src/services/globalToast";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { WalletDayStatItem } from "@/src/features/merchant/components/WalletDayStatItem";
 import { WalletDayStatSkeleton } from "@/src/features/merchant/components/WalletDayStatSkeleton";
-import { WithdrawOverlay } from "@/src/features/merchant/components/WithdrawOverlay";
-import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useWithdraw";
+import { WithdrawSheet } from "@/src/features/merchant/components/withdraw/WithdrawSheet";
+import { useWithdraw } from "@/src/features/merchant/hooks/useWithdraw";
 import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
@@ -12,10 +12,7 @@ import { WalletNetworkCards } from "./WalletNetworkCards";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Animated,
   FlatList,
-  Keyboard,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -71,78 +68,16 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     onRefresh?.();
   }, [refreshStats, onRefresh]);
 
-  // Retrait : POST /wallet/withdraw + verdict socket (géré dans le hook).
-  const {
-    withdrawPhone,
-    setWithdrawPhone,
-    withdrawAmount,
-    setWithdrawAmount,
-    sourceNetwork,
-    setSourceNetwork,
-    detectedNetwork,
-    detecting,
-    detectError,
-    quote,
-    quoteLoading,
-    withdrawState,
-    setWithdrawState,
-    withdrawError,
-    setWithdrawError,
-    resetWithdraw,
-    handleWithdrawConfirm,
-  } = useWithdraw();
+  // Solde global réel (fourni par le backend) et ses deux soldes par réseau.
+  const balance = stats?.balance ?? 0;
+  const balances = stats?.balances ?? { mtn: 0, orange: 0 };
 
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const keyboardHeight = useRef(new Animated.Value(0)).current;
+  // Retrait : feuille en 3 etapes, POST /wallet/withdraw + verdict socket
+  // (geres dans le hook).
+  const w = useWithdraw(balances);
+  const { withdrawError, setWithdrawError } = w;
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        setIsKeyboardVisible(true);
-        Animated.spring(keyboardHeight, {
-          toValue: e.endCoordinates.height,
-          useNativeDriver: false,
-          tension: 40,
-          friction: 8,
-        }).start();
-      },
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        setIsKeyboardVisible(false);
-        Animated.spring(keyboardHeight, {
-          toValue: 0,
-          useNativeDriver: false,
-          tension: 40,
-          friction: 8,
-        }).start();
-      },
-    );
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  // Après "Retrait effectué" (completed, 5s) : fermer simplement l'overlay.
-  // ⚠️ PAS de refresh ici : le socket wallet.withdrawal (completed) a déjà patché
-  // le solde + la série du jour via handleWithdrawalEvent → applyEvent. Un refresh
-  // mettrait loading=true → le loader natif du pull-to-refresh s'activerait tout
-  // seul après réception du socket (le bug visible signalé).
-  // En mode DEBUG_COMPLETED, on ne ferme pas (l'overlay reste visible).
-  useEffect(() => {
-    if (DEBUG_COMPLETED) return;
-    if (withdrawState === "completed") {
-      const timer = setTimeout(() => {
-        resetWithdraw();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [withdrawState, resetWithdraw]);
-
-  // Toast d'erreur retrait.
+  // Toast d'erreur retrait (global : la feuille porte son `GlobalToastHost`).
   useEffect(() => {
     if (withdrawError) {
       showToast(withdrawError, "error");
@@ -150,18 +85,16 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     }
   }, [withdrawError, setWithdrawError]);
 
-  // Solde global réel (fourni par le backend) et ses deux soldes par réseau.
-  const balance = stats?.balance ?? 0;
-  const balances = stats?.balances ?? { mtn: 0, orange: 0 };
-
   // Remonte le solde au header parent dès qu'il change.
   useEffect(() => {
     onBalanceChange?.(balance);
   }, [balance, onBalanceChange]);
 
   // Expose l'ouverture du retrait au header (pilule "Retirer"). Une seule fois au montage.
+  const openWithdrawRef = useRef(w.openWithdraw);
+  openWithdrawRef.current = w.openWithdraw;
   useEffect(() => {
-    onRegisterWithdraw?.(() => setWithdrawState("source_select"));
+    onRegisterWithdraw?.(() => openWithdrawRef.current());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -288,40 +221,15 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         <TouchableOpacity
           style={styles.withdrawBtn}
           activeOpacity={0.85}
-          onPress={() => setWithdrawState("source_select")}
+          onPress={w.openWithdraw}
         >
           <Ionicons name="arrow-up" size={20} color={DS.onInk} />
           <Text style={styles.withdrawBtnText}>{t("Faire un retrait")}</Text>
         </TouchableOpacity>
       </View>
 
-      <BlurScope>
-
-      {/* Overlay de RETRAIT (copie adaptée du paiement panier) */}
-      {withdrawState !== "idle" && (
-        <WithdrawOverlay
-          phone={withdrawPhone}
-          onPhoneChange={setWithdrawPhone}
-          amount={withdrawAmount}
-          onAmountChange={setWithdrawAmount}
-          onConfirm={handleWithdrawConfirm}
-          withdrawState={withdrawState}
-          setWithdrawState={setWithdrawState}
-          sourceNetwork={sourceNetwork}
-          onSourceChange={setSourceNetwork}
-          balances={balances}
-          detectedNetwork={detectedNetwork}
-          detecting={detecting}
-          detectError={detectError}
-          quote={quote}
-          quoteLoading={quoteLoading}
-          onClose={resetWithdraw}
-          onError={(msg) => showToast(msg, "error")}
-          isKeyboardVisible={isKeyboardVisible}
-          bottom={Animated.add(keyboardHeight, isKeyboardVisible ? 5 : 92)}
-        />
-      )}
-      </BlurScope>
+      {/* Feuille de RETRAIT (3 etapes, modele du panier groupe). */}
+      <WithdrawSheet w={w} balances={balances} percents={stats?.withdrawFeePercent} />
     </View>
   );
 };

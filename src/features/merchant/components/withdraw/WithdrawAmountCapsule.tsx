@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
@@ -28,7 +29,9 @@ import { groupThousands } from "../../services/walletNetwork";
  * - le tap ouvre cette capsule, posee sur un voile floute, en haut du voile ;
  * - le voile a la hauteur de la FEUILLE (comme celui de l'auth, cale sur sa
  *   sheet). Si le pave numerique la depasse, il monte juste au-dessus :
- *   clavier, une respiration, la capsule, rien de plus ;
+ *   clavier, une respiration, la capsule, rien de plus. Cette hauteur est la
+ *   FINALE des l'ouverture (mesure du pave gardee sur le telephone ; la toute
+ *   premiere fois, l'entree attend le clavier) ;
  * - elle porte le SEUL vrai `TextInput`, focalise APRES l'entree (le clavier
  *   suit la capsule au lieu de la preceder) ;
  * - la perte de focus la referme, avec un sursis ; la valeur saisie retombe
@@ -51,11 +54,32 @@ const KEYBOARD_GAP = 10;
 const VEIL_FIT_MS = 250;
 
 /**
- * Haut du pave numerique (px depuis le bas de l'ecran), garde d'une ouverture
- * a l'autre : des la deuxieme, le voile est a sa taille des l'entree. Le pave
- * numerique ne change pas de hauteur (ni suggestions ni langue).
+ * Premiere ouverture SANS mesure connue : on attend le clavier au plus ce
+ * temps, puis on affiche a la hauteur de la feuille.
  */
+const MEASURE_TIMEOUT_MS = 700;
+
+/**
+ * Haut du pave numerique (px depuis le bas de l'ecran). Le voile doit etre a
+ * sa hauteur FINALE des l'ouverture, donc AVANT que le clavier ne monte : la
+ * mesure est gardee sur le telephone et relue des le chargement du module
+ * (bien avant le premier tap). Le pave numerique ne change pas de hauteur (ni
+ * suggestions ni langue).
+ */
+const KEYBOARD_TOP_KEY = "withdraw.numpadTop";
 let lastKeyboardTop: number | null = null;
+AsyncStorage.getItem(KEYBOARD_TOP_KEY)
+  .then((v) => {
+    const n = Number(v);
+    if (lastKeyboardTop == null && n > 0) lastKeyboardTop = n;
+  })
+  .catch(() => {});
+
+function rememberKeyboardTop(top: number) {
+  if (top === lastKeyboardTop) return;
+  lastKeyboardTop = top;
+  AsyncStorage.setItem(KEYBOARD_TOP_KEY, String(top)).catch(() => {});
+}
 
 // --- Durees d'animation : celles d'`AuthFieldCapsule` ---
 const VEIL_FADE_IN_MS = 220;
@@ -113,6 +137,37 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
   /** Descente du calque plein ecran : `SCREEN_H - hauteur visible du voile`. */
   const veilShift = React.useRef(new Animated.Value(SCREEN_H - sheetHeight)).current;
 
+  /** Entree : voile puis capsule, a la hauteur deja posee dans `veilShift`. */
+  const playEnter = React.useCallback(() => {
+    Animated.parallel([
+      Animated.timing(veilAnim, {
+        toValue: 1,
+        duration: VEIL_FADE_IN_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(capsuleAnim, {
+        toValue: 1,
+        duration: CAPSULE_FADE_IN_MS,
+        delay: CAPSULE_DELAY_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [veilAnim, capsuleAnim]);
+
+  /**
+   * Mesure en attente (aucune hauteur connue) : l'entree est retenue jusqu'au
+   * clavier, pour ne jamais afficher une hauteur provisoire puis l'agrandir.
+   */
+  const measuring = React.useRef(false);
+  const measureTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopMeasure = React.useCallback(() => {
+    measuring.current = false;
+    if (measureTimer.current) clearTimeout(measureTimer.current);
+    measureTimer.current = null;
+  }, []);
+
   React.useEffect(() => {
     if (!visible) return;
     const evt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
@@ -120,7 +175,15 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
       const height = e.endCoordinates?.height ?? 0;
       if (height <= 0) return;
       const top = height + navBarGap;
-      lastKeyboardTop = top;
+      rememberKeyboardTop(top);
+      if (measuring.current) {
+        // Premiere mesure : hauteur finale posee, PUIS l'entree.
+        stopMeasure();
+        veilShift.setValue(SCREEN_H - fitHeight(top));
+        playEnter();
+        return;
+      }
+      // Hauteur deja connue : ne bouge que si le clavier a change.
       Animated.timing(veilShift, {
         toValue: SCREEN_H - fitHeight(top),
         duration: Platform.OS === "ios" && e.duration ? e.duration : VEIL_FIT_MS,
@@ -129,30 +192,29 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
       }).start();
     });
     return () => sub.remove();
-  }, [visible, navBarGap, fitHeight, veilShift]);
+  }, [visible, navBarGap, fitHeight, veilShift, playEnter, stopMeasure]);
 
   React.useEffect(() => {
     if (visible) {
-      // Taille connue (ouverture precedente) : posee avant le fondu.
-      veilShift.setValue(SCREEN_H - fitHeight(lastKeyboardTop));
       setMounted(true);
-      Animated.parallel([
-        Animated.timing(veilAnim, {
-          toValue: 1,
-          duration: VEIL_FADE_IN_MS,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(capsuleAnim, {
-          toValue: 1,
-          duration: CAPSULE_FADE_IN_MS,
-          delay: CAPSULE_DELAY_MS,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]).start();
+      if (lastKeyboardTop != null) {
+        // Hauteur connue : posee avant le fondu, c'est la hauteur finale.
+        veilShift.setValue(SCREEN_H - fitHeight(lastKeyboardTop));
+        playEnter();
+        return;
+      }
+      // Jamais mesuree (premiere ouverture sur ce telephone) : on attend le
+      // clavier ; a defaut, hauteur de la feuille.
+      measuring.current = true;
+      measureTimer.current = setTimeout(() => {
+        if (!measuring.current) return;
+        stopMeasure();
+        veilShift.setValue(SCREEN_H - fitHeight(null));
+        playEnter();
+      }, MEASURE_TIMEOUT_MS);
       return;
     }
+    stopMeasure();
     // SORTIE : la capsule part vite, le voile se retire ensuite, plus lentement.
     Animated.parallel([
       Animated.timing(capsuleAnim, {
@@ -171,7 +233,9 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
     ]).start(({ finished }) => {
       if (finished) setMounted(false);
     });
-  }, [visible, veilAnim, capsuleAnim, veilShift, fitHeight]);
+  }, [visible, veilAnim, capsuleAnim, veilShift, fitHeight, playEnter, stopMeasure]);
+
+  React.useEffect(() => stopMeasure, [stopMeasure]);
 
   /**
    * FERMETURE PILOTEE PAR LE FOCUS, et DIFFEREE : tout retour de focus dans le
@@ -198,13 +262,18 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
     [],
   );
 
-  /** FOCUS RETARDE, a la place d'`autoFocus` : la capsule part avant le clavier. */
+  /**
+   * FOCUS RETARDE, a la place d'`autoFocus` : la capsule part avant le clavier.
+   * En mesure (premiere ouverture), focus IMMEDIAT : c'est le clavier qui donne
+   * la hauteur, l'entree attend sa mesure. Attend le montage du champ.
+   */
   const inputRef = React.useRef<TextInput>(null);
   React.useEffect(() => {
-    if (!visible) return;
-    const id = setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY_MS);
+    if (!visible || !mounted) return;
+    const delay = measuring.current ? 0 : FOCUS_DELAY_MS;
+    const id = setTimeout(() => inputRef.current?.focus(), delay);
     return () => clearTimeout(id);
-  }, [visible]);
+  }, [visible, mounted]);
 
   /** Le bouton FERME toujours la capsule ; l'etape avance depuis le pied. */
   const handleAction = () => {

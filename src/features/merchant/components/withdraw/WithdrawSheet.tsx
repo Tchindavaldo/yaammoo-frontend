@@ -2,6 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
+  ActivityIndicator,
   Animated,
   Modal,
   Pressable,
@@ -12,7 +13,6 @@ import {
   View,
 } from "react-native";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
-import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
@@ -223,8 +223,10 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
                       disabled={w.quoteLoading}
                       activeOpacity={0.85}
                     >
+                      {/* Spinner natif : centre et lisible dans le rond (le
+                          loader maison est trop fin a cette taille). */}
                       {w.quoteLoading ? (
-                        <ActivityIndicator size={18} color={DS.onInk} />
+                        <ActivityIndicator size="small" color={DS.onInk} />
                       ) : (
                         <Ionicons name="arrow-forward" size={18} color={DS.onInk} />
                       )}
@@ -262,6 +264,7 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
           onChange={w.setAmount}
           maxLabel={t("max {{a}}", { a: formatF(sourceBalance) })}
           onClose={closeAmount}
+          sheetHeight={WITHDRAW_SHEET_HEIGHT + insets.bottom}
         />
       </BlurScope>
       {/* Toast global au premier plan (Android). */}

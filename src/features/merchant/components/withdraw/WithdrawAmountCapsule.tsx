@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { groupThousands } from "../../services/walletNetwork";
@@ -25,8 +25,10 @@ import { groupThousands } from "../../services/walletNetwork";
  *
  * Meme workflow « double input » :
  * - dans le pied de la feuille, le montant n'est qu'un LEURRE non editable ;
- * - le tap ouvre cette capsule, posee sur un voile floute, a position FIXE en
- *   haut du voile (elle ne suit pas le clavier) ;
+ * - le tap ouvre cette capsule, posee sur un voile floute, en haut du voile ;
+ * - le voile a la hauteur de la FEUILLE (comme celui de l'auth, cale sur sa
+ *   sheet). Si le pave numerique la depasse, il monte juste au-dessus :
+ *   clavier, une respiration, la capsule, rien de plus ;
  * - elle porte le SEUL vrai `TextInput`, focalise APRES l'entree (le clavier
  *   suit la capsule au lieu de la preceder) ;
  * - la perte de focus la referme, avec un sursis ; la valeur saisie retombe
@@ -34,19 +36,26 @@ import { groupThousands } from "../../services/walletNetwork";
  * Memes durees d'animation que l'original.
  */
 
-const { height: SCREEN_H } = Dimensions.get("window");
-
 /**
- * Hauteur du voile, HORS bande safe-area : celle de la sheet d'auth
- * (`AUTH_SHEET_HEIGHT`, recopiee ici). La feuille de retrait est plus basse que
- * le clavier : un voile cale sur elle laisserait la capsule SOUS le clavier.
- * A cette hauteur la capsule est toujours au-dessus, comme dans l'auth.
+ * Hauteur du calque du voile : il fait tout l'ecran et descend, par
+ * translation (driver natif), pour n'en montrer que le haut voulu.
  */
-const VEIL_BASE_HEIGHT = SCREEN_H * (Platform.OS === "android" ? 0.59 : 0.57);
+const { height: SCREEN_H } = Dimensions.get("window");
 /** Hauteur de la capsule (`styles.capsule`). */
 const CAPSULE_HEIGHT = 70;
 /** Respiration entre le haut du voile et la capsule. */
 const VEIL_TOP_GAP = 10;
+/** Respiration entre le haut du clavier et la capsule. */
+const KEYBOARD_GAP = 10;
+/** Ajustement du voile sur le clavier, a defaut de la duree fournie par iOS. */
+const VEIL_FIT_MS = 250;
+
+/**
+ * Haut du pave numerique (px depuis le bas de l'ecran), garde d'une ouverture
+ * a l'autre : des la deuxieme, le voile est a sa taille des l'entree. Le pave
+ * numerique ne change pas de hauteur (ni suggestions ni langue).
+ */
+let lastKeyboardTop: number | null = null;
 
 // --- Durees d'animation : celles d'`AuthFieldCapsule` ---
 const VEIL_FADE_IN_MS = 220;
@@ -69,6 +78,8 @@ interface WithdrawAmountCapsuleProps {
   maxLabel: string;
   /** Fermeture : bouton rond ou perte de focus. */
   onClose: () => void;
+  /** Hauteur de la feuille hote, bande safe-area comprise : hauteur minimale du voile. */
+  sheetHeight: number;
 }
 
 export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
@@ -77,16 +88,53 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
   onChange,
   maxLabel,
   onClose,
+  sheetHeight,
 }) => {
   useLanguage();
   const [mounted, setMounted] = React.useState(false);
-  // Le voile descend jusqu'au bord de l'ecran : bande safe-area incluse (R19).
-  const band = useBottomSafeArea();
+  /**
+   * ANDROID : `keyboardDidShow` mesure le clavier SANS la barre de navigation,
+   * alors que le `Modal` couvre tout l'ecran (cf. `CartGroupedDetailCapsule`).
+   */
+  const insets = useSafeAreaInsets();
+  const navBarGap = Platform.OS === "android" ? insets.bottom : 0;
   const veilAnim = React.useRef(new Animated.Value(0)).current;
   const capsuleAnim = React.useRef(new Animated.Value(0)).current;
 
+  /** Hauteur du voile : la feuille, ou juste ce qu'il faut au-dessus du clavier. */
+  const fitHeight = React.useCallback(
+    (keyboardTop: number | null) =>
+      Math.max(
+        sheetHeight,
+        keyboardTop ? keyboardTop + KEYBOARD_GAP + CAPSULE_HEIGHT + VEIL_TOP_GAP : 0,
+      ),
+    [sheetHeight],
+  );
+  /** Descente du calque plein ecran : `SCREEN_H - hauteur visible du voile`. */
+  const veilShift = React.useRef(new Animated.Value(SCREEN_H - sheetHeight)).current;
+
+  React.useEffect(() => {
+    if (!visible) return;
+    const evt = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const sub = Keyboard.addListener(evt, (e) => {
+      const height = e.endCoordinates?.height ?? 0;
+      if (height <= 0) return;
+      const top = height + navBarGap;
+      lastKeyboardTop = top;
+      Animated.timing(veilShift, {
+        toValue: SCREEN_H - fitHeight(top),
+        duration: Platform.OS === "ios" && e.duration ? e.duration : VEIL_FIT_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    });
+    return () => sub.remove();
+  }, [visible, navBarGap, fitHeight, veilShift]);
+
   React.useEffect(() => {
     if (visible) {
+      // Taille connue (ouverture precedente) : posee avant le fondu.
+      veilShift.setValue(SCREEN_H - fitHeight(lastKeyboardTop));
       setMounted(true);
       Animated.parallel([
         Animated.timing(veilAnim, {
@@ -123,7 +171,7 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
     ]).start(({ finished }) => {
       if (finished) setMounted(false);
     });
-  }, [visible, veilAnim, capsuleAnim]);
+  }, [visible, veilAnim, capsuleAnim, veilShift, fitHeight]);
 
   /**
    * FERMETURE PILOTEE PAR LE FOCUS, et DIFFEREE : tout retour de focus dans le
@@ -166,9 +214,6 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
 
   if (!mounted) return null;
 
-  const VEIL_HEIGHT = VEIL_BASE_HEIGHT + band;
-  // Position FIXE, en haut du voile : rien a synchroniser avec le clavier.
-  const capsuleBottom = VEIL_HEIGHT - CAPSULE_HEIGHT - VEIL_TOP_GAP;
   const capsuleTranslateY = capsuleAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [CAPSULE_SLIDE_FROM, 0],
@@ -179,16 +224,19 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
       {/* Voile FLOUTE, rendu AVANT la capsule : il passe dessous. */}
       <Animated.View
         pointerEvents="none"
-        style={[styles.veil, { opacity: veilAnim, height: VEIL_HEIGHT }]}
+        style={[styles.veil, { opacity: veilAnim, transform: [{ translateY: veilShift }] }]}
       >
         {/* Android : floute la feuille (`BlurTarget` de `WithdrawSheet`). */}
         <BlurView forceAndroidBlur intensity={65} tint="dark" style={StyleSheet.absoluteFill} />
         <View pointerEvents="none" style={styles.veilTint} />
       </Animated.View>
 
-      {/* Conteneur BORNE au voile, en `overflow: hidden` : la capsule glisse
-          dedans sans deborder sur le contenu net au-dessus. */}
-      <View pointerEvents="box-none" style={[styles.capsuleClip, { height: VEIL_HEIGHT }]}>
+      {/* Conteneur BORNE au voile (meme descente), en `overflow: hidden` : la
+          capsule glisse dedans sans deborder sur le contenu net au-dessus. */}
+      <Animated.View
+        pointerEvents="box-none"
+        style={[styles.capsuleClip, { transform: [{ translateY: veilShift }] }]}
+      >
         <Animated.View
           pointerEvents="box-none"
           style={[
@@ -196,7 +244,8 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
             { opacity: capsuleAnim, transform: [{ translateY: capsuleTranslateY }] },
           ]}
         >
-          <View style={[styles.capsule, { bottom: capsuleBottom }]}>
+          {/* En HAUT du voile, il suit sa hauteur. */}
+          <View style={[styles.capsule, { top: VEIL_TOP_GAP }]}>
             <BlurView forceAndroidBlur intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
 
             <View style={styles.inputRow}>
@@ -210,11 +259,11 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
                   // Affiche groupe par milliers, stocke en chiffres seuls.
                   value={value ? groupThousands(value) : ""}
                   onChangeText={(v) => onChange(v.replace(/\D/g, "").replace(/^0+/, ""))}
+                  // Pas de `returnKeyType` : sur iOS il ajoute une barre « Done »
+                  // au-dessus du pave numerique. La capsule se ferme par son bouton.
                   keyboardType="number-pad"
                   onFocus={handleFocus}
                   onBlur={handleBlur}
-                  returnKeyType="done"
-                  onSubmitEditing={handleAction}
                   keyboardAppearance="dark"
                   selectionColor={DS.accent}
                   cursorColor={DS.accent}
@@ -228,7 +277,7 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
             </View>
           </View>
         </Animated.View>
-      </View>
+      </Animated.View>
     </View>
   );
 };
@@ -239,6 +288,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    height: SCREEN_H,
     overflow: "hidden",
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
@@ -305,6 +355,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    height: SCREEN_H,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     overflow: "hidden",

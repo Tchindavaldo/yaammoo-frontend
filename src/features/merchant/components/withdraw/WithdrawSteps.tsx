@@ -1,8 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
-import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import type { PayoutNumbers, WithdrawQuote } from "../../services/withdrawService";
@@ -146,7 +145,7 @@ export const WithdrawReceiveStep: React.FC<{
               <View key={net} style={[ws.card, ws.cardEmpty]}>
                 <View style={[ws.iconDot, ws.iconDotEmpty]}>
                   {numbersLoading ? (
-                    <ActivityIndicator size={16} color={DS.slate500} />
+                    <ActivityIndicator size="small" color={DS.slate500} />
                   ) : (
                     <Ionicons name="add" size={16} color={DS.slate500} />
                   )}

@@ -18,7 +18,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
-import { showToast } from "@/src/services/globalToast";
 import { groupThousands } from "../../services/walletNetwork";
 
 /**
@@ -162,8 +161,6 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
    * clavier, pour ne jamais afficher une hauteur provisoire puis l'agrandir.
    */
   const measuring = React.useRef(false);
-  /** TRACE TEMPORAIRE — a retirer : source de la hauteur + instant du focus. */
-  const trace = React.useRef<{ src: string; focusAt: number } | null>(null);
   const measureTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopMeasure = React.useCallback(() => {
     measuring.current = false;
@@ -178,16 +175,6 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
       const height = e.endCoordinates?.height ?? 0;
       if (height <= 0) return;
       const top = height + navBarGap;
-      // TRACE TEMPORAIRE — a retirer : source de la hauteur et delai du clavier.
-      if (trace.current) {
-        const { src, focusAt } = trace.current;
-        trace.current = null;
-        showToast(
-          `[TRACE] hauteur ${src} · clavier ${Math.round(top)} en ${focusAt ? Date.now() - focusAt : "?"} ms`,
-          "info",
-          6000,
-        );
-      }
       rememberKeyboardTop(top);
       if (measuring.current) {
         // Premiere mesure : hauteur finale posee, PUIS l'entree.
@@ -209,11 +196,6 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
 
   React.useEffect(() => {
     if (visible) {
-      // TRACE TEMPORAIRE — a retirer.
-      trace.current = {
-        src: lastKeyboardTop != null ? `mémorisée ${Math.round(lastKeyboardTop)}` : "absente, mesure",
-        focusAt: 0,
-      };
       setMounted(true);
       if (lastKeyboardTop != null) {
         // Hauteur connue : posee avant le fondu, c'est la hauteur finale.
@@ -289,10 +271,7 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
   React.useEffect(() => {
     if (!visible || !mounted) return;
     const delay = measuring.current ? 0 : FOCUS_DELAY_MS;
-    const id = setTimeout(() => {
-      if (trace.current) trace.current.focusAt = Date.now(); // TRACE TEMPORAIRE
-      inputRef.current?.focus();
-    }, delay);
+    const id = setTimeout(() => inputRef.current?.focus(), delay);
     return () => clearTimeout(id);
   }, [visible, mounted]);
 

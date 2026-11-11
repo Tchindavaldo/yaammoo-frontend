@@ -17,8 +17,10 @@ const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} F`;
 export const MenuPricePreviewCard: React.FC<{
   preview: MenuPricePreview | null;
   loading: boolean;
-}> = ({ preview, loading }) => {
+}> = ({ preview: raw, loading }) => {
   useLanguage();
+  // Prix refusé par le backend : aucun montant affiché (cases « — »).
+  const preview = raw?.accepted ? raw : null;
   // Carte toujours visible : cases vides (« — ») tant qu'aucun montant n'est saisi.
   const value = (n?: number) =>
     preview && n != null ? fmt(n) : loading ? "…" : "—";

@@ -1144,5 +1144,7 @@
   "Prix du plat": "Dish price",
   "Vous recevez": "You receive",
   "Nom et prix": "Name and price",
-  "Extras, stock, statut et photos": "Extras, stock, status and photos"
+  "Extras, stock, statut et photos": "Extras, stock, status and photos",
+  "Impossible de vérifier le prix": "Unable to check the price",
+  "Prix non accepté": "Price not accepted"
 }

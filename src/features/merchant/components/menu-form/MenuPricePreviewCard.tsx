@@ -4,18 +4,21 @@ import { StyleSheet, Text, View } from "react-native";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { DS } from "@/src/theme/ds";
 import { t as tr, useLanguage } from "@/src/i18n";
-import { useMenuPricePreview } from "./useMenuPricePreview";
+import { MenuPricePreview } from "./useMenuPricePreview";
 
 /**
  * Aperçu du prix en cours de saisie (maquette B4, canvas « Menu — prix ») :
  * bandeau « Prix affiché au client », puis trois cases « Prix du plat »,
- * « Frais de retrait », « Vous recevez ». Valeurs renvoyées par le backend.
+ * « Frais de retrait », « Vous recevez ». Valeurs renvoyées par le backend,
+ * remplies quand le prix est validé (bouton ✓ ou « Suivant »).
  */
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} F`;
 
-export const MenuPricePreviewCard: React.FC<{ price: string }> = ({ price }) => {
+export const MenuPricePreviewCard: React.FC<{
+  preview: MenuPricePreview | null;
+  loading: boolean;
+}> = ({ preview, loading }) => {
   useLanguage();
-  const { preview, loading } = useMenuPricePreview(price);
   // Carte toujours visible : cases vides (« — ») tant qu'aucun montant n'est saisi.
   const value = (n?: number) =>
     preview && n != null ? fmt(n) : loading ? "…" : "—";
@@ -46,9 +49,6 @@ export const MenuPricePreviewCard: React.FC<{ price: string }> = ({ price }) => 
           </Text>
         </View>
       </View>
-      {preview && !preview.accepted && !!preview.message && (
-        <Text style={styles.refused}>{preview.message}</Text>
-      )}
     </View>
   );
 };
@@ -77,5 +77,4 @@ const styles = StyleSheet.create({
   tileLabel: { fontSize: 11, color: DS.slate500 },
   tileValue: { fontSize: 16, fontWeight: "800", color: DS.ink, marginTop: 3 },
   accent: { color: DS.accent },
-  refused: { fontSize: 12, color: DS.dangerInk, lineHeight: 17 },
 });

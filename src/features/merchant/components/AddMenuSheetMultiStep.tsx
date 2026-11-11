@@ -27,6 +27,8 @@ import { MenuExtrasEditor } from "./menu-form/MenuExtrasEditor";
 import { MenuStockAvailability } from "./menu-form/MenuStockAvailability";
 import { MenuPhotoSlots } from "./menu-form/MenuPhotoSlots";
 import { MenuPricePreviewCard } from "./menu-form/MenuPricePreviewCard";
+import { useMenuPriceCheck } from "./menu-form/useMenuPricePreview";
+import { menuPriceStepActions } from "./menu-form/menuPriceStepActions";
 import { t as tr, useLanguage } from "@/src/i18n";
 
 type Step = "nameImage" | "details" | "recap";
@@ -101,6 +103,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const [prices, setPrices] = useState<DraftPrice[]>(toPrices(existingMenu));
   // Prix sélectionné dont on édite montant + description (index 0-based).
   const [selectedPriceIdx, setSelectedPriceIdx] = useState(0);
+  // Vérification serveur des prix : bouton ✓ (un prix) et « Suivant » (tous).
+  const priceCheck = useMenuPriceCheck(prices);
   const [extras, setExtras] = useState<DraftItem[]>(
     existingMenu?.extra?.map(toItem) || [],
   );
@@ -211,7 +215,15 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     return null;
   };
 
-  const goNext = () => {
+  const priceActions = menuPriceStepActions({
+    priceCheck,
+    selectedIdx: selectedPriceIdx,
+    setSelectedIdx: setSelectedPriceIdx,
+    setErrorFields,
+    clearError,
+  });
+
+  const goNext = async () => {
     const err = validate();
     if (err) {
       setErrorFields(err.fields);
@@ -224,6 +236,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       return;
     }
     setErrorFields([]);
+
+    // Étape 1 : tous les prix vérifiés côté serveur en une requête.
+    if (step === "nameImage" && !(await priceActions.checkAllPrices())) return;
 
     if (step === "recap") {
       handleSubmit();
@@ -367,11 +382,16 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                 fieldStyle={fieldStyle}
                 focusProps={focusProps}
                 clearError={clearError}
+                validated={priceCheck.isValidated(selectedPriceIdx)}
+                checking={priceCheck.loadingIdx !== null}
+                onValidate={priceActions.validateSelected}
+                onRemove={priceCheck.removeAt}
               />
 
               {/* Apercu B4 : prix affiche, retrait, montant recu (backend). */}
               <MenuPricePreviewCard
-                price={prices[selectedPriceIdx]?.price || ""}
+                preview={priceCheck.previewAt(selectedPriceIdx)}
+                loading={priceCheck.loadingIdx !== null}
               />
             </DismissKeyboardWrapper>
           )}

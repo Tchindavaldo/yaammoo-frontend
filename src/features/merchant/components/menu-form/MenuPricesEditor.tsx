@@ -3,6 +3,8 @@ import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
+import { DS } from "@/src/theme/ds";
 import { DraftPrice } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
 import { DESC_MAX, DESC_MIN } from "./menuFormConstants";
@@ -12,6 +14,8 @@ import { t as tr, useLanguage } from "@/src/i18n";
  * Prix du plat en nombre VARIABLE : un onglet par prix (« Prix 1 * », « Prix 2 »…),
  * « + » pour en ajouter, poubelle pour retirer le prix sélectionné (sauf le 1er).
  * Le prix sélectionné pilote un couple prix + description sur la même ligne.
+ * Bouton de fin de ligne : ✓ (vérifie le prix côté serveur) tant que le prix
+ * n'est pas validé, puis poubelle (prix 2 et suivants) une fois validé.
  */
 interface Props {
   prices: DraftPrice[];
@@ -21,6 +25,12 @@ interface Props {
   fieldStyle: (field: string) => any[];
   focusProps: (field: string) => { onFocus: () => void; onBlur: () => void };
   clearError: (field: string) => void;
+  /** Le prix sélectionné a été vérifié et accepté par le backend. */
+  validated: boolean;
+  checking: boolean;
+  onValidate: () => void;
+  /** Prévenu AVANT le retrait d'un prix (décalage des aperçus). */
+  onRemove: (idx: number) => void;
 }
 
 const placeholders = (): string[][] => [
@@ -37,6 +47,10 @@ export const MenuPricesEditor: React.FC<Props> = ({
   fieldStyle,
   focusProps,
   clearError,
+  validated,
+  checking,
+  onValidate,
+  onRemove,
 }) => {
   useLanguage();
   // Hauteur auto de la description (par prix) : suit le contenu, plafonnée.
@@ -59,6 +73,7 @@ export const MenuPricesEditor: React.FC<Props> = ({
 
   const remove = () => {
     if (selectedIdx === 0) return;
+    onRemove(selectedIdx);
     setPrices(prices.filter((_, i) => i !== selectedIdx));
     setDescHeights((h) => h.filter((_, i) => i !== selectedIdx));
     setSelectedIdx(selectedIdx - 1);
@@ -151,10 +166,24 @@ export const MenuPricesEditor: React.FC<Props> = ({
           scrollEnabled
           {...focusProps(`desc${selectedIdx}`)}
         />
-        {selectedIdx > 0 && (
-          <TouchableOpacity style={styles.itemActionBtn} onPress={remove}>
-            <Ionicons name="trash-outline" size={18} color={Theme.colors.danger} />
+        {!validated ? (
+          <TouchableOpacity
+            style={[styles.itemActionBtn, styles.itemValidateBtn]}
+            onPress={onValidate}
+            disabled={checking || !current.price}
+          >
+            {checking ? (
+              <ActivityIndicator size="small" color={DS.onInk} />
+            ) : (
+              <Ionicons name="checkmark" size={20} color={DS.onInk} />
+            )}
           </TouchableOpacity>
+        ) : (
+          selectedIdx > 0 && (
+            <TouchableOpacity style={styles.itemActionBtn} onPress={remove}>
+              <Ionicons name="trash-outline" size={18} color={Theme.colors.danger} />
+            </TouchableOpacity>
+          )
         )}
       </View>
     </>

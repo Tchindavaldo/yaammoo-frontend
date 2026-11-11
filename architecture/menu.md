@@ -138,8 +138,15 @@ un saut de taille au changement d'étape) = **540** (~62% d'un écran de référ
 - Étape 1 : sous le prix sélectionné, `MenuPricePreviewCard` (maquette B4 du canvas
   « Yaammoo — Design », page « Menu — prix ») : « Prix affiché au client », puis
   « Prix du plat », « Frais de retrait », « Vous recevez ». Données de
-  `GET /menu/price-preview/:fastFoodId?price=` via `useMenuPricePreview` (debounce
-  400 ms) ; rien n'est recalculé dans l'app. Prix refusé par le garde-fou : le
-  `message` du backend s'affiche en rouge sous les cases.
+  `GET /menu/price-preview/:fastFoodId` via `useMenuPriceCheck`
+  (`menu-form/useMenuPricePreview.ts`) ; rien n'est recalculé dans l'app. Cases
+  vides (« — ») tant que le prix n'est pas vérifié.
+- Vérification à la demande (`menu-form/menuPriceStepActions.ts`) :
+  - bouton ✓ en fin de ligne (`?price=`) : remplit les cases ; refus = un toast ;
+    une fois accepté, le ✓ devient la poubelle (prix 2+) ; modifier le montant
+    le dévalide ;
+  - bouton « Suivant » : tous les prix en une requête (`?prices=a,b`) ; refus =
+    bascule sur le premier prix refusé + un seul toast (une ligne
+    « Prix N : message » par prix refusé).
 - Étape 2 : les photos (`MenuPhotoSlots`, 3 requises) sont passées sous extras,
   disponibilité et stock ; leur validation se fait à cette étape.

@@ -1,8 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Tabs } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Platform, View } from "react-native";
-import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameSheet";
 import { ProfileNameProvider } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,6 +16,7 @@ import { TAB_BAR_ITEM_HEIGHT } from "@/src/hooks/useTabBarHeight";
 import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
+import { useActivateFastFoods } from "@/src/features/restaurants/context/FastFoodContext";
 export default function TabLayout() {
   useLanguage();
   const colorScheme = useColorScheme();
@@ -24,18 +24,21 @@ export default function TabLayout() {
   // Style unique de la navbar, partage avec les ecrans qui l'ajustent.
   const tabBarStyle = useTabBarStyle();
 
+  // Arrivee dans le home : c'est ICI, et seulement ici, que part le premier
+  // `GET /fastFood/all` (plus sous le splash ni sur l'ecran d'accueil). Pose
+  // au niveau des onglets, pas du seul ecran home : un lancement ouvert sur un
+  // autre onglet (notification) a aussi besoin du catalogue.
+  const activateHome = useActivateFastFoods();
+  useEffect(() => {
+    activateHome();
+  }, [activateHome]);
+
   return (
     <ProfileNameProvider>
-      {/* Flou Android (SDK 57) : la tab bar floute l'ecran d'onglet ACTIF,
-          chaque ecran etant enveloppe dans sa propre cible (`screenLayout`). */}
-      <BlurScope>
+      {/* Plus de cible de flou par ecran (`screenLayout`) : Android ne floute
+          plus rien, la tab bar y est opaque (`useTabBarStyle`). */}
       <View style={{ flex: 1 }}>
         <Tabs
-          screenLayout={({ navigation, children }) => (
-            <TabScreenBlurTarget navigation={navigation}>
-              {children}
-            </TabScreenBlurTarget>
-          )}
           screenOptions={{
             tabBarActiveTintColor: DS.accent,
             tabBarInactiveTintColor: "#000000",
@@ -152,37 +155,6 @@ export default function TabLayout() {
         {/* Au-dessus des onglets (tab bar comprise) : le flou couvre tout l'ecran. */}
         <ProfileNameSheet />
       </View>
-      </BlurScope>
     </ProfileNameProvider>
-  );
-}
-
-/**
- * Cible du flou de la tab bar pour UN ecran d'onglet. Les onglets restent
- * montes en arriere-plan : seule la cible de l'ecran focalise est active.
- */
-function TabScreenBlurTarget({
-  navigation,
-  children,
-}: {
-  navigation: {
-    isFocused: () => boolean;
-    addListener: (event: "focus" | "blur", cb: () => void) => () => void;
-  };
-  children: React.ReactElement;
-}) {
-  const [focused, setFocused] = useState(() => navigation.isFocused());
-  useEffect(() => {
-    const offFocus = navigation.addListener("focus", () => setFocused(true));
-    const offBlur = navigation.addListener("blur", () => setFocused(false));
-    return () => {
-      offFocus();
-      offBlur();
-    };
-  }, [navigation]);
-  return (
-    <BlurTarget active={focused} style={{ flex: 1 }}>
-      {children}
-    </BlurTarget>
   );
 }

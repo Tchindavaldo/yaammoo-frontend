@@ -382,7 +382,8 @@ page), et la `value` reste mémoïsée.
 | `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
 | `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |
 | `cancelPendingLoadMore()` | Invalide une page en vol **sans tronquer**. Appelé au début d'une remontée. |
-| `hasLoadedOnce` | ⚠️ **Pilote la révélation de `(tabs)`** — voir [structure.md](./structure.md). Ne pas casser. |
+| `hasLoadedOnce` | `true` après le 1er fetch (succès, vide ou erreur). Ne pilote plus la navigation. |
+| `useActivateFastFoods()` | Contexte séparé, valeur stable. Appelé par `app/(tabs)/_layout.tsx` à l'arrivée dans le home : **aucun `GET /fastFood/all` ne part avant** (ni sous le splash, ni sur l'écran d'accueil). Définitif pour la session. |
 | `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie inactive). |
 | `appleReviewMode` · `banners` | Portés par la réponse. |
 | `upsert*FromSocket` · `applyDeliveryOffer` · `clearDeliveryOfferForBonus` | Injection socket, sans refetch. |

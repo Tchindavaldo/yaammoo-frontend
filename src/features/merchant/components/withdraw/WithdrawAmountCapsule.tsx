@@ -1,6 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import { AppBlurView as BlurView, isNativeBlurAvailable } from "@/src/components/AppBlurView";
 import React from "react";
 import {
   Animated,
@@ -295,9 +295,15 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
         pointerEvents="none"
         style={[styles.veil, { opacity: veilAnim, transform: [{ translateY: veilShift }] }]}
       >
-        {/* Android : floute la feuille (`BlurTarget` de `WithdrawSheet`). */}
-        <BlurView forceAndroidBlur intensity={65} tint="dark" style={StyleSheet.absoluteFill} />
-        <View pointerEvents="none" style={styles.veilTint} />
+        {/* iOS : flou sombre. Android : aucun flou, voile BLANC opaque (sans
+            la teinte sombre, qui le griserait). */}
+        <BlurView
+          intensity={65}
+          tint="dark"
+          style={StyleSheet.absoluteFill}
+          fallbackStyle={styles.veilWhite}
+        />
+        {isNativeBlurAvailable && <View pointerEvents="none" style={styles.veilTint} />}
       </Animated.View>
 
       {/* Conteneur BORNE au voile (meme descente), en `overflow: hidden` : la
@@ -315,7 +321,13 @@ export const WithdrawAmountCapsule: React.FC<WithdrawAmountCapsuleProps> = ({
         >
           {/* En HAUT du voile, il suit sa hauteur. */}
           <View style={[styles.capsule, { top: VEIL_TOP_GAP }]}>
-            <BlurView forceAndroidBlur intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+            {/* Android, sans flou : capsule sombre OPAQUE, lisible sur le blanc. */}
+            <BlurView
+              intensity={80}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+              fallbackStyle={styles.capsuleSolid}
+            />
 
             <View style={styles.inputRow}>
               <View style={styles.inputWrapper}>
@@ -430,4 +442,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   veilTint: { ...StyleSheet.absoluteFill, backgroundColor: DS.veilTint },
+  veilWhite: { backgroundColor: DS.bg },
+  capsuleSolid: { backgroundColor: DS.ink, borderRadius: 80 },
 });

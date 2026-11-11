@@ -226,8 +226,9 @@ l'autre.
   - `updateAvailable` → `mandatory={false}`, bouton « Plus tard ».
 - Le splash est caché explicitement quand cet écran s'affiche : aucun écran du
   Stack ne peut le faire puisque le Stack n'est pas monté.
-- **« Plus tard » n'est honoré que si `canEnterApp`** est vrai. Sinon le Stack se
-  monterait sur un état incomplet et afficherait `(auth)` à nu — le splash étant
-  déjà caché, l'utilisateur voyait le get-started en cliquant « Plus tard ».
-  `hasLoadedOnce` passant à `true` dans un `finally`, le clic finit toujours par
-  aboutir, même sur erreur réseau.
+- **« Plus tard » n'est honoré qu'une fois l'auth tranchée** (`!loading`) : la
+  destination est alors connue (home si connecté, écran d'accueil sinon), rien
+  ne s'affiche puis se remplace. Le choix est verrouillé pour la session
+  (`dismissHonoredRef`) : la re-vérification du profil au login ne fait pas
+  revenir l'écran. Le splash n'attend plus `GET /fastFood/all` (seulement ce
+  verdict de version) : la home charge ses boutiques à son arrivée.

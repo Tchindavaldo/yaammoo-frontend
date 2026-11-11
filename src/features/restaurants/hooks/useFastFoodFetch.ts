@@ -8,7 +8,6 @@ import { sinceBoot } from "@/src/utils/bootClock";
 import axios from "axios";
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type Dispatch,
@@ -24,22 +23,15 @@ import { t as tr, useLanguage } from "@/src/i18n";
  * Requetes du catalogue (`GET /fastFood/all`), extraites de `FastFoodContext` :
  * `fetchPage` (premiere page, page suivante, recherche) et
  * `refreshLoadedSilently` (catch-up socket), plus l'etat porte par la reponse
- * (chargement, erreur, bannieres, mode review, garde-fou du splash).
+ * (chargement, erreur, bannieres, mode review).
  *
  * ⚠️ Les deux callbacks gardent une identite STABLE : ils ne dependent que de
  * refs et de setters. L'effet d'identite du contexte en depend : une nouvelle
  * reference relancerait la premiere page.
- */
-
-/**
- * Delai au-dela duquel on entre dans la home sans le catalogue.
  *
- * `/fastFood/all` repond en ~1,5 s de façon stable (mesure : 5 appels
- * consecutifs, machine Fly.io maintenue eveillee). 12 s laissent donc huit fois
- * la marge : seul un vrai blocage declenche le garde-fou, jamais une reponse
- * simplement lente.
+ * NOTE : plus de garde-fou du splash. Le splash n'attend plus ce catalogue
+ * (seulement le verdict de version) ; la home affiche son propre loader.
  */
-const BOOT_GIVE_UP_MS = 12000;
 
 interface Params {
   setFastFoods: Dispatch<SetStateAction<FastFood[]>>;
@@ -67,31 +59,6 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
   const { homeSettingsRef, storedSettingsRef, applyServerSettings } = settings;
   const [loading, setLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-
-  /**
-   * Garde-fou du splash : on entre dans la home au bout de `BOOT_GIVE_UP_MS`,
-   * meme si le catalogue n'a pas repondu.
-   *
-   * ⚠️ `hasLoadedOnce` pilote la revelation de (tabs) et ne passait a `true`
-   * qu'au `finally` du premier fetch. Or cette requete peut ne JAMAIS revenir :
-   * aucun timeout axios (volontaire, cf. `setupHttp`), et le backend est
-   * heberge sur Fly.io, qui endort les machines — un demarrage a froid de
-   * `/fastFood/all` a ete mesure a 15-20 s, contre 1,3 s a chaud. L'app restait
-   * bloquee sur le splash pendant tout ce temps, et indefiniment si la reponse
-   * ne venait pas.
-   *
-   * Mieux vaut la home avec son message d'erreur — l'utilisateur voit l'app,
-   * peut naviguer, et la reponse tardive remplit la liste quand elle arrive.
-   */
-  useEffect(() => {
-    if (hasLoadedOnce) return;
-    const t = setTimeout(() => {
-      console.log("[boot] catalogue sans reponse, on entre dans la home");
-      setError(tr("Connection internet indisponible, vérifiez votre réseau"));
-      setHasLoadedOnce(true);
-    }, BOOT_GIVE_UP_MS);
-    return () => clearTimeout(t);
-  }, [hasLoadedOnce]);
   /**
    * Numéro de la requête en cours. Une réponse dont le numéro n'est plus le
    * dernier est ignorée : sans ça, une recherche lente écraserait le résultat
@@ -104,9 +71,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
    *
    * ⚠️ Ref et non `hasLoadedOnce` : lu dans `fetchPage`, l'etat restait fige a
    * `false` par la closure, et la mesure repartait a chaque refresh ou
-   * recherche. Il ne convient pas non plus : le garde-fou du splash le passe a
-   * `true` au bout de `BOOT_GIVE_UP_MS`, et une reponse tardive (demarrage a
-   * froid Fly.io) ne serait alors jamais mesuree.
+   * recherche.
    */
   const bootMeasuredRef = useRef(false);
   const [appleReviewMode, setAppleReviewMode] = useState(false);
@@ -294,8 +259,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
         trackBootStep("catalogue", elapsed);
       }
 
-      // `hasLoadedOnce` pilote la revelation de (tabs) : une reponse recue,
-      // quelle qu'elle soit, prouve que le chargement a eu lieu.
+      // Une reponse recue, quelle qu'elle soit, prouve que le chargement a eu lieu.
       setHasLoadedOnce(true);
 
       // Chaque appel n'eteint QUE son propre indicateur, sinon un `loadMore`

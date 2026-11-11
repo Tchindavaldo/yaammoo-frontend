@@ -101,9 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // 2. REFRESH EN ARRIÈRE-PLAN : tenter de récupérer la version fraîche.
         //    Ne bloque pas l'UI si on a déjà affiché le cache.
         //
-        // ⚠️ Cache frais : on ne rafraîchit PAS ici. Sous le splash, seules
-        // `/fastFood/all` et `/settings/app-version` ont le droit de partir —
-        // le profil affiché est déjà le bon. Le rafraîchissement est déclenché
+        // ⚠️ Cache frais : on ne rafraîchit PAS ici. Sous le splash, seule
+        // `/settings/app-version` a le droit de partir (`/fastFood/all` attend
+        // l'arrivée dans le home) — le profil affiché est déjà le bon. Le rafraîchissement est déclenché
         // par le home, via `ensureProfileRefreshed()`.
         // Sans cache, en revanche, on attend l'API : c'est elle qui débloque
         // l'app.

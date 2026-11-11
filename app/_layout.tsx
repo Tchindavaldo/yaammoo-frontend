@@ -18,9 +18,11 @@ import { WalletProvider } from "@/src/features/wallet/context/WalletContext";
 import { MerchantWalletProvider } from "@/src/features/merchant/context/MerchantWalletContext";
 import { FastFoodProvider } from "@/src/features/restaurants/context/FastFoodContext";
 import { BonusProvider } from "@/src/features/bonus/context/BonusContext";
-import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { NotificationProvider } from "@/src/features/notifications/context/NotificationContext";
-import { AuthGateProvider } from "@/src/features/auth/context/AuthGateContext";
+import {
+  AuthGateProvider,
+  useAuthGate,
+} from "@/src/features/auth/context/AuthGateContext";
 import {
   AppVersionProvider,
   useAppVersion,
@@ -78,7 +80,8 @@ function AppContent() {
   // et ne peuvent pas etre livrees par `expo-updates`.
   useOtaUpdates();
   const { user, userData, loading } = useAuth();
-  const { hasLoadedOnce: homeReady } = useFastFoods();
+  // Invite ayant touche « Explorer sans compte » sur l'ecran d'accueil.
+  const { guestBrowsing } = useAuthGate();
   // `checked` passe a true des que le backend a repondu OU a echoue — on ne
   // reste donc jamais bloque sur le splash si le serveur est injoignable.
   // On attend ce verdict avant d'entrer dans l'app : sans ca, le Stack se
@@ -108,30 +111,20 @@ function AppContent() {
   // L'auth est résolue quand Firebase a fini de répondre (loading false).
   const authResolved = !loading;
 
-  // Accès invité (Apple 5.1.1(v)) : on entre dans la home dès que l'auth est
-  // résolue ET que les données ont fini de charger — CONNECTÉ OU NON. Les
-  // invités parcourent home/boutique librement ; les actions liées à un compte
-  // ouvrent la sheet d'auth via AuthGate. isSignedIn n'est PLUS une condition
-  // d'entrée (sinon un invité reste bloqué sur le login).
+  // Destination apres le splash, qui n'attend QUE le verdict de version
+  // (`versionChecked`) — plus le catalogue : la home charge ses boutiques a
+  // son arrivee (`useActivateFastFoods`, layout des onglets) et a son loader.
+  //   - connecte            → home ;
+  //   - non connecte        → ecran d'accueil (bonhomme), a CHAQUE lancement ;
+  //   - « Explorer sans compte » touche → home en invite (Apple 5.1.1(v)), les
+  //     actions liees a un compte ouvrant la sheet d'auth via AuthGate.
   //
-  // ⚠️ Anti-flash de l'écran Welcome au login (invité → connecté) : quand le
-  // user se connecte via la sheet overlay, AuthContext repasse loading=true le
-  // temps de re-vérifier le profil → authResolved=false → on quitterait (tabs)
-  // pour (auth) puis on y reviendrait = flash. On garde donc les tabs montées
-  // tant qu'un user Firebase est présent (login en cours), même si loading=true.
-  // Au vrai logout, `user` devient null → on sort proprement vers (auth).
-  // `versionChecked` : on ne monte le Stack qu'une fois le verdict de version
-  // connu, pour n'afficher QU'UNE seule destination apres le splash (home ou
-  // ecran de blocage), jamais l'une puis l'autre.
-  //
-  // ⚠️ `|| updateDismissed` : `homeReady` sert a ne pas montrer une home vide
-  // AU BOOT, sous le splash. Apres un clic sur « Plus tard », l'utilisateur a
-  // deja un ecran devant les yeux — le faire patienter jusqu'a la fin du
-  // `GET /fastFood/all` rendait le bouton inerte pendant plusieurs secondes.
-  // La home a son PROPRE loader : elle n'a pas besoin des donnees pour
-  // s'afficher, on y va donc immediatement.
-  const canEnterApp =
-    (homeReady || updateDismissed) && versionChecked && (authResolved || !!user);
+  // ⚠️ Invite → connecte (login via la sheet, home affichee) : `guestBrowsing`
+  // reste vrai jusqu'a ce que `isSignedIn` le soit, donc (tabs) ne se demonte
+  // jamais pendant la re-verification du profil (pas de flash de l'accueil).
+  // A la deconnexion, `guestBrowsing` a ete remis a faux a la connexion : on
+  // revient bien a l'accueil.
+  const canEnterApp = versionChecked && (isSignedIn || guestBrowsing);
 
   // Animation de bascule de groupe (auth ↔ tabs) :
   // - Au BOOT, on est monté directement dans le groupe cible pendant que le
@@ -194,12 +187,15 @@ function AppContent() {
   // Même écran, même emplacement : il remplace le Stack, donc on arrive dessus
   // DIRECTEMENT après le splash, sans passer par la home. `mandatory` ne change
   // que le texte et la présence du bouton.
-  // « Plus tard » ne retire l'ecran QUE si la home est prete a le remplacer.
-  // Sinon le Stack se monterait sur `canEnterApp` faux → c'est (auth) qui
-  // s'affiche, a nu, le splash etant deja cache : l'utilisateur voyait le
-  // get-started en cliquant « Plus tard ».
-  const dismissHonored = updateDismissed && canEnterApp;
-  const showUpdate = forceUpdate || (updateAvailable && !dismissHonored);
+  // « Plus tard » ne retire l'ecran qu'une fois l'auth tranchee : la bonne
+  // destination (home si connecte, accueil sinon) est alors connue, rien ne
+  // s'affiche puis se remplace. Verrou pose une fois pour la session : la
+  // re-verification du profil au login (`loading` repasse a vrai) ne doit pas
+  // faire revenir l'ecran de mise a jour.
+  const dismissHonoredRef = useRef(false);
+  if (updateDismissed && authResolved) dismissHonoredRef.current = true;
+  const showUpdate =
+    forceUpdate || (updateAvailable && !dismissHonoredRef.current);
 
   // Le splash natif est normalement caché depuis un écran du <Stack> via
   // `onLayout` (useHideSplash). Ici le Stack n'est PAS monté → le splash
@@ -239,10 +235,10 @@ function AppContent() {
             On NE met PAS authResolved ici : sinon, pendant la re-vérification auth
             au login (loading=true → authResolved=false), les deux guards seraient
             faux en même temps → écran blanc.
-            Au boot, cet écran n'est qu'un support monté SOUS le splash : il ne
-            l'a jamais caché lui-même (cf. `onLayoutRootView` de (auth)/index),
-            donc le get-started n'apparaît pas avant la home. Seule la home lève
-            le splash, une fois peinte. */}
+            Non connecté, l'écran d'accueil EST la destination : il lève
+            lui-même le splash, mais seulement une fois l'auth tranchée et la
+            version vérifiée (sinon un connecté le verrait passer avant la
+            home). Connecté, c'est la home qui lève le splash. */}
         <Stack.Protected guard={!canEnterApp}>
           {/* Vers (auth) : "none" au boot (sous splash), "fade" sur déconnexion
               (transition douce vers le login). */}

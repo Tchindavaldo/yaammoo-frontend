@@ -1,6 +1,9 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import {
+  AppBlurView as BlurView,
+  isNativeBlurAvailable,
+} from "@/src/components/AppBlurView";
 import React from "react";
 import {
   Animated,
@@ -409,15 +412,16 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
         pointerEvents="none"
         style={[styles.veil, { opacity: veilOpacity, height: VEIL_HEIGHT }]}
       >
-        {/* Android : floute le formulaire (`BlurTarget` d'EmailAuthStep). */}
+        {/* iOS : flou sombre. Android : aucun flou, voile BLANC opaque. */}
         <BlurView
-          forceAndroidBlur
           intensity={65}
           tint="dark"
           style={StyleSheet.absoluteFill}
+          fallbackStyle={styles.veilWhite}
         />
-        {/* Teinte posee SUR le flou : l'intensite seule ne noircit pas assez. */}
-        <View pointerEvents="none" style={styles.veilTint} />
+        {/* Teinte posee SUR le flou : l'intensite seule ne noircit pas assez.
+            Pas sur Android : elle griserait le voile blanc. */}
+        {isNativeBlurAvailable && <View pointerEvents="none" style={styles.veilTint} />}
       </Animated.View>
 
       {/* ⚠️ Conteneur BORNE a la hauteur du voile, en `overflow: hidden` : la
@@ -443,10 +447,11 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
         >
           <View style={[styles.capsule, { bottom: capsuleBottom }]}>
             <BlurView
-              forceAndroidBlur
               intensity={80}
               tint="dark"
               style={StyleSheet.absoluteFill}
+              // Android, sans flou : capsule sombre OPAQUE, lisible sur le blanc.
+              fallbackStyle={styles.capsuleSolid}
             />
 
             <View style={styles.inputRow}>
@@ -705,4 +710,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.3)",
   },
+  veilWhite: { backgroundColor: DS.bg },
+  capsuleSolid: { backgroundColor: DS.ink, borderRadius: 80 },
 });

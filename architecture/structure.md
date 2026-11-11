@@ -269,7 +269,7 @@ src/
     ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp. Web : sonde en no-cors (Cloudflare sans CORS → faux « hors ligne »)
     ├── audio/useVoiceNote.ts   # Notes vocales sur expo-audio : useVoiceNoteRecorder / useVoiceNotePlayer
     ├── audio/uploadVoiceNote.ts # Envoi de la note vocale (/image/upload, folder=voiceNotes) -> URL publique mise dans delivery.voiceNoteUri
-    │   (flou Android SDK 57 : src/components/BlurTarget.tsx — BlurScope / BlurTarget, cf. blur-safe-area.md)
+    │   (src/components/BlurTarget.tsx — BlurScope / BlurTarget, INERTES : Android ne floute plus, cf. blur-safe-area.md)
     │                           # Sonde pointée sur le backend (/settings/app-version) :
     │                           # par défaut NetInfo interroge l'origine de la page, donc
     │                           # Metro en dev web, ce qui relançait un bundle à chaque ping
@@ -311,10 +311,11 @@ AuthProvider
 > de providers ; `useSocketEvents` (monté dans AppContent) abonne aux events et
 > dispatch vers les contexts.
 
-> **Gating de navigation** : `AppContent` est sous `FastFoodProvider` car il lit
-> `useFastFoods().hasLoadedOnce` pour ne révéler `(tabs)` qu'une fois la home
-> chargée. Les guards `Stack.Protected` pilotent toute la bascule `(auth)`↔`(tabs)`
-> (aucun `router.replace`). Détail dans [auth.md](./auth.md#navigation--gating-anti-page-blanche).
+> **Gating de navigation** : `canEnterApp = versionChecked && (isSignedIn || guestBrowsing)`.
+> Le splash n'attend plus le catalogue ; non connecté, l'écran d'accueil
+> (`app/(auth)/index.tsx`) s'affiche à chaque lancement. Les guards
+> `Stack.Protected` pilotent toute la bascule `(auth)`↔`(tabs)` (aucun
+> `router.replace`). Détail dans [auth.md](./auth.md#navigation--gating-anti-page-blanche).
 
 ## Convention
 

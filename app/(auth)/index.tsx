@@ -397,9 +397,10 @@ const styles = StyleSheet.create({
   content: {
     position: "absolute",
     top: 96,
-    // Bord gauche aligne sur l'heure de la barre d'etat (mesure iPhone :
-    // heure a ~36 pt ; a 36 ici, le texte tombait a ~38 pt, le lien a ~45).
-    left: 34,
+    // Bord gauche cale sur l'heure de la barre d'etat (mesure iPhone : heure
+    // a ~36 pt). 34 l'alignait exactement ; 31 a la demande, un cran plus a
+    // gauche.
+    left: 31,
     right: 36,
     zIndex: 4,
     alignItems: "flex-start",

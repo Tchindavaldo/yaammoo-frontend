@@ -35,7 +35,8 @@ import { isHomeListAvailable } from "@/modules/home-list";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useNavigation, useRouter } from "expo-router";
+import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import {
   clearVisibleShops,
   setVisibleShops,
@@ -98,6 +99,8 @@ export default function HomeScreen() {
   } = useFastFoods();
   const locationAccess = useLocationAccess();
   const tabBarHeight = useTabBarHeight();
+  const tabBarStyle = useTabBarStyle();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const HEADER_HEIGHT = 100 + insets.top;
 
@@ -206,7 +209,18 @@ export default function HomeScreen() {
   // repasse `loading` à true. Sans cette garde, l'écran plein remplacerait la
   // home et ferait disparaître la barre de recherche, empêchant l'utilisateur
   // de corriger sa saisie.
-  if ((loading && fastFoods.length === 0 && !searchQuery) || forceLoading) {
+  const fullLoading =
+    (loading && fastFoods.length === 0 && !searchQuery) || forceLoading;
+
+  // Navbar masquee pendant l'ecran de chargement plein : elle apparait en meme
+  // temps que l'en-tete et les squelettes.
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: fullLoading ? [tabBarStyle, { display: "none" }] : tabBarStyle,
+    });
+  }, [navigation, fullLoading, tabBarStyle]);
+
+  if (fullLoading) {
     return <HomeLoadingScreen onLayout={onLayoutRootView} />;
   }
 

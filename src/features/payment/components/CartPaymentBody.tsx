@@ -57,15 +57,16 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
    * - livraison : `Livraison · Express|<heure> · <zone>` ;
    * - retrait   : `récupérer à la boutique · N cmd`.
    */
+  // Retrait : 0 F parce qu'il n'y a AUCUNE course, pas une course offerte.
+  const allPickup = groups.every((g) => g.type !== "express" && g.type !== "time");
   const shipRows = grouped
     ? [
         {
           key: "grouped",
           // Tout en retrait : rien a livrer, on l'affiche tel quel a 0 F.
-          label: groups.every((g) => g.type !== "express" && g.type !== "time")
-            ? t("Récupérer sur place")
-            : t("Livraison"),
+          label: allPickup ? t("Récupérer sur place") : t("Livraison"),
           frais: groupedLivraison ?? 0,
+          pickup: allPickup,
         },
       ]
     : groups.map((g) => {
@@ -77,12 +78,14 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
             key: g.key,
             label: t("Livraison · {{a}} · {{b}}", { a: quand, b: g.zone }),
             frais: g.livraison,
+            pickup: false,
           };
         }
         return {
           key: g.key,
           label: t("récupérer à la boutique · {{a}} cmd", { a: n }),
           frais: g.livraison,
+          pickup: true,
         };
       });
 
@@ -185,8 +188,8 @@ export const CartPaymentBody: React.FC<CartPaymentBodyProps> = ({
             <Text style={styles.recapLabel} numberOfLines={2}>
               {r.label}
             </Text>
-            <Text style={[styles.recapValue, r.frais === 0 && { color: C.ok }]}>
-              {r.frais > 0 ? `${fmt(r.frais)} F` : t("Offerte")}
+            <Text style={[styles.recapValue, r.frais === 0 && !r.pickup && { color: C.ok }]}>
+              {r.frais > 0 ? `${fmt(r.frais)} F` : r.pickup ? "0 F" : t("Offerte")}
             </Text>
           </View>
         ))}

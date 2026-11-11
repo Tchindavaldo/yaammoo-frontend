@@ -63,7 +63,9 @@ const useRecap = (groups: CartZoneGroup[]) => {
         : t("sur place");
   const heure = multi ? "" : g?.type === "time" ? g?.heure || "" : "";
 
-  return { cmd, articles, course, total, zone, type, heure };
+  // Tout en retrait : course à 0 F parce qu'il n'y en a pas (pas « offerte »).
+  const pickup = groups.every((x) => x.type !== "express" && x.type !== "time");
+  return { cmd, articles, course, total, zone, type, heure, pickup };
 };
 
 /** Ligne « zone · type · heure », rendue à l'identique dans les 3 variantes. */
@@ -149,7 +151,7 @@ export const PaymentVariantTicket: React.FC<VariantProps> = ({
   onError,
 }) => {
   useLanguage();
-  const { cmd, articles, course, total, zone, type, heure } = useRecap(groups);
+  const { cmd, articles, course, total, zone, type, heure, pickup } = useRecap(groups);
 
   return (
     <View style={s.ticket}>
@@ -168,8 +170,8 @@ export const PaymentVariantTicket: React.FC<VariantProps> = ({
         </View>
         <View style={s.ticketLine}>
           <Text style={s.ticketLabel}>{t("Livraison")}</Text>
-          <Text style={[s.ticketValue, course === 0 && s.free]}>
-            {course > 0 ? fmt(course) : t("Offerte")}
+          <Text style={[s.ticketValue, course === 0 && !pickup && s.free]}>
+            {course > 0 ? fmt(course) : pickup ? "0 F" : t("Offerte")}
           </Text>
         </View>
         <View style={[s.ticketLine, { marginTop: 4 }]}>
@@ -237,7 +239,7 @@ export const PaymentVariantCard: React.FC<VariantProps> = ({
   onError,
 }) => {
   useLanguage();
-  const { cmd, articles, course, total, zone, type, heure } = useRecap(groups);
+  const { cmd, articles, course, total, zone, type, heure, pickup } = useRecap(groups);
   const tint = TINT[network];
 
   return (
@@ -264,8 +266,8 @@ export const PaymentVariantCard: React.FC<VariantProps> = ({
           </View>
           <View style={s.cardLine}>
             <Text style={s.cardLabel}>{t("Livraison")}</Text>
-            <Text style={[s.cardValue, course === 0 && s.free]}>
-              {course > 0 ? fmt(course) : t("Offerte")}
+            <Text style={[s.cardValue, course === 0 && !pickup && s.free]}>
+              {course > 0 ? fmt(course) : pickup ? "0 F" : t("Offerte")}
             </Text>
           </View>
         </View>
@@ -318,7 +320,7 @@ export const PaymentVariantColonnes: React.FC<VariantProps> = ({
   onError,
 }) => {
   useLanguage();
-  const { cmd, articles, course, total, zone, type, heure } = useRecap(groups);
+  const { cmd, articles, course, total, zone, type, heure, pickup } = useRecap(groups);
 
   return (
     <View style={{ flex: 1 }}>
@@ -336,8 +338,8 @@ export const PaymentVariantColonnes: React.FC<VariantProps> = ({
             </View>
             <View style={s.splitLine}>
               <Text style={s.splitLineLabel}>{t("Livraison")}</Text>
-              <Text style={[s.splitLineValue, course === 0 && s.free]}>
-                {course > 0 ? fmt(course) : t("Offerte")}
+              <Text style={[s.splitLineValue, course === 0 && !pickup && s.free]}>
+                {course > 0 ? fmt(course) : pickup ? "0 F" : t("Offerte")}
               </Text>
             </View>
           </View>

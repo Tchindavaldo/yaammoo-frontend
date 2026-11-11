@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -5,18 +6,22 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { CARD_BOTTOM_STYLE } from "../config";
 import { sharedStyles as styles } from "../styles/sharedStyles";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Pastille des frais de livraison (« gratuit », « 300F »…) : fond accent, texte blanc gras. */
 export const DeliveryFeePill: React.FC<{ label: string; accent: string }> = ({
   label,
   accent,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View style={[styles.deliveryFeePill, { backgroundColor: accent }]}>
     <Text style={[styles.deliveryFeePillText, { color: "#fff", fontWeight: "800" }]}>
-      {label}
+      {t(label)}
     </Text>
   </View>
 );
+};
 
 /**
  * ANDROID — ombre interne noire legere en bas de carte (pas de degrade), posee
@@ -50,9 +55,10 @@ const StockDeliveryBar: React.FC<{
   deliveryTime,
   stock,
   hideStock = false,
-  stockLabel = "disponible",
+  stockLabel = t("disponible"),
   dark = false,
 }) => {
+  useLanguage();
   const ink = dark ? "#fff" : "#000";
   return (
     <BlurView
@@ -90,10 +96,10 @@ const StockDeliveryBar: React.FC<{
             <Text
               style={[styles.v5DeliveryLabel, { fontSize: 10 }, dark && { color: ink }]}
             >
-              Prochaine
+              {t("Prochaine")}
             </Text>
             <Text style={[styles.v5DeliveryTime, { color: ink, fontSize: 11 }]}>
-              Livraison {deliveryTime}
+              {t("Livraison")} {deliveryTime}
             </Text>
           </View>
         </View>
@@ -107,17 +113,20 @@ const V7BottomZone: React.FC<{
   accent: string;
   deliveryTime: string;
   deliveryFeeLabel: string;
-}> = ({ accent, deliveryTime, deliveryFeeLabel }) => (
+}> = ({ accent, deliveryTime, deliveryFeeLabel }) => {
+  useLanguage();
+  return (
   <View style={styles.v7BottomZone}>
     <View style={styles.v7LiveRow}>
-      <Text style={styles.v7LiveMeta}>Prochaine</Text>
+      <Text style={styles.v7LiveMeta}>{t("Prochaine")}</Text>
     </View>
     <View style={styles.v7DeliveryRow}>
-      <Text style={styles.v7LiveHour}>livraison · {deliveryTime}</Text>
+      <Text style={styles.v7LiveHour}>{t("livraison ·")} {deliveryTime}</Text>
       <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
     </View>
   </View>
 );
+};
 
 /** Bas interne commun des cartes, pilote par `CARD_BOTTOM_STYLE`. */
 export const CardBottom: React.FC<{
@@ -138,10 +147,11 @@ export const CardBottom: React.FC<{
   stock,
   withBackground = true,
   hideStock = false,
-  stockLabel = "disponible",
+  stockLabel = t("disponible"),
   deliveryFeeLabel = "gratuit",
   dark = false,
 }) => {
+  useLanguage();
   // Mode "blur2" : ancienne barre stock + livraison, sauf le 7 qui garde
   // sa propre zone.
   if (CARD_BOTTOM_STYLE === "blur2") {
@@ -190,9 +200,9 @@ export const CardBottom: React.FC<{
             },
           ]}
         >
-          <Text style={[styles.v7LiveMeta, { color: "#000" }]}>Prochaine</Text>
+          <Text style={[styles.v7LiveMeta, { color: "#000" }]}>{t("Prochaine")}</Text>
           <Text style={[styles.v7LiveHour, { color: "#000" }]}>
-            livraison · <Text style={{ color: accent }}>{deliveryTime}</Text>
+            {t("livraison ·")} <Text style={{ color: accent }}>{deliveryTime}</Text>
           </Text>
           <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
         </View>
@@ -214,6 +224,7 @@ export const V5BottomBar: React.FC<{
   deliveryFeeLabel: string;
   dark?: boolean;
 }> = ({ accent, deliveryTime, deliveryFeeLabel, dark = false }) => {
+  useLanguage();
   const ink = dark ? "#fff" : "black";
   return (
     <BlurView
@@ -234,12 +245,12 @@ export const V5BottomBar: React.FC<{
         <Text
           style={[styles.v5DeliveryLabel, { fontSize: 10 }, dark && { color: ink }]}
         >
-          Prochaine
+          {t("Prochaine")}
         </Text>
         <Text style={[styles.v5DeliveryTime, { color: ink, fontSize: 11 }]}>
           <View style={styles.v5DeliveryFeeRow}>
             <Text style={[styles.v5DeliveryTime, { color: ink, fontSize: 11 }]}>
-              Livraison {deliveryTime}
+              {t("Livraison")} {deliveryTime}
             </Text>
             <DeliveryFeePill label={deliveryFeeLabel} accent={accent} />
           </View>

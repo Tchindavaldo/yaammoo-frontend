@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface CartDeliveryInfoStepProps {
   /**
@@ -44,6 +46,7 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
   onOpenExpress,
   onOpenVoiceNote,
 }) => {
+  useLanguage();
   const isExpress = delivery.type === "express";
 
   /**
@@ -64,9 +67,9 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
     rows.push({
       key: "location",
       icon: "location-outline",
-      title: "Lieu de livraison",
-      value: delivery.address || "Où vous livrer ?",
-      filled: !!delivery.address,
+      title: t("Lieu de livraison"),
+      value: delivery.address || t("Où vous livrer ?"),
+      filled: !!(delivery.address || delivery.note),
       onPress: onOpenLocation,
     });
   }
@@ -75,8 +78,8 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
     rows.push({
       key: "express",
       icon: "flash-outline",
-      title: "Zone express",
-      value: delivery.expressLieu || "Choisir une zone",
+      title: t("Zone express"),
+      value: delivery.expressLieu || t("Choisir une zone"),
       filled: !!delivery.expressLieu,
       onPress: onOpenExpress,
     });
@@ -86,8 +89,8 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
     rows.push({
       key: "period",
       icon: "time-outline",
-      title: "Créneau horaire",
-      value: delivery.hour ? delivery.hour.split("|").slice(0, 2).join(" · ") : "Choisir un créneau",
+      title: t("Créneau horaire"),
+      value: delivery.hour ? delivery.hour.split("|").slice(0, 2).join(" · ") : t("Choisir un créneau"),
       filled: !!delivery.hour,
       onPress: onOpenPeriod,
     });
@@ -97,8 +100,8 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
     rows.push({
       key: "contact",
       icon: "call-outline",
-      title: "Contact",
-      value: delivery.phone || "Numéro",
+      title: t("Contact"),
+      value: delivery.phone || t("Numéro"),
       filled: !!delivery.phone,
       onPress: onOpenContact,
     });
@@ -106,8 +109,8 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
     rows.push({
       key: "note",
       icon: "mic-outline",
-      title: "Note vocale",
-      value: delivery.voiceNoteUri ? "Enregistrée" : "Facultatif",
+      title: t("Note vocale"),
+      value: delivery.voiceNoteUri ? t("Enregistrée") : t("Facultatif"),
       filled: !!delivery.voiceNoteUri,
       onPress: onOpenVoiceNote,
     });
@@ -134,26 +137,26 @@ export const CartDeliveryInfoStep: React.FC<CartDeliveryInfoStepProps> = ({
   const typeRow = {
     express: {
       icon: "flash-outline" as const,
-      label: "Livraison express",
+      label: t("Livraison express"),
       sub: delivery.expressLieu
-        ? `Zone de livraison · ${delivery.expressLieu}`
-        : "Livré dès que terminée",
+        ? t("Zone de livraison · {{a}}", { a: delivery.expressLieu })
+        : t("Livré dès que terminée"),
     },
     standard: {
       icon: "time-outline" as const,
-      label: creneauHeure ? `Livraison à ${creneauHeure}` : "Livraison à l'heure",
+      label: creneauHeure ? t("Livraison à {{a}}", { a: creneauHeure }) : t("Livraison à l'heure"),
       sub: creneauDate
-        ? `Créneau du ${new Date(creneauDate).toLocaleDateString("fr-FR", {
+        ? t("Créneau du {{a}}", { a: new Date(creneauDate).toLocaleDateString(dateLocale(), {
             weekday: "long",
             day: "numeric",
             month: "long",
-          })}`
-        : "Créneau à choisir",
+          }) })
+        : t("Créneau à choisir"),
     },
     aucune: {
       icon: "storefront-outline" as const,
-      label: "Aucune livraison",
-      sub: "Vous récupérez en boutique",
+      label: t("Aucune livraison"),
+      sub: t("Vous récupérez en boutique"),
     },
   }[(delivery.type || "express") as "express" | "standard" | "aucune"];
 

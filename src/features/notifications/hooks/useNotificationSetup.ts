@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
@@ -12,6 +13,7 @@ import { useNotificationContext } from "../context/NotificationContext";
 import { getNotificationRoute } from "../utils/notificationRouting";
 import { auth } from "@/src/services/firebase";
 import { getDeviceId } from "../services/deviceId";
+import { t, useLanguage } from "@/src/i18n";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -29,6 +31,7 @@ const routeFromData = (data: any): string => {
 };
 
 export const useNotificationSetup = () => {
+  useLanguage();
   const { userData, setUserData } = useAuth();
   const router = useRouter();
   // refresh n'est plus déclenché automatiquement — seul le pull-to-refresh manuel le déclenche.
@@ -119,7 +122,7 @@ export const useNotificationSetup = () => {
 
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("high_priority_channel", {
-        name: "high_priority_channel",
+        name: t("Notifications importantes"),
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",

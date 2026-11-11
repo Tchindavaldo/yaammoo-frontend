@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
@@ -7,6 +8,7 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { CartStatusPanel } from "@/src/features/orders/components/CartStatusPanel";
 import { DS } from "@/src/theme/ds";
 import { useLocalSearchParams } from "expo-router";
+import { t, useLanguage } from "@/src/i18n";
 
 const STATUSES = ["pending", "active", "finished", "delivered"] as const;
 
@@ -15,6 +17,7 @@ const STATUSES = ["pending", "active", "finished", "delivered"] as const;
  * La page Boutique (marchand) n'a plus d'onglet : Profil → Boutique → Commandes.
  */
 export default function OrdersScreen() {
+  useLanguage();
   const { isSignedIn } = useAuthGate();
   const [headerHeight, setHeaderHeight] = useState(70);
   // Deep-link `?section=` (notifications, home) : statut ouvert au montage.
@@ -27,8 +30,8 @@ export default function OrdersScreen() {
     return (
       <GuestGate
         icon="receipt-outline"
-        title="Vos commandes"
-        subtitle="Connectez-vous pour suivre l'état de vos commandes."
+        title={t("Vos commandes")}
+        subtitle={t("Connectez-vous pour suivre l'état de vos commandes.")}
       >
         {null}
       </GuestGate>
@@ -38,7 +41,7 @@ export default function OrdersScreen() {
   return (
     <View style={styles.container}>
       <BlurScope>
-        <TabHeader title="Commandes" onHeightChange={setHeaderHeight} />
+        <TabHeader title={t("Commandes")} onHeightChange={setHeaderHeight} />
         {/* Cible du flou du header (Android). */}
         <BlurTarget style={styles.container}>
           {/* key : un nouveau `section` remonte le panel sur ce statut. */}

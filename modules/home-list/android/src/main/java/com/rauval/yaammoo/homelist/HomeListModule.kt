@@ -14,7 +14,8 @@ class HomeListModule : Module() {
     Name("HomeList")
 
     View(HomeListView::class) {
-      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics")
+      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics",
+        "onVisibleShops")
 
       // ⚠️ Les boutiques ne sont PAS une prop : une prop renverrait TOUTE la
       // liste a chaque page. `updateRows` ne recoit que les rangees nouvelles
@@ -63,6 +64,13 @@ class HomeListModule : Module() {
 
       Prop("bannerAutoplay") { _: HomeListView, on: Boolean ->
         HLBannerView.autoplayEnabled = on
+      }
+
+      // Design des cartes 4 / 5 / 7 et de la note boutique (`actuel` | `aere`).
+      // Recu au montage, avant la creation des cartes : une carte garde le
+      // design sous lequel elle a ete construite.
+      Prop("homeDesign") { _: HomeListView, design: String ->
+        HLDesign.aere = design == "aere"
       }
 
       OnViewDidUpdateProps { view: HomeListView ->

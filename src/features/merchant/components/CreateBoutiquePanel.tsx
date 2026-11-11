@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { View } from "react-native";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
@@ -15,6 +16,7 @@ import {
   CityPickerModal,
   BoutiqueToast,
 } from "./create-boutique/BoutiquePickers";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CreateBoutiquePanelProps {
   onCancel: () => void;
@@ -33,6 +35,7 @@ interface CreateBoutiquePanelProps {
 export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
   onCancel,
 }) => {
+  useLanguage();
   // Rendu dans (tabs)/boutique, navbar par-dessus : hauteur REELLE de la
   // navbar, safe-area comprise (source unique R19).
   const tabBarHeight = useTabBarHeight();
@@ -104,11 +107,11 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
       />
 
       <TabHeader
-        title="Créer ma boutique"
-        subtitle="Informations du fast-food"
+        title={t("Créer ma boutique")}
+        subtitle={t("Informations du fast-food")}
         right={
           <HeaderPill
-            label="Retour"
+            label={t("Retour")}
             icon="arrow-back-outline"
             onPress={onCancel}
           />

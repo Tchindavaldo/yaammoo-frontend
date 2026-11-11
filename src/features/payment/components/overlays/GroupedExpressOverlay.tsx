@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { verifyBonusCode } from "@/src/features/checkout/services/verifyBonusCode";
 import { DeliveryOffer } from "@/src/types";
@@ -20,6 +21,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { GroupedValidateRow } from "./GroupedValidateRow";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 /** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
@@ -69,6 +71,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   // Fondu d'entree/sortie : le parent monte et demonte l'overlay d'un coup,
   // c'est donc ici qu'on l'amene et qu'on retarde la fermeture le temps de
@@ -197,7 +200,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
     // fermait quand meme et la card apparaissait remplie alors que la livraison
     // n'avait ni lieu ni prix — « Continuer » passait ensuite sans rien voir.
     if (!selectedValue) {
-      onError?.("Sélectionnez d'abord une zone de livraison.");
+      onError?.(t("Sélectionnez d'abord une zone de livraison."));
       return;
     }
 
@@ -221,7 +224,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
     // Code refusé → toast d'erreur, l'overlay RESTE ouvert pour ressaisie.
     if (!result.valid) {
       setVerifiedCode(null);
-      onError?.(result.message || "Code bonus invalide.");
+      onError?.(result.message || t("Code bonus invalide."));
       return;
     }
 
@@ -273,7 +276,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="flash-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Choisir un lieu express</Text>
+              <Text style={styles.headerTitle}>{t("Choisir un lieu express")}</Text>
             </View>
             <TouchableOpacity
               onPress={() => closeWithFade()}
@@ -291,7 +294,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
           >
             {zones.length === 0 ? (
               <Text style={styles.emptyText}>
-                Aucune zone express disponible
+                {t("Aucune zone express disponible")}
               </Text>
             ) : (
               zones.map((item, idx) => {
@@ -330,7 +333,7 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
                       isFree ? (
                         <View style={styles.pricePair}>
                           <Text style={styles.strikePrix}>{item.prix} F</Text>
-                          <Text style={styles.freePrix}>Offert</Text>
+                          <Text style={styles.freePrix}>{t("Offert")}</Text>
                         </View>
                       ) : (
                         <Text

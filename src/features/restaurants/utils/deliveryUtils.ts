@@ -1,5 +1,7 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Extrait le string "HH:MM" depuis un item du nouveau format ou le retourne tel quel.
@@ -106,7 +108,7 @@ export const formatCountdown = (minutes: number): string => {
   const m = minutes % 60;
   if (h === 0) return `${m}min`;
   if (m === 0) return `${h}h`;
-  return `${h}h ${m}min`;
+  return t("{{a}}h {{b}}min", { a: h, b: m });
 };
 
 /**
@@ -117,6 +119,7 @@ export const useOrderCountdown = (
   deliveryHours?: any[],
   orderLeadTime: number = 0,
 ): string | null => {
+  useLanguage();
   const [left, setLeft] = useState(() =>
     getOrderCutoffMinutes(deliveryHours, orderLeadTime),
   );
@@ -139,6 +142,61 @@ export const useOrderCountdown = (
   }, [JSON.stringify(deliveryHours), orderLeadTime]);
 
   return left === null ? null : formatCountdown(left);
+};
+
+const toMinutes = (hour: string) => {
+  const [h, m] = hour.split(":");
+  return parseInt(h, 10) * 60 + (parseInt(m, 10) || 0);
+};
+
+/**
+ * Libellé de livraison de l'en-tête boutique : prochain créneau périodique
+ * (« 12h », délai de commande `orderLeadTime` compris, demain si tous sont
+ * passés), « express » si la boutique n'a que de l'express, `null` sans
+ * aucune livraison. Ancien format `string[]` = créneaux périodiques.
+ */
+export const getShopDeliveryLabel = (
+  deliveryHours?: any[],
+  orderLeadTime: number = 0,
+): string | null => {
+  const raw = Array.isArray(deliveryHours) ? deliveryHours : [];
+  const periodic = raw
+    .filter((h) => typeof h === "string" || h?.periodic === true)
+    .map(extractHour)
+    .filter(Boolean)
+    .sort((a, b) => toMinutes(a) - toMinutes(b));
+  if (periodic.length > 0) return getNextDeliveryTime(periodic, orderLeadTime);
+  if (raw.some((h) => h?.express === true)) return "express";
+  return null;
+};
+
+/** Version réactive de getShopDeliveryLabel (chaque minute + retour au premier plan). */
+export const useShopDeliveryLabel = (
+  deliveryHours?: any[],
+  orderLeadTime: number = 0,
+): string | null => {
+  const [label, setLabel] = useState(() =>
+    getShopDeliveryLabel(deliveryHours, orderLeadTime),
+  );
+
+  useEffect(() => {
+    const recompute = () =>
+      setLabel(getShopDeliveryLabel(deliveryHours, orderLeadTime));
+
+    recompute();
+    const interval = setInterval(recompute, 60_000);
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") recompute();
+    });
+
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(deliveryHours), orderLeadTime]);
+
+  return label;
 };
 
 /**

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Commande, FastFood } from "@/src/types";
 import React, { useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * En-tête du détail client (`OrderBottomSheet`) : avatar de la boutique +
@@ -44,6 +46,7 @@ export function OrderSheetHeader({
   onSelectOrder,
   panHandlers,
 }: Props) {
+  useLanguage();
   const hasMultiple = !!allOrders && allOrders.length > 1;
 
   // ─── Chips « Cmd » : compteur de débordement « +N » ───────────────────────
@@ -71,7 +74,7 @@ export function OrderSheetHeader({
           </View>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.userName}>{boutique?.nom || "Boutique"}</Text>
+          <Text style={styles.userName}>{boutique?.nom || t("Boutique")}</Text>
           {hasMultiple ? (
             /* Multi-commandes : chips Cmd 1/2/3… à la place de l'adresse. */
             <View style={styles.cmdRow}>
@@ -116,7 +119,7 @@ export function OrderSheetHeader({
             </View>
           ) : (
             <Text style={styles.userAddr} numberOfLines={1}>
-              {selectedOrder?.delivery?.location || "Sur place"}
+              {selectedOrder?.delivery?.location || t("Sur place")}
             </Text>
           )}
         </View>

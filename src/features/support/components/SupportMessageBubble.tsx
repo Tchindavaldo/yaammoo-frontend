@@ -1,10 +1,12 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { SupportMessage } from "../types/support.types";
+import { dateLocale, useLanguage } from "@/src/i18n";
 
 const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("fr-FR", {
+  new Date(iso).toLocaleTimeString(dateLocale(), {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -13,6 +15,7 @@ const formatTime = (iso: string) =>
 export const SupportMessageBubble: React.FC<{ message: SupportMessage }> = ({
   message,
 }) => {
+  useLanguage();
   const mine = message.author === "user";
   return (
     <View style={[styles.row, mine ? styles.rowMine : styles.rowTheirs]}>

@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { showToast } from "@/src/services/globalToast";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -7,7 +9,6 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import { uploadVoiceNote } from "@/src/services/audio/uploadVoiceNote";
 import {
-  Alert,
   Animated,
   StyleSheet,
   Text,
@@ -19,6 +20,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // L'overlay recouvre EXACTEMENT le sheet groupe. La card, elle, est retrecie par
 // le `paddingVertical` du conteneur (respiration en haut et en bas).
@@ -34,6 +36,7 @@ type RecordingStatus = "idle" | "recording" | "recorded" | "playing";
 export const GroupedVoiceNoteOverlay: React.FC<
   GroupedVoiceNoteOverlayProps
 > = ({ onClose, onSave }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   // Phase de l'enregistrement ; « playing » est deduit du lecteur.
   const [phase, setPhase] = useState<Exclude<RecordingStatus, "playing">>(
@@ -93,7 +96,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
   async function startRecording() {
     try {
       if (!(await recorder.start())) {
-        alert("Permission to access microphone is required!");
+        showToast(tr("L'accès au micro est nécessaire."), "error");
         return;
       }
       setPhase("recording");
@@ -167,7 +170,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="mic-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Delivery Instruction</Text>
+              <Text style={styles.headerTitle}>{tr("Consigne de livraison")}</Text>
             </View>
             <TouchableOpacity onPress={closeWithFade} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#94a3b8" />
@@ -184,7 +187,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                   <Ionicons name="mic" size={36} color="white" />
                 </TouchableOpacity>
                 <Text style={styles.instructionText}>
-                  Tap to start recording voice instruction
+                  {tr("Appuyez pour enregistrer une consigne vocale")}
                 </Text>
               </View>
             )}
@@ -207,7 +210,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                   <Text style={styles.timerLarge}>{formatTime(timer)}</Text>
                   <View style={styles.recordingBadge}>
                     <View style={styles.redDot} />
-                    <Text style={styles.recordingLabel}>RECORDING</Text>
+                    <Text style={styles.recordingLabel}>{tr("ENREGISTREMENT")}</Text>
                   </View>
                 </View>
 
@@ -278,9 +281,9 @@ export const GroupedVoiceNoteOverlay: React.FC<
                       closeWithFade();
                     } catch (e) {
                       console.log("Error uploading voice note", e);
-                      Alert.alert(
-                        "Note vocale",
-                        "Envoi impossible. Vérifiez votre connexion et réessayez.",
+                      showToast(
+                        tr("Note vocale : envoi impossible. Vérifiez votre connexion et réessayez."),
+                        "error",
                       );
                     } finally {
                       setUploading(false);
@@ -288,7 +291,7 @@ export const GroupedVoiceNoteOverlay: React.FC<
                   }}
                 >
                   <Text style={styles.validateBtnText}>
-                    {uploading ? "Envoi..." : "Save Instruction"}
+                    {uploading ? tr("Envoi...") : tr("Enregistrer la consigne")}
                   </Text>
                 </TouchableOpacity>
               </View>

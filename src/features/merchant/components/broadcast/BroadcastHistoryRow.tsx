@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React from "react";
@@ -5,6 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { BroadcastItem } from "../../types/broadcast.types";
 import { audienceLabel } from "./BroadcastAudiencePicker";
 import { BC, capsLabel } from "./broadcastTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Gabarit d'une ligne selon le nombre d'envois affichés (2, 3, 4 et plus). */
 export interface RowLayout {
@@ -31,7 +33,7 @@ export const rowLayoutFor = (count: number): RowLayout => {
 export const audienceSummary = (item: BroadcastItem) => {
   const who = audienceLabel(item.audience, item.city).toUpperCase();
   const n = item.recipientsCount;
-  return n > 0 ? `${who} · ${n} PERSONNE${n > 1 ? "S" : ""}` : who;
+  return n > 0 ? t("{{a}} · {{b}} PERSONNE{{c}}", { a: who, b: n, c: n > 1 ? "S" : "" }) : who;
 };
 
 /** Vignette d'un envoi : sa photo, sinon une cloche sur fond teinté. */
@@ -66,7 +68,9 @@ export const BroadcastHistoryRow: React.FC<Props> = ({
   open,
   onToggle,
   onReuse,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View
     style={[
       styles.row,
@@ -100,7 +104,7 @@ export const BroadcastHistoryRow: React.FC<Props> = ({
     {open && (
       <View style={[styles.body, { paddingLeft: c.pad + c.thumb + 12 }]}>
         <View style={styles.bodyTexts}>
-          <Text style={styles.desc}>{item.body || "Sans message"}</Text>
+          <Text style={styles.desc}>{item.body || t("Sans message")}</Text>
           <Text style={capsLabel} numberOfLines={1}>
             {audienceSummary(item)}
           </Text>
@@ -110,12 +114,13 @@ export const BroadcastHistoryRow: React.FC<Props> = ({
           style={({ pressed }) => [styles.reuse, pressed && { opacity: 0.7 }]}
           accessibilityRole="button"
         >
-          <Text style={styles.reuseText}>Réutiliser</Text>
+          <Text style={styles.reuseText}>{t("Réutiliser")}</Text>
         </Pressable>
       </View>
     )}
   </View>
 );
+};
 
 const styles = StyleSheet.create({
   row: { backgroundColor: BC.surface, overflow: "hidden" },

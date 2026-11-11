@@ -1,4 +1,5 @@
 import { Config } from "@/src/api/config";
+import { Sentry } from "@/src/services/sentry";
 import type { LatLng } from "./orderTrackingService";
 
 /**
@@ -25,13 +26,27 @@ const ORS_URL =
 /** Sur un réseau lent, mieux vaut garder l'estimation à vol d'oiseau. */
 const TIMEOUT_MS = 12000;
 
+/** Échec envoyé à Sentry : sans lui, la carte reste sans tracé sans aucune trace. */
+const reportRouteFailure = (reason: string, extra: Record<string, unknown> = {}) => {
+  console.warn("[Suivi] itinéraire indisponible :", reason);
+  Sentry.captureMessage("Suivi: itinéraire indisponible", {
+    level: "warning",
+    tags: { route_failure: reason },
+    extra,
+  });
+};
+
 /** Itinéraire, ou null (clé absente, réseau, aucune route) : l'appelant garde l'estimation. */
 export async function fetchRoute(
   origin: LatLng,
   destination: LatLng,
 ): Promise<Route | null> {
   const key = Config.orsKey;
-  if (!key) return null;
+  if (!key) {
+    reportRouteFailure("no_key");
+    return null;
+  }
+  const points = { origin, destination };
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -47,13 +62,21 @@ export async function fetchRoute(
       }),
       signal: controller.signal,
     });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => "")).slice(0, 500);
+      reportRouteFailure(`http_${response.status}`, { ...points, detail });
+      return null;
+    }
     const body = await response.json();
     const feature = body?.features?.[0];
     const coords: [number, number][] | undefined = feature?.geometry?.coordinates;
     const summary = feature?.properties?.summary;
-    if (!Array.isArray(coords) || coords.length < 2) return null;
+    if (!Array.isArray(coords) || coords.length < 2) {
+      reportRouteFailure("no_geometry", points);
+      return null;
+    }
     if (typeof summary?.distance !== "number" || typeof summary?.duration !== "number") {
+      reportRouteFailure("no_summary", points);
       return null;
     }
     return {
@@ -62,7 +85,7 @@ export async function fetchRoute(
       durationSeconds: summary.duration,
     };
   } catch (e) {
-    console.warn("[Suivi] itinéraire indisponible :", (e as Error)?.message);
+    reportRouteFailure("network", { ...points, message: (e as Error)?.message });
     return null;
   } finally {
     clearTimeout(timer);

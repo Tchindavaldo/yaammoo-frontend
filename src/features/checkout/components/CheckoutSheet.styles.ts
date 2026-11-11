@@ -36,7 +36,7 @@ export const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tabsContent: {
-        gap: 8,
+        gap: 4,
     },
     tabChip: {
         height: 32,

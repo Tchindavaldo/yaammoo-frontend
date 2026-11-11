@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // ============================================================================
 // useBonusFlyer — téléchargement du flyer d'un bonus `status_view`
 // ----------------------------------------------------------------------------
@@ -31,6 +32,7 @@ function getCompressor(): CompressorModule | null {
   return compressorModule;
 }
 import type { Bonus } from "../types/bonus.types";
+import { t, useLanguage } from "@/src/i18n";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
 
@@ -112,6 +114,7 @@ export const useBonusFlyer = (
    */
   applyClaimPayload?: (payload: ClaimPayload) => void,
 ) => {
+  useLanguage();
   const [downloading, setDownloading] = useState<Record<string, boolean>>({});
   // Absent de la map = aucun envoi en cours pour ce bonus.
   const [uploading, setUploading] = useState<Record<string, UploadState>>({});
@@ -143,7 +146,7 @@ export const useBonusFlyer = (
           { headers: await authHeaders() },
         );
         const data: FlyerPayload | undefined = res.data?.data;
-        if (!data?.flyerUrl) throw new Error("Flyer indisponible.");
+        if (!data?.flyerUrl) throw new Error(t("Flyer indisponible."));
 
         // Rapatrié en cache : la feuille de partage exige un fichier local.
         // Un flyer déjà téléchargé est écrasé, sinon `downloadFileAsync` échoue.
@@ -162,7 +165,7 @@ export const useBonusFlyer = (
         setError(
           e?.response?.data?.message ??
             e?.message ??
-            "Téléchargement du flyer impossible.",
+            t("Téléchargement du flyer impossible."),
         );
         return null;
       } finally {
@@ -258,7 +261,7 @@ export const useBonusFlyer = (
         if (payload) {
           applyClaimPayload?.(payload);
           setUploadSuccess(
-            "Preuve envoyée ! Ton bonus est en cours de traitement.",
+            t("Preuve envoyée ! Ton bonus est en cours de traitement."),
           );
         }
         return payload;
@@ -266,7 +269,7 @@ export const useBonusFlyer = (
         const msg =
           e?.response?.data?.message ??
           e?.message ??
-          "Envoi de la preuve impossible.";
+          t("Envoi de la preuve impossible.");
         setError(msg);
         // Doublé en échec GLOBAL : sans ça, un envoi qui échoue alors que le
         // user a quitté la page bonus ne lui est jamais signalé.
@@ -293,7 +296,7 @@ export const useBonusFlyer = (
       setUploading((s) => {
         if (Object.keys(s).length === 0) return s;
         setUploadFailure(
-          "L'envoi a été interrompu par la mise en veille. Relance-le depuis la page bonus.",
+          t("L'envoi a été interrompu par la mise en veille. Relance-le depuis la page bonus."),
         );
         return {};
       });

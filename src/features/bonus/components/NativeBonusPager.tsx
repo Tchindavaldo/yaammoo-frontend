@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { BonusPagerView } from "@/modules/bonus-pager";
 import { Theme } from "@/src/theme";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -7,6 +8,7 @@ import type { Bonus, BonusClaimStatus } from "../types/bonus.types";
 import { toPagerItem } from "../utils/bonusPagerItem";
 import { BonusCard } from "./BonusCard";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
+import { useLanguage } from "@/src/i18n";
 
 /**
  * Carrousel NATIF de la sheet Bonus (iOS, `modules/bonus-pager`), à la place
@@ -42,7 +44,8 @@ const NativeBonusPagerBase = ({
   arming,
   onBlocked,
 }: NativeBonusPagerProps) => {
-  const items = useMemo(() => bonuses.map(toPagerItem), [bonuses]);
+  const i18nLang = useLanguage();
+  const items = useMemo(() => bonuses.map(toPagerItem), [bonuses, i18nLang]);
   const footerHeight = bonuses.length > 1 ? FOOTER_HEIGHT : 0;
 
   if (!BonusPagerView) return null;

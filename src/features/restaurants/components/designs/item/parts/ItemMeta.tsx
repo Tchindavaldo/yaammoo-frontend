@@ -1,11 +1,22 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, View } from "react-native";
 import { useNextDeliveryTime } from "../../../../utils/deliveryUtils";
-import { SHOW_AVAILABILITY } from "../config";
+import { IS_AERE, SHOW_AVAILABILITY, deliveryFeeLabelFor } from "../config";
+import { V4AereMeta } from "../aere/CardV4Aere";
+import { V5AereMeta } from "../aere/CardV5Aere";
+import { V7AereMeta } from "../aere/CardV7Aere";
+
+const AERE_META: Record<number, typeof V4AereMeta> = {
+  4: V4AereMeta,
+  5: V5AereMeta,
+  7: V7AereMeta,
+};
 import { sharedStyles as styles } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Bloc d'infos rendu SOUS la carte, hors de celle-ci : nom du menu, livraison
@@ -28,10 +39,26 @@ export const ItemMeta: React.FC<{
   orderLeadTime = 0,
   index = 0,
 }) => {
+  useLanguage();
   const rating = (menu as any)?.rating ?? 4.5;
   const votes = (menu as any)?.votes ?? 0;
   // Appel conserve : le hook fait partie de l'ordre des hooks du composant.
   useNextDeliveryTime(deliveryHours, orderLeadTime);
+
+  // HOME_DESIGN = "aere" : lignes propres aux cartes 4 / 5 / 7 aerees.
+  const AereMeta = IS_AERE ? AERE_META[variant] : undefined;
+  if (AereMeta) {
+    return (
+      <View style={[styles.metaBlock, { width, marginRight }]}>
+        <AereMeta
+          title={menu.titre}
+          rating={rating}
+          votes={votes}
+          deliveryFeeLabel={deliveryFeeLabelFor(index)}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.metaBlock, { width, marginRight }]}>
@@ -61,7 +88,7 @@ export const ItemMeta: React.FC<{
                     <Text style={[styles.metaText, { color: "#000" }]}>
                       {rating}
                     </Text>
-                    <Text style={styles.metaMuted}>({votes} avis)</Text>
+                    <Text style={styles.metaMuted}>({votes} {t("avis)")}</Text>
                   </>
                 ) : (
                   <Text
@@ -71,7 +98,7 @@ export const ItemMeta: React.FC<{
                     ]}
                   >
                     {(menu as any)?.stock ?? 0}
-                    {variant !== 5 ? " plats disponibles" : null}
+                    {variant !== 5 ? t(" plats disponibles") : null}
                   </Text>
                 )}
               </>
@@ -83,27 +110,27 @@ export const ItemMeta: React.FC<{
       {variant === 4 ? (
         <View style={[styles.metaRow, { justifyContent: "space-between" }]}>
           <Text style={styles.metaText}>
-            Livraison{" "}
+            {t("Livraison")}{" "}
             <Text style={{ color: DS.accentDeep, fontWeight: "900" }}>
-              {index % 3 === 0 ? "gratuite" : index % 3 === 1 ? "300F" : "1000F"}
+              {index % 3 === 0 ? t("gratuite") : index % 3 === 1 ? "300F" : "1000F"}
             </Text>
           </Text>
           <Text style={styles.v4TimeText}>
-            Livré en <Text style={styles.v4TimeValue}>15min</Text>
+            {t("Livré en")} <Text style={styles.v4TimeValue}>15min</Text>
           </Text>
         </View>
       ) : (
         <View style={styles.metaRow}>
           {variant === 5 || variant === 7 ? (
             <Text style={styles.metaText}>
-              Livré en{" "}
+              {t("Livré en")}{" "}
               <Text style={{ color: DS.accentDeep, fontWeight: "900" }}>30min</Text>
             </Text>
           ) : (
             <>
-              <Text style={styles.metaText}>Livraison </Text>
+              <Text style={styles.metaText}>{t("Livraison")} </Text>
               <Text style={[styles.metaFree, { color: DS.accentDeep }]}>
-                offerte 30min
+                {t("offerte 30min")}
               </Text>
             </>
           )}
@@ -117,7 +144,7 @@ export const ItemMeta: React.FC<{
           ) : null}
           {/* La carte du variant 5 est plus etroite : le nombre d'avis deborde. */}
           {variant !== 5 && variant !== 7 ? (
-            <Text style={styles.metaMuted}>({votes} avis)</Text>
+            <Text style={styles.metaMuted}>({votes} {t("avis)")}</Text>
           ) : null}
         </View>
       )}

@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { styles } from "@/src/features/checkout/components/CheckoutSheet.styles";
 import { DeliveryOffer, Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface GroupedDeliveryTabProps {
   delivery: Livraison;
@@ -37,7 +39,8 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
   availableHours,
   deliveryOffer,
 }) => {
-  const isLocationFilled = !!delivery.address;
+  useLanguage();
+  const isLocationFilled = !!(delivery.address || delivery.note);
   const isPeriodFilled = !!delivery.hour;
   const isContactFilled = !!delivery.phone;
   const isVoiceNoteFilled = !!delivery.voiceNoteUri;
@@ -90,7 +93,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
     let date = "";
     if (rawDate) {
       const d = new Date(rawDate);
-      date = d.toLocaleDateString("fr-FR", {
+      date = d.toLocaleDateString(dateLocale(), {
         weekday: "short",
         day: "numeric",
       });
@@ -123,7 +126,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                       { color: getTextColor(isLocationFilled) },
                     ]}
                   >
-                    Lieux
+                    {t("Lieux")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -146,7 +149,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                         { color: getTextColor(isExpressFilled) },
                       ]}
                     >
-                      Zone
+                      {t("Zone")}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -167,7 +170,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                       { color: getTextColor(isContactFilled) },
                     ]}
                   >
-                    Contact
+                    {t("Contact")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -187,7 +190,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                       { color: getTextColor(isVoiceNoteFilled) },
                     ]}
                   >
-                    Note
+                    {t("Note")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -214,7 +217,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                     { color: getTextColor(isLocationFilled) },
                   ]}
                 >
-                  Lieux
+                  {t("Lieux")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -234,7 +237,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                     { color: getTextColor(isPeriodFilled) },
                   ]}
                 >
-                  Période
+                  {t("Période")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -254,7 +257,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                     { color: getTextColor(isContactFilled) },
                   ]}
                 >
-                  Contact
+                  {t("Contact")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -274,7 +277,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                     { color: getTextColor(isVoiceNoteFilled) },
                   ]}
                 >
-                  Note
+                  {t("Note")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -285,7 +288,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
           <View style={localStyles.aucuneBanner}>
             <Ionicons name="storefront-outline" size={20} color="#64748b" />
             <Text style={localStyles.aucuneText}>
-              Vous passerez en boutique récupérer votre commande
+              {t("Vous passerez en boutique récupérer votre commande")}
             </Text>
           </View>
         )}
@@ -294,7 +297,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
       {/* Zone basse (sélection du type) — prix dynamique depuis la période */}
       <View style={localStyles.bottomZone}>
         <View style={[styles.sectionHeader, localStyles.sectionHeader]}>
-          <Text style={styles.sectionHeaderText}>Select Type</Text>
+          <Text style={styles.sectionHeaderText}>{t("Type de livraison")}</Text>
         </View>
 
         <View style={[styles.deliveryTypeGrid, localStyles.deliveryTypeGrid]}>
@@ -324,8 +327,8 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                 ]}
               >
                 {deliveryFree && expressPrice
-                  ? "Dès que terminée"
-                  : `Livré dès que terminée${expressPrice ? ` · ${expressPrice}F` : ""}`}
+                  ? t("Dès que terminée")
+                  : t("Livré dès que terminée{{a}}", { a: expressPrice ? ` · ${expressPrice}F` : "" })}
               </Text>
               {deliveryFree && expressPrice ? (
                 <Text
@@ -334,7 +337,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                     delivery.type === "express" && { color: DS.accent },
                   ]}
                 >
-                  <Text style={localStyles.freeLabel}>Offert</Text>
+                  <Text style={localStyles.freeLabel}>{t("Offert")}</Text>
                   <Text style={localStyles.strikePrice}>
                     {" "}
                     · {expressPrice}F
@@ -361,7 +364,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-                Heure
+                {t("Heure")}
               </Text>
               {deliveryFree && selectedHour && periodPrice ? (
                 <>
@@ -380,7 +383,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                       delivery.type === "standard" && { color: DS.accent },
                     ]}
                   >
-                    <Text style={localStyles.freeLabel}>Offert</Text>
+                    <Text style={localStyles.freeLabel}>{t("Offert")}</Text>
                     <Text style={localStyles.strikePrice}>
                       {" "}
                       · {periodPrice}F
@@ -407,7 +410,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                   >
                     {selectedHour
                       ? `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
-                      : "Choisir un créneau"}
+                      : t("Choisir un créneau")}
                   </Text>
                 </>
               )}
@@ -431,7 +434,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-                Aucun
+                {t("Aucun")}
               </Text>
               <Text
                 style={[
@@ -439,7 +442,7 @@ export const GroupedDeliveryTab: React.FC<GroupedDeliveryTabProps> = ({
                   delivery.type === "aucune" && { color: DS.accent },
                 ]}
               >
-                No rush
+                {t("Sans urgence")}
               </Text>
             </View>
           </TouchableOpacity>

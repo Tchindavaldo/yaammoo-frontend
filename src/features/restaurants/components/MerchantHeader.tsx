@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,9 @@ import { ShopSkeleton } from './ShopSkeleton';
 import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
+import { IS_AERE } from "./designs/item/config";
+import { useShopDeliveryLabel } from "../utils/deliveryUtils";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MerchantHeaderProps {
   name: string;
@@ -29,6 +33,9 @@ interface MerchantHeaderProps {
   isOpen?: boolean;
   /** Distance utilisateur → boutique (`distanceKm` du backend), apres « Ouvert ». */
   distanceKm?: number | null;
+  /** Creneaux de la boutique : « Livraison 12h » / « Livraison express » sous la note (design aere). */
+  deliveryHours?: any[];
+  orderLeadTime?: number;
 }
 
 export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
@@ -40,8 +47,12 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   syncWithImage,
   isOpen = true,
   distanceKm,
+  deliveryHours,
+  orderLeadTime = 0,
 }) => {
+  useLanguage();
   const distance = formatDistanceKm(distanceKm);
+  const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime);
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec
   // les cartes) et son PROPRE avatar.
   //
@@ -184,7 +195,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             <View style={styles.statusRow}>
               <View style={[styles.statusDot, { backgroundColor: isOpen ? '#00b894' : '#d63031' }]} />
               <Text style={[styles.statusText, { color: isOpen ? '#00b894' : '#d63031' }]}>
-                {isOpen ? 'Ouvert' : 'Fermé'}
+                {isOpen ? t("Ouvert") : t("Fermé")}
               </Text>
               {distance ? (
                 <Text style={styles.distanceText}>· {distance}</Text>
@@ -192,6 +203,24 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             </View>
           </View>
         </View>
+        {IS_AERE ? (
+          // Design aere : etoile + note /5 et nombre d'avis en pastille grise,
+          // puis la prochaine livraison dessous (rien sans livraison).
+          <View style={styles.ratingBlock}>
+            <View style={styles.aereRating}>
+              <Ionicons name="star" size={13} color={DS.star} />
+              <Text style={styles.aereScore}>{rating.toFixed(1)}/5</Text>
+              <View style={styles.aereReviews}>
+                <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
+              </View>
+            </View>
+            {delivery ? (
+              <Text style={styles.aereDelivery}>
+                {t("Livraison")} <Text style={styles.aereDeliveryValue}>{delivery}</Text>
+              </Text>
+            ) : null}
+          </View>
+        ) : (
         <View style={styles.ratingBlock}>
           <View style={styles.ratingMetaRow}>
             <View style={styles.statChip}>
@@ -214,6 +243,7 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
           ))}
           </View>
         </View>
+        )}
       </Animated.View>
       {/* Fondu de sortie sur la MEME valeur que l'entree du contenu : les deux
           se croisent exactement, sans trou ni chevauchement visible. */}
@@ -312,6 +342,18 @@ const styles = StyleSheet.create({
     color: DS.muted,
   },
   ratingBlock: { alignItems: 'flex-end', gap: 3 },
+  aereRating: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  aereScore: { fontSize: 13, fontWeight: '800', color: DS.ink },
+  aereReviews: {
+    marginLeft: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: DS.surface,
+  },
+  aereReviewsText: { fontSize: 10, fontWeight: '700', color: DS.text2 },
+  aereDelivery: { fontSize: 10, fontWeight: '700', color: DS.muted },
+  aereDeliveryValue: { fontWeight: '800', color: DS.accentDeep },
   ratingMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statChip: {
     flexDirection: 'row',

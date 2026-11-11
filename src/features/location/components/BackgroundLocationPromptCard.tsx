@@ -1,10 +1,10 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -16,10 +16,11 @@ import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
 
 import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Écran d'information avant la popup système « Toujours » (localisation
- * arrière-plan). COPIE DÉDIÉE (R16) de `OtaUpdateCard` : même carte sombre
+ * arrière-plan, iOS seulement). COPIE DÉDIÉE (R16) de `OtaUpdateCard` : même carte sombre
  * flottante par-dessus la barre d'onglets, même pastille teintée, même dégradé
  * et même entrée. Écarts : pas de retrait automatique ni de trait de décompte
  * (un choix est attendu), deux boutons « Plus tard » / « Continuer » à la place
@@ -29,19 +30,19 @@ import { onBackgroundPromptRequest } from "../services/backgroundPrompt";
  * demandes de `useUserLocationSync` via `backgroundPrompt`.
  */
 
-const TITLE = "Suivez vos livraisons en direct";
-/** Libellé du choix « Toujours » dans l'écran système (Android : réglages). */
-const ALWAYS_LABEL =
-  Platform.OS === "android" ? "Autoriser tout le temps" : "Toujours autoriser";
-const MESSAGE =
-  Platform.OS === "android"
-    ? `Sur l'écran suivant, choisissez « ${ALWAYS_LABEL} » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.`
-    : `Dans la fenêtre suivante, choisissez « ${ALWAYS_LABEL} » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.`;
+const title = (): string => t("Suivez vos livraisons en direct");
+/**
+ * iOS seulement : Android n'a plus la permission « Toujours » (refusée par
+ * Google Play), `useUserLocationSync` ne l'y demande jamais.
+ */
+const message = (): string =>
+  t("Dans la fenêtre suivante, choisissez « Toujours autoriser » : le livreur vous localise même app fermée, et vous voyez les restaurants et offres de votre ville.");
 
 /** Ecart entre le bas de la carte et le bas visible de la barre (cf. OTA). */
-const BOTTOM_GAP = 7;
+const BOTTOM_GAP = 0;
 
 export const BackgroundLocationPromptCard = () => {
+  useLanguage();
   // Bande safe-area basse : source unique (R19) ; la carte flotte au-dessus.
   const band = useBottomSafeArea();
   const [visible, setVisible] = useState(false);
@@ -139,8 +140,8 @@ export const BackgroundLocationPromptCard = () => {
             </View>
           </View>
           <View style={styles.texts}>
-            <Text style={styles.title}>{TITLE}</Text>
-            <Text style={styles.message}>{MESSAGE}</Text>
+            <Text style={styles.title}>{title()}</Text>
+            <Text style={styles.message}>{message()}</Text>
           </View>
         </View>
 
@@ -154,7 +155,7 @@ export const BackgroundLocationPromptCard = () => {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.laterText}>Plus tard</Text>
+            <Text style={styles.laterText}>{t("Plus tard")}</Text>
           </Pressable>
           <Pressable
             onPress={() => answer(true)}
@@ -165,7 +166,7 @@ export const BackgroundLocationPromptCard = () => {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={styles.continueText}>Continuer</Text>
+            <Text style={styles.continueText}>{t("Continuer")}</Text>
           </Pressable>
         </View>
       </Animated.View>

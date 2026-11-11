@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { Theme } from "@/src/theme";
@@ -5,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   onEditPress: () => void;
@@ -15,6 +17,7 @@ interface Props {
  * Marchand, bouton d'édition. Posé en absolu au-dessus de la liste qui défile.
  */
 export function SettingsProfileCard({ onEditPress }: Props) {
+  useLanguage();
   const { user, userData } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -26,7 +29,7 @@ export function SettingsProfileCard({ onEditPress }: Props) {
   const nomComplet =
     [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(" ") ||
     firebaseName ||
-    "Utilisateur";
+    t("Utilisateur");
   const contact =
     userData?.infos.email ||
     user?.email ||
@@ -55,7 +58,7 @@ export function SettingsProfileCard({ onEditPress }: Props) {
         {userData?.isMarchand && (
           <View style={styles.merchantBadge}>
             <Ionicons name="storefront-outline" size={12} color="white" />
-            <Text style={styles.merchantBadgeText}>Marchand</Text>
+            <Text style={styles.merchantBadgeText}>{t("Marchand")}</Text>
           </View>
         )}
       </View>

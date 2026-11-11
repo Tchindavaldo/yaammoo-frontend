@@ -111,9 +111,12 @@ Apple exige que les fonctionnalités **non liées à un compte** (parcourir les
 restaurants et menus) soient accessibles **sans inscription**. L'app applique
 donc un modèle **invité → compte** :
 
-- **Boot non connecté** → on entre directement dans `(tabs)` (home + recherche +
-  consultation des menus). Plus de mur d'inscription. Cf. guard ci-dessous :
-  `canEnterApp = authResolved && homeReady` (sans `isSignedIn`).
+- **Boot non connecté** → écran d'accueil (`app/(auth)/index.tsx`, bonhomme sur
+  le vélo), **à chaque lancement**. Son bouton porte les icônes Apple / Google /
+  WhatsApp / email à la place du texte et ouvre la sheet de connexion telle
+  quelle. Le lien « Explorer sans compte » (`browseAsGuest()`, `AuthGate`) fait
+  entrer l'invité dans `(tabs)` : home + recherche + consultation des menus.
+  `guestBrowsing` vaut pour la session et repasse à `false` à la connexion.
 - **Action liée au compte** (ouvrir un menu pour commander, panier, profil,
   notifications) → on ouvre la **sheet d'auth** (Apple/Google/email) en overlay
   via `AuthGate`, au lieu d'exécuter l'action.
@@ -147,35 +150,32 @@ La bascule entre `(auth)` et `(tabs)` est gérée par deux guards dans
 `app/_layout.tsx`, **sans aucun `router.replace`** :
 
 ```
-canEnterApp = authResolved && homeReady   // accès invité : plus de isSignedIn
+canEnterApp = versionChecked && (isSignedIn || guestBrowsing)
 guard (tabs) = canEnterApp
 guard (auth) = !canEnterApp        // PAS de authResolved ici (cf. ci-dessous)
 ```
 
-> **Note accès invité** : `isSignedIn` a été retiré de `canEnterApp` pour laisser
-> les invités entrer dans `(tabs)`. Les fonctions liées au compte sont protégées
-> au niveau de l'action via `AuthGate` (voir section « Accès invité » plus haut),
-> pas au niveau de la navigation.
-
-Trois signaux :
-- **`authResolved`** = `!loading` (AuthContext) — Firebase a répondu.
+Signaux :
+- **`versionChecked`** — verdict de version reçu (ou échec) : SEULE attente du
+  splash. Le catalogue (`GET /fastFood/all`) ne part qu'à l'arrivée dans
+  `(tabs)` (`useActivateFastFoods`) ; la home affiche son propre loader.
 - **`isSignedIn`** = `user && userData` — connecté avec profil.
-- **`homeReady`** = `FastFoodContext.hasLoadedOnce` — le 1er fetch des restaurants
-  est terminé (succès, liste vide **ou** erreur ; jamais de blocage infini).
+- **`guestBrowsing`** (`AuthGate`) — « Explorer sans compte » touché.
 
 Règles clés (chacune corrige un bug observé) :
 
-1. **On n'entre dans `(tabs)` que lorsque `homeReady`.** Sinon la home se
-   monterait vide → page blanche. Tant que ce n'est pas prêt, l'écran `(auth)`
-   reste affiché avec le loader de son bouton → transition propre.
+1. **Invité → connecté sans flash** : `guestBrowsing` reste vrai jusqu'à ce que
+   `isSignedIn` le soit, donc `(tabs)` reste monté pendant la re-vérification
+   du profil.
 2. **`guard(auth)` n'inclut PAS `authResolved`.** Au login, `onAuthStateChanged`
    repasse `loading=true` (donc `authResolved=false`) pendant la re-vérif du
    profil ; si le guard auth dépendait de `authResolved`, les deux groupes
    seraient démontés en même temps → écran blanc. `!canEnterApp` garde toujours
    un écran monté.
 3. **`WelcomeScreen` (`app/(auth)/index.tsx`) ne cache le splash que si
-   `!loading && !isSignedIn`.** Évite de flasher l'écran de login au boot à froid
-   quand l'utilisateur est déjà connecté (le splash reste jusqu'à la home).
+   `versionChecked && !loading && !isSignedIn`.** C'est alors la vraie
+   destination. Connecté, il reste sous le splash jusqu'à la home : il
+   n'apparaît plus jamais brièvement.
 4. **Animation conditionnelle au splash** : `screenAnimation = isSplashHidden() ? "fade" : "none"`
    (les deux écrans `(tabs)` et `(auth)` la partagent).
    - **Sous le splash** (boot, `isSplashHidden()` faux) : `none`. La 1re bascule de
@@ -196,17 +196,6 @@ Règles clés (chacune corrige un bug observé) :
    > est une coupure nette (`none`), pas de fondu au boot. **Comportement voulu**
    > (pas de flash possible) ; ne pas chercher à le « corriger ».
 
-   > **Accès invité — `WelcomeScreen` ne cache JAMAIS le splash.** Depuis que les
-   > invités entrent dans `(tabs)`, la destination après le splash est toujours
-   > la home, connecté ou non. Cet écran n'est monté que transitoirement, sous le
-   > splash, le temps que la home soit prête. Le laisser lever le splash — même
-   > sous condition — faisait apparaître le get-started avant la home sur un
-   > appareil lent (constaté sur Pixel 2). Seule la home appelle `useHideSplash`,
-   > et `hasLoadedOnce` passe à `true` dans un `finally`, donc même une erreur
-   > réseau ne peut pas figer l'app sur le splash.
-
-`FastFoodContext` expose pour cela `hasLoadedOnce` (passe à `true` dans le
-`finally` du 1er `fetchFastFoods`, reste `true` ensuite même au pull-to-refresh).
 
 ## Déconnexion
 

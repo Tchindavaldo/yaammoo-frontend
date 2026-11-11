@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Theme } from "@/src/theme";
@@ -10,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
   getThreadName,
@@ -22,6 +22,7 @@ import type { SupportThread, SupportTopic } from "../types/support.types";
 import { SupportChatView } from "./SupportChatView";
 import { SupportThreadRow } from "./SupportThreadRow";
 import { SupportThreadsSkeleton } from "./SupportThreadsSkeleton";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -38,7 +39,7 @@ type Screen = { name: "list" } | { name: "chat"; thread: SupportThread | null };
  * l'objet se choisit en chips en haut.
  */
 export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
-  const tabBarHeight = useTabBarHeight();
+  useLanguage();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   /** Objet de la conversation courante, remonté par la vue chat pour le header. */
@@ -49,7 +50,8 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
 
   // Hauteur REELLE de la navbar (safe-area comprise, source unique R19), pour
   // caler le bouton au-dessus.
-  const bottomInset = tabBarHeight;
+  // Page entiere (app/account/*) : ShopPageFrame reserve deja la safe-area, pas de navbar.
+  const bottomInset = 0;
   // Espace réservé sous la liste = écart du bouton (16) + bouton (52) + 8.
   const listBottomPad = bottomInset + 16 + 52 + 8;
 
@@ -77,21 +79,21 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
     ? thread
       ? getThreadName(thread)
       : SUPPORT_DEFAULT_NAME
-    : "Contactez-nous";
+    : tr("Contactez-nous");
   // En conversation, le sous-titre porte le seul objet de la discussion. Sur un
   // fil existant on prend l'objet du fil : `chatTopic` n'est remonté qu'après le
   // rendu de la vue chat, et l'invite « Choisissez… » clignoterait entre-temps.
   const topicForHeader = chatTopic ?? thread?.topic ?? null;
   const chatSubtitle = topicForHeader
     ? getTopicDescriptor(topicForHeader).label
-    : "Choisissez l'objet de votre demande";
+    : tr("Choisissez l'objet de votre demande");
   const subtitle = inChat
     ? chatSubtitle
     : loading
-      ? "Chargement…"
+      ? tr("Chargement…")
       : unread > 0
-        ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
-        : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
+        ? tr("{{a}} message{{b}} non lu{{c}}", { a: unread, b: unread > 1 ? "s" : "", c: unread > 1 ? "s" : "" })
+        : tr("{{a}} discussion{{b}}", { a: threads.length, b: threads.length > 1 ? "s" : "" });
 
   return (
     <View style={styles.overlay}>
@@ -102,7 +104,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
         subtitle={subtitle}
         right={
           <HeaderPill
-            label="Retour"
+            label={tr("Retour")}
             icon="arrow-back-outline"
             onPress={() => (inChat ? setScreen({ name: "list" }) : onClose())}
           />
@@ -145,7 +147,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
                 style={[styles.flex, { marginTop: headerHeight + 6 }]}
                 contentContainerStyle={{ paddingBottom: listBottomPad }}
               >
-                <Text style={styles.section}>Vos discussions</Text>
+                <Text style={styles.section}>{tr("Vos discussions")}</Text>
                 {threads.length === 0 ? (
                   <View style={styles.empty}>
                     <Ionicons
@@ -154,7 +156,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
                       color={Theme.colors.gray[400]}
                     />
                     <Text style={styles.emptyText}>
-                      Aucune discussion pour le moment.
+                      {tr("Aucune discussion pour le moment.")}
                     </Text>
                   </View>
                 ) : (
@@ -174,7 +176,7 @@ export const SupportChatSheet: React.FC<Props> = ({ visible, onClose }) => {
               onPress={() => setScreen({ name: "chat", thread: null })}
             >
               <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.newChatText}>Nouveau chat</Text>
+              <Text style={styles.newChatText}>{tr("Nouveau chat")}</Text>
             </TouchableOpacity>
           </>
         )}

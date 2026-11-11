@@ -1,6 +1,8 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
+import { AUTH_SHEET_HEIGHT } from "@/src/features/auth/constants";
 import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
@@ -8,7 +10,13 @@ import {
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useAppVersion } from "@/src/features/appVersion/context/AppVersionContext";
+import { GoogleIcon, WhatsAppIcon } from "@/src/features/auth/components/AuthProviderIcons";
+import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
+import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { DS } from "@/src/theme/ds";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import React, { useEffect, useRef, useState } from "react";
@@ -32,6 +40,7 @@ import Svg, {
   Stop,
   RadialGradient as SvgRadialGradient,
 } from "react-native-svg";
+import { t, useLanguage } from "@/src/i18n";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -63,14 +72,20 @@ function Doodle({
 }
 
 export default function WelcomeScreen() {
-  const router = useRouter();
+  useLanguage();
+  const { user, userData, loading } = useAuth();
+  const { checked: versionChecked } = useAppVersion();
+  const { browseAsGuest } = useAuthGate();
 
-  // Cet ecran ne cache JAMAIS le splash. Depuis l'acces invite, la destination
-  // apres le splash est TOUJOURS la home — connecte ou non. Cet ecran n'est
-  // monte que transitoirement, sous le splash, le temps que la home soit prete ;
-  // le laisser lever le splash faisait apparaitre le get-started avant la home
-  // (visible sur un appareil lent, ou le fetch traine). C'est la home seule qui
-  // appelle `useHideSplash`.
+  // Non connecte, cet ecran EST la destination apres le splash, a chaque
+  // lancement : c'est lui qui leve le splash. Mais SEULEMENT une fois l'auth
+  // tranchee (`!loading`) et la version verifiee : avant, un utilisateur
+  // connecte le verrait passer en attendant la home, ou l'ecran de mise a jour
+  // le remplacerait sous ses yeux. Connecte, il reste sous le splash et c'est
+  // la home qui le leve.
+  const isSignedIn = !!user && !!userData;
+  const isDestination = versionChecked && !loading && !isSignedIn;
+  const hideSplash = useHideSplash();
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
@@ -90,6 +105,12 @@ export default function WelcomeScreen() {
       mass: 0.9,
     }).start();
   }, [sheetOpen, slide]);
+
+  // Apres le premier rendu peint (polices chargees) : `useHideSplash` laisse
+  // encore une frame avant de cacher le splash.
+  useEffect(() => {
+    if (fontsLoaded && isDestination) hideSplash();
+  }, [fontsLoaded, isDestination, hideSplash]);
 
   if (!fontsLoaded) return null;
 
@@ -113,8 +134,8 @@ export default function WelcomeScreen() {
       <StatusBar barStyle="dark-content" />
 
       <View style={styles.phone}>
-        {/* Flou Android (SDK 57) : le voile du sheet floute le decor
-            (`BlurTarget`, tous ses enfants sont en position absolue). */}
+        {/* Decor (tous ses enfants sont en position absolue). `BlurTarget` est
+            inerte : Android ne floute plus, iOS floute sans cible. */}
         <BlurScope>
         <BlurTarget style={StyleSheet.absoluteFill}>
         {/* Base gradient */}
@@ -200,25 +221,32 @@ export default function WelcomeScreen() {
         {/* Content: headline + button */}
         <View style={styles.content}>
           <Text style={styles.headline}>
-            Quick{"\n"}Bites, Fast{"\n"}Delivery!
+            Quick{"\n"}{t("Bites, Fast")}{"\n"}Delivery!
           </Text>
 
+          {/* Les modes de connexion A LA PLACE du texte : un seul bouton, qui
+              ouvre la sheet de connexion telle quelle. */}
           <TouchableOpacity
             style={styles.btnGetStarted}
             activeOpacity={0.85}
             onPress={onGetStarted}
+            accessibilityRole="button"
+            accessibilityLabel={t("Se connecter")}
           >
-            <Text style={styles.btnText}>Get started</Text>
-            <Svg width={14} height={14} viewBox="0 0 14 14">
-              <Path
-                d="M2 7h10M8 3l4 4-4 4"
-                stroke="#fff"
-                strokeWidth={1.8}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-            </Svg>
+            <Ionicons name="logo-apple" size={20} color={DS.onInk} />
+            <GoogleIcon />
+            <WhatsAppIcon size={20} />
+            <Ionicons name="mail-outline" size={20} color={DS.onInk} />
+          </TouchableOpacity>
+
+          {/* Acces invite (Apple 5.1.1(v)) : parcourir sans compte. */}
+          <TouchableOpacity
+            onPress={browseAsGuest}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+          >
+            <Text style={styles.guestLink}>{t("Explorer sans compte")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -307,10 +335,13 @@ export default function WelcomeScreen() {
             pointerEvents="auto"
           >
             <Pressable style={StyleSheet.absoluteFill} onPress={closeSheet}>
+              {/* Android : aucun flou, voile blanc (meme rendu que la sheet
+                  d'auth de `AuthGateContext`). */}
               <BlurView
                 intensity={30}
                 tint="light"
                 style={StyleSheet.absoluteFill}
+                fallbackStyle={styles.backdropWhite}
               />
               <View style={styles.backdropDim} />
             </Pressable>
@@ -321,7 +352,10 @@ export default function WelcomeScreen() {
         <Animated.View
           style={[
             styles.sheet,
-            { height: SCREEN_H * 0.59 + band, paddingBottom: band },
+            // ⚠️ `AUTH_SHEET_HEIGHT`, jamais une valeur locale : le voile de
+            // la capsule (`AuthFieldCapsule`) a cette hauteur. L'ancien
+            // `0.59` en dur valait 0.57 sur iPhone : bande blanche au-dessus.
+            { height: AUTH_SHEET_HEIGHT + band, paddingBottom: band },
             { transform: [{ translateY: sheetTranslateY }] },
           ]}
           pointerEvents={sheetOpen ? "auto" : "none"}
@@ -363,7 +397,10 @@ const styles = StyleSheet.create({
   content: {
     position: "absolute",
     top: 96,
-    left: 36,
+    // Bord gauche cale sur l'heure de la barre d'etat (mesure iPhone : heure
+    // a ~36 pt). 34 l'alignait exactement ; 31 a la demande, un cran plus a
+    // gauche.
+    left: 31,
     right: 36,
     zIndex: 4,
     alignItems: "flex-start",
@@ -380,10 +417,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 18,
     backgroundColor: "#141414",
-    paddingHorizontal: 22,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
     borderRadius: 999,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
@@ -391,12 +428,12 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  btnText: {
-    fontFamily: "PlusJakartaSans_700Bold",
-    fontSize: 14,
-    color: "#ffffff",
-    letterSpacing: 0.2,
-    marginRight: 8,
+  guestLink: {
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontSize: 13,
+    color: DS.slate600,
+    textDecorationLine: "underline",
+    marginTop: 18,
   },
   burger: {
     top: "50%",
@@ -439,6 +476,7 @@ const styles = StyleSheet.create({
     zIndex: 3,
   },
 
+  backdropWhite: { backgroundColor: DS.frost },
   backdropDim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(20,20,20,0.25)",

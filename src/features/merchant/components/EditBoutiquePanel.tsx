@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { Theme } from "@/src/theme";
@@ -16,6 +17,7 @@ import {
   CityPickerModal,
   BoutiqueToast,
 } from "./edit-boutique/BoutiquePickers";
+import { t, useLanguage } from "@/src/i18n";
 
 interface EditBoutiquePanelProps {
   visible: boolean;
@@ -32,6 +34,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   onClose,
   onSuccess,
 }) => {
+  useLanguage();
   const footerInset = useFooterBottomInset();
   const s = useEditBoutique({ visible, onClose, onSuccess });
   // Sheet de consultation des zones, ouvrable depuis la page 1.
@@ -105,11 +108,11 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
       />
 
       <TabHeader
-        title="Gérer ma boutique"
-        subtitle="Informations du fast-food"
+        title={t("Gérer ma boutique")}
+        subtitle={t("Informations du fast-food")}
         right={
           <HeaderPill
-            label="Retour"
+            label={t("Retour")}
             icon="arrow-back-outline"
             onPress={s.closeModal}
           />
@@ -135,7 +138,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
           {s.loadingData ? (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="large" color={Theme.colors.primary} />
-              <Text style={styles.loaderText}>Chargement de la boutique…</Text>
+              <Text style={styles.loaderText}>{t("Chargement de la boutique…")}</Text>
             </View>
           ) : (
             <BoutiqueInfoPage

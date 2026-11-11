@@ -473,3 +473,13 @@ du bouton panier est devenu inutile (cart est mono-section).
 2. **Webhook HMAC** : vérifié avant traitement (Stripe-like)
 3. **Idempotence** : webhooks retentés sans risque de doublon côté DB
 4. **API key auth** : backend yaammoo utilise `X-Admin-Key` pour appeler ai_browser2
+
+## Verrou du paiement en cours (`src/services/paymentLock.ts`)
+
+Pendant l'attente du verdict (`waiting` / `ussd_sent`), un toucher hors de la zone
+ferme le sheet (accueil : `CheckoutSheet`, panier : `CartCheckoutSheet`, groupé :
+`CartGroupedDeliverySheet` via `onHide`) sans annuler le paiement : l'état est conservé.
+Tant que le verrou est posé, toute ouverture de plat / commande / « commander »
+appelle `reopenLockedPayment()` et rouvre le sheet du paiement en cours tel quel.
+Verdict reçu sheet fermé : toast global (`showToast`) succès ou échec, remise à zéro,
+verrou levé.

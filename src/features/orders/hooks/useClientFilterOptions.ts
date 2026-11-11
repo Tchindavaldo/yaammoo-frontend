@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useMemo } from "react";
 import { Commande } from "@/src/types";
 import {
@@ -5,6 +6,7 @@ import {
   getOrderDateISO,
   periodKeyOf,
 } from "@/src/features/orders/components/CartStatusPanel.parts";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Params {
   /** Commandes du statut actif. */
@@ -32,6 +34,7 @@ export const useClientFilterOptions = ({
   todayISO,
   activeDateISO,
 }: Params) => {
+  const i18nLang = useLanguage();
   /** Commandes du statut actif, filtrées sur le fastfood sélectionné. */
   const scopedOrders = useMemo(
     () =>
@@ -51,7 +54,7 @@ export const useClientFilterOptions = ({
         isos.filter((d) => d < todayISO).sort().reverse(),
       ),
     };
-  }, [scopedOrders, todayISO]);
+  }, [scopedOrders, todayISO, i18nLang]);
 
   /** Périodes de la date active, avec leur nombre de commandes. */
   const availablePeriods = useMemo(() => {
@@ -70,17 +73,17 @@ export const useClientFilterOptions = ({
     return [
       {
         key: "express",
-        label: "Livraison express",
+        label: t("Livraison express"),
         count: counts.express || 0,
       },
       {
         key: "surplace",
-        label: "Récupérer\nsur place",
+        label: t("Récupérer\nsur place"),
         count: counts.surplace || 0,
       },
       ...slots.map((k) => ({ key: k, label: k, count: counts[k] })),
     ];
-  }, [scopedOrders, activeDateISO]);
+  }, [scopedOrders, activeDateISO, i18nLang]);
 
   const allPeriodsCount = useMemo(
     () => availablePeriods.reduce((acc, p) => acc + p.count, 0),

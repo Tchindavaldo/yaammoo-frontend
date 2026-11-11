@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import type { ApplicationEvent } from "@/src/features/driver/context/DriverContext";
@@ -7,6 +8,7 @@ import {
   type DriverApplication,
   type DriverInfo,
 } from "@/src/features/driver/services/driverService";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // Construit un DriverInfo (forme « Mes livreurs ») depuis une demande
 // acceptée, pour l'ajouter EN LOCAL sans refetch.
@@ -47,6 +49,7 @@ export type DriverActionResult = { ok: true } | { ok: false; message: string };
  * Reprend la logique de l'ancien écran « Livreurs ».
  */
 export const useStaffDrivers = (active: boolean, onLoadError: () => void) => {
+  useLanguage();
   const { userData } = useAuth();
   const { registerApplicationHandler, unregisterApplicationHandler } = useDriver();
   const fastFoodId = userData?.fastFoodId;
@@ -138,7 +141,7 @@ export const useStaffDrivers = (active: boolean, onLoadError: () => void) => {
         }
         return { ok: true };
       } catch {
-        return { ok: false, message: "Action échouée" };
+        return { ok: false, message: tr("Action échouée") };
       } finally {
         setDeciding((p) => ({ ...p, [app.id]: false }));
       }
@@ -148,14 +151,14 @@ export const useStaffDrivers = (active: boolean, onLoadError: () => void) => {
 
   const removeDriver = useCallback(
     async (driverId: string): Promise<DriverActionResult> => {
-      if (!fastFoodId) return { ok: false, message: "Boutique introuvable" };
+      if (!fastFoodId) return { ok: false, message: tr("Boutique introuvable") };
       setRemovingId(driverId);
       try {
         await driverService.removeDriver(driverId, fastFoodId);
         setDrivers((prev) => prev.filter((d) => d.driverId !== driverId));
         return { ok: true };
       } catch {
-        return { ok: false, message: "Retrait échoué" };
+        return { ok: false, message: tr("Retrait échoué") };
       } finally {
         setRemovingId(null);
       }

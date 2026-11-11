@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Toast } from "@/src/components/Toast";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
@@ -18,6 +19,9 @@ import {
   HomeErrorScreen,
   HomeLoadingScreen,
 } from "@/src/features/restaurants/components/home/HomeFullScreenStates";
+import { HomeLocationBanner } from "@/src/features/restaurants/components/home/HomeLocationBanner";
+import { useLocationAccess } from "@/src/features/location/hooks/useLocationAccess";
+import { SHOW_LOCATION_BANNER } from "@/src/features/location/config";
 import { homeStyles as styles } from "@/src/features/restaurants/components/home/homeScreenStyles";
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
 import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListData";
@@ -31,7 +35,19 @@ import { isHomeListAvailable } from "@/modules/home-list";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useNavigation, useRouter } from "expo-router";
+import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
+import {
+  clearVisibleShops,
+  setVisibleShops,
+} from "@/src/services/analytics/shopImpressions";
+import { homePageOf } from "@/src/services/analytics/homePages";
+import { track } from "@/src/services/analytics/analytics";
+import { t, useLanguage } from "@/src/i18n";
+
+/** Boutique « vue » : visible a 50 % au moins (meme seuil que la liste native). */
+const SHOP_VIEWABILITY = { itemVisiblePercentThreshold: 50 };
+const seenBanners = new Set<string>();
 
 /**
  * Home client : en-tete, banniere + boutiques paginees (liste NATIVE iOS quand
@@ -43,6 +59,7 @@ import { useRouter } from "expo-router";
  * Voir architecture/restaurants.md.
  */
 export default function HomeScreen() {
+  useLanguage();
   const onLayoutRootView = useHideSplash();
   const { ensureProfileRefreshed } = useAuth();
   const { unreadCount, ensureLoaded: ensureNotificationsLoaded } =
@@ -80,7 +97,10 @@ export default function HomeScreen() {
     setSelectedCategory,
     homeSettings,
   } = useFastFoods();
+  const locationAccess = useLocationAccess();
   const tabBarHeight = useTabBarHeight();
+  const tabBarStyle = useTabBarStyle();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const HEADER_HEIGHT = 100 + insets.top;
 
@@ -112,6 +132,7 @@ export default function HomeScreen() {
     listRef,
     nativeListRef,
     loadMoreRef,
+    listLengthRef,
     handleScroll,
     handleMomentumEnd,
     handleNativeEdgeChange,
@@ -127,6 +148,7 @@ export default function HomeScreen() {
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
+      track("banner_click", { bannerId: String(banner.id) });
       // Une bannière `bonus` ouvre la sheet Bonus (Settings → Bonus et parrainage).
       if (banner.type === "bonus") {
         router.push("/(tabs)/settings?section=bonus");
@@ -135,12 +157,42 @@ export default function HomeScreen() {
     [router],
   );
 
+  // Statistiques (FlashList) : boutiques visibles a 50 %, rang = index - banniere.
+  const shopCountRef = React.useRef(0);
+  shopCountRef.current = fastFoods.length;
+  const pageSizeRef = React.useRef(homeSettings.pageSize);
+  pageSizeRef.current = homeSettings.pageSize;
+  const handleViewableShops = useCallback(
+    ({ viewableItems }: { viewableItems: { item: any; index: number | null }[] }) => {
+      const shops = viewableItems.filter(
+        (v) => v.index != null && v.index >= 1 && v.index - 1 < shopCountRef.current && v.item?.id,
+      );
+      setVisibleShops(
+        shops.map((v) => String(v.item.id)),
+        shops.map((v) => (v.index as number) - 1),
+        (p) => homePageOf(p, pageSizeRef.current),
+      );
+    },
+    [],
+  );
+  // Bannière affichée en tête du carrousel : une vue par bannière et par lancement
+  // (les suivantes ne sont vues qu'au glissé, que la liste ne signale pas).
+  const firstBannerId = banners[0]?.id;
+  useEffect(() => {
+    if (firstBannerId == null || seenBanners.has(String(firstBannerId))) return;
+    seenBanners.add(String(firstBannerId));
+    track("banner_view", { bannerId: String(firstBannerId) });
+  }, [firstBannerId]);
+  // Home quitte (autre onglet) : les boutiques visibles sont closes.
+  useFocusEffect(useCallback(() => clearVisibleShops, []));
+
   const { firstScreenUris, listData, drawDistance } = useHomeListData({
     fastFoods,
     banners,
     hasMore,
     loading,
   });
+  listLengthRef.current = listData.length;
   const { listFooter, renderItem, keyExtractor, getItemType } =
     useHomeListRenderers({
       banners,
@@ -157,7 +209,18 @@ export default function HomeScreen() {
   // repasse `loading` à true. Sans cette garde, l'écran plein remplacerait la
   // home et ferait disparaître la barre de recherche, empêchant l'utilisateur
   // de corriger sa saisie.
-  if ((loading && fastFoods.length === 0 && !searchQuery) || forceLoading) {
+  const fullLoading =
+    (loading && fastFoods.length === 0 && !searchQuery) || forceLoading;
+
+  // Navbar masquee pendant l'ecran de chargement plein : elle apparait en meme
+  // temps que l'en-tete et les squelettes.
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: fullLoading ? [tabBarStyle, { display: "none" }] : tabBarStyle,
+    });
+  }, [navigation, fullLoading, tabBarStyle]);
+
+  if (fullLoading) {
     return <HomeLoadingScreen onLayout={onLayoutRootView} />;
   }
 
@@ -192,6 +255,15 @@ export default function HomeScreen() {
           onTouchEnd={onListTouchEnd}
           onTouchCancel={onListTouchEnd}
         >
+          {/* Localisation non accordée : bandeau d'activation au-dessus des
+              boutiques, le home reste utilisable (voir useLocationAccess). */}
+          {SHOW_LOCATION_BANNER && locationAccess.state === "blocked" && (
+            <HomeLocationBanner
+              canAskAgain={locationAccess.canAskAgain}
+              requesting={locationAccess.requesting}
+              onEnable={locationAccess.enable}
+            />
+          )}
           {/* ⚠️ FlashList, pas FlatList : elle RECYCLE les vues natives au lieu
               de les detruire en sortie d'ecran et d'en recreer en entree. C'est
               ce qui supprime definitivement la micro-pause au scroll (63-90 ms
@@ -212,10 +284,10 @@ export default function HomeScreen() {
               footerText={
                 fastFoods.length === 0 && !loading
                   ? searchQuery
-                    ? `Aucun restaurant trouvé pour "${searchQuery}"`
-                    : "Aucun restaurant disponible pour le moment"
+                    ? t("Aucun restaurant trouvé pour \"{{a}}\"", { a: searchQuery })
+                    : t("Aucun restaurant disponible pour le moment")
                   : !hasMore && !loading && fastFoods.length > 0
-                    ? "Vous avez vu toutes les boutiques"
+                    ? t("Vous avez vu toutes les boutiques")
                     : null
               }
               footerIsEmpty={fastFoods.length === 0 && !loading}
@@ -237,6 +309,8 @@ export default function HomeScreen() {
             onScroll={handleScroll}
             scrollEventThrottle={64}
             onMomentumScrollEnd={handleMomentumEnd}
+            viewabilityConfig={SHOP_VIEWABILITY}
+            onViewableItemsChanged={handleViewableShops}
             contentContainerStyle={[
               styles.listContent,
               {
@@ -320,6 +394,7 @@ export default function HomeScreen() {
         visible={checkout.checkoutVisible}
         onClose={checkout.closeCheckout}
         menu={checkout.selectedMenu}
+        onReopen={checkout.reopenCheckout}
         onConfirm={checkout.handleConfirmOrder}
       />
 

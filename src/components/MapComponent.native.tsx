@@ -1,8 +1,10 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MapComponentProps {
   region: {
@@ -19,6 +21,7 @@ interface MapComponentProps {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ region, coords, deliveryType }) => {
+  useLanguage();
   const isNoDelivery = deliveryType === 'surplace' || !deliveryType;
 
   if (isNoDelivery) {
@@ -26,8 +29,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ region, coords, deliveryTyp
       <View style={styles.errorContainer}>
         <Text style={{ fontSize: 28 }}>📍</Text>
         <View style={{ paddingHorizontal: 16 }}>
-          <Text style={styles.errorText}>Pas de livraison</Text>
-          <Text style={[styles.errorText, { fontSize: 10 }]}>Le client va passer à la boutique prendre</Text>
+          <Text style={styles.errorText}>{t("Pas de livraison")}</Text>
+          <Text style={[styles.errorText, { fontSize: 10 }]}>{t("Le client va passer à la boutique prendre")}</Text>
         </View>
       </View>
     );
@@ -37,7 +40,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ region, coords, deliveryTyp
     return (
       <View style={styles.errorContainer}>
         <Text style={{ fontSize: 28 }}>📍</Text>
-        <Text style={styles.errorText}>Le client n'a pas envoyé ses coordonnées</Text>
+        <Text style={styles.errorText}>{t("Le client n'a pas envoyé ses coordonnées")}</Text>
       </View>
     );
   }

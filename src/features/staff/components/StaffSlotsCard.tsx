@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import type { StaffPlan } from "../types/staff.types";
 import { plural } from "../utils/staffFormat";
 import { capsLabel, ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 const SIZE = 88;
 const STROKE = 9;
@@ -69,6 +71,7 @@ const SlotsRing = ({ used, limit }: { used: number; limit: number }) => {
  * libres, plan, et barre des places de livreur.
  */
 export const StaffSlotsCard: React.FC<Props> = ({ plan, members, drivers }) => {
+  useLanguage();
   const free = Math.max(plan.memberLimit - members, 0);
   const driverRatio = plan.driverLimit > 0 ? Math.min(drivers / plan.driverLimit, 1) : 0;
 
@@ -81,22 +84,22 @@ export const StaffSlotsCard: React.FC<Props> = ({ plan, members, drivers }) => {
             {members}
             <Text style={styles.ringLimit}>/{plan.memberLimit}</Text>
           </Text>
-          <Text style={[capsLabel, styles.ringCaption]}>POSTES</Text>
+          <Text style={[capsLabel, styles.ringCaption]}>{t("POSTES")}</Text>
         </View>
       </View>
 
       <View style={styles.body}>
         <View style={{ gap: 2 }}>
           <Text style={styles.title}>
-            {free > 0 ? `${plural(free, "poste libre", "postes libres")}` : "Tous les postes sont pris"}
+            {free > 0 ? `${plural(free, t("poste libre"), t("postes libres"))}` : t("Tous les postes sont pris")}
           </Text>
           <Text style={styles.sub} numberOfLines={1}>
-            Plan {plan.label} · {plural(plan.memberLimit, "membre")} max
+            {t("Plan")} {plan.label} · {plural(plan.memberLimit, t("membre"))} {t("max")}
           </Text>
         </View>
         <View style={{ gap: 5 }}>
           <View style={styles.barLabels}>
-            <Text style={styles.barText}>Livreurs</Text>
+            <Text style={styles.barText}>{t("Livreurs")}</Text>
             <Text style={styles.barText}>
               {drivers}/{plan.driverLimit}
             </Text>

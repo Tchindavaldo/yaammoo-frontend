@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { DeliveryOffer, Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "../CheckoutSheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface DeliveryTabProps {
   delivery: Livraison;
@@ -32,7 +34,8 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   deliveryOffer,
   pickupAllowed,
 }) => {
-  const isLocationFilled = !!delivery.address;
+  useLanguage();
+  const isLocationFilled = !!(delivery.address || delivery.note);
   const isPeriodFilled = !!delivery.hour;
   const isContactFilled = !!delivery.phone;
   const isVoiceNoteFilled = !!delivery.voiceNoteUri;
@@ -85,7 +88,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
     let date = "";
     if (rawDate) {
       const d = new Date(rawDate);
-      date = d.toLocaleDateString("fr-FR", {
+      date = d.toLocaleDateString(dateLocale(), {
         weekday: "short",
         day: "numeric",
       });
@@ -124,7 +127,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                       { color: getTextColor(isLocationFilled) },
                     ]}
                   >
-                    Lieux
+                    {t("Lieux")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -147,7 +150,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                         { color: getTextColor(isExpressFilled) },
                       ]}
                     >
-                      Zone
+                      {t("Zone")}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -168,7 +171,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                       { color: getTextColor(isContactFilled) },
                     ]}
                   >
-                    Contact
+                    {t("Contact")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -188,7 +191,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                       { color: getTextColor(isVoiceNoteFilled) },
                     ]}
                   >
-                    vocale
+                    {t("vocale")}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -215,7 +218,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     { color: getTextColor(isLocationFilled) },
                   ]}
                 >
-                  Lieux
+                  {t("Lieux")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -235,7 +238,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     { color: getTextColor(isPeriodFilled) },
                   ]}
                 >
-                  Période
+                  {t("Période")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -255,7 +258,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     { color: getTextColor(isContactFilled) },
                   ]}
                 >
-                  Contact
+                  {t("Contact")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -275,7 +278,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     { color: getTextColor(isVoiceNoteFilled) },
                   ]}
                 >
-                  Vocale
+                  {t("Vocale")}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -286,7 +289,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
           <View style={localStyles.aucuneBanner}>
             <Ionicons name="storefront-outline" size={20} color="#64748b" />
             <Text style={localStyles.aucuneText}>
-              Vous passerez en boutique récupérer votre commande
+              {t("Vous passerez en boutique récupérer votre commande")}
             </Text>
           </View>
         )}
@@ -295,7 +298,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
       {/* Zone basse (sélection du type) — prix dynamique depuis la période */}
       <View style={localStyles.bottomZone}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionHeaderText}>Select Type</Text>
+          <Text style={styles.sectionHeaderText}>{t("Type de livraison")}</Text>
         </View>
 
         <View style={[styles.deliveryTypeGrid, localStyles.deliveryTypeGrid]}>
@@ -324,8 +327,8 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                 ]}
               >
                 {deliveryFree && expressPrice
-                  ? "Dès que terminée"
-                  : `Livré dès que terminée${expressPrice ? ` · ${expressPrice}F` : ""}`}
+                  ? t("Dès que terminée")
+                  : t("Livré dès que terminée{{a}}", { a: expressPrice ? ` · ${expressPrice}F` : "" })}
               </Text>
               {deliveryFree && expressPrice ? (
                 <Text
@@ -334,7 +337,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     delivery.type === "express" && { color: DS.accent },
                   ]}
                 >
-                  <Text style={localStyles.freeLabel}>Offert</Text>
+                  <Text style={localStyles.freeLabel}>{t("Offert")}</Text>
                   <Text style={localStyles.strikePrice}> · {expressPrice}F</Text>
                 </Text>
               ) : null}
@@ -357,7 +360,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-                Heure
+                {t("Heure")}
               </Text>
               {deliveryFree && selectedHour && periodPrice ? (
                 <>
@@ -376,7 +379,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                       delivery.type === "standard" && { color: DS.accent },
                     ]}
                   >
-                    <Text style={localStyles.freeLabel}>Offert</Text>
+                    <Text style={localStyles.freeLabel}>{t("Offert")}</Text>
                     <Text style={localStyles.strikePrice}>
                       {" "}
                       · {periodPrice}F
@@ -403,7 +406,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                   >
                     {selectedHour
                       ? `${selectedHour}${periodPrice ? ` · ${periodPrice}F` : ""}`
-                      : "Choisir un créneau de livraison"}
+                      : t("Choisir un créneau de livraison")}
                   </Text>
                 </>
               )}
@@ -430,7 +433,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             />
             <View style={styles.deliveryTypeText}>
               <Text style={[styles.deliveryTypeTitle, styles.textDark]}>
-                Aucun
+                {t("Aucun")}
               </Text>
               <Text
                 style={[
@@ -439,8 +442,8 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                 ]}
               >
                 {pickupAllowed === false
-                  ? "Retrait boutique indisponible"
-                  : "No rush"}
+                  ? t("Retrait boutique indisponible")
+                  : t("Sans urgence")}
               </Text>
             </View>
           </TouchableOpacity>

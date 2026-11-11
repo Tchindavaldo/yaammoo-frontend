@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { CartZoneFooterBar } from "@/src/features/orders/components/CartZoneFooterBar";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
@@ -18,6 +20,7 @@ import {
   type CartPaymentVariant,
 } from "./CartPaymentVariants";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -92,6 +95,7 @@ const FilterContent: React.FC<{
   onConfirm,
   onError,
 }) => {
+  useLanguage();
   // Variantes de comparaison : autonomes (champ numero inclus), rendues telles
   // quelles. Le design ACTUEL reste le cas par defaut et n'est pas touche.
   if (variant !== "actuel" && groups && groups.length > 0) {
@@ -126,7 +130,7 @@ const FilterContent: React.FC<{
           checkout. */}
       <View style={styles.actionArea}>
         <Text style={styles.actionTitle}>
-          Sélectionnez le réseau utilisé pour le paiement
+          {t("Sélectionnez le réseau utilisé pour le paiement")}
         </Text>
         <View style={styles.networkRow}>
           {(["orange", "mtn"] as const).map((net) => {
@@ -334,6 +338,8 @@ export const CartPaymentTopCard: React.FC<CartPaymentTopCardProps> = ({
           {!isVariant && children}
         </Animated.View>
       </Animated.View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

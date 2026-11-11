@@ -1,4 +1,5 @@
 import type { LatLng } from "../services/orderTrackingService";
+import { t } from "@/src/i18n";
 
 /**
  * Heure d'arrivée estimée du livreur, sans service d'itinéraire : distance à
@@ -56,7 +57,7 @@ export const formatClock = (d: Date) =>
 /** « à l'instant », « il y a 40 s », « il y a 3 min ». */
 export const formatAgo = (iso: string, now = Date.now()) => {
   const s = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
-  if (!Number.isFinite(s) || s < 10) return "à l'instant";
-  if (s < 60) return `il y a ${s} s`;
-  return `il y a ${Math.round(s / 60)} min`;
+  if (!Number.isFinite(s) || s < 10) return t("à l'instant");
+  if (s < 60) return t("il y a {{a}} s", { a: s });
+  return t("il y a {{a}} min", { a: Math.round(s / 60) });
 };

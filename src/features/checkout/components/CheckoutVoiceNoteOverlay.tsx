@@ -1,5 +1,7 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { showToast } from "@/src/services/globalToast";
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Animated } from 'react-native';
 import { uploadVoiceNote } from '@/src/services/audio/uploadVoiceNote';
 import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
@@ -7,6 +9,7 @@ import { useVoiceNotePlayer, useVoiceNoteRecorder } from '@/src/services/audio/u
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -21,6 +24,7 @@ interface CheckoutVoiceNoteOverlayProps {
 type RecordingStatus = 'idle' | 'recording' | 'recorded' | 'playing';
 
 export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> = ({ onClose, onSave }) => {
+  useLanguage();
   // Phase de l'enregistrement ; « playing » est deduit du lecteur.
   const [phase, setPhase] = useState<Exclude<RecordingStatus, 'playing'>>('idle');
   const [timer, setTimer] = useState(0);
@@ -75,7 +79,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
   async function startRecording() {
     try {
       if (!(await recorder.start())) {
-        alert('Permission to access microphone is required!');
+        showToast(tr("L'accès au micro est nécessaire."), "error");
         return;
       }
       setPhase('recording');
@@ -162,7 +166,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="mic-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Delivery Instruction</Text>
+              <Text style={styles.headerTitle}>{tr("Consigne de livraison")}</Text>
             </View>
             <TouchableOpacity onPress={closeWithFade} style={styles.closeBtn}>
               <Ionicons name="close" size={22} color="#94a3b8" />
@@ -175,7 +179,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                 <TouchableOpacity style={styles.micCircleBig} onPress={startRecording}>
                   <Ionicons name="mic" size={36} color="white" />
                 </TouchableOpacity>
-                <Text style={styles.instructionText}>Tap to start recording voice instruction</Text>
+                <Text style={styles.instructionText}>{tr("Appuyez pour enregistrer une consigne vocale")}</Text>
               </View>
             )}
 
@@ -197,7 +201,7 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                   <Text style={styles.timerLarge}>{formatTime(timer)}</Text>
                   <View style={styles.recordingBadge}>
                     <View style={styles.redDot} />
-                    <Text style={styles.recordingLabel}>RECORDING</Text>
+                    <Text style={styles.recordingLabel}>{tr("ENREGISTREMENT")}</Text>
                   </View>
                 </View>
 
@@ -252,12 +256,12 @@ export const CheckoutVoiceNoteOverlay: React.FC<CheckoutVoiceNoteOverlayProps> =
                     closeWithFade();
                   } catch (e) {
                     console.log('Error uploading voice note', e);
-                    Alert.alert('Note vocale', "Envoi impossible. Vérifiez votre connexion et réessayez.");
+                    showToast(tr("Note vocale : envoi impossible. Vérifiez votre connexion et réessayez."), 'error');
                   } finally {
                     setUploading(false);
                   }
                 }}>
-                  <Text style={styles.validateBtnText}>{uploading ? 'Envoi...' : 'Save Instruction'}</Text>
+                  <Text style={styles.validateBtnText}>{uploading ? tr("Envoi...") : tr("Enregistrer la consigne")}</Text>
                 </TouchableOpacity>
               </View>
             )}

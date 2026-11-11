@@ -3,10 +3,11 @@ import type {
   BroadcastPlan,
   BroadcastQuota,
 } from "../types/broadcast.types";
+import { t as tr } from "@/src/i18n";
 
-const MONTHS = [
-  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
+const monthNames = (): string[] => [
+  tr("Janvier"), tr("Février"), tr("Mars"), tr("Avril"), tr("Mai"), tr("Juin"),
+  tr("Juillet"), tr("Août"), tr("Septembre"), tr("Octobre"), tr("Novembre"), tr("Décembre"),
 ];
 
 /** Lundi 00:00 de la semaine de `now` (heure locale). */
@@ -49,7 +50,7 @@ export const untilMidnight = (now: Date): { h: number; m: string } => {
   return { h: Math.floor(mins / 60), m: String(mins % 60).padStart(2, "0") };
 };
 
-export const monthLabel = (now: Date): string => MONTHS[now.getMonth()];
+export const monthLabel = (now: Date): string => monthNames()[now.getMonth()];
 
 /** Étiquette courte d'un envoi : « AUJOURD'HUI · 11:40 », « HIER · 18:04 », « IL Y A 3 J ». */
 export const sentLabel = (sentAt: string, now: Date): string => {
@@ -59,7 +60,7 @@ export const sentLabel = (sentAt: string, now: Date): string => {
     (startOfDay(now).getTime() - startOfDay(d).getTime()) / 86400000,
   );
   const hm = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-  if (days <= 0) return `AUJOURD’HUI · ${hm}`;
-  if (days === 1) return `HIER · ${hm}`;
-  return `IL Y A ${days} J`;
+  if (days <= 0) return tr("AUJOURD’HUI · {{a}}", { a: hm });
+  if (days === 1) return tr("HIER · {{a}}", { a: hm });
+  return tr("IL Y A {{a}} J", { a: days });
 };

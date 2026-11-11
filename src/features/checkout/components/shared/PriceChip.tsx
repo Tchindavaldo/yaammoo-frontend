@@ -1,7 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { TouchableOpacity, Text } from 'react-native';
 import { styles } from '../CheckoutSheet.styles';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface PriceChipProps {
   isActive: boolean;
@@ -11,6 +13,7 @@ interface PriceChipProps {
 }
 
 export const PriceChip: React.FC<PriceChipProps> = ({ isActive, label, price, onPress }) => {
+  useLanguage();
   return (
     <TouchableOpacity 
       style={[
@@ -23,7 +26,7 @@ export const PriceChip: React.FC<PriceChipProps> = ({ isActive, label, price, on
         {label}
       </Text>
       <Text style={[styles.sizePrice, styles.textDark, isActive && { color: DS.accent }]}>
-        {price > 0 ? `${price} F` : 'no ref'}
+        {price > 0 ? `${price} F` : t("Prix non défini")}
       </Text>
     </TouchableOpacity>
   );

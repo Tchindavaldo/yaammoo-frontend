@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React from "react";
@@ -14,6 +15,7 @@ import {
 import { CardBottom } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const V6_BG = ["#fef4f0", "#f0f4fe", "#f0fef4", "#fef0fa", "#f4f0fe", "#fefaf0"];
 const V6_ACCENT = [DS.accentDeep, "#0984e3", "#00b894", "#e84393", "#6c5ce7", "#e17055"];
@@ -28,6 +30,7 @@ export const CardV6: React.FC<CardVariantProps> = ({
   price,
   deliveryTime,
 }) => {
+  useLanguage();
   const bg = USE_VARIABLE_BACKGROUNDS ? V6_BG[index % V6_BG.length] : V6_BG[0];
   const accent = USE_VARIABLE_BACKGROUNDS
     ? V6_ACCENT[index % V6_ACCENT.length]
@@ -96,14 +99,14 @@ export const CardV6: React.FC<CardVariantProps> = ({
                     {stock}
                   </SvgText>
                 </Svg>
-                <Text style={styles.v6StockText}>en stock</Text>
+                <Text style={styles.v6StockText}>{t("en stock")}</Text>
               </View>
               <View style={styles.v6DeliveryBadge}>
                 <View style={[styles.v6DeliveryDot, { backgroundColor: accent }]} />
                 <View>
-                  <Text style={styles.v6DeliveryMeta}>PROCHAINE</Text>
+                  <Text style={styles.v6DeliveryMeta}>{t("PROCHAINE")}</Text>
                   <Text style={[styles.v6DeliveryHour, { color: accent }]}>
-                    LIVRAISON · {deliveryTime}
+                    {t("LIVRAISON ·")} {deliveryTime}
                   </Text>
                 </View>
               </View>
@@ -133,7 +136,7 @@ export const CardV6: React.FC<CardVariantProps> = ({
           accent={accent}
           deliveryTime={deliveryTime}
           stock={stock}
-          stockLabel="plats disponibles"
+          stockLabel={t("plats disponibles")}
         />
       )}
       <View

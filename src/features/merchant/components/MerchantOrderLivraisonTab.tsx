@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
@@ -9,6 +10,7 @@ import * as Linking from 'expo-linking';
 import { Platform } from 'react-native';
 import { DeliveryUser } from './MerchantOrderBottomSheet';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 // ─── InfoCard ──────────────────────────────────────────────────────────────────
 export function InfoCard({
@@ -57,6 +59,7 @@ function Waveform({ active, progress = 0 }: { active?: boolean; progress?: numbe
 
 // ─── LivraisonTab ──────────────────────────────────────────────────────────────
 export function LivraisonTab({ user }: { user: DeliveryUser }) {
+  useLanguage();
   // expo-audio : lecteur libere par le hook au demontage.
   const voice = useVoiceNotePlayer(user.voiceNoteUri);
   const isPlaying = voice.playing;
@@ -121,8 +124,8 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
     <>
       <View style={{ flexDirection: 'row', gap: 10, marginTop: 10, height: 110 }}>
         <View style={{ width: '42%', gap: 8 }}>
-          <View style={{ flex: 1 }}><InfoCard label="Créneau" value={user.creneau} compact /></View>
-          <View style={{ flex: 1 }}><InfoCard label="Téléphone" value={user.phone} small compact /></View>
+          <View style={{ flex: 1 }}><InfoCard label={t("Créneau")} value={user.creneau} compact /></View>
+          <View style={{ flex: 1 }}><InfoCard label={t("Téléphone")} value={user.phone} small compact /></View>
         </View>
         <View style={{ flex: 1, height: 110 }}>
           <TouchableOpacity
@@ -136,7 +139,7 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
               coords={coords}
               address={user.addr}
               deliveryType={
-                user.creneau === 'Sur place' ? 'surplace'
+                user.creneau === t('Sur place') ? 'surplace'
                   : user.creneau.includes('Express') ? 'express'
                   : 'time'
               }
@@ -146,7 +149,7 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
                 <View style={styles.mapLoaderCircle}>
                   <Text style={{ fontSize: 18 }}>📍</Text>
                 </View>
-                <Text style={styles.mapLoadingText}>Ouverture Maps...</Text>
+                <Text style={styles.mapLoadingText}>{t("Ouverture Maps...")}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -154,13 +157,13 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
       </View>
 
       <View style={[styles.infoCard, { marginTop: 12, padding: 12 }]}>
-        <Text style={styles.infoLabel}>Note de livraison</Text>
+        <Text style={styles.infoLabel}>{t("Note de livraison")}</Text>
         <Text style={styles.infoValSm}>{user.note}</Text>
       </View>
 
       {user.voiceNoteUri ? (
         <>
-          <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>Message vocal</Text>
+          <Text style={[styles.infoLabel, { marginTop: 14, marginBottom: 8 }]}>{t("Message vocal")}</Text>
           <TouchableOpacity style={styles.voiceBar} activeOpacity={0.7} onPress={playSound}>
             <View style={styles.playBtn}>
               <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={DS.accent} />
@@ -173,8 +176,8 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
         </>
       ) : (
         <View style={[styles.infoCard, { marginTop: 12, padding: 12, opacity: 0.5 }]}>
-          <Text style={styles.infoLabel}>Message vocal</Text>
-          <Text style={styles.infoValSm}>Aucun message vocal</Text>
+          <Text style={styles.infoLabel}>{t("Message vocal")}</Text>
+          <Text style={styles.infoValSm}>{t("Aucun message vocal")}</Text>
         </View>
       )}
     </>

@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useMemo, useState } from "react";
 import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -22,6 +24,7 @@ import { StaffTabs } from "./StaffTabs";
 import { ORPHAN_KEY, StaffTeamHead, StaffTeamTab } from "./StaffTeamTab";
 import { StaffRoleMembersSheet } from "./StaffRoleMembersSheet";
 import { ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 const FAB_HEIGHT = 54;
 
@@ -42,16 +45,17 @@ type RoleSheetState = { role: StaffRole | null; forCreate: boolean } | null;
  * Page entière dans un <Modal> plein écran : couvre header et tab bar.
  */
 export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab = "team" }) => {
+  useLanguage();
   const [toast, setToast] = useState<ToastState>(null);
   const onLoadError = useCallback(
-    () => setToast({ message: "Impossible de charger le personnel", type: "error" }),
+    () => setToast({ message: t("Impossible de charger le personnel"), type: "error" }),
     [],
   );
   const staff = useStaff(visible, onLoadError);
   const drv = useStaffDrivers(visible, onLoadError);
   const { userData } = useAuth();
   const ownerName =
-    [userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(" ") || "Propriétaire";
+    [userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(" ") || t("Propriétaire");
   const [headerHeight, setHeaderHeight] = useState(70);
   const [tab, setTab] = useState<StaffTab>(initialTab);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -123,7 +127,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
 
   const openCreate = () => {
     if (membersFull) {
-      setToast({ message: "Tous les postes du plan sont pris", type: "error" });
+      setToast({ message: t("Tous les postes du plan sont pris"), type: "error" });
       return;
     }
     setCreateRoleId(roles.length === 1 ? roles[0].id : null);
@@ -132,7 +136,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
 
   const submitMember = async (draft: StaffMemberDraft) => {
     const res = await staff.createMember(draft);
-    notify(res.ok, "Membre ajouté", res.ok ? "" : res.message);
+    notify(res.ok, t("Membre ajouté"), res.ok ? "" : res.message);
     if (res.ok) {
       setTab("team");
     }
@@ -142,7 +146,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   const saveRole = async (draft: StaffRoleDraft) => {
     const editing = roleSheet?.role;
     const res = await staff.saveRole(draft, editing?.id);
-    notify(res.ok, editing ? "Rôle modifié" : "Rôle créé", res.ok ? "" : res.message);
+    notify(res.ok, editing ? t("Rôle modifié") : t("Rôle créé"), res.ok ? "" : res.message);
     if (res.ok && roleSheet?.forCreate && !editing) setCreateRoleId(res.data.id);
     return res.ok;
   };
@@ -162,13 +166,13 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   const deleteRole = (role: StaffRole) =>
     ask(
       {
-        title: "Supprimer ce rôle ?",
-        message: `« ${role.name} » n’est attribué à personne. Il sera supprimé.`,
-        confirmLabel: "Supprimer",
+        title: t("Supprimer ce rôle ?"),
+        message: t("« {{a}} » n’est attribué à personne. Il sera supprimé.", { a: role.name }),
+        confirmLabel: t("Supprimer"),
       },
       async () => {
         const res = await staff.removeRole(role.id);
-        notify(res.ok, "Rôle supprimé", res.ok ? "" : res.message);
+        notify(res.ok, t("Rôle supprimé"), res.ok ? "" : res.message);
         return res.ok;
       },
     );
@@ -176,13 +180,13 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   const removeMember = (m: StaffMember) =>
     ask(
       {
-        title: "Retirer ce membre ?",
-        message: `${memberName(m)} n’aura plus accès à la boutique. Son poste sera libéré.`,
-        confirmLabel: "Retirer",
+        title: t("Retirer ce membre ?"),
+        message: t("{{a}} n’aura plus accès à la boutique. Son poste sera libéré.", { a: memberName(m) }),
+        confirmLabel: t("Retirer"),
       },
       async () => {
         const res = await staff.removeMember(m.id);
-        notify(res.ok, "Membre retiré", res.ok ? "" : res.message);
+        notify(res.ok, t("Membre retiré"), res.ok ? "" : res.message);
         if (res.ok) setMemberId(null);
         return res.ok;
       },
@@ -191,36 +195,36 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   const changeRole = async (roleId: string) => {
     if (!member) return false;
     const res = await staff.updateMember(member.id, { roleId });
-    notify(res.ok, "Rôle changé", res.ok ? "" : res.message);
+    notify(res.ok, t("Rôle changé"), res.ok ? "" : res.message);
     return res.ok;
   };
 
   const setActive = async (active: boolean) => {
     if (!member) return false;
     const res = await staff.updateMember(member.id, { active });
-    notify(res.ok, active ? "Accès réactivé" : "Accès suspendu", res.ok ? "" : res.message);
+    notify(res.ok, active ? t("Accès réactivé") : t("Accès suspendu"), res.ok ? "" : res.message);
     return res.ok;
   };
 
   const decide = async (app: DriverApplication, decision: "accepted" | "refused") => {
     if (decision === "accepted" && driversFull) {
-      setToast({ message: "Toutes les places de livreur sont prises", type: "error" });
+      setToast({ message: t("Toutes les places de livreur sont prises"), type: "error" });
       return;
     }
     const res = await drv.decide(app, decision);
-    notify(res.ok, decision === "accepted" ? "Livreur accepté" : "Demande refusée", res.ok ? "" : res.message);
+    notify(res.ok, decision === "accepted" ? t("Livreur accepté") : t("Demande refusée"), res.ok ? "" : res.message);
   };
 
   const removeDriver = (d: DriverInfo) =>
     ask(
       {
-        title: "Retirer ce livreur ?",
-        message: `${personName(d.infos)} ne pourra plus livrer les commandes de votre boutique.`,
-        confirmLabel: "Retirer",
+        title: t("Retirer ce livreur ?"),
+        message: t("{{a}} ne pourra plus livrer les commandes de votre boutique.", { a: personName(d.infos) }),
+        confirmLabel: t("Retirer"),
       },
       async () => {
         const res = await drv.removeDriver(d.driverId);
-        notify(res.ok, "Livreur retiré", res.ok ? "" : res.message);
+        notify(res.ok, t("Livreur retiré"), res.ok ? "" : res.message);
         return res.ok;
       },
     );
@@ -233,9 +237,9 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
     <View style={styles.overlay}>
 
       <StaffHeader
-        title="Personnel"
-        subtitle={`${plural(roles.length, "rôle")} · ${plural(members.length, "membre")} · ${plural(drv.drivers.length, "livreur")}`}
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        title={t("Personnel")}
+        subtitle={`${plural(roles.length, t("rôle"))} · ${plural(members.length, t("membre"))} · ${plural(drv.drivers.length, t("livreur"))}`}
+        right={<HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 
@@ -306,7 +310,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
         >
           <Ionicons name="person-add-outline" size={18} color={membersFull ? "#8A8A90" : "#fff"} />
           <Text style={[styles.fabText, { color: membersFull ? "#8A8A90" : "#fff" }]}>
-            {membersFull ? "Tous les postes sont pris" : "Ajouter un membre"}
+            {membersFull ? t("Tous les postes sont pris") : t("Ajouter un membre")}
           </Text>
         </Pressable>
       </View>
@@ -361,7 +365,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
         <StaffMemberCreateSheet
           roles={sortedRoles}
           catalog={catalog}
-          slotLabel={`Poste ${members.length + 1} sur ${plan.memberLimit}`}
+          slotLabel={t("Poste {{a}} sur {{b}}", { a: members.length + 1, b: plan.memberLimit })}
           roleId={createRoleId}
           onSelectRole={setCreateRoleId}
           saving={staff.saving}
@@ -387,6 +391,8 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
       {toast && (creating || !!roleSheet) && (
         <Toast message={toast.message} type={toast.type} onHide={() => setToast(null)} />
       )}
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
 
       <StaffConfirmDialog confirm={confirm} busy={confirmBusy} onCancel={() => setConfirm(null)} />

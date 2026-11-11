@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +7,7 @@ import { DS, Theme } from '../../../theme';
 import { Notification } from '../context/NotificationContext';
 import { useNotifications } from '../hooks/useNotifications';
 import { getNotificationIcon } from '../utils/notificationRouting';
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 interface NotificationItemProps {
   notification: Notification;
@@ -21,13 +23,13 @@ const formatWhen = (value: string | number | Date): string => {
   const now = new Date();
   const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const days = Math.round((startOf(now) - startOf(d)) / 86400000);
-  if (days === 0) return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  if (days === 1) return 'Hier';
+  if (days === 0) return d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
+  if (days === 1) return t("Hier");
   if (days < 7) {
-    const w = d.toLocaleDateString('fr-FR', { weekday: 'long' });
+    const w = d.toLocaleDateString(dateLocale(), { weekday: 'long' });
     return w.charAt(0).toUpperCase() + w.slice(1);
   }
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  return d.toLocaleDateString(dateLocale(), { day: '2-digit', month: '2-digit', year: '2-digit' });
 };
 
 /**
@@ -36,6 +38,7 @@ const formatWhen = (value: string | number | Date): string => {
  * aligné sur le texte.
  */
 export const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onPress }) => {
+  useLanguage();
   const { isRead } = useNotifications();
   const read = isRead(notification);
   const title = notification.title || notification.titre || 'Notification';

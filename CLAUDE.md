@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **19 règles numérotées R1 → R19.** Toute nouvelle règle ajoutée à ce fichier
+> **25 règles numérotées R1 → R25.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -296,7 +296,81 @@ prend la safe-area basse via `src/hooks/usePageBottomInset.ts`. **Jamais**
   absorbe `useFooterBottomInset()` en `paddingBottom`, sans padding bas en plus
   (sinon la bande est poussée et ne s'aligne plus avec les autres pages).
 - **Bottom sheet** (`<Modal>` ancré en bas) : `useSheetSafeInsets()`.
+- **JAMAIS de marge / padding bas ajouté en plus de la safe-area** (ni
+  `16 + insets.bottom`, ni `marginBottom` sur le dernier élément) : l'espace
+  bas de TOUTE page, sheet ou pied est garanti par ce seul hook.
 - Régler une valeur = modifier `PAGE_INSET_RATIO` (iOS / Android) dans ce seul
   fichier ; ne jamais recopier le ratio ailleurs.
 - Couleur de la bande = `SAFE_AREA_BG` (même fichier) ; `SAFE_AREA_DEBUG = true`
   la colore en orange pour vérifier l'alignement. Jamais de couleur en dur.
+
+## R20 — OTA : toujours via GitHub Actions (OBLIGATOIRE)
+
+Une mise à jour OTA se publie **uniquement** via le workflow `.github/workflows/eas-update.yml`
+(`workflow_dispatch` : `channel` + `message`), jamais par `eas update` en local
+(bundle ~90 Mo, connexion trop lente). Le workflow charge les variables EAS
+(`EXPO_PUBLIC_ORS_KEY`…). Pousser la branche d'abord, puis déclencher le workflow
+sur cette branche (`gh` absent : API GitHub `POST …/actions/workflows/eas-update.yml/dispatches`).
+
+## R21 — Plusieurs options : DEMANDER, ne rien inventer (OBLIGATOIRE)
+
+Quand une action a plusieurs options possibles (ex. workflow avec cases a cocher, mode permanent ou non, deployer ou non, quelle branche), DEMANDER a l utilisateur laquelle prendre AVANT d agir. Ne jamais choisir une option ni inventer un parametre qu il n a pas donne. Regarder comment l action a ete lancee precedemment ne suffit pas : demander.
+
+## R22 — Messages : toast GLOBAL uniquement, jamais d'alerte native (OBLIGATOIRE)
+
+Tout message affiché à l'utilisateur (succès, erreur, information) passe par le
+toast global : `showToast(message, "success" | "error" | "info")`
+(`src/services/globalToast.ts`, rendu par `GlobalToastHost` dans `app/_layout.tsx`,
+composant `src/components/Toast.tsx` : en haut, premier plan, fermeture par glissement).
+
+- **INTERDIT** : `Alert.alert(...)` (modal natif) pour afficher un message.
+- Seule exception : une vraie **confirmation à choix** (boutons Annuler / Confirmer),
+  qui n'est pas un message.
+- Un écran qui a déjà son `<Toast>` local peut le garder ; tout nouveau code appelle `showToast`.
+- **Tout `<Modal>`** pose `<GlobalToastHost modal />` en dernier enfant : sur Android
+  une Modal est une fenêtre au-dessus de l'app, sans cet hôte le toast passerait dessous
+  (pile d'hôtes, seul le premier plan affiche ; inactif sur iOS).
+
+## R23 — ARGENT : relecture OBLIGATOIRE, aucun chiffre de mémoire (OBLIGATOIRE)
+
+**Yaammoo manipule de l'argent réel.** Une erreur de chiffre = un marchand mal
+payé, de l'argent perdu, un litige.
+
+1. **Source** : [`architecture/money-rules.md`](./architecture/money-rules.md),
+   copie du fichier backend (à resynchroniser à chaque changement côté backend).
+   Le frontend n'est **jamais** la vérité de l'argent : il affiche ce que le
+   backend renvoie, et tout montant envoyé est recalculé côté serveur.
+2. **Aucun chiffre d'argent de mémoire.** Un chiffre non vérifié est annoncé
+   comme tel.
+3. **Appliqué par le harness** (hooks `.claude/hooks/`) :
+   - `money-context.sh` (UserPromptSubmit) réinjecte `money-rules.md` à CHAQUE
+     message qui parle d'argent ;
+   - `require-money-rules.sh` (PreToolUse) BLOQUE toute modification d'un
+     fichier d'argent (`src/features/wallet|checkout|payment|cart|bonus/`…),
+     toute écriture SQL sur une table d'argent et tout déploiement si
+     `money-rules.md` n'a pas été relu (Read) dans les 15 dernières minutes ;
+   - `money-read-marker.sh` (PostToolUse) note la relecture ;
+   - `install-money-guard.sh` (SessionStart) installe le mod `money-guard`
+     (dépôt backend, `claude-mods/`) : règles dans le prompt système à chaque
+     tour + blocage en double.
+
+## R24 — Build Android Play Store : notes de version FIXES (OBLIGATOIRE)
+
+Le build de production passe par `.github/workflows/android-release.yml`
+(toutes les ABIs, x86 inclus pour les émulateurs). Chaque soumission porte
+TOUJOURS ce message « Nouveautés », sans le changer :
+
+> Corrections de bugs, améliorations de la stabilité et de l'interface utilisateur.
+
+Il vit dans `distribution/whatsnew/whatsnew-fr-FR` (lu par le workflow).
+
+## R25 — Maquettes : un seul canvas « Yaammoo — Design » (OBLIGATOIRE)
+
+Toute nouvelle maquette / variante d'interface se crée dans le canvas Design
+existant, **jamais dans un nouvel artifact** :
+https://claude.ai/artifact/EQX6WSUfNmPW1dgnb8GJti
+
+- Un nouveau sujet (écran, flux) = une **nouvelle page** du canvas
+  (`pages` de `project/canvas.json`), ses artboards rattachés via `page`.
+- Un sujet existant (ex. Portefeuille, Retrait) : ajouter les artboards sur
+  sa page.

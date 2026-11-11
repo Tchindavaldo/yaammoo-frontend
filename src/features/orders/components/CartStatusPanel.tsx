@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { ClientDateChipsRow as StickyChipsRow } from "./ClientDateChipsRow";
 import { ClientFilterSheet } from "./ClientFilterSheet";
 import {
@@ -41,6 +42,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Hauteur de la barre de filtres du bas (meme gabarit que le marchand). */
 const FILTER_BAR_HEIGHT = 54;
@@ -59,6 +61,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   bottomOffset = 0,
   initialStatus = "pending",
 }) => {
+  const i18nLang = useLanguage();
   const {
     pending,
     active,
@@ -147,7 +150,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         const fetched = fetchedFfInfos[ffId];
         entry = {
           id: ffId,
-          name: ff?.nom || ff?.name || fetched?.name || "Boutique",
+          name: ff?.nom || ff?.name || fetched?.name || t("Boutique"),
           // `image` est déjà normalisé (photo du fastfood, sinon 1er plat).
           image: ff?.image || ff?.logo || ff?.coverImage || fetched?.image,
           orderCount: 0,
@@ -166,7 +169,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         entry!.counts.finished += 1;
     });
     return Array.from(map.values());
-  }, [pending, active, finished, delivered, fastFoods, fetchedFfInfos, activeDateISO]);
+  }, [pending, active, finished, delivered, fastFoods, fetchedFfInfos, activeDateISO, i18nLang]);
 
   // Sélection obligatoire : par défaut le premier fastfood de la liste. On
   // re-sélectionne aussi si le fastfood courant disparaît (changement d'onglet).
@@ -198,7 +201,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           selectedPeriods.length === 0 || selectedPeriods.includes(periodKeyOf(o))
         );
       }),
-    [selectedDate, statusList, selectedFastFoodId, selectedPeriods],
+    [selectedDate, statusList, selectedFastFoodId, selectedPeriods, i18nLang],
   );
 
   // Aplatissement des données → FlatList
@@ -260,7 +263,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
                 color={Theme.colors.gray[200]}
               />
               <Text style={styles.emptyText}>
-                Aucune commande pour cette date
+                {t("Aucune commande pour cette date")}
               </Text>
             </View>
           );
@@ -268,7 +271,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
           return null;
       }
     },
-    [groupSubTab, fastFoods],
+    [groupSubTab, fastFoods, i18nLang],
   );
 
   const keyExtractor = useCallback((item: FlatItem) => item.key, []);
@@ -383,11 +386,11 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         <View style={{ flex: 1 }}>
           <StickyChipsRow
             items={[
-              { key: "pending", label: "En Attente", count: chipCounts.pending },
-              { key: "active", label: "En cours", count: chipCounts.active },
+              { key: "pending", label: t("En Attente"), count: chipCounts.pending },
+              { key: "active", label: t("En cours"), count: chipCounts.active },
               {
                 key: "finished",
-                label: "Terminées",
+                label: t("Terminées"),
                 count: chipCounts.finished,
               },
             ]}
@@ -436,9 +439,9 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
         pastUntreated={activeStatus !== "finished"}
         // Statuts rendus DANS le sheet, comme côté marchand.
         statusTabs={[
-          { key: "pending", label: "En Attente", count: chipCounts.pending },
-          { key: "active", label: "En cours", count: chipCounts.active },
-          { key: "finished", label: "Terminées", count: chipCounts.finished },
+          { key: "pending", label: t("En Attente"), count: chipCounts.pending },
+          { key: "active", label: t("En cours"), count: chipCounts.active },
+          { key: "finished", label: t("Terminées"), count: chipCounts.finished },
         ]}
         selectedStatus={activeStatus}
         onSelectStatus={(k) => setActiveStatus(k as any)}

@@ -1,12 +1,24 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Contenu du TabHeader de Settings (maquette D, sans titre ni bouton d'edition) :
-// avatar, nom + badge Marchand, contact.
+// avatar, nom + badge Marchand, contact, pastille comptes a droite.
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
-import React from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useAccounts } from "../hooks/useAccounts";
+import { AccountSheet } from "./AccountSheet";
+import { AccountSwitcherPill } from "./AccountSwitcherPill";
+import { t, useLanguage } from "@/src/i18n";
 
-export function SettingsHeaderProfile() {
+interface Props {
+  onAddAccount: () => void;
+}
+
+export function SettingsHeaderProfile({ onAddAccount }: Props) {
+  useLanguage();
   const { user, userData } = useAuth();
+  const accounts = useAccounts();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const firebaseName = user?.displayName || "";
   const initiale =
@@ -16,7 +28,7 @@ export function SettingsHeaderProfile() {
   const nomComplet =
     [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(" ") ||
     firebaseName ||
-    "Utilisateur";
+    t("Utilisateur");
   const contact =
     userData?.infos.email ||
     user?.email ||
@@ -36,7 +48,7 @@ export function SettingsHeaderProfile() {
             </Text>
             {userData?.isMarchand && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>Marchand</Text>
+                <Text style={styles.badgeText}>{t("Marchand")}</Text>
               </View>
             )}
           </View>
@@ -46,7 +58,21 @@ export function SettingsHeaderProfile() {
             </Text>
           )}
         </View>
+        <AccountSwitcherPill
+          accounts={accounts}
+          onPress={() => setSheetOpen(true)}
+        />
       </View>
+      <AccountSheet
+        visible={sheetOpen}
+        accounts={accounts}
+        onClose={() => setSheetOpen(false)}
+        onSelect={() => setSheetOpen(false)}
+        onAddAccount={() => {
+          setSheetOpen(false);
+          onAddAccount();
+        }}
+      />
     </View>
   );
 }
@@ -57,17 +83,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 14,
   },
+  // Meme theme que l'avatar du header de l'accueil : fond blanc, filet
+  // gris, initiale orange. 46 = hauteur titre 24 + sous-titre des autres
+  // onglets (Panier, Notifications) : le TabHeader garde la meme hauteur.
   avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: DS.accent,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: DS.bg,
+    borderWidth: 1,
+    borderColor: DS.line,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
-    color: DS.bg,
-    fontSize: 24,
+    color: DS.accent,
+    fontSize: 20,
     fontWeight: "800",
   },
   info: {

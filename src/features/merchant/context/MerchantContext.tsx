@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { merchantService } from '../services/merchantService';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Commande, Menu, Transaction } from '@/src/types';
 import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 import { useLazyFetch } from '@/src/hooks/useLazyFetch';
+import { t, useLanguage } from "@/src/i18n";
 
 interface MerchantContextType {
   orders: Commande[];
@@ -41,6 +43,7 @@ interface MerchantContextType {
 const MerchantContext = createContext<MerchantContextType | undefined>(undefined);
 
 export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [orders, setOrders] = useState<Commande[]>([]);
   const [menus, setMenus] = useState<Menu[]>([]);
@@ -69,7 +72,7 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return true;
     } catch (err) {
       console.error("Merchant fetch error:", err);
-      setError("Erreur lors du chargement des données marchand");
+      setError(t("Erreur lors du chargement des données marchand"));
       // `false` rearme `useLazyFetch` : revenir sur l'ecran relancera le
       // chargement au lieu de rester bloque sur l'erreur.
       return false;

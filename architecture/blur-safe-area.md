@@ -45,50 +45,35 @@ toute liste qui scrolle sous un header ou une tab bar.
 
 ### Comportement
 
-> ⚠️ **SDK 57 : le flou Android exige une CIBLE.** `expo-blur` 57 ne floute
-> sur Android que le contenu enveloppé dans un `BlurTargetView` passé via
-> `blurTarget` ; sans cible il retombe en voile. La bibliothèque native
-> (`eightbitlab` v3) **interdit** qu'un flou soit DANS la cible qu'il floute :
-> contenu et flou doivent être frères. `experimentalBlurMethod` est déprécié
-> et n'est plus passé nulle part (`AppBlurView` pose
-> `blurMethod="dimezisBlurViewSdk31Plus"`).
+> ⚠️ **Android : PLUS AUCUN flou, toutes versions confondues.** Le flou natif
+> SDK 57 (`BlurTargetView`) ne s'appliquait qu'à partir d'Android 12 et
+> seulement là où une cible existait : selon l'appareil, un même écran sortait
+> flouté ou en fond blanc. Tout Android prend désormais le rendu des anciennes
+> versions : une `View` portant `fallbackStyle`, identique partout.
 >
-> Mécanisme : [`src/components/BlurTarget.tsx`](../src/components/BlurTarget.tsx).
->
-> ```tsx
-> <BlurScope>
->   <BlurTarget style={…}>{contenu derrière le flou}</BlurTarget>  // remplace un View
->   <Header />  // son AppBlurView floute la cible de la zone
-> </BlurScope>
-> ```
->
-> - `BlurTarget` = drop-in d'un `View` (iOS/web : simple `View`, aucun effet).
-> - Un `AppBlurView` DANS un `BlurTarget` ne vise pas cette cible (contexte
->   remis à null) : il lui faut son propre `BlurScope` imbriqué.
-> - Onglets : `(tabs)/_layout.tsx` enveloppe chaque écran (`screenLayout`) ;
->   seule la cible de l'écran focalisé (`active`) est floutée par la tab bar.
-> - `useNativeBlurActive()` : `true` si un flou a réellement lieu à cet endroit
->   — `TabHeader` et `RestaurantHeader` s'en servent pour opacifier leur fond.
-> - Pas de cible sur le home (la liste ne passe pas sous le header) ni dans les
->   `Modal` RN (fenêtre séparée : rien à flouter derrière).
-> - Le voile de la sheet d'auth (`AuthGateContext`) floute toute l'app,
->   enveloppée dans une cible : **perf du scroll home à vérifier sur appareil**.
+> - `BlurScope` / `BlurTarget` ([`src/components/BlurTarget.tsx`](../src/components/BlurTarget.tsx))
+>   sont **inertes** sur tous les OS (fragment / simple `View`), laissés en place
+>   pour ne pas toucher à la structure des écrans. Plus de `screenLayout` dans
+>   `(tabs)/_layout.tsx`.
+> - `isNativeBlurAvailable` et `useNativeBlurActive()` valent `false` sur
+>   Android : `TabHeader`, `RestaurantHeader`, la tab bar et la carte récap de
+>   paiement y prennent leur fond opaque.
+> - Les anciens flous forcés (`forceAndroidBlur`, prop supprimée) portent un
+>   voile blanc : sheet d'auth et accueil `DS.frost` + voile sombre ; capsules
+>   email/mot de passe et montant du retrait : voile `DS.bg` opaque, sans la
+>   teinte sombre, capsule `DS.ink` opaque.
 
 - **iOS** : flou natif (`UIVisualEffectView`), rien à configurer.
-- **Android 12+** : flou natif si une cible existe dans la zone, sinon `View`
-  opacifiée par `fallbackStyle`.
-- **Android < 12** : flou désactivé, rendu en `fallbackStyle`.
-- **`disableAndroidBlur`** : coupe le flou sur Android **toutes versions
-  confondues**. À poser sur tout BlurView placé devant une liste qui défile.
+- **Android** : `View` opacifiée par `fallbackStyle` (`pointerEvents="none"`).
+- **`disableAndroidBlur`** : même rendu, mais la `View` garde ses touches. À
+  poser sur les BlurView qui enveloppent du contenu interactif.
 
 ```tsx
 <BlurView disableAndroidBlur fallbackStyle={styles.opaque} … />
 ```
 
-Posé aujourd'hui sur les **10 blurs des cartes du home**
-(`restaurants/components/designs/item/` : variantes + `parts/CardBottom.tsx`), seul écran où le crash a été
-reproduit. Le header et la tab bar gardent leur flou pour l'instant — à basculer
-si le crash y réapparaît.
+Posé sur les **10 blurs des cartes du home**
+(`restaurants/components/designs/item/` : variantes + `parts/CardBottom.tsx`).
 
 Sans flou, les éléments qui reposaient dessus deviennent illisibles : ils portent
 alors **eux-mêmes** un fond opaque, conditionné à Android pour ne rien changer sur
@@ -120,17 +105,6 @@ de `RestaurantHeader`, `OrderHeader`, `MenuManagePanel` et du header de settings
 Le chemin `disableAndroidBlur`, lui, ne pose rien : il enveloppe du contenu
 interactif (badges, barre de stock).
 
-### Limite dans une Modal
-
-`dimezisBlurView` ne floute que le contenu de **sa propre fenêtre**. Une `Modal`
-React Native est une fenêtre séparée : un BlurView placé dedans ne voit ni
-l'écran, ni le sheet qui l'héberge. C'est pour cette raison que la capsule de
-paiement ne floute rien sur Android, alors qu'elle floute sur iOS, où le
-compositeur système traite toutes les fenêtres.
-
-Le seul flou qui fonctionne dans le sheet de paiement est le voile affiché quand
-le clavier s'ouvre ([`CheckoutPaymentOverlay`](../src/features/checkout/components/CheckoutPaymentOverlay.tsx)) :
-il floute la carte récap, qui est dans la même fenêtre que lui.
 
 ---
 
@@ -171,7 +145,7 @@ Sheets traités :
 | Détail notification | `notifications/components/NotificationDetailSheet.tsx` |
 | Ajout menu | `merchant/components/AddMenuSheet.tsx`, `AddMenuSheetMultiStep.tsx` |
 | Zone de livraison (+ time picker) | `merchant/components/edit-boutique/ZoneFormSheet.tsx` |
-| Nom / prénom manquant (home) | `profile/components/ProfileNameSheet.tsx` — carte flottante `bottom: 24 + insets.bottom`, montée au clavier par translation (`edgeToEdgeEnabled` ne redimensionne pas la fenêtre), rendue dans `app/(tabs)/_layout.tsx` au-dessus de la tab bar pour que le flou couvre tout l'écran (iOS seulement : `disableAndroidBlur`, voile noir sur Android toutes versions). Bas iOS : `8 + insets.bottom × TAB_BAR_INSET_RATIO` — cf. [profile-name-sheet.md](./profile-name-sheet.md) |
+| Nom / prénom manquant (home) | `profile/components/ProfileNameSheet.tsx` — carte flottante `bottom: bande` (collée, écart 0), montée au clavier par translation (`edgeToEdgeEnabled` ne redimensionne pas la fenêtre), rendue dans `app/(tabs)/_layout.tsx` au-dessus de la tab bar pour que le flou couvre tout l'écran (iOS seulement : `disableAndroidBlur`, voile noir sur Android toutes versions). — cf. [profile-name-sheet.md](./profile-name-sheet.md) |
 
 Non concernés : les panneaux plein écran des settings (`MenuManageModal`,
 `WalletManageModal`, `UserOrdersModal`, `UserWalletModal`, `DriverManageModal`),
@@ -260,7 +234,8 @@ La safe-area basse n'est **jamais** prise telle quelle : chaque famille d'écran
 en garde une part, réglée **séparément pour iOS et Android**.
 
 **Source UNIQUE** : `PAGE_INSET_RATIO` (`src/hooks/usePageBottomInset.ts`,
-iOS 1 / Android 1). Tout en dérive — plus aucun ratio ailleurs :
+iOS 1 / Android 1,15, bande arrondie au pixel). Tout en dérive — plus aucun
+ratio ailleurs :
 
 | Famille | Accès |
 |---|---|
@@ -269,7 +244,7 @@ iOS 1 / Android 1). Tout en dérive — plus aucun ratio ailleurs :
 | Pages entières (hors `(tabs)`) | `ShopPageFrame` / `usePageBottomInset()` |
 | Pieds fixes | `useFooterBottomInset()` |
 | Tous les `<Modal>` ancrés en bas (filtres, détail commande, bonus, zones, auth, paiement groupé…) | `useSheetSafeInsets()` |
-| Cartes flottantes (nom manquant, mise à jour) | `useBottomSafeArea()` + leur écart propre |
+| Cartes flottantes (nom manquant, mise à jour) | `useBottomSafeArea()`, collées à la bande (écart 0) |
 
 Règles appliquées partout :
 - Sheet / pied qui touche le bas : `paddingBottom` = la bande, **sans constante
@@ -296,8 +271,9 @@ fine (Menu, Notifications, filtres, détail commande).
 Sheets marchand passés à `useSheetSafeInsets` (importé sous l'alias
 `useSafeAreaInsets`, seul `bottom` change) : `MerchantFilterSheet`,
 `DelegateDriverSheet`, `MerchantOrderBottomSheet`, `AddMenuSheetMultiStep`,
-`edit-boutique/ZoneFormSheet`, `edit-boutique/ZoneListSheet`. Les calques
-rendus DANS une page (`WithdrawOverlay`, `BroadcastComposer`) n'ont rien à
+`edit-boutique/ZoneFormSheet`, `edit-boutique/ZoneListSheet`,
+`withdraw/WithdrawSheet`. Les calques
+rendus DANS une page (`BroadcastComposer`) n'ont rien à
 ajouter : `ShopPageFrame` a déjà réservé la safe-area.
 
 ### Pages entières sans navbar (`app/shop/*`)

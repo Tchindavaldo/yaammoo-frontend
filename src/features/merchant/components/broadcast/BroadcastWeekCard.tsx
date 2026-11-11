@@ -1,8 +1,10 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { BroadcastPlan, BroadcastQuota } from "../../types/broadcast.types";
 import { monthLabel } from "../../utils/broadcastQuota";
 import { BC, capsLabel } from "./broadcastTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
 const BAR_MAX = 40;
@@ -18,6 +20,7 @@ interface Props {
  * envois du jour), limites du plan toujours visibles, reste de la semaine.
  */
 export const BroadcastWeekCard: React.FC<Props> = ({ plan, quota, now }) => {
+  useLanguage();
   const weekPct = Math.round((quota.weekLeft / plan.weekLimit) * 100);
 
   return (
@@ -60,9 +63,9 @@ export const BroadcastWeekCard: React.FC<Props> = ({ plan, quota, now }) => {
       </View>
 
       <View style={styles.stats}>
-        <Stat value={String(plan.dayLimit)} label="PAR JOUR" />
-        <Stat value={String(plan.weekLimit)} label="PAR SEMAINE" />
-        <Stat value="00:00" label="REMISE À ZÉRO" />
+        <Stat value={String(plan.dayLimit)} label={t("PAR JOUR")} />
+        <Stat value={String(plan.weekLimit)} label={t("PAR SEMAINE")} />
+        <Stat value="00:00" label={t("REMISE À ZÉRO")} />
       </View>
 
       <View style={styles.progressRow}>
@@ -70,8 +73,7 @@ export const BroadcastWeekCard: React.FC<Props> = ({ plan, quota, now }) => {
           <View style={[styles.fill, { width: `${weekPct}%` }]} />
         </View>
         <Text style={styles.progressText}>
-          <Text style={styles.progressStrong}>{quota.weekLeft}</Text>/{plan.weekLimit} cette
-          semaine
+          <Text style={styles.progressStrong}>{quota.weekLeft}</Text>/{plan.weekLimit} {t("cette semaine")}
         </Text>
       </View>
     </View>

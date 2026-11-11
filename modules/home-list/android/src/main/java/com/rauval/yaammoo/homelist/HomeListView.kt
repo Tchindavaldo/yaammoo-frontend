@@ -34,6 +34,9 @@ class HomeListView(context: Context, appContext: AppContext) :
   val onEdgeChange by EventDispatcher()
   /** Rapports de fluidite (scroll, pages, prechauffage) : journal `[HL]`, cote JS. */
   val onDiagnostics by EventDispatcher()
+  /** Statistiques : boutiques visibles a >= 50 %, envoyees quand l'ensemble change. */
+  val onVisibleShops by EventDispatcher()
+  private var visibleShopIds: List<String> = emptyList()
 
   private val perf = HLPerfMonitor()
   /** Rangees creees au repos avant le premier scroll (prop `preheatScreens`). */
@@ -299,7 +302,11 @@ class HomeListView(context: Context, appContext: AppContext) :
     lastPatch = null
     // Fin du chargement sans boutique : la banniere attendait peut-etre la liste.
     tryOpenFirstGate()
-    post { checkEndReached() }
+    post {
+      checkEndReached()
+      // Fantomes remplis sur place, sans scroll : de nouvelles boutiques a l'ecran.
+      checkVisibleShops()
+    }
   }
 
   private fun itemHeight(item: HLItem): Int = when (item) {
@@ -342,6 +349,37 @@ class HomeListView(context: Context, appContext: AppContext) :
     }
     checkEndReached()
     prefetchAhead()
+    checkVisibleShops()
+  }
+
+  /**
+   Boutiques visibles a 50 % au moins dans la hauteur VISIBLE de la vue (pas
+   celle de la liste allongee par le prechauffage). Seules les positions
+   affichees sont parcourues ; l'evenement ne part que si l'ensemble change.
+   */
+  private fun checkVisibleShops() {
+    val first = lm.findFirstVisibleItemPosition()
+    val last = lm.findLastVisibleItemPosition()
+    if (first == RecyclerView.NO_POSITION || last == RecyclerView.NO_POSITION) return
+    val top = scrollY()
+    val bottom = top + height
+    val ids = ArrayList<String>()
+    val positions = ArrayList<Int>()
+    for (index in first..last) {
+      val pos = index - rowOffset
+      if (pos < 0 || pos >= rows.size || index + 1 >= tops.size) continue
+      val shop = (rows[pos] as? HLRowContent.Shop)?.shop ?: continue
+      val h = tops[index + 1] - tops[index]
+      if (h <= 0) continue
+      val shown = minOf(tops[index + 1], bottom) - maxOf(tops[index], top)
+      if (shown * 2 >= h) {
+        ids.add(shop.id)
+        positions.add(pos)
+      }
+    }
+    if (ids == visibleShopIds) return
+    visibleShopIds = ids
+    onVisibleShops(mapOf("ids" to ids, "positions" to positions))
   }
 
   // Sonde : un rapport par geste (doigt pose -> fin de l'elan).

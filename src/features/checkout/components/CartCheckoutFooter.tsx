@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
@@ -5,6 +6,7 @@ import { useSheetInsets } from "../hooks/useSheetInsets";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Loader } from "../../../components/Loader";
 import { styles } from "./CartCheckoutSheet.styles";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CheckoutFooterProps {
   total: number;
@@ -28,6 +30,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
   onAddToCart,
   isSaving,
 }) => {
+  useLanguage();
   const busy = isLoading || isSaving;
   const insets = useSheetInsets();
 
@@ -81,7 +84,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
           ) : (
             <>
               <Ionicons name="save-outline" size={16} color="white" />
-              <Text style={styles.btnText}>save</Text>
+              <Text style={styles.btnText}>{t("Enregistrer")}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -97,7 +100,7 @@ export const CartCheckoutFooter: React.FC<CheckoutFooterProps> = ({
         ) : (
           <>
             <Ionicons name="checkmark-circle-outline" size={16} color="white" />
-            <Text style={styles.btnText}>Valider</Text>
+            <Text style={styles.btnText}>{t("Valider")}</Text>
           </>
         )}
       </TouchableOpacity>

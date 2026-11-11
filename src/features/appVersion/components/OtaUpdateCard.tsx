@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import {
   onUpdateDownloaded,
 } from "../services/otaNotice";
 import { DS } from "@/src/theme/ds";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Carte de mise a jour OTA, montee une seule fois a la racine de l'app (comme
@@ -50,16 +52,18 @@ const CONTENT: Record<
   downloaded: {
     icon: "arrow-down",
     tint: DS.accent,
-    title: "Mise à jour téléchargée",
-    message:
-      "De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter.",
+    get title() { return tr("Mise à jour téléchargée"); },
+    get message() {
+      return tr("De nouvelles mises à jour viennent d'être téléchargées. Fermez puis rouvrez l'application pour en profiter.");
+    },
   },
   applied: {
     icon: "checkmark",
     tint: "#12a150",
-    title: "Application à jour",
-    message:
-      "Les dernières améliorations sont installées. Vous profitez dès maintenant de la version la plus récente.",
+    get title() { return tr("Application à jour"); },
+    get message() {
+      return tr("Les dernières améliorations sont installées. Vous profitez dès maintenant de la version la plus récente.");
+    },
   },
 };
 
@@ -69,7 +73,7 @@ const DARK = true;
 /** Carte en haut de l'ecran ou en bas, par-dessus la barre d'onglets (essai). */
 const POSITION = "bottom" as "top" | "bottom";
 /** En bas : ecart entre le bas de la carte et le bas visible de la barre. */
-const BOTTOM_GAP = 7;
+const BOTTOM_GAP = 0;
 
 const PALETTE = DARK
   ? {
@@ -114,6 +118,7 @@ const TRACK_INSET = 18;
 const DEV_PREVIEW = false;
 
 export const OtaUpdateCard = () => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   // Bande safe-area basse : source unique (R19) ; la carte flotte au-dessus.
   const band = useBottomSafeArea();
@@ -282,7 +287,7 @@ export const OtaUpdateCard = () => {
           onPress={hide}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Fermer"
+          accessibilityLabel={tr("Fermer")}
           style={({ pressed }) => [
             styles.close,
             pressed && styles.closePressed,

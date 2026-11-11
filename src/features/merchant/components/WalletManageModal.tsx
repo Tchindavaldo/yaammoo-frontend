@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { DS } from "@/src/theme";
@@ -5,6 +6,7 @@ import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { PorteFeuillePanel } from "@/src/features/merchant/components/PorteFeuillePanel";
+import { t, useLanguage } from "@/src/i18n";
 
 interface WalletManageModalProps {
   visible: boolean;
@@ -16,6 +18,7 @@ interface WalletManageModalProps {
  * Rendu par la route `app/shop/wallet.tsx` : page entière hors (tabs), sans navbar.
  */
 export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, onClose }) => {
+  useLanguage();
   const { refresh } = useMerchant();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -30,10 +33,10 @@ export const WalletManageModal: React.FC<WalletManageModalProps> = ({ visible, o
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Portefeuille"
+        title={t("Portefeuille")}
         subtitle={`${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} XAF`}
         right={
-          <HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />
+          <HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />
         }
         onHeightChange={setHeaderHeight}
       />
@@ -59,6 +62,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "#fff",
+    backgroundColor: DS.bg,
   },
 });

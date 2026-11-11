@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
@@ -11,6 +12,7 @@ import {
 } from "react-native";
 import { styles } from "./styles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface BoutiqueInfoPageProps {
   image: string;
@@ -84,7 +86,9 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   loading,
   onSubmit,
   keyboardOffset = 0,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <View style={{ flex: 1 }}>
     {/* Pas de KeyboardAvoidingView : sa hauteur animee ferait bouger le
         space-between ci-dessous. Le ScrollView natif (keyboardShouldPersistTaps)
@@ -116,12 +120,12 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           )}
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Nom Boutique</Text>
+          <Text style={styles.floatingLabel}>{t("Nom Boutique")}</Text>
           <TextInput
             style={[styles.glassInput, { borderRadius: 20 }]}
             value={name}
             onChangeText={setName}
-            placeholder="Entrer le nom de votre boutique"
+            placeholder={t("Entrer le nom de votre boutique")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -132,7 +136,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         style={[styles.formRow, { marginTop: 16, gap: 6 }]}
       >
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Ouverture</Text>
+          <Text style={styles.floatingLabel}>{t("Ouverture")}</Text>
           <TouchableOpacity
             style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]}
             onPress={onOpenTimePress}
@@ -141,7 +145,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           </TouchableOpacity>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Fermeture</Text>
+          <Text style={styles.floatingLabel}>{t("Fermeture")}</Text>
           <TouchableOpacity
             style={[styles.glassInput, styles.timeInput, { borderRadius: 20 }]}
             onPress={onCloseTimePress}
@@ -162,7 +166,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
             value={number}
             onChangeText={setNumber}
             keyboardType="numeric"
-            placeholder="Orange Money"
+            placeholder={t("Orange Money")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -173,7 +177,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
             value={momoNumber}
             onChangeText={setMomoNumber}
             keyboardType="numeric"
-            placeholder="MTN Mobile Money"
+            placeholder={t("MTN Mobile Money")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -195,30 +199,30 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         style={[styles.formRow, { marginTop: 16, gap: 10 }]}
       >
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Délai livraison (minutes)</Text>
+          <Text style={styles.floatingLabel}>{t("Délai livraison (minutes)")}</Text>
           <Text style={styles.helperText}>
-            Temps limite pour commander avant le créneau (ex: 30 = bloqué 30 min avant)
+            {t("Temps limite pour commander avant le créneau (ex: 30 = bloqué 30 min avant)")}
           </Text>
           <TextInput
             style={[styles.glassInput, { borderRadius: 20 }]}
             value={orderLeadTime}
             onChangeText={setOrderLeadTime}
             keyboardType="numeric"
-            placeholder="ex: 30"
+            placeholder={t("ex: 30")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.floatingLabel}>Jours en avance</Text>
+          <Text style={styles.floatingLabel}>{t("Jours en avance")}</Text>
           <Text style={styles.helperText}>
-            Nombre de jours réservables à l'avance (ex: 3 = aujourd'hui à après-demain)
+            {t("Nombre de jours réservables à l'avance (ex: 3 = aujourd'hui à après-demain)")}
           </Text>
           <TextInput
             style={[styles.glassInput, { borderRadius: 20 }]}
             value={advanceDays}
             onChangeText={setAdvanceDays}
             keyboardType="numeric"
-            placeholder="ex: 3"
+            placeholder={t("ex: 3")}
             placeholderTextColor="#cbd5e1"
           />
         </View>
@@ -230,7 +234,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       >
         <View style={[styles.inputGroup, { flex: 1, marginTop: 0 }]}>
           <Text style={styles.floatingLabel}>
-            Localisation
+            {t("Localisation")}
             {selectedCities.length > 0 ? ` (${selectedCities.length})` : ""}
           </Text>
           <TouchableOpacity
@@ -251,7 +255,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               </Text>
             ) : (
               <Text style={{ color: "#cbd5e1", fontSize: 14 }}>
-                Sélectionner les villes de livraison
+                {t("Sélectionner les villes de livraison")}
               </Text>
             )}
           </TouchableOpacity>
@@ -259,7 +263,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
 
         <View style={{ width: 120 }}>
           <Text style={styles.floatingLabel} numberOfLines={2}>
-            Zone de livraison
+            {t("Zone de livraison")}
           </Text>
           <View style={{ flexDirection: "row", gap: 8, minHeight: 46 }}>
             <TouchableOpacity
@@ -298,7 +302,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
 
       {/* Position GPS de la boutique : distance affichée aux clients du home. */}
       <View style={{ marginTop: 16 }}>
-        <Text style={styles.floatingLabel}>Position de la boutique</Text>
+        <Text style={styles.floatingLabel}>{t("Position de la boutique")}</Text>
         <TouchableOpacity
           style={[
             styles.glassInput,
@@ -328,8 +332,8 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
             numberOfLines={2}
           >
             {hasShopPosition
-              ? "Position enregistrée · appuyez pour la remplacer par votre position actuelle"
-              : "Utiliser ma position actuelle (à faire depuis la boutique)"}
+              ? t("Position enregistrée · appuyez pour la remplacer par votre position actuelle")
+              : t("Utiliser ma position actuelle (à faire depuis la boutique)")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -374,7 +378,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               flexShrink: 1,
             }}
           >
-            Le client peut passer à la boutique récupérer la commande
+            {t("Le client peut passer à la boutique récupérer la commande")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -393,9 +397,10 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       ) : (
         <>
           <Ionicons name="checkmark" size={18} color="white" />
-          <Text style={styles.updateBtnText}>Mettre à jour</Text>
+          <Text style={styles.updateBtnText}>{t("Mettre à jour")}</Text>
         </>
       )}
     </TouchableOpacity>
   </View>
 );
+};

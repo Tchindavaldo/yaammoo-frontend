@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +7,7 @@ import { Loader } from '../../../components/Loader';
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -17,9 +19,12 @@ interface CheckoutContactOverlayProps {
   onClose: () => void;
   phone: string;
   onSelectPhone?: (phone: string) => void;
+  /** Commande sans livraison (retrait) : texte adapte a la boutique. */
+  pickup?: boolean;
 }
 
-export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone, onSelectPhone }) => {
+export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ onClose, phone, onSelectPhone, pickup }) => {
+  useLanguage();
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isSaving, setIsSaving] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
@@ -139,7 +144,7 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="call-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Contact Number</Text>
+              <Text style={styles.headerTitle}>{t("Numéro de contact")}</Text>
               <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
                 <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
               </TouchableOpacity>
@@ -176,7 +181,9 @@ export const CheckoutContactOverlay: React.FC<CheckoutContactOverlayProps> = ({ 
             </View>
 
             <Text style={styles.helperText}>
-              Our courier will use this number to contact you upon arrival if there are any issues with your delivery.
+              {pickup
+                ? t("La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande.")
+                : t("Le livreur utilisera ce numéro pour vous joindre à son arrivée en cas de souci avec votre livraison.")}
             </Text>
           </View>
         </View>

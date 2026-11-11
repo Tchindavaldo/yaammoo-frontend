@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useEffect, useState } from "react";
 import {
   Animated,
@@ -12,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   onClose: () => void;
@@ -31,6 +33,7 @@ interface Props {
  * composeur de notifications).
  */
 export const StaffSheet: React.FC<Props> = ({ onClose, full = false, header, footer, children }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const { height: screenH } = useWindowDimensions();
   const [enter] = useState(() => new Animated.Value(0));
@@ -71,7 +74,7 @@ export const StaffSheet: React.FC<Props> = ({ onClose, full = false, header, foo
         <Pressable
           style={[StyleSheet.absoluteFill, styles.backdrop]}
           onPress={() => (keyboard > 0 ? Keyboard.dismiss() : onClose())}
-          accessibilityLabel="Fermer"
+          accessibilityLabel={t("Fermer")}
         />
       </Animated.View>
 

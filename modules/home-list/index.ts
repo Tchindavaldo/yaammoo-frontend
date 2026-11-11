@@ -22,6 +22,19 @@ export type HomeListMenu = {
   votes: number;
   feeLabel: string;
   metaFeeLabel: string;
+  /**
+   * Design aere (`homeDesign = "aere"`), deja calcule par `aere/labels.ts` :
+   * stock (« 12 » + « plats dispo », « Plus que 3 » + « plats »), urgence,
+   * remplissage de jauge (0-1), frais (« gratuite ») et delai. Ignores par
+   * une build native anterieure (champs inconnus du Record).
+   */
+  stockValue: string;
+  stockUnit: string;
+  stockLow: boolean;
+  stockRatio: number;
+  feeText: string;
+  feeFree: boolean;
+  eta: string;
 };
 
 export type HomeListRow = {
@@ -38,8 +51,19 @@ export type HomeListRow = {
    * Ignoree par une build native anterieure (champ inconnu du Record).
    */
   distance: string;
+  /** Note de la boutique en design aere (« 4.5/5 »). */
+  ratingText: string;
+  /**
+   * Sous la note (design aere) : « Livraison <valeur> », valeur « 13h »
+   * (prochain creneau periodique) ou « express » ; "" = rien. Ignoree par une
+   * build native anterieure.
+   */
+  deliveryLabel: string;
   menus: HomeListMenu[];
 };
+
+/** Design des cartes 4 / 5 / 7 et de la note boutique (`HOME_DESIGN`). */
+export type HomeListDesign = "actuel" | "aere";
 
 export type HomeListBanner = {
   id: string;
@@ -103,6 +127,12 @@ export type HomeListViewProps = ViewProps & {
   /** Defilement auto de la banniere (sinon seul le doigt la fait defiler). */
   bannerAutoplay: boolean;
   /**
+   * Design des cartes et de la note boutique, recu au montage avant les
+   * cellules (change par OTA au lancement suivant). Ignore par une build
+   * anterieure, qui garde le design actuel.
+   */
+  homeDesign: HomeListDesign;
+  /**
    * Rangees sous l'ecran creees au repos avant le premier scroll, en ecrans
    * de hauteur (0 = coupe). Ignore par une build qui ne l'embarque pas.
    */
@@ -114,6 +144,11 @@ export type HomeListViewProps = ViewProps & {
   onEdgeChange: (e: Event<{ atTop: boolean; nearBottom: boolean }>) => void;
   /** Sonde de fluidite (TestFlight seulement) : `kind: "scroll"` (par geste), `"apply"` (par page) ou `"preheat"`. */
   onDiagnostics: (e: Event<Record<string, any>>) => void;
+  /**
+   * Statistiques : boutiques visibles a 50 % au moins (rang dans la liste),
+   * envoye quand l'ensemble change. Absent d'une build anterieure.
+   */
+  onVisibleShops?: (e: Event<{ ids: string[]; positions: number[] }>) => void;
 };
 
 export type HomeListHandle = {

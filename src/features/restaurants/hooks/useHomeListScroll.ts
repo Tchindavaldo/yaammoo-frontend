@@ -4,6 +4,7 @@ import { useNavigation } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated } from "react-native";
 import {
+  GHOST_COUNT,
   LOADER_VISIBLE_DISTANCE,
   PLACEHOLDER_FETCH_DISTANCE,
 } from "../utils/homeListConfig";
@@ -114,6 +115,12 @@ export const useHomeListScroll = ({
   // sans geste (double fetch, double loader). On n'autorise le fetch suivant
   // qu'apres etre remonte de 200 px : le rebond (±40 px) ne re-arme jamais.
   const fetchArmedRef = useRef(true);
+  // Nombre d'items de `listData` (banniere + boutiques + fantomes), pose par
+  // l'ecran a chaque rendu. Sert a MESURER la hauteur reelle d'une rangee :
+  // `ROW_HEIGHT_ESTIMATE` fige sous-estimait les rangees des designs a lignes
+  // sous la carte, et le fetch partait bien apres l'entree des fantomes a
+  // l'ecran (squelettes visibles longtemps en bas).
+  const listLengthRef = useRef(0);
   const handleScroll = useCallback(
     (e: any) => {
       const y = e.nativeEvent.contentOffset.y;
@@ -135,7 +142,14 @@ export const useHomeListScroll = ({
       // Le « bas » est desormais l'entree des FANTOMES dans le champ de vision
       // (ils occupent la fin du contenu) : le fetch part des qu'on les voit,
       // et ses donnees viennent remplir les squelettes deja en place.
-      const nextAtBottom = distanceToEnd <= PLACEHOLDER_FETCH_DISTANCE;
+      // Zone des fantomes = GHOST_COUNT rangees de hauteur MESUREE (hauteur
+      // du contenu / nombre d'items) ; repli sur l'estimation avant mesure.
+      const len = listLengthRef.current;
+      const fetchDistance =
+        len > GHOST_COUNT
+          ? (contentSize.height / len) * GHOST_COUNT + 90
+          : PLACEHOLDER_FETCH_DISTANCE;
+      const nextAtBottom = distanceToEnd <= fetchDistance;
       const nextLoaderVisible = distanceToEnd <= LOADER_VISIBLE_DISTANCE;
       if (nextLoaderVisible !== loaderVisibleRef.current) {
         loaderVisibleRef.current = nextLoaderVisible;
@@ -145,7 +159,7 @@ export const useHomeListScroll = ({
       // l'utilisateur est remonte attend son retour, elle ne s'insere jamais
       // sous ses yeux. Ecriture ref uniquement, aucun rendu.
       setListAtBottomRef.current(distanceToEnd <= 10);
-      if (distanceToEnd > PLACEHOLDER_FETCH_DISTANCE + 200) {
+      if (distanceToEnd > fetchDistance + 200) {
         fetchArmedRef.current = true;
       }
       if (nextAtBottom !== atBottomRef.current) {
@@ -240,6 +254,7 @@ export const useHomeListScroll = ({
     listRef,
     nativeListRef,
     loadMoreRef,
+    listLengthRef,
     handleScroll,
     handleMomentumEnd,
     handleNativeEdgeChange,

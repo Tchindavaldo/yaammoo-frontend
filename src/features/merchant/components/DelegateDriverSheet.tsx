@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +18,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Theme } from "@/src/theme";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { driverService, DriverInfo } from "@/src/features/driver/services/driverService";
+import { t, useLanguage } from "@/src/i18n";
 
 interface DelegateDriverSheetProps {
   visible: boolean;
@@ -30,7 +33,7 @@ const fullName = (infos?: { prenom?: string; nom?: string; email?: string }) => 
   const name = [infos?.prenom, infos?.nom].filter(Boolean).join(" ");
   if (name) return name;
   if (infos?.email) return infos.email.split("@")[0];
-  return "Livreur";
+  return t("Livreur");
 };
 
 /**
@@ -43,6 +46,7 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
   onSelfDeliver,
   onDelegate,
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const insets = useSafeAreaInsets();
   const fastFoodId = userData?.fastFoodId;
@@ -76,13 +80,13 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
     try {
       const ok = await action();
       if (ok === false) {
-        setError("Échec, réessayez.");
+        setError(t("Échec, réessayez."));
         setPending(null);
         return;
       }
       onClose();
     } catch {
-      setError("Échec, réessayez.");
+      setError(t("Échec, réessayez."));
       setPending(null);
     }
   };
@@ -97,7 +101,7 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
         {/* Contenu pose sur la bande safe-area, sans marge en plus (R19). */}
         <Pressable style={[styles.sheet, { paddingBottom: insets.bottom }]}>
           <View style={styles.handle} />
-          <Text style={styles.title}>Qui livre cette commande ?</Text>
+          <Text style={styles.title}>{t("Qui livre cette commande ?")}</Text>
 
           {/* Moi-même = comportement Lancer actuel */}
           <TouchableOpacity
@@ -108,7 +112,7 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
             <View style={[styles.rowIcon, { backgroundColor: Theme.colors.primary + "15" }]}>
               <Ionicons name="storefront-outline" size={20} color={Theme.colors.primary} />
             </View>
-            <Text style={styles.rowName}>Moi-même</Text>
+            <Text style={styles.rowName}>{t("Moi-même")}</Text>
             {pending === "self" ? (
               <ActivityIndicator size="small" color={Theme.colors.primary} />
             ) : (
@@ -116,12 +120,12 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
             )}
           </TouchableOpacity>
 
-          <Text style={styles.sectionLabel}>Mes livreurs</Text>
+          <Text style={styles.sectionLabel}>{t("Mes livreurs")}</Text>
 
           {loading ? (
             <ActivityIndicator color={Theme.colors.primary} style={{ marginVertical: 20 }} />
           ) : drivers.length === 0 ? (
-            <Text style={styles.empty}>Aucun livreur. Ajoutez-en dans Boutique → Livreurs.</Text>
+            <Text style={styles.empty}>{t("Aucun livreur. Ajoutez-en dans Boutique → Livreurs.")}</Text>
           ) : (
             <ScrollView style={{ maxHeight: 260 }}>
               {drivers.map((d) => (
@@ -149,6 +153,8 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
           <SafeAreaDebugBand />
         </Pressable>
       </Pressable>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

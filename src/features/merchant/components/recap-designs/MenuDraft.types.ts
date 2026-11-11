@@ -7,7 +7,7 @@
 
 export type Availability = "available" | "unavailable";
 
-/** Item d'extra ou de boisson : nom, prix, quantité, disponibilité. */
+/** Item d'extra : nom, prix, quantité, disponibilité. */
 export interface DraftItem {
   name: string;
   prix: string;
@@ -30,10 +30,9 @@ export interface DraftPrice {
  */
 export interface MenuDraft {
   nom: string;
-  prix: [string, string, string]; // prix1, prix2, prix3
-  desc: [string, string, string]; // desc1, desc2, desc3
+  /** N prix (plus limité à 3) ; les boissons appartiennent à la boutique. */
+  prices: DraftPrice[];
   extras: DraftItem[];
-  drinks: DraftItem[];
   availability: Availability;
   stock: string;
   images: string[];
@@ -43,10 +42,8 @@ export interface MenuDraft {
 
 /** Prix valides (> 0) avec leur description. */
 export const validPrices = (d: MenuDraft): DraftPrice[] =>
-  d.prix
-    .map((price, i) => ({ price, description: d.desc[i] }))
-    .filter((p) => p.price && Number(p.price) > 0);
+  d.prices.filter((p) => p.price && Number(p.price) > 0);
 
-/** Extras/boissons dont le nom est renseigné. */
+/** Extras dont le nom est renseigné. */
 export const namedItems = (items: DraftItem[]) =>
   items.filter((i) => i.name.trim());

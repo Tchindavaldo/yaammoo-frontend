@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import {
   ActivityIndicator,
@@ -14,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
 import { AuthFieldCapsule } from "./AuthFieldCapsule";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Connexion / inscription par email — DESIGN D'ORIGINE conserve.
@@ -55,6 +57,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
   onToggleMode,
   onBack,
 }) => {
+  useLanguage();
   const [field, setField] = React.useState<Field>(null);
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
@@ -79,7 +82,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
       if (loading) return;
       // Erreur INLINE, jamais d'`Alert` natif : la boite volerait le focus.
       if (!mail || !pwd) {
-        setError("L'email ou le mot de passe ne doit pas être vide.");
+        setError(t("L'email ou le mot de passe ne doit pas être vide."));
         return;
       }
       setLoading(true);
@@ -91,7 +94,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
       } catch (err: any) {
         setError(
           err?.message ??
-            (isRegister ? "Inscription échouée." : "Connexion échouée."),
+            (isRegister ? t("Inscription échouée.") : t("Connexion échouée.")),
         );
         setLoading(false);
       }
@@ -120,7 +123,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
              l'ecran. Le champ reprend sa couleur des la capsule refermee, avec
              la valeur a jour. */
           style={[styles.input, field !== null && styles.inputMuted]}
-          placeholder={isPwd ? "Mot de passe" : "Adresse email"}
+          placeholder={isPwd ? t("Mot de passe") : t("Adresse email")}
           placeholderTextColor={field !== null ? "transparent" : "#a8a8a6"}
           value={isPwd ? password : email}
           onChangeText={(v) => {
@@ -185,12 +188,12 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
         {/* Titre et description propres a CETTE etape : le message d'accueil
             appartient a l'ecran des boutons sociaux, pas ici. */}
         <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-          {isRegister ? "Inscription via email" : "Connexion via email"}
+          {isRegister ? t("Inscription via email") : t("Connexion via email")}
         </Text>
         <Text style={styles.subtitle}>
           {isRegister
-            ? "Créez votre compte avec votre adresse email et un mot de passe."
-            : "Entrez votre adresse email et votre mot de passe pour continuer."}
+            ? t("Créez votre compte avec votre adresse email et un mot de passe.")
+            : t("Entrez votre adresse email et votre mot de passe pour continuer.")}
         </Text>
 
         <View style={styles.auth}>
@@ -212,7 +215,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
               <ActivityIndicator size="small" color="#ffffff" />
             ) : (
               <Text style={[styles.btnText, styles.btnTextPrimary]}>
-                {isRegister ? "Créer le compte" : "Se connecter"}
+                {isRegister ? t("Créer le compte") : t("Se connecter")}
               </Text>
             )}
           </TouchableOpacity>
@@ -224,7 +227,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
             <>
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>Ou continuer avec</Text>
+                <Text style={styles.dividerText}>{t("Ou continuer avec")}</Text>
                 <View style={styles.dividerLine} />
               </View>
 
@@ -286,7 +289,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
               activeOpacity={0.7}
             >
               <Text style={styles.compactToggleLink} numberOfLines={1}>
-                {isRegister ? "Se connecter" : "S'inscrire"}
+                {isRegister ? t("Se connecter") : t("S'inscrire")}
               </Text>
               <Ionicons name="arrow-forward" size={14} color="#141414" />
             </TouchableOpacity>
@@ -295,7 +298,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
           /* iOS : ligne de bascule d'ORIGINE, sous le cadre des logos. */
           <View style={styles.footerLine}>
             <Text style={styles.footerText}>
-              {isRegister ? "Déjà un compte ?" : "Pas encore de compte ?"}
+              {isRegister ? t("Déjà un compte ?") : t("Pas encore de compte ?")}
             </Text>
             <TouchableOpacity
               onPress={onToggleMode}
@@ -304,7 +307,7 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
               activeOpacity={0.7}
             >
               <Text style={styles.footerLink}>
-                {isRegister ? " Se connecter" : " S'inscrire"}
+                {isRegister ? t(" Se connecter") : t(" S'inscrire")}
               </Text>
             </TouchableOpacity>
           </View>

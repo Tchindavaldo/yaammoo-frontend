@@ -9,7 +9,8 @@ public final class HomeListModule: Module {
     Name("HomeList")
 
     View(HomeListView.self) {
-      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics")
+      Events("onMenuPress", "onBannerPress", "onEndReached", "onRefresh", "onEdgeChange", "onDiagnostics",
+             "onVisibleShops")
 
       // ⚠️ Les boutiques ne sont PAS une prop. Une prop renvoie TOUTE la liste a
       // chaque page, et Expo la decode sur le fil de l'ecran : environ 1 ms par
@@ -68,6 +69,13 @@ public final class HomeListModule: Module {
       // des cellules.
       Prop("bannerAutoplay") { (_: HomeListView, on: Bool) in
         HLBannerCell.autoplayEnabled = on
+      }
+
+      // Design des cartes 4 / 5 / 7 et de la note boutique (`actuel` | `aere`).
+      // Recu au montage, avant la creation des cellules : une cellule garde
+      // le design sous lequel elle a ete construite.
+      Prop("homeDesign") { (_: HomeListView, design: String) in
+        HLDesign.aere = design == "aere"
       }
 
       OnViewDidUpdateProps { (view: HomeListView) in

@@ -190,7 +190,9 @@ function HeroBannerBase({ banners, onBonusPress, loading = false }: Props) {
   // d'ancrage, les puces s'eteindraient toutes en arrivant sur un clone.
   const dotViews = useMemo(() => {
     const n = banners.length;
-    if (n <= 1) return null;
+    // Largeur nulle (web, rendu statique) : toutes les positions valent 0, la
+    // rampe n'aurait qu'un point et `interpolate` leverait une erreur.
+    if (n <= 1 || width <= 0) return null;
     const looped = slides.length === n + 2;
     return banners.map((b, i) => {
       // Position(s) de diapo qui affichent la banniere `i`.

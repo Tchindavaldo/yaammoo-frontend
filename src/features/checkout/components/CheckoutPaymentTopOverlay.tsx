@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Menu } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import {
@@ -15,6 +16,7 @@ import {
 } from "react-native";
 import { useSheetInsets } from "../hooks/useSheetInsets";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
@@ -89,18 +91,19 @@ const PriceRecap: React.FC<{
   deliveryPrice: number;
   isDeliveryFree?: boolean;
 }> = ({ menuPrice, drinksPrice, extrasPrice, deliveryPrice, isDeliveryFree }) => {
+  useLanguage();
   const rows: {
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
     value: number;
     free?: boolean;
   }[] = [
-    { icon: "fast-food-outline", label: "Menu", value: menuPrice },
-    { icon: "wine-outline", label: "Boisson", value: drinksPrice },
+    { icon: "fast-food-outline", label: t("Menu"), value: menuPrice },
+    { icon: "wine-outline", label: t("Boisson"), value: drinksPrice },
     { icon: "add-circle-outline", label: "Extras", value: extrasPrice },
     {
       icon: "bicycle-outline",
-      label: "Livraison",
+      label: t("Livraison"),
       value: deliveryPrice,
       free: isDeliveryFree,
     },
@@ -112,7 +115,7 @@ const PriceRecap: React.FC<{
           <Ionicons name={r.icon} size={16} color={DS.accent} />
           <Text style={styles.recapLabel}>{r.label}</Text>
           {r.free ? (
-            <Text style={[styles.recapValue, styles.recapFree]}>Gratuit</Text>
+            <Text style={[styles.recapValue, styles.recapFree]}>{t("Gratuit")}</Text>
           ) : (
             <Text style={styles.recapValue}>{r.value} F</Text>
           )}
@@ -129,11 +132,12 @@ const ActionArea: React.FC<{
   network: "orange" | "mtn";
   onNetworkChange?: (network: "orange" | "mtn") => void;
 }> = ({ network, onNetworkChange }) => {
+  useLanguage();
   // Pour l'instant : uniquement la sélection du réseau.
   return (
     <View style={styles.actionArea}>
       <Text style={styles.actionTitle}>
-        Sélectionnez le réseau utilisé pour le paiement
+        {t("Sélectionnez le réseau utilisé pour le paiement")}
       </Text>
       <View style={styles.networkRow}>
         {(["orange", "mtn"] as const).map((net) => {
@@ -182,7 +186,10 @@ export const CheckoutPaymentTopOverlay: React.FC<
   network = "orange",
   onNetworkChange,
 }) => {
-  const anim = React.useRef(new Animated.Value(0)).current; // 0 = caché, 1 = visible
+  useLanguage();
+  // Monté DÉJÀ visible (réouverture d'un paiement en cours) : aucune entrée
+  // propre, la carte suit le glissement du sheet.
+  const anim = React.useRef(new Animated.Value(visible ? 1 : 0)).current; // 0 = caché, 1 = visible
   // Reste monté tant que l'animation de sortie n'est pas terminée.
   const insets = useSheetInsets();
   const [mounted, setMounted] = React.useState(visible);
@@ -267,7 +274,7 @@ export const CheckoutPaymentTopOverlay: React.FC<
 
           {/* Total affiché à part, plus grand */}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total à payer</Text>
+            <Text style={styles.totalLabel}>{t("Total à payer")}</Text>
             <Text style={styles.totalValue}>{total} FCFA</Text>
           </View>
 

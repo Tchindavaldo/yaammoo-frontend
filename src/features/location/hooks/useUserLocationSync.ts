@@ -1,35 +1,53 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { useCallback, useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
 import { requestBackgroundPrompt } from "../services/backgroundPrompt";
 import {
+  onForegroundLocationStatus,
+  requestForegroundLocation,
+} from "../services/locationPermission";
+import {
   LocationSource,
   userLocationService,
 } from "../services/userLocationService";
 import {
-  backgroundLocationSupported,
   startBackgroundLocation,
   stopBackgroundLocation,
+  stopLegacyUserTracking,
+  userBackgroundSupported,
 } from "../tasks/backgroundLocationTask";
 import { buildLocationPayload } from "../utils/buildLocationPayload";
+import { useLanguage } from "@/src/i18n";
 
 /** Dernier envoi réussi (ms), partagé entre sessions. */
 const LAST_SENT_KEY = "user_location_last_sent";
 /** Écart minimal entre deux captures hors connexion (ouverture, premier plan). */
 const MIN_INTERVAL_MS = 30 * 60 * 1000;
+/**
+ * La permission « Pendant l'utilisation » n'est proposée automatiquement
+ * qu'une fois à la connexion ; ensuite seulement via le bandeau du home
+ * (`useLocationAccess`), à l'initiative de l'utilisateur.
+ */
+const FG_ASKED_KEY = "user_location_fg_asked";
 /** La permission « Toujours » n'est proposée qu'une fois, jamais redemandée. */
 const BG_ASKED_KEY = "user_location_bg_asked";
 
 /**
- * Suivi app fermée : permission « Toujours » demandée une seule fois (après
- * celle « Pendant l'utilisation »), précédée d'un écran d'information
- * (`BackgroundLocationPromptCard`) : « Plus tard » n'ouvre pas la popup
- * système et n'est jamais reproposé. Puis tâche arrière-plan lancée. Relancée
- * à chaque connexion si déjà accordée (idempotent).
+ * Suivi app fermée (iOS seulement) : permission « Toujours » demandée une
+ * seule fois (après celle « Pendant l'utilisation »), précédée d'un écran
+ * d'information (`BackgroundLocationPromptCard`) : « Plus tard » n'ouvre pas
+ * la popup système et n'est jamais reproposé. Puis tâche arrière-plan lancée.
+ * Relancée à chaque connexion si déjà accordée (idempotent).
+ * Android : plus de « Toujours » (refusée par Google Play) ; un suivi lancé
+ * par une version antérieure est arrêté.
  */
 const ensureBackgroundTracking = async () => {
-  if (!backgroundLocationSupported) return;
+  if (!userBackgroundSupported) {
+    await stopLegacyUserTracking();
+    return;
+  }
   const current = await Location.getBackgroundPermissionsAsync();
   let status = current.status;
   if (
@@ -49,30 +67,37 @@ const ensureBackgroundTracking = async () => {
  * Position de l'utilisateur, envoyée au backend :
  * - à la connexion (`capture("login")`, appelée après la permission
  *   notifications) : la permission de localisation est demandée à ce moment,
- *   une seule fois — un refus n'est jamais redemandé. Puis la permission
- *   « Toujours » (suivi app fermée, voir `backgroundLocationTask`) ;
+ *   une seule fois, précédée de l'écran de divulgation (Android) — un refus
+ *   n'est jamais redemandé. Puis la permission « Toujours » (iOS, suivi app
+ *   fermée, voir `backgroundLocationTask`) ;
  * - au retour au premier plan, au plus toutes les 30 min.
  *
- * Silencieux : ni loader ni toast. Aucune fonction de l'app n'en dépend, un
- * échec (GPS lent, hors ligne, refus) n'a pas à interrompre l'utilisateur.
+ * Silencieux : ni loader ni toast, un échec (GPS lent, hors ligne) n'interrompt
+ * pas l'utilisateur. Le refus de la permission affiche un bandeau sur le home
+ * (`useLocationAccess`), sans rien bloquer.
  */
 export const useUserLocationSync = (isSignedIn: boolean) => {
+  useLanguage();
   const running = useRef(false);
 
-  const capture = useCallback(async (source: LocationSource) => {
+  const capture = useCallback(async (source: LocationSource, force = false) => {
     if (running.current || Platform.OS === "web") return;
     running.current = true;
     try {
-      if (source !== "login") {
+      if (source !== "login" && !force) {
         const last = Number(await AsyncStorage.getItem(LAST_SENT_KEY));
         if (last && Date.now() - last < MIN_INTERVAL_MS) return;
       }
 
-      const current = await Location.getForegroundPermissionsAsync();
-      let status = current.status;
-      // Demandée seulement à la connexion, et si l'OS le permet encore.
-      if (status === "undetermined" && current.canAskAgain && source === "login") {
-        status = (await Location.requestForegroundPermissionsAsync()).status;
+      let { status } = await Location.getForegroundPermissionsAsync();
+      // Demandée seulement à la connexion, une seule fois.
+      if (
+        status === "undetermined" &&
+        source === "login" &&
+        !(await AsyncStorage.getItem(FG_ASKED_KEY))
+      ) {
+        await AsyncStorage.setItem(FG_ASKED_KEY, "1");
+        status = await requestForegroundLocation("nearby");
       }
       if (status !== "granted") return;
 
@@ -102,6 +127,15 @@ export const useUserLocationSync = (isSignedIn: boolean) => {
       if (state === "active") void capture("foreground");
     });
     return () => sub.remove();
+  }, [isSignedIn, capture]);
+
+  // Permission accordée plus tard (bandeau du home, `useLocationAccess`) : envoi
+  // immédiat, sans attendre le prochain retour au premier plan.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    return onForegroundLocationStatus((status) => {
+      if (status === "granted") void capture("foreground", true);
+    });
   }, [isSignedIn, capture]);
 
   // Déconnexion (connecté → non connecté) : fin du suivi app fermée. Pas au

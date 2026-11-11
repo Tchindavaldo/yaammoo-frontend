@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from "react";
 import { storage } from "@/src/utils/storage";
 import axios from "axios";
@@ -7,6 +8,7 @@ import { Commande } from "@/src/types";
 import { sanitizeOrder } from "../utils/sanitizeOrder";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useLazyFetch } from "@/src/hooks/useLazyFetch";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Cache des commandes, pour un badge panier juste des la premiere frame. */
 const ORDERS_CACHE_KEY = "orders_cache";
@@ -50,6 +52,7 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [orders, setOrders] = useState<Commande[]>([]);
   const [loading, setLoading] = useState(false);
@@ -120,7 +123,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return true;
     } catch (err: any) {
       console.error("Error fetching orders:", err);
-      if (!quiet) setError("Erreur réseau");
+      if (!quiet) setError(t("Erreur réseau"));
       // `false` rearme `useLazyFetch` : le prochain passage sur une page de
       // commandes relancera le chargement au lieu de rester sur l'erreur.
       return false;
@@ -162,13 +165,13 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         await fetchOrders();
         return { success: true };
       }
-      return { success: false, message: "Erreur lors de la création." };
+      return { success: false, message: t("Erreur lors de la création.") };
     } catch (err: any) {
       console.error("Add order error:", err);
       const backendMessage = err.response?.data?.message;
       return {
         success: false,
-        message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || "Erreur réseau"
+        message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || t("Erreur réseau")
       };
     } finally {
       setLoading(false);
@@ -209,8 +212,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const saveOrder = async (
     order: any,
   ): Promise<{ success: boolean; message?: string }> => {
-    if (!userData) return { success: false, message: "Utilisateur non connecté" };
-    if (!order?.id) return { success: false, message: "Commande introuvable" };
+    if (!userData) return { success: false, message: t("Utilisateur non connecté") };
+    if (!order?.id) return { success: false, message: t("Commande introuvable") };
     try {
       const { status, ...payload } = sanitizeOrder(order, userData.uid) as any;
       await axios.put(`${Config.apiUrl}/order`, { ...payload, id: order.id });
@@ -223,7 +226,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         success: false,
         message: Array.isArray(backendMessage)
           ? backendMessage.join("; ")
-          : backendMessage || "Erreur réseau",
+          : backendMessage || t("Erreur réseau"),
       };
     }
   };
@@ -264,7 +267,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   const buyOrders = async (ordersToBuy: Commande[]): Promise<{ success: boolean; message?: string }> => {
-    if (!userData) return { success: false, message: "Utilisateur non connecté" };
+    if (!userData) return { success: false, message: t("Utilisateur non connecté") };
     try {
       setLoading(true);
       const ordersWithUserId = ordersToBuy.map((o) => sanitizeOrder(o, userData?.uid));
@@ -276,13 +279,13 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         await fetchOrders();
         return { success: true };
       }
-      return { success: false, message: "Erreur lors de la validation des commandes" };
+      return { success: false, message: t("Erreur lors de la validation des commandes") };
     } catch (err: any) {
       console.error("Buy orders error:", err);
       const backendMessage = err.response?.data?.message;
       return {
         success: false,
-        message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || "Erreur réseau"
+        message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || t("Erreur réseau")
       };
     } finally {
       setLoading(false);

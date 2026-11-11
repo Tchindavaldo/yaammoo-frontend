@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { StaffMember, StaffRole } from "../types/staff.types";
@@ -5,6 +6,7 @@ import { memberInitials, plural } from "../utils/staffFormat";
 import { grantedOf, isFullAccess, type PermissionMeta } from "../utils/staffPermissions";
 import { StaffAvatar } from "./StaffAvatar";
 import { ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 const MAX_STACK = 4;
 const MAX_CHIPS = 3;
@@ -23,9 +25,9 @@ const summaryOf = (members: StaffMember[]) => {
   const invited = members.filter((m) => m.active && !m.userId).length;
   const suspended = members.filter((m) => !m.active).length;
   return [
-    plural(members.length, "membre"),
-    invited ? plural(invited, "invitation") : "",
-    suspended ? plural(suspended, "accès coupé", "accès coupés") : "",
+    plural(members.length, t("membre")),
+    invited ? plural(invited, t("invitation")) : "",
+    suspended ? plural(suspended, t("accès coupé"), t("accès coupés")) : "",
   ]
     .filter(Boolean)
     .join(" · ");
@@ -42,6 +44,7 @@ export const StaffRoleCard: React.FC<Props> = ({
   catalog,
   onPress,
 }) => {
+  useLanguage();
   const permissions = role?.permissions || [];
   const dark = isFullAccess(permissions, catalog);
   const granted = grantedOf(permissions, catalog);
@@ -55,26 +58,26 @@ export const StaffRoleCard: React.FC<Props> = ({
         onPress={onPress}
         style={({ pressed }) => [styles.head, pressed && { opacity: 0.75 }]}
         accessibilityRole="button"
-        accessibilityLabel={role?.name || "Sans rôle"}
+        accessibilityLabel={role?.name || t("Sans rôle")}
       >
         <View style={styles.row}>
           <Text style={[styles.name, { color: fg }]} numberOfLines={1}>
-            {role?.name || "Sans rôle"}
+            {role?.name || t("Sans rôle")}
           </Text>
           {dark ? (
             <View style={styles.fullPill}>
-              <Text style={styles.fullPillText}>Accès complet</Text>
+              <Text style={styles.fullPillText}>{t("Accès complet")}</Text>
             </View>
           ) : (
             <Text style={styles.count}>
-              {granted.length} / {catalog.length} permission{granted.length > 1 ? "s" : ""}
+              {t("{{a}} / {{b}} permission{{c}}", { a: granted.length, b: catalog.length, c: granted.length > 1 ? "s" : "" })}
             </Text>
           )}
         </View>
 
         <View style={styles.people}>
           {members.length === 0 ? (
-            <Text style={[styles.peopleText, { color: soft }]}>Aucun membre</Text>
+            <Text style={[styles.peopleText, { color: soft }]}>{t("Aucun membre")}</Text>
           ) : (
             <>
               <View style={styles.stack}>
@@ -105,7 +108,7 @@ export const StaffRoleCard: React.FC<Props> = ({
           )}
           <View style={{ flex: 1 }} />
           <View style={[styles.seePill, { backgroundColor: dark ? "rgba(255,255,255,0.12)" : ST.surface }]}>
-            <Text style={[styles.seeText, { color: fg }]}>Voir</Text>
+            <Text style={[styles.seeText, { color: fg }]}>{t("Voir")}</Text>
           </View>
         </View>
 
@@ -116,7 +119,7 @@ export const StaffRoleCard: React.FC<Props> = ({
             ))}
           </View>
         ) : granted.length === 0 ? (
-          <Text style={styles.noPerm}>Aucune permission</Text>
+          <Text style={styles.noPerm}>{t("Aucune permission")}</Text>
         ) : (
           <View style={styles.chips}>
             {granted.slice(0, MAX_CHIPS).map((p) => (

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { socketService } from "@/src/services/socket";
 import { useCallback, useEffect, useState } from "react";
 import { merchantSupportService } from "../services/merchantSupportService";
@@ -5,6 +6,7 @@ import type {
   MerchantSupportMessage,
   MerchantSupportThread,
 } from "../types/merchantSupport.types";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Options {
   /** Compte marchand connecté ; sans lui aucune réponse n'est possible. */
@@ -23,6 +25,7 @@ export const useMerchantSupportConversation = ({
   thread,
   onThreadUpdated,
 }: Options) => {
+  useLanguage();
   const [messages, setMessages] = useState<MerchantSupportMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -41,7 +44,7 @@ export const useMerchantSupportConversation = ({
       })
       .catch((e) => {
         console.error("useMerchantSupportConversation:", e?.message || e);
-        if (!cancelled) setError("Impossible de charger les messages");
+        if (!cancelled) setError(t("Impossible de charger les messages"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -95,7 +98,7 @@ export const useMerchantSupportConversation = ({
         return true;
       } catch (e: any) {
         console.error("useMerchantSupportConversation send:", e?.message || e);
-        setError("Message non envoyé, réessayez");
+        setError(t("Message non envoyé, réessayez"));
         return false;
       } finally {
         setSending(false);

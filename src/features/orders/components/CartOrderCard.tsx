@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Commande, FastFood } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -6,6 +7,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { computeGrandTotal } from "../../merchant/components/MerchantOrderMontantTab";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartOrderCardProps {
   order: Commande;
@@ -51,10 +53,11 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
     localRank,
     onPress,
   }) => {
+    useLanguage();
     const priceStyle = [styles.summaryPrice, darkPrice && { color: "#111827" }];
     if (allOrders && allOrders.length > 0) {
       const orderCount = allOrders.length;
-      const ffName = fastFood?.nom || fastFood?.name || "Boutique";
+      const ffName = fastFood?.nom || fastFood?.name || t("Boutique");
       const initials = ffName.substring(0, 2).toUpperCase();
       const ffImage = (fastFood as any)?.logo || (fastFood as any)?.coverImage;
 
@@ -62,7 +65,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
       const isAnyDelivering = allOrders.some(
         (o) => (o.status || "").toLowerCase() === "delivering",
       );
-      const addressStr = order.delivery?.location || "Sur place";
+      const addressStr = order.delivery?.location || t("Sur place");
 
       // On calcule le prix total de toutes les commandes du groupe
       const totalPriceGroup = allOrders.reduce(
@@ -170,7 +173,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
      * un nombre. Le suffixe de livraison est conservé après le nom.
      */
     const menuName =
-      (order.menu as any)?.titre || (order.menu as any)?.name || "Commande";
+      (order.menu as any)?.titre || (order.menu as any)?.name || t("Commande");
 
     /**
      * Partie "livraison" seule, sans préfixe "N cmd" : suffixe le libellé quand
@@ -178,10 +181,10 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
      */
     const deliverySuffix = (() => {
       const d = order.delivery as any;
-      if (d?.status !== true) return "pas de livraison";
-      if (d?.type === "express") return "livraison express";
+      if (d?.status !== true) return t("pas de livraison");
+      if (d?.type === "express") return t("livraison express");
       const time = d?.time || d?.hour;
-      return time ? `livrée à ${time}` : "livrée";
+      return time ? t("livrée à {{a}}", { a: time }) : t("livrée");
     })();
 
     const menuImage =
@@ -269,7 +272,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                 <View style={[styles.smallChip, chipTint]}>
                   <Ionicons name="beer-outline" size={14} color="black" />
                   <Text style={[styles.chipText, { color: "black" }]}>
-                    Boisson +{drinksActiveCount}
+                    {t("Boisson +")}{drinksActiveCount}
                   </Text>
                 </View>
               </View>
@@ -286,7 +289,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                         size={16}
                         color={DS.danger}
                       />
-                      <Text style={styles.deleteBtnText}>annuler</Text>
+                      <Text style={styles.deleteBtnText}>{t("annuler")}</Text>
                     </TouchableOpacity>
                   </View>
                 ) : hideRanking ? (
@@ -298,7 +301,7 @@ export const CartOrderCard = React.memo<CartOrderCardProps>(
                   <View style={styles.rankContainer}>
                     <Ionicons name="trophy-outline" size={14} color="#ccc" />
                     <Text style={styles.rankText}>
-                      {status === "pending" ? "En attente" : "En cours"} •{" "}
+                      {status === "pending" ? t("En attente") : t("En cours")} •{" "}
                       {order.rank}
                     </Text>
                   </View>

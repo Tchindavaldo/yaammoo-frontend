@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { DS } from "@/src/theme";
@@ -5,6 +6,7 @@ import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { MenuManagePanel } from "@/src/features/merchant/components/MenuManagePanel";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MenuManageModalProps {
   visible: boolean;
@@ -16,6 +18,7 @@ interface MenuManageModalProps {
  * Rendu par la route `app/shop/menu.tsx` : page entière hors (tabs), sans navbar.
  */
 export const MenuManageModal: React.FC<MenuManageModalProps> = ({ visible, onClose }) => {
+  useLanguage();
   const { menus, loading, refresh, addMenu } = useMerchant();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [openAddMenu, setOpenAddMenu] = useState<(() => void) | null>(null);
@@ -36,10 +39,10 @@ export const MenuManageModal: React.FC<MenuManageModalProps> = ({ visible, onClo
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Gestion menu"
-        subtitle={`${available} plat${available > 1 ? "s" : ""} disponible${available > 1 ? "s" : ""}`}
+        title={t("Gestion menu")}
+        subtitle={t("{{a}} plat{{b}} disponible{{c}}", { a: available, b: available > 1 ? "s" : "", c: available > 1 ? "s" : "" })}
         right={
-          <HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />
+          <HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />
         }
         onHeightChange={setHeaderHeight}
       />

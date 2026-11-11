@@ -1,6 +1,8 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import type { Bonus, BonusRequestStatus } from "../types/bonus.types";
 import { useBonusEligibility } from "./useBonusEligibility";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface BonusStatus {
   isInactive: boolean;
@@ -25,6 +27,7 @@ export const useBonusStatus = (
   /** Statut optimiste local, prioritaire sur celui du backend. */
   optimisticPending = false,
 ): BonusStatus => {
+  useLanguage();
   const d = getBonusDescriptor(bonus.type);
   const p = useBonusEligibility(bonus);
 
@@ -40,16 +43,16 @@ export const useBonusStatus = (
     !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
 
   const label = isInactive
-    ? "Inactif"
+    ? t("Inactif")
     : isRedeemed
-      ? "Utilisé"
+      ? t("Utilisé")
       : isApproved
-        ? "Validé"
+        ? t("Validé")
         : isPending
-          ? "En attente"
+          ? t("En attente")
           : isEligible
-            ? "Éligible"
-            : "Non éligible";
+            ? t("Éligible")
+            : t("Non éligible");
 
   // Teinte UNIFORME : quel que soit l'état, on garde la couleur du bonus.
   // (plus de code couleur par statut — indigo/violet/vert/orange/rouge retirés).

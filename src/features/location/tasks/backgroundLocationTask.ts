@@ -6,6 +6,7 @@ import type { User } from "firebase/auth";
 import { AppState, Platform } from "react-native";
 import { auth } from "@/src/services/firebase";
 import { driverLocationService } from "../services/driverLocationService";
+import { requestForegroundLocation } from "../services/locationPermission";
 import { userLocationService } from "../services/userLocationService";
 import {
   buildDriverPositionPayload,
@@ -22,8 +23,9 @@ import {
 
 /**
  * Localisation app fermée ou en arrière-plan : position de l'utilisateur
- * (mode `normal`, permission « Toujours ») et, pour un livreur en course,
- * position du livreur (mode `delivery`). Voir `trackingModes.ts`.
+ * (mode `normal`, permission « Toujours », iOS seulement) et, pour un livreur
+ * en course, position du livreur (mode `delivery`, iOS et Android). Voir
+ * `trackingModes.ts`.
  *
  * Ce module est importé par le point d'entrée `index.js`, AVANT expo-router :
  * Android exécute la tâche sans monter l'interface, une définition placée dans
@@ -40,6 +42,16 @@ const DRIVER_LAST_SENT_KEY = "driver_location_last_sent";
 export const backgroundLocationSupported =
   Platform.OS !== "web" &&
   Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+
+/**
+ * Suivi utilisateur app fermée (mode `normal`, permission « Toujours ») : iOS
+ * seulement. Android n'a plus `ACCESS_BACKGROUND_LOCATION` (refusée par Google
+ * Play) ; seul le mode livraison y tourne, en service de premier plan.
+ * ⚠️ Sur Android, `getBackgroundPermissionsAsync` lève une exception sans
+ * cette permission au manifeste : ne l'appeler que si ce flag est vrai.
+ */
+export const userBackgroundSupported =
+  backgroundLocationSupported && Platform.OS === "ios";
 
 type LocationTaskData = { locations?: Location.LocationObject[] };
 
@@ -95,6 +107,10 @@ if (Platform.OS !== "web") {
           await sendDriverPosition(position, user).catch((e) =>
             console.warn("Position livreur impossible:", e),
           );
+        } else if (!userBackgroundSupported) {
+          // Android : suivi utilisateur d'une version antérieure, plus permis.
+          await stopLegacyUserTracking();
+          return;
         }
         await sendUserPosition(position, user);
       } catch (e) {
@@ -120,13 +136,26 @@ const restartIn = async (mode: TrackingMode) => {
 };
 
 /**
- * Lance le suivi utilisateur (idempotent). Exige la permission « Toujours ».
- * Une course en cours garde la main : le mode livraison n'est pas rétrogradé.
+ * Lance le suivi utilisateur (idempotent, iOS). Exige la permission
+ * « Toujours ». Une course en cours garde la main : le mode livraison n'est
+ * pas rétrogradé.
  */
 export const startBackgroundLocation = async () => {
-  if (!backgroundLocationSupported) return;
+  if (!userBackgroundSupported) return;
   if (await isStarted()) return;
   await restartIn("normal");
+};
+
+/**
+ * Android : arrête un suivi utilisateur lancé par une version antérieure
+ * (avec « Toujours »). Une course en cours (mode livraison) n'est pas touchée.
+ */
+export const stopLegacyUserTracking = async () => {
+  if (!backgroundLocationSupported || userBackgroundSupported) return;
+  if ((await getTrackingMode()) === "delivery") return;
+  if (await isStarted()) {
+    await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+  }
 };
 
 /** Arrête tout suivi (déconnexion). */
@@ -141,17 +170,13 @@ export const stopBackgroundLocation = async () => {
 /**
  * Livreur : passe la tâche en mode livraison (idempotent). À appeler app
  * ouverte (Android refuse de démarrer un service de premier plan sinon).
- * Demande la permission « Pendant l'utilisation » si l'OS le permet encore.
+ * Demande la permission « Pendant l'utilisation » si l'OS le permet encore,
+ * précédée de l'écran de divulgation (Android).
  * @returns false si la localisation est refusée ou indisponible.
  */
 export const startDeliveryTracking = async (): Promise<boolean> => {
   if (!backgroundLocationSupported) return false;
-  const current = await Location.getForegroundPermissionsAsync();
-  let status = current.status;
-  if (status !== "granted" && current.canAskAgain) {
-    status = (await Location.requestForegroundPermissionsAsync()).status;
-  }
-  if (status !== "granted") return false;
+  if ((await requestForegroundLocation("delivery")) !== "granted") return false;
   if ((await getTrackingMode()) === "delivery" && (await isStarted())) {
     return true;
   }
@@ -160,13 +185,15 @@ export const startDeliveryTracking = async (): Promise<boolean> => {
 };
 
 /**
- * Fin des courses : retour au suivi utilisateur si « Toujours » est accordé,
- * arrêt sinon. Sans effet hors mode livraison.
+ * Fin des courses : retour au suivi utilisateur si « Toujours » est accordé
+ * (iOS), arrêt sinon. Sans effet hors mode livraison.
  */
 export const stopDeliveryTracking = async () => {
   if (!backgroundLocationSupported) return;
   if ((await getTrackingMode()) !== "delivery") return;
-  const { status } = await Location.getBackgroundPermissionsAsync();
+  const status = userBackgroundSupported
+    ? (await Location.getBackgroundPermissionsAsync()).status
+    : "denied";
   if (status === "granted") {
     await restartIn("normal");
     return;

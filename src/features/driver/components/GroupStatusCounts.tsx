@@ -1,6 +1,8 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Commande } from "@/src/types";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Décompte par statut de livraison d'un groupe, affiché dans l'en-tête de groupe
@@ -11,6 +13,7 @@ import { Commande } from "@/src/types";
 export const GroupStatusCounts: React.FC<{ orders: Commande[] }> = ({
   orders,
 }) => {
+  useLanguage();
   let attente = 0;
   let cours = 0;
   let termine = 0;
@@ -24,17 +27,17 @@ export const GroupStatusCounts: React.FC<{ orders: Commande[] }> = ({
     <View style={styles.row}>
       {attente > 0 && (
         <View style={[styles.pill, styles.pillAttente]}>
-          <Text style={[styles.pillText, styles.textAttente]}>{attente} attente</Text>
+          <Text style={[styles.pillText, styles.textAttente]}>{attente} {t("attente")}</Text>
         </View>
       )}
       {cours > 0 && (
         <View style={[styles.pill, styles.pillCours]}>
-          <Text style={[styles.pillText, styles.textCours]}>{cours} en cours</Text>
+          <Text style={[styles.pillText, styles.textCours]}>{cours} {t("en cours")}</Text>
         </View>
       )}
       {termine > 0 && (
         <View style={[styles.pill, styles.pillTermine]}>
-          <Text style={[styles.pillText, styles.textTermine]}>{termine} terminé</Text>
+          <Text style={[styles.pillText, styles.textTermine]}>{termine} {t("terminé")}</Text>
         </View>
       )}
     </View>

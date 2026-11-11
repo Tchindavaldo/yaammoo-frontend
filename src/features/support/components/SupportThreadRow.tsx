@@ -1,17 +1,19 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getThreadName, getTopicDescriptor } from "../data/support.constants";
 import type { SupportThread } from "../types/support.types";
+import { dateLocale, useLanguage } from "@/src/i18n";
 
 /** Date courte : « 14:05 » aujourd'hui, « 28 juil. » au-delà. */
 const formatDate = (iso: string) => {
   const d = new Date(iso);
   const sameDay = new Date().toDateString() === d.toDateString();
   return sameDay
-    ? d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-    : d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+    ? d.toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" })
+    : d.toLocaleDateString(dateLocale(), { day: "2-digit", month: "short" });
 };
 
 interface Props {
@@ -21,6 +23,7 @@ interface Props {
 
 /** Ligne de la liste des discussions passées. */
 export const SupportThreadRow: React.FC<Props> = ({ thread, onPress }) => {
+  useLanguage();
   const topic = getTopicDescriptor(thread.topic);
   return (
     <Pressable style={styles.row} onPress={() => onPress(thread)}>

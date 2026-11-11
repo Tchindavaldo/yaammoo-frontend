@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -22,6 +23,7 @@ import type {
 import { BroadcastAudiencePicker } from "./BroadcastAudiencePicker";
 import { BroadcastPreview } from "./BroadcastPreview";
 import { BC, capsLabel } from "./broadcastTheme";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 const TITLE_MAX = 50;
 const BODY_MAX = 150;
@@ -59,6 +61,7 @@ export const BroadcastComposer: React.FC<Props> = ({
   onSend,
   onClose,
 }) => {
+  useLanguage();
   const [title, setTitle] = useState(initial.title);
   const [body, setBody] = useState(initial.body);
   const [bodyOn, setBodyOn] = useState(!!initial.body);
@@ -161,7 +164,7 @@ export const BroadcastComposer: React.FC<Props> = ({
         <Pressable
           style={[StyleSheet.absoluteFill, styles.backdrop]}
           onPress={onBackdrop}
-          accessibilityLabel="Fermer"
+          accessibilityLabel={tr("Fermer")}
         />
       </Animated.View>
 
@@ -169,8 +172,8 @@ export const BroadcastComposer: React.FC<Props> = ({
         style={[styles.card, { bottom, opacity: enter, transform: [{ translateY }] }]}
       >
         <View style={styles.top}>
-          <Text style={capsLabel}>NOUVELLE NOTIFICATION</Text>
-          <Pressable onPress={close} hitSlop={10} style={styles.closeBtn} accessibilityLabel="Fermer">
+          <Text style={capsLabel}>{tr("NOUVELLE NOTIFICATION")}</Text>
+          <Pressable onPress={close} hitSlop={10} style={styles.closeBtn} accessibilityLabel={tr("Fermer")}>
             <Ionicons name="close" size={16} color={BC.ink} />
           </Pressable>
         </View>
@@ -194,13 +197,13 @@ export const BroadcastComposer: React.FC<Props> = ({
         <TextInput
           value={title}
           onChangeText={(t) => setTitle(t.slice(0, TITLE_MAX))}
-          placeholder="Titre"
+          placeholder={tr("Titre")}
           placeholderTextColor="#8A8A90"
           maxLength={TITLE_MAX}
           style={styles.titleInput}
           returnKeyType={bodyOn ? "next" : "done"}
           onSubmitEditing={() => bodyOn && bodyRef.current?.focus()}
-          accessibilityLabel="Titre"
+          accessibilityLabel={tr("Titre")}
         />
 
         {bodyOn && (
@@ -208,12 +211,12 @@ export const BroadcastComposer: React.FC<Props> = ({
             ref={bodyRef}
             value={body}
             onChangeText={(t) => setBody(t.slice(0, BODY_MAX))}
-            placeholder="Message"
+            placeholder={tr("Message")}
             placeholderTextColor="#8A8A90"
             maxLength={BODY_MAX}
             multiline
             style={styles.bodyInput}
-            accessibilityLabel="Message"
+            accessibilityLabel={tr("Message")}
           />
         )}
 
@@ -224,7 +227,7 @@ export const BroadcastComposer: React.FC<Props> = ({
             contentContainerStyle={styles.strip}
             keyboardShouldPersistTaps="handled"
           >
-            <Pressable onPress={pickFromGallery} style={styles.galleryTile} accessibilityLabel="Choisir dans la galerie">
+            <Pressable onPress={pickFromGallery} style={styles.galleryTile} accessibilityLabel={tr("Choisir dans la galerie")}>
               <Ionicons name="images-outline" size={22} color={BC.ink} />
             </Pressable>
             {strip.map((uri) => {
@@ -235,7 +238,7 @@ export const BroadcastComposer: React.FC<Props> = ({
                   onPress={() => setImageUri(sel ? null : uri)}
                   style={[styles.photoRing, sel && styles.photoRingOn]}
                   accessibilityState={{ selected: sel }}
-                  accessibilityLabel="Photo"
+                  accessibilityLabel={tr("Photo")}
                 >
                   <Image source={{ uri }} style={styles.photo} contentFit="cover" />
                 </Pressable>
@@ -245,8 +248,8 @@ export const BroadcastComposer: React.FC<Props> = ({
         )}
 
         <View style={styles.toolbar}>
-          <ToolButton icon="reorder-three-outline" label="Message" on={bodyOn} onPress={toggleBody} />
-          <ToolButton icon="image-outline" label="Image" on={hasImage} onPress={() => setPickOn((v) => !v)} />
+          <ToolButton icon="reorder-three-outline" label={tr("Message")} on={bodyOn} onPress={toggleBody} />
+          <ToolButton icon="image-outline" label={tr("Image")} on={hasImage} onPress={() => setPickOn((v) => !v)} />
           <View style={{ flex: 1 }} />
           <Text style={styles.counter}>
             {title.length}/{TITLE_MAX}
@@ -255,7 +258,7 @@ export const BroadcastComposer: React.FC<Props> = ({
             onPress={submit}
             disabled={!canSend}
             style={[styles.send, { backgroundColor: canSend ? BC.ink : "#E5E5EA" }]}
-            accessibilityLabel="Envoyer"
+            accessibilityLabel={tr("Envoyer")}
           >
             {sending ? (
               <ActivityIndicator color="#fff" />

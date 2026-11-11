@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
@@ -25,8 +26,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { t, useLanguage } from "@/src/i18n";
 
 export default function NotificationsScreen() {
+  const i18nLang = useLanguage();
   const {
     notifications,
     loading,
@@ -48,7 +51,7 @@ export default function NotificationsScreen() {
   const unreadCount = notifications.filter((n) => !isReadFlag(n)).length;
   const sections = useMemo(
     () => groupNotificationsByDate(notifications),
-    [notifications],
+    [notifications, i18nLang],
   );
 
   const handleNotifPress = (notif: Notification) => {
@@ -76,8 +79,8 @@ export default function NotificationsScreen() {
     return (
       <GuestGate
         icon="notifications-outline"
-        title="Vos notifications"
-        subtitle="Connectez-vous pour suivre l'état de vos commandes et recevoir des alertes."
+        title={t("Vos notifications")}
+        subtitle={t("Connectez-vous pour suivre l'état de vos commandes et recevoir des alertes.")}
       >
         {null}
       </GuestGate>
@@ -90,7 +93,7 @@ export default function NotificationsScreen() {
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Theme.colors.primary} />
           <Text style={styles.loadingText}>
-            Chargement des notifications...
+            {t("Chargement des notifications...")}
           </Text>
         </View>
       </View>
@@ -105,13 +108,13 @@ export default function NotificationsScreen() {
         title="Notifications"
         subtitle={
           unreadCount > 0
-            ? `${unreadCount} non lue${unreadCount > 1 ? "s" : ""}`
+            ? t("{{a}} non lue{{b}}", { a: unreadCount, b: unreadCount > 1 ? "s" : "" })
             : undefined
         }
         right={
           unreadCount > 0 ? (
             <HeaderPill
-              label="Tout marquer lu"
+              label={t("Tout marquer lu")}
               icon="checkmark-done-outline"
               onPress={markAllAsRead}
             />
@@ -146,9 +149,9 @@ export default function NotificationsScreen() {
                 size={60}
                 color={Theme.colors.gray[300]}
               />
-              <Text style={styles.emptyTitle}>Aucune notification</Text>
+              <Text style={styles.emptyTitle}>{t("Aucune notification")}</Text>
               <Text style={styles.emptySubtitle}>
-                Vous serez notifié lors de nouvelles commandes et mises à jour
+                {t("Vous serez notifié lors de nouvelles commandes et mises à jour")}
               </Text>
             </View>
           ) : null

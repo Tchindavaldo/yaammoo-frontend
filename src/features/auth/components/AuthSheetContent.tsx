@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { showToast } from "@/src/services/globalToast";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -5,7 +7,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,8 +28,10 @@ import {
   requestPhoneCode,
   verifyPhoneCode,
 } from "@/src/features/auth/services/whatsappAuthService";
+import { t, useLanguage } from "@/src/i18n";
 
 export default function AuthSheetContent() {
+  useLanguage();
   const { user, userData, setUserData } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -76,12 +79,12 @@ export default function AuthSheetContent() {
         // Évite le flash blanc le temps que la home charge.
         setUserData(result.userData);
         return;
-      } else if (result.error && result.error !== "Connexion annulée") {
-        Alert.alert("Erreur Google", result.error);
+      } else if (result.error && result.error !== t("Connexion annulée")) {
+        showToast(result.error, "error");
       }
       setGoogleLoading(false);
     } catch {
-      Alert.alert("Erreur", "Connexion Google échouée.");
+      showToast(t("Connexion Google échouée."), "error");
       setGoogleLoading(false);
     }
   };
@@ -95,12 +98,12 @@ export default function AuthSheetContent() {
         // Loader maintenu jusqu'au montage de la home (voir onGoogle).
         setUserData(result.userData);
         return;
-      } else if (result.error && result.error !== "Connexion annulée") {
-        Alert.alert("Erreur Apple", result.error);
+      } else if (result.error && result.error !== t("Connexion annulée")) {
+        showToast(result.error, "error");
       }
       setAppleLoading(false);
     } catch {
-      Alert.alert("Erreur", "Connexion Apple échouée.");
+      showToast(t("Connexion Apple échouée."), "error");
       setAppleLoading(false);
     }
   };
@@ -208,10 +211,10 @@ export default function AuthSheetContent() {
   return (
     <View style={styles.content}>
       <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit>
-        Bienvenue sur Yaammoo
+        {t("Bienvenue sur Yaammoo")}
       </Text>
       <Text style={styles.subtitle}>
-        La meilleure application de cuisine et de recettes du siècle.
+        {t("La meilleure application de cuisine et de recettes du siècle.")}
       </Text>
 
       {/* Plus de ternaire `emailMode` ici : la saisie email a son propre ecran
@@ -236,7 +239,7 @@ export default function AuthSheetContent() {
                     <AppleIcon />
                   </View>
                 )}
-                <Text style={styles.btnText}>Continuer avec Apple</Text>
+                <Text style={styles.btnText}>{t("Continuer avec Apple")}</Text>
               </TouchableOpacity>
             )}
 
@@ -257,7 +260,7 @@ export default function AuthSheetContent() {
                   <GoogleIcon />
                 </View>
               )}
-              <Text style={styles.btnText}>Continuer avec Google</Text>
+              <Text style={styles.btnText}>{t("Continuer avec Google")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -268,12 +271,12 @@ export default function AuthSheetContent() {
               <View style={styles.btnIcon}>
                 <WhatsAppIcon />
               </View>
-              <Text style={styles.btnText}>Continuer avec WhatsApp</Text>
+              <Text style={styles.btnText}>{t("Continuer avec WhatsApp")}</Text>
             </TouchableOpacity>
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>Ou connectez-vous avec</Text>
+              <Text style={styles.dividerText}>{t("Ou connectez-vous avec")}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -292,7 +295,7 @@ export default function AuthSheetContent() {
                 style={styles.btnIcon}
               />
               <Text style={[styles.btnText, styles.btnTextPrimary]}>
-                Se connecter avec un email
+                {t("Se connecter avec un email")}
               </Text>
             </TouchableOpacity>
       </View>
@@ -300,7 +303,7 @@ export default function AuthSheetContent() {
       {/* Ce footer n'est visible que sur l'ecran des fournisseurs : la bascule
           connexion <-> inscription appartient desormais a `EmailAuthStep`. */}
       <View style={styles.footerLine}>
-        <Text style={styles.footerText}>Pas encore de compte ?</Text>
+        <Text style={styles.footerText}>{t("Pas encore de compte ?")}</Text>
         <TouchableOpacity
           onPress={() => {
             setIsRegister(true);
@@ -309,7 +312,7 @@ export default function AuthSheetContent() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           activeOpacity={0.7}
         >
-          <Text style={styles.footerLink}> S&apos;inscrire</Text>
+          <Text style={styles.footerLink}> {t("S'inscrire")}</Text>
         </TouchableOpacity>
       </View>
     </View>

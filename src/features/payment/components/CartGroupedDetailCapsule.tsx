@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -18,6 +19,7 @@ import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow
 import type { CartPaymentState } from "../hooks/useCartPayment";
 import { GROUPED_SHEET_HEIGHT } from "./CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * COPIE DEDIEE et AUTONOME de la capsule flottante du parcours groupe
@@ -75,6 +77,7 @@ export const CartGroupedDetailCapsule: React.FC<
   isKeyboardVisible,
   translateY,
 }) => {
+  useLanguage();
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const insets = useSafeAreaInsets();
@@ -369,7 +372,7 @@ export const CartGroupedDetailCapsule: React.FC<
                 />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="saisir le numéro de paiement"
+                  placeholder={t("saisir le numéro de paiement")}
                   placeholderTextColor="rgba(255,255,255,0.5)"
                   keyboardType="phone-pad"
                   value={phone}
@@ -403,7 +406,7 @@ export const CartGroupedDetailCapsule: React.FC<
             {shownState === "waiting" && (
               <View pointerEvents="none" style={styles.overlayText}>
                 <Text style={[styles.centerText, styles.overlayTextLabel]}>
-                  Veuillez patienter...
+                  {t("Veuillez patienter...")}
                 </Text>
               </View>
             )}
@@ -423,7 +426,7 @@ export const CartGroupedDetailCapsule: React.FC<
             {shownState === "success" && (
               <View pointerEvents="none" style={styles.overlayText}>
                 <Text style={[styles.centerText, styles.overlayTextLabel]}>
-                  Paiement réussi ! Création de la commande en cours...
+                  {t("Paiement réussi ! Création de la commande en cours...")}
                 </Text>
               </View>
             )}
@@ -435,7 +438,7 @@ export const CartGroupedDetailCapsule: React.FC<
               >
                 <Ionicons name="checkmark-circle" size={20} color="#10b981" />
                 <Text style={[styles.iconTextLabel, { color: "#10b981" }]}>
-                  Commande créée avec succès !
+                  {t("Commande créée avec succès !")}
                 </Text>
               </View>
             )}

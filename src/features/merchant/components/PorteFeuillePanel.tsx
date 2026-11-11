@@ -1,23 +1,24 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { showToast } from "@/src/services/globalToast";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { WalletDayStatItem } from "@/src/features/merchant/components/WalletDayStatItem";
 import { WalletDayStatSkeleton } from "@/src/features/merchant/components/WalletDayStatSkeleton";
-import { WithdrawOverlay } from "@/src/features/merchant/components/WithdrawOverlay";
-import { useWithdraw, DEBUG_COMPLETED } from "@/src/features/merchant/hooks/useWithdraw";
+import { WithdrawSheet } from "@/src/features/merchant/components/withdraw/WithdrawSheet";
+import { useWithdraw } from "@/src/features/merchant/hooks/useWithdraw";
 import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
+import { WalletNetworkCards } from "./WalletNetworkCards";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
   FlatList,
-  Keyboard,
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { t, useLanguage } from "@/src/i18n";
 
 type FilterType = "all" | "credit" | "debit" | "transfer";
 
@@ -42,6 +43,7 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   onRegisterWithdraw,
   topOffset = 0,
 }) => {
+  useLanguage();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
   // Hauteur mesurée de la barre fixe (solde + retrait) pour décaler la liste.
   const [barHeight, setBarHeight] = useState(0);
@@ -66,82 +68,22 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
     onRefresh?.();
   }, [refreshStats, onRefresh]);
 
-  // Retrait : POST /wallet/withdraw + verdict socket (géré dans le hook).
-  const {
-    withdrawPhone,
-    setWithdrawPhone,
-    withdrawAmount,
-    setWithdrawAmount,
-    withdrawNetwork,
-    setWithdrawNetwork,
-    withdrawState,
-    setWithdrawState,
-    withdrawError,
-    setWithdrawError,
-    resetWithdraw,
-    handleWithdrawConfirm,
-  } = useWithdraw();
+  // Solde global réel (fourni par le backend) et ses deux soldes par réseau.
+  const balance = stats?.balance ?? 0;
+  const balances = stats?.balances ?? { mtn: 0, orange: 0 };
 
-  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const keyboardHeight = useRef(new Animated.Value(0)).current;
+  // Retrait : feuille en 3 etapes, POST /wallet/withdraw + verdict socket
+  // (geres dans le hook).
+  const w = useWithdraw(balances);
+  const { withdrawError, setWithdrawError } = w;
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      (e) => {
-        setIsKeyboardVisible(true);
-        Animated.spring(keyboardHeight, {
-          toValue: e.endCoordinates.height,
-          useNativeDriver: false,
-          tension: 40,
-          friction: 8,
-        }).start();
-      },
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        setIsKeyboardVisible(false);
-        Animated.spring(keyboardHeight, {
-          toValue: 0,
-          useNativeDriver: false,
-          tension: 40,
-          friction: 8,
-        }).start();
-      },
-    );
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  // Après "Retrait effectué" (completed, 5s) : fermer simplement l'overlay.
-  // ⚠️ PAS de refresh ici : le socket wallet.withdrawal (completed) a déjà patché
-  // le solde + la série du jour via handleWithdrawalEvent → applyEvent. Un refresh
-  // mettrait loading=true → le loader natif du pull-to-refresh s'activerait tout
-  // seul après réception du socket (le bug visible signalé).
-  // 🐞 En mode DEBUG_COMPLETED, on ne ferme pas (l'overlay reste visible).
-  useEffect(() => {
-    if (DEBUG_COMPLETED) return;
-    if (withdrawState === "completed") {
-      const timer = setTimeout(() => {
-        resetWithdraw();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [withdrawState, resetWithdraw]);
-
-  // Toast d'erreur retrait.
+  // Toast d'erreur retrait (global : la feuille porte son `GlobalToastHost`).
   useEffect(() => {
     if (withdrawError) {
-      Alert.alert("Retrait", withdrawError);
+      showToast(withdrawError, "error");
       setWithdrawError(null);
     }
   }, [withdrawError, setWithdrawError]);
-
-  // Solde global réel (fourni par le backend).
-  const balance = stats?.balance ?? 0;
 
   // Remonte le solde au header parent dès qu'il change.
   useEffect(() => {
@@ -149,8 +91,10 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   }, [balance, onBalanceChange]);
 
   // Expose l'ouverture du retrait au header (pilule "Retirer"). Une seule fois au montage.
+  const openWithdrawRef = useRef(w.openWithdraw);
+  openWithdrawRef.current = w.openWithdraw;
   useEffect(() => {
-    onRegisterWithdraw?.(() => setWithdrawState("amount_input"));
+    onRegisterWithdraw?.(() => openWithdrawRef.current());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -158,17 +102,14 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
   const series = stats?.series ?? [];
 
   const filters: { key: FilterType; label: string; icon: string }[] = [
-    { key: "all", label: "Historique", icon: "time-outline" },
-    { key: "credit", label: "Dépôt", icon: "cash-outline" },
-    { key: "debit", label: "Retrait", icon: "arrow-back-circle-outline" },
-    { key: "transfer", label: "Transfert", icon: "arrow-redo-circle-outline" },
+    { key: "all", label: t("Historique"), icon: "time-outline" },
+    { key: "credit", label: t("Dépôt"), icon: "cash-outline" },
+    { key: "debit", label: t("Retrait"), icon: "arrow-back-circle-outline" },
+    { key: "transfer", label: t("Transfert"), icon: "arrow-redo-circle-outline" },
   ];
 
   const handleComingSoon = (label: string) => {
-    Alert.alert(
-      "Bientôt disponible",
-      `La fonctionnalité "${label}" arrive prochainement.`,
-    );
+    showToast(t("La fonctionnalité \"{{a}}\" arrive prochainement.", { a: label }), "info");
   };
 
   const listTopPad = topOffset + barHeight;
@@ -247,17 +188,14 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
               size={60}
               color={Theme.colors.gray[200]}
             />
-            <Text style={styles.emptyTitle}>Pas d&apos;activité</Text>
+            <Text style={styles.emptyTitle}>{t("Pas d'activité")}</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
               onPress={() =>
-                Alert.alert(
-                  "Commandez!",
-                  "Passez votre première commande depuis l'accueil.",
-                )
+                showToast(t("Passez votre première commande depuis l'accueil."), "info")
               }
             >
-              <Text style={styles.emptyBtnText}>Passer une commande</Text>
+              <Text style={styles.emptyBtnText}>{t("Passer une commande")}</Text>
             </TouchableOpacity>
           </View>
           )
@@ -270,49 +208,28 @@ export const PorteFeuillePanel: React.FC<PorteFeuilleProps> = ({
         style={[styles.fixedBar, { top: topOffset }]}
         onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
       >
-        <View style={styles.balanceRow}>
-          <View style={styles.balanceItem}>
-            <Text style={styles.balanceLbl}>Solde</Text>
-            <Text style={styles.balanceVal}>
-              {balance.toLocaleString("fr-FR")} F
-            </Text>
-          </View>
-          <View style={styles.divider} />
-          <TouchableOpacity
-            style={styles.balanceItem}
-            activeOpacity={0.7}
-            onPress={() => setWithdrawState("amount_input")}
-          >
-            <Text style={styles.balanceLbl}>Retrait</Text>
-            <View style={styles.withdrawRow}>
-              <Text style={[styles.balanceVal, { color: Theme.colors.primary }]}>
-                Retirer
-              </Text>
-              <Ionicons name="arrow-up-circle" size={20} color={Theme.colors.primary} />
-            </View>
-          </TouchableOpacity>
-        </View>
+        {/* Par réseau : commandes + frais de retrait = total (le solde global
+            est dans le sous-titre du header). */}
+        {stats?.breakdown && (
+          <WalletNetworkCards breakdown={stats.breakdown} />
+        )}
+      </View>
+      </BlurScope>
+
+      {/* Bouton de retrait fixe en bas (ShopPageFrame réserve la safe-area). */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.withdrawBtn}
+          activeOpacity={0.85}
+          onPress={w.openWithdraw}
+        >
+          <Ionicons name="arrow-up" size={20} color={DS.onInk} />
+          <Text style={styles.withdrawBtnText}>{t("Faire un retrait")}</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Overlay de RETRAIT (copie adaptée du paiement panier) */}
-      {withdrawState !== "idle" && (
-        <WithdrawOverlay
-          phone={withdrawPhone}
-          onPhoneChange={setWithdrawPhone}
-          amount={withdrawAmount}
-          onAmountChange={setWithdrawAmount}
-          onConfirm={handleWithdrawConfirm}
-          withdrawState={withdrawState}
-          setWithdrawState={setWithdrawState}
-          network={withdrawNetwork}
-          onNetworkChange={setWithdrawNetwork}
-          onClose={resetWithdraw}
-          onError={(msg) => Alert.alert("Retrait", msg)}
-          isKeyboardVisible={isKeyboardVisible}
-          bottom={Animated.add(keyboardHeight, isKeyboardVisible ? 5 : 92)}
-        />
-      )}
-      </BlurScope>
+      {/* Feuille de RETRAIT (3 etapes, modele du panier groupe). */}
+      <WithdrawSheet w={w} balances={balances} percents={stats?.withdrawFeePercent} />
     </View>
   );
 };
@@ -332,36 +249,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.gray[100],
   },
-  balanceRow: {
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: DS.bg,
+    borderTopWidth: 1,
+    borderTopColor: DS.line,
+  },
+  withdrawBtn: {
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: DS.accent,
     flexDirection: "row",
     alignItems: "center",
-    padding: Theme.spacing.lg,
-    gap: Theme.spacing.lg,
+    justifyContent: "center",
+    gap: 8,
   },
-  balanceItem: {
-    flex: 1,
-  },
-  withdrawRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  divider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Theme.colors.gray[200],
-  },
-  balanceLbl: {
-    fontSize: 12,
-    color: Theme.colors.gray[500],
-    marginBottom: 4,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  balanceVal: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: Theme.colors.dark,
+  withdrawBtnText: {
+    color: DS.onInk,
+    fontSize: 16,
+    fontWeight: "700",
   },
   balanceCard: {
     backgroundColor: Theme.colors.white,

@@ -1,22 +1,24 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { BroadcastAudience } from "../../types/broadcast.types";
 import { BC } from "./broadcastTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 const OPTIONS: {
   key: BroadcastAudience;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
-  { key: "customers", label: "Mes clients", icon: "people-outline" },
-  { key: "city", label: "Ma ville", icon: "location-outline" },
-  { key: "all", label: "Tout le monde", icon: "globe-outline" },
+  { key: "customers", get label() { return t("Mes clients"); }, icon: "people-outline" },
+  { key: "city", get label() { return t("Ma ville"); }, icon: "location-outline" },
+  { key: "all", get label() { return t("Tout le monde"); }, icon: "globe-outline" },
 ];
 
 /** Libellé court d'une audience, pour l'historique. */
 export const audienceLabel = (audience: BroadcastAudience, city?: string) =>
-  audience === "city" ? city || "Ville" : audience === "all" ? "Tout le monde" : "Mes clients";
+  audience === "city" ? city || t("Ville") : audience === "all" ? t("Tout le monde") : t("Mes clients");
 
 interface Props {
   /** Audiences permises par le plan. */
@@ -40,6 +42,7 @@ export const BroadcastAudiencePicker: React.FC<Props> = ({
   city,
   onChange,
 }) => {
+  useLanguage();
   const options = OPTIONS.filter(
     (o) => audiences.includes(o.key) && (o.key !== "city" || cities.length > 0),
   );

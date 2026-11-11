@@ -1,7 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { socketService } from "@/src/services/socket";
 import { useCallback, useEffect, useState } from "react";
 import { merchantSupportService } from "../services/merchantSupportService";
 import type { MerchantSupportThread } from "../types/merchantSupport.types";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Fils reçus par la boutique : chargement HTTP + temps réel.
@@ -13,6 +15,7 @@ export const useMerchantSupportThreads = (
   fastFoodId?: string,
   enabled = true
 ) => {
+  useLanguage();
   const [threads, setThreads] = useState<MerchantSupportThread[]>([]);
   // `true` d'entrée : le premier rendu précède le `refresh` de l'effet, et un
   // `false` initial ferait clignoter l'état vide avant le squelette.
@@ -32,7 +35,7 @@ export const useMerchantSupportThreads = (
       setThreads(await merchantSupportService.getThreads(fastFoodId));
     } catch (e: any) {
       console.error("useMerchantSupportThreads:", e?.message || e);
-      setError("Impossible de charger les discussions");
+      setError(tr("Impossible de charger les discussions"));
     } finally {
       setLoading(false);
     }

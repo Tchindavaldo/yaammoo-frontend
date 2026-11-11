@@ -1,4 +1,6 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Menu } from "@/src/types";
+import { menuPriceDescription } from "../../utils/menuPrices";
 import React, { useState } from "react";
 import { LayoutChangeEvent, View } from "react-native";
 import { styles } from "../CartCheckoutSheet.styles";
@@ -9,6 +11,7 @@ import {
   SOFT_ACCENT,
 } from "./detail-hero/heroShared";
 import { CartRecapBody } from "./cart-detail-hero/CartRecapBody";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Espace libre sous la section, avant le footer. */
 const FOOTER_SPACE = 80;
@@ -41,6 +44,7 @@ export const CartDetailTab: React.FC<CartDetailTabProps> = ({
   deliveryPrice,
   isDeliveryFree,
 }) => {
+  useLanguage();
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) =>
     setWidth(e.nativeEvent.layout.width);
@@ -52,15 +56,13 @@ export const CartDetailTab: React.FC<CartDetailTabProps> = ({
   const images =
     menu.images && menu.images.length > 0 ? menu.images : [menu.image];
   const priceDescription =
-    [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
-      selectedPriceIndex - 1
-    ] || "";
+    menuPriceDescription(menu, selectedPriceIndex);
 
   const recap: RecapCell[] = [
-    { icon: "fast-food-outline", title: "Menu", value: `${menuPrice} FCFA` },
+    { icon: "fast-food-outline", title: t("Menu"), value: `${menuPrice} FCFA` },
     {
       icon: "wine-outline",
-      title: "Boisson",
+      title: t("Boisson"),
       value: `${drinksPrice} FCFA`,
       onPress: () => onOpenTab("drink"),
     },
@@ -73,14 +75,14 @@ export const CartDetailTab: React.FC<CartDetailTabProps> = ({
     {
       icon: "bicycle-outline",
       iconColor: isDeliveryFree || deliveryPrice > 0 ? SOFT_ACCENT : MUTED,
-      title: "Livraison",
-      value: isDeliveryFree ? "Gratuit" : `${deliveryPrice} FCFA`,
+      title: t("Livraison"),
+      value: isDeliveryFree ? t("Gratuit") : `${deliveryPrice} FCFA`,
       strong: isDeliveryFree,
       onPress: () => onOpenTab("delivery"),
     },
     {
       icon: "wallet-outline",
-      title: "Total",
+      title: t("Total"),
       value: `${totalDisplay} FCFA`,
       strong: true,
     },

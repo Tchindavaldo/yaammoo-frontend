@@ -1,12 +1,16 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { showToast } from "@/src/services/globalToast";
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Keyboard, Platform, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppBlurView as BlurView } from '@/src/components/AppBlurView';
 import { Loader } from '../../../components/Loader';
 import * as Location from 'expo-location';
+import { requestForegroundLocation } from '@/src/features/location/services/locationPermission';
 import { useSheetInsets } from '../hooks/useSheetInsets';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
@@ -22,6 +26,7 @@ interface CheckoutLocationOverlayProps {
 }
 
 export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = ({ onClose, address, note, onSave }) => {
+  useLanguage();
   const [localAddress, setLocalAddress] = React.useState(address);
   const [localNote, setLocalNote] = React.useState(note);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -102,9 +107,10 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
   const handleGetLocation = async () => {
     try {
       setIsLocating(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      // Écran de divulgation avant la popup système (Android, Google Play).
+      const status = await requestForegroundLocation('address');
       if (status !== 'granted') {
-        alert('Permission to access location was denied');
+        showToast(t("Accès à la position refusé"), "error");
         setIsLocating(false);
         return;
       }
@@ -115,7 +121,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       const coords = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
       setLocalAddress(coords);
     } catch (error) {
-      alert('Error fetching location or timeout. Using last known if available.');
+      showToast(t("Position introuvable : la dernière position connue sera utilisée si possible."), "error");
       // Try a less accurate but faster fix as fallback
       try {
         const last = await Location.getLastKnownPositionAsync({});
@@ -134,12 +140,10 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
       Keyboard.dismiss();
       return;
     }
-    if (!localAddress.trim()) {
-      setValidationError("Envoyez votre GPS ou saisissez une adresse");
-      return;
-    }
-    if (!localNote.trim()) {
-      setValidationError("Ajoutez une note (ex: Porte bleue, 2ème étage)");
+    // GPS OU adresse écrite : l'un des deux suffit (livraison possible
+    // ailleurs que là où se trouve le client).
+    if (!localAddress.trim() && !localNote.trim()) {
+      setValidationError(t("Envoyez votre GPS ou saisissez une adresse"));
       return;
     }
     setValidationError(null);
@@ -186,7 +190,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="location-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Delivery Address</Text>
+              <Text style={styles.headerTitle}>{t("Adresse de livraison")}</Text>
               <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.keyboardSmallBtn}>
                 <Ionicons name="chevron-down-outline" size={18} color="#94a3b8" />
               </TouchableOpacity>
@@ -198,10 +202,10 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
 
           <View style={styles.inputContainer}>
             <View style={styles.addressBox}>
-              <Text style={styles.addressText}>{localAddress || '(Send Live GPS Location)'}</Text>
+              <Text style={styles.addressText}>{localAddress || t("(Envoyer ma position GPS)")}</Text>
                 <TextInput 
                   style={styles.textInput}
-                  placeholder="Note (ex: Porte bleue, 2ème étage...)"
+                  placeholder={t("Note (ex: Porte bleue, 2ème étage...)")}
                   placeholderTextColor="#94a3b8"
                   multiline
                   textAlignVertical="top"
@@ -220,7 +224,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
                   style={styles.locatingOverlay}
                 >
                     <Loader size={40} color={DS.accent} />
-                    <Text style={styles.locatingText}>Récupération de votre position actuelle...</Text>
+                    <Text style={styles.locatingText}>{t("Récupération de votre position actuelle...")}</Text>
                   </BlurView>
                 )}
             </View>
@@ -236,7 +240,7 @@ export const CheckoutLocationOverlay: React.FC<CheckoutLocationOverlayProps> = (
               onPress={handleGetLocation}
             >
               <Ionicons name="locate-outline" size={18} color="#334155" />
-              <Text style={styles.gpsBtnText}>Send Live GPS</Text>
+              <Text style={styles.gpsBtnText}>{t("Envoyer ma position GPS")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 

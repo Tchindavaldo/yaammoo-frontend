@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '../../../theme';
 import { Commande } from '@/src/types';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface OrderCardProps {
   order: Commande;
@@ -18,17 +20,18 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onUpdateQuantity,
   showActions = true 
 }) => {
+  useLanguage();
   const [activePanel, setActivePanel] = useState<'menu' | 'extra' | 'drink'>('menu');
   
   const isPending = order.status === 'pendingToBuy';
 
   const handleDelete = () => {
     Alert.alert(
-      'Annuler la commande',
-      'Voulez-vous vraiment retirer cet article du panier ?',
+      t("Annuler la commande"),
+      t("Voulez-vous vraiment retirer cet article du panier ?"),
       [
-        { text: 'Non', style: 'cancel' },
-        { text: 'Oui, retirer', style: 'destructive', onPress: () => onDelete?.(order.id) }
+        { text: t("Non"), style: 'cancel' },
+        { text: t("Oui, retirer"), style: 'destructive', onPress: () => onDelete?.(order.id) }
       ]
     );
   };
@@ -44,7 +47,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                onPress={() => setActivePanel('menu')}
              >
                 <Ionicons name="restaurant-outline" size={14} color={activePanel === 'menu' ? 'white' : 'black'} />
-                <Text style={[styles.chipLabel, activePanel === 'menu' && styles.activeChipLabel]}>Menu</Text>
+                <Text style={[styles.chipLabel, activePanel === 'menu' && styles.activeChipLabel]}>{t("Menu")}</Text>
              </TouchableOpacity>
 
              {(order.extra && order.extra.length > 0) && (
@@ -63,7 +66,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                  onPress={() => setActivePanel('drink')}
                >
                   <Ionicons name="beer-outline" size={14} color={activePanel === 'drink' ? 'white' : 'black'} />
-                  <Text style={[styles.chipLabel, activePanel === 'drink' && styles.activeChipLabel]}>Boisson +{order.drink.length}</Text>
+                  <Text style={[styles.chipLabel, activePanel === 'drink' && styles.activeChipLabel]}>{t("Boisson +")}{order.drink.length}</Text>
                </TouchableOpacity>
              )}
           </View>
@@ -101,7 +104,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 {/* Delivery Location */}
                 <View style={styles.infoRow}>
                   <Ionicons name="navigate-outline" size={14} color={Theme.colors.primary} />
-                  <Text style={styles.addressLabel}>Livraison:</Text>
+                  <Text style={styles.addressLabel}>{t("Livraison:")}</Text>
                   <Text style={styles.addressText} numberOfLines={1}>
                     {order.delivery?.location || 'Quartier Nkomo, Cameroun'}
                   </Text>

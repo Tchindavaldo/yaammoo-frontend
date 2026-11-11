@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -9,6 +10,7 @@ import {
   GHOST_MIN_VISIBLE,
 } from "./GhostZoneTable";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface DeliveryZoneListProps {
   groups: ZoneGroup[];
@@ -29,6 +31,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
   selectedLieu,
   onSelect,
 }) => {
+  useLanguage();
   // Hauteurs mesurees : on comble le vide restant avec un tableau fantome
   // (lignes vides) tant que le contenu ne declenche pas le scroll.
   const [viewportH, setViewportH] = useState(0);
@@ -67,7 +70,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
               paddingVertical: 10,
             }}
           >
-            Aucune zone renseignée
+            {t("Aucune zone renseignée")}
           </Text>
         ) : (
           groups.map((g, gi) => (
@@ -130,9 +133,9 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                     borderBottomColor: DS.slate100,
                   }}
                 >
-                  <Text style={colHeader}>Heure</Text>
+                  <Text style={colHeader}>{t("Heure")}</Text>
                   <Text style={[colHeader, { textAlign: "right" }]}>
-                    Périod.
+                    {t("Périod.")}
                   </Text>
                   <Text style={[colHeader, { textAlign: "right" }]}>
                     Express

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, {
   createContext,
   useCallback,
@@ -14,6 +15,7 @@ import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
 import { Config } from "@/src/api/config";
 import { sinceBoot } from "@/src/utils/bootClock";
+import { t, useLanguage } from "@/src/i18n";
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +35,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  useLanguage();
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<Users | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,9 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // 2. REFRESH EN ARRIÈRE-PLAN : tenter de récupérer la version fraîche.
         //    Ne bloque pas l'UI si on a déjà affiché le cache.
         //
-        // ⚠️ Cache frais : on ne rafraîchit PAS ici. Sous le splash, seules
-        // `/fastFood/all` et `/settings/app-version` ont le droit de partir —
-        // le profil affiché est déjà le bon. Le rafraîchissement est déclenché
+        // ⚠️ Cache frais : on ne rafraîchit PAS ici. Sous le splash, seule
+        // `/settings/app-version` a le droit de partir (`/fastFood/all` attend
+        // l'arrivée dans le home) — le profil affiché est déjà le bon. Le rafraîchissement est déclenché
         // par le home, via `ensureProfileRefreshed()`.
         // Sans cache, en revanche, on attend l'API : c'est elle qui débloque
         // l'app.
@@ -168,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const deleteAccount = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser) {
-      throw new Error("Aucun utilisateur connecté");
+      throw new Error(t("Aucun utilisateur connecté"));
     }
 
     const idToken = await currentUser.getIdToken();
@@ -183,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     if (!response.data?.success) {
-      throw new Error(response.data?.error || response.data?.message || "Échec de la suppression");
+      throw new Error(response.data?.error || response.data?.message || t("Échec de la suppression"));
     }
 
     console.log("✅ [AuthContext] Compte supprimé côté serveur");

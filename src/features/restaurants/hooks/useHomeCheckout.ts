@@ -1,16 +1,30 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useCallback, useRef, useState } from "react";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { Menu } from "@/src/types";
+import { track } from "@/src/services/analytics/analytics";
+import { reopenLockedPayment } from "@/src/services/paymentLock";
+import { t, useLanguage } from "@/src/i18n";
 
 type HomeToast = { message: string; type: "success" | "error" } | null;
+
+/** Boutique et menu d'un menu du catalogue (champs du backend, hors type `Menu`). */
+const idsOf = (menu: Menu | null) => {
+  const m = menu as any;
+  return {
+    ...(m?.fastFoodId ? { fastFoodId: String(m.fastFoodId) } : {}),
+    ...(m?.id ? { menuId: String(m.id) } : {}),
+  };
+};
 
 /**
  * Commande depuis le home : menu choisi, visibilité du `CheckoutSheet`, envoi
  * de la commande et toast de résultat. L'écran rend la sheet et le toast.
  */
 export const useHomeCheckout = () => {
+  useLanguage();
   const { requireAuth } = useAuthGate();
   const requireName = useRequireName();
   const { addOrder } = useOrders();
@@ -20,6 +34,9 @@ export const useHomeCheckout = () => {
   const [toast, setToast] = useState<HomeToast>(null);
 
   const handleMenuClick = (menu: Menu) => {
+    // Paiement en cours (ici ou au panier) : on rouvre SON sheet, pas ce plat.
+    if (reopenLockedPayment()) return;
+    track("menu_open", idsOf(menu));
     // Ouvrir le menu mène à la commande (CheckoutSheet = action liée au compte).
     // Pour un invité, on ouvre la sheet d'auth au lieu du checkout.
     // Nom / prenom manquant : la sheet dediee passe AVANT le checkout.
@@ -53,19 +70,26 @@ export const useHomeCheckout = () => {
     try {
       const result = await addOrder(order);
       if (result.success) {
+        // La commande payee passe par `checkout_start` / `payment_result`.
+        if (order.status !== "pending") {
+          track("add_to_cart", {
+            ...idsOf(selectedMenu),
+            data: Number.isFinite(order.quantity) ? { quantity: order.quantity } : {},
+          });
+        }
         showToast(
           order.status === "pending"
-            ? "Commande envoyée au marchand !"
-            : "Article ajouté au panier !",
+            ? t("Commande envoyée au marchand !")
+            : t("Article ajouté au panier !"),
           "success",
         );
         return true;
       } else {
-        showToast(result.message || "Une erreur est survenue.", "error");
+        showToast(result.message || t("Une erreur est survenue."), "error");
         return false;
       }
     } catch {
-      showToast("Une erreur est survenue.", "error");
+      showToast(t("Une erreur est survenue."), "error");
       return false;
     }
   };
@@ -74,6 +98,7 @@ export const useHomeCheckout = () => {
     selectedMenu,
     checkoutVisible,
     closeCheckout: () => setCheckoutVisible(false),
+    reopenCheckout: () => setCheckoutVisible(true),
     toast,
     hideToast: () => setToast(null),
     onMenuClickStable,

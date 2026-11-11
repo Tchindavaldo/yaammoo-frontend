@@ -1,9 +1,12 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState } from 'react';
 import { PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../../../services/firebase';
 import { getAuthErrorMessage } from '../utils/authErrors';
+import { useLanguage } from "@/src/i18n";
 
 export const usePhoneAuth = () => {
+    useLanguage();
     const [verificationId, setVerificationId] = useState<string>('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

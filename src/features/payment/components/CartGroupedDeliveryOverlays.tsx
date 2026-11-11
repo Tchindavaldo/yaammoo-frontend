@@ -70,6 +70,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
       <GroupedContactOverlay
         onClose={onCloseOverlay}
         phone={delivery.phone || ""}
+        pickup={delivery.type === "aucune"}
         onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
       />
     )}

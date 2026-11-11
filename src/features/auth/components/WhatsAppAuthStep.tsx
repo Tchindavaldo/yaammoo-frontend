@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import {
   ActivityIndicator,
@@ -12,6 +13,7 @@ import {
   isInvalidCode,
   isRateLimited,
 } from "../services/whatsappAuthService";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Authentification WhatsApp — etapes « numero » puis « code ».
@@ -68,6 +70,7 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
   onResend,
   onBack,
 }) => {
+  useLanguage();
   const [step, setStep] = React.useState<"phone" | "code">("phone");
   const [phone, setPhone] = React.useState("");
   const [code, setCode] = React.useState("");
@@ -124,12 +127,12 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
         // meme a l'etape du code — un code precedent peut encore etre valide.
         setCooldown(err.retryAfter);
         setError(
-          `Trop de tentatives. Réessayez dans ${err.retryAfter} secondes.`,
+          t("Trop de tentatives. Réessayez dans {{a}} secondes.", { a: err.retryAfter }),
         );
         setStep("code");
         return;
       }
-      setError(err?.message ?? "Envoi du code impossible.");
+      setError(err?.message ?? t("Envoi du code impossible."));
     } finally {
       setLoading(false);
     }
@@ -150,11 +153,11 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
       if (isRateLimited(err)) {
         setCooldown(err.retryAfter);
         setError(
-          `Trop de tentatives. Réessayez dans ${err.retryAfter} secondes.`,
+          t("Trop de tentatives. Réessayez dans {{a}} secondes.", { a: err.retryAfter }),
         );
         return;
       }
-      setError(err?.message ?? "Envoi du code impossible.");
+      setError(err?.message ?? t("Envoi du code impossible."));
     } finally {
       setLoading(false);
     }
@@ -174,18 +177,16 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
         // affiche plutot qu'un « code invalide » sec.
         const left =
           err.attemptsRemaining !== undefined
-            ? ` ${err.attemptsRemaining} tentative${
-                err.attemptsRemaining > 1 ? "s" : ""
-              } restante${err.attemptsRemaining > 1 ? "s" : ""}.`
+            ? t(" {{a}} tentative{{b}} restante{{c}}.", { a: err.attemptsRemaining, b: err.attemptsRemaining > 1 ? "s" : "", c: err.attemptsRemaining > 1 ? "s" : "" })
             : "";
-        setError(`${err.reason ?? "Code invalide."}${left}`);
+        setError(`${err.reason ?? t("Code invalide.")}${left}`);
         // Le code refuse est efface : l'utilisateur ressaisit sans avoir a
         // vider les cases une a une.
         setCode("");
         setLoading(false);
         return;
       }
-      setError(err?.message ?? "Code invalide.");
+      setError(err?.message ?? t("Code invalide."));
       setLoading(false);
     }
   };
@@ -216,8 +217,8 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
           bouton d'action. */}
       <Text style={styles.headerText}>
         {isPhone
-          ? "Un code vous sera envoyé sur WhatsApp"
-          : `Code à ${CODE_LENGTH} chiffres envoyé au ${DIAL_CODE} ${phone}`}
+          ? t("Un code vous sera envoyé sur WhatsApp")
+          : t("Code à {{a}} chiffres envoyé au {{b}} {{c}}", { a: CODE_LENGTH, b: DIAL_CODE, c: phone })}
       </Text>
 
       {/* Zone de saisie — affichage seul, alimente par le clavier custom. */}
@@ -269,7 +270,7 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
             <Text style={styles.btnText}>
-              {isPhone ? "Recevoir le code" : "Vérifier"}
+              {isPhone ? t("Recevoir le code") : t("Vérifier")}
             </Text>
           )}
         </TouchableOpacity>
@@ -286,7 +287,7 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
             activeOpacity={0.7}
           >
             <Text style={styles.resendBtnText}>
-              {cooldown > 0 ? `${cooldown} s` : "Renvoyer"}
+              {cooldown > 0 ? `${cooldown} s` : t("Renvoyer")}
             </Text>
           </TouchableOpacity>
         ) : null}

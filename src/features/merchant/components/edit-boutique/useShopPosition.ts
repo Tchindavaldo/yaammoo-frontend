@@ -1,6 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import * as Location from "expo-location";
 import { useCallback, useState } from "react";
 import { Platform } from "react-native";
+import { requestForegroundLocation } from "@/src/features/location/services/locationPermission";
+import { t, useLanguage } from "@/src/i18n";
 
 export type ShopPosition = { latitude: number; longitude: number };
 
@@ -13,6 +16,7 @@ export type ShopPosition = { latitude: number; longitude: number };
 export const useShopPosition = (
   onError: (message: string) => void,
 ) => {
+  useLanguage();
   const [shopPosition, setShopPosition] = useState<ShopPosition | null>(null);
   const [locating, setLocating] = useState(false);
 
@@ -29,18 +33,15 @@ export const useShopPosition = (
 
   const captureShopPosition = useCallback(async () => {
     if (Platform.OS === "web") {
-      onError("Disponible dans l'application mobile");
+      onError(t("Disponible dans l'application mobile"));
       return;
     }
     setLocating(true);
     try {
-      const current = await Location.getForegroundPermissionsAsync();
-      let status = current.status;
-      if (status !== "granted" && current.canAskAgain) {
-        status = (await Location.requestForegroundPermissionsAsync()).status;
-      }
+      // Écran de divulgation avant la popup système (Android, Google Play).
+      const status = await requestForegroundLocation("shop");
       if (status !== "granted") {
-        onError("Autorisez la localisation dans les réglages du téléphone");
+        onError(t("Autorisez la localisation dans les réglages du téléphone"));
         return;
       }
       const pos = await Location.getCurrentPositionAsync({
@@ -52,7 +53,7 @@ export const useShopPosition = (
       });
     } catch (e) {
       console.warn("Position de la boutique impossible:", e);
-      onError("Position introuvable, réessayez à l'extérieur");
+      onError(t("Position introuvable, réessayez à l'extérieur"));
     } finally {
       setLocating(false);
     }

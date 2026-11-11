@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Text, TouchableOpacity, View } from "react-native";
 import type { ZoneHourEntry } from "./groupZones";
 import { zoneListStyles as st } from "./ZoneListSheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface ZoneSlotGridProps {
   lieu: string;
@@ -38,6 +40,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
   fmt,
   toNumber,
 }) => {
+  useLanguage();
   const [page, setPage] = useState(0);
   const fade = useRef(new Animated.Value(1)).current;
 
@@ -109,7 +112,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
       >
         <Ionicons name="chevron-back" size={20} color="#475569" />
         <Text style={st.priceNote} numberOfLines={1}>
-          Retour
+          {t("Retour")}
         </Text>
       </TouchableOpacity>,
     );
@@ -137,7 +140,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
           {fmt(price)}
         </Text>
         <Text style={st.priceNote} numberOfLines={1}>
-          Créneau
+          {t("Créneau")}
         </Text>
       </TouchableOpacity>,
     );
@@ -156,7 +159,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
         </View>
         <Text style={st.priceValue}>000 F</Text>
         <Text style={st.priceNote} numberOfLines={1}>
-          Créneau
+          {t("Créneau")}
         </Text>
       </View>,
     );
@@ -172,7 +175,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
       >
         <Text style={st.priceCardMoreText}>+{remaining}</Text>
         <Text style={st.priceNote} numberOfLines={1}>
-          Voir la suite
+          {t("Voir la suite")}
         </Text>
       </TouchableOpacity>,
     );

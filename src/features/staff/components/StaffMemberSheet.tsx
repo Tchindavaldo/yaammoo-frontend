@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from "react-native";
@@ -8,6 +9,7 @@ import { StaffAvatar } from "./StaffAvatar";
 import { StaffSheet } from "./StaffSheet";
 import { StaffSwitch } from "./StaffSwitch";
 import { capsLabel, ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   member: StaffMember;
@@ -26,7 +28,7 @@ interface Props {
 /** « Carine », « Carine et Brice », « Carine, Brice et 2 autres ». */
 const joinNames = (names: string[]) => {
   if (names.length <= 2) return names.join(" et ");
-  return `${names[0]}, ${names[1]} et ${plural(names.length - 2, "autre")}`;
+  return t("{{a}}, {{b}} et {{c}}", { a: names[0], b: names[1], c: plural(names.length - 2, "autre") });
 };
 
 /**
@@ -45,6 +47,7 @@ export const StaffMemberSheet: React.FC<Props> = ({
   onRemove,
   onClose,
 }) => {
+  useLanguage();
   const [pickRole, setPickRole] = useState(false);
   const [showDenied, setShowDenied] = useState(false);
 
@@ -54,10 +57,10 @@ export const StaffMemberSheet: React.FC<Props> = ({
   const suspended = !member.active;
   const invited = !suspended && !member.userId;
   const status = suspended
-    ? { label: "Accès coupé", dot: ST.faint }
+    ? { label: t("Accès coupé"), dot: ST.faint }
     : invited
-      ? { label: "Invitation", dot: ST.accent }
-      : { label: "Compte relié", dot: ST.success };
+      ? { label: t("Invitation"), dot: ST.accent }
+      : { label: t("Compte relié"), dot: ST.success };
 
   const call = () => Linking.openURL(`tel:${member.phoneNumber}`).catch(() => {});
 
@@ -81,7 +84,7 @@ export const StaffMemberSheet: React.FC<Props> = ({
             <View style={styles.tags}>
               <View style={[styles.tag, { backgroundColor: ST.ink }]}>
                 <Text style={[styles.tagText, { color: "#fff" }]} numberOfLines={1}>
-                  {role?.name || "Sans rôle"}
+                  {role?.name || t("Sans rôle")}
                 </Text>
               </View>
               <View style={[styles.tag, { backgroundColor: ST.surface }]}>
@@ -90,23 +93,23 @@ export const StaffMemberSheet: React.FC<Props> = ({
               </View>
             </View>
           </View>
-          <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn} accessibilityLabel="Fermer">
+          <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn} accessibilityLabel={t("Fermer")}>
             <Ionicons name="close" size={16} color={ST.ink} />
           </Pressable>
         </View>
       }
     >
       <View style={styles.actions}>
-        <Action icon="call-outline" label="Appeler" onPress={call} />
+        <Action icon="call-outline" label={t("Appeler")} onPress={call} />
         <Action
           icon="shield-checkmark-outline"
-          label="Changer de rôle"
+          label={t("Changer de rôle")}
           on={pickRole}
           onPress={() => setPickRole((v) => !v)}
         />
         <Action
           icon={suspended ? "lock-open-outline" : "lock-closed-outline"}
-          label={suspended ? "Réactiver" : "Suspendre"}
+          label={suspended ? t("Réactiver") : t("Suspendre")}
           onPress={() => onSetActive(suspended)}
           disabled={saving}
         />
@@ -115,7 +118,7 @@ export const StaffMemberSheet: React.FC<Props> = ({
       {pickRole ? (
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <Text style={capsLabel}>CHOISIR UN RÔLE</Text>
+            <Text style={capsLabel}>{t("CHOISIR UN RÔLE")}</Text>
             {saving && <ActivityIndicator size="small" color={ST.accent} />}
           </View>
           <View style={styles.roleChips}>
@@ -141,7 +144,7 @@ export const StaffMemberSheet: React.FC<Props> = ({
         <View style={styles.section}>
           <View style={styles.sectionHead}>
             <Text style={capsLabel} numberOfLines={1}>
-              CE QUE {firstNameOf(member).toUpperCase()} PEUT FAIRE
+              {t("CE QUE")} {firstNameOf(member).toUpperCase()} {t("PEUT FAIRE")}
             </Text>
             <Text style={styles.count}>
               {granted.length} / {catalog.length}
@@ -173,8 +176,8 @@ export const StaffMemberSheet: React.FC<Props> = ({
                 {!showDenied && <View style={styles.checkOff} />}
                 <Text style={styles.deniedText}>
                   {showDenied
-                    ? "Masquer les permissions non accordées"
-                    : `${denied.length} autre${denied.length > 1 ? "s" : ""} non accordée${denied.length > 1 ? "s" : ""}`}
+                    ? t("Masquer les permissions non accordées")
+                    : t("{{a}} autre{{b}} non accordée{{c}}", { a: denied.length, b: denied.length > 1 ? "s" : "", c: denied.length > 1 ? "s" : "" })}
                 </Text>
                 <Ionicons name={showDenied ? "chevron-up" : "chevron-down"} size={14} color={ST.muted} />
               </Pressable>
@@ -182,8 +185,8 @@ export const StaffMemberSheet: React.FC<Props> = ({
           </View>
           <Text style={styles.note}>
             {role
-              ? `Hérité du rôle ${role.name}${mates.length ? `, partagé avec ${joinNames(mates)}` : ""}.`
-              : "Aucun rôle : choisissez-en un pour lui donner des permissions."}
+              ? t("Hérité du rôle {{a}}{{b}}.", { a: role.name, b: mates.length ? t(", partagé avec {{a}}", { a: joinNames(mates) }) : "" })
+              : t("Aucun rôle : choisissez-en un pour lui donner des permissions.")}
           </Text>
         </View>
       )}
@@ -191,19 +194,19 @@ export const StaffMemberSheet: React.FC<Props> = ({
       <View style={styles.block}>
         <View style={styles.accessRow}>
           <View style={{ flex: 1, gap: 1 }}>
-            <Text style={styles.accessTitle}>Accès actif</Text>
-            <Text style={styles.accessSub}>Désactiver suspend sans supprimer</Text>
+            <Text style={styles.accessTitle}>{t("Accès actif")}</Text>
+            <Text style={styles.accessSub}>{t("Désactiver suspend sans supprimer")}</Text>
           </View>
           <StaffSwitch
             value={member.active}
             onValueChange={(v) => onSetActive(v)}
-            label="Accès actif"
+            label={t("Accès actif")}
             disabled={saving}
           />
         </View>
         <Pressable onPress={onRemove} style={styles.removeRow} accessibilityRole="button">
           <Ionicons name="trash-outline" size={18} color={ST.danger} />
-          <Text style={styles.removeText}>Retirer de la boutique</Text>
+          <Text style={styles.removeText}>{t("Retirer de la boutique")}</Text>
         </Pressable>
       </View>
     </StaffSheet>

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -11,6 +12,7 @@ import { ShopOrderManagePanel } from '@/src/features/merchant/components/shop/Sh
 import { ShopPageFrame } from '@/src/features/merchant/components/shop/ShopPageFrame';
 import { ActivityIndicator } from '@/src/components/CustomActivityIndicator';
 import { Toast } from '@/src/components/Toast';
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 /**
  * Settings → Boutique → « Commandes » : page entière hors (tabs), sans navbar.
@@ -18,6 +20,7 @@ import { Toast } from '@/src/components/Toast';
  * son panel dédié `ShopOrderManagePanel` et dans `ShopPageFrame` (safe-area).
  */
 export default function ShopOrdersScreen() {
+  const i18nLang = useLanguage();
   const router = useRouter();
   const { loading: authLoading } = useAuth();
   const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder, ensureLoaded } = useMerchant();
@@ -30,30 +33,30 @@ export default function ShopOrdersScreen() {
   const [headerHeight, setHeaderHeight] = useState(70);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [statusInfo, setStatusInfo] = useState<{ label: string; count: number; amount: number }>(
-    { label: 'En Attente', count: 0, amount: 0 },
+    { label: t("En Attente"), count: 0, amount: 0 },
   );
 
   const todayISO = new Date().toISOString().substring(0, 10);
   const selectedDateLabel = useMemo(() => {
     const iso = selectedDate ?? todayISO;
-    if (iso === todayISO) return "Aujourd'hui";
-    return new Date(iso).toLocaleDateString('fr-FR', {
+    if (iso === todayISO) return t("Aujourd'hui");
+    return new Date(iso).toLocaleDateString(dateLocale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     });
-  }, [selectedDate, todayISO]);
+  }, [selectedDate, todayISO, i18nLang]);
 
   const handleUpdateStatus = async (id: string, status: string) => {
     const ok = await updateStatus(id, status);
-    const fail = { message: 'Erreur lors de la mise à jour', type: 'error' as const };
+    const fail = { message: t("Erreur lors de la mise à jour"), type: 'error' as const };
     if (status === 'delivering') {
-      setToast(ok ? { message: 'Livraison lancée', type: 'success' } : fail);
+      setToast(ok ? { message: t("Livraison lancée"), type: 'success' } : fail);
     } else if (status === 'processing') {
-      setToast(ok ? { message: '✅ Commande acceptée', type: 'success' } : fail);
+      setToast(ok ? { message: t("✅ Commande acceptée"), type: 'success' } : fail);
     } else if (status === 'finished') {
-      setToast(ok ? { message: '✅ Commande terminée', type: 'success' } : fail);
+      setToast(ok ? { message: t("✅ Commande terminée"), type: 'success' } : fail);
     }
   };
 
@@ -64,16 +67,16 @@ export default function ShopOrdersScreen() {
     <View style={styles.container}>
       <BlurScope>
         <TabHeader
-          title="Commandes"
+          title={t("Commandes")}
           subtitle={`${selectedDateLabel} · ${statusInfo.count} ${statusInfo.label.toLowerCase()}`}
-          right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={() => router.back()} />}
+          right={<HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={() => router.back()} />}
           onHeightChange={setHeaderHeight}
         />
         <BlurTarget style={{ flex: 1 }}>
           {loading && orders.length === 0 ? (
             <View style={styles.centered}>
               <ActivityIndicator size="large" color={Theme.colors.primary} />
-              <Text style={styles.loadingText}>Chargement de votre boutique...</Text>
+              <Text style={styles.loadingText}>{t("Chargement de votre boutique...")}</Text>
             </View>
           ) : (
             <ShopOrderManagePanel

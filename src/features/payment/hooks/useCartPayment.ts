@@ -1,9 +1,12 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState, useCallback, useEffect, useRef } from "react";
 import axios from "axios";
 import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
 import { useAuth } from "../../auth/context/AuthContext";
 import { REVIEW_STEP_MS } from "../constants/reviewPayment";
+import { track } from "../../../services/analytics/analytics";
+import { t, useLanguage } from "@/src/i18n";
 
 export type CartPaymentState =
   | "total"
@@ -21,6 +24,7 @@ export type CartPaymentState =
  * Reproduit la même logique API (/transaction) + verdict socket.
  */
 export const useCartPayment = (amount: number) => {
+  useLanguage();
   const { userData } = useAuth();
 
   const [paymentPhone, setPaymentPhone] = useState("");
@@ -59,7 +63,7 @@ export const useCartPayment = (amount: number) => {
   const handlePaymentConfirm = useCallback(
     async (phone: string, items: any[] = [], amountOverride?: number) => {
       if (!userData || !phone) {
-        setPaymentError("Numéro de paiement requis");
+        setPaymentError(t("Numéro de paiement requis"));
         return;
       }
       setPaymentError(null);
@@ -67,6 +71,7 @@ export const useCartPayment = (amount: number) => {
       // Source de vérité unique : "waiting" ici (pas en local capsule) pour que
       // le retour à "input" sur erreur fonctionne toujours.
       setPaymentState("waiting");
+      track("checkout_start", { data: { total: amountOverride ?? amount } });
 
       try {
         const response = await axios.post(`${Config.apiUrl}/transaction`, {
@@ -86,7 +91,7 @@ export const useCartPayment = (amount: number) => {
         // synchrone — aucun paiement réel, aucun verdict socket à attendre. On
         // déroule donc les étapes nous-mêmes pour montrer le parcours complet.
         if (response.data.appleReviewMode === true) {
-          setUssdMessage("Vérification du paiement...");
+          setUssdMessage(t("Vérification du paiement..."));
           setPaymentState("ussd_sent");
           reviewTimers.current.push(
             setTimeout(() => setPaymentState("success"), REVIEW_STEP_MS),
@@ -96,13 +101,16 @@ export const useCartPayment = (amount: number) => {
         }
 
         if (response.data.status === "ussd_sent" || response.data.success === true) {
-          setUssdMessage(response.data.message);
+          // Verdict déjà reçu par socket pendant la requête (refus immédiat) : ne pas
+        // remettre l'écran en attente USSD.
+        if (paymentStateRef.current !== "waiting") return;
+        setUssdMessage(response.data.message);
           setPaymentState("ussd_sent");
         } else {
           const raw = response.data.message;
           const message = Array.isArray(raw)
-            ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ") || "Erreur paiement"
-            : raw || "Erreur paiement";
+            ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ") || t("Erreur paiement")
+            : raw || t("Erreur paiement");
           setPaymentError(message);
           setPaymentState("input");
         }
@@ -112,7 +120,8 @@ export const useCartPayment = (amount: number) => {
         let message = Array.isArray(raw)
           ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ")
           : raw;
-        message = message || data?.error || error.message || "Erreur paiement";
+        // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
+      message = message || data?.error || (error.response ? t("Service momentanément indisponible. Réessayez dans un instant.") : t("Connexion impossible. Vérifiez votre réseau et réessayez."));
         setPaymentError(message);
         setPaymentState("input");
       }
@@ -122,17 +131,24 @@ export const useCartPayment = (amount: number) => {
 
 
   // Verdict reçu via socket (payment.settled).
+  // Verdict pris en compte SEULEMENT si un paiement est en attente : un verdict
+  // tardif (paiement précédent annulé, rejeu au reconnect) affichait un toast
+  // « Paiement échoué » parasite avant le vrai message.
+  const paymentStateRef = useRef(paymentState);
+  paymentStateRef.current = paymentState;
   const handlePaymentVerdict = useCallback((data: any) => {
+    if (paymentStateRef.current !== "waiting" && paymentStateRef.current !== "ussd_sent") return;
     if (data.status === "successful") {
       setPaymentState("success");
       setTimeout(() => {
         // La fermeture est gérée par le parent (effet sur 'success_created').
-        setPaymentState("success_created");
+        // Ignoré si le paiement a été remis à zéro entre-temps (verdict reçu sheet fermé).
+        if (paymentStateRef.current === "success") setPaymentState("success_created");
       }, 5000);
     } else {
       // Échec : pas d'état "failed" dans l'overlay → retour direct au repos
       // (total). Seul le toast top affiche l'erreur.
-      setPaymentError("Paiement échoué");
+      setPaymentError(data.message || t("Paiement échoué"));
       setPaymentState("total");
     }
   }, []);

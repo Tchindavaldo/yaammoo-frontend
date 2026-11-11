@@ -6,6 +6,7 @@
 import type { Ionicons } from "@expo/vector-icons";
 import type { BonusProgress } from "../types/bonus.types";
 import type { CampaignInfo } from "../hooks/useCampaignPhase";
+import { t } from "@/src/i18n";
 
 const fmt = (n: number) => n.toLocaleString("fr-FR");
 
@@ -51,16 +52,16 @@ export const claimIconOf = (
 export const claimTitleOf = (f: ClaimRowStateFlags): string => {
   if (f.upload)
     return f.upload.phase === "compressing"
-      ? "Compression en cours"
-      : "Envoi en cours";
-  if (f.inactiveWithReward) return "Ta récompense reste disponible";
-  if (f.isInactive) return "Offre non activée";
-  if (f.isRedeemed) return "Bonus déjà utilisé";
-  if (f.isApproved) return "Bonus validé";
-  if (f.isPending) return "Demande en cours";
-  if (f.isFlyerStep) return f.campaign.title || "Télécharger le flyer";
-  if (f.isEligible) return "Réclamer ce bonus";
-  return "Pas encore disponible";
+      ? t("Compression en cours")
+      : t("Envoi en cours");
+  if (f.inactiveWithReward) return t("Ta récompense reste disponible");
+  if (f.isInactive) return t("Offre non activée");
+  if (f.isRedeemed) return t("Bonus déjà utilisé");
+  if (f.isApproved) return t("Bonus validé");
+  if (f.isPending) return t("Demande en cours");
+  if (f.isFlyerStep) return f.campaign.title || t("Télécharger le flyer");
+  if (f.isEligible) return t("Réclamer ce bonus");
+  return t("Pas encore disponible");
 };
 
 export const claimDescOf = (f: ClaimRowStateFlags): string => {
@@ -68,24 +69,24 @@ export const claimDescOf = (f: ClaimRowStateFlags): string => {
   // comprendre pourquoi ça dure (une compression peut prendre une minute).
   if (f.upload)
     return f.upload.phase === "compressing"
-      ? "Compression de ta vidéo en cours… Garde l'application ouverte."
-      : "Envoi de ta vidéo en cours… Garde l'application ouverte.";
+      ? t("Compression de ta vidéo en cours… Garde l'application ouverte.")
+      : t("Envoi de ta vidéo en cours… Garde l'application ouverte.");
   if (f.inactiveWithReward)
-    return "Le fastfood a retiré cette offre, mais ta récompense reste valable — tu peux toujours y accéder.";
+    return t("Le fastfood a retiré cette offre, mais ta récompense reste valable — tu peux toujours y accéder.");
   if (f.isInactive)
-    return "Cette offre n'est pas encore activée. reviens bientôt pour en profiter.";
+    return t("Cette offre n'est pas encore activée. reviens bientôt pour en profiter.");
   if (f.isRedeemed)
-    return "Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.";
+    return t("Tu as déjà utilisé ce code. Les compteurs repartent à zéro, tu peux re-devenir éligible.");
   // Approuvé mais rien à délivrer encore : la récompense est provisionnée
   // manuellement (Netflix…), elle arrivera par socket `bonus.reward_credentials`.
   if (f.isApproved)
     return f.fieldsCount > 0
-      ? "Ta récompense est prête !"
-      : "Récompense en cours de préparation. Tu seras notifié dès qu'elle est prête.";
+      ? t("Ta récompense est prête !")
+      : t("Récompense en cours de préparation. Tu seras notifié dès qu'elle est prête.");
   if (f.isPending)
     return f.hasFastFoodId
-      ? "Ta demande a bien été envoyée et attend la validation du fastfood. Tu recevras une notification dès qu'elle est acceptée."
-      : "Ta demande est en cours de traitement. Tu seras notifié dès qu'elle est validée et que ton bonus est disponible.";
+      ? t("Ta demande a bien été envoyée et attend la validation du fastfood. Tu recevras une notification dès qu'elle est acceptée.")
+      : t("Ta demande est en cours de traitement. Tu seras notifié dès qu'elle est validée et que ton bonus est disponible.");
   // Campagne datée : le message suit la phase (avant téléchargement, jour J,
   // publication, envoi de la preuve). À défaut de calendrier, la consigne du
   // bonus fait foi — plus précise que n'importe quel texte générique.
@@ -93,14 +94,14 @@ export const claimDescOf = (f: ClaimRowStateFlags): string => {
     return (
       f.campaign.desc ||
       f.description ||
-      "Télécharge le flyer et publie-le en statut pour obtenir ce bonus."
+      t("Télécharge le flyer et publie-le en statut pour obtenir ce bonus.")
     );
   if (f.isEligible)
-    return "Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.";
+    return t("Tu remplis les conditions. Appuie sur Réclamer pour obtenir ton bonus.");
   if (f.progress.measurable && f.progress.target > 0) {
     return f.progress.unit === "FCFA"
-      ? `Tu y es presque ! Encore ${fmt(f.progress.remaining)} FCFA à dépenser pour remplir les conditions et débloquer ce bonus.`
-      : `Tu y es presque ! Encore ${f.progress.remaining} commande${f.progress.remaining > 1 ? "s" : ""} à passer pour remplir les conditions et débloquer ce bonus.`;
+      ? t("Tu y es presque ! Encore {{a}} FCFA à dépenser pour remplir les conditions et débloquer ce bonus.", { a: fmt(f.progress.remaining) })
+      : t("Tu y es presque ! Encore {{a}} commande{{b}} à passer pour remplir les conditions et débloquer ce bonus.", { a: f.progress.remaining, b: f.progress.remaining > 1 ? "s" : "" });
   }
-  return "Continue de commander pour remplir les conditions de ce bonus. Il se débloquera automatiquement dès que tu y seras.";
+  return t("Continue de commander pour remplir les conditions de ce bonus. Il se débloquera automatiquement dès que tu y seras.");
 };

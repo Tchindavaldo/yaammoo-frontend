@@ -1,15 +1,17 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import {
   formatSizePrice,
   HeroImages,
   HeroProps,
   SECTION_HEIGHT,
-  SIZES,
 } from "./heroShared";
 import { amount, Banner, PALETTE, Tile } from "./recapTiles";
 import { DS } from "@/src/theme/ds";
+import { menuPriceOptions } from "../../../utils/menuPrices";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Design « recap photo » : la photo remplit toute la section ; par-dessus,
@@ -25,13 +27,13 @@ export const RecapBody: React.FC<HeroProps> = ({
   recap,
   width,
 }) => {
+  useLanguage();
   const p = PALETTE;
   const totalIndex = recap.length - 1;
   const total = recap[totalIndex];
   const cells = recap.slice(0, totalIndex);
-  // Seules les tailles definies (prix > 0) ; un prix unique = « Prix ».
-  const prices = [menu.prix1, menu.prix2, menu.prix3];
-  const sizes = SIZES.filter(({ index }) => prices[index - 1] > 0);
+  // Prix en nombre VARIABLE (prices[]) ; un prix unique = « Prix ».
+  const sizes = menuPriceOptions(menu);
   const single = sizes.length === 1;
 
   return (
@@ -51,18 +53,24 @@ export const RecapBody: React.FC<HeroProps> = ({
 
       <Banner
         name={menu.titre}
-        status={priceDescription || "Disponible"}
+        status={priceDescription || t("Disponible")}
         bigNum={amount(total.value)}
-        bigLabel="total FCFA"
+        bigLabel={t("total FCFA")}
       />
 
       <View style={styles.chipsZone}>
-        {sizes.map(({ label, index }) => {
+        <ScrollView
+          horizontal
+          style={styles.chipsScroll}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsRow}
+        >
+        {sizes.map(({ index }) => {
           const on = selectedPriceIndex === index;
-          const name = single ? "Prix" : `Prix ${index}`;
+          const name = single ? t("Prix") : t("Prix {{a}}", { a: index });
           return (
             <TouchableOpacity
-              key={label}
+              key={index}
               activeOpacity={0.85}
               onPress={() => setSelectedPriceIndex(index)}
               style={[styles.chip, { backgroundColor: on ? p.chipOn : p.chip }]}
@@ -78,19 +86,20 @@ export const RecapBody: React.FC<HeroProps> = ({
             </TouchableOpacity>
           );
         })}
+        </ScrollView>
       </View>
 
       <View style={styles.chipsGap} />
       <View style={styles.tiles}>
         {cells.map((cell) => {
-          const free = amount(cell.value) === "Gratuit";
+          const free = amount(cell.value) === t("Gratuit");
           return (
             <Tile
               key={cell.title}
               icon={cell.icon}
               count={free ? "0" : amount(cell.value)}
               title={cell.title}
-              sub={free ? "Gratuit" : "FCFA"}
+              sub={free ? t("Gratuit") : "FCFA"}
               onPress={cell.onPress}
             />
           );
@@ -110,12 +119,11 @@ const styles = StyleSheet.create({
   },
   chipsGap: { height: 6 },
   topShade: { position: "absolute", left: 0, right: 0, top: 0, height: 80 },
-  chipsZone: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 6,
-  },
+  chipsZone: { flex: 1, justifyContent: "flex-end" },
+  chipsScroll: { flexGrow: 0 },
+  // alignItems : sinon le ScrollView horizontal étire la pastille sur toute
+  // la hauteur de `chipsZone` (flex: 1).
+  chipsRow: { flexDirection: "row", gap: 6, alignItems: "flex-end" },
   chip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12 },
   chipText: { fontSize: 11, fontWeight: "700" },
   tiles: { flexDirection: "row", gap: 6 },

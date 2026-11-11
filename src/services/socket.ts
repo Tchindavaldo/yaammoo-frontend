@@ -2,12 +2,16 @@ import { io, Socket } from 'socket.io-client';
 import { Config } from '../api/config';
 import { sinceBoot } from '../utils/bootClock';
 import { trackBootStep } from './bootTelemetry';
+import { APP_PLATFORM, APP_VERSION } from '../api/version';
+import { track } from './analytics/analytics';
 
 class SocketService {
     private socket: Socket;
     private paymentHandler: ((data: any) => void) | null = null;
     /** Horodatage du dernier `connect()`, pour mesurer la duree d'etablissement. */
     private connectStartedAt: number | null = null;
+    /** Verdicts deja comptes dans les statistiques (`__eventId`). */
+    private trackedVerdicts = new Set<string>();
 
     constructor() {
         this.socket = io(Config.apiUrl, {
@@ -34,6 +38,8 @@ class SocketService {
             // Bruit aleatoire : evite que tous les clients reconnectent en meme
             // temps apres une coupure cote serveur.
             randomizationFactor: 0.5,
+            // Statistiques de connexion (backend `analytics_connections`).
+            query: { appVersion: APP_VERSION, platform: APP_PLATFORM },
         });
 
         this.socket.on('connect', () => {
@@ -73,7 +79,18 @@ class SocketService {
         // et routé vers le handler enregistré par le checkout en cours.
         // ACK obligatoire (event rejoué par le backend si non acquitté).
         this.socket.on('payment.settled', (data, ack?: () => void) => {
-            console.log('💳 payment.settled:', data);
+            console.log('payment.settled:', data);
+            // Statistiques : un verdict par event (le rejeu porte le meme __eventId).
+            const eventId = data?.__eventId;
+            if (!eventId || !this.trackedVerdicts.has(eventId)) {
+                if (eventId) this.trackedVerdicts.add(eventId);
+                track('payment_result', {
+                    data: {
+                        status: data?.status === 'successful' ? 'success' : 'failed',
+                        ...(Number.isFinite(Number(data?.amount)) ? { total: Number(data.amount) } : {}),
+                    },
+                });
+            }
             try {
                 if (this.paymentHandler) this.paymentHandler(data);
             } finally {

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
@@ -10,6 +11,7 @@ import {
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Theme } from "@/src/theme";
 import { homeStyles as styles } from "./homeScreenStyles";
+import { t, useLanguage } from "@/src/i18n";
 
 type OnLayout = (event: LayoutChangeEvent) => void;
 
@@ -17,14 +19,17 @@ type OnLayout = (event: LayoutChangeEvent) => void;
  * Écran de chargement plein du home — RÉSERVÉ au tout premier affichage (la
  * condition vit dans l'écran : voir la garde `!searchQuery`).
  */
-export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }) => (
+export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }) => {
+  useLanguage();
+  return (
   <SafeAreaView style={styles.container} onLayout={onLayout}>
     <View style={styles.centered}>
       <ActivityIndicator size="large" color={Theme.colors.primary} />
-      <Text style={styles.loadingText}>Recherche des meilleurs plats...</Text>
+      <Text style={styles.loadingText}>{t("Recherche des meilleurs plats...")}</Text>
     </View>
   </SafeAreaView>
 );
+};
 
 /**
  * Échec du chargement initial : la page entière est remplacée par un message
@@ -35,18 +40,21 @@ export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }
 export const HomeErrorScreen: React.FC<{ onLayout: OnLayout; onRetry: () => void }> = ({
   onLayout,
   onRetry,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <SafeAreaView style={styles.container} onLayout={onLayout}>
     <View style={styles.centered}>
       <Ionicons name="cloud-offline-outline" size={54} color={Theme.colors.gray[300]} />
-      <Text style={styles.errorTitle}>Connexion indisponible</Text>
+      <Text style={styles.errorTitle}>{t("Connexion indisponible")}</Text>
       <Text style={styles.errorText}>
-        Impossible de charger le contenu. Vérifiez votre connexion.
+        {t("Impossible de charger le contenu. Vérifiez votre connexion.")}
       </Text>
       <TouchableOpacity style={styles.retryBtn} activeOpacity={0.8} onPress={onRetry}>
         <Ionicons name="refresh" size={17} color={Theme.colors.white} />
-        <Text style={styles.retryText}>Réessayer</Text>
+        <Text style={styles.retryText}>{t("Réessayer")}</Text>
       </TouchableOpacity>
     </View>
   </SafeAreaView>
 );
+};

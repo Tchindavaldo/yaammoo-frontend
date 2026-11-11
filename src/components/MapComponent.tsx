@@ -1,7 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface MapComponentProps {
   region: any;
@@ -11,6 +13,7 @@ interface MapComponentProps {
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({ address, region, coords, deliveryType }) => {
+  useLanguage();
   const isNoDelivery = deliveryType === 'surplace' || !deliveryType;
 
   if (isNoDelivery) {
@@ -18,7 +21,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ address, region, coords, de
       <View style={[styles.mapPlaceholder, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ fontSize: 28 }}>🏪</Text>
         <Text style={{ fontSize: 11, color: '#6b7280', fontWeight: '500', marginTop: 6, textAlign: 'center' }}>
-          Pas de livraison
+          {t("Pas de livraison")}
         </Text>
       </View>
     );
@@ -29,7 +32,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ address, region, coords, de
       <View style={[styles.mapPlaceholder, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
         <Text style={{ fontSize: 28 }}>📍</Text>
         <Text style={{ fontSize: 11, color: '#6b7280', fontWeight: '500', marginTop: 6, textAlign: 'center' }}>
-          Le client n'a pas envoyé ses coordonnées
+          {t("Le client n'a pas envoyé ses coordonnées")}
         </Text>
       </View>
     );
@@ -44,7 +47,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ address, region, coords, de
         <View style={styles.pinDot} />
       </View>
       <Text style={styles.mapLabel} numberOfLines={1}>
-        {address || "Localisation"}
+        {address || t("Localisation")}
       </Text>
     </View>
   );

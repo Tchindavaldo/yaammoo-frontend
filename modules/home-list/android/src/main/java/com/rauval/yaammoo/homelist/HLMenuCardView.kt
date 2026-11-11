@@ -31,6 +31,11 @@ class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
   private var v7Bottom: HLV7BottomZone? = null
   private var v4Bar: HLStockDeliveryBar? = null
   private var v5Bar: HLV5BottomBar? = null
+  // Design aere (`HLDesign.aere`, cf. HLAere.kt), fige a la creation.
+  private val aere = HLDesign.aere
+  private var aereV4: HLAereV4Bottom? = null
+  private var aereV5: HLAereV5Bar? = null
+  private var aereV7: HLAereV7Bottom? = null
 
   // ItemMeta : deux lignes, chacune a gauche + a droite.
   private val titleLabel = HLLabel(context)
@@ -48,7 +53,7 @@ class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
     content.addView(card)
     card.roundCorners(size.radius)
     card.addView(image)
-    when (design) {
+    if (aere) buildAere() else when (design) {
       4 -> {
         card.setBackgroundColor(HLColor.v4Background)
         v4Bar = HLStockDeliveryBar(context).also { card.addView(it) }
@@ -93,7 +98,31 @@ class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
     }
   }
 
+  /** Vues du design aere : degrade (4, 7) et zone basse propre a la carte. */
+  private fun buildAere() {
+    when (design) {
+      4 -> {
+        card.setBackgroundColor(HLAereColor.surface)
+        gradient = hlAereScrim(context, 4).also { card.addView(it) }
+        aereV4 = HLAereV4Bottom(context).also { card.addView(it) }
+      }
+      5 -> {
+        card.setBackgroundColor(HLAereColor.surface)
+        aereV5 = HLAereV5Bar(context).also { card.addView(it) }
+      }
+      else -> {
+        card.setBackgroundColor(HLAereColor.ink)
+        gradient = hlAereScrim(context, 7).also { card.addView(it) }
+        aereV7 = HLAereV7Bottom(context).also { card.addView(it) }
+      }
+    }
+  }
+
   private fun placeCard(w: Float, h: Float) {
+    aereV4?.frame(0f, h - HLAereV4Bottom.HEIGHT, w, HLAereV4Bottom.HEIGHT)
+    aereV7?.frame(0f, h - HLAereV7Bottom.HEIGHT, w, HLAereV7Bottom.HEIGHT)
+    val bi = HLAereV5Bar.INSET
+    aereV5?.frame(bi, h - bi - HLAereV5Bar.HEIGHT, w - 2f * bi, HLAereV5Bar.HEIGHT)
     gradient?.frame(0f, 0f, w, h)
     image.frame(0f, 0f, w, h)
     // Photo floutee calee sur la photo de la carte (repere de la barre).
@@ -106,8 +135,9 @@ class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
       it.frame(0f, h - HLV5BottomBar.HEIGHT, w, HLV5BottomBar.HEIGHT)
     }
     v7Bottom?.frame(0f, h - HLV7BottomZone.HEIGHT, w, HLV7BottomZone.HEIGHT)
-    // Pastille prix : 8/8 (variants 7 et 5), 14/14 (variant 4).
-    val inset = if (design == 4) 14f else 8f
+    // Pastille prix : 8/8 (variants 7 et 5), 14/14 (variant 4) ;
+    // design aere : 12/12 (4 et 5), 8/8 (7).
+    val inset = if (aere) (if (design == 7) 8f else 12f) else if (design == 4) 14f else 8f
     price.frame(inset, inset, price.fitWidth(), price.fitHeight())
   }
 
@@ -119,8 +149,8 @@ class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
     val metaX = 4f
     val row1Y = h + 8f
     val row2Y = row1Y + 16f + 3f
-    // Variant 7 : `marginRight: 6` apres le stock.
-    val rightInset = if (design == 7) 6f else 0f
+    // Variant 7 : `marginRight: 6` apres le stock (design actuel seulement).
+    val rightInset = if (design == 7 && !aere) 6f else 0f
     val trw = titleRight.textWidth()
     val trx = w - rightInset - trw
     titleRight.frame(trx, row1Y, trw, 16f)
@@ -155,7 +185,18 @@ class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
     v7Bottom?.configure(deliveryTime, menu.feeLabel)
     v4Bar?.configure(menu.stock, deliveryTime)
     v5Bar?.configure(deliveryTime, menu.feeLabel)
-    configureMeta(menu)
+    aereV4?.configure(menu)
+    aereV5?.configure(menu)
+    aereV7?.configure(menu)
+    if (aere) {
+      val t = hlAereMeta(design, menu)
+      titleLabel.text = t.title
+      titleRight.text = t.titleRight
+      lineLeft.text = t.lineLeft
+      lineRight.text = t.lineRight
+    } else {
+      configureMeta(menu)
+    }
     setRevealed(revealed)
     card.relayout()
     content.relayout()

@@ -45,6 +45,9 @@ blanc + texte orange.
 
 `children` (optionnel) remplace titre + zone droite par un contenu libre :
 utilisé par Settings (`SettingsHeaderProfile`). `title` est alors omis.
+Ce contenu ne dépasse pas la hauteur titre + sous-titre (avatar 46, pastille
+comptes 40) : le header du profil a la même hauteur que Panier / Notifications,
+et la page laisse 16 entre le header et le premier titre de section.
 
 Le `TabHeader` accepte aussi `onBack?: () => void` : affiche un chevron retour à
 gauche du titre. Les pages Settings → Boutique (EditBoutique, MenuManageModal,

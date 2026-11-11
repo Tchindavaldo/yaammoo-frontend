@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { staffErrorMessage, staffService } from "../services/staffService";
@@ -10,6 +11,7 @@ import type {
   StaffRoleDraft,
 } from "../types/staff.types";
 import { buildCatalog, PERMISSION_CATALOG, type PermissionMeta } from "../utils/staffPermissions";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Membres, rôles et catalogue de permissions de la boutique, et leurs
@@ -18,6 +20,7 @@ import { buildCatalog, PERMISSION_CATALOG, type PermissionMeta } from "../utils/
  * @param onLoadError appelé si le chargement échoue (l'écran affiche un toast).
  */
 export const useStaff = (active: boolean, onLoadError: () => void) => {
+  useLanguage();
   const { userData } = useAuth();
   const fastFoodId = userData?.fastFoodId;
 
@@ -85,7 +88,7 @@ export const useStaff = (active: boolean, onLoadError: () => void) => {
   /** Enveloppe commune : verrou `saving`, log et message d'erreur. */
   const run = useCallback(
     async <T>(label: string, fallback: string, fn: (ff: string) => Promise<T>): Promise<StaffResult<T>> => {
-      if (!fastFoodId) return { ok: false, message: "Boutique introuvable" };
+      if (!fastFoodId) return { ok: false, message: t("Boutique introuvable") };
       setSaving(true);
       try {
         return { ok: true, data: await fn(fastFoodId) };
@@ -101,7 +104,7 @@ export const useStaff = (active: boolean, onLoadError: () => void) => {
 
   const createMember = useCallback(
     (draft: StaffMemberDraft) =>
-      run("creating staff member", "Création impossible, réessayez", async (ff) => {
+      run("creating staff member", t("Création impossible, réessayez"), async (ff) => {
         const member = await staffService.createMember(ff, draft);
         setMembers((prev) => [...prev.filter((p) => p.id !== member.id), member]);
         return member;
@@ -111,7 +114,7 @@ export const useStaff = (active: boolean, onLoadError: () => void) => {
 
   const updateMember = useCallback(
     (memberId: string, patch: StaffMemberPatch) =>
-      run("updating staff member", "Modification impossible, réessayez", async (ff) => {
+      run("updating staff member", t("Modification impossible, réessayez"), async (ff) => {
         const member = await staffService.updateMember(ff, memberId, patch);
         setMembers((prev) => prev.map((p) => (p.id === member.id ? member : p)));
         return member;
@@ -121,7 +124,7 @@ export const useStaff = (active: boolean, onLoadError: () => void) => {
 
   const removeMember = useCallback(
     (memberId: string) =>
-      run("removing staff member", "Retrait impossible, réessayez", async (ff) => {
+      run("removing staff member", t("Retrait impossible, réessayez"), async (ff) => {
         await staffService.removeMember(ff, memberId);
         setMembers((prev) => prev.filter((p) => p.id !== memberId));
         return undefined;
@@ -132,7 +135,7 @@ export const useStaff = (active: boolean, onLoadError: () => void) => {
   /** Crée le rôle, ou le modifie si `roleId` est fourni. */
   const saveRole = useCallback(
     (draft: StaffRoleDraft, roleId?: string) =>
-      run("saving staff role", "Enregistrement impossible, réessayez", async (ff) => {
+      run("saving staff role", t("Enregistrement impossible, réessayez"), async (ff) => {
         const role = roleId
           ? await staffService.updateRole(ff, roleId, draft)
           : await staffService.createRole(ff, draft);
@@ -148,7 +151,7 @@ export const useStaff = (active: boolean, onLoadError: () => void) => {
 
   const removeRole = useCallback(
     (roleId: string) =>
-      run("removing staff role", "Suppression impossible, réessayez", async (ff) => {
+      run("removing staff role", t("Suppression impossible, réessayez"), async (ff) => {
         await staffService.removeRole(ff, roleId);
         setRoles((prev) => prev.filter((r) => r.id !== roleId));
         return undefined;

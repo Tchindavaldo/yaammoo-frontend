@@ -1,4 +1,5 @@
 import type { Notification } from "@/src/features/notifications/hooks/useNotifications";
+import { t, dateLocale } from "@/src/i18n";
 
 export interface NotificationSection {
   title: string;
@@ -11,15 +12,15 @@ const startOfDay = (d: Date) =>
 /** Libellé du jour : « Aujourd'hui », « Hier », jour de semaine sur 7 jours, sinon date complète. */
 const dayLabel = (d: Date, now: Date): string => {
   const days = Math.round((startOfDay(now) - startOfDay(d)) / 86400000);
-  if (days === 0) return "Aujourd'hui";
-  if (days === 1) return "Hier";
+  if (days === 0) return t("Aujourd'hui");
+  if (days === 1) return t("Hier");
   const opts: Intl.DateTimeFormatOptions =
     days < 7
       ? { weekday: "long" }
       : d.getFullYear() === now.getFullYear()
         ? { weekday: "long", day: "numeric", month: "long" }
         : { day: "numeric", month: "long", year: "numeric" };
-  const s = d.toLocaleDateString("fr-FR", opts);
+  const s = d.toLocaleDateString(dateLocale(), opts);
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
@@ -40,7 +41,7 @@ export const groupNotificationsByDate = (
     const key = valid ? startOfDay(d) : -1;
     let section = byKey.get(key);
     if (!section) {
-      section = { title: valid ? dayLabel(d, now) : "Plus ancien", data: [] };
+      section = { title: valid ? dayLabel(d, now) : t("Plus ancien"), data: [] };
       byKey.set(key, section);
       sections.push(section);
     }

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -5,6 +6,7 @@ import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { CreateBoutiquePanel } from "./CreateBoutiquePanel";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Écran affiché quand l'utilisateur n'a pas encore de boutique. Présente un
@@ -12,6 +14,7 @@ import { DS } from "@/src/theme/ds";
  * de création (`CreateBoutiquePanel`) coiffé du header global.
  */
 export const NoBoutiquePanel = () => {
+  useLanguage();
   // Hauteur REELLE de la navbar, safe-area comprise (source unique R19).
   const tabBarHeight = useTabBarHeight();
   const [creating, setCreating] = useState(false);
@@ -40,18 +43,17 @@ export const NoBoutiquePanel = () => {
       {/* Titre et Description */}
       <View style={styles.textCtn}>
         <Text style={styles.titre}>
-          Créez votre boutique et{"\n"}recevez vos commandes
+          {t("Créez votre boutique et")}{"\n"}{t("recevez vos commandes")}
         </Text>
         <Text style={styles.description}>
-          Gérez facilement vos commandes, vos livraisons{"\n"}et vos
-          transactions avec votre Boutique
+          {t("Gérez facilement vos commandes, vos livraisons")}{"\n"}{t("et vos transactions avec votre Boutique")}
         </Text>
       </View>
 
       {/* Bouton */}
       <View style={styles.ctnBtn}>
         <TouchableOpacity style={styles.mainBtn} onPress={() => setCreating(true)}>
-          <Text style={styles.mainBtnText}>Continuer</Text>
+          <Text style={styles.mainBtnText}>{t("Continuer")}</Text>
         </TouchableOpacity>
       </View>
     </View>

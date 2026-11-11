@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Loader } from "@/src/components/Loader";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,6 +19,7 @@ import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBott
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { GROUPED_SHEET_HEIGHT } from "../CartGroupedDeliverySheet.styles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 /** Hauteur du flou quand le clavier est ouvert : tout l'ecran. */
@@ -31,13 +33,17 @@ interface GroupedContactOverlayProps {
   onClose: () => void;
   phone: string;
   onSelectPhone?: (phone: string) => void;
+  /** Commande sans livraison (retrait) : texte adapte a la boutique. */
+  pickup?: boolean;
 }
 
 export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
   onClose,
   phone,
   onSelectPhone,
+  pickup,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isSaving, setIsSaving] = React.useState(false);
@@ -169,7 +175,7 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="call-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Contact Number</Text>
+              <Text style={styles.headerTitle}>{t("Numéro de contact")}</Text>
               <TouchableOpacity
                 onPress={() => Keyboard.dismiss()}
                 style={styles.keyboardSmallBtn}
@@ -217,8 +223,9 @@ export const GroupedContactOverlay: React.FC<GroupedContactOverlayProps> = ({
             </View>
 
             <Text style={styles.helperText}>
-              Our courier will use this number to contact you upon arrival if
-              there are any issues with your delivery.
+              {pickup
+                ? t("La boutique utilisera ce numéro pour vous contacter au sujet du retrait de votre commande.")
+                : t("Le livreur utilisera ce numéro pour vous joindre à son arrivée en cas de souci avec votre livraison.")}
             </Text>
           </View>
         </View>

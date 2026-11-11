@@ -1,8 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useRouter } from "expo-router";
 import React from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
+import { useCurrentPlaceLabel } from "@/src/features/location/hooks/useCurrentPlaceLabel";
 import { RestaurantHeader } from "../RestaurantHeader";
 import { CATEGORIES } from "../../utils/homeListConfig";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   unreadCount: number;
@@ -28,18 +31,20 @@ export const HomeHeader: React.FC<Props> = ({
   selectedCategory,
   onCategorySelect,
 }) => {
+  useLanguage();
   const { user, userData } = useAuth();
   const router = useRouter();
+  const placeLabel = useCurrentPlaceLabel();
 
   return (
     <RestaurantHeader
       userName={
         [userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(" ") ||
         user?.displayName ||
-        "Utilisateur"
+        t("Utilisateur")
       }
       userPhoto={(userData as any)?.photoUrl || (userData as any)?.photo || ""}
-      location="Banganté, Cameroun"
+      location={placeLabel}
       unreadCount={unreadCount}
       onNotifPress={() => router.push("/(tabs)/notifications")}
       onProfilePress={() => router.push("/(tabs)/settings")}

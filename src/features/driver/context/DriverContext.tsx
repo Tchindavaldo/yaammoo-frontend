@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, {
   createContext,
   useContext,
@@ -11,6 +12,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { Commande } from "@/src/types";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useDeliveryTrackingSync } from "../../location/hooks/useDeliveryTrackingSync";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Event socket sur une demande de livraison (création / décision / retrait). */
 export type ApplicationEvent =
@@ -51,6 +53,7 @@ const DriverContext = createContext<DriverContextType | undefined>(undefined);
 export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [orders, setOrders] = useState<Commande[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,7 +77,7 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoaded(true);
       } catch (err) {
         console.error("Driver fetch error:", err);
-        setError("Erreur lors du chargement des commandes déléguées");
+        setError(t("Erreur lors du chargement des commandes déléguées"));
       } finally {
         if (showLoading) setLoading(false);
       }

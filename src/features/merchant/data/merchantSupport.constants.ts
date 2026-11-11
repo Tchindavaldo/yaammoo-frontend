@@ -4,34 +4,35 @@ import type {
   MerchantSupportTopic,
   MerchantSupportTopicDescriptor,
 } from "../types/merchantSupport.types";
+import { t as tr } from "@/src/i18n";
 
 /** Libellé affiché pour le statut d'un fil. */
 export const MERCHANT_SUPPORT_STATUS_LABEL: Record<
   MerchantSupportStatus,
   string
 > = {
-  open: "En cours",
-  pending: "En attente",
-  closed: "Résolu",
+  get open() { return tr("En cours"); },
+  get pending() { return tr("En attente"); },
+  get closed() { return tr("Résolu"); },
 };
 
 /** Objets de discussion, posés par le client (lecture seule côté marchand). */
 export const MERCHANT_SUPPORT_TOPICS: MerchantSupportTopicDescriptor[] = [
   {
     id: "question",
-    label: "Question",
+    get label() { return tr("Question"); },
     icon: "help-circle-outline",
     color: Theme.colors.info,
   },
   {
     id: "probleme",
-    label: "Problème",
+    get label() { return tr("Problème"); },
     icon: "alert-circle-outline",
     color: Theme.colors.danger,
   },
   {
     id: "assistance",
-    label: "Assistance",
+    get label() { return tr("Assistance"); },
     icon: "hand-left-outline",
     color: Theme.colors.primary,
   },
@@ -43,7 +44,7 @@ export const MERCHANT_SUPPORT_TOPICS: MerchantSupportTopicDescriptor[] = [
   },
   {
     id: "discussion",
-    label: "Discussion",
+    get label() { return tr("Discussion"); },
     icon: "chatbubbles-outline",
     color: Theme.colors.secondary,
   },

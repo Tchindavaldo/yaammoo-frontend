@@ -30,6 +30,11 @@ final class HLMenuCardCell: UICollectionViewCell {
   private var v4Bar: HLStockDeliveryBar?
   private var v5Bar: HLV5BottomBar?
   private var blurBar: HLBlurBar? { v4Bar?.blur ?? v5Bar?.blur }
+  // Design aere (`HLDesign.aere`, cf. HLAere.swift).
+  private var aere = false
+  private var aereV4: HLAereV4Bottom?
+  private var aereV5: HLAereV5Bar?
+  private var aereV7: HLAereV7Bottom?
   /** URL de la photo affichee : ignore le chargement d'une photo remplacee depuis. */
   private var photoKey: String?
 
@@ -72,7 +77,11 @@ final class HLMenuCardCell: UICollectionViewCell {
     design = d
     size = HLLayout.card(d)
     card.layer.cornerRadius = size.radius
+    aere = HLDesign.aere
 
+    if aere {
+      buildAere(d)
+    } else {
     switch d {
     case 4:
       card.backgroundColor = HLColor.v4Background
@@ -99,11 +108,39 @@ final class HLMenuCardCell: UICollectionViewCell {
       card.addSubview(zone)
       v7Bottom = zone
     }
+    }
     card.addSubview(price)
 
     let skel = HLSkeletonView(radius: size.radius)
     skeletons.insertSubview(skel, at: 0)
     cardSkeleton = skel
+  }
+
+  /** Vues du design aere : degrade (4, 7) et zone basse propre a la carte. */
+  private func buildAere(_ d: Int) {
+    switch d {
+    case 4:
+      card.backgroundColor = HLAereColor.surface
+      let g = HLAereScrim(design: 4)
+      card.addSubview(g)
+      gradient = g
+      let b = HLAereV4Bottom()
+      card.addSubview(b)
+      aereV4 = b
+    case 5:
+      card.backgroundColor = HLAereColor.surface
+      let b = HLAereV5Bar()
+      card.addSubview(b)
+      aereV5 = b
+    default:
+      card.backgroundColor = HLAereColor.ink
+      let g = HLAereScrim(design: 7)
+      card.addSubview(g)
+      gradient = g
+      let b = HLAereV7Bottom()
+      card.addSubview(b)
+      aereV7 = b
+    }
   }
 
   /**
@@ -133,7 +170,18 @@ final class HLMenuCardCell: UICollectionViewCell {
     v7Bottom?.configure(deliveryTime: deliveryTime, feeLabel: m.feeLabel)
     v4Bar?.configure(stock: m.stock, deliveryTime: deliveryTime)
     v5Bar?.configure(deliveryTime: deliveryTime, feeLabel: m.feeLabel)
-    configureMeta(m)
+    aereV4?.configure(m)
+    aereV5?.configure(m)
+    aereV7?.configure(m)
+    if aere {
+      let t = HLAereMeta.texts(design: design, m)
+      titleLabel.attributedText = t.0
+      titleRight.attributedText = t.1
+      lineLeft.attributedText = t.2
+      lineRight.attributedText = t.3
+    } else {
+      configureMeta(m)
+    }
     setRevealed(revealed)
     setNeedsLayout()
   }
@@ -206,9 +254,15 @@ final class HLMenuCardCell: UICollectionViewCell {
     gradient?.frame = card.bounds
 
     let ps = price.sizeThatFits(.zero)
-    // Pastille prix : 8/8 (variants 7 et 5), 14/14 (variant 4).
-    let inset: CGFloat = design == 4 ? 14 : 8
+    // Pastille prix : 8/8 (variants 7 et 5), 14/14 (variant 4) ;
+    // design aere : 12/12 (4 et 5), 8/8 (7).
+    let inset: CGFloat = aere ? (design == 7 ? 8 : 12) : (design == 4 ? 14 : 8)
     price.frame = CGRect(x: inset, y: inset, width: ps.width, height: ps.height)
+
+    aereV4?.frame = CGRect(x: 0, y: h - HLAereV4Bottom.height, width: w, height: HLAereV4Bottom.height)
+    aereV7?.frame = CGRect(x: 0, y: h - HLAereV7Bottom.height, width: w, height: HLAereV7Bottom.height)
+    let bi = HLAereV5Bar.inset
+    aereV5?.frame = CGRect(x: bi, y: h - bi - HLAereV5Bar.height, width: w - 2 * bi, height: HLAereV5Bar.height)
 
     // Hauteur de zone 42 = contenu 32 + paddingBottom 10.
     v7Bottom?.frame = CGRect(x: 0, y: h - HLV7BottomZone.height, width: w, height: HLV7BottomZone.height)
@@ -222,8 +276,8 @@ final class HLMenuCardCell: UICollectionViewCell {
     let metaX: CGFloat = 4
     let row1Y = h + 8
     let row2Y = row1Y + 16 + 3
-    // Variant 7 : `marginRight: 6` apres le stock.
-    let rightInset: CGFloat = design == 7 ? 6 : 0
+    // Variant 7 : `marginRight: 6` apres le stock (design actuel seulement).
+    let rightInset: CGFloat = design == 7 && !aere ? 6 : 0
     let trw = ceil(titleRight.sizeThatFits(.zero).width)
     titleRight.frame = CGRect(x: w - rightInset - trw, y: row1Y, width: trw, height: 16)
     titleLabel.frame = CGRect(x: metaX, y: row1Y, width: max(0, titleRight.frame.minX - 4 - metaX), height: 16)

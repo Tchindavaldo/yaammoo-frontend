@@ -110,6 +110,9 @@ export class Menu {
     public rawPrice1?: number,
     public rawPrice2?: number,
     public rawPrice3?: number,
+    // Source de vérité des prix : N lignes (plus limité à 3). prix1..3 restent
+    // les miroirs aplatis des 3 premières. Lire via `checkout/utils/menuPrices`.
+    public prices?: { price: number; description?: string; rawPrice?: number }[],
   ) {}
 }
 

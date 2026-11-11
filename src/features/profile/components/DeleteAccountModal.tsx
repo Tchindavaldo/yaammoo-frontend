@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,8 +13,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { t as tr, useLanguage } from "@/src/i18n";
 
-const REQUIRED_CONFIRM = "SUPPRIMER";
+const requiredConfirm = (): string => tr("SUPPRIMER");
 
 interface Props {
   visible: boolean;
@@ -25,6 +28,7 @@ interface Props {
  * n'est plus connecté, ce qui remet saisie / loader / erreur à zéro.
  */
 export function DeleteAccountModal({ visible, onClose }: Props) {
+  useLanguage();
   const { userData, deleteAccount } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -41,7 +45,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
     }
   }
 
-  const canConfirm = confirmText.trim().toUpperCase() === REQUIRED_CONFIRM;
+  const canConfirm = confirmText.trim().toUpperCase() === requiredConfirm();
 
   const cancel = () => {
     if (isDeleting) return;
@@ -51,7 +55,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
   };
 
   const confirm = async () => {
-    // Le bouton "Supprimer" est déjà disabled tant que le texte ≠ REQUIRED_CONFIRM,
+    // Le bouton "Supprimer" est déjà disabled tant que le texte ≠ requiredConfirm(),
     // donc pas de re-validation ici (et plus d'Alert native).
     setIsDeleting(true);
     setError(null);
@@ -69,7 +73,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
         err?.response?.data?.error ||
           err?.response?.data?.message ||
           err?.message ||
-          "Impossible de supprimer le compte. Réessayez ou contactez le support.",
+          tr("Impossible de supprimer le compte. Réessayez ou contactez le support."),
       );
     }
   };
@@ -91,22 +95,20 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
           <View style={styles.iconWrap}>
             <Ionicons name="warning" size={32} color={Theme.colors.danger} />
           </View>
-          <Text style={styles.title}>Supprimer mon compte</Text>
+          <Text style={styles.title}>{tr("Supprimer mon compte")}</Text>
           <Text style={styles.message}>
-            Cette action est{" "}
+            {tr("Cette action est")}{" "}
             <Text style={{ fontWeight: "700" }}>
-              définitive et irréversible
+              {tr("définitive et irréversible")}
             </Text>
             .{"\n\n"}
-            Toutes vos données seront supprimées :{"\n"}• Votre profil et
-            identifiants{"\n"}• Vos commandes et transactions{"\n"}• Vos bonus
-            et notifications{"\n"}
-            {userData?.isMarchand ? "• Votre boutique et menus\n" : ""}
-            {"\n"}Pour confirmer, tapez{" "}
+            {tr("Toutes vos données seront supprimées :")}{"\n"}{tr("• Votre profil et identifiants")}{"\n"}{tr("• Vos commandes et transactions")}{"\n"}{tr("• Vos bonus et notifications")}{"\n"}
+            {userData?.isMarchand ? tr("• Votre boutique et menus\n") : ""}
+            {"\n"}{tr("Pour confirmer, tapez")}{" "}
             <Text style={{ fontWeight: "700", color: Theme.colors.danger }}>
-              {REQUIRED_CONFIRM}
+              {requiredConfirm()}
             </Text>{" "}
-            ci-dessous.
+            {tr("ci-dessous.")}
           </Text>
 
           <TextInput
@@ -116,7 +118,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
               setConfirmText(t);
               if (error) setError(null);
             }}
-            placeholder={REQUIRED_CONFIRM}
+            placeholder={requiredConfirm()}
             placeholderTextColor={Theme.colors.gray[300]}
             autoCapitalize="characters"
             autoCorrect={false}
@@ -132,7 +134,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
               disabled={isDeleting}
               activeOpacity={0.7}
             >
-              <Text style={styles.btnCancelText}>Annuler</Text>
+              <Text style={styles.btnCancelText}>{tr("Annuler")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -147,12 +149,14 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
               {isDeleting ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.btnDangerText}>Supprimer</Text>
+                <Text style={styles.btnDangerText}>{tr("Supprimer")}</Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 }

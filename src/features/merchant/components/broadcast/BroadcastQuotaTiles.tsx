@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { BroadcastPlan, BroadcastQuota } from "../../types/broadcast.types";
 import { untilMidnight } from "../../utils/broadcastQuota";
 import { BC, capsLabel } from "./broadcastTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   plan: BroadcastPlan;
@@ -13,13 +15,14 @@ interface Props {
 
 /** Deux tuiles : reste du jour (sombre, une capsule par envoi) et compte à rebours. */
 export const BroadcastQuotaTiles: React.FC<Props> = ({ plan, quota, now }) => {
+  useLanguage();
   const reset = untilMidnight(now);
 
   return (
     <View style={styles.row}>
       <View style={[styles.tile, styles.dark]}>
         <View style={styles.head}>
-          <Text style={styles.darkLabel}>Aujourd’hui</Text>
+          <Text style={styles.darkLabel}>{t("Aujourd’hui")}</Text>
           <View style={[styles.icon, styles.darkIcon]}>
             <Ionicons name="notifications-outline" size={14} color={BC.accent} />
           </View>
@@ -43,7 +46,7 @@ export const BroadcastQuotaTiles: React.FC<Props> = ({ plan, quota, now }) => {
 
       <View style={[styles.tile, styles.light]}>
         <View style={styles.head}>
-          <Text style={styles.lightLabel}>Remise à zéro</Text>
+          <Text style={styles.lightLabel}>{t("Remise à zéro")}</Text>
           <View style={[styles.icon, styles.lightIcon]}>
             <Ionicons name="refresh-outline" size={14} color={BC.ink} />
           </View>
@@ -53,7 +56,7 @@ export const BroadcastQuotaTiles: React.FC<Props> = ({ plan, quota, now }) => {
           <Text style={styles.resetUnit}>h</Text>
           {reset.m}
         </Text>
-        <Text style={capsLabel}>SEMAINE · LUNDI</Text>
+        <Text style={capsLabel}>{t("SEMAINE · LUNDI")}</Text>
       </View>
     </View>
   );

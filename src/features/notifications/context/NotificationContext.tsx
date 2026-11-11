@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from "react";
 import axios from "axios";
 import * as Notifications from "expo-notifications";
@@ -5,6 +6,7 @@ import { Config } from "../../../api/config";
 import { useAuth } from "../../auth/context/AuthContext";
 import { storage } from "../../../utils/storage";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface Notification {
   id: string;
@@ -62,6 +64,7 @@ export const isNotifRead = (n: Notification, userId?: string) => {
 };
 
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -163,7 +166,7 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       }
     } catch (err: any) {
       console.error("Error fetching notifications:", err);
-      if (!quiet) setError("Erreur lors de la récupération des notifications");
+      if (!quiet) setError(t("Erreur lors de la récupération des notifications"));
     } finally {
       if (!quiet) setLoading(false);
     }

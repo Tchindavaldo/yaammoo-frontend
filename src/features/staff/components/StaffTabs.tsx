@@ -1,7 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { StaffTab } from "../types/staff.types";
 import { ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   tab: StaffTab;
@@ -13,18 +15,21 @@ interface Props {
 }
 
 /** Sélecteur Équipe / Livreurs (contrôle segmenté de la maquette). */
-export const StaffTabs: React.FC<Props> = ({ tab, onChange, members, drivers, pending }) => (
+export const StaffTabs: React.FC<Props> = ({ tab, onChange, members, drivers, pending }) => {
+  useLanguage();
+  return (
   <View style={styles.track} accessibilityRole="tablist">
-    <Segment on={tab === "team"} onPress={() => onChange("team")} label="Équipe" count={members} />
+    <Segment on={tab === "team"} onPress={() => onChange("team")} label={t("Équipe")} count={members} />
     <Segment
       on={tab === "drivers"}
       onPress={() => onChange("drivers")}
-      label="Livreurs"
+      label={t("Livreurs")}
       count={pending > 0 ? undefined : drivers}
       badge={pending > 0 ? pending : undefined}
     />
   </View>
 );
+};
 
 const Segment = ({
   on,

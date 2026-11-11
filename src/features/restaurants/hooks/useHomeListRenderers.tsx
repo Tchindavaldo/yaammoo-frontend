@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useMemo } from "react";
 import { Text, View } from "react-native";
@@ -8,6 +9,7 @@ import { HeroBanner } from "../components/HeroBanner";
 import { homeStyles as styles } from "../components/home/homeScreenStyles";
 import { designNumberFor } from "../utils/designCycle";
 import { isBannerItem } from "../utils/homeListConfig";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Params {
   banners: AppBanner[];
@@ -34,6 +36,7 @@ export const useHomeListRenderers = ({
   onBannerPress,
   onMenuClick,
 }: Params) => {
+  const i18nLang = useLanguage();
   // Pied de liste : le loader de pagination vit HORS de la liste (overlay
   // fixe au-dessus de la navbar, en fade) pour ne jamais toucher au contenu :
   // ici seulement les etats stables (vide, fin de catalogue).
@@ -48,8 +51,8 @@ export const useHomeListRenderers = ({
           />
           <Text style={styles.emptyText}>
             {searchQuery
-              ? `Aucun restaurant trouvé pour "${searchQuery}"`
-              : "Aucun restaurant disponible pour le moment"}
+              ? t("Aucun restaurant trouvé pour \"{{a}}\"", { a: searchQuery })
+              : t("Aucun restaurant disponible pour le moment")}
           </Text>
         </View>
       );
@@ -58,13 +61,13 @@ export const useHomeListRenderers = ({
       return (
         <View style={styles.footerEnd}>
           <Text style={styles.footerEndText}>
-            Vous avez vu toutes les boutiques
+            {t("Vous avez vu toutes les boutiques")}
           </Text>
         </View>
       );
     }
     return null;
-  }, [hasMore, loading, fastFoodsCount, searchQuery]);
+  }, [hasMore, loading, fastFoodsCount, searchQuery, i18nLang]);
 
   // ⚠️ `renderItem` et `keyExtractor` DOIVENT rester stables.
   //

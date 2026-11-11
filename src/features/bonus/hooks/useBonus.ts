@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // ============================================================================
 // useBonus — récupération des bonus + réclamation (claim)
 // ----------------------------------------------------------------------------
@@ -17,6 +18,7 @@ import type {
   BonusClaimStatus,
 } from "../types/bonus.types";
 import { DEFAULT_BONUSES, USE_DEFAULT_BONUSES } from "../config/defaultBonuses";
+import { t, useLanguage } from "@/src/i18n";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
 
@@ -77,6 +79,7 @@ export const normalizeBonus = (raw: any): Bonus => ({
 });
 
 export const useBonus = () => {
+  useLanguage();
   const { userData } = useAuth();
   const [bonuses, setBonuses] = useState<Bonus[]>([]);
   // `true` dès le départ : le premier fetch part au montage, sans ça la page
@@ -109,7 +112,7 @@ export const useBonus = () => {
       if (USE_DEFAULT_BONUSES) {
         setBonuses(DEFAULT_BONUSES);
       } else if (!quiet) {
-        setError("Impossible de charger les bonus");
+        setError(t("Impossible de charger les bonus"));
       }
     } finally {
       if (!quiet) setLoading(false);
@@ -280,7 +283,7 @@ export const useBonus = () => {
   /** Réclame un bonus. Optimiste : passe le statut local à "pending" au succès. */
   const claimBonus = useCallback(
     async (bonus: Bonus): Promise<{ success: boolean; message?: string }> => {
-      if (!userData) return { success: false, message: "Non connecté" };
+      if (!userData) return { success: false, message: t("Non connecté") };
       setClaims((c) => ({ ...c, [bonus.id]: "posting" }));
       // Bonus de démo : pas d'appel réseau, on simule le succès pour l'UI.
       if (bonus.id.startsWith("mock-")) {
@@ -306,7 +309,7 @@ export const useBonus = () => {
         setClaims((c) => ({ ...c, [bonus.id]: "error" }));
         return {
           success: false,
-          message: e?.response?.data?.message || "Échec de la demande",
+          message: e?.response?.data?.message || t("Échec de la demande"),
         };
       }
     },
@@ -345,7 +348,7 @@ export const useBonus = () => {
       bonus: Bonus,
       next = !bonus.armed,
     ): Promise<{ success: boolean; message?: string }> => {
-      if (!userData) return { success: false, message: "Non connecté" };
+      if (!userData) return { success: false, message: t("Non connecté") };
       const previous = !!bonus.armed;
       setArming((a) => ({ ...a, [bonus.id]: true }));
       setBonuses((list) =>
@@ -373,7 +376,7 @@ export const useBonus = () => {
           success: false,
           message:
             e?.response?.data?.message ||
-            (next ? "Échec de l'activation" : "Échec de la désactivation"),
+            (next ? t("Échec de l'activation") : t("Échec de la désactivation")),
         };
       } finally {
         setArming((a) => ({ ...a, [bonus.id]: false }));

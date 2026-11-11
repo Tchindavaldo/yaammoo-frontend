@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -8,6 +9,7 @@ import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportBubble } from "./MerchantSupportBubble";
 import { MerchantSupportComposer } from "./MerchantSupportComposer";
 import { MerchantSupportMessagesSkeleton } from "./MerchantSupportMessagesSkeleton";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   thread: MerchantSupportThread;
@@ -30,6 +32,7 @@ export const MerchantSupportChatView: React.FC<Props> = ({
   bottomInset = 0,
   onThreadUpdated,
 }) => {
+  useLanguage();
   const [draft, setDraft] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
@@ -84,9 +87,9 @@ export const MerchantSupportChatView: React.FC<Props> = ({
           <View style={styles.empty}>
             {/* Le cas « en chargement » est pris par le squelette au-dessus :
                 ici le fil est bel et bien vide. */}
-            <Text style={styles.emptyTitle}>Aucun message</Text>
+            <Text style={styles.emptyTitle}>{t("Aucun message")}</Text>
             <Text style={styles.emptyText}>
-              Répondez au client pour démarrer la discussion.
+              {t("Répondez au client pour démarrer la discussion.")}
             </Text>
           </View>
         ) : (

@@ -1,4 +1,5 @@
 import { Commande } from "@/src/types";
+import { t } from "@/src/i18n";
 
 /** Ligne de l'onglet « Commandes » du détail client (`OrderBottomSheet`). */
 export type OrderItem = {
@@ -26,7 +27,7 @@ export const buildOrderItems = (order: Commande | null): OrderItem[] => {
   const menuPrice =
     order.menu?.prices?.[priceIdx]?.price || order.menu?.prices?.[0]?.price || 0;
   items.push({
-    name: order.menu?.titre || order.menu?.name || "Menu principal",
+    name: order.menu?.titre || order.menu?.name || t("Menu principal"),
     qty: order.quantity || 1,
     price: `${menuPrice * (order.quantity || 1)} F`,
     unitPrice: menuPrice,

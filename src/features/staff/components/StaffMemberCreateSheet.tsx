@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
@@ -8,6 +9,7 @@ import { StaffPrimaryButton } from "./StaffPrimaryButton";
 import { StaffPage } from "./StaffPage";
 import { StaffSwitch } from "./StaffSwitch";
 import { capsLabel, ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   roles: StaffRole[];
@@ -40,6 +42,7 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
   onEditRole,
   onClose,
 }) => {
+  useLanguage();
   const [phone, setPhone] = useState("");
   const [phoneFocus, setPhoneFocus] = useState(false);
   const [prenom, setPrenom] = useState("");
@@ -75,17 +78,17 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
       header={
         <View style={styles.head}>
           <View style={{ gap: 3 }}>
-            <Text style={styles.title}>Nouveau membre</Text>
+            <Text style={styles.title}>{t("Nouveau membre")}</Text>
             <Text style={styles.subtitle}>{slotLabel}</Text>
           </View>
-          <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn} accessibilityLabel="Fermer">
+          <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn} accessibilityLabel={t("Fermer")}>
             <Ionicons name="close" size={16} color={ST.ink} />
           </Pressable>
         </View>
       }
       footer={
         <StaffPrimaryButton
-          label="Créer le membre"
+          label={t("Créer le membre")}
           onPress={submit}
           disabled={!canSubmit}
           loading={saving}
@@ -93,7 +96,7 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
       }
     >
       <View style={styles.field}>
-        <Text style={styles.label}>Numéro de téléphone</Text>
+        <Text style={styles.label}>{t("Numéro de téléphone")}</Text>
         <View style={[styles.phoneBox, phoneFocus && styles.focused, phoneError && styles.errored]}>
           <View style={styles.dial}>
             <Text style={styles.dialText}>{DEFAULT_DIAL}</Text>
@@ -107,34 +110,34 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
             placeholderTextColor={ST.faint}
             keyboardType="phone-pad"
             style={styles.phoneInput}
-            accessibilityLabel="Numéro de téléphone"
+            accessibilityLabel={t("Numéro de téléphone")}
           />
         </View>
         <Text style={[styles.help, phoneError && { color: ST.danger }]}>
           {phoneError
-            ? "Numéro invalide : 9 chiffres, ou le numéro complet avec +"
-            : "Il se connectera avec ce numéro, par code SMS."}
+            ? t("Numéro invalide : 9 chiffres, ou le numéro complet avec +")
+            : t("Il se connectera avec ce numéro, par code SMS.")}
         </Text>
       </View>
 
       <View style={styles.pair}>
         <View style={[styles.field, { flex: 1 }]}>
-          <Text style={styles.label}>Prénom</Text>
+          <Text style={styles.label}>{t("Prénom")}</Text>
           <TextInput
             value={prenom}
             onChangeText={setPrenom}
-            placeholder="Facultatif"
+            placeholder={t("Facultatif")}
             placeholderTextColor={ST.faint}
             style={styles.input}
             autoCapitalize="words"
           />
         </View>
         <View style={[styles.field, { flex: 1 }]}>
-          <Text style={styles.label}>Nom</Text>
+          <Text style={styles.label}>{t("Nom")}</Text>
           <TextInput
             value={nom}
             onChangeText={setNom}
-            placeholder="Facultatif"
+            placeholder={t("Facultatif")}
             placeholderTextColor={ST.faint}
             style={styles.input}
             autoCapitalize="words"
@@ -143,7 +146,7 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Rôle</Text>
+        <Text style={styles.label}>{t("Rôle")}</Text>
         <View style={styles.chips}>
           {roles.map((r) => {
             const on = r.id === roleId;
@@ -162,7 +165,7 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
           })}
           <Pressable onPress={onNewRole} style={styles.newRole} accessibilityRole="button">
             <Ionicons name="add" size={16} color={ST.accentText} />
-            <Text style={styles.newRoleText}>Nouveau rôle</Text>
+            <Text style={styles.newRoleText}>{t("Nouveau rôle")}</Text>
           </Pressable>
         </View>
 
@@ -170,17 +173,17 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
           <View style={styles.preview}>
             <View style={styles.previewHead}>
               <Text style={capsLabel} numberOfLines={1}>
-                {role.name.toUpperCase()} PEUT
+                {role.name.toUpperCase()} {t("PEUT")}
               </Text>
               <Pressable onPress={() => onEditRole(role)} hitSlop={8} accessibilityRole="button">
-                <Text style={styles.link}>Modifier</Text>
+                <Text style={styles.link}>{t("Modifier")}</Text>
               </Pressable>
             </View>
             <View style={styles.permChips}>
               {full ? (
-                <PermChip icon="shield-checkmark-outline" label="Accès complet" />
+                <PermChip icon="shield-checkmark-outline" label={t("Accès complet")} />
               ) : granted.length === 0 ? (
-                <Text style={styles.help}>Aucune permission : seule la connexion est possible.</Text>
+                <Text style={styles.help}>{t("Aucune permission : seule la connexion est possible.")}</Text>
               ) : (
                 granted.map((p) => <PermChip key={p.key} icon={p.icon} label={p.short} />)
               )}
@@ -191,10 +194,10 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
 
       <View style={styles.switchRow}>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={styles.switchTitle}>Connexion par email aussi</Text>
-          <Text style={styles.help}>Facultatif : email et mot de passe en plus du code SMS.</Text>
+          <Text style={styles.switchTitle}>{t("Connexion par email aussi")}</Text>
+          <Text style={styles.help}>{t("Facultatif : email et mot de passe en plus du code SMS.")}</Text>
         </View>
-        <StaffSwitch value={emailOn} onValueChange={setEmailOn} label="Connexion par email aussi" />
+        <StaffSwitch value={emailOn} onValueChange={setEmailOn} label={t("Connexion par email aussi")} />
       </View>
 
       {emailOn && (
@@ -213,13 +216,13 @@ export const StaffMemberCreateSheet: React.FC<Props> = ({
             <TextInput
               value={password}
               onChangeText={setPassword}
-              placeholder="Mot de passe"
+              placeholder={t("Mot de passe")}
               placeholderTextColor={ST.faint}
               secureTextEntry
               autoCapitalize="none"
               style={styles.input}
             />
-            <Text style={styles.help}>6 caractères minimum. Transmis au membre par vos soins.</Text>
+            <Text style={styles.help}>{t("6 caractères minimum. Transmis au membre par vos soins.")}</Text>
           </View>
         </>
       )}

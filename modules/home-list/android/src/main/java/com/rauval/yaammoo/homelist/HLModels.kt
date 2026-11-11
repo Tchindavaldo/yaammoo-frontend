@@ -21,6 +21,14 @@ class HLMenuRecord : Record {
   @Field var feeLabel: String = ""
   /** « gratuite », « 300F », « 1000F » (ligne livraison du variant 4). */
   @Field var metaFeeLabel: String = ""
+  // Design aere (`homeDesign = "aere"`), calcule par `aere/labels.ts`.
+  @Field var stockValue: String = ""
+  @Field var stockUnit: String = ""
+  @Field var stockLow: Boolean = false
+  @Field var stockRatio: Double = 0.0
+  @Field var feeText: String = ""
+  @Field var feeFree: Boolean = false
+  @Field var eta: String = ""
 }
 
 class HLShopRecord : Record {
@@ -34,6 +42,10 @@ class HLShopRecord : Record {
   @Field var deliveryTime: String = ""
   /** Distance formatee (« 1,2 km ») apres « Ouvert » ; "" = rien. */
   @Field var distance: String = ""
+  /** Note de la boutique en design aere (« 4.5/5 »). */
+  @Field var ratingText: String = ""
+  /** Sous la note (design aere) : « 13h » / « express » apres « Livraison » ; "" = rien. */
+  @Field var deliveryLabel: String = ""
   @Field var menus: List<HLMenuRecord> = emptyList()
 }
 
@@ -88,10 +100,19 @@ data class HLMenu(
   val votes: Int,
   val feeLabel: String,
   val metaFeeLabel: String,
+  val stockValue: String,
+  val stockUnit: String,
+  val stockLow: Boolean,
+  val stockRatio: Float,
+  val feeText: String,
+  val feeFree: Boolean,
+  val eta: String,
 ) {
   constructor(r: HLMenuRecord) : this(
     r.id, r.title, r.image ?: r.fallbackImage, r.price, r.stock, r.rating, r.votes,
     r.feeLabel, r.metaFeeLabel,
+    r.stockValue, r.stockUnit, r.stockLow, r.stockRatio.toFloat().coerceIn(0f, 1f),
+    r.feeText, r.feeFree, r.eta,
   )
 }
 
@@ -104,6 +125,8 @@ data class HLShop(
   val votes: Int,
   val deliveryTime: String,
   val distance: String,
+  val ratingText: String,
+  val deliveryLabel: String,
   val menus: List<HLMenu>,
 ) {
   constructor(r: HLShopRecord) : this(
@@ -115,6 +138,8 @@ data class HLShop(
     r.votes,
     r.deliveryTime,
     r.distance,
+    r.ratingText,
+    r.deliveryLabel,
     r.menus.map { HLMenu(it) },
   )
 }

@@ -1,12 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { DS } from "@/src/theme/ds";
+import { t } from "@/src/i18n";
 
 /**
  * Deux réglages pour UNE seule tâche arrière-plan (`backgroundLocationTask`) :
  *
  * - `normal`   : position de l'utilisateur (ciblage ville, marketing), rare,
- *                exige la permission « Toujours ».
+ *                exige la permission « Toujours » : iOS seulement (retirée
+ *                d'Android, refusée par Google Play).
  * - `delivery` : livreur en course, fréquent. Android : service de premier
  *                plan (notification permanente) ; iOS : indicateur bleu. Les
  *                deux suffisent avec la permission « Pendant l'utilisation ».
@@ -51,9 +53,9 @@ export const trackingOptions = (
         // `isAndroidForegroundServiceEnabled: true`). Démarré app ouverte
         // seulement (bouton « Lancer »), l'OS l'interdit sinon.
         foregroundService: {
-          notificationTitle: "Livraison en cours",
+          notificationTitle: t("Livraison en cours"),
           notificationBody:
-            "Votre position est partagée avec le client jusqu'à la fin de la course.",
+            t("Votre position est partagée avec le client jusqu'à la fin de la course."),
           notificationColor: DS.accent,
           killServiceOnDestroy: false,
         },

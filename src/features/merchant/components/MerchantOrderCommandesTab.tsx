@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
@@ -7,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { OrderItem } from './MerchantOrderBottomSheet';
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 // Ic\u00F4nes align\u00E9es sur le bottom sheet du home (checkout/tabs/DetailTab).
 const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -18,7 +20,7 @@ const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 const ITEM_LABEL: Record<string, string> = {
   menu: 'Menu',
   extra: 'Extra',
-  drink: 'Boisson',
+  get drink() { return t('Boisson'); },
 };
 
 // Devise
@@ -60,16 +62,17 @@ export function CommandesTab({
   onValidate,
   validating = false,
 }: Props) {
+  useLanguage();
   const hasDelivery = deliveryPrice > 0 || !!zone || deliveryOffered || deliveryGrouped;
   // Offert prime sur le groupé : le client ne paie rien dans les deux cas, mais
   // « Offert » porte l'info commerciale (bonus / campagne).
   const deliveryLabel = deliveryOffered
-    ? 'Offert'
+    ? t("Offert")
     : deliveryGrouped
-      ? 'Cmd groupée'
+      ? t("Cmd groupée")
       : deliveryPrice > 0
         ? `${deliveryPrice} ${CURRENCY}`
-        : 'Inclus';
+        : t("Inclus");
 
   // Une seule remontée par montage : évite de spammer le parent à chaque frame.
   const notified = useRef(false);
@@ -120,7 +123,7 @@ export function CommandesTab({
   if (orders.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>Aucun détail de commande disponible</Text>
+        <Text style={styles.emptyText}>{t("Aucun détail de commande disponible")}</Text>
       </View>
     );
   }
@@ -183,10 +186,10 @@ export function CommandesTab({
                   {o.hasQty && o.qty > 1 ? (
                     <>
                       <Text style={styles.itemPrice}>{lineTotal} {CURRENCY}</Text>
-                      <Text style={styles.itemPriceSub}>{unitPrice} {CURRENCY} × {o.qty}</Text>
+                      <Text style={styles.itemPriceSub}>{unitPrice} {CURRENCY} {t("×")} {o.qty}</Text>
                     </>
                   ) : (
-                    <Text style={styles.itemPrice}>{unitPrice > 0 ? `${unitPrice} ${CURRENCY}` : 'Inclus'}</Text>
+                    <Text style={styles.itemPrice}>{unitPrice > 0 ? `${unitPrice} ${CURRENCY}` : t("Inclus")}</Text>
                   )}
                 </View>
               </View>
@@ -200,7 +203,7 @@ export function CommandesTab({
                 <Ionicons name="bicycle-outline" size={16} color={DS.accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.itemName} numberOfLines={1}>Livraison</Text>
+                <Text style={styles.itemName} numberOfLines={1}>{t("Livraison")}</Text>
                 {zone ? (
                   <Text style={styles.itemZone}>{zone}</Text>
                 ) : null}
@@ -223,7 +226,7 @@ export function CommandesTab({
         <View style={styles.totalRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.totalLabel}>
-              {deliveryGrouped ? 'Total' : 'Total commande'}
+              {deliveryGrouped ? 'Total' : t("Total commande")}
             </Text>
             <Text style={styles.totalVal}>{total} {CURRENCY}</Text>
           </View>
@@ -244,7 +247,7 @@ export function CommandesTab({
                 />
               )}
               <Text style={styles.validateBtnText}>
-                {validating ? 'Validation…' : 'Valider'}
+                {validating ? 'Validation…' : t("Valider")}
               </Text>
             </TouchableOpacity>
           )}

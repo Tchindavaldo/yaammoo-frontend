@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useFocusEffect } from "expo-router";
 import {
@@ -45,12 +46,15 @@ import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
 import { useRequireName } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Toast } from "@/src/components/Toast";
+import { showToast } from "@/src/services/globalToast";
+import { lockPayment, unlockPayment, reopenLockedPayment } from "@/src/services/paymentLock";
 import { CartCheckoutSheet } from "@/src/features/checkout/components/CartCheckoutSheet";
 import { useCartPayment } from "@/src/features/payment/hooks/useCartPayment";
 import { sanitizeOrder } from "@/src/features/orders/utils/sanitizeOrder";
 import { CartGroupedDeliverySheet } from "@/src/features/payment/components/CartGroupedDeliverySheet";
 import { computeCartTotal } from "@/src/features/checkout/utils/cartDeliveryTotal";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 if (
   Platform.OS === "android" &&
@@ -60,6 +64,7 @@ if (
 }
 
 export default function OrdersScreen() {
+  const i18nLang = useLanguage();
   const {
     loading,
     // Renommé : `refreshing` est déjà pris par le pull-to-refresh local.
@@ -114,7 +119,7 @@ export default function OrdersScreen() {
         const fetched = fetchedFfInfos[ffId];
         entry = {
           id: ffId,
-          name: ff?.nom || ff?.name || fetched?.name || "Boutique",
+          name: ff?.nom || ff?.name || fetched?.name || t("Boutique"),
           image: ff?.image || ff?.logo || ff?.coverImage || fetched?.image,
           orderCount: 0,
           total: 0,
@@ -129,7 +134,7 @@ export default function OrdersScreen() {
       entry.total = computeCartTotal(ordersByFf.get(ffId) || []);
     });
     return Array.from(map.values());
-  }, [pendingToBuy, fastFoods, fetchedFfInfos]);
+  }, [pendingToBuy, fastFoods, fetchedFfInfos, i18nLang]);
 
   // Creneaux et zones express des boutiques du panier chargees d'avance : a
   // l'ouverture d'un sheet de livraison, la card « Zone » est deja la. Sans ce
@@ -166,7 +171,7 @@ export default function OrdersScreen() {
   // Commandes regroupées par zone + créneau : une card de tableau par groupe.
   const zoneGroups = useMemo(
     () => groupCartOrdersByZone(visibleCartOrders),
-    [visibleCartOrders],
+    [visibleCartOrders, i18nLang],
   );
 
   // Groupe (zone) en cours de paiement via "Tout payer" du pied de tableau.
@@ -225,6 +230,8 @@ export default function OrdersScreen() {
 
   // Livraison commune validée : écrase celle de chaque commande payée.
   const [groupedDeliveryValue, setGroupedDeliveryValue] = useState<any>(null);
+  /** Sheet groupé masqué pendant l'attente du verdict (cf. `paymentLock`). */
+  const [groupedHidden, setGroupedHidden] = useState(false);
   /** Meme valeur, lisible SYNCHRONEMENT par `confirmCartPayment`. */
   const groupedDeliveryRef = React.useRef<any>(null);
 
@@ -293,8 +300,9 @@ export default function OrdersScreen() {
       prix2: p[1]?.price || 0,
       prix3: p[2]?.price || 0,
       optionPrix1: p[0]?.description || "Standard",
-      optionPrix2: p[1]?.description || "Medium",
-      optionPrix3: p[2]?.description || "Large",
+      optionPrix2: p[1]?.description || "Moyen",
+      optionPrix3: p[2]?.description || "Grand",
+      prices: p,
       image: orderToEdit.menu.image || orderToEdit.menu.coverImage || "",
       disponibilite: "active",
       images: orderToEdit.menu.images || [
@@ -365,6 +373,7 @@ export default function OrdersScreen() {
     // Le parcours groupé porte le paiement dans son propre sheet : la fin du
     // paiement le referme aussi, sinon il resterait ouvert sur le succès.
     setGroupedDelivery(null);
+    setGroupedHidden(false);
     resetPayment();
   }, [resetPayment]);
 
@@ -378,6 +387,7 @@ export default function OrdersScreen() {
   const startOrder = React.useCallback(
     (groups: ReturnType<typeof groupCartOrdersByZone>) => {
       // Nom / prenom manquant : la sheet dediee passe AVANT la livraison.
+      if (reopenLockedPayment()) return;
       requireName(() => setGroupedDelivery(groups));
     },
     [requireName],
@@ -394,13 +404,35 @@ export default function OrdersScreen() {
     }
   }, [paymentState, endPayment, refresh]);
 
-  // Toast d'erreur paiement.
+  // Paiement groupé en attente de verdict : verrou global, toute ouverture
+  // (commande, « commander ») rouvre le sheet groupé tel qu'il était.
+  const groupedInFlight =
+    paymentState === "waiting" || paymentState === "ussd_sent";
+  const reopenGrouped = React.useRef(() => setGroupedHidden(false)).current;
+  useEffect(() => {
+    if (groupedInFlight) lockPayment(reopenGrouped);
+    else unlockPayment(reopenGrouped);
+  }, [groupedInFlight, reopenGrouped]);
+
+  // Toast d'erreur paiement (sheet masqué : toast global et fin du parcours).
   useEffect(() => {
     if (paymentError) {
-      setToast({ message: paymentError, type: "error" });
+      if (groupedHidden) {
+        showToast(paymentError, "error");
+        endPayment();
+      } else setToast({ message: paymentError, type: "error" });
       setPaymentError(null);
     }
-  }, [paymentError, setPaymentError]);
+  }, [paymentError, setPaymentError, groupedHidden, endPayment]);
+
+  // Succès reçu sheet masqué : toast global, fin immédiate du parcours.
+  useEffect(() => {
+    if (groupedHidden && paymentState === "success") {
+      showToast(t("Paiement de la commande effectué avec succès !"), "success");
+      endPayment();
+      refresh();
+    }
+  }, [groupedHidden, paymentState, endPayment, refresh]);
 
   const tabBarHeight = useTabBarHeight();
   const insets = useSafeAreaInsets();
@@ -439,16 +471,16 @@ export default function OrdersScreen() {
   /** Libellé de période d'une commande : "Express" / "Créneau" / "Sur place". */
   const periodeOf = (o: any) =>
     o?.delivery?.status !== true
-      ? "Sur place"
+      ? t("Sur place")
       : o?.delivery?.type === "express"
         ? "Express"
-        : "Créneau";
+        : t("Créneau");
 
   /** Zone de livraison, "Retrait en boutique" à défaut. */
   const zoneOf = (o: any) =>
     o?.delivery?.status === true
-      ? o?.delivery?.zone || o?.delivery?.location || "Zone inconnue"
-      : "Retrait en boutique";
+      ? o?.delivery?.zone || o?.delivery?.location || t("Zone inconnue")
+      : t("Retrait en boutique");
 
   /** Créneau horaire, `null` hors livraison programmée. */
   const heureOf = (o: any): string | null =>
@@ -537,7 +569,7 @@ export default function OrdersScreen() {
   // et au paiement (la liste, elle, est désormais plate).
   const displayedZoneGroups = useMemo(
     () => groupCartOrdersByZone(filteredCartOrders),
-    [filteredCartOrders],
+    [filteredCartOrders, i18nLang],
   );
 
   // For testing: force loader to persist
@@ -550,9 +582,9 @@ export default function OrdersScreen() {
       const success = await deleteOrder(orderToDelete);
       if (success) {
         setOrderToDelete(null);
-        setToast({ message: "Article supprimé du panier", type: "success" });
+        setToast({ message: t("Article supprimé du panier"), type: "success" });
       } else {
-        setToast({ message: "Erreur lors de la suppression", type: "error" });
+        setToast({ message: t("Erreur lors de la suppression"), type: "error" });
       }
     } finally {
       setIsSubmitting(false);
@@ -569,12 +601,12 @@ export default function OrdersScreen() {
       const d = order.delivery as any;
       if (!d || !d.status || d.type === "aucune") continue;
       const menuName =
-        (order.menu as any)?.name || (order.menu as any)?.titre || "Commande";
-      if (!d.location) return `"${menuName}" : adresse de livraison requise`;
+        (order.menu as any)?.name || (order.menu as any)?.titre || t("Commande");
+      if (!d.location) return t("\"{{a}}\" : adresse de livraison requise", { a: menuName });
       if (!d.phone && !order.userData?.phoneNumber)
-        return `"${menuName}" : numéro de contact requis`;
+        return t("\"{{a}}\" : numéro de contact requis", { a: menuName });
       if (d.type === "time" && !d.time)
-        return `"${menuName}" : période de livraison requise`;
+        return t("\"{{a}}\" : période de livraison requise", { a: menuName });
     }
     return null;
   };
@@ -586,7 +618,9 @@ export default function OrdersScreen() {
    * `expressLieu` / `hour`).
    */
   const toOrderDelivery = (d: any) => {
-    if (!d || d.type === "aucune") return { status: false, type: "aucune" };
+    // Retrait : le numero de contact est exige par le backend.
+    if (!d || d.type === "aucune")
+      return { status: false, type: "aucune", ...(d?.phone && { phone: d.phone }) };
     const express = d.type === "express";
     return {
       status: true,
@@ -663,8 +697,8 @@ export default function OrdersScreen() {
     return (
       <GuestGate
         icon="cart-outline"
-        title="Votre panier vous attend"
-        subtitle="Connectez-vous pour ajouter des plats à votre panier et passer commande."
+        title={t("Votre panier vous attend")}
+        subtitle={t("Connectez-vous pour ajouter des plats à votre panier et passer commande.")}
       >
         {null}
       </GuestGate>
@@ -687,17 +721,21 @@ export default function OrdersScreen() {
   //
   // ⚠️ `!refreshing` exclut le pull-to-refresh : il a déjà son propre indicateur
   // natif, et le skeleton s'afficherait par-dessus, masquant le geste en cours.
+  // ⚠️ Paiement ou sheet en cours : le rafraichissement au retour dans l'app
+  // (USSD valide hors de l'app) ne doit PAS remplacer la page par le skeleton,
+  // sinon le sheet est demonte et le suivi du paiement (verdict) est perdu.
+  const flowOpen = paymentActive || editModalVisible || groupedDelivery !== null;
   if (
     (loading && orders.length === 0) ||
-    (ordersRefreshing && !refreshing) ||
+    (ordersRefreshing && !refreshing && !flowOpen) ||
     forceLoading
   ) {
     return (
       <View style={styles.container}>
         <BlurScope>
           <TabHeader
-            title="Mon panier"
-            subtitle="Chargement..."
+            title={t("Mon panier")}
+            subtitle={t("Chargement...")}
             onHeightChange={setHeaderHeight}
           />
           <BlurTarget style={{ flex: 1, paddingTop: HEADER_HEIGHT }}>
@@ -717,7 +755,7 @@ export default function OrdersScreen() {
   const headerRight =
     pendingToBuy.length > 0 && !orderToDelete ? (
       <HeaderPill
-        label="Tout commander"
+        label={t("Tout commander")}
         icon="card-outline"
         onPress={() => startOrder(displayedZoneGroups)}
       />
@@ -730,7 +768,7 @@ export default function OrdersScreen() {
           ne doivent pas viser la liste. */}
       <BlurScope>
       <TabHeader
-        title="Mon panier"
+        title={t("Mon panier")}
         subtitle={headerSubtitle}
         right={headerRight}
         onHeightChange={setHeaderHeight}
@@ -784,6 +822,7 @@ export default function OrdersScreen() {
               localRank={index + 1}
               showActions
               onPress={() => {
+                if (reopenLockedPayment()) return;
                 setOrderToEdit(item);
                 setEditModalVisible(true);
               }}
@@ -825,8 +864,8 @@ export default function OrdersScreen() {
               />
               <Text style={styles.emptyText}>
                 {zoneGroups.length > 0
-                  ? "Aucune commande pour ce filtre"
-                  : "Votre panier est vide"}
+                  ? t("Aucune commande pour ce filtre")
+                  : t("Votre panier est vide")}
               </Text>
             </View>
           }
@@ -886,7 +925,7 @@ export default function OrdersScreen() {
               FCFA
             </Text>
             <Text style={styles.deleteMsg}>
-              Voulez-vous vraiment supprimer ?
+              {t("Voulez-vous vraiment supprimer ?")}
             </Text>
           </View>
           <TouchableOpacity
@@ -915,13 +954,14 @@ export default function OrdersScreen() {
           les deux. La livraison validée est appliquée à toutes les commandes du
           lot au moment de construire les `items` du paiement. */}
       <CartGroupedDeliverySheet
-        visible={!orderToDelete && groupedDelivery !== null}
+        visible={!orderToDelete && groupedDelivery !== null && !groupedHidden}
+        onHide={() => setGroupedHidden(true)}
         groups={groupedDelivery || []}
         onSplit={() => {
           setGroupedDelivery(null);
           setToast({
             message:
-              "Utilisez les filtres pour isoler les commandes à livrer dans la même zone et le même créneau, ou validez-les individuellement.",
+              t("Utilisez les filtres pour isoler les commandes à livrer dans la même zone et le même créneau, ou validez-les individuellement."),
             type: "success",
           });
         }}
@@ -963,8 +1003,10 @@ export default function OrdersScreen() {
 
       {toast && (
         <Toast
+          key={toast.message}
           message={toast.message}
           type={toast.type}
+          duration={toast.type === "error" ? 10000 : undefined}
           onHide={() => setToast(null)}
         />
       )}
@@ -976,6 +1018,7 @@ export default function OrdersScreen() {
           onClose={() => {
             setEditModalVisible(false);
           }}
+          onReopen={() => setEditModalVisible(true)}
           menu={synthesizedEditMenu}
           initialOrder={orderToEdit}
           isCartMode={true}
@@ -991,7 +1034,7 @@ export default function OrdersScreen() {
             ]);
             if (result.success) {
               setToast({
-                message: "Commande validée avec succès",
+                message: t("Commande validée avec succès"),
                 type: "success",
               });
               setEditModalVisible(false);

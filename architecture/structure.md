@@ -50,6 +50,8 @@ app/
 │   ├── register.tsx         # Inscription
 │   └── phone.tsx            # Login WhatsApp / téléphone
 │
+├── account/                 # Pages entieres de Settings (hors Boutique), sans navbar : wallet, support,
+│                            #   driver-apply, driver-orders, driver-applications (ShopPageFrame + router.back)
 ├── (tabs)/                  # Tabs authentifiées
 │   ├── _layout.tsx
 │   ├── index.tsx            # Home (liste restaurants, feed)
@@ -91,6 +93,8 @@ src/features/
 │   ├── hooks/useCheckout.ts             # État commande, prix, validation, verdict paiement
 │   ├── services/verifyBonusCode.ts      # POST /bonus/verify — vérif code bonus (lecture seule)
 │   ├── utils/cartDeliveryTotal.ts       # Total panier + mutualisation frais de livraison
+│   ├── utils/menuPrices.ts              # N prix d'un plat (menuPriceOptions / menuPriceAt / menuPriceDescription)
+│   ├── utils/checkoutPrices.ts          # Montants du checkout home (computeCheckoutPrices)
 │   └── components/                      # BottomSheets (home, cart) + overlays paiement
 │       ├── CheckoutSheet / CartCheckoutSheet
 │       ├── CheckoutPaymentOverlay       # Capsule BAS (saisie n° + étapes paiement)
@@ -128,11 +132,14 @@ src/features/
 ├── merchant/                            # Détail complet : architecture/orders-merchant.md
 │   ├── context/                         # MerchantContext + MerchantWalletContext
 │   ├── hooks/                           # useMerchant · useWithdraw · useBroadcast
-│   ├── services/                        # merchantService · withdrawService · merchantSupportService · broadcastService
+│   ├── services/                        # merchantService · withdrawService · walletNetwork · merchantSupportService · broadcastService
 │   ├── utils/broadcastQuota.ts          # Quota / semaine / dates des notifications boutique
 │   ├── utils/orderGroupKey.ts           # Clé de groupage d'une cmd (client + date + créneau/zone)
 │   ├── components/                      # OrderManagePanel, MerchantOrderCard, bottom sheet + ses tabs
 │   │                                    #   (Livraison / Commande / Montant), gestion menus, portefeuille
+│   ├── components/menu-form/            # Modules du formulaire plat (N prix, extras, photos, stock, modal)
+│   ├── components/drinks/               # Boissons de la BOUTIQUE (Settings → Boutique → Boissons,
+│   │                                    #   route app/shop/drinks.tsx). Détail : architecture/menu.md
 │   ├── components/broadcast/            # Notifications envoyées aux clients (Settings → Boutique →
 │   │                                    #   Notifications). Détail : architecture/merchant-broadcast.md
 │   └── components/support/              # Chat MARCHAND (Settings → Boutique → Messages) —
@@ -141,13 +148,18 @@ src/features/
 │
 ├── location/                            # Position de l'utilisateur (POST /user/location) + livreur en course
 │   ├── hooks/useUserLocationSync.ts     # permissions (après les notifs), capture, suivi arrière-plan
+│   ├── hooks/useCurrentPlaceLabel.ts    # « Quartier, Ville » pour la pilule du header home
 │   ├── hooks/useDeliveryTrackingSync.ts # livreur : mode livraison tant qu'une cmd est `delivering`
+│   ├── hooks/useLocationAccess.ts       # statut de la localisation pour le bandeau du home
+│   ├── config.ts                        # flags OTA : bandeau du home, lieu réel dans la pilule hors Banganté
 │   ├── tasks/backgroundLocationTask.ts  # tâche app fermée (importée par index.js), modes normal / livraison
 │   ├── tasks/trackingModes.ts           # réglages et persistance des deux modes
-│   ├── components/BackgroundLocationPromptCard.tsx # info avant la popup « Toujours » (copie de OtaUpdateCard)
+│   ├── components/BackgroundLocationPromptCard.tsx # info avant la popup « Toujours », iOS (copie de OtaUpdateCard)
+│   ├── components/LocationDisclosureModal.tsx # divulgation avant toute popup de localisation, Android (copie de LogoutModal)
 │   ├── utils/buildLocationPayload.ts    # position + géocodage inverse → payload (+ payload livreur)
 │   └── services/                        # userLocationService · driverLocationService (POST /driver/location)
-│                                        #   · backgroundPrompt. Détail : architecture/user-location.md
+│                                        #   · backgroundPrompt · locationPermission (seule demande de permission)
+│                                        #   Détail : architecture/user-location.md
 │
 ├── driver/                             # Rôle driver (commandes déléguées)
 │   ├── context/DriverContext.tsx       # orders déléguées + updateStatus + upsert socket
@@ -222,7 +234,7 @@ src/features/
 │   ├── utils/normalizeFastFood.ts       # Normalisation boutique / menu (HTTP + socket)
 │   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
 │   ├── utils/homeClientSettings.ts      # Taille de page / préchargement venus du serveur (`settings_client`)
-│   └── components/home/                 # HomeHeader, HomeFullScreenStates, homeScreenStyles
+│   └── components/home/                 # HomeHeader, HomeFullScreenStates, HomeLocationBanner, homeScreenStyles
 │
 └── menu/
 ```
@@ -249,12 +261,15 @@ src/
 ├── utils/formatDistance.ts      # « 850 m » / « 1,2 km » (home + suivi livraison)
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)
+    ├── paymentLock.ts          # Verrou du paiement en cours : rouvre son sheet (cf. payment.md)
     ├── useSocketEvents.ts      # Hook global : abonne aux events socket + dispatch vers contexts
+    ├── socketHandlers/         # Handlers sortis de useSocketEvents (R4) : catalogEvents (menus, boutiques),
+    │                           #   bonusWalletEvents (transactions, bonus, wallet), logEvent
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
     ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp. Web : sonde en no-cors (Cloudflare sans CORS → faux « hors ligne »)
     ├── audio/useVoiceNote.ts   # Notes vocales sur expo-audio : useVoiceNoteRecorder / useVoiceNotePlayer
     ├── audio/uploadVoiceNote.ts # Envoi de la note vocale (/image/upload, folder=voiceNotes) -> URL publique mise dans delivery.voiceNoteUri
-    │   (flou Android SDK 57 : src/components/BlurTarget.tsx — BlurScope / BlurTarget, cf. blur-safe-area.md)
+    │   (src/components/BlurTarget.tsx — BlurScope / BlurTarget, INERTES : Android ne floute plus, cf. blur-safe-area.md)
     │                           # Sonde pointée sur le backend (/settings/app-version) :
     │                           # par défaut NetInfo interroge l'origine de la page, donc
     │                           # Metro en dev web, ce qui relançait un bundle à chaque ping
@@ -296,10 +311,11 @@ AuthProvider
 > de providers ; `useSocketEvents` (monté dans AppContent) abonne aux events et
 > dispatch vers les contexts.
 
-> **Gating de navigation** : `AppContent` est sous `FastFoodProvider` car il lit
-> `useFastFoods().hasLoadedOnce` pour ne révéler `(tabs)` qu'une fois la home
-> chargée. Les guards `Stack.Protected` pilotent toute la bascule `(auth)`↔`(tabs)`
-> (aucun `router.replace`). Détail dans [auth.md](./auth.md#navigation--gating-anti-page-blanche).
+> **Gating de navigation** : `canEnterApp = versionChecked && (isSignedIn || guestBrowsing)`.
+> Le splash n'attend plus le catalogue ; non connecté, l'écran d'accueil
+> (`app/(auth)/index.tsx`) s'affiche à chaque lancement. Les guards
+> `Stack.Protected` pilotent toute la bascule `(auth)`↔`(tabs)` (aucun
+> `router.replace`). Détail dans [auth.md](./auth.md#navigation--gating-anti-page-blanche).
 
 ## Convention
 
@@ -307,3 +323,15 @@ AuthProvider
 - Les **contexts** sont toujours fournis au niveau `app/_layout.tsx`.
 - Les **types globaux** (Commande, Menu…) vivent dans `src/types/`.
 - Les **types locaux à une feature** vivent dans le dossier de la feature.
+
+## src/i18n/ — langues
+
+```
+src/i18n/
+├── index.ts            # i18next (init synchrone), t(), useLanguage(), setLanguage() (à chaud), dateLocale()
+└── locales/
+    ├── en.json         # traduction anglaise (clé = texte français)
+    └── fr.json         # surcharges françaises
+```
+
+Détail : [i18n.md](./i18n.md).

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -7,6 +8,7 @@ import type { Bonus } from "../types/bonus.types";
 // Fonctions pures partagées avec le pied de page natif (`NativeBonusPager`).
 import { remainingUses, statusOf } from "../utils/bonusPagerItem";
 import { CAROUSEL_INTERVAL } from "./BonusCarousel";
+import { t, useLanguage } from "@/src/i18n";
 
 interface BonusPagerInfoProps {
   bonuses: Bonus[];
@@ -118,6 +120,7 @@ const FadeStack = ({
  * seulement s'ils diffèrent ; jauge remplie de 0 (1er) à plein (dernier).
  */
 export const BonusPagerInfo = ({ bonuses, scrollX }: BonusPagerInfoProps) => {
+  useLanguage();
   const n = bonuses.length;
   if (!n) return <View style={styles.wrap} />;
   const descs = bonuses.map((b) => getBonusDescriptor(b.type));
@@ -177,7 +180,7 @@ export const BonusPagerInfo = ({ bonuses, scrollX }: BonusPagerInfoProps) => {
               {bonuses[i].fastFoodName || "yaammoo"}
               {remaining !== null && (
                 <Text style={styles.remaining}>
-                  {"  "}· {remaining} restante{remaining > 1 ? "s" : ""}
+                  {"  "}· {remaining} {t("restante")}{remaining > 1 ? "s" : ""}
                 </Text>
               )}
             </Text>

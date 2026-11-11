@@ -1,5 +1,6 @@
 import type { Ionicons } from "@expo/vector-icons";
 import type { StaffPermission } from "../types/staff.types";
+import { t } from "@/src/i18n";
 
 export type PermissionGroup = "orders" | "shop" | "team";
 
@@ -17,28 +18,28 @@ export interface PermissionMeta {
 
 /** Clés du backend (`staffPermissions.js`) et leur rendu. */
 export const PERMISSION_CATALOG: PermissionMeta[] = [
-  { key: "orders.validate", label: "Valider les commandes", short: "Valider", icon: "checkmark-circle-outline", group: "orders" },
-  { key: "orders.finish", label: "Marquer une commande prête", short: "Marquer prête", icon: "restaurant-outline", group: "orders" },
-  { key: "orders.deliver", label: "Livrer, assigner un livreur", short: "Livrer", icon: "bicycle-outline", group: "orders" },
-  { key: "orders.cancel", label: "Annuler une commande", short: "Annuler", icon: "close-circle-outline", group: "orders" },
-  { key: "menus.manage", label: "Gérer les menus", short: "Menus", icon: "reader-outline", group: "shop" },
-  { key: "fastfood.update", label: "Modifier la boutique", short: "Boutique", icon: "storefront-outline", group: "shop" },
-  { key: "notifications.send", label: "Envoyer des notifications", short: "Notifications", icon: "megaphone-outline", group: "shop" },
-  { key: "support.reply", label: "Répondre aux clients", short: "Messagerie", icon: "chatbubble-outline", group: "shop" },
+  { key: "orders.validate", get label() { return t("Valider les commandes"); }, get short() { return t("Valider"); }, icon: "checkmark-circle-outline", group: "orders" },
+  { key: "orders.finish", get label() { return t("Marquer une commande prête"); }, get short() { return t("Marquer prête"); }, icon: "restaurant-outline", group: "orders" },
+  { key: "orders.deliver", get label() { return t("Livrer, assigner un livreur"); }, get short() { return t("Livrer"); }, icon: "bicycle-outline", group: "orders" },
+  { key: "orders.cancel", get label() { return t("Annuler une commande"); }, get short() { return t("Annuler"); }, icon: "close-circle-outline", group: "orders" },
+  { key: "menus.manage", get label() { return t("Gérer les menus"); }, get short() { return t("Menus"); }, icon: "reader-outline", group: "shop" },
+  { key: "fastfood.update", get label() { return t("Modifier la boutique"); }, get short() { return t("Boutique"); }, icon: "storefront-outline", group: "shop" },
+  { key: "notifications.send", get label() { return t("Envoyer des notifications"); }, short: "Notifications", icon: "megaphone-outline", group: "shop" },
+  { key: "support.reply", get label() { return t("Répondre aux clients"); }, get short() { return t("Messagerie"); }, icon: "chatbubble-outline", group: "shop" },
   {
     key: "staff.manage",
-    label: "Gérer le personnel",
-    short: "Personnel",
+    get label() { return t("Gérer le personnel"); },
+    get short() { return t("Personnel"); },
     icon: "shield-checkmark-outline",
     group: "team",
-    hint: "Donne accès à cet écran",
+    get hint() { return t("Donne accès à cet écran"); },
   },
 ];
 
 export const PERMISSION_GROUPS: { key: PermissionGroup; label: string }[] = [
-  { key: "orders", label: "COMMANDES" },
-  { key: "shop", label: "BOUTIQUE" },
-  { key: "team", label: "ÉQUIPE" },
+  { key: "orders", get label() { return t("COMMANDES"); } },
+  { key: "shop", get label() { return t("BOUTIQUE"); } },
+  { key: "team", get label() { return t("ÉQUIPE"); } },
 ];
 
 /**

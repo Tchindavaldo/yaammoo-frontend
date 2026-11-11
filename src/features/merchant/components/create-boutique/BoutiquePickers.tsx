@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React from "react";
 import {
   View,
@@ -14,13 +16,16 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
 import { CAMEROON_CITIES } from "./constants";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Overlay iOS-like contenant un DateTimePicker "time". */
 export const TimePickerOverlay: React.FC<{
   value: Date;
   onChange: (d: Date) => void;
   onDone: () => void;
-}> = ({ value, onChange, onDone }) => (
+}> = ({ value, onChange, onDone }) => {
+  useLanguage();
+  return (
   <Modal transparent={true} visible={true} animationType="fade">
     <View style={styles.modalOverlay}>
       <BlurView
@@ -32,7 +37,7 @@ export const TimePickerOverlay: React.FC<{
         pointerEvents="auto"
       >
         <TouchableOpacity style={styles.iosPickerDone} onPress={onDone}>
-          <Text style={{ color: "white", fontWeight: "bold" }}>Terminer</Text>
+          <Text style={{ color: "white", fontWeight: "bold" }}>{t("Terminer")}</Text>
         </TouchableOpacity>
         <DateTimePicker
           value={value}
@@ -44,8 +49,11 @@ export const TimePickerOverlay: React.FC<{
         />
       </BlurView>
     </View>
+    {/* Toast global au premier plan (Android). */}
+    <GlobalToastHost modal />
   </Modal>
 );
+};
 
 /** Selecteur multiple des villes de livraison, avec recherche. */
 export const CityPickerModal: React.FC<{
@@ -54,7 +62,9 @@ export const CityPickerModal: React.FC<{
   selectedCities: string[];
   setSelectedCities: (fn: (prev: string[]) => string[]) => void;
   onDone: () => void;
-}> = ({ search, setSearch, selectedCities, setSelectedCities, onDone }) => (
+}> = ({ search, setSearch, selectedCities, setSelectedCities, onDone }) => {
+  useLanguage();
+  return (
   <Modal transparent={true} visible={true} animationType="fade">
     <View style={styles.modalOverlay}>
       <BlurView
@@ -81,11 +91,11 @@ export const CityPickerModal: React.FC<{
             }}
           >
             <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Villes de livraison
+              {t("Villes de livraison")}
             </Text>
             <TouchableOpacity onPress={onDone}>
               <Text style={{ color: DS.accent, fontWeight: "bold" }}>
-                Terminer
+                {t("Terminer")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -102,7 +112,7 @@ export const CityPickerModal: React.FC<{
             }}
             value={search}
             onChangeText={setSearch}
-            placeholder="Rechercher une ville…"
+            placeholder={t("Rechercher une ville…")}
             placeholderTextColor="#94a3b8"
           />
         </View>
@@ -157,8 +167,11 @@ export const CityPickerModal: React.FC<{
         </ScrollView>
       </BlurView>
     </View>
+    {/* Toast global au premier plan (Android). */}
+    <GlobalToastHost modal />
   </Modal>
 );
+};
 
 /** Toast global (succes / erreur) anime depuis le haut. */
 export const BoutiqueToast: React.FC<{

@@ -1,7 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   /**
@@ -37,6 +39,7 @@ export const OtherDatesNotice: React.FC<Props> = ({
   onPress,
   inset = true,
 }) => {
+  useLanguage();
   if (pastCount === 0 && futureCount === 0) return null;
 
   return (
@@ -49,7 +52,7 @@ export const OtherDatesNotice: React.FC<Props> = ({
         >
           <Ionicons name="alert-circle-outline" size={18} color={PAST_COLOR} />
           <Text style={styles.text}>
-            {pastCount} Commandes passées non traitées
+            {pastCount} {t("Commandes passées non traitées")}
           </Text>
         </TouchableOpacity>
       )}
@@ -62,7 +65,7 @@ export const OtherDatesNotice: React.FC<Props> = ({
         >
           <Ionicons name="calendar-outline" size={18} color={FUTURE_COLOR} />
           <Text style={styles.text}>
-            {futureCount} Commandes futur pas encore traité
+            {futureCount} {t("Commandes futur pas encore traité")}
           </Text>
         </TouchableOpacity>
       )}

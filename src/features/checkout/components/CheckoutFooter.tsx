@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useSheetInsets } from '../hooks/useSheetInsets';
@@ -5,6 +6,7 @@ import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './CheckoutSheet.styles';
 import { Loader } from '../../../components/Loader';
+import { t, useLanguage } from "@/src/i18n";
 
 interface CheckoutFooterProps {
   total: number;
@@ -23,6 +25,7 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
   onBuy,
   isLoading,
 }) => {
+  useLanguage();
   const insets = useSheetInsets();
 
   return (
@@ -63,13 +66,16 @@ export const CheckoutFooter: React.FC<CheckoutFooterProps> = ({
         {isLoading ? (
           <Loader size={20} color="white" />
         ) : (
-          <Text style={styles.btnText}>add To Cart</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Ionicons name="add" size={16} color="white" />
+            <Text style={styles.btnText}>{t("Panier")}</Text>
+          </View>
         )}
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.buyBtn} onPress={onBuy}>
         <Ionicons name="cart-outline" size={16} color="white" />
-        <Text style={styles.btnText}>order</Text>
+        <Text style={styles.btnText}>{t("Acheter")}</Text>
       </TouchableOpacity>
     </View>
   );

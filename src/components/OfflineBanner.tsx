@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, StyleSheet, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { onNetworkStateChange } from "@/src/services/network";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Bandeau hors-ligne, monte une seule fois a la racine de l'app.
@@ -17,6 +19,7 @@ import { onNetworkStateChange } from "@/src/services/network";
  * page des ecrans quand il apparait ou disparait.
  */
 export const OfflineBanner = () => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [offline, setOffline] = useState(false);
   // `visible` reste vrai pendant l'animation de sortie, pour ne pas demonter la
@@ -60,7 +63,7 @@ export const OfflineBanner = () => {
       ]}
     >
       <Ionicons name="cloud-offline-outline" size={16} color="white" />
-      <Text style={styles.text}>Pas de connexion Internet</Text>
+      <Text style={styles.text}>{t("Pas de connexion Internet")}</Text>
     </Animated.View>
   );
 };

@@ -10,12 +10,12 @@ import { DS } from "@/src/theme/ds";
  */
 
 /**
- * Part de la safe area basse reservee, par OS. Aligne sur l'ecran Personnel
- * (reference) : inset complet sur les deux OS (iOS : indicateur d'accueil,
- * Android : barre systeme). La garde par OS reste pour pouvoir diverger sans
- * toucher aux appelants.
+ * Part de la safe area basse reservee, par OS.
+ * - iOS : inset complet (indicateur d'accueil), aligne sur l'ecran Personnel.
+ * - Android : inset de la barre systeme + 15 %, l'inset seul laissait l'app
+ *   trop collee a la barre de navigation.
  */
-export const PAGE_INSET_RATIO = Platform.OS === "android" ? 1 : 1;
+export const PAGE_INSET_RATIO = Platform.OS === "android" ? 1.15 : 1;
 
 /**
  * Mode verification : `true` colore la bande safe-area basse (pages, pieds
@@ -27,19 +27,27 @@ export const SAFE_AREA_DEBUG = false;
 /** Couleur de la bande safe-area basse, appliquee partout depuis ici. */
 export const SAFE_AREA_BG = SAFE_AREA_DEBUG ? DS.accent : DS.bg;
 
+/**
+ * Bande (px) pour un inset systeme donne. Arrondie : avec un ratio non entier,
+ * une hauteur fractionnaire laisse un liseré entre la bande et le contenu.
+ */
+function bandFor(insetBottom: number): number {
+  return Math.round(insetBottom * PAGE_INSET_RATIO);
+}
+
 /** Hauteur de la bande safe-area basse (px), commune a tous les elements. */
 export function useBottomSafeArea(): number {
   const insets = useSafeAreaInsets();
-  return insets.bottom * PAGE_INSET_RATIO;
+  return bandFor(insets.bottom);
 }
 
 /**
  * Insets pour les bottom sheets (Modal ancree en bas) : identiques a
- * `useSafeAreaInsets()`, sauf `bottom` ramene au ratio ci-dessus.
+ * `useSafeAreaInsets()`, sauf `bottom` ramene a la bande ci-dessus.
  */
 export function useSheetSafeInsets() {
   const insets = useSafeAreaInsets();
-  return { ...insets, bottom: insets.bottom * PAGE_INSET_RATIO };
+  return { ...insets, bottom: bandFor(insets.bottom) };
 }
 
 /**
@@ -51,11 +59,11 @@ export const FOOTER_INSET_RATIO = PAGE_INSET_RATIO;
 
 export function useFooterBottomInset(): number {
   const insets = useSafeAreaInsets();
-  return insets.bottom * FOOTER_INSET_RATIO;
+  return bandFor(insets.bottom);
 }
 
 /** Marge basse d'une page entiere : le contenu est tronque au-dessus. */
 export function usePageBottomInset(): number {
   const insets = useSafeAreaInsets();
-  return insets.bottom * PAGE_INSET_RATIO;
+  return bandFor(insets.bottom);
 }

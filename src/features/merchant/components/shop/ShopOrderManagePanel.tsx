@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { GroupStatusCounts } from "@/src/features/driver/components/GroupStatusCounts";
 import { MerchantStickyChipsRow } from "../MerchantStickyChipsRow";
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
@@ -32,6 +33,7 @@ import { MerchantOrderSkeleton } from "../MerchantOrderSkeleton";
 import { OtherDatesNotice } from "../OtherDatesNotice";
 import { DS } from "@/src/theme/ds";
 import { useFooterBottomInset } from "@/src/hooks/usePageBottomInset";
+import { t as tr, dateLocale, useLanguage } from "@/src/i18n";
 
 /*
  * Copie dédiée de OrderManagePanel pour la page entière « Commandes »
@@ -85,6 +87,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
   onStatusChange,
   topOffset = 0,
 }) => {
+  const i18nLang = useLanguage();
   /**
    * Vrai uniquement quand le rafraichissement vient du GESTE de l'utilisateur.
    *
@@ -197,7 +200,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
   const formatDateLabel = (iso: string): string => {
     try {
       const d = new Date(iso);
-      return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+      return d.toLocaleDateString(dateLocale(), { day: "numeric", month: "long" });
     } catch {
       return iso;
     }
@@ -306,7 +309,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
     const d = (o as any).delivery;
     if (d?.status !== true) return "surplace";
     if (d?.type === "express") return "express";
-    return d?.time || "À définir";
+    return d?.time || tr("À définir");
   };
 
   const dateFilteredOrders = useMemo(() => {
@@ -344,17 +347,17 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
     return [
       {
         key: "express",
-        label: "Livraison express",
+        label: tr("Livraison express"),
         count: counts.express || 0,
       },
       {
         key: "surplace",
-        label: "Récupérer\nsur place",
+        label: tr("Récupérer\nsur place"),
         count: counts.surplace || 0,
       },
       ...slots.map((s) => ({ key: s, label: s, count: counts[s] })),
     ];
-  }, [filteredOrders, selectedDate]);
+  }, [filteredOrders, selectedDate, i18nLang]);
 
   // Total de la date active (toutes périodes) pour le libellé « Toutes les périodes ».
   const allPeriodsCount = useMemo(
@@ -408,10 +411,10 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
 
   const emptyLabel =
     selectedStatus === "pending"
-      ? "Aucune commande en attente"
+      ? tr("Aucune commande en attente")
       : selectedStatus === "proccess"
-        ? "Aucune commande en cours"
-        : "Aucune commande terminée";
+        ? tr("Aucune commande en cours")
+        : tr("Aucune commande terminée");
 
   // Badges des chips de statut : ils comptent les commandes de la DATE ACTIVE,
   // TOUTES périodes confondues (express + sur place + créneaux) — pas le total
@@ -484,9 +487,9 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
   }, [orders]);
 
   const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
-    { key: "pending", label: "En Attente", icon: "time-outline" },
-    { key: "proccess", label: "En cours", icon: "restaurant-outline" },
-    { key: "finish", label: "Terminées", icon: "checkmark-done-outline" },
+    { key: "pending", label: tr("En Attente"), icon: "time-outline" },
+    { key: "proccess", label: tr("En cours"), icon: "restaurant-outline" },
+    { key: "finish", label: tr("Terminées"), icon: "checkmark-done-outline" },
   ];
 
   // Remonte au header « N cmd <statut> ». On compte les commandes RÉELLEMENT
@@ -517,7 +520,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
       if (d?.type === "express") {
         express.push(o);
       } else {
-        const slot = d?.time || "À définir";
+        const slot = d?.time || tr("À définir");
         if (!scheduled[slot]) scheduled[slot] = [];
         scheduled[slot].push(o);
       }
@@ -542,7 +545,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
         userGroups: groupByUser(orders),
       })),
     };
-  }, [dateFilteredOrders, selectedStatus]);
+  }, [dateFilteredOrders, selectedStatus, i18nLang]);
 
   const renderUserGroup = (orders: Commande[], groupId?: string) => {
     const isForced = groupId ? launchedGroups[groupId] : false;
@@ -656,9 +659,9 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
       <View style={{ marginTop: 4 }}>
         {/* Sous-tabs En attente / En cours / Terminé */}
         <View style={styles.subTabRow}>
-          {renderSubTab("en_attente", "En attente", enAttenteOrders.length)}
-          {renderSubTab("en_cours", "En cours", enCoursOrders.length)}
-          {renderSubTab("termine", "Terminé", deliveredOrders.length)}
+          {renderSubTab("en_attente", tr("En attente"), enAttenteOrders.length)}
+          {renderSubTab("en_cours", tr("En cours"), enCoursOrders.length)}
+          {renderSubTab("termine", tr("Terminé"), deliveredOrders.length)}
         </View>
 
         {/* Liste des commandes du sous-tab actif */}
@@ -666,10 +669,10 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
           <View style={styles.subTabEmpty}>
             <Text style={styles.subTabEmptyText}>
               {activeSubTab === "en_cours"
-                ? "Aucune livraison en cours"
+                ? tr("Aucune livraison en cours")
                 : activeSubTab === "termine"
-                  ? "Aucune livraison terminée"
-                  : "Aucune commande en attente"}
+                  ? tr("Aucune livraison terminée")
+                  : tr("Aucune commande en attente")}
             </Text>
           </View>
         ) : (
@@ -750,7 +753,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
               cmd
             </Text>
           </View>
-          <Text style={styles.statLbl}>Commandes effectue</Text>
+          <Text style={styles.statLbl}>{tr("Commandes effectue")}</Text>
         </View>
         <View style={styles.statBox}>
           <View style={{ flexDirection: "row", alignItems: "baseline" }}>
@@ -766,7 +769,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
               fcfa
             </Text>
           </View>
-          <Text style={styles.statLbl}>Montant Total</Text>
+          <Text style={styles.statLbl}>{tr("Montant Total")}</Text>
         </View>
       </View>
     </View>
@@ -851,7 +854,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
                 size={50}
                 color="#D3D1C7"
               />
-              <Text style={styles.emptyText}>Aucune commande terminée</Text>
+              <Text style={styles.emptyText}>{tr("Aucune commande terminée")}</Text>
             </View>
           ) : (
             deliveryData && (
@@ -904,7 +907,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
                                 styles.btnLaunchGroupTextLaunched,
                             ]}
                           >
-                            {launchingGroups["express"] ? "..." : "Lancer tout"}
+                            {launchingGroups["express"] ? "..." : tr("Lancer tout")}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -935,10 +938,10 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
                           size={12}
                           color="#888780"
                         />
-                        <Text style={styles.groupTitle}>Sur place</Text>
+                        <Text style={styles.groupTitle}>{tr("Sur place")}</Text>
                         <View style={styles.groupCountBadge}>
                           <Text style={styles.groupCountText}>
-                            {deliveryData.surplaceGroups.length} commande
+                            {deliveryData.surplaceGroups.length} {tr("commande")}
                             {deliveryData.surplaceGroups.length > 1 ? "s" : ""}
                           </Text>
                         </View>
@@ -1000,7 +1003,7 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
                                 isLaunched && styles.btnLaunchGroupTextLaunched,
                               ]}
                             >
-                              {launchingGroups[groupId] ? "..." : "Lancer tout"}
+                              {launchingGroups[groupId] ? "..." : tr("Lancer tout")}
                             </Text>
                           </TouchableOpacity>
                         )}

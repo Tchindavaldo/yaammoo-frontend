@@ -1,14 +1,17 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Menu } from '@/src/types';
 import { Theme } from '../../../theme';
+import { t, useLanguage } from "@/src/i18n";
 
 interface MenuItemProps {
   menu: Menu;
 }
 
 export const MenuItem: React.FC<MenuItemProps> = ({ menu }) => {
+  useLanguage();
   return (
     <TouchableOpacity style={styles.container} activeOpacity={0.7}>
       <Image
@@ -26,7 +29,7 @@ export const MenuItem: React.FC<MenuItemProps> = ({ menu }) => {
             styles.badgeText, 
             { color: menu.disponibilite === 'available' ? Theme.colors.success : Theme.colors.danger }
           ]}>
-            {menu.disponibilite === 'available' ? 'Disponible' : 'Indisponible'}
+            {menu.disponibilite === 'available' ? t("Disponible") : t("Indisponible")}
           </Text>
         </View>
       </View>

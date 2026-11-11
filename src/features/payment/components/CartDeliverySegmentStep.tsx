@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -5,6 +6,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import type { GroupedDeliveryType } from "./CartDeliveryTypeStep";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -97,6 +99,7 @@ export const CartDeliverySegmentStep: React.FC<
   pickupAllowed,
   onNetworkChange,
 }) => {
+  useLanguage();
   const type = (delivery.type || "express") as GroupedDeliveryType;
   const show = (s: "group" | "type" | "infos" | "montants" | "recap") =>
     section === "all" || section === s;
@@ -108,18 +111,18 @@ export const CartDeliverySegmentStep: React.FC<
     /** Une ligne sous le libelle : ce que le mode implique concretement. */
     sub: string;
   }[] = [
-    { key: "express", icon: "flash", label: "Express", sub: "Dès que prête" },
+    { key: "express", icon: "flash", label: "Express", sub: tr("Dès que prête") },
     {
       key: "standard",
       icon: "time-outline",
-      label: "À l'heure",
-      sub: "Vous choisissez",
+      label: tr("À l'heure"),
+      sub: tr("Vous choisissez"),
     },
     {
       key: "aucune",
       icon: "briefcase-outline",
-      label: "Sur place",
-      sub: "Vous récupérez",
+      label: tr("Sur place"),
+      sub: tr("Vous récupérez"),
     },
   ];
 
@@ -149,10 +152,10 @@ export const CartDeliverySegmentStep: React.FC<
     tiles.push({
       key: "location",
       icon: "location-outline",
-      label: "Lieu",
-      recapLabel: "Lieu de livraison",
-      value: delivery.address || "À remplir",
-      filled: !!delivery.address,
+      label: tr("Lieu"),
+      recapLabel: tr("Lieu de livraison"),
+      value: delivery.address || tr("À remplir"),
+      filled: !!(delivery.address || delivery.note),
       onPress: onOpenLocation,
     });
   } else {
@@ -160,11 +163,12 @@ export const CartDeliverySegmentStep: React.FC<
     tiles.push({
       key: "location",
       icon: "location-outline",
-      label: "Lieu",
-      recapLabel: "Lieu",
-      value: "Récupérer sur place",
+      label: tr("Lieu"),
+      recapLabel: tr("Lieu"),
+      value: tr("Récupérer sur place"),
       filled: true,
-      onPress: onOpenLocation,
+      // Retrait : rien a choisir, la card n'ouvre pas l'overlay du lieu.
+      onPress: () => {},
     });
   }
 
@@ -175,9 +179,9 @@ export const CartDeliverySegmentStep: React.FC<
     tiles.push({
       key: "express",
       icon: "flash",
-      label: "Zone express",
-      recapLabel: "Zone express",
-      value: delivery.expressLieu || "À remplir",
+      label: tr("Zone express"),
+      recapLabel: tr("Zone express"),
+      value: delivery.expressLieu || tr("À remplir"),
       filled: !!delivery.expressLieu,
       onPress: hasExpressZones ? onOpenExpress : () => {},
     });
@@ -187,9 +191,9 @@ export const CartDeliverySegmentStep: React.FC<
     tiles.push({
       key: "period",
       icon: "time-outline",
-      label: "Créneau",
-      recapLabel: "Créneau horaire",
-      value: heure || "À remplir",
+      label: tr("Créneau"),
+      recapLabel: tr("Créneau horaire"),
+      value: heure || tr("À remplir"),
       filled: !!delivery.hour,
       onPress: onOpenPeriod,
     });
@@ -200,9 +204,9 @@ export const CartDeliverySegmentStep: React.FC<
     tiles.push({
       key: "pickupHour",
       icon: "time-outline",
-      label: "Heure",
-      recapLabel: "Heure de retrait",
-      value: "À remplir",
+      label: tr("Heure"),
+      recapLabel: tr("Heure de retrait"),
+      value: tr("À remplir"),
       filled: false,
       onPress: () => {},
     });
@@ -211,9 +215,9 @@ export const CartDeliverySegmentStep: React.FC<
   tiles.push({
     key: "contact",
     icon: "call-outline",
-    label: "Contact",
+    label: tr("Contact"),
     recapLabel: "Contact",
-    value: delivery.phone || "À remplir",
+    value: delivery.phone || tr("À remplir"),
     filled: !!delivery.phone,
     onPress: onOpenContact,
   });
@@ -287,20 +291,19 @@ export const CartDeliverySegmentStep: React.FC<
           commandes), puis les trois facons d'en sortir. */}
       {show("group") && (
         <>
-          {renderHead("Comment vous faire livrer ?")}
+          {renderHead(tr("Comment vous faire livrer ?"))}
           <Text style={styles.stepSub}>
-            Vos {cmd} commande{cmd > 1 ? "s" : ""} demandent {deliveryCount}{" "}
-            livraison{deliveryCount > 1 ? "s" : ""} différente
-            {deliveryCount > 1 ? "s" : ""}. Regroupez-les pour ne payer
-            qu&apos;une seule course.
+            {tr("Vos")} {cmd} {tr("commande")}{cmd > 1 ? "s" : ""} {tr("demandent")} {deliveryCount}{" "}
+            {tr("livraison")}{deliveryCount > 1 ? "s" : ""} {tr("différente")}
+            {deliveryCount > 1 ? "s" : ""}{tr(". Regroupez-les pour ne payer qu'une seule course.")}
           </Text>
           <View style={styles.choiceCards}>
             {[
               {
                 key: "together",
                 icon: "cube-outline" as const,
-                title: "Ensemble",
-                sub: "Une seule course",
+                title: tr("Ensemble"),
+                sub: tr("Une seule course"),
                 active: grouped && type !== "aucune",
                 onPress: () => {
                   if (type === "aucune") {
@@ -312,21 +315,21 @@ export const CartDeliverySegmentStep: React.FC<
               {
                 key: "split",
                 icon: "git-branch-outline" as const,
-                title: "Séparément",
-                sub: "5 livraison",
+                title: tr("Séparément"),
+                sub: tr("5 livraison"),
                 active: !grouped && type !== "aucune",
                 onPress: onSplit,
               },
               {
                 key: "pickup",
                 icon: "briefcase-outline" as const,
-                title: "À la boutique",
+                title: tr("À la boutique"),
                 // Retrait désactivé par le marchand : card visible, NON
                 // cliquable (pas de grisée), le sous-texte l'explique.
                 sub:
                   pickupAllowed === false
-                    ? "Retrait indisponible"
-                    : "Sans frais",
+                    ? tr("Retrait indisponible")
+                    : tr("Sans frais"),
                 active: type === "aucune",
                 disabled: pickupAllowed === false,
                 onPress: () =>
@@ -341,10 +344,9 @@ export const CartDeliverySegmentStep: React.FC<
           description de deux lignes, trois cards identiques. */}
       {show("type") && (
         <>
-          {renderHead("Quand souhaitez-vous être livré ?")}
+          {renderHead(tr("Quand souhaitez-vous être livré ?"))}
           <Text style={styles.stepSub}>
-            Choisissez le moment de la livraison. Express part dès que la
-            commande est prête, sinon fixez vous-même le créneau.
+            {tr("Choisissez le moment de la livraison. Express part dès que la commande est prête, sinon fixez vous-même le créneau.")}
           </Text>
           <View style={styles.choiceCards}>
             {segments.map((s) =>
@@ -354,7 +356,7 @@ export const CartDeliverySegmentStep: React.FC<
                 title: s.label,
                 sub:
                   s.key === "aucune" && pickupAllowed === false
-                    ? "Retrait indisponible"
+                    ? tr("Retrait indisponible")
                     : s.sub,
                 active: type === s.key,
                 disabled: s.key === "aucune" && pickupAllowed === false,
@@ -375,10 +377,9 @@ export const CartDeliverySegmentStep: React.FC<
           son overlay, et l'etat rempli se lit a la bordure orange. */}
       {show("infos") && (
         <>
-          {renderHead("Informations de livraison")}
+          {renderHead(tr("Informations de livraison"))}
           <Text style={styles.stepSub}>
-            Complétez les informations de la course. Touchez une carte pour la
-            remplir, chacune ouvre son formulaire.
+            {tr("Complétez les informations de la course. Touchez une carte pour la remplir, chacune ouvre son formulaire.")}
           </Text>
           <View style={styles.choiceCards}>
             {tiles.map((t) =>
@@ -390,8 +391,8 @@ export const CartDeliverySegmentStep: React.FC<
                   t.key === "location" && type === "aucune"
                     ? t.value
                     : t.filled
-                      ? "Rempli"
-                      : "À remplir",
+                      ? tr("Rempli")
+                      : tr("À remplir"),
                 active: t.filled,
                 onPress: t.onPress,
               }),
@@ -405,10 +406,9 @@ export const CartDeliverySegmentStep: React.FC<
           et rappellent chacune le total a payer. */}
       {show("montants") && (
         <>
-          {renderHead("Détail et moyen de paiement")}
+          {renderHead(tr("Détail et moyen de paiement"))}
           <Text style={styles.stepSub}>
-            Vérifiez le détail de votre commande — les articles et la course —
-            puis choisissez l&apos;opérateur qui réglera le montant total.
+            {tr("Vérifiez le détail de votre commande — les articles et la course — puis choisissez l'opérateur qui réglera le montant total.")}
           </Text>
           <View style={styles.choiceCards}>
             <View style={[styles.choiceCard, styles.amountCard]}>
@@ -431,14 +431,14 @@ export const CartDeliverySegmentStep: React.FC<
                   <View style={styles.amountSep} />
                   <View>
                     <Text style={styles.choiceTitle} numberOfLines={1}>
-                      Course
+                      {tr("Course")}
                     </Text>
                     <Text style={styles.choiceSub} numberOfLines={1}>
                       {type === "aucune"
-                        ? "Sur place"
+                        ? tr("Sur place")
                         : livraison > 0
                           ? `${fmt(livraison)} F`
-                          : "Offerte"}
+                          : tr("Offerte")}
                     </Text>
                   </View>
                 </View>
@@ -477,10 +477,9 @@ export const CartDeliverySegmentStep: React.FC<
           saisie, ancree sous le sheet, remplace le bouton « Continuer ». */}
       {show("recap") && (
         <>
-          {renderHead("Comment souhaitez-vous payer ?")}
+          {renderHead(tr("Comment souhaitez-vous payer ?"))}
           <Text style={styles.stepSub}>
-            Choisissez votre opérateur, puis saisissez le numéro qui réglera la
-            commande.
+            {tr("Choisissez votre opérateur, puis saisissez le numéro qui réglera la commande.")}
           </Text>
           <View style={styles.choiceCards}>
             <View style={styles.choiceCard}>
@@ -489,7 +488,7 @@ export const CartDeliverySegmentStep: React.FC<
               </View>
               <View style={styles.choiceText}>
                 <Text style={styles.choiceTitle} numberOfLines={1}>
-                  {cmd} commande{cmd > 1 ? "s" : ""}
+                  {cmd} {tr("commande")}{cmd > 1 ? "s" : ""}
                 </Text>
                 <Text style={styles.choiceSub} numberOfLines={2}>
                   {fmt(articlesTotal + livraison)} F

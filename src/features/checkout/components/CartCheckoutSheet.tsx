@@ -1,10 +1,17 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
+import { showToast } from "@/src/services/globalToast";
+import { lockPayment, unlockPayment } from "@/src/services/paymentLock";
 import React, { useState, useEffect, useRef } from "react";
+import { menuPriceDescription } from "../utils/menuPrices";
 import {
   View,
   Modal,
   TouchableOpacity,
   ScrollView,
   Platform,
+  StyleSheet,
+  Pressable,
   Text,
   Animated,
   Dimensions,
@@ -47,6 +54,7 @@ import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
 import { CheckoutPaymentOverlay } from "./CheckoutPaymentOverlay";
 import { CheckoutPaymentTopOverlay } from "./CheckoutPaymentTopOverlay";
 import { extractPeriodDate } from "../utils/periodDate";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CheckoutSheetProps {
   visible: boolean;
@@ -62,6 +70,8 @@ interface CheckoutSheetProps {
   onSave?: (order: any) => Promise<{ success: boolean; message?: string }>;
   onChange?: (order: any) => void;
   isCartMode?: boolean;
+  /** Rouvre ce sheet (paiement en cours, cf. `paymentLock`). */
+  onReopen?: () => void;
 }
 
 type CheckoutStep = "detail" | "extra" | "drink" | "delivery";
@@ -75,10 +85,17 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   onSave,
   isCartMode,
   onChange,
+  onReopen,
 }) => {
+  useLanguage();
   const [activeTab, setActiveTab] = useState<CheckoutStep>("detail");
   const [isLocationPopupVisible, setIsLocationPopupVisible] = useState(false);
   const [isContactPopupVisible, setIsContactPopupVisible] = useState(false);
+  // Commande SANS livraison (retrait) : le numero est exige par le backend. Sans
+  // numero, on ouvre l'overlay contact puis on reprend l'action demandee.
+  const pendingAction = useRef<null | "cart" | "buy">(null);
+  const [resumeAction, setResumeAction] = useState<null | "cart" | "buy">(null);
+  const actionsRef = useRef<{ cart?: () => void; buy?: () => void }>({});
   const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
   const [isExpressPopupVisible, setIsExpressPopupVisible] = useState(false);
   const [isVoiceNotePopupVisible, setIsVoiceNotePopupVisible] = useState(false);
@@ -213,6 +230,41 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     }
   }, [paymentState, onClose]);
 
+  // Paiement en attente de verdict : le sheet peut être fermé (toucher hors
+  // zone), le paiement continue et toute ouverture rouvre CE sheet.
+  const paymentInFlight =
+    paymentState === "waiting" || paymentState === "ussd_sent";
+  const onReopenRef = useRef(onReopen);
+  onReopenRef.current = onReopen;
+  const reopenRef = useRef<() => void>(() => onReopenRef.current?.());
+  useEffect(() => {
+    const reopen = reopenRef.current;
+    if (paymentInFlight) lockPayment(reopen);
+    else unlockPayment(reopen);
+  }, [paymentInFlight]);
+  useEffect(() => () => unlockPayment(reopenRef.current), []);
+
+  // Verdict reçu sheet FERMÉ : toast global, verrou levé, paiement refermé.
+  // Erreur déjà affichée par le toast du sheet ouvert : pas de 2e toast à la fermeture.
+  const shownErrorRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (visible && paymentError) shownErrorRef.current = paymentError;
+  }, [visible, paymentError]);
+  useEffect(() => {
+    if (visible) return;
+    if (paymentError) {
+      if (shownErrorRef.current !== paymentError) showToast(paymentError, "error");
+      shownErrorRef.current = null;
+      setPaymentError(null);
+      setIsPaymentPopupVisible(false);
+    } else if (paymentState === "success") {
+      showToast(t("Paiement de la commande effectué avec succès !"), "success");
+    } else if (paymentState === "success_created") {
+      setIsPaymentPopupVisible(false);
+      setPaymentState("network_select");
+    }
+  }, [visible, paymentError, paymentState]);
+
   // En cas d'erreur paiement : NE PAS fermer les overlays. On reste sur l'état
   // `input` (le toast d'erreur s'affiche, l'utilisateur peut ressaisir).
   // Seul `success_created` déclenche la fermeture (effet ci-dessus).
@@ -261,7 +313,22 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
     prefetchFastFoodDelivery(ffId).then(merge);
   }, [menu, fastFoods]);
 
+  // Reprend l'action une fois le numero saisi (delivery.phone a jour).
+  useEffect(() => {
+    if (!resumeAction || !delivery.phone) return;
+    const action = resumeAction;
+    setResumeAction(null);
+    actionsRef.current[action]?.();
+  }, [resumeAction, delivery.phone]);
+
   if (!menu) return null;
+
+  const needsPickupPhone = () =>
+    (!delivery.statut || delivery.type === "aucune") && !delivery.phone;
+  const askPhoneThen = (action: "cart" | "buy") => {
+    pendingAction.current = action;
+    setIsContactPopupVisible(true);
+  };
 
   const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
@@ -287,7 +354,11 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             style={[styles.backdrop, { opacity: backdropOpacity }]}
             pointerEvents="none"
           />
-          <View style={styles.dismiss} />
+          {/* Paiement en cours : toucher hors zone = retour au panier. */}
+          <Pressable
+            style={styles.dismiss}
+            onPress={paymentInFlight ? onClose : undefined}
+          />
 
           <Animated.View
             style={[
@@ -309,13 +380,13 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 >
                   <TabChip
                     isActive={activeTab === "detail"}
-                    label="Details"
+                    label={t("Détails")}
                     icon="information-circle-outline"
                     onPress={() => setActiveTab("detail")}
                   />
                   <TabChip
                     isActive={activeTab === "drink"}
-                    label="Drinks"
+                    label={t("Boissons")}
                     icon="wine-outline"
                     onPress={() => setActiveTab("drink")}
                   />
@@ -327,7 +398,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   />
                   <TabChip
                     isActive={activeTab === "delivery"}
-                    label="Delivery"
+                    label={t("Livraison")}
                     icon="bicycle-outline"
                     onPress={() => setActiveTab("delivery")}
                   />
@@ -402,7 +473,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                  (elle reste dans le panier). Le sheet NE se ferme PAS — on
                  confirme par un toast pour que l'user puisse continuer à
                  éditer. */
-              onAddToCart={onSave && (async () => {
+              onAddToCart={onSave && (actionsRef.current.cart = async () => {
+                if (needsPickupPhone()) return askPhoneThen("cart");
                 const deliveryErr = validateDelivery();
                 if (deliveryErr) {
                   showError(deliveryErr);
@@ -415,7 +487,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   );
                   if (result === true || result?.success) {
                     setSheetToast({
-                      message: "Modifications enregistrées",
+                      message: t("Modifications enregistrées"),
                       type: "success",
                     });
                   } else if (result?.message) {
@@ -425,7 +497,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   setIsSaving(false);
                 }
               })}
-              onBuy={() => {
+              onBuy={(actionsRef.current.buy = () => {
+                if (needsPickupPhone()) return askPhoneThen("buy");
                 const stockErr = validateStock();
                 if (stockErr) {
                   showError(stockErr);
@@ -439,7 +512,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 setPaymentState("network_select");
                 setIsPaymentPopupVisible(true);
                 setPaymentKey((prev) => prev + 1);
-              }}
+              })}
             />
             </BlurTarget>
           </Animated.View>
@@ -457,9 +530,19 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
           {isContactPopupVisible && (
             <CheckoutContactOverlay
-              onClose={() => setIsContactPopupVisible(false)}
+              onClose={() => {
+                setIsContactPopupVisible(false);
+                pendingAction.current = null;
+              }}
               phone={delivery.phone || ""}
-              onSelectPhone={(ph) => setDelivery({ ...delivery, phone: ph })}
+              pickup={!delivery.statut || delivery.type === "aucune"}
+              onSelectPhone={(ph) => {
+                setDelivery({ ...delivery, phone: ph });
+                if (ph && pendingAction.current) {
+                  setResumeAction(pendingAction.current);
+                  pendingAction.current = null;
+                }
+              }}
             />
           )}
 
@@ -511,14 +594,18 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             />
           )}
 
+          {/* Carte récap + capsule : glissent AVEC le sheet (fermeture hors
+              zone / réouverture d'un paiement en cours), jamais de vide dessous. */}
+          <Animated.View
+            pointerEvents="box-none"
+            style={[StyleSheet.absoluteFill, { transform: [{ translateY: sheetTranslate }] }]}
+          >
           <CheckoutPaymentTopOverlay
             visible={isPaymentPopupVisible}
             menu={menu}
             priceDescription={
               menu
-                ? [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
-                    selectedPriceIndex - 1
-                  ] || ""
+                ? menuPriceDescription(menu, selectedPriceIndex)
                 : ""
             }
             menuPrice={menuPrice}
@@ -545,6 +632,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             onError={setPaymentError}
             onConfirm={handlePaymentConfirm}
           />
+          </Animated.View>
 
           {sheetToast && (
             <Toast
@@ -558,14 +646,17 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             (au-dessus du voile noir), pas masqué dessous. */}
           {paymentError && (
             <Toast
+              key={paymentError}
               message={paymentError}
               type="error"
-              duration={7000}
+              duration={10000}
               onHide={() => setPaymentError(null)}
             />
           )}
           </BlurScope>
         </View>
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
     </>
   );

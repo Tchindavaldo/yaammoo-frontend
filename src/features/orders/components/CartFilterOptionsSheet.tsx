@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {
@@ -20,6 +22,7 @@ import {
   filterChipIcons,
   filterChipLabels,
 } from "./CartFilterChipsRow";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartFilterOptionsSheetProps {
   visible: boolean;
@@ -44,6 +47,7 @@ export const CartFilterOptionsSheet: React.FC<CartFilterOptionsSheetProps> = ({
   onSelect,
   onClose,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
 
   // Backdrop en fondu + sheet qui glisse (même animation que CartFilterSheet).
@@ -116,7 +120,7 @@ export const CartFilterOptionsSheet: React.FC<CartFilterOptionsSheetProps> = ({
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={{ gap: 8 }}>
             <CartFilterOptionRow
-              option={{ key: "__all__", label: "Toutes", count: total }}
+              option={{ key: "__all__", label: t("Toutes"), count: total }}
               active={selected === null}
               onPress={() => {
                 onSelect(null);
@@ -135,12 +139,14 @@ export const CartFilterOptionsSheet: React.FC<CartFilterOptionsSheetProps> = ({
               />
             ))}
             {options.length === 0 && (
-              <Text style={styles.empty}>Aucune valeur disponible</Text>
+              <Text style={styles.empty}>{t("Aucune valeur disponible")}</Text>
             )}
           </View>
         </ScrollView>
         <SafeAreaDebugBand />
       </Animated.View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

@@ -1,9 +1,12 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Menu } from "@/src/types";
+import { menuPriceDescription } from "../../utils/menuPrices";
 import React from "react";
 import { View } from "react-native";
 import { styles } from "../CheckoutSheet.styles";
 import { HomeDetailHero } from "./HomeDetailHero";
 import { MUTED, RecapCell, SOFT_ACCENT } from "./detail-hero/heroShared";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Onglet Detail du checkout HOME — copie dediee de `DetailTab` (R16), qui
@@ -38,6 +41,7 @@ export const HomeDetailTab: React.FC<HomeDetailTabProps> = ({
   deliveryPrice,
   isDeliveryFree,
 }) => {
+  useLanguage();
   // Livraison offerte : le total affiche n'inclut PAS la livraison, et la ligne
   // Livraison affiche « Gratuit ». La requete garde le vrai prix (cote hook).
   const totalDisplay = isDeliveryFree
@@ -47,15 +51,13 @@ export const HomeDetailTab: React.FC<HomeDetailTabProps> = ({
     menu.images && menu.images.length > 0 ? menu.images : [menu.image];
   // Description affichee = celle du PRIX selectionne (optionPrix1/2/3).
   const priceDescription =
-    [menu.optionPrix1, menu.optionPrix2, menu.optionPrix3][
-      selectedPriceIndex - 1
-    ] || "";
+    menuPriceDescription(menu, selectedPriceIndex);
 
   const recap: RecapCell[] = [
-    { icon: "fast-food-outline", title: "Menu", value: `${menuPrice} FCFA` },
+    { icon: "fast-food-outline", title: t("Menu"), value: `${menuPrice} FCFA` },
     {
       icon: "wine-outline",
-      title: "Boisson",
+      title: t("Boisson"),
       value: `${drinksPrice} FCFA`,
       onPress: () => onOpenTab("drink"),
     },
@@ -68,14 +70,14 @@ export const HomeDetailTab: React.FC<HomeDetailTabProps> = ({
     {
       icon: "bicycle-outline",
       iconColor: isDeliveryFree || deliveryPrice > 0 ? SOFT_ACCENT : MUTED,
-      title: "Livraison",
-      value: isDeliveryFree ? "Gratuit" : `${deliveryPrice} FCFA`,
+      title: t("Livraison"),
+      value: isDeliveryFree ? t("Gratuit") : `${deliveryPrice} FCFA`,
       strong: isDeliveryFree,
       onPress: () => onOpenTab("delivery"),
     },
     {
       icon: "wallet-outline",
-      title: "Total",
+      title: t("Total"),
       value: `${totalDisplay} FCFA`,
       strong: true,
     },

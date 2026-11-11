@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { socketService } from "@/src/services/socket";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supportService } from "../services/supportService";
@@ -6,6 +7,7 @@ import type {
   SupportThread,
   SupportTopic,
 } from "../types/support.types";
+import { t, useLanguage } from "@/src/i18n";
 
 interface Options {
   userId?: string;
@@ -26,6 +28,7 @@ export const useSupportConversation = ({
   thread,
   onThreadUpdated,
 }: Options) => {
+  useLanguage();
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -48,7 +51,7 @@ export const useSupportConversation = ({
       })
       .catch((e) => {
         console.error("useSupportConversation:", e?.message || e);
-        if (!cancelled) setError("Impossible de charger les messages");
+        if (!cancelled) setError(t("Impossible de charger les messages"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -109,7 +112,7 @@ export const useSupportConversation = ({
         return true;
       } catch (e: any) {
         console.error("useSupportConversation send:", e?.message || e);
-        setError("Message non envoyé, réessayez");
+        setError(t("Message non envoyé, réessayez"));
         return false;
       } finally {
         setSending(false);

@@ -1,6 +1,8 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Theme } from '../../../theme';
+import { t, useLanguage } from "@/src/i18n";
 
 interface MenuStatsProps {
   total: number;
@@ -10,12 +12,13 @@ interface MenuStatsProps {
 }
 
 export const MenuStats: React.FC<MenuStatsProps> = ({ total, available, unavailable, date }) => {
+  useLanguage();
   return (
     <View style={styles.container}>
       <Text style={styles.date}>{date}</Text>
       <View style={styles.row}>
-        <StatItem label="Total" value={total} color={Theme.colors.dark} />
-        <StatItem label="Dispo" value={available} color={Theme.colors.success} />
+        <StatItem label={t("Total")} value={total} color={Theme.colors.dark} />
+        <StatItem label={t("Dispo")} value={available} color={Theme.colors.success} />
         <StatItem label="Indispo" value={unavailable} color={Theme.colors.danger} />
       </View>
     </View>

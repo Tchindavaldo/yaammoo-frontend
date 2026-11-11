@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { onNetworkRestored } from "@/src/services/network";
@@ -16,6 +17,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { t, useLanguage } from "@/src/i18n";
 // ⚠️ `prefetchHomeImages` n'est PLUS appele. Chaque carte monte desormais son
 // image des son rendu (cf. DesignItem) : le prechargement faisait donc DOUBLON.
 // Les deux mecanismes se disputaient la bande passante, les requetes
@@ -45,8 +47,8 @@ interface FastFoodContextType {
    */
   loadMore: () => void;
   /** true une fois le 1er fetch terminé (succès, liste vide OU erreur). Reste true
-   *  ensuite, même pendant un pull-to-refresh. Sert à savoir quand la home a fini
-   *  son chargement initial → bascule login → home. */
+   *  ensuite, même pendant un pull-to-refresh. Ne pilote plus la navigation :
+   *  la home n'attend plus ce fetch pour s'afficher (elle a son loader). */
   hasLoadedOnce: boolean;
   /** Mode review Apple : renvoyé par GET /fastFood/all. Quand true, le flux
    *  « buy » (home) et « Tout payer » (panier) crée la commande directement via
@@ -130,9 +132,22 @@ const FastFoodContext = createContext<FastFoodContextType | undefined>(
   undefined,
 );
 
+/**
+ * Autorise le chargement des boutiques : appele a l'ARRIVEE dans (tabs). Le
+ * splash et l'ecran d'accueil ne lancent plus `GET /fastFood/all`. Definitif
+ * pour la session (les refetchs de changement de compte suivent ensuite).
+ *
+ * Contexte SEPARE, a valeur stable : l'appelant (layout des onglets) ne se
+ * re-rend pas a chaque mouvement de la liste, contrairement a un abonne de
+ * `FastFoodContext`.
+ */
+const FastFoodActivationContext = createContext<() => void>(() => {});
+export const useActivateFastFoods = () => useContext(FastFoodActivationContext);
+
 export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const i18nLang = useLanguage();
   // `user` (Firebase User) plutôt que `userData` : c'est lui qui porte le token,
   // et il devient disponible dès la restauration de session.
   // `loading` : Firebase n'a pas encore tranche sur la session. Tant qu'il est
@@ -179,7 +194,13 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     clearDeliveryOfferForBonus,
   } = useFastFoodSocketUpdates(setFastFoods);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(t("Tout"));
+  // Langue changee : les noms de categories changent, on revient sur « Tout ».
+  const [categoryLang, setCategoryLang] = useState(i18nLang);
+  if (categoryLang !== i18nLang) {
+    setCategoryLang(i18nLang);
+    setSelectedCategory(t("Tout"));
+  }
 
   // ⚠️ La recherche courante est lue via une REF, pas via la dependance d'un
   // `useCallback`. Sinon `refresh` et `loadMore` changent de reference a chaque
@@ -271,9 +292,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // login. On rafraichit les boutiques deja chargees SUR PLACE (le Bearer
   // resout les `deliveryOffer` du compte), sans loader ni perte de scroll.
   // `null` = aucun fetch encore fait ; `undefined` = dernier fetch en invite.
+  //
+  // ⚠️ `homeActive` : rien ne part avant l'arrivee dans (tabs). Le splash
+  // n'attend plus que le verdict de version, et l'ecran d'accueil (non
+  // connecte) ne charge pas les boutiques qu'il n'affiche pas.
+  const [homeActive, setHomeActive] = useState(false);
+  const activateHome = useCallback(() => setHomeActive(true), []);
   const fetchedUidRef = useRef<string | null | undefined>(null);
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !homeActive) return;
     const uid = user?.uid;
     const prevUid = fetchedUidRef.current;
     fetchedUidRef.current = uid;
@@ -288,6 +315,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     refreshLoadedSilently,
     user?.uid,
     authLoading,
+    homeActive,
     fastFoodsLenRef,
     cursorRef,
   ]);
@@ -421,9 +449,11 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   return (
-    <FastFoodContext.Provider value={value}>
-      {children}
-    </FastFoodContext.Provider>
+    <FastFoodActivationContext.Provider value={activateHome}>
+      <FastFoodContext.Provider value={value}>
+        {children}
+      </FastFoodContext.Provider>
+    </FastFoodActivationContext.Provider>
   );
 };
 

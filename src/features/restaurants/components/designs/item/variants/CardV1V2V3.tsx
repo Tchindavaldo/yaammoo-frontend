@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -8,6 +9,7 @@ import { CardVariantProps, SHOW_BOTTOM_BAR } from "../config";
 import { CardBottom } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Chip prix blanc en haut-gauche, positionne en absolu. */
 const cornerPrice = (top: number, left: number) => [
@@ -120,7 +122,9 @@ export const CardV2: React.FC<CardVariantProps> = ({
   stock,
   price,
   deliveryTime,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <TouchableOpacity
     style={[styles.v2Card, isLast && { marginRight: 0 }]}
     onPress={onPress}
@@ -134,7 +138,7 @@ export const CardV2: React.FC<CardVariantProps> = ({
       <View style={styles.v2DispoPulse} />
       <Text style={styles.v2DispoText}>
         <Text style={{ color: "#4faa71ff", fontWeight: "900" }}>{stock}</Text>
-        <Text style={{ color: "#666" }}> En Stock</Text>
+        <Text style={{ color: "#666" }}> {t("En Stock")}</Text>
       </Text>
     </View>
     <View style={styles.v2ImgWrap}>
@@ -160,6 +164,7 @@ export const CardV2: React.FC<CardVariantProps> = ({
     )}
   </TouchableOpacity>
 );
+};
 
 /** DESIGN 3 : COMPACT GEM. */
 export const CardV3: React.FC<CardVariantProps> = ({
@@ -169,7 +174,9 @@ export const CardV3: React.FC<CardVariantProps> = ({
   stock,
   price,
   deliveryTime,
-}) => (
+}) => {
+  useLanguage();
+  return (
   <TouchableOpacity
     style={[styles.v3Card, isLast && { marginRight: 0 }]}
     onPress={onPress}
@@ -186,7 +193,7 @@ export const CardV3: React.FC<CardVariantProps> = ({
     />
     <View style={styles.v3StockTextRow}>
       <View style={styles.v3StockDot} />
-      <Text style={styles.v3StockTxt}>{stock} en stock</Text>
+      <Text style={styles.v3StockTxt}>{stock} {t("en stock")}</Text>
     </View>
     <View style={styles.v3HeroZone}>
       <Image
@@ -208,6 +215,7 @@ export const CardV3: React.FC<CardVariantProps> = ({
     )}
   </TouchableOpacity>
 );
+};
 
 const styles = StyleSheet.create({
   // --- DESIGN 1 ---

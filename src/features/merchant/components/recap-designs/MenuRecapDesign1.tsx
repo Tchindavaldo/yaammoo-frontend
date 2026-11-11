@@ -1,10 +1,12 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Theme } from "@/src/theme";
-import { MenuDraft, namedItems } from "./MenuDraft.types";
+import { MenuDraft, namedItems, validPrices } from "./MenuDraft.types";
+import { t, useLanguage } from "@/src/i18n";
 
 const ORANGE = Theme.colors.primary;
 
@@ -12,12 +14,15 @@ const ORANGE = Theme.colors.primary;
  * Design 1 — Combo (orange chaleureux).
  * Carte food app : vignette ronde + nom + statut sur un bandeau orange dégradé,
  * gros prix d'entrée à droite, puis trois "tuiles combo" teintées orange
- * (prix / extras / boissons) et une barre stock. Brèveté totale : compteurs
+ * (photos / extras / nombre de prix) et une barre stock. Brèveté totale : compteurs
  * + 2 noms résumés, jamais de liste.
  */
 export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
+  useLanguage();
   const extras = namedItems(draft.extras);
-  const drinks = namedItems(draft.drinks);
+  const prices = validPrices(draft);
+  // N prix : 3 tuiles max, la 3e résume le reste (« +N »).
+  const shownPrices = prices.length > 3 ? prices.slice(0, 2) : prices;
   const cover = draft.images[0];
   const isAvailable = draft.availability === "available";
 
@@ -46,7 +51,7 @@ export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
 
         <View style={{ flex: 1 }}>
           <Text style={styles.name} numberOfLines={2}>
-            {draft.nom || "Sans nom"}
+            {draft.nom || t("Sans nom")}
           </Text>
           <View style={styles.statusRow}>
             <View
@@ -56,7 +61,7 @@ export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
               ]}
             />
             <Text style={styles.statusText}>
-              {isAvailable ? "Disponible" : "Indisponible"}
+              {isAvailable ? t("Disponible") : t("Indisponible")}
             </Text>
             {draft.images.length > 1 && (
               <>
@@ -70,39 +75,43 @@ export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
 
         <View style={styles.stockBox}>
           <Text style={styles.stockBoxNum}>{Number(draft.stock) || 0}</Text>
-          <Text style={styles.stockBoxLabel}>en stock</Text>
+          <Text style={styles.stockBoxLabel}>{t("en stock")}</Text>
         </View>
       </LinearGradient>
 
-      {/* Ligne 1 — les 3 prix (même structure que la ligne combo, adaptée) */}
-      <Text style={styles.sectionLabel}>Prix</Text>
+      {/* Ligne 1 — les prix (N), même structure que la ligne combo */}
+      <Text style={styles.sectionLabel}>{t("Prix")}</Text>
       <View style={styles.tilesNoTop}>
-        {[0, 1, 2].map((i) => {
-          const price = draft.prix[i];
-          const has = price && Number(price) > 0;
-          return (
-            <Tile
-              key={i}
-              icon="pricetag"
-              count=""
-              title={has ? `${price}F` : "—"}
-              sub={has ? draft.desc[i] || "—" : "—"}
-            />
-          );
-        })}
+        {shownPrices.map((p, i) => (
+          <Tile
+            key={i}
+            icon="pricetag"
+            count=""
+            title={`${p.price}F`}
+            sub={p.description || "—"}
+          />
+        ))}
+        {prices.length > 3 && (
+          <Tile
+            icon="pricetags"
+            count=""
+            title={`+${prices.length - 2}`}
+            sub={brief(prices.slice(2).map((p) => `${p.price}F`))}
+          />
+        )}
       </View>
 
-      {/* Ligne 2 — combo photos / extras / boissons */}
-      <Text style={styles.sectionLabel}>Détails</Text>
+      {/* Ligne 2 — combo photos / extras / prix (les boissons sont gérées par la boutique) */}
+      <Text style={styles.sectionLabel}>{t("Détails")}</Text>
       <View style={styles.tilesNoTop}>
         <Tile
           icon="images"
           count={draft.images.length}
-          title="Photos"
-          sub={draft.images.length > 0 ? "ajoutées" : "aucune"}
+          title={t("Photos")}
+          sub={draft.images.length > 0 ? t("ajoutées") : t("aucune")}
         />
         <Tile icon="add-circle" count={extras.length} title="Extras" sub={brief(extras.map((e) => e.name))} />
-        <Tile icon="cafe" count={drinks.length} title="Boissons" sub={brief(drinks.map((d) => d.name))} />
+        <Tile icon="pricetag" count={prices.length} title={t("Prix")} sub={brief(prices.map((p) => p.description).filter(Boolean))} />
       </View>
     </View>
   );

@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Commande, FastFood } from "@/src/types";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -23,6 +25,7 @@ import { OrderSheetHeader } from "./OrderSheetHeader";
 import { OrderSheetTab, OrderSheetTabBar } from "./OrderSheetTabBar";
 import { OrderTrackingTab } from "./OrderTrackingTab";
 import { RateMenuTab } from "./RateMenuTab";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // `OrderItem` reste importable d'ici (type historique du sheet).
 export type { OrderItem } from "../utils/buildOrderItems";
@@ -51,6 +54,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
   boutique,
   allOrders,
 }) => {
+  const i18nLang = useLanguage();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<OrderSheetTab>("livraison");
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
@@ -78,14 +82,14 @@ export const OrderBottomSheet: React.FC<Props> = ({
   const tabs = useMemo(
     () =>
       [
-        { key: "livraison" as const, label: "Livraison", show: true },
-        { key: "commandes" as const, label: "Commandes", show: true },
-        { key: "montant" as const, label: "Montant", show: showMontantTab },
-        { key: "suivi" as const, label: "Suivi", show: showTrackingTab },
-        { key: "livreur" as const, label: "Livreur", show: showDriverTab },
-        { key: "noter" as const, label: "Noter", show: showRateTab },
+        { key: "livraison" as const, label: tr("Livraison"), show: true },
+        { key: "commandes" as const, label: tr("Commandes"), show: true },
+        { key: "montant" as const, label: tr("Montant"), show: showMontantTab },
+        { key: "suivi" as const, label: tr("Suivi"), show: showTrackingTab },
+        { key: "livreur" as const, label: tr("Livreur"), show: showDriverTab },
+        { key: "noter" as const, label: tr("Noter"), show: showRateTab },
       ].filter((t) => t.show),
-    [showMontantTab, showTrackingTab, showDriverTab, showRateTab],
+    [showMontantTab, showTrackingTab, showDriverTab, showRateTab, i18nLang],
   );
 
   // Livraison offerte (bonus/campagne couvert par le fastfood) ou mutualisée sur
@@ -102,7 +106,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
       (o: any) => o.deliveryGroupId === currentGroupId,
     ).length > 1;
 
-  const items = useMemo(() => buildOrderItems(selectedOrder), [selectedOrder]);
+  const items = useMemo(() => buildOrderItems(selectedOrder), [selectedOrder, i18nLang]);
 
   useEffect(() => {
     if (isVisible && order) {
@@ -197,7 +201,7 @@ export const OrderBottomSheet: React.FC<Props> = ({
             menuName={
               selectedOrder?.menu?.titre ||
               selectedOrder?.menu?.name ||
-              "ce plat"
+              tr("ce plat")
             }
             menuImage={
               selectedOrder?.menu?.image ||
@@ -285,6 +289,8 @@ export const OrderBottomSheet: React.FC<Props> = ({
           <SafeAreaDebugBand />
         </Animated.View>
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

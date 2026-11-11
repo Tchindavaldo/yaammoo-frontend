@@ -1,10 +1,13 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Config } from '../../../api/config';
 import { useAuth } from '../../auth/context/AuthContext';
 import { Menu } from '@/src/types';
+import { t, useLanguage } from "@/src/i18n";
 
 export const useMenu = () => {
+    useLanguage();
     const { userData } = useAuth();
     const [menus, setMenus] = useState<Menu[]>([]);
     const [loading, setLoading] = useState(false);
@@ -33,7 +36,7 @@ export const useMenu = () => {
             }
         } catch (err: any) {
             console.error('Error fetching menu:', err);
-            setError('Erreur lors de la récupération des menus');
+            setError(t("Erreur lors de la récupération des menus"));
         } finally {
             setLoading(false);
         }

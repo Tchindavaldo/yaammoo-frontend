@@ -33,10 +33,11 @@ src/features/restaurants/
 ├── utils/homeClientSettings.ts     # Home : taille de page + distance de préchargement venues du serveur (`clientSettings`), valeurs de secours, copie gardée
 ├── utils/normalizeFastFood.ts      # normalizeMenu / normalizeFastFood (payload backend → format UI), fonctions pures
 └── components/
-    ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), homeScreenStyles
+    ├── home/                       # Morceaux de l'écran home : HomeHeader, HomeFullScreenStates (chargement / erreur), HomeLocationBanner (bandeau « Localisation désactivée »), homeScreenStyles
     ├── DesignRouter.tsx            # Aiguille vers Design7/4/5 (designCycle) + ShopRevealProvider
     ├── HeroBanner.tsx              # Carrousel de bannières (+ BannerImage)
     ├── RestaurantHeader.tsx        # En-tête home (recherche, catégories)
+    ├── LocationPill.tsx            # Pilule de localisation du header home, rendu par LOCATION_PILL_STYLE ("actuel" | "c" bordée | "d" sombre | "e" rond sans fond | "f" flottante)
     ├── RestaurantCard.tsx · CategoryList.tsx · MerchantHeader.tsx
     ├── ShopSkeleton.tsx            # Copie de CardSkeleton (R16), respiration sur driver NATIF (fantomes : JS-driven saturait le thread UI)
     ├── NativeHomeList.tsx          # Pont JS de la liste NATIVE iOS (modules/home-list) : donnees pre-calculees + evenements
@@ -45,6 +46,10 @@ src/features/restaurants/
         ├── item/
         │   ├── config.ts           # Flags, fonds, SKELETON_SIZES, types de props
         │   ├── DesignItemCard.tsx  # Valeurs dérivées (prix, livraison) + aiguillage vers la variante
+        │   ├── aere/               # HOME_DESIGN = "aere" (config.ts) : CardV4Aere (segments), CardV5Aere (barre
+        │   │                       # flottante), CardV7Aere (jauge) + leurs lignes sous la carte ; labels.ts =
+        │   │                       # stock (« N plats dispo » / « Plus que N plats » sous 5, jauge pleine dès 20),
+        │   │                       # « gratuite », délai unique. Note de MerchantHeader en « ★ 4.5/5 · N avis »
         │   ├── parts/              # ItemMeta (infos sous la carte), CardBottom (barres basses)
         │   ├── styles/sharedStyles.ts  # Styles partagés entre variantes
         │   └── variants/           # CardV1V2V3 · CardV4V7 · CardV5 · CardV6 (rendu + styles propres)
@@ -79,6 +84,7 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HLMenuCardCell.swift        # Carte 7/4/5 + les 2 lignes SOUS la carte (ItemMeta) + squelettes
     ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
     ├── HLCardBottoms.swift         # Zones basses (v7), barres floutees (v4 stock, v5 livraison)
+    ├── HLAere.swift                # Design aere (prop `homeDesign`) : zones basses 4/5/7, lignes sous la carte, couleurs DS
     ├── HLBlurBar.swift             # Flou des barres v4/v5 : systeme (`live`) ou photo floutee d'avance (`baked`)
     ├── HLBannerCell.swift          # Carrousel en boucle, autoplay 3,5 s (coupé par défaut), puces, squelette
     ├── HLPerfMonitor.swift         # Sonde TestFlight : images perdues / accrocs / mouvement par geste (CADisplayLink, fil principal)
@@ -177,6 +183,13 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
   d'après part avec. Valeur de secours (premier lancement, clé absente ou
   invalide) : `HOME_CLIENT_SETTINGS_FALLBACK` (10 boutiques, 1200 px), dans
   `utils/homeClientSettings.ts`. Taille plafonnée à 50 (`MAX_SERVER_LIMIT`).
+- **Design des cartes (`homeDesign`, OTA)** : `HOME_DESIGN` de `item/config.ts`
+  (`"actuel"` | `"aere"`) part en prop ; lu au montage avant les cellules
+  (`HLDesign.aere`, iOS et Android), donc appliqué au lancement suivant une
+  OTA. Les libellés aérés (stock, jauge 0-1, « gratuite », délai, note
+  « 4.5/5 ») sont calculés en JS par `aere/labels.ts` et envoyés dans chaque
+  menu : le natif n'a aucune règle. Une build antérieure ignore ces champs et
+  garde le design actuel.
 - **Réglages ajustables par OTA** : `ICON_ROLES` (rôle lu par le Swift -> nom
   Ionicons) et `FONTS` (nom PostScript par graisse, `null` = police système) :
   le Swift ne fixe ni icône ni police.
@@ -210,6 +223,7 @@ modules/home-list/android/
     ├── HLShopRowView.kt            # Rangee : en-tete + RecyclerView horizontal de cartes, revelation groupee (8 s max)
     ├── HLMenuCardView.kt           # Carte 7/4/5 + ItemMeta + squelettes
     ├── HLMerchantHeaderView.kt · HLCardBottoms.kt · HLBannerView.kt
+    ├── HLAere.kt                   # Design aere (prop `homeDesign`), copie de HLAere.swift
     ├── HLViews.kt                  # HLBox (mise en page manuelle), HLLabel (texte dessine), squelettes, degrade
     ├── HLText.kt                   # Fragments de texte (polices, couleurs, icones Ionicons, espaces)
     ├── HLImage.kt                  # Glide (meme moteur qu'expo-image), photo floutee d'avance des barres v4/v5
@@ -311,6 +325,24 @@ la position posée par la boutique ; `null` si l'une manque). Voir
 - **Pas de tri par distance** : l'ordre reste celui du curseur
   (`created_at DESC`), la distance est seulement affichée.
 
+## Livraison dans l'en-tête boutique (design aéré)
+
+Sous la note, alignée à droite : « Livraison 13h » (prochain créneau
+**périodique**, `orderLeadTime` compris, demain si tous sont passés),
+« Livraison express » si la boutique n'a que de l'express, rien sans livraison.
+
+- Calcul unique en JS : `getShopDeliveryLabel` / `useShopDeliveryLabel`
+  (`utils/deliveryUtils.ts`), recalculé chaque minute et au retour au premier
+  plan. Créneaux : `deliveryHours[]` au nouveau format (`periodic`, `express`
+  par heure) ; ancien format `string[]` = créneaux périodiques.
+- ⚠️ Le backend ne sert le nouveau format qu'avec `x-app-version` ≥ 1.0.1
+  (posé par `setupHttp`) : un appel sans cet en-tête (curl, navigateur) reçoit
+  des heures seules, sans express. Voir `BACKEND/architecture/merchants.md`.
+- FlashList : props `deliveryHours` / `orderLeadTime` de `MerchantHeader`
+  (Design4/5/7). Liste native : champ `deliveryLabel` (« 13h » / « express »,
+  "" = rien) de `HomeListRow`, rendu par `HLMerchantHeaderView` (iOS et
+  Android) ; une build native antérieure l'ignore.
+
 ## Recherche — SERVEUR, pas locale
 
 `searchQuery` déclenche un fetch debouncé (350 ms) avec `?q=`, qui repart de la
@@ -350,7 +382,8 @@ page), et la `value` reste mémoïsée.
 | `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
 | `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |
 | `cancelPendingLoadMore()` | Invalide une page en vol **sans tronquer**. Appelé au début d'une remontée. |
-| `hasLoadedOnce` | ⚠️ **Pilote la révélation de `(tabs)`** — voir [structure.md](./structure.md). Ne pas casser. |
+| `hasLoadedOnce` | `true` après le 1er fetch (succès, vide ou erreur). Ne pilote plus la navigation. |
+| `useActivateFastFoods()` | Contexte séparé, valeur stable. Appelé par `app/(tabs)/_layout.tsx` à l'arrivée dans le home : **aucun `GET /fastFood/all` ne part avant** (ni sous le splash, ni sur l'écran d'accueil). Définitif pour la session. |
 | `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie inactive). |
 | `appleReviewMode` · `banners` | Portés par la réponse. |
 | `upsert*FromSocket` · `applyDeliveryOffer` · `clearDeliveryOfferForBonus` | Injection socket, sans refetch. |
@@ -658,7 +691,10 @@ tant que la page suivante charge.
   position qu'occupera la vraie boutique, donc même variante et même type de
   cellule. Elles sont montées d'avance en squelette (`ShopRevealProvider`
   `hold`). Le fetch part quand elles entrent dans le champ
-  (`PLACEHOLDER_FETCH_DISTANCE`) ; à l'arrivée, FlashList **rebind** ces
+  (`GHOST_COUNT` × hauteur de rangée MESURÉE = hauteur du contenu / nombre
+  d'items, via `listLengthRef` ; `PLACEHOLDER_FETCH_DISTANCE` seulement avant
+  mesure — l'estimation fixe de 270 px, trop basse pour les designs à lignes
+  sous la carte, faisait partir le fetch très tard) ; à l'arrivée, FlashList **rebind** ces
   cellules au lieu d'en monter : plus de montage à l'insertion, donc plus de
   HOLD ni d'`insertLock` (`FILL_PLACEHOLDERS` dans `hooks/useFastFoodPagination`,
   `false` = retour à l'ancien flux). `resetKey` remet le groupe à zéro au passage fantôme ↔ réel

@@ -3,6 +3,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { getBonusDescriptor } from "../config/bonusRegistry";
 import { computeEligibility } from "../hooks/useBonusEligibility";
 import type { Bonus } from "../types/bonus.types";
+import { t } from "@/src/i18n";
 
 /**
  * Libellé + couleur d'un bonus, en fonction PURE (pas un hook) : les slides du
@@ -22,16 +23,16 @@ export const statusOf = (bonus: Bonus) => {
   const isEligible =
     !isInactive && !isRedeemed && reqStatus === "none" && p.eligible;
   const label = isInactive
-    ? "Inactif"
+    ? t("Inactif")
     : isRedeemed
-      ? "Utilisé"
+      ? t("Utilisé")
       : isApproved
-        ? "Validé"
+        ? t("Validé")
         : isPending
-          ? "En attente"
+          ? t("En attente")
           : isEligible
-            ? "Éligible"
-            : "Non éligible";
+            ? t("Éligible")
+            : t("Non éligible");
   return { label, color: d.color };
 };
 
@@ -57,12 +58,12 @@ export const toPagerItem = (bonus: Bonus, position: number): BonusPagerItem => {
     id: bonus.id ?? String(position),
     color: desc.color,
     icon: typeof glyph === "number" ? String.fromCodePoint(glyph) : "",
-    label: `Bonus ${position + 1}`,
+    label: t("Bonus {{a}}", { a: position + 1 }),
     issuer: bonus.fastFoodName || "yaammoo",
     remaining:
       remaining === null
         ? null
-        : `· ${remaining} restante${remaining > 1 ? "s" : ""}`,
+        : t("· {{a}} restante{{b}}", { a: remaining, b: remaining > 1 ? "s" : "" }),
     name: bonus.name ?? "",
     statusLabel: status.label,
     statusColor: status.color,

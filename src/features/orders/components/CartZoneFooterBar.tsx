@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { CartZoneGroup } from "../utils/groupCartOrders";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartZoneFooterBarProps {
   /** Groupes actuellement affichés : un seul si une zone est isolée. */
@@ -33,6 +35,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
   onPay,
   inlineHeader = false,
 }) => {
+  useLanguage();
   if (groups.length === 0) return null;
 
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);
@@ -54,12 +57,12 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
    */
   const headerParts = (() => {
     if (groups.length > 1)
-      return { mode: "ZONES", zone: `${groups.length} zones` };
+      return { mode: "ZONES", zone: t("{{a}} zones", { a: groups.length }) };
     const g = groups[0];
     if (g.type !== "express" && g.type !== "time")
-      return { mode: "SUR PLACE", zone: g.zone.toUpperCase() };
+      return { mode: t("SUR PLACE"), zone: g.zone.toUpperCase() };
     return {
-      mode: ["LIVRAISON", g.type === "express" ? "EXPRESS" : g.heure]
+      mode: [t("LIVRAISON"), g.type === "express" ? "EXPRESS" : g.heure]
         .filter(Boolean)
         .join(" · "),
       zone: g.zone.toUpperCase(),
@@ -117,22 +120,22 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
                     : { color: "#16a34a", fontSize: 11 },
               ]}
             >
-              {livraison > 0 ? fmt(livraison) : isPickupOnly ? "0 F" : "Offerte"}
+              {livraison > 0 ? fmt(livraison) : isPickupOnly ? "0 F" : t("Offerte")}
             </Text>
-            <Text style={footLabel}>COURSE</Text>
+            <Text style={footLabel}>{t("COURSE")}</Text>
           </View>
           <View style={styles.sep} />
 
           <View style={{ gap: 3, flexDirection: colDirection }}>
             <Text style={footValue}>{fmt(articles)}</Text>
-            <Text style={footLabel}>{cmd} CMD</Text>
+            <Text style={footLabel}>{t("{{a}} CMD", { a: cmd })}</Text>
           </View>
 
           <View style={styles.sep} />
 
           <View style={{ gap: 3, flexDirection: colDirection }}>
             <Text style={footValue}>{fmt(total)}</Text>
-            <Text style={footLabel}>TOTAL</Text>
+            <Text style={footLabel}>{t("TOTAL")}</Text>
           </View>
         </View>
 
@@ -161,7 +164,7 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
             style={styles.payBtn}
           >
             <Ionicons name="card-outline" size={14} color="#fff" />
-            <Text style={styles.payText}>commander</Text>
+            <Text style={styles.payText}>{t("commander")}</Text>
           </TouchableOpacity>
         )}
       </View>

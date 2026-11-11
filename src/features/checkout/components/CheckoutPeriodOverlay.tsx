@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import {
   Animated,
@@ -17,6 +18,7 @@ import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 import { verifyBonusCode } from "../services/verifyBonusCode";
 import { DS } from "@/src/theme/ds";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 // Hauteur NUE du sheet de commande. A l'ecran il occupe `384 + insets.bottom`
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
@@ -60,6 +62,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
   fastFoodId,
   onError,
 }) => {
+  useLanguage();
   const insets = useSheetInsets();
   const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
@@ -136,7 +139,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     const d = new Date();
     d.setDate(d.getDate() + i);
     dateOptions.push({
-      label: d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" }),
+      label: d.toLocaleDateString(dateLocale(), { weekday: "short", day: "numeric" }),
       value: d.toISOString().split("T")[0],
     });
   }
@@ -257,7 +260,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     // Un code ne s'applique qu'à une livraison précise : sans période choisie,
     // il n'y a rien à offrir → on refuse et l'overlay reste ouvert.
     if (typed && !selectedValue) {
-      onError?.("Sélectionnez d'abord une période de livraison.");
+      onError?.(t("Sélectionnez d'abord une période de livraison."));
       return;
     }
 
@@ -281,7 +284,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
     // Code refusé → toast d'erreur, l'overlay RESTE ouvert pour ressaisie.
     if (!result.valid) {
       setVerifiedCode(null);
-      onError?.(result.message || "Code bonus invalide.");
+      onError?.(result.message || t("Code bonus invalide."));
       return;
     }
 
@@ -331,7 +334,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Ionicons name="time-outline" size={20} color="#94a3b8" />
-              <Text style={styles.headerTitle}>Choisir une période</Text>
+              <Text style={styles.headerTitle}>{t("Choisir une période")}</Text>
             </View>
             <TouchableOpacity
               onPress={() => closeWithFade()}
@@ -425,7 +428,7 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
                     isFree ? (
                       <View style={styles.pricePair}>
                         <Text style={styles.strikePrix}>{item.prix} F</Text>
-                        <Text style={styles.freePrix}>Offert</Text>
+                        <Text style={styles.freePrix}>{t("Offert")}</Text>
                       </View>
                     ) : (
                       <Text

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // ============================================================================
 // useCampaignPhase — phase courante d'une campagne `status_view`
 // ----------------------------------------------------------------------------
@@ -11,6 +12,7 @@
 // ============================================================================
 import { useMemo } from "react";
 import type { Bonus } from "../types/bonus.types";
+import { t, dateLocale, useLanguage } from "@/src/i18n";
 
 export type CampaignPhase =
   /** Téléchargement pas encore ouvert (downloadDate à venir). */
@@ -54,7 +56,7 @@ const daysUntil = (target: Date, now: Date): number => {
 
 /** "mardi 5 août" — repère lisible, sans l'année (campagnes courtes). */
 const fmtDay = (d: Date): string =>
-  d.toLocaleDateString("fr-FR", {
+  d.toLocaleDateString(dateLocale(), {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -74,23 +76,23 @@ const fmtHour = (iso?: string): string => {
 const fmtWindow = (start?: string, end?: string): string => {
   const a = fmtHour(start);
   const b = fmtHour(end);
-  return a && b ? ` entre ${a} et ${b}` : "";
+  return a && b ? t(" entre {{a}} et {{b}}", { a: a, b: b }) : "";
 };
 
 /** Formule la proximité d'une échéance : aujourd'hui / demain / dans N jours. */
 const whenText = (days: number, day: Date): string => {
-  if (days === 0) return "aujourd'hui";
-  if (days === 1) return "demain";
+  if (days === 0) return t("aujourd'hui");
+  if (days === 1) return t("demain");
   if (days > 1 && days <= 6) return fmtDay(day);
-  return `le ${fmtDay(day)}`;
+  return t("le {{a}}", { a: fmtDay(day) });
 };
 
 /** Rappel de la date de publication, ajouté au message de téléchargement. */
 const postReminder = (post: Date | null, days: number | null): string => {
   if (!post || days === null) return "";
-  if (days === 0) return " À poster aujourd'hui.";
-  if (days === 1) return " À poster demain.";
-  return ` À poster ${whenText(days, post)}.`;
+  if (days === 0) return t(" À poster aujourd'hui.");
+  if (days === 1) return t(" À poster demain.");
+  return t(" À poster {{a}}.", { a: whenText(days, post) });
 };
 
 /**
@@ -109,10 +111,10 @@ export const computeCampaignPhase = (
     const window = fmtWindow(s?.postWindowStart, s?.postWindowEnd);
     return {
       phase: "upload",
-      title: "Envoie ta preuve",
+      title: t("Envoie ta preuve"),
       desc: post
-        ? `Publie le flyer en statut${window}, puis envoie la vidéo montrant les vues de ton statut du ${fmtDay(post)}.`
-        : `Envoie la vidéo montrant les vues de ton statut${window}.`,
+        ? t("Publie le flyer en statut{{a}}, puis envoie la vidéo montrant les vues de ton statut du {{b}}.", { a: window, b: fmtDay(post) })
+        : t("Envoie la vidéo montrant les vues de ton statut{{a}}.", { a: window }),
       action: "upload",
       blockedReason: null,
     };
@@ -141,14 +143,14 @@ export const computeCampaignPhase = (
     const when = download && dDays !== null ? whenText(dDays, download) : null;
     return {
       phase: "before_download",
-      title: when ? `Téléchargement ${when}` : "Téléchargement bientôt ouvert",
+      title: when ? t("Téléchargement {{a}}", { a: when }) : t("Téléchargement bientôt ouvert"),
       desc: when
-        ? `Le flyer sera disponible ${when}.${reminder}`
-        : `Le flyer n'est pas encore disponible.${reminder}`,
+        ? t("Le flyer sera disponible {{a}}.{{b}}", { a: when, b: reminder })
+        : t("Le flyer n'est pas encore disponible.{{a}}", { a: reminder }),
       action: "download",
       blockedReason: when
-        ? `Le flyer sera disponible ${when}.`
-        : "Le flyer n'est pas encore disponible.",
+        ? t("Le flyer sera disponible {{a}}.", { a: when })
+        : t("Le flyer n'est pas encore disponible."),
     };
   }
 
@@ -157,11 +159,11 @@ export const computeCampaignPhase = (
     const window = fmtWindow(s?.postWindowStart, s?.postWindowEnd);
     return {
       phase: "await_post",
-      title: pDays === 0 ? "Poste ton statut aujourd'hui" : "Statut à publier",
+      title: pDays === 0 ? t("Poste ton statut aujourd'hui") : t("Statut à publier"),
       desc:
         pDays === 0
-          ? `Publie le flyer en statut${window}. Tu pourras ensuite envoyer ta preuve.`
-          : `La publication était prévue le ${fmtDay(post)}.`,
+          ? t("Publie le flyer en statut{{a}}. Tu pourras ensuite envoyer ta preuve.", { a: window })
+          : t("La publication était prévue le {{a}}.", { a: fmtDay(post) }),
       action: "download",
       blockedReason: null,
     };
@@ -171,8 +173,8 @@ export const computeCampaignPhase = (
   return {
     phase: "download",
     title:
-      dDays === 0 ? "Télécharge ton flyer aujourd'hui" : "Télécharger le flyer",
-    desc: `Récupère le flyer et publie-le en statut.${reminder}`,
+      dDays === 0 ? t("Télécharge ton flyer aujourd'hui") : t("Télécharger le flyer"),
+    desc: t("Récupère le flyer et publie-le en statut.{{a}}", { a: reminder }),
     action: "download",
     blockedReason: null,
   };
@@ -180,4 +182,7 @@ export const computeCampaignPhase = (
 
 /** Phase de campagne du bonus — recalculée si le bonus change. */
 export const useCampaignPhase = (bonus: Bonus): CampaignInfo =>
-  useMemo(() => computeCampaignPhase(bonus), [bonus]);
+  {
+  const i18nLang = useLanguage();
+  return useMemo(() => computeCampaignPhase(bonus), [bonus, i18nLang]);
+};

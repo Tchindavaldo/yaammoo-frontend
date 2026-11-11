@@ -1,8 +1,10 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { WalletPanel } from "@/src/features/wallet/components/WalletPanel";
+import { t, useLanguage } from "@/src/i18n";
 
 interface UserWalletModalProps {
   visible: boolean;
@@ -16,6 +18,7 @@ interface UserWalletModalProps {
  * Réutilise le WalletPanel user (différent du PorteFeuillePanel marchand).
  */
 export const UserWalletModal: React.FC<UserWalletModalProps> = ({ visible, onClose }) => {
+  useLanguage();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [walletBalance, setWalletBalance] = useState(0);
 
@@ -26,9 +29,9 @@ export const UserWalletModal: React.FC<UserWalletModalProps> = ({ visible, onClo
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Portefeuille"
+        title={t("Portefeuille")}
         subtitle={`${walletBalance.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} FCFA`}
-        right={<HeaderPill label="Retour" icon="arrow-back-outline" onPress={onClose} />}
+        right={<HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
       />
 

@@ -3,6 +3,7 @@ import { Config } from "../../../api/config";
 import { auth } from "../../../services/firebase";
 import { Users, UsersInfos } from "../../../types";
 import { userFirestore } from "./userFirestore";
+import { t } from "@/src/i18n";
 
 export interface GoogleSignInResult {
   success: boolean;
@@ -20,7 +21,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     return {
       success: false,
       isNewUser: false,
-      error: "Google Auth est désactivé dans Expo Go. Utilisez un development build.",
+      error: t("Google Auth est désactivé dans Expo Go. Utilisez un development build."),
     };
   }
 
@@ -55,7 +56,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     const signInResponse = await GoogleSignin.signIn();
 
     if (signInResponse.type === "cancelled") {
-      return { success: false, isNewUser: false, error: "Connexion annulée" };
+      return { success: false, isNewUser: false, error: t("Connexion annulée") };
     }
 
     console.log("🔵 [GoogleAuth] Étape 3: Récupération du token");
@@ -66,7 +67,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
       return {
         success: false,
         isNewUser: false,
-        error: "Token Google invalide",
+        error: t("Token Google invalide"),
       };
     }
 
@@ -133,7 +134,7 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     // Fetch the user data from API to get server data
     const createdUserData = await userFirestore.getUser(firebaseUser);
     if (!createdUserData) {
-      throw new Error("Failed to retrieve created user data");
+      throw new Error(t("Impossible de récupérer les données du compte créé"));
     }
 
     console.log("✅ [GoogleAuth] Utilisateur créé avec succès");
@@ -146,38 +147,38 @@ export async function handleGoogleSignIn(): Promise<GoogleSignInResult> {
     console.error("❌ [GoogleAuth] Erreur:", error);
 
     if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-      return { success: false, isNewUser: false, error: "Connexion annulée" };
+      return { success: false, isNewUser: false, error: t("Connexion annulée") };
     } else if (error.code === statusCodes.IN_PROGRESS) {
       return {
         success: false,
         isNewUser: false,
-        error: "Connexion déjà en cours",
+        error: t("Connexion déjà en cours"),
       };
     } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
       return {
         success: false,
         isNewUser: false,
-        error: "Google Play Services non disponible",
+        error: t("Google Play Services non disponible"),
       };
     } else if (error.code === "auth/account-exists-with-different-credential") {
       return {
         success: false,
         isNewUser: false,
         error:
-          "Un compte existe déjà avec cet email. Utilisez email/mot de passe.",
+          t("Un compte existe déjà avec cet email. Utilisez email/mot de passe."),
       };
     } else if (error.code === "auth/network-request-failed") {
       return {
         success: false,
         isNewUser: false,
-        error: "Erreur réseau. Vérifiez votre connexion.",
+        error: t("Erreur réseau. Vérifiez votre connexion."),
       };
     }
 
     return {
       success: false,
       isNewUser: false,
-      error: "Erreur de connexion Google",
+      error: t("Erreur de connexion Google"),
     };
   }
 }

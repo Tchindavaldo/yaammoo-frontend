@@ -13,16 +13,41 @@ la gestion des **commandes** (feature distincte, même dossier `merchant/`).
 yaammoo/src/features/merchant/components/
 ├── MenuManagePanel.tsx             # Panel gestion des menus (stats + chips filtres Dispo/Indispo + bouton Ajouter ; item calqué sur MerchantOrderCard ; vue ajout inline)
 ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
-├── AddMenuSheetMultiStep.tsx       # Formulaire menu (Modal pour modif / inline `embedded` pour création) — 3 étapes
-├── recap-designs/                  # Designs alternatifs de l'étape récap (switcher)
-│   ├── MenuDraft.types.ts          # Type `MenuDraft` (snapshot du formulaire) + sélecteurs (validPrices, namedItems)
-│   ├── MenuRecap.tsx               # Switcher : pills Aperçu/Blocs/Édito/Synthèse → rend le design choisi
-│   ├── MenuRecapDesign1.tsx        # "Aperçu" — carte client (couverture + tarifs/extras/boissons listés)
-│   ├── MenuRecapDesign2.tsx        # "Blocs" — hero card + blocs bordés par section
-│   ├── MenuRecapDesign3.tsx        # "Édito" — mise en page éditoriale
-│   └── MenuRecapDesign4.tsx        # "Synthèse" — recap bref (bandeau + 4 stat-tuiles + résumés condensés +N)
+├── AddMenuSheetMultiStep.tsx       # Formulaire menu (Modal pour modif / inline `embedded` pour création) — 3 étapes, orchestration
+├── menu-form/                      # Modules du formulaire (découpe R4)
+│   ├── AddMenuSheet.styles.ts      # Styles du formulaire et de ses étapes
+│   ├── menuFormConstants.ts        # MODAL_HEIGHT, DESC_MIN/MAX
+│   ├── useMenuImageUpload.ts       # Sélection galerie + upload `/image/upload` (progression par slot)
+│   ├── MenuPricesEditor.tsx        # N prix : onglets « Prix 1 * / Prix 2 / … » + « + » / poubelle
+│   ├── MenuPhotoSlots.tsx          # Les 3 emplacements photo
+│   ├── MenuExtrasEditor.tsx        # Extras (chips + ligne d'édition)
+│   ├── MenuStockAvailability.tsx   # Disponibilité + stock
+│   └── MenuFormModal.tsx           # Coque Modal (flou + sheet) + `useSheetAnimation`
+├── drinks/                         # Boissons de la BOUTIQUE (route app/shop/drinks.tsx)
+│   ├── useShopDrinks.ts            # GET/POST `/fastfood/:id` (`drinks`, liste complète)
+│   ├── ShopDrinksPage.tsx          # Page : ajout/modif, liste, pied « Enregistrer »
+│   └── ShopDrinkRow.tsx            # Ligne : prix, dispo/rupture, plats concernés (« Tous les plats » ou sélection)
+├── recap-designs/                  # Étape récap
+│   ├── MenuDraft.types.ts          # Type `MenuDraft` (snapshot du formulaire, `prices: DraftPrice[]`) + sélecteurs
+│   ├── MenuRecap.tsx               # Rend le design retenu
+│   └── MenuRecapDesign1.tsx        # Bandeau + tuiles prix (3 max, la 3e résume « +N ») + photos/extras/prix
 └── MenuManageModal.tsx             # Page entière, route app/shop/menu.tsx (sans navbar), gestion menus (Settings → "Gestion menu")
 ```
+
+## Boissons de la boutique (app ≥ 1.1.5)
+
+Les boissons ne sont plus saisies dans le plat : elles appartiennent à la **boutique**
+(`fastfood.drinks` côté backend). Settings → Boutique → **Boissons** (`app/shop/drinks.tsx`).
+Une boisson est proposée avec **tous les plats** par défaut (`menuIds: null`) ; le marchand
+peut la restreindre à certains plats. Enregistrement = liste complète via `POST /fastfood/:id`.
+Côté client rien ne change : le backend reconstruit `menu.drink` à la lecture.
+
+## Nombre de prix variable (app ≥ 1.1.5)
+
+Un plat a **N prix** (`prices[]`, au moins un). Client : toujours lire les prix via
+`src/features/checkout/utils/menuPrices.ts` (`menuPriceOptions`, `menuPriceAt`,
+`menuPriceDescription`) ; `prix1..3` ne sont plus que des miroirs des 3 premiers.
+`selectedPriceIndex` reste 1-based. Les apps ≤ 1.1.4 n'affichent que les 3 premiers prix.
 
 ---
 
@@ -72,25 +97,13 @@ Formulaire de création/modification d'un menu.
 - défaut (modification, ouvert depuis le crayon d'un item) : `Modal` plein écran classique.
 
 **3 étapes** (`STEPS = ['nameImage', 'details', 'recap']`) :
-1. **nameImage** — nom, **3 prix en tabs** (Prix 1/2/3 ; le tab sélectionné pilote un couple
-   prix + description sur la même ligne ; description multiligne en édition, tronquée 1 ligne
-   sinon), puis photos (optionnelles — obligation désactivée temporairement).
-2. **details** — deux **sections empilées** (Extras puis Boissons), calquées sur le design
-   des prix :
-   - **Ligne label** : libellé + compteur `×N` (texte orange, sans fond) + chips des items
-     **validés** dans un `ScrollView` horizontal (ne wrappe jamais, scroll pour voir les
-     cachés). Chips plats (texte seul, séparés par `·`) ; couleur du texte passe en orange
-     pour l'item en cours d'édition.
-   - **Ligne d'édition** : input nom + input prix + bouton **supprimer** (poubelle rouge) +
-     bouton **valider** (check, fond orange). Cliquer un chip recharge nom/prix dans la ligne
-     d'édition (`editIdx`) ; Valider crée ou met à jour, Supprimer retire l'item édité.
-   - États draft par catégorie : `extraDraft`/`extraEditIdx`, `drinkDraft`/`drinkEditIdx`.
-     Les items sont enregistrés avec `quantite: "1"` et `status: true` par défaut (le stepper
-     quantité / toggle dispo par item de l'ancien design ont été retirés).
-   - **Disponibilité du menu** : label "Disponibilité" + 2 boutons côte à côte
-     (Disponible/Indisponible, vif au clic).
-   - **Stock** : label "Stock disponible" + sur la ligne suivante, chiffres `0..200` (pas de
-     10) en `ScrollView` **horizontal** scrollable + stepper `− nb +` resserré à droite.
+1. **nameImage** — nom, **N prix en onglets** (`MenuPricesEditor` : « Prix 1 * », « Prix 2 »…,
+   « + » ajoute un prix, poubelle retire le prix sélectionné sauf le 1er ; l'onglet pilote un
+   couple prix + description sur la même ligne), puis photos (`MenuPhotoSlots`).
+2. **details** — **Extras** (`MenuExtrasEditor` : chips scrollables + ligne d'édition nom/prix/
+   supprimer/valider ; items enregistrés avec `quantite: "1"`, `status: true`), puis
+   **Disponibilité** et **Stock** (`MenuStockAvailability`). Plus de section Boissons
+   (voir « Boissons de la boutique »).
 3. **recap** — délégué au composant **`MenuRecap`** (dossier `recap-designs/`) qui propose un
    **switcher** entre plusieurs rendus du même `MenuDraft` (l'utilisateur choisit celui qu'il
    préfère) : *Aperçu* (carte client), *Blocs* (hero + blocs), *Édito* (éditorial), *Synthèse*
@@ -107,7 +120,7 @@ Formulaire de création/modification d'un menu.
 (`errorFields`, nettoyée à la saisie) ; tap dans le vide ferme le clavier (`Pressable` +
 `keyboardDismissMode`).
 
-**Données** : `extra` / `drink` envoyés au backend portent `name`, `prix`, `quantite`, `status`.
+**Données** : `extra` envoyé au backend porte `name`, `prix`, `quantite`, `status` ; `drink` n'est plus envoyé.
 Helper `toItem` pour (re)charger un menu existant.
 
 **Hauteur du mode Modal** : `MODAL_HEIGHT` (px, fixe, identique sur les 3 étapes pour éviter
@@ -119,3 +132,24 @@ un saut de taille au changement d'étape) = **540** (~62% d'un écran de référ
 > apparaître le fond gris de l'`overlay` sous le bouton "Suivant" — bug déjà rencontré. La
 > safe-area doit rester absorbée à l'intérieur d'un élément à fond blanc (footer ou sheet),
 > pas retranchée de la zone visible du sheet lui-même.
+
+## Aperçu du prix (étape 1) et photos (étape 2)
+
+- Étape 1 : sous le prix sélectionné, `MenuPricePreviewCard` (maquette B4 du canvas
+  « Yaammoo — Design », page « Menu — prix ») : « Prix affiché au client », puis
+  « Prix du plat », « Frais de retrait », « Vous recevez ». Données de
+  `GET /menu/price-preview/:fastFoodId` via `useMenuPriceCheck`
+  (`menu-form/useMenuPricePreview.ts`) ; rien n'est recalculé dans l'app. Cases
+  vides (« — ») tant que le prix n'est pas vérifié.
+- Vérification à la demande (`menu-form/menuPriceStepActions.ts`) :
+  - bouton ✓ en fin de ligne (`?price=`) : remplit les cases ; refus = un toast ;
+    une fois accepté, le ✓ devient la poubelle (prix 2+) ; modifier le montant
+    le dévalide ;
+  - ouverture d'un menu existant : ses prix sont vérifiés d'office (spinner
+    sur les cartes) ;
+  - bouton « Suivant » : seuls les prix pas encore vérifiés partent, en une
+    requête (`?prices=a,b`), spinner sur le bouton seulement ; refus =
+    bascule sur le premier prix refusé + un seul toast (une ligne
+    « Prix N : message » par prix refusé).
+- Étape 2 : les photos (`MenuPhotoSlots`, 3 requises) sont passées sous extras,
+  disponibilité et stock ; leur validation se fait à cette étape.

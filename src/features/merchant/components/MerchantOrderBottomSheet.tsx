@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
@@ -16,6 +18,7 @@ import { MontantTab } from './MerchantOrderMontantTab';
 import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
 import { DS } from "@/src/theme/ds";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 // iOS aligne sur le sheet client (450) ; Android garde 490.
 const SHEET_HEIGHT = Platform.OS === 'ios' ? 450 : 490;
@@ -100,7 +103,7 @@ function buildItems(order: Commande): OrderItem[] {
     (order.menu as any)?.prix1 ||
     0;
   items.push({
-    name: order.menu?.titre || order.menu?.name || 'Menu principal',
+    name: order.menu?.titre || order.menu?.name || tr("Menu principal"),
     qty: order.quantity || 1,
     price: `${menuPrice * (order.quantity || 1)} XAF`,
     unitPrice: menuPrice,
@@ -139,22 +142,22 @@ function buildUser(order: Commande): DeliveryUser {
   return {
     initials,
     name: `${first} ${last}`.trim(),
-    addr: order.delivery?.location || 'Adresse non spécifiée',
+    addr: order.delivery?.location || tr("Adresse non spécifiée"),
     avColor: theme.bg,
     avTextColor: theme.text,
     badgeColor: theme.badge,
     orderCount: (order as any).rank || 1,
     rating: 4,
-    phone: order.delivery?.phone || order.userData?.phoneNumber?.toString() || 'Non fourni',
+    phone: order.delivery?.phone || order.userData?.phoneNumber?.toString() || tr("Non fourni"),
     creneau: !order.delivery?.status
-      ? 'Sur place'
+      ? tr("Sur place")
       : order.delivery?.type === 'express'
         ? 'Express'
-        : `Période (${order.delivery?.time || 'Dès que possible'})`,
+        : tr("Période ({{a}})", { a: order.delivery?.time || tr("Dès que possible") }),
     duration: !order.delivery?.status
-      ? 'Immédiat'
+      ? tr("Immédiat")
       : order.delivery?.type === 'express' ? '15-20 min' : '30-45 min',
-    note: order.delivery?.note || 'Aucune note de livraison.',
+    note: order.delivery?.note || tr("Aucune note de livraison."),
     voiceNoteUri: order.delivery?.voiceNoteUri || '',
     zone: (order.delivery as any)?.zone || '',
     deliveryPrice: Number((order.delivery as any)?.prix) || 0,
@@ -166,6 +169,7 @@ function buildUser(order: Commande): DeliveryUser {
 export default function MerchantOrderBottomSheet({
   order, visible, onClose, allOrders, groupPool, onValidate, canValidate = false,
 }: Props) {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
@@ -193,8 +197,8 @@ export default function MerchantOrderBottomSheet({
   // que soit la Cmd choisie — jamais un mélange de zones.
   const zoneOf = useCallback((o: Commande | null | undefined): string => {
     const d = (o as any)?.delivery;
-    if (!d || d.status !== true) return 'Sur place';
-    return d.zone || d.location || 'Zone inconnue';
+    if (!d || d.status !== true) return tr("Sur place");
+    return d.zone || d.location || tr("Zone inconnue");
   }, []);
 
   const zones = useMemo(() => {
@@ -267,13 +271,13 @@ export default function MerchantOrderBottomSheet({
 
   /** Message du toast pour la commande affichée. */
   const buildBlockedMessage = () => {
-    const label = hasExtra && hasDrink ? 'extras et boissons'
+    const label = hasExtra && hasDrink ? tr("extras et boissons")
       : hasExtra ? 'extras'
-        : 'boissons';
+        : tr("boissons");
     // Même numéro que le chip du header : le vrai rang, pas la position.
     const rank = (orderList[selectedOrderIdx] as any)?.rank ?? selectedOrderIdx + 1;
     const prefix = orderList.length > 1 ? `Cmd ${rank} : ` : '';
-    return `${prefix}${label} non vérifiés — faites défiler la liste`;
+    return tr("{{a}}{{b}} non vérifiés — faites défiler la liste", { a: prefix, b: label });
   };
 
   // ─── Chips « Cmd » du header : compteur de débordement « +N » ───────────────
@@ -522,7 +526,7 @@ export default function MerchantOrderBottomSheet({
                   </View>
                 ) : (
                   <Text style={styles.userAddr} numberOfLines={1}>
-                    {user.zone ? `Zone de livraison : ${user.zone}` : user.addr}
+                    {user.zone ? tr("Zone de livraison : {{a}}", { a: user.zone }) : user.addr}
                   </Text>
                 )}
               </View>
@@ -547,12 +551,12 @@ export default function MerchantOrderBottomSheet({
               >
                 <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
                   {t === 'livraison'
-                    ? 'Livraison'
+                    ? tr("Livraison")
                     : t === 'commandes'
-                      ? 'Commande'
+                      ? tr("Commande")
                       : t === 'montant'
-                        ? 'Montant'
-                        : 'Livreur'}
+                        ? tr("Montant")
+                        : tr("Livreur")}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -643,6 +647,8 @@ export default function MerchantOrderBottomSheet({
           />
         ) : null}
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 }

@@ -5,6 +5,7 @@ import type {
   SupportTopic,
   SupportTopicDescriptor,
 } from "../types/support.types";
+import { t as tr } from "@/src/i18n";
 
 /** Nom affiché quand le fil s'adresse au support yaammoo. */
 export const SUPPORT_DEFAULT_NAME = "yaammoo";
@@ -15,28 +16,28 @@ export const getThreadName = (thread: SupportThread): string =>
 
 /** Libellé affiché pour le statut d'un fil. */
 export const SUPPORT_STATUS_LABEL: Record<SupportThreadStatus, string> = {
-  open: "En cours",
-  pending: "En attente",
-  closed: "Résolu",
+  get open() { return tr("En cours"); },
+  get pending() { return tr("En attente"); },
+  get closed() { return tr("Résolu"); },
 };
 
 /** Sujets proposés en chips en haut d'un nouveau chat. */
 export const SUPPORT_TOPICS: SupportTopicDescriptor[] = [
   {
     id: "question",
-    label: "Question",
+    get label() { return tr("Question"); },
     icon: "help-circle-outline",
     color: Theme.colors.info,
   },
   {
     id: "probleme",
-    label: "Problème",
+    get label() { return tr("Problème"); },
     icon: "alert-circle-outline",
     color: Theme.colors.danger,
   },
   {
     id: "assistance",
-    label: "Assistance",
+    get label() { return tr("Assistance"); },
     icon: "hand-left-outline",
     color: Theme.colors.primary,
   },
@@ -48,7 +49,7 @@ export const SUPPORT_TOPICS: SupportTopicDescriptor[] = [
   },
   {
     id: "discussion",
-    label: "Discussion",
+    get label() { return tr("Discussion"); },
     icon: "chatbubbles-outline",
     color: Theme.colors.secondary,
   },

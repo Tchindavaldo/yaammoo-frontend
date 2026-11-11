@@ -1,9 +1,11 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import React from "react";
 import { ScrollView, Text, View } from "react-native";
 import { DS } from "@/src/theme/ds";
 import { OrderItem } from "../utils/buildOrderItems";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Onglet « Commandes » du détail client (`OrderBottomSheet`) : plat, extras,
@@ -21,7 +23,7 @@ const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 const ITEM_LABEL: Record<string, string> = {
   menu: "Menu",
   extra: "Extra",
-  drink: "Boisson",
+  get drink() { return t("Boisson"); },
 };
 
 const CURRENCY = "XAF";
@@ -43,17 +45,18 @@ export function OrderCommandesTab({
   /** La commande partage son deliveryGroupId avec au moins une autre du sheet. */
   deliveryGrouped?: boolean;
 }) {
+  useLanguage();
   const hasDelivery =
     deliveryPrice > 0 || !!zone || deliveryOffered || deliveryGrouped;
   // Offert prime sur le groupé : le client ne paie rien dans les deux cas, mais
   // « Offert » porte l'info commerciale (bonus / campagne).
   const deliveryLabel = deliveryOffered
-    ? "Offert"
+    ? t("Offert")
     : deliveryGrouped
-      ? "Cmd groupée"
+      ? t("Cmd groupée")
       : deliveryPrice > 0
         ? `${deliveryPrice} ${CURRENCY}`
-        : "Inclus";
+        : t("Inclus");
   if (items.length === 0) {
     return (
       <View
@@ -65,7 +68,7 @@ export function OrderCommandesTab({
         }}
       >
         <Text style={{ fontSize: 13, color: "#9CA3AF", fontStyle: "italic" }}>
-          Aucun détail de commande disponible
+          {t("Aucun détail de commande disponible")}
         </Text>
       </View>
     );
@@ -187,7 +190,7 @@ export function OrderCommandesTab({
                       <Text
                         style={{ fontSize: 10, color: "#9CA3AF", marginTop: 1 }}
                       >
-                        {unitPrice} {CURRENCY} × {o.qty}
+                        {unitPrice} {CURRENCY} {t("×")} {o.qty}
                       </Text>
                     </>
                   ) : (
@@ -198,7 +201,7 @@ export function OrderCommandesTab({
                         color: "#111827",
                       }}
                     >
-                      {unitPrice > 0 ? `${unitPrice} ${CURRENCY}` : "Inclus"}
+                      {unitPrice > 0 ? `${unitPrice} ${CURRENCY}` : t("Inclus")}
                     </Text>
                   )}
                 </View>
@@ -233,7 +236,7 @@ export function OrderCommandesTab({
                   style={{ fontSize: 13, fontWeight: "600", color: "#111827" }}
                   numberOfLines={1}
                 >
-                  Livraison
+                  {t("Livraison")}
                 </Text>
                 {zone ? (
                   <Text
@@ -278,7 +281,7 @@ export function OrderCommandesTab({
           }}
         >
           <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827" }}>
-            {deliveryGrouped ? "Total" : "Total commande"}
+            {deliveryGrouped ? "Total" : t("Total commande")}
           </Text>
           <Text style={{ fontSize: 16, fontWeight: "900", color: DS.accent }}>
             {total} {CURRENCY}

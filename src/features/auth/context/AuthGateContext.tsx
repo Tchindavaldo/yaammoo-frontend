@@ -5,6 +5,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { AUTH_SHEET_HEIGHT } from "@/src/features/auth/constants";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
+import { DS } from "@/src/theme/ds";
 import React, {
   createContext,
   useCallback,
@@ -32,6 +33,15 @@ interface AuthGateValue {
   requireAuth: (action?: () => void) => boolean;
   /** true si l'utilisateur est connecté (raccourci pour masquer des CTA). */
   isSignedIn: boolean;
+  /**
+   * `true` une fois « Explorer sans compte » touche sur l'ecran d'accueil :
+   * l'invite entre dans (tabs). Vaut pour la session (pas de stockage) : a
+   * chaque lancement, un non-connecte revoit l'ecran d'accueil. Remis a
+   * `false` a la connexion, pour qu'une deconnexion ramene a l'accueil.
+   */
+  guestBrowsing: boolean;
+  /** Entree en invite (Apple 5.1.1(v) : parcourir sans compte). */
+  browseAsGuest: () => void;
 }
 
 const AuthGateContext = createContext<AuthGateValue | undefined>(undefined);
@@ -73,6 +83,14 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
     if (isSignedIn && open) setOpen(false);
   }, [isSignedIn, open]);
 
+  const [guestBrowsing, setGuestBrowsing] = useState(false);
+  const browseAsGuest = useCallback(() => setGuestBrowsing(true), []);
+  // Connecte : le mode invite n'a plus lieu d'etre. Sans cette remise a zero,
+  // une deconnexion laisserait l'utilisateur dans (tabs) au lieu de l'accueil.
+  useEffect(() => {
+    if (isSignedIn) setGuestBrowsing(false);
+  }, [isSignedIn]);
+
   useEffect(() => {
     Animated.spring(slide, {
       toValue: open ? 1 : 0,
@@ -97,10 +115,9 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <AuthGateContext.Provider value={{ requireAuth, isSignedIn }}>
-      {/* Flou Android (SDK 57) : le voile de la sheet floute toute l'app,
-          enveloppee dans la cible (`BlurTarget`). Les flous DE l'app ne visent
-          pas cette cible (la lib l'interdit) : chaque ecran a la sienne. */}
+    <AuthGateContext.Provider
+      value={{ requireAuth, isSignedIn, guestBrowsing, browseAsGuest }}
+    >
       <BlurScope>
       <BlurTarget style={styles.appTarget}>{children}</BlurTarget>
 
@@ -113,13 +130,12 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           pointerEvents="auto"
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={close}>
-            {/* Flou + voile sombre, sur les deux OS. */}
+            {/* Flou (iOS) ou voile blanc (Android, aucun flou), puis voile sombre. */}
             <AppBlurView
-              // Rien ne defile derriere : flou force aussi sous Android 12.
-              forceAndroidBlur
               intensity={30}
               tint="light"
               style={StyleSheet.absoluteFill}
+              fallbackStyle={styles.backdropWhite}
             />
             <View style={styles.backdropDim} />
           </Pressable>
@@ -157,6 +173,7 @@ export function useAuthGate(): AuthGateValue {
 
 const styles = StyleSheet.create({
   appTarget: { flex: 1 },
+  backdropWhite: { backgroundColor: DS.frost },
   backdropDim: {
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(20,20,20,0.25)",

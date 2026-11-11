@@ -1,7 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Les trois axes de filtrage du panier. */
 export type CartFilterKind = "zone" | "periode" | "heure";
@@ -21,9 +23,9 @@ interface CartFilterChipsRowProps {
 }
 
 const LABELS: Record<CartFilterKind, string> = {
-  zone: "Zone de livraison",
-  periode: "Période",
-  heure: "Heure",
+  get zone() { return t("Zone de livraison"); },
+  get periode() { return t("Période"); },
+  get heure() { return t("Heure"); },
 };
 
 const ICONS: Record<CartFilterKind, keyof typeof Ionicons.glyphMap> = {
@@ -61,7 +63,9 @@ export const CartFilterChipsRow: React.FC<CartFilterChipsRowProps> = ({
   chips,
   onOpen,
   onClear,
-}) => (
+}) => {
+  useLanguage();
+  return (
   // Ligne FIXE de 3 chips repartis sur toute la largeur (pas de scroll : leur
   // nombre est constant). La liste n'a plus de padding horizontal, les chips
   // le portent.
@@ -115,8 +119,8 @@ export const CartFilterChipsRow: React.FC<CartFilterChipsRowProps> = ({
                 heure se suffisent a elles-memes (« Express », « 12h »). */}
             {!active
               ? LABELS[c.kind]
-              : c.kind === "zone" && c.value !== "Retrait en boutique"
-                ? `Zone ${c.value}`
+              : c.kind === "zone" && c.value !== t("Retrait en boutique")
+                ? t("Zone {{a}}", { a: c.value })
                 : c.value}
           </Text>
 
@@ -143,6 +147,7 @@ export const CartFilterChipsRow: React.FC<CartFilterChipsRowProps> = ({
     })}
   </View>
 );
+};
 
 /** Option listée dans un `CartFilterOptionsSheet`. */
 export interface CartFilterOption {

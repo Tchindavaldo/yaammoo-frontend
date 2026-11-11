@@ -6,10 +6,11 @@ import {
   startNetworkWatch,
   trackInFlight,
 } from "@/src/services/network";
+import { t } from "@/src/i18n";
 
 /** Code porte par l'erreur hors-ligne, pour que l'UI la distingue d'un 500. */
 export const OFFLINE_CODE = "ERR_OFFLINE";
-export const OFFLINE_MESSAGE = "Pas de connexion Internet";
+export const offlineMessage = (): string => t("Pas de connexion Internet");
 
 /**
  * Configure les headers globaux envoyés à CHAQUE requête backend.
@@ -51,7 +52,7 @@ export function setupHttp() {
       // d'un faux negatif de la sonde NetInfo, qui rejetterait alors des
       // requetes parfaitement valides.
       console.log(`[net] REJET hors-ligne → ${config.method} ${config.url}`);
-      return Promise.reject(new AxiosError(OFFLINE_MESSAGE, OFFLINE_CODE, config));
+      return Promise.reject(new AxiosError(offlineMessage(), OFFLINE_CODE, config));
     }
 
     // Rend la requete annulable : si la coupure est constatee pendant son vol,

@@ -471,8 +471,8 @@ Le backend sert un **prix brut** sur chaque prix de menu, extra et boisson
 1. `normalizeMenu()` (`src/features/restaurants/context/FastFoodContext.tsx`) —
    aplatit `prices[].rawPrice` en `rawPrice1/2/3` (comme `prix1/2/3`). Les
    `extra[]`/`drink[]` passent tels quels via le spread `...m`.
-2. `useCheckout.createOrder()` — reporte `rawPrice` dans `menu.prices[]` (depuis
-   `rawPrice1/2/3`) et dans les `extra[]`/`drink[]` de la racine (portés par les
+2. `useCheckout.createOrder()` — reporte `rawPrice` dans `menu.prices[]` (N prix, via
+   `utils/menuPrices.ts` qui lit `prices[]` en priorité, sinon `rawPrice1/2/3`) et dans les `extra[]`/`drink[]` de la racine (portés par les
    classes `Embalage`/`Boisson`, qui ont un 3e champ `rawPrice`).
 3. `sanitizeOrder()` — conserve `rawPrice` sur `menu.prices[]`, `extra[]`, `drink[]`.
 
@@ -481,3 +481,11 @@ Le champ est **omis** (pas mis à `0`/`null`) quand le backend ne le fournit pas
 **`menu.extra` / `menu.drink` ne sont plus envoyés** : le backend les a rendus
 optionnels et détient déjà le menu. Seuls les `extra[]`/`drink[]` de la **racine**
 partent — ce sont eux qui portent la sélection du client (`status: true/false`).
+
+## Prix en nombre variable (app >= 1.1.5)
+
+Un plat a N prix (`menu.prices[]`). Lecture via `src/features/checkout/utils/menuPrices.ts`
+(`menuPriceOptions` / `menuPriceAt` / `menuPriceDescription`, index 1-based). Les montants
+du checkout home sont calculés par `utils/checkoutPrices.ts` (`computeCheckoutPrices`,
+extrait de `useCheckout`). Les pastilles de prix des récaps (`RecapBody`, `CartRecapBody`)
+défilent horizontalement.

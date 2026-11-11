@@ -1,7 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
 import { DS, HEADER_GRADIENT } from "@/src/theme/ds";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface DatePillOption {
   iso: string;
@@ -30,6 +32,7 @@ export const DatePill: React.FC<DatePillProps> = ({
   onSelect,
   collapsedCount = 2,
 }) => {
+  useLanguage();
   const [expanded, setExpanded] = useState(false);
 
   if (options.length === 0) return null;
@@ -77,7 +80,7 @@ export const DatePill: React.FC<DatePillProps> = ({
           onPress={() => setExpanded(false)}
           activeOpacity={0.7}
         >
-          <Text style={styles.moreText}>×</Text>
+          <Text style={styles.moreText}>{t("×")}</Text>
         </TouchableOpacity>
       )}
     </View>

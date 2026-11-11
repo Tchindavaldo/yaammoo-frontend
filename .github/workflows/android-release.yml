@@ -20,14 +20,6 @@ on:
         type: choice
         options: [production, beta, alpha, internal]
         default: production
-      release_notes:
-        description: "Notes de version Play Store (« Nouveautés », 500 car. max, \\n = retour à la ligne). Vide = aucune note"
-        type: string
-        required: false
-      notes_language:
-        description: Langue des notes (doit exister dans la fiche Play Store)
-        type: string
-        default: fr-FR
 
 jobs:
   release:
@@ -57,12 +49,11 @@ jobs:
 
       # Le gradle.properties du HOME prime sur celui du projet genere :
       # - memoire : 2 Go par defaut → OutOfMemoryError Metaspace sur R8 ;
-      # - ABIs : x86/x86_64 ne servent qu'aux emulateurs, les retirer divise
-      #   environ par deux la compilation native.
+      # Toutes les ABIs (armeabi-v7a, arm64-v8a, x86, x86_64) : x86 pour les emulateurs.
       - run: |
           mkdir -p ~/.gradle
           echo "org.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError" >> ~/.gradle/gradle.properties
-          echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> ~/.gradle/gradle.properties
+          echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64" >> ~/.gradle/gradle.properties
 
       # Le profil `production` charge les variables EAS `production`
       # (EXPO_PUBLIC_*), `.env` etant absent du runner.
@@ -77,23 +68,12 @@ jobs:
           name: app-aab
           path: app.aab
 
-      # Fichier whatsnew-<langue> lu par l'action Play. Les notes passent par
-      # env (et non ${{ }} dans le script) pour qu'aucun caractere ne soit
-      # interprete par le shell.
-      - if: inputs.release_notes != ''
-        env:
-          NOTES: ${{ inputs.release_notes }}
-          NOTES_LANG: ${{ inputs.notes_language }}
-        run: |
-          mkdir -p whatsnew
-          printf '%s' "$NOTES" | sed 's/\\n/\n/g' > "whatsnew/whatsnew-$NOTES_LANG"
-          cat "whatsnew/whatsnew-$NOTES_LANG"
-
       - uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.rauval.yaammoo
           releaseFiles: app.aab
           track: ${{ inputs.track }}
+          # Notes de version fixes (R24 CLAUDE.md) : distribution/whatsnew/whatsnew-fr-FR
+          whatsNewDirectory: distribution/whatsnew
           status: completed
-          whatsNewDirectory: ${{ inputs.release_notes != '' && 'whatsnew' || '' }}

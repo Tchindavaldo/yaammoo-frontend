@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -20,10 +21,10 @@ import { MissingName } from "../utils/missingName";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const ACCENT = DS.accentDeep;
 /** Marge entre la carte et le bas de l'ecran (ou le haut du clavier). */
-const CARD_GAP = 24;
 const CARD_GAP_KEYBOARD = 12;
 /**
  * La carte doit toujours GARDER D'AVANCE sur le clavier, sinon il la
@@ -34,7 +35,7 @@ const CARD_GAP_KEYBOARD = 12;
 const KEYBOARD_ANIM_MS = 220;
 const KEYBOARD_LEAD = 0.75;
 const KEYBOARD_EASING = Easing.out(Easing.quad);
-const TITLE = "Complétez vos informations";
+const title = (): string => t("Complétez vos informations");
 
 /**
  * Carte flottante du home qui demande le prenom et/ou le nom manquant.
@@ -46,13 +47,14 @@ const TITLE = "Complétez vos informations";
  * la fenetre).
  */
 export function ProfileNameSheet() {
+  useLanguage();
   const { visible, missing, saving, error, dismiss, submit } =
     useProfileNameSheet();
   const { userData } = useAuth();
   // Carte FLOTTANTE (pas un pied) : elle garde son ecart au-dessus de la bande
   // safe-area, dont la hauteur vient de la source unique (R19).
   const band = useBottomSafeArea();
-  const cardBottom = Platform.OS === "ios" ? 8 + band : CARD_GAP + band;
+  const cardBottom = band; // collee a la bande safe-area, sans espace (R19)
 
   const [mounted, setMounted] = useState(false);
   const [variant, setVariant] = useState<MissingName>("both");
@@ -222,7 +224,7 @@ export function ProfileNameSheet() {
       <Pressable
         style={StyleSheet.absoluteFill}
         onPress={closeKeyboard}
-        accessibilityLabel="Fermer le clavier"
+        accessibilityLabel={t("Fermer le clavier")}
       />
 
       <Animated.View
@@ -237,15 +239,15 @@ export function ProfileNameSheet() {
             <Ionicons name="person-outline" size={24} color={ACCENT} />
           </View>
           <View style={styles.headerText}>
-            <Text style={styles.title}>{TITLE}</Text>
+            <Text style={styles.title}>{title()}</Text>
             <Text style={styles.subtitle}>
-              Pour que le restaurant et le livreur t&apos;identifient.
+              {t("Pour que le restaurant et le livreur t'identifient.")}
             </Text>
           </View>
           <TouchableOpacity
             onPress={dismiss}
             style={styles.close}
-            accessibilityLabel="Fermer"
+            accessibilityLabel={t("Fermer")}
             hitSlop={8}
           >
             <Ionicons name="close" size={22} color="#6b635c" />
@@ -257,7 +259,7 @@ export function ProfileNameSheet() {
             <TextInput
               value={prenom}
               onChangeText={setPrenom}
-              placeholder="Prénom"
+              placeholder={t("Prénom")}
               placeholderTextColor="#a39a92"
               style={inputStyle}
               autoCapitalize="words"
@@ -278,7 +280,7 @@ export function ProfileNameSheet() {
               ref={nomRef}
               value={nom}
               onChangeText={setNom}
-              placeholder="Nom"
+              placeholder={t("Nom")}
               placeholderTextColor="#a39a92"
               style={inputStyle}
               autoCapitalize="words"
@@ -298,7 +300,7 @@ export function ProfileNameSheet() {
               styles.submit,
               !keyboardOpen && !canSubmit && !saving && styles.submitDisabled,
             ]}
-            accessibilityLabel={keyboardOpen ? "Fermer le clavier" : "Valider"}
+            accessibilityLabel={keyboardOpen ? t("Fermer le clavier") : t("Valider")}
           >
             {saving ? (
               <ActivityIndicator color="#fff" />

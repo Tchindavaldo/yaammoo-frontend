@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Config } from '@/src/api/config';
 import { auth } from '@/src/services/firebase';
+import { t } from "@/src/i18n";
 
 /** Une ligne par jour renvoyée par /wallet/stats (groupBy=day). */
 export interface WalletDayStat {
@@ -13,9 +14,18 @@ export interface WalletDayStat {
 
 export interface WalletStats {
   groupBy: string;
-  balance: number;  // solde global actuel du marchand (tout l'historique)
+  balance: number;  // solde retirable total (= mtn + orange)
+  // Deux soldes, un par réseau qui a encaissé. Absent sur un backend antérieur.
+  balances?: { mtn: number; orange: number };
+  // Découpage commandes / frais de retrait par réseau. Absent sur un backend antérieur.
+  breakdown?: import("./walletNetwork").WalletBreakdown;
   totals: { payin: number; payout: number; net: number };
   series: WalletDayStat[];
+  /**
+   * Taux interréseau indicatif (%) par réseau de RÉCEPTION, affiché sur les
+   * cartes de numéro du retrait. Absent sur un backend antérieur.
+   */
+  withdrawFeePercent?: { mtn: number; orange: number };
 }
 
 type StatsPeriod = 'week' | 'month';
@@ -27,7 +37,7 @@ export const walletStatsService = {
    */
   async getStats(period: StatsPeriod = 'month'): Promise<WalletStats> {
     const currentUser = auth.currentUser;
-    if (!currentUser) throw new Error('Aucun utilisateur connecté');
+    if (!currentUser) throw new Error(t("Aucun utilisateur connecté"));
 
     const idToken = await currentUser.getIdToken();
     const response = await axios.get(`${Config.apiUrl}/wallet/stats`, {

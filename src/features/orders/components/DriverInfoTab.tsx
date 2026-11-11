@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import {
   DriverProfile,
   driverService,
@@ -26,6 +28,7 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 // Même hauteur de référence que CheckoutContactOverlay (base du blur + container).
 const SHEET_H = 384;
@@ -48,6 +51,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
   order,
   allowRating = true,
 }) => {
+  useLanguage();
   const rawDriverId = (order as any).driverId as string | undefined;
   // Le marchand se livre lui-même quand driverId === fastFoodId (ou absent).
   const isMerchantDelivery = !rawDriverId || rawDriverId === order.fastFoodId;
@@ -230,7 +234,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
     return (
       <View style={styles.centered}>
         <Ionicons name="person-remove-outline" size={28} color="#9CA3AF" />
-        <Text style={styles.muted}>Livreur indisponible</Text>
+        <Text style={styles.muted}>{t("Livreur indisponible")}</Text>
       </View>
     );
   }
@@ -238,7 +242,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
   const name =
     profile?.displayName ||
     `${profile?.prenom || ""} ${profile?.nom || ""}`.trim() ||
-    (isMerchantDelivery ? "Le restaurant" : "Livreur");
+    (isMerchantDelivery ? t("Le restaurant") : t("Livreur"));
 
   const stats = profile?.myStats || profile?.stats;
   const isDelivered = order.status === "delivered";
@@ -256,15 +260,15 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
   // - Marchand livre lui-même (isMerchantDelivery) : le restaurant assure la livraison
   let infoMessage: string | null = null;
   if (viewerIsSelf) {
-    infoMessage = "Vous ne pouvez pas vous noter vous-même";
+    infoMessage = t("Vous ne pouvez pas vous noter vous-même");
   } else if (viewerIsMerchant) {
-    infoMessage = "Vous ne pouvez pas noter votre propre livraison";
+    infoMessage = t("Vous ne pouvez pas noter votre propre livraison");
   } else if (isMerchantDelivery) {
     infoMessage = isDelivered
-      ? "Livré par le restaurant"
-      : "Livraison par le restaurant";
+      ? t("Livré par le restaurant")
+      : t("Livraison par le restaurant");
   } else if (!isDelivered) {
-    infoMessage = "Notez le livreur après réception";
+    infoMessage = t("Notez le livreur après réception");
   }
 
   // Commande livrée : peut-on noter ? déjà noté ?
@@ -302,7 +306,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
             size={20}
             color="#94a3b8"
           />
-          <Text style={styles.commentInlineTitle}>Commentaire</Text>
+          <Text style={styles.commentInlineTitle}>{t("Commentaire")}</Text>
           <TouchableOpacity
             onPress={() => Keyboard.dismiss()}
             style={styles.keyboardSmallBtn}
@@ -319,7 +323,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
       </View>
       <TextInput
         style={styles.commentModalInput}
-        placeholder="Votre commentaire…"
+        placeholder={t("Votre commentaire…")}
         placeholderTextColor="#9CA3AF"
         value={comment}
         onChangeText={setComment}
@@ -332,7 +336,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
         onPress={closeCommentOverlay}
       >
         <Ionicons name="checkmark" size={18} color="#fff" />
-        <Text style={styles.commentValidateText}>Valider</Text>
+        <Text style={styles.commentValidateText}>{t("Valider")}</Text>
       </TouchableOpacity>
     </>
   );
@@ -346,14 +350,14 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
         <View style={{ width: "42%", gap: 8 }}>
           <View style={{ flex: 1 }}>
             <InfoCard
-              label={isMerchantDelivery ? "Restaurant" : "Livreur"}
+              label={isMerchantDelivery ? "Restaurant" : t("Livreur")}
               value={name}
               compact
             />
           </View>
           <View style={{ flex: 1 }}>
             <InfoCard
-              label="Note"
+              label={t("Note")}
               value={
                 profile?.ratingAvg != null
                   ? `★ ${profile.ratingAvg.toFixed(1)}`
@@ -370,7 +374,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
             <View style={styles.statePlaceholder}>
               {/* Commande livrée : vélo figé (plus d'animation, il est arrivé). */}
               <BikeAnimation paused />
-              <Text style={styles.deliveredText}>Livré</Text>
+              <Text style={styles.deliveredText}>{t("Livré")}</Text>
             </View>
           ) : (
             <View style={styles.statePlaceholder}>
@@ -384,22 +388,22 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
       {stats && (
         <View style={styles.statsCardsRow}>
           <StatCard
-            title={"Cmd\nlivré"}
+            title={t("Cmd\nlivré")}
             value={stats.delivered}
-            label="livraisons"
+            label={t("livraisons")}
           />
           <StatCard
-            title={"Cmd\nen cours"}
+            title={t("Cmd\nen cours")}
             value={stats.inProgress}
-            label="livraisons"
+            label={t("livraisons")}
           />
           <StatCard
-            title={"Cmd nen\ attente"}
+            title={t("Cmd nen attente")}
             value={stats.pending}
-            label="livraisons"
+            label={t("livraisons")}
           />
           <StatCard
-            title={"Nombre\nvote"}
+            title={t("Nombre\nvote")}
             value={profile?.ratingCount ?? 0}
             label="vote"
           />
@@ -424,10 +428,10 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
           <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
           <Text style={styles.ratedText}>
             {viewerIsSelf
-              ? "Vous avez noté"
+              ? t("Vous avez noté")
               : viewerIsMerchant
-                ? "Noté"
-                : "Vous avez noté ce livreur"}
+                ? t("Noté")
+                : t("Vous avez noté ce livreur")}
           </Text>
           <TouchableOpacity style={styles.modifyBtn} onPress={handleModify}>
             <Ionicons
@@ -435,7 +439,7 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
               size={16}
               color={Theme.colors.primary}
             />
-            <Text style={styles.modifyBtnText}>Modifier</Text>
+            <Text style={styles.modifyBtnText}>{t("Modifier")}</Text>
           </TouchableOpacity>
         </View>
       ) : showRateFormModify || showRateBtn ? (
@@ -517,6 +521,8 @@ export const DriverInfoTab: React.FC<DriverInfoTabProps> = ({
             <View style={styles.commentModalCard}>{commentCardContent}</View>
           </Animated.View>
         </View>
+        {/* Toast global au premier plan (Android). */}
+        <GlobalToastHost modal />
       </Modal>
     </View>
   );

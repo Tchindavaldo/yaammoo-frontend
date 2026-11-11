@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { showToast } from "@/src/services/globalToast";
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -5,14 +7,13 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
-} from 'react-native';
+  } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/src/theme';
-import { useTabBarHeight } from '@/src/hooks/useTabBarHeight';
 import { WalletTransactionItem } from '@/src/features/wallet/components/WalletTransactionItem';
 import { useWallet } from '@/src/features/wallet/context/WalletContext';
 import { WalletTransactionSkeleton } from '@/src/features/wallet/components/WalletTransactionSkeleton';
+import { t as tr, useLanguage } from "@/src/i18n";
 
 type FilterType = 'all' | 'credit' | 'debit' | 'transfer';
 
@@ -28,9 +29,9 @@ interface WalletPanelProps {
 }
 
 export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOffset = 0 }) => {
+  useLanguage();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('all');
   const { transactions, loading, refresh, ensureLoaded, loaded } = useWallet();
-  const tabBarHeight = useTabBarHeight();
 
   // Le portefeuille ne se charge plus au boot : c'est cet ecran qui le demande,
   // a son ouverture.
@@ -61,14 +62,14 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
   });
 
   const filters: { key: FilterType; label: string; icon: string }[] = [
-    { key: 'all', label: 'Historique', icon: 'time-outline' },
-    { key: 'credit', label: 'Dépôt', icon: 'cash-outline' },
-    { key: 'debit', label: 'Retrait', icon: 'arrow-back-circle-outline' },
-    { key: 'transfer', label: 'Transfert', icon: 'arrow-redo-circle-outline' },
+    { key: 'all', label: tr("Historique"), icon: 'time-outline' },
+    { key: 'credit', label: tr("Dépôt"), icon: 'cash-outline' },
+    { key: 'debit', label: tr("Retrait"), icon: 'arrow-back-circle-outline' },
+    { key: 'transfer', label: tr("Transfert"), icon: 'arrow-redo-circle-outline' },
   ];
 
   const handleComingSoon = (label: string) => {
-    Alert.alert('Bientôt disponible', `La fonctionnalité "${label}" arrive prochainement.`);
+    showToast(tr("La fonctionnalité \"{{a}}\" arrive prochainement.", { a: label }), 'info');
   };
 
   return (
@@ -123,7 +124,7 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
         // juste au-dessus d'elle, safe-area comprise (source unique R19).
         contentContainerStyle={[
           styles.listContent,
-          { paddingTop: topOffset + 10, paddingBottom: tabBarHeight + 8 },
+          { paddingTop: topOffset + 10, paddingBottom: 8 },
         ]}
         ListEmptyComponent={
           !loaded ? (
@@ -136,12 +137,12 @@ export const WalletPanel: React.FC<WalletPanelProps> = ({ onBalanceChange, topOf
           ) : (
           <View style={styles.emptyState}>
             <Ionicons name="receipt-outline" size={60} color={Theme.colors.gray[200]} />
-            <Text style={styles.emptyTitle}>Pas de transaction</Text>
+            <Text style={styles.emptyTitle}>{tr("Pas de transaction")}</Text>
             <TouchableOpacity
               style={styles.emptyBtn}
-              onPress={() => Alert.alert('Commandez!', 'Passez votre première commande depuis l\'accueil.')}
+              onPress={() => showToast(tr("Passez votre première commande depuis l'accueil."), 'info')}
             >
-              <Text style={styles.emptyBtnText}>Passer une commande</Text>
+              <Text style={styles.emptyBtnText}>{tr("Passer une commande")}</Text>
             </TouchableOpacity>
           </View>
           )

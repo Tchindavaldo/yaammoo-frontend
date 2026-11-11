@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Theme } from "@/src/theme";
@@ -15,6 +16,7 @@ import type { MerchantSupportThread } from "../../types/merchantSupport.types";
 import { MerchantSupportChatView } from "./MerchantSupportChatView";
 import { MerchantSupportThreadRow } from "./MerchantSupportThreadRow";
 import { MerchantSupportThreadsSkeleton } from "./MerchantSupportThreadsSkeleton";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface Props {
   visible: boolean;
@@ -30,6 +32,7 @@ type Screen = { name: "list" } | { name: "chat"; thread: MerchantSupportThread }
  * clients et y répond ; elle n'en crée jamais — pas de bouton « Nouveau chat ».
  */
 export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
+  useLanguage();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const { userData } = useAuth();
@@ -61,10 +64,10 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
         MERCHANT_SUPPORT_STATUS_LABEL[thread.status]
       }`
     : loading
-      ? "Chargement…"
+      ? tr("Chargement…")
       : unread > 0
-        ? `${unread} message${unread > 1 ? "s" : ""} non lu${unread > 1 ? "s" : ""}`
-        : `${threads.length} discussion${threads.length > 1 ? "s" : ""}`;
+        ? tr("{{a}} message{{b}} non lu{{c}}", { a: unread, b: unread > 1 ? "s" : "", c: unread > 1 ? "s" : "" })
+        : tr("{{a}} discussion{{b}}", { a: threads.length, b: threads.length > 1 ? "s" : "" });
 
   return (
     <View style={styles.overlay}>
@@ -75,7 +78,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
         subtitle={subtitle}
         right={
           <HeaderPill
-            label="Retour"
+            label={tr("Retour")}
             icon="arrow-back-outline"
             onPress={() => (inChat ? setScreen({ name: "list" }) : onClose())}
           />
@@ -119,7 +122,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
               style={[styles.flex, { marginTop: headerHeight + 6 }]}
               contentContainerStyle={{ paddingBottom: bottomInset + 8 }}
             >
-              <Text style={styles.section}>Discussions reçues</Text>
+              <Text style={styles.section}>{tr("Discussions reçues")}</Text>
               {threads.length === 0 ? (
                 <View style={styles.empty}>
                   <Ionicons
@@ -128,7 +131,7 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
                     color={Theme.colors.gray[400]}
                   />
                   <Text style={styles.emptyText}>
-                    Aucun message de vos clients pour le moment.
+                    {tr("Aucun message de vos clients pour le moment.")}
                   </Text>
                 </View>
               ) : (

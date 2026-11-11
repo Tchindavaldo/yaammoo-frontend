@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { isBonusPagerAvailable } from "@/modules/bonus-pager";
 import { Toast } from "@/src/components/Toast";
 import { Theme } from "@/src/theme";
@@ -33,6 +35,7 @@ import { BonusPagerInfo } from "./BonusPagerInfo";
 import { BonusEmptyState, BonusSkeleton } from "./BonusStates";
 import { GALLERY_GAP, galleryWindow } from "./gallery.constants";
 import { NativeBonusPager } from "./NativeBonusPager";
+import { t as tr, useLanguage } from "@/src/i18n";
 
 interface UserBonusSheetProps {
   visible: boolean;
@@ -60,6 +63,7 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
   visible,
   onClose,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
   const [index, setIndex] = useState(0);
   const [toast, setToast] = useState<{
@@ -195,10 +199,10 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
       setToast(
         res.success
           ? {
-              message: "Demande envoyée ! Tu recevras une notification.",
+              message: tr("Demande envoyée ! Tu recevras une notification."),
               type: "success",
             }
-          : { message: res.message || "Échec de la demande", type: "error" },
+          : { message: res.message || tr("Échec de la demande"), type: "error" },
       );
     },
     [claimBonus],
@@ -222,11 +226,11 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
         res.success
           ? {
               message: next
-                ? "Bonus activé : il s'appliquera à ta prochaine commande."
-                : "Bonus désactivé.",
+                ? tr("Bonus activé : il s'appliquera à ta prochaine commande.")
+                : tr("Bonus désactivé."),
               type: "success",
             }
-          : { message: res.message || "Échec de l'opération", type: "error" },
+          : { message: res.message || tr("Échec de l'opération"), type: "error" },
       );
     },
     [armBonus],
@@ -292,8 +296,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
           ) : bonuses.length === 0 ? (
             <View style={styles.state}>
               <BonusEmptyState
-                title="Aucun bonus pour l'instant"
-                subtitle="Passe des commandes : tes fastfoods proposeront bientôt des récompenses."
+                title={tr("Aucun bonus pour l'instant")}
+                subtitle={tr("Passe des commandes : tes fastfoods proposeront bientôt des récompenses.")}
               />
             </View>
           ) : isBonusPagerAvailable ? (
@@ -376,6 +380,8 @@ export const UserBonusSheet: React.FC<UserBonusSheetProps> = ({
           />
         )}
       </View>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

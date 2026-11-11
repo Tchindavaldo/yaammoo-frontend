@@ -1,10 +1,13 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { showToast } from "@/src/services/globalToast";
 import { useEffect, useRef } from "react";
-import { Alert, Platform } from "react-native";
+import { Platform } from "react-native";
 import { Commande } from "@/src/types";
 import {
   startDeliveryTracking,
   stopDeliveryTracking,
 } from "../tasks/backgroundLocationTask";
+import { t, useLanguage } from "@/src/i18n";
 
 const isDelivering = (o: Commande) =>
   (o.status || "").toLowerCase() === "delivering";
@@ -23,6 +26,7 @@ const isDelivering = (o: Commande) =>
  *   signifie pas « aucune course » et couperait un suivi en cours.
  */
 export const useDeliveryTrackingSync = (orders: Commande[], loaded: boolean) => {
+  useLanguage();
   const active = loaded && orders.some(isDelivering);
   const refusedAlerted = useRef(false);
 
@@ -38,9 +42,9 @@ export const useDeliveryTrackingSync = (orders: Commande[], loaded: boolean) => 
       .then((ok) => {
         if (ok || refusedAlerted.current) return;
         refusedAlerted.current = true;
-        Alert.alert(
-          "Localisation désactivée",
-          "Le client ne peut pas suivre la livraison. Autorisez la localisation de Yaammoo dans les réglages du téléphone.",
+        showToast(
+          t("Localisation désactivée : le client ne peut pas suivre la livraison. Autorisez la localisation de Yaammoo dans les réglages du téléphone."),
+          "error",
         );
       })
       .catch((e) => console.warn("Suivi livraison impossible:", e));

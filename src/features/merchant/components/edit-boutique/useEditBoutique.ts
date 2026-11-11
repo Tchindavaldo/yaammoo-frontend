@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState, useEffect } from "react";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
@@ -12,6 +13,7 @@ import { parseDeliveryHours, hourToDate } from "./parseBoutique";
 import { useToast } from "./useToast";
 import { useEntryAnimation } from "./useEntryAnimation";
 import { useShopPosition } from "./useShopPosition";
+import { t, useLanguage } from "@/src/i18n";
 
 export type { Zone } from "./parseBoutique";
 
@@ -29,6 +31,7 @@ export const useEditBoutique = ({
   onClose: () => void;
   onSuccess?: () => void;
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -239,13 +242,13 @@ export const useEditBoutique = ({
       }
     } catch (error) {
       console.error("Error picking image:", error);
-      showToast("Erreur lors de la sélection de l'image", "error");
+      showToast(t("Erreur lors de la sélection de l'image"), "error");
     }
   };
 
   const handleUpdate = async () => {
     if (!name || !number) {
-      showToast("Veuillez remplir les champs obligatoires", "error");
+      showToast(t("Veuillez remplir les champs obligatoires"), "error");
       return;
     }
 
@@ -291,19 +294,19 @@ export const useEditBoutique = ({
       );
 
       if (response.data && response.data.success) {
-        showToast("Boutique mise à jour avec succès !", "success", 2000);
+        showToast(t("Boutique mise à jour avec succès !"), "success", 2000);
         setTimeout(() => {
           closeModal();
           if (onSuccess) onSuccess();
         }, 1500);
       } else {
-        showToast("Impossible de mettre à jour la boutique", "error");
+        showToast(t("Impossible de mettre à jour la boutique"), "error");
       }
     } catch (error: any) {
       console.error("Error updating boutique:", error);
       const errorMessage =
         error?.response?.data?.error ||
-        "Une erreur est survenue lors de la mise à jour";
+        t("Une erreur est survenue lors de la mise à jour");
       showToast(errorMessage, "error");
     } finally {
       setLoading(false);

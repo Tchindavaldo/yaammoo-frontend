@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import React from "react";
@@ -16,6 +17,7 @@ import { ActivityIndicator } from "../../../components/CustomActivityIndicator";
 import { AnimatedBorderGlow } from "../../checkout/components/AnimatedBorderGlow";
 import { CartPaymentState } from "../hooks/useCartPayment";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 interface CartPaymentOverlayProps {
   phone: string;
@@ -82,6 +84,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
   autoFocus = false,
   blurFallbackStyle,
 }) => {
+  useLanguage();
   const [isProcessing, setIsProcessing] = React.useState(false);
   // Fondu du contenu lors d'un changement d'étape.
   const contentOpacity = React.useRef(new Animated.Value(1)).current;
@@ -103,7 +106,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
     }
     const p = phone.trim();
     if (!p) {
-      onError?.("Veuillez remplir le numéro de paiement");
+      onError?.(t("Veuillez remplir le numéro de paiement"));
       return;
     }
     try {
@@ -142,7 +145,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
               <Ionicons name="card-outline" size={16} color="white" />
             </View>
             <View style={styles.totalInfo}>
-              <Text style={styles.totalTitle}>Total à payer</Text>
+              <Text style={styles.totalTitle}>{t("Total à payer")}</Text>
               <Text style={styles.totalAmount}>{totalAmount} FCFA</Text>
             </View>
             <TouchableOpacity
@@ -175,7 +178,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
               />
               <TextInput
                 style={styles.textInput}
-                placeholder="saisir le numéro de paiement"
+                placeholder={t("saisir le numéro de paiement")}
                 placeholderTextColor="rgba(255,255,255,0.5)"
                 keyboardType="phone-pad"
                 value={phone}
@@ -207,7 +210,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
 
         {/* WAITING */}
         {paymentState === "waiting" && (
-          <Text style={styles.centerText}>Veuillez patienter...</Text>
+          <Text style={styles.centerText}>{t("Veuillez patienter...")}</Text>
         )}
 
         {/* USSD_SENT : message backend uniquement */}
@@ -220,7 +223,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
         {/* SUCCESS */}
         {paymentState === "success" && (
           <Text style={styles.centerText}>
-            Paiement réussi ! Création de la commande en cours...
+            {t("Paiement réussi ! Création de la commande en cours...")}
           </Text>
         )}
 
@@ -229,7 +232,7 @@ export const CartPaymentOverlay: React.FC<CartPaymentOverlayProps> = ({
           <View style={styles.iconTextRow}>
             <Ionicons name="checkmark-circle" size={20} color="#10b981" />
             <Text style={[styles.iconTextLabel, { color: "#10b981" }]}>
-              Commande créée avec succès !
+              {t("Commande créée avec succès !")}
             </Text>
           </View>
         )}

@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import {
   HomeListView,
   type HomeListBanner,
@@ -19,15 +20,25 @@ import React, {
   useState,
 } from "react";
 import { AppState, Image, StyleSheet } from "react-native";
-import { V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
+import { HOME_DESIGN, V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
+import {
+  DELIVERY_ETA,
+  feeText,
+  isStockLow,
+  stockParts,
+  stockRatio,
+} from "./designs/item/aere/labels";
 import { fontFor } from "@/src/theme/fonts";
 import { designNumberFor } from "../utils/designCycle";
-import { getNextDeliveryTime } from "../utils/deliveryUtils";
+import { getNextDeliveryTime, getShopDeliveryLabel } from "../utils/deliveryUtils";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import {
   announceNativeList,
   reportNativeDiagnostics,
 } from "../utils/nativeListDiagnostics";
+import { setVisibleShops } from "@/src/services/analytics/shopImpressions";
+import { homePageOf } from "@/src/services/analytics/homePages";
+import { getLanguage, t as tr, useLanguage } from "@/src/i18n";
 
 /**
  * Pont JS de la liste NATIVE du home (`modules/home-list`, iOS et Android).
@@ -107,7 +118,7 @@ const FONTS: HomeListFonts = {
 
 /** Frais de la ligne sous la carte du variant 4 (`ItemMeta`). */
 const metaFeeLabelFor = (i: number) =>
-  i % 3 === 0 ? "gratuite" : i % 3 === 1 ? "300F" : "1000F";
+  i % 3 === 0 ? tr("gratuite") : i % 3 === 1 ? "300F" : "1000F";
 
 const menuIdOf = (ff: FastFood, m: any, i: number) => String(m?.id ?? `${ff.id}_${i}`);
 
@@ -116,7 +127,11 @@ const fallbackFor = (design: number, i: number) =>
     : design === 5 ? FALLBACK_V5[i % FALLBACK_V5.length]
       : FALLBACK_V7;
 
-const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
+const toRow = (
+  ff: FastFood,
+  deliveryTime: string,
+  deliveryLabel: string,
+): HomeListRow => {
   const f = ff as any;
   const design = designNumberFor(ff.designIndex);
   return {
@@ -130,18 +145,33 @@ const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
     deliveryTime,
     // « 1,2 km » apres « Ouvert » ; vide = position inconnue (rien d'affiche).
     distance: formatDistanceKm(f?.distanceKm) ?? "",
-    menus: (ff.menu ?? []).map((m: any, i: number) => ({
-      id: menuIdOf(ff, m, i),
-      title: m?.titre ?? "",
-      image: m?.image || null,
-      fallbackImage: fallbackFor(design, i),
-      price: `${m?.prix1 ?? 0} F`,
-      stock: Math.round(m?.stock ?? 0),
-      rating: String(m?.rating ?? 4.5),
-      votes: Math.round(m?.votes ?? 0),
-      feeLabel: deliveryFeeLabelFor(i),
-      metaFeeLabel: metaFeeLabelFor(i),
-    })),
+    ratingText: `${Number(f?.stats?.rating ?? 4.5).toFixed(1)}/5`,
+    deliveryLabel,
+    menus: (ff.menu ?? []).map((m: any, i: number) => {
+      const stock = Math.round(m?.stock ?? 0);
+      const fee = deliveryFeeLabelFor(i);
+      const { value, unit } = stockParts(stock);
+      return {
+        id: menuIdOf(ff, m, i),
+        title: m?.titre ?? "",
+        image: m?.image || null,
+        fallbackImage: fallbackFor(design, i),
+        price: `${m?.prix1 ?? 0} F`,
+        stock,
+        rating: String(m?.rating ?? 4.5),
+        votes: Math.round(m?.votes ?? 0),
+        feeLabel: fee,
+        metaFeeLabel: metaFeeLabelFor(i),
+        // Design aere : memes libelles que la liste JS (`aere/labels.ts`).
+        stockValue: value,
+        stockUnit: unit,
+        stockLow: isStockLow(stock),
+        stockRatio: stockRatio(stock),
+        feeText: feeText(fee),
+        feeFree: fee === "gratuit",
+        eta: DELIVERY_ETA,
+      };
+    }),
   };
 };
 
@@ -150,15 +180,27 @@ const toRow = (ff: FastFood, deliveryTime: string): HomeListRow => {
  * heure de livraison n'ont pas change. Une rangee inchangee garde donc la meme
  * reference, et `updateRows` n'envoie au natif que ce qui a reellement bouge.
  */
-const rowCache = new WeakMap<FastFood, HomeListRow>();
+// `lang` : une ligne en cache ne sert que dans la langue ou elle a ete faite.
+const rowCache = new WeakMap<FastFood, { row: HomeListRow; lang: string }>();
 
 const rowFor = (ff: FastFood): HomeListRow => {
   const f = ff as any;
   const deliveryTime = getNextDeliveryTime(f?.deliveryHours, f?.orderLeadTime ?? 0);
+  // En-tete : prochain creneau periodique / express / rien (MerchantHeader).
+  const deliveryLabel =
+    getShopDeliveryLabel(f?.deliveryHours, f?.orderLeadTime ?? 0) ?? "";
+  const lang = getLanguage();
   const cached = rowCache.get(ff);
-  if (cached && cached.deliveryTime === deliveryTime) return cached;
-  const row = toRow(ff, deliveryTime);
-  rowCache.set(ff, row);
+  if (
+    cached &&
+    cached.lang === lang &&
+    cached.row.deliveryTime === deliveryTime &&
+    cached.row.deliveryLabel === deliveryLabel
+  ) {
+    return cached.row;
+  }
+  const row = toRow(ff, deliveryTime, deliveryLabel);
+  rowCache.set(ff, { row, lang });
   return row;
 };
 
@@ -212,6 +254,7 @@ export const NativeHomeList: React.FC<Props> = ({
   onBannerPress,
   onEdgeChange,
 }) => {
+  const i18nLang = useLanguage();
   // L'heure de prochaine livraison avance avec le temps : recalcul chaque
   // minute et au retour au premier plan (comme `useNextDeliveryTime`).
   const [minute, setMinute] = useState(0);
@@ -236,7 +279,7 @@ export const NativeHomeList: React.FC<Props> = ({
   const rows = useMemo(
     () => fastFoods.map(rowFor),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [fastFoods, minute],
+    [fastFoods, minute, i18nLang],
   );
 
   // Vue native : `updateRows` en interne, seul `scrollToTop` expose au home.
@@ -349,6 +392,7 @@ export const NativeHomeList: React.FC<Props> = ({
       fonts={FONTS}
       cardBlurMode={CARD_BLUR_MODE}
       bannerAutoplay={BANNER_AUTOPLAY}
+      homeDesign={HOME_DESIGN === "aere" ? "aere" : "actuel"}
       preheatScreens={PREHEAT_SCREENS}
       onMenuPress={handleMenuPress}
       onBannerPress={handleBannerPress}
@@ -356,6 +400,11 @@ export const NativeHomeList: React.FC<Props> = ({
       onRefresh={() => onRefresh()}
       onEdgeChange={(e) => onEdgeChange(e.nativeEvent.atTop, e.nativeEvent.nearBottom)}
       onDiagnostics={(e) => reportNativeDiagnostics(e.nativeEvent)}
+      onVisibleShops={(e) =>
+        setVisibleShops(e.nativeEvent.ids, e.nativeEvent.positions, (p) =>
+          homePageOf(p, ghostCount),
+        )
+      }
     />
   );
 };

@@ -1,3 +1,5 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { AppBlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Toast } from "@/src/components/Toast";
@@ -35,6 +37,7 @@ import { CartGroupedDetailCapsule } from "./CartGroupedDetailCapsule";
 import { CartGroupedPaymentBody } from "./CartGroupedPaymentBody";
 import { CartPaymentOverlay } from "./CartPaymentOverlay";
 import { C, styles as sheetStyles } from "./CartPaymentSheet.styles";
+import { t, useLanguage } from "@/src/i18n";
 
 /** Hauteur de la capsule flottante (`CartPaymentOverlay.styles.capsule`). */
 const CAPSULE_HEIGHT = 70;
@@ -80,6 +83,8 @@ interface CartGroupedDeliverySheetProps {
   keyboardHeight: Animated.Value | Animated.AnimatedInterpolation<number>;
   isKeyboardVisible: boolean;
   onClose: () => void;
+  /** Paiement en cours : masque le sheet sans l'annuler (cf. `paymentLock`). */
+  onHide?: () => void;
   onError?: (message: string) => void;
 }
 
@@ -112,6 +117,7 @@ export const CartGroupedDeliverySheet: React.FC<
   onSplit,
   onValidate,
   onClose,
+  onHide,
   onError,
   phone,
   onPhoneChange,
@@ -124,6 +130,7 @@ export const CartGroupedDeliverySheet: React.FC<
   keyboardHeight,
   isKeyboardVisible,
 }) => {
+  useLanguage();
   const insets = useSafeAreaInsets();
 
   /**
@@ -164,17 +171,28 @@ export const CartGroupedDeliverySheet: React.FC<
    * Livraison incomplete : le paiement ne part pas. Le message dit CE QUI
    * manque, sinon le clic reste sans effet visible.
    */
+  // Overlay ouvert par `DeliveryTab` (un seul a la fois).
+  const [overlay, setOverlay] = React.useState<GroupedDeliveryOverlay>(null);
+  const pendingPayPhone = React.useRef<string | null>(null);
+
   const guardedConfirm = React.useCallback(
     async (payPhone: string) => {
+      // Retrait (sans livraison) : numero de contact exige. On ouvre l'overlay
+      // contact, puis le paiement reprend des que le numero est saisi.
+      if (delivery.type === "aucune" && !delivery.phone) {
+        pendingPayPhone.current = payPhone;
+        setOverlay("contact");
+        return;
+      }
       const manque =
         delivery.type === "aucune"
           ? null
-          : !delivery.address
-            ? "Indiquez le lieu de livraison"
+          : !delivery.address && !delivery.note
+            ? t("Indiquez le lieu de livraison")
             : !delivery.phone
-              ? "Indiquez un numéro de contact"
+              ? t("Indiquez un numéro de contact")
               : delivery.type === "standard" && !delivery.hour
-                ? "Choisissez un créneau horaire"
+                ? t("Choisissez un créneau horaire")
                 : null;
       if (manque) {
         showError(manque);
@@ -185,8 +203,19 @@ export const CartGroupedDeliverySheet: React.FC<
     [delivery, handleConfirm, showError],
   );
 
-  // Overlay ouvert par `DeliveryTab` (un seul a la fois).
-  const [overlay, setOverlay] = React.useState<GroupedDeliveryOverlay>(null);
+  // Reprise du paiement apres saisie du numero de contact (retrait).
+  React.useEffect(() => {
+    const payPhone = pendingPayPhone.current;
+    if (!payPhone || !delivery.phone) return;
+    pendingPayPhone.current = null;
+    handleConfirm(payPhone);
+  }, [delivery.phone, handleConfirm]);
+
+  // Overlay ferme sans numero : on abandonne la reprise.
+  React.useEffect(() => {
+    if (overlay === null && !delivery.phone) pendingPayPhone.current = null;
+  }, [overlay, delivery.phone]);
+
 
   /**
    * Envoi en cours cote capsule du footer. Local, comme l'etait `isProcessing`
@@ -203,7 +232,7 @@ export const CartGroupedDeliverySheet: React.FC<
   const handlePay = React.useCallback(async () => {
     const p = phone.trim();
     if (!p) {
-      showError("Veuillez remplir le numéro de paiement");
+      showError(t("Veuillez remplir le numéro de paiement"));
       return;
     }
     try {
@@ -241,7 +270,12 @@ export const CartGroupedDeliverySheet: React.FC<
    * precedente. On le repositionne aussi a l'OUVERTURE, sur les `groups` du
    * nouveau lot.
    */
+  // Paiement en attente de verdict : rouvert tel quel (étape et capsule gardées).
+  const inFlightRef = React.useRef(false);
+  inFlightRef.current =
+    paymentState === "waiting" || paymentState === "ussd_sent";
   React.useEffect(() => {
+    if (inFlightRef.current) return;
     setStep(singleOrder ? 2 : 1);
   }, [visible, singleOrder]);
 
@@ -471,17 +505,22 @@ export const CartGroupedDeliverySheet: React.FC<
    * incomplete, et le seul message venait de `guardedConfirm`, bien trop tard.
    */
   const goNext = React.useCallback(() => {
+    // Retrait : seul le numero de contact est exige (la boutique joint le client).
+    if (step === 3 && delivery.type === "aucune" && !delivery.phone) {
+      showError(t("Indiquez un numéro de contact pour que la boutique puisse vous joindre"));
+      return;
+    }
     if (step === 3 && delivery.type !== "aucune") {
-      const manque = !delivery.address
-        ? "Indiquez le lieu de livraison"
+      const manque = !delivery.address && !delivery.note
+        ? t("Indiquez le lieu de livraison")
         : !delivery.phone
-          ? "Indiquez un numéro de contact"
+          ? t("Indiquez un numéro de contact")
           : delivery.type === "standard" && !delivery.hour
-            ? "Choisissez un créneau horaire"
+            ? t("Choisissez un créneau horaire")
             : delivery.type === "express" &&
                 hasExpressZones &&
                 !delivery.expressLieu
-              ? "Choisissez une zone express"
+              ? t("Choisissez une zone express")
               : null;
       if (manque) {
         showError(manque);
@@ -531,7 +570,13 @@ export const CartGroupedDeliverySheet: React.FC<
         {/* Paiement parti : le tap sur le voile ne ferme plus. */}
         <Pressable
           style={StyleSheet.absoluteFill}
-          onPress={isBusy ? undefined : onClose}
+          onPress={
+            paymentState === "waiting" || paymentState === "ussd_sent"
+              ? onHide
+              : isBusy
+                ? undefined
+                : onClose
+          }
         />
       </Animated.View>
 
@@ -598,7 +643,7 @@ export const CartGroupedDeliverySheet: React.FC<
                 onPress={goNext}
                 activeOpacity={0.9}
               >
-                <Text style={styles.primaryBtnLabel}>Continuer</Text>
+                <Text style={styles.primaryBtnLabel}>{t("Continuer")}</Text>
               </TouchableOpacity>
             ) : (
               /* DERNIERE page : la capsule PREND LA PLACE du bouton, comme
@@ -622,7 +667,7 @@ export const CartGroupedDeliverySheet: React.FC<
                   ]}
                   numberOfLines={1}
                 >
-                  {phone || "Numéro de paiement"}
+                  {phone || t("Numéro de paiement")}
                 </Text>
                 <TouchableOpacity
                   style={styles.payCapsuleBtn}
@@ -789,6 +834,8 @@ export const CartGroupedDeliverySheet: React.FC<
         />
       )}
       </BlurScope>
+      {/* Toast global au premier plan (Android). */}
+      <GlobalToastHost modal />
     </Modal>
   );
 };

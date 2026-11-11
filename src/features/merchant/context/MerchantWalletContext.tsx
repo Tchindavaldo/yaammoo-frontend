@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, {
   createContext,
   useContext,
@@ -15,6 +16,13 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import moment from "moment";
+import {
+  WalletBalances,
+  WalletNetwork,
+  WalletBreakdown,
+  balanceKey,
+} from "../services/walletNetwork";
+import { useLanguage } from "@/src/i18n";
 
 /** Payload normalisé d'un event wallet (wallet.credited / wallet.withdrawal). */
 export interface WalletEvent {
@@ -23,15 +31,28 @@ export interface WalletEvent {
   date?: string; // ISO (createdAt) ; défaut = maintenant
   /** Solde absolu après l'opération, si le backend le fournit (retrait). */
   newBalance?: number;
+  /** Soldes absolus par réseau après l'opération (retrait). */
+  newBalances?: WalletBalances;
+  /** Réseau du solde touché (gain). */
+  network?: WalletNetwork;
+  /** Part du gain réservée aux frais de retrait (gain). */
+  kioskFee?: number;
+  /** Découpage absolu après l'opération (retrait). */
+  newBreakdown?: WalletBreakdown;
 }
 
 /** Event socket `wallet.withdrawal` (les 3 états d'un retrait, même withdrawalId). */
 export interface WithdrawalEvent {
   withdrawalId: string;
   status: "pending" | "completed" | "failed";
-  amount: number;
+  amount: number; // espèces touchées chez l'agent
+  kioskFee?: number; // frais kiosque, envoyés en plus au téléphone
+  fee?: number; // frais interréseau, débités en plus
+  newBreakdown?: WalletBreakdown; // découpage absolu (sur completed)
   newBalance?: number; // solde absolu après l'opération (sur completed)
-  reason?: string; // cause sur failed
+  newBalances?: WalletBalances; // soldes absolus par réseau (sur completed)
+  reason?: string; // statut brut sur failed (failed/cancelled)
+  message?: string; // message exact MobileWallet à afficher sur failed
   createdAt?: string;
   __eventId?: number;
 }
@@ -61,6 +82,7 @@ const MerchantWalletContext = createContext<MerchantWalletContextType | undefine
 export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  useLanguage();
   const { userData } = useAuth();
   const [stats, setStats] = useState<WalletStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -130,10 +152,35 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
         series.sort((a, b) => (a.period < b.period ? 1 : -1));
       }
 
+      // Soldes par réseau : absolus si fournis (retrait), sinon delta sur le
+      // réseau crédité. Sans réseau connu, on garde l'existant.
+      let balances = prev.balances;
+      if (e.newBalances) {
+        balances = e.newBalances;
+      } else if (balances && e.network && e.type === "credit") {
+        const k = balanceKey(e.network);
+        balances = { ...balances, [k]: balances[k] + e.amount };
+      }
+      // Découpage commandes / frais : absolu (retrait) ou delta (gain).
+      let breakdown = prev.breakdown;
+      if (e.newBreakdown) {
+        breakdown = e.newBreakdown;
+      } else if (breakdown && e.network && e.type === "credit") {
+        const k = balanceKey(e.network);
+        const fees = Math.min(e.amount, Math.max(0, e.kioskFee ?? 0));
+        const p = breakdown[k];
+        breakdown = {
+          ...breakdown,
+          [k]: { orders: p.orders + e.amount - fees, fees: p.fees + fees, total: p.total + e.amount },
+        };
+      }
+
       return {
         ...prev,
         // newBalance (solde absolu fourni par le backend) prioritaire sinon delta.
         balance: e.newBalance ?? prev.balance + net,
+        balances,
+        breakdown,
         totals: {
           payin: prev.totals.payin + payin,
           payout: prev.totals.payout + payout,
@@ -158,11 +205,14 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
   const handleWithdrawalEvent = useCallback(
     (e: WithdrawalEvent) => {
       if (e.status === "completed") {
+        // Débit réel = montant reçu + frais interréseau.
         applyEvent({
           type: "debit",
-          amount: e.amount,
+          amount: e.amount + (e.kioskFee ?? 0) + (e.fee ?? 0),
           date: e.createdAt,
           newBalance: e.newBalance,
+          newBalances: e.newBalances,
+          newBreakdown: e.newBreakdown,
         });
       }
       // failed/pending : pas de modif du solde (le backend ne débite qu'au completed).

@@ -1,6 +1,8 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import type { DeliveryOffer, FastFood } from "@/src/types";
 import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { normalizeFastFood, normalizeMenu } from "../utils/normalizeFastFood";
+import { useLanguage } from "@/src/i18n";
 
 /**
  * Injection directe des payloads socket dans la liste du home, sans refetch.
@@ -10,6 +12,7 @@ import { normalizeFastFood, normalizeMenu } from "../utils/normalizeFastFood";
 export function useFastFoodSocketUpdates(
   setFastFoods: Dispatch<SetStateAction<FastFood[]>>,
 ) {
+  useLanguage();
   // ── Injection socket : upsert/remove sur le state local, sans requête ──
   const upsertMenuFromSocket = useCallback(
     (rawMenu: any) => {
@@ -20,6 +23,10 @@ export function useFastFoodSocketUpdates(
         prev.map((ff) => {
           if (ff.id !== ffId) return ff;
           const list = Array.isArray(ff.menu) ? ff.menu : [];
+          // Menu passé indisponible : il sort du catalogue, comme au chargement.
+          if (rawMenu?.status === "unavailable") {
+            return { ...ff, menu: list.filter((m: any) => m.id !== menu.id) };
+          }
           const idx = list.findIndex((m: any) => m.id === menu.id);
           const nextMenu =
             idx >= 0

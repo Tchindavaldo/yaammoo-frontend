@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Image } from "expo-image";
 import React from "react";
 import {
@@ -8,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Filtre fastfood du panier — duplication autonome du filtre haut de la page
@@ -87,6 +89,7 @@ const FastFoodPill = React.memo(function FastFoodPill({
   onLayout?: (x: number, width: number) => void;
   onPress?: () => void;
 }) {
+  useLanguage();
   return (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -125,7 +128,7 @@ const FastFoodPill = React.memo(function FastFoodPill({
             {item.orderCount}{" "}
             {compactMeta
               ? "cmd"
-              : `commande${item.orderCount > 1 ? "s" : ""}`}
+              : t("commande{{a}}", { a: item.orderCount > 1 ? "s" : "" })}
           </Text>
           <Text style={styles.ffTotal} numberOfLines={1}>
             {fmtAmount(item.total)}

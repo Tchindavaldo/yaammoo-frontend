@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,6 +20,7 @@ import {
 import { DarkBottomShade, V5BottomBar } from "../parts/CardBottom";
 import { sharedStyles as shared } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const IS_ANDROID = Platform.OS === "android";
 
@@ -35,6 +37,7 @@ export const CardV5: React.FC<CardVariantProps> = ({
   deliveryTime,
   deliveryFeeLabel,
 }) => {
+  useLanguage();
   const accent = USE_VARIABLE_BACKGROUNDS
     ? V5_ACCENTS[index % V5_ACCENTS.length]
     : V5_ACCENTS[0];
@@ -75,7 +78,7 @@ export const CardV5: React.FC<CardVariantProps> = ({
           <View style={styles.v5TopRow}>
             <View style={styles.v5DeliveryStrip1}>
               <Text style={[shared.v5DeliveryTime, { color: accent }]}>
-                {stock} En Stock
+                {stock} {t("En Stock")}
               </Text>
             </View>
             <View style={[styles.v5PriceChip, { backgroundColor: accent }]}>
@@ -104,9 +107,9 @@ export const CardV5: React.FC<CardVariantProps> = ({
               <Ionicons name="flash" size={10} color={accent} />
             </View>
             <View>
-              <Text style={shared.v5DeliveryLabel}>Prochaine</Text>
+              <Text style={shared.v5DeliveryLabel}>{t("Prochaine")}</Text>
               <Text style={[shared.v5DeliveryTime, { color: accent }]}>
-                Livraison {deliveryTime} · {deliveryFeeLabel}
+                {t("Livraison")} {deliveryTime} · {deliveryFeeLabel}
               </Text>
             </View>
           </View>

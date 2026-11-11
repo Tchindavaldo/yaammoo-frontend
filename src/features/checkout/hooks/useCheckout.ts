@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Menu, Commande, Embalage, Boisson, Livraison } from "../../../types";
 import { useAuth } from "../../auth/context/AuthContext";
@@ -5,8 +6,13 @@ import axios from "axios";
 import { Config } from "../../../api/config";
 import { socketService } from "../../../services/socket";
 import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
+import { track } from "../../../services/analytics/analytics";
+import { menuPriceOptions } from "../utils/menuPrices";
+import { computeCheckoutPrices } from "../utils/checkoutPrices";
+import { t, useLanguage } from "@/src/i18n";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
+  useLanguage();
   const { userData, user } = useAuth();
   const registerPaymentHandler = useCallback(
     (handler: (data: any) => void) => socketService.registerPaymentHandler(handler),
@@ -167,63 +173,10 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     }
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
-  const prices = useMemo(() => {
-    if (!menu) return { menuPrice: 0, extrasPrice: 0, drinksPrice: 0, deliveryPrice: 0, total: 0, isDeliveryFree: false, displayDeliveryPrice: 0, displayTotal: 0 };
-
-    let basePrice = menu.prix1;
-    if (selectedPriceIndex === 2 && menu.prix2 > 0) basePrice = menu.prix2;
-    if (selectedPriceIndex === 3 && menu.prix3 > 0) basePrice = menu.prix3;
-
-    const menuPrice = basePrice * quantity;
-    const extrasPrice = selectedPackaging.reduce((acc, p) => acc + p.prix, 0);
-    const drinksPrice = selectedDrinks.reduce((acc, d) => acc + d.prix * (drinkQuantities[d.type] || 1), 0);
-    // Prix de livraison selon le type actif, indépendant entre express et période.
-    // Le prix vient EXCLUSIVEMENT de la zone/période choisie : aucun fallback.
-    // Tant que l'utilisateur n'a pas sélectionné de lieu/zone, deliveryPrice = 0.
-    // - express  → prix de la zone express sélectionnée (delivery.expressPrix)
-    // - standard → prix de la période/créneau sélectionné (delivery.prix)
-    const periodPrice =
-      delivery.prix != null && Number(delivery.prix) > 0
-        ? Number(delivery.prix)
-        : 0;
-    const expressPrice =
-      delivery.expressPrix != null && Number(delivery.expressPrix) > 0
-        ? Number(delivery.expressPrix)
-        : 0;
-    let deliveryPrice = 0;
-    if (delivery.statut) {
-      if (delivery.type === "express") {
-        deliveryPrice = expressPrice;
-      } else if (delivery.type === "standard") {
-        deliveryPrice = periodPrice;
-      }
-    }
-
-    const total = menuPrice + extrasPrice + drinksPrice + deliveryPrice;
-
-    // Livraison offerte : offre backend active OU code bonus appliqué.
-    // Le VRAI prix de livraison reste envoyé dans `delivery.prix` (le livreur
-    // doit être payé), mais le montant débité (`displayTotal`) l'exclut.
-    const deliveryOffer = (menu as any)?.deliveryOffer;
-    const isDeliveryFree =
-      delivery.statut &&
-      delivery.type !== "aucune" &&
-      (!!deliveryOffer?.active || !!delivery.bonusCode);
-
-    const displayDeliveryPrice = isDeliveryFree ? 0 : deliveryPrice;
-    const displayTotal = isDeliveryFree ? total - deliveryPrice : total;
-
-    return {
-      menuPrice,
-      extrasPrice,
-      drinksPrice,
-      deliveryPrice,
-      total,
-      isDeliveryFree,
-      displayDeliveryPrice,
-      displayTotal,
-    };
-  }, [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery]);
+  const prices = useMemo(
+    () => computeCheckoutPrices({ menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery }),
+    [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery],
+  );
 
   const createOrder = useCallback((status: string = "pendingToBuy"): any | null => {
     if (!menu || !userData) return null;
@@ -250,14 +203,6 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     if (drinkData.length === 0)
       drinkData.push({ name: "Aucune", status: false, prix: 0, quantite: 0 });
 
-    // Calcul du prix sélectionné
-    let selectedPrice = menu.prix1;
-    if (selectedPriceIndex === 2 && menu.prix2 > 0) selectedPrice = menu.prix2;
-    if (selectedPriceIndex === 3 && menu.prix3 > 0) selectedPrice = menu.prix3;
-
-    let selectedDescription = menu.optionPrix1 || "Standard";
-    if (selectedPriceIndex === 2) selectedDescription = menu.optionPrix2 || "Medium";
-    if (selectedPriceIndex === 3) selectedDescription = menu.optionPrix3 || "Large";
 
     const mappedMenu = {
       id: (menu as any).id || (menu as any)._id || "unknown",
@@ -269,19 +214,12 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       // `rawPrice` (prix brut hors marge) accompagne chaque taille quand le
       // backend l'a fourni sur le menu. `menu.extra`/`menu.drink` ne sont plus
       // envoyés : le backend les a rendus optionnels et détient déjà le menu.
-      prices: (
-        [
-          [menu.prix1, menu.optionPrix1 || "Standard", (menu as any).rawPrice1],
-          [menu.prix2, menu.optionPrix2 || "Medium", (menu as any).rawPrice2],
-          [menu.prix3, menu.optionPrix3 || "Large", (menu as any).rawPrice3],
-        ] as Array<[number, string, number | undefined]>
-      )
-        .filter(([price], i) => i === 0 || price > 0)
-        .map(([price, description, rawPrice]) => ({
-          price,
-          description,
-          ...(rawPrice != null && { rawPrice }),
-        })),
+      // N prix (prices[]) : l'ordre est conservé, `selectedPriceIndex` y renvoie.
+      prices: menuPriceOptions(menu).map(({ price, description, rawPrice }) => ({
+        price,
+        description,
+        ...(rawPrice != null && { rawPrice }),
+      })),
       status: menu.disponibilite === "active" || menu.disponibilite === "Disponible" ? "available" : "unavailable",
     };
 
@@ -297,12 +235,15 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       date: delivery.date || new Date().toISOString().split("T")[0],
     };
 
+    // Numero de contact envoye aussi en RETRAIT : exige par le backend
+    // (validateOrder : `delivery.phone` requis pour une commande en retrait).
+    if (delivery.phone) deliveryData.phone = delivery.phone;
+
     if (hasDelivery && finalDeliveryType) {
       deliveryData.type = finalDeliveryType;
       // Prix de livraison unique (le backend connaît le type via `type`).
       deliveryData.prix = prices.deliveryPrice;
       if (delivery.address) deliveryData.location = delivery.address;
-      if (delivery.phone) deliveryData.phone = delivery.phone;
       if (delivery.voiceNoteUri) deliveryData.voiceNoteUri = delivery.voiceNoteUri;
       if (delivery.note) deliveryData.note = delivery.note;
 
@@ -388,16 +329,16 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     if (!menu) return null;
     const menuStock = (menu as any).stock;
     if (typeof menuStock !== 'number') return null;
-    if (menuStock < quantity) return `Stock insuffisant. Disponible : ${menuStock}`;
+    if (menuStock < quantity) return t("Stock insuffisant. Disponible : {{a}}", { a: menuStock });
     return null;
   }, [menu, quantity]);
 
   const validateDelivery = useCallback((): string | null => {
     const type = delivery.type;
     if (!delivery.statut || type === 'aucune') return null;
-    if (!delivery.address) return "Adresse de livraison requise";
-    if (!delivery.phone) return "Numéro de contact requis";
-    if (type === 'standard' && !delivery.hour) return "Période de livraison requise";
+    if (!delivery.address && !delivery.note) return t("Adresse de livraison requise");
+    if (!delivery.phone) return t("Numéro de contact requis");
+    if (type === 'standard' && !delivery.hour) return t("Période de livraison requise");
     // Express : exiger le choix d'une zone SI des zones express sont disponibles
     // (le prix vient exclusivement de la zone choisie, pas d'un défaut).
     if (type === 'express') {
@@ -409,7 +350,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
             h && typeof h === 'object' && h.express && h.expressZones?.length > 0,
         );
       if (hasExpressZones && !delivery.expressLieu) {
-        return "Zone de livraison express requise";
+        return t("Zone de livraison express requise");
       }
     }
     return null;
@@ -419,7 +360,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
 
   const handlePaymentConfirm = useCallback(async (phone: string) => {
     if (!userData || !phone) {
-      setPaymentError('Numéro de paiement requis');
+      setPaymentError(t("Numéro de paiement requis"));
       return;
     }
 
@@ -431,6 +372,11 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
 
     // Commande complète à payer (le backend déduit le fastFoodId des items).
     const order = createOrder('pending');
+    track('checkout_start', {
+      ...((menu as any)?.fastFoodId ? { fastFoodId: String((menu as any).fastFoodId) } : {}),
+      ...((menu as any)?.id ? { menuId: String((menu as any).id) } : {}),
+      data: { total: prices.displayTotal },
+    });
 
     try {
       const response = await axios.post(`${Config.apiUrl}/transaction`, {
@@ -450,7 +396,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       // synchrone — aucun paiement réel, aucun verdict socket à attendre. On
       // déroule donc les étapes nous-mêmes pour montrer le parcours complet.
       if (response.data.appleReviewMode === true) {
-        setUssdMessage('Vérification du paiement...');
+        setUssdMessage(t("Vérification du paiement..."));
         setPaymentState('ussd_sent');
         reviewTimers.current.push(
           setTimeout(() => setPaymentState('success'), REVIEW_STEP_MS),
@@ -461,6 +407,9 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
 
       // Cas A — USSD envoyé : afficher le message du backend, écouter le socket
       if (response.data.status === 'ussd_sent' || response.data.success === true) {
+        // Verdict déjà reçu par socket pendant la requête (refus immédiat) : ne pas
+        // remettre l'écran en attente USSD.
+        if (paymentStateRef.current !== 'waiting') return;
         setUssdMessage(response.data.message);
         setPaymentState('ussd_sent');
         // Le socket commence à écouter directement dans cet état
@@ -468,8 +417,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
         // Cas C — validation backend échouée : message est un tableau [{ field, message }]
         const raw = response.data.message;
         const message = Array.isArray(raw)
-          ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || 'Erreur paiement'
-          : raw || 'Erreur paiement';
+          ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ') || t("Erreur paiement")
+          : raw || t("Erreur paiement");
         // Le délai d'attente est déjà inclus dans le message du backend.
         setPaymentError(message);
         setPaymentState('input');
@@ -480,7 +429,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       let message = Array.isArray(raw)
         ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
         : raw;
-      message = message || data?.error || error.message || 'Erreur paiement';
+      // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
+      message = message || data?.error || (error.response ? t("Service momentanément indisponible. Réessayez dans un instant.") : t("Connexion impossible. Vérifiez votre réseau et réessayez."));
       // Le délai d'attente est déjà inclus dans le message du backend.
       console.log('Payment error details:', data);
       // Erreur → afficher le Toast et revenir à l'input (overlays restent ouverts).
@@ -489,7 +439,13 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     }
   }, [userData, paymentNetwork, prices.displayTotal, createOrder]);
 
+  // Verdict pris en compte SEULEMENT si un paiement est en attente : un verdict
+  // tardif (paiement précédent annulé, rejeu au reconnect) affichait un toast
+  // « Paiement échoué » parasite avant le vrai message.
+  const paymentStateRef = useRef(paymentState);
+  paymentStateRef.current = paymentState;
   const handlePaymentVerdict = useCallback((data: any) => {
+    if (paymentStateRef.current !== 'waiting' && paymentStateRef.current !== 'ussd_sent') return;
     if (data.status === 'successful') {
       // Paiement réussi → afficher "Création commande en cours" pendant 5s
       setPaymentState('success');
@@ -497,12 +453,13 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
         // Après 5s, afficher "Commande créée avec succès".
         // La fermeture des overlays + du checkout est gérée par le parent
         // (effet sur paymentState === 'success_created').
-        setPaymentState('success_created');
+        // Ignoré si le paiement a été remis à zéro entre-temps (verdict reçu sheet fermé).
+        if (paymentStateRef.current === 'success') setPaymentState('success_created');
       }, 5000);
     } else {
       // Échec : pas d'état "failed" dans l'overlay → retour direct à l'input.
       // Seul le toast top affiche l'erreur.
-      setPaymentError('Paiement échoué');
+      setPaymentError(data.message || t("Paiement échoué"));
       setPaymentState('input');
     }
   }, []);

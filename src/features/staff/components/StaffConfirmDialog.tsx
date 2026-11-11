@@ -1,7 +1,10 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { ST } from "./staffTheme";
+import { t, useLanguage } from "@/src/i18n";
 
 export interface StaffConfirm {
   title: string;
@@ -17,7 +20,9 @@ interface Props {
 }
 
 /** Confirmation d'une action destructive (retirer un membre, un livreur, supprimer un rôle). */
-export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel }) => (
+export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel }) => {
+  useLanguage();
+  return (
   <Modal visible={!!confirm} transparent animationType="fade" onRequestClose={onCancel}>
     <View style={styles.backdrop}>
       <View style={styles.card}>
@@ -33,7 +38,7 @@ export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel })
             style={[styles.btn, { backgroundColor: ST.surface }]}
             accessibilityRole="button"
           >
-            <Text style={[styles.btnText, { color: ST.ink }]}>Annuler</Text>
+            <Text style={[styles.btnText, { color: ST.ink }]}>{t("Annuler")}</Text>
           </Pressable>
           <Pressable
             onPress={confirm?.onConfirm}
@@ -50,8 +55,11 @@ export const StaffConfirmDialog: React.FC<Props> = ({ confirm, busy, onCancel })
         </View>
       </View>
     </View>
+    {/* Toast global au premier plan (Android). */}
+    <GlobalToastHost modal />
   </Modal>
 );
+};
 
 const styles = StyleSheet.create({
   backdrop: {

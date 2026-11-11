@@ -14,27 +14,30 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [structure.md](./structure.md) | Arborescence `app/`, `src/features/`, `src/components/`, `src/api/` |
 | [http-versioning.md](./http-versioning.md) | Versioning d'app dans les requêtes HTTP (`x-app-version`, `setupHttp.ts`, headers globaux) |
 | [tab-header.md](./tab-header.md) | En-têtes d'onglets uniformes (TabHeader, HeaderPill, DatePill, SectionSwitcher) |
-| [blur-safe-area.md](./blur-safe-area.md) | Flou unifié iOS/Android (AppBlurView) + safe-area des bottom sheets |
+| [blur-safe-area.md](./blur-safe-area.md) | Flou iOS seulement (AppBlurView, Android en fond blanc) + safe-area des bottom sheets |
 | [auth.md](./auth.md) | Authentification client (Email/Password, Google/Apple Sign-In, AuthContext, **accès invité / AuthGate**) |
 | [checkout.md](./checkout.md) | Bottom sheets de commande (home + panier) |
 | [payment.md](./payment.md) | Intégration paiement MobileWallet (hook, overlay, socket, 2 points d'entrée) |
 | [orders-client.md](./orders-client.md) | Commandes côté client (contexte, cartes, tri par rank, détail `OrderBottomSheet` et son onglet **Suivi** : carte du livreur + arrivée estimée) |
 | [orders-merchant.md](./orders-merchant.md) | Gestion commandes côté marchand (panel, cartes, statuts) |
-| [menu.md](./menu.md) | Gestion des menus côté marchand (panel, formulaire multi-étapes, designs récap) |
+| [menu.md](./menu.md) | Gestion des menus côté marchand (panel, formulaire multi-étapes N prix, designs récap) + **boissons de la boutique** (`app/shop/drinks.tsx`) |
 | [bonus.md](./bonus.md) | Bonus & récompenses client (bottom sheet, carrousel, registre évolutif, moteur d'éligibilité, claim, campagne `status_view` : flyer + preuve vidéo) |
 | [driver.md](./driver.md) | Rôle driver — commandes déléguées (onglet, panel, carte, socket, contrat backend) |
 | [staff.md](./staff.md) | Personnel boutique (Settings → Boutique → Personnel) — quotas, rôles et permissions, membres (création, fiche, suspension), livreurs et demandes |
 | [notifications.md](./notifications.md) | Notifications côté client (context, setup hook, détail sheet, deep-linking) |
+| [analytics.md](./analytics.md) | Statistiques d'usage envoyées au backend (sessions, écrans, scroll du home, boutiques vues, entonnoir, recherches, bannières) — `src/services/analytics/`, event natif `onVisibleShops` |
 | [socket-events-client.md](./socket-events-client.md) | Socket client — connexion, rooms, handlers |
 | [merchant-broadcast.md](./merchant-broadcast.md) | Notifications boutique — envois à une audience (clients / ville / tous), quota du plan, semaine en barres, derniers envois, composeur, réception côté client |
-| [user-location.md](./user-location.md) | Localisation de l'utilisateur — permission après les notifications, **écran d'info avant « Toujours »**, envoi à chaque connexion, au retour au premier plan et app fermée (tâche arrière-plan, `POST /user/location`) ; **mode livraison** du livreur en course (`POST /driver/location`, service de premier plan Android) |
+| [user-location.md](./user-location.md) | Localisation de l'utilisateur — permission après les notifications, **écran de divulgation avant toute popup (Android, Google Play)**, **bandeau d'activation sur le home tant que la localisation est refusée (`useLocationAccess`, jamais bloquant)**, **écran d'info avant « Toujours » (iOS seulement, retiré d'Android)**, envoi à chaque connexion, au retour au premier plan et app fermée (tâche arrière-plan iOS, `POST /user/location`) ; **mode livraison** du livreur en course (`POST /driver/location`, service de premier plan Android) |
 | [support-merchant.md](./support-merchant.md) | Messages boutique — discussions clients reçues par le marchand (feature séparée, HTTP + socket) |
 | [support.md](./support.md) | Contactez-nous — chat support client (écran plein écran, chips d'objet, historique, HTTP + socket) |
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |
 | [home-banners.md](./home-banners.md) | Bannière pub du home — carrousel dynamique, images via `/fastfood/all`, fallback statique |
 | [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement**, **distance** de chaque boutique (`distanceKm`) |
 | [home-scroll-pause.md](./home-scroll-pause.md) | ⚠️ **EN COURS** — micro-pause au scroll du home : mesures, sonde `[ROW]`, `windowSize={15}` (fonctionne, OTA) et tentative FlashList (non résolue) |
+| — (profil, header) | Pastille comptes `AccountSwitcherPill` à droite de `SettingsHeaderProfile` → `AccountSheet` (comptes, ajouter, déconnexion). Liste via `useAccounts` (compte courant seul tant que le multi-compte n'est pas stocké) |
 | [profile-name-sheet.md](./profile-name-sheet.md) | Sheet « nom / prénom manquant » — home à l'arrivée + garde `requireName` avant toute commande (home, panier), voile, clavier |
+| [i18n.md](./i18n.md) | Langues Français / English — i18next, clés = textes français, `t()`, `en.json` / `fr.json`, sheet Settings → Langue, langue du téléphone par défaut, changement à chaud sans recharger (`useLanguage()`) |
 | [settings-grille.md](./settings-grille.md) | Écran Settings — grille de tuiles par section (SettingGrid / SettingGridItem / SettingGridSwitch), teintes, sections, sous-pages (useSettingsSubScreens), modals suppression / déconnexion |
 
 ---
@@ -82,7 +85,7 @@ yaammoo/
 │   │   ├── checkout/         # Bottom sheets commande
 │   │   ├── notifications/    # Context + hooks + components
 │   │   ├── orders/           # OrderContext + cartes
-│   │   ├── merchant/         # Panel marchand (boutique, commandes, menu) + components/recap-designs/ (3 designs récapitulatif menu)
+│   │   ├── merchant/         # Panel marchand (boutique, commandes, menu) + components/menu-form/ (formulaire menu) + components/drinks/ (boissons boutique) + components/recap-designs/
 │   │   └── menu/ restaurants/ profile/ payment/
 │   ├── api/                  # config.ts (apiUrl, Firebase, Google Client IDs) + version.ts + setupHttp.ts (headers globaux x-app-version)
 │   ├── theme/                # ds.ts = design system (SOURCE UNIQUE des couleurs : DS.accent, accentAlpha(a), surfaces, palette Personnel…) ; Theme.colors (primary = DS.accent), typography ; fonts.ts = police globale changeable par OTA (`FONT_THEME` : jakarta, manrope, figtree, dmsans, system) ; appFont.tsx = remplace `Text`/`TextInput` de RN pour poser la police selon `fontWeight` (hors styles a `fontFamily` explicite), chargee sous le splash dans `app/_layout.tsx` ; la liste native iOS la recoit via la prop `fonts`

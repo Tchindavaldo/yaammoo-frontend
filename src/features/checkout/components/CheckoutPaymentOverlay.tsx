@@ -1,3 +1,4 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
@@ -16,6 +17,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { Loader } from "../../../components/Loader";
 import { AnimatedBorderGlow } from "./AnimatedBorderGlow";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 const SHEET_HEIGHT = 384;
@@ -52,6 +54,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
   ussdMessage,
   onError,
 }) => {
+  useLanguage();
   const [localPhone, setLocalPhone] = React.useState(phone);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
@@ -63,7 +66,9 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
 
   const insets = useSheetInsets();
   const keyboardHeight = React.useRef(new Animated.Value(0)).current;
-  const slideAnim = React.useRef(new Animated.Value(300)).current; // Entry/Exit animation
+  // Monté DÉJÀ visible (réouverture d'un paiement en cours) : pas d'entrée
+  // propre, la capsule suit le glissement du sheet.
+  const slideAnim = React.useRef(new Animated.Value(visible ? 0 : 300)).current; // Entry/Exit animation
   // Fondu du contenu lors d'un changement d'étape (input → waiting → ussd_sent…).
   const contentOpacity = React.useRef(new Animated.Value(1)).current;
 
@@ -163,7 +168,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
       // n'est pas rempli → on affiche juste le toast d'erreur.
       const phone = localPhone.trim();
       if (!phone) {
-        onError?.("Veuillez remplir le numéro de paiement");
+        onError?.(t("Veuillez remplir le numéro de paiement"));
         return;
       }
       try {
@@ -300,7 +305,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
                 />
                 <TextInput
                   style={styles.textInput}
-                  placeholder="saisir le numéro de paiement"
+                  placeholder={t("saisir le numéro de paiement")}
                   placeholderTextColor="rgba(255,255,255,0.5)"
                   keyboardType="phone-pad"
                   value={localPhone}
@@ -339,7 +344,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
           {/* État WAITING : requête envoyée, en attente de la réponse backend */}
           {localPaymentState === "waiting" && (
             <View style={styles.waitingContent}>
-              <Text style={styles.waitingText}>Veuillez patienter...</Text>
+              <Text style={styles.waitingText}>{t("Veuillez patienter...")}</Text>
             </View>
           )}
 
@@ -355,7 +360,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
           {localPaymentState === "success" && (
             <View style={styles.successContent}>
               <Text style={styles.successText}>
-                Paiement réussi ! Création de la commande en cours...
+                {t("Paiement réussi ! Création de la commande en cours...")}
               </Text>
             </View>
           )}
@@ -365,7 +370,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
             <View style={styles.successCreatedContent}>
               <Ionicons name="checkmark-circle" size={20} color="#10b981" />
               <Text style={styles.successCreatedText}>
-                Commande créée avec succès !
+                {t("Commande créée avec succès !")}
               </Text>
             </View>
           )}

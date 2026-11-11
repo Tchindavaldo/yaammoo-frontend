@@ -1,5 +1,9 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
-import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
+import {
+  AppBlurView as BlurView,
+  isNativeBlurAvailable,
+} from "@/src/components/AppBlurView";
 import React from "react";
 import {
   Animated,
@@ -13,6 +17,7 @@ import {
 import { AUTH_SHEET_HEIGHT } from "../constants";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { DS } from "@/src/theme/ds";
+import { t, useLanguage } from "@/src/i18n";
 
 /**
  * Capsule flottante de saisie du flux email — COPIE DEDIEE de
@@ -108,6 +113,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
   onChangePassword,
   onClose,
 }) => {
+  useLanguage();
   const [mounted, setMounted] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   // Gouttiere basse de la sheet = bande safe-area (source unique, R19).
@@ -406,15 +412,16 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
         pointerEvents="none"
         style={[styles.veil, { opacity: veilOpacity, height: VEIL_HEIGHT }]}
       >
-        {/* Android : floute le formulaire (`BlurTarget` d'EmailAuthStep). */}
+        {/* iOS : flou sombre. Android : aucun flou, voile BLANC opaque. */}
         <BlurView
-          forceAndroidBlur
           intensity={65}
           tint="dark"
           style={StyleSheet.absoluteFill}
+          fallbackStyle={styles.veilWhite}
         />
-        {/* Teinte posee SUR le flou : l'intensite seule ne noircit pas assez. */}
-        <View pointerEvents="none" style={styles.veilTint} />
+        {/* Teinte posee SUR le flou : l'intensite seule ne noircit pas assez.
+            Pas sur Android : elle griserait le voile blanc. */}
+        {isNativeBlurAvailable && <View pointerEvents="none" style={styles.veilTint} />}
       </Animated.View>
 
       {/* ⚠️ Conteneur BORNE a la hauteur du voile, en `overflow: hidden` : la
@@ -440,10 +447,11 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
         >
           <View style={[styles.capsule, { bottom: capsuleBottom }]}>
             <BlurView
-              forceAndroidBlur
               intensity={80}
               tint="dark"
               style={StyleSheet.absoluteFill}
+              // Android, sans flou : capsule sombre OPAQUE, lisible sur le blanc.
+              fallbackStyle={styles.capsuleSolid}
             />
 
             <View style={styles.inputRow}>
@@ -477,7 +485,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                       // Inactif, l'email remonte au-dessus du cadre.
                       isPwd ? styles.fieldOffTop : styles.fieldActive,
                     ]}
-                    placeholder={isPwd ? "" : "Adresse email"}
+                    placeholder={isPwd ? "" : t("Adresse email")}
                     placeholderTextColor="rgba(255,255,255,0.5)"
                     value={email}
                     onChangeText={(v) => {
@@ -521,7 +529,7 @@ export const AuthFieldCapsule: React.FC<AuthFieldCapsuleProps> = ({
                       // Inactif, le mot de passe descend sous le cadre.
                       isPwd ? styles.fieldActive : styles.fieldOffBottom,
                     ]}
-                    placeholder={isPwd ? "Mot de passe" : ""}
+                    placeholder={isPwd ? t("Mot de passe") : ""}
                     placeholderTextColor="rgba(255,255,255,0.5)"
                     value={password}
                     onChangeText={(v) => {
@@ -702,4 +710,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0,0,0,0.3)",
   },
+  veilWhite: { backgroundColor: DS.bg },
+  capsuleSolid: { backgroundColor: DS.ink, borderRadius: 80 },
 });

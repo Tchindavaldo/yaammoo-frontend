@@ -13,6 +13,7 @@ import { Commande } from "@/src/types";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useDeliveryTrackingSync } from "../../location/hooks/useDeliveryTrackingSync";
 import { t, useLanguage } from "@/src/i18n";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 
 /** Event socket sur une demande de livraison (création / décision / retrait). */
 export type ApplicationEvent =
@@ -156,6 +157,9 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
     }
     appHandlersRef.current.forEach((h) => h(e));
   }, []);
+
+  // Connexion revenue : rechargement avec loader (app ouverte hors-ligne).
+  useRefetchOnReconnect(() => fetchData(true));
 
   return (
     <DriverContext.Provider

@@ -6,6 +6,7 @@ import { Commande, Menu, Transaction } from '@/src/types';
 import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 import { useLazyFetch } from '@/src/hooks/useLazyFetch';
 import { t, useLanguage } from "@/src/i18n";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 
 interface MerchantContextType {
   orders: Commande[];
@@ -199,6 +200,9 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       )
       .reduce((acc, o) => acc + (o.total || 0), 0),
   };
+
+  // Connexion revenue : rechargement avec loader (app ouverte hors-ligne).
+  useRefetchOnReconnect(() => fetchData(true));
 
   return (
     <MerchantContext.Provider

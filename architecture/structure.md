@@ -266,7 +266,7 @@ src/
     ├── socketHandlers/         # Handlers sortis de useSocketEvents (R4) : catalogEvents (menus, boutiques),
     │                           #   bonusWalletEvents (transactions, bonus, wallet), logEvent
     ├── socketTelemetry.ts      # Transitions socket → Sentry (voir socket-events-client.md)
-    ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp. Web : sonde en no-cors (Cloudflare sans CORS → faux « hors ligne »)
+    ├── network.ts              # Connectivité réelle (NetInfo) — lue par setupHttp. Web : sonde en no-cors (Cloudflare sans CORS → faux « hors ligne »). Retour réseau → `useRefetchOnReconnect` (src/hooks) recharge commandes, notifications, marchand, livreur, wallets avec loader ; la home recharge si erreur ou liste vide
     ├── audio/useVoiceNote.ts   # Notes vocales sur expo-audio : useVoiceNoteRecorder / useVoiceNotePlayer
     ├── audio/uploadVoiceNote.ts # Envoi de la note vocale (/image/upload, folder=voiceNotes) -> URL publique mise dans delivery.voiceNoteUri
     │   (src/components/BlurTarget.tsx — BlurScope / BlurTarget, INERTES : Android ne floute plus, cf. blur-safe-area.md)

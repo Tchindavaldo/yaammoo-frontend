@@ -327,11 +327,12 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(
     () =>
       onNetworkRestored(() => {
-        if (!errorRef.current) return;
+        // Erreur affichee OU liste vide (app ouverte hors-ligne).
+        if (!errorRef.current && fastFoodsLenRef.current > 0) return;
         cursorRef.current = null;
         void fetchPage(undefined, undefined);
       }),
-    [fetchPage, errorRef, cursorRef],
+    [fetchPage, errorRef, cursorRef, fastFoodsLenRef],
   );
 
   // Changement de compte : on repart de zero. La liste porte les

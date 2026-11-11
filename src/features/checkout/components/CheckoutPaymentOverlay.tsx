@@ -384,7 +384,7 @@ export const CheckoutPaymentOverlay: React.FC<CheckoutPaymentOverlayProps> = ({
 const styles = StyleSheet.create({
   // Repli Android < 12 (pas de flou natif) : voile sombre opaque, la capsule
   // porte du texte clair.
-  blurFallbackDark: { backgroundColor: "rgba(17, 17, 17, 0.92)" },
+  blurFallbackDark: { backgroundColor: DS.ink },
   keyboardWrapper: {
     ...StyleSheet.absoluteFill,
     zIndex: 100,

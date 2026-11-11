@@ -116,7 +116,7 @@ export const styles = StyleSheet.create({
    * Fond de repli de la capsule flottante quand le flou natif manque
    * (Android < 12) : sans lui, le contenu du sheet reste lisible au travers.
    */
-  payCapsuleBlurFallback: { backgroundColor: "rgba(17,17,17,0.96)" },
+  payCapsuleBlurFallback: { backgroundColor: DS.ink },
   /**
    * Voile pose SOUS la capsule flottante : il part du bas de l'ecran et monte
    * jusqu'a son bord superieur, couvrant toute la zone du clavier. C'est cette
@@ -135,7 +135,8 @@ export const styles = StyleSheet.create({
     overflow: "hidden",
   },
   /** Android < 12 : sans flou natif, le voile se rabat sur un fond sombre. */
-  keyboardVeilFallback: { backgroundColor: "rgba(0,0,0,0.72)" },
+  // Android (sans flou) : voile BLANC, comme la capsule d'auth.
+  keyboardVeilFallback: { backgroundColor: DS.bg },
   /** Teinte sombre posee sur le flou, qui seul ne noircit pas assez. */
   keyboardVeilTint: {
     ...StyleSheet.absoluteFill,

@@ -2,6 +2,7 @@
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import AuthSheetContent from "@/src/features/auth/components/AuthSheetContent";
+import { AUTH_SHEET_HEIGHT } from "@/src/features/auth/constants";
 import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
@@ -351,7 +352,10 @@ export default function WelcomeScreen() {
         <Animated.View
           style={[
             styles.sheet,
-            { height: SCREEN_H * 0.59 + band, paddingBottom: band },
+            // ⚠️ `AUTH_SHEET_HEIGHT`, jamais une valeur locale : le voile de
+            // la capsule (`AuthFieldCapsule`) a cette hauteur. L'ancien
+            // `0.59` en dur valait 0.57 sur iPhone : bande blanche au-dessus.
+            { height: AUTH_SHEET_HEIGHT + band, paddingBottom: band },
             { transform: [{ translateY: sheetTranslateY }] },
           ]}
           pointerEvents={sheetOpen ? "auto" : "none"}

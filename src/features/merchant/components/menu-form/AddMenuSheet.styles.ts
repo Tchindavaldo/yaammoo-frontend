@@ -88,7 +88,7 @@ export const styles = StyleSheet.create({
   },
   imageSlot: {
     flex: 1,
-    aspectRatio: 1.35,
+    aspectRatio: 1.2,
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: Theme.colors.gray[100],
@@ -292,7 +292,7 @@ export const styles = StyleSheet.create({
   },
   // --- Stock (ligne 2) ---
   stockSection: {
-    marginTop: Theme.spacing.sm,
+    marginTop: 12,
   },
   stockSectionHead: {
     flexDirection: "row",

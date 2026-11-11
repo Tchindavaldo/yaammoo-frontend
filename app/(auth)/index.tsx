@@ -397,7 +397,9 @@ const styles = StyleSheet.create({
   content: {
     position: "absolute",
     top: 96,
-    left: 36,
+    // Bord gauche aligne sur l'heure de la barre d'etat (mesure iPhone :
+    // heure a ~36 pt ; a 36 ici, le texte tombait a ~38 pt, le lien a ~45).
+    left: 34,
     right: 36,
     zIndex: 4,
     alignItems: "flex-start",
@@ -431,7 +433,6 @@ const styles = StyleSheet.create({
     color: DS.slate600,
     textDecorationLine: "underline",
     marginTop: 18,
-    marginLeft: 6,
   },
   burger: {
     top: "50%",

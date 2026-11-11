@@ -26,6 +26,7 @@ import { MenuPricesEditor } from "./menu-form/MenuPricesEditor";
 import { MenuExtrasEditor } from "./menu-form/MenuExtrasEditor";
 import { MenuStockAvailability } from "./menu-form/MenuStockAvailability";
 import { MenuPhotoSlots } from "./menu-form/MenuPhotoSlots";
+import { MenuPricePreviewCard } from "./menu-form/MenuPricePreviewCard";
 import { t as tr, useLanguage } from "@/src/i18n";
 
 type Step = "nameImage" | "details" | "recap";
@@ -179,14 +180,6 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     if (step === "nameImage") {
       if (!nom.trim())
         return { message: tr("Le nom ne doit pas être vide"), fields: ["nom"] };
-      // Obligation des 3 photos : il faut 3 images réellement uploadées (URLs).
-      // En modification, les images existantes sont déjà dans uploadedUrls/images.
-      const uploadedCount = uploadedUrls.filter(Boolean).length;
-      if (uploadedCount < 3)
-        return {
-          message: tr("Vous devez ajouter 3 photos du menu"),
-          fields: ["images"],
-        };
       // Chaque prix renseigné doit avoir sa description ; le 1er est obligatoire.
       for (let i = 0; i < prices.length; i++) {
         const p = prices[i];
@@ -201,6 +194,14 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     }
     // Page details : extras libres, stock obligatoire (numérique).
     if (step === "details") {
+      // Obligation des 3 photos : il faut 3 images réellement uploadées (URLs).
+      // En modification, les images existantes sont déjà dans uploadedUrls/images.
+      const uploadedCount = uploadedUrls.filter(Boolean).length;
+      if (uploadedCount < 3)
+        return {
+          message: tr("Vous devez ajouter 3 photos du menu"),
+          fields: ["images"],
+        };
       if (stock.trim() === "" || isNaN(Number(stock)))
         return {
           message: tr("Le stock du menu doit être un nombre"),
@@ -284,8 +285,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   };
 
   const stepTitles: Record<Step, string> = {
-    nameImage: tr("Nom, prix et photos"),
-    details: tr("Extras, stock et statut"),
+    nameImage: tr("Nom et prix"),
+    details: tr("Extras, stock, statut et photos"),
     recap: tr("Récapitulatif"),
   };
 
@@ -368,11 +369,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                 clearError={clearError}
               />
 
-              <MenuPhotoSlots
-                images={images}
-                uploadProgress={uploadProgress}
-                uploadingIdx={uploadingIdx}
-                pickImage={pickImage}
+              {/* Apercu B4 : prix affiche, retrait, montant recu (backend). */}
+              <MenuPricePreviewCard
+                price={prices[selectedPriceIdx]?.price || ""}
               />
             </DismissKeyboardWrapper>
           )}
@@ -389,6 +388,13 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                   setStock(v);
                   clearError("stock");
                 }}
+              />
+              {/* Photos : passees a l'etape 2 (l'etape 1 montre l'apercu du prix). */}
+              <MenuPhotoSlots
+                images={images}
+                uploadProgress={uploadProgress}
+                uploadingIdx={uploadingIdx}
+                pickImage={pickImage}
               />
             </DismissKeyboardWrapper>
           )}

@@ -132,3 +132,14 @@ un saut de taille au changement d'étape) = **540** (~62% d'un écran de référ
 > apparaître le fond gris de l'`overlay` sous le bouton "Suivant" — bug déjà rencontré. La
 > safe-area doit rester absorbée à l'intérieur d'un élément à fond blanc (footer ou sheet),
 > pas retranchée de la zone visible du sheet lui-même.
+
+## Aperçu du prix (étape 1) et photos (étape 2)
+
+- Étape 1 : sous le prix sélectionné, `MenuPricePreviewCard` (maquette B4 du canvas
+  « Yaammoo — Design », page « Menu — prix ») : « Prix affiché au client », puis
+  « Prix du plat », « Frais de retrait », « Vous recevez ». Données de
+  `GET /menu/price-preview/:fastFoodId?price=` via `useMenuPricePreview` (debounce
+  400 ms) ; rien n'est recalculé dans l'app. Prix refusé par le garde-fou : le
+  `message` du backend s'affiche en rouge sous les cases.
+- Étape 2 : les photos (`MenuPhotoSlots`, 3 requises) sont passées sous extras,
+  disponibilité et stock ; leur validation se fait à cette étape.

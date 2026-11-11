@@ -1139,5 +1139,10 @@
   "Retrait réussi": "Withdrawal successful",
   "{{a}} envoyés au {{b}} ({{c}}). Le montant peut mettre jusqu'à 24 h pour arriver.": "{{a}} sent to {{b}} ({{c}}). The amount can take up to 24 h to arrive.",
   "{{a}} vers {{b}}. Ne fermez pas l'application.": "{{a}} to {{b}}. Do not close the app.",
-  "max {{a}}": "max {{a}}"
+  "max {{a}}": "max {{a}}",
+  "Prix affiché au client": "Price shown to customers",
+  "Prix du plat": "Dish price",
+  "Vous recevez": "You receive",
+  "Nom et prix": "Name and price",
+  "Extras, stock, statut et photos": "Extras, stock, status and photos"
 }

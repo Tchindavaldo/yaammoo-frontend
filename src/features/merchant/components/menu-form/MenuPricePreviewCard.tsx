@@ -22,7 +22,7 @@ export const MenuPricePreviewCard: React.FC<{
   // Prix refusé par le backend : aucun montant affiché (cases « — »).
   const preview = raw?.accepted ? raw : null;
   // Carte toujours visible : cases vides (« — ») tant qu'aucun montant n'est saisi.
-  const value = (n?: number) =>
+  const value = (n?: number | null) =>
     preview && n != null ? fmt(n) : loading ? "…" : "—";
 
   return (

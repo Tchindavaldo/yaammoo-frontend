@@ -16,7 +16,7 @@ import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { groupNotificationsByDate } from "@/src/features/notifications/utils/groupNotificationsByDate";
 import { DS } from "@/src/theme/ds";
 import {
@@ -26,6 +26,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { onPendingPushTap, takePendingPushTap } from "@/src/features/notifications/services/pendingPushTap";
 import { t, useLanguage } from "@/src/i18n";
 
 export default function NotificationsScreen() {
@@ -53,6 +54,18 @@ export default function NotificationsScreen() {
     () => groupNotificationsByDate(notifications),
     [notifications, i18nLang],
   );
+
+  // Push touchée : ouvre le mini sheet de récap de cette notification.
+  useEffect(() => {
+    const open = () => {
+      const n = takePendingPushTap();
+      if (!n) return;
+      setSelectedNotif(n);
+      setDetailVisible(true);
+    };
+    open();
+    return onPendingPushTap(open);
+  }, []);
 
   const handleNotifPress = (notif: Notification) => {
     if (!isReadFlag(notif)) {

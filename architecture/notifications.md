@@ -113,15 +113,20 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
   - Listener nettoyé dans le cleanup du `useEffect`.
 
 **Response (tap sur la notif)**
-- `addNotificationResponseReceivedListener` → lit `data.route` ou le dérive du `type` → `router.push(route)`.
+- `addNotificationResponseReceivedListener` → TOUJOURS la page Notifications, qui
+  ouvre le mini sheet de récap (`NotificationDetailSheet`) de cette push
+  (`services/pendingPushTap.ts`). Son bouton mène ensuite à la page concernée
+  (`getNotificationRoute`), comme depuis la liste.
 - Commande client : `orderId` est ajouté à la route (`/(tabs)/orders?section=…&orderId=…`) ;
   `CartStatusPanel` (hook `useFocusOrderFromNotification`) ouvre la fiche de CETTE
-  commande sur son statut réel. Même chose depuis la liste in-app.
-- `data.userId` (destinataire) ≠ compte connecté → page Notifications seulement.
+  commande sur son statut réel.
+- `data.userId` (destinataire) ≠ compte connecté : push non affichée app ouverte
+  (`setNotificationHandler`), pas de sheet au tap. App fermée, c'est l'OS qui
+  affiche : seul le backend l'évite.
   Le backend détache aussi le device des autres comptes à chaque `push-token/add`.
 
 **Initial (app killed → ouverte via notif)**
-- `getLastNotificationResponseAsync()` au setup → si présent, navigate vers la route.
+- `getLastNotificationResponseAsync()` au setup → même chemin que le tap (page Notifications + sheet).
 
 ---
 

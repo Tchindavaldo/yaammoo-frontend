@@ -14,8 +14,6 @@ import { getNotificationRoute } from "../utils/notificationRouting";
 import { auth } from "@/src/services/firebase";
 import { setPendingPushTap } from "../services/pendingPushTap";
 import { getDeviceId } from "../services/deviceId";
-import { auth } from "@/src/services/firebase";
-import { setPendingPushTap } from "../services/pendingPushTap";
 import { t, useLanguage } from "@/src/i18n";
 
 Notifications.setNotificationHandler({

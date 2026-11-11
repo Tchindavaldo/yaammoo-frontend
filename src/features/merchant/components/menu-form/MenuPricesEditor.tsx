@@ -7,7 +7,7 @@ import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { DS } from "@/src/theme/ds";
 import { DraftPrice } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
-import { DESC_MAX, DESC_MIN } from "./menuFormConstants";
+import { DESC_MIN } from "./menuFormConstants";
 import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
@@ -53,13 +53,8 @@ export const MenuPricesEditor: React.FC<Props> = ({
   onRemove,
 }) => {
   useLanguage();
-  // Hauteur auto de la description (par prix) : suit le contenu, plafonnée.
-  const [descHeights, setDescHeights] = useState<number[]>([]);
   // Hauteur mesurée de l'input prix → hauteur min de la description (même ligne).
   const [priceColH, setPriceColH] = useState(0);
-  // Plus petite hauteur de contenu vue (une ligne) : la description garde la
-  // hauteur de l'input prix et ne grandit que des lignes en plus.
-  const [baseContentH, setBaseContentH] = useState(0);
   const current = prices[selectedIdx] || { price: "", description: "" };
   const [pricePh, descPh] = placeholders()[Math.min(selectedIdx, 2)];
 
@@ -78,7 +73,6 @@ export const MenuPricesEditor: React.FC<Props> = ({
     if (selectedIdx === 0) return;
     onRemove(selectedIdx);
     setPrices(prices.filter((_, i) => i !== selectedIdx));
-    setDescHeights((h) => h.filter((_, i) => i !== selectedIdx));
     setSelectedIdx(selectedIdx - 1);
   };
 
@@ -140,14 +134,8 @@ export const MenuPricesEditor: React.FC<Props> = ({
           style={[
             styles.input,
             styles.descCol,
-            // Hauteur auto : min = hauteur de l'input prix, puis scroll interne.
-            {
-              height: Math.min(
-                DESC_MAX,
-                (priceColH || DESC_MIN) +
-                  Math.max(0, (descHeights[selectedIdx] || 0) - (baseContentH || Infinity)),
-              ),
-            },
+            // Hauteur FIXE = celle de l'input prix ; le texte long défile dedans.
+            { height: priceColH || DESC_MIN },
             ...fieldStyle(`desc${selectedIdx}`),
           ]}
           placeholder={descPh}
@@ -156,16 +144,6 @@ export const MenuPricesEditor: React.FC<Props> = ({
           onChangeText={(t) => {
             update({ description: t });
             clearError(`desc${selectedIdx}`);
-          }}
-          onContentSizeChange={(e) => {
-            const h = e.nativeEvent.contentSize.height;
-            if (!baseContentH || h < baseContentH) setBaseContentH(h);
-            setDescHeights((prev) => {
-              if (prev[selectedIdx] === h) return prev;
-              const next = [...prev];
-              next[selectedIdx] = h;
-              return next;
-            });
           }}
           multiline
           scrollEnabled

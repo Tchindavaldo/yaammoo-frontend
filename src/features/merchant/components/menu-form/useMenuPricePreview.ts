@@ -8,9 +8,9 @@ import { t as tr } from "@/src/i18n";
 /** Réponse de `GET /menu/price-preview/:fastFoodId` (calcul 100 % serveur). */
 export interface MenuPricePreview {
   price: number;
-  displayedPrice: number;
-  withdrawalFee: number;
-  merchantReceives: number;
+  displayedPrice: number | null;
+  withdrawalFee: number | null;
+  merchantReceives: number | null;
   accepted: boolean;
   message: string | null;
 }

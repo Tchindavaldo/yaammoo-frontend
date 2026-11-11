@@ -292,7 +292,7 @@ export const styles = StyleSheet.create({
   },
   // --- Stock (ligne 2) ---
   stockSection: {
-    marginTop: Theme.spacing.lg,
+    marginTop: Theme.spacing.sm,
   },
   stockSectionHead: {
     flexDirection: "row",

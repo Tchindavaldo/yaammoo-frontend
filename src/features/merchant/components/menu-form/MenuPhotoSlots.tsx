@@ -17,7 +17,7 @@ export const MenuPhotoSlots: React.FC<{
   return (
   <>
     <Text
-      style={[styles.fieldLabel, { marginTop: Theme.spacing.md }]}
+      style={[styles.fieldLabel, { marginTop: Theme.spacing.sm, marginBottom: Theme.spacing.sm }]}
     >
       {t("Photos du plat (3 requises)")}
     </Text>

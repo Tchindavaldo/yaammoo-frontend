@@ -145,7 +145,10 @@ un saut de taille au changement d'étape) = **540** (~62% d'un écran de référ
   - bouton ✓ en fin de ligne (`?price=`) : remplit les cases ; refus = un toast ;
     une fois accepté, le ✓ devient la poubelle (prix 2+) ; modifier le montant
     le dévalide ;
-  - bouton « Suivant » : tous les prix en une requête (`?prices=a,b`) ; refus =
+  - ouverture d'un menu existant : ses prix sont vérifiés d'office (spinner
+    sur les cartes) ;
+  - bouton « Suivant » : seuls les prix pas encore vérifiés partent, en une
+    requête (`?prices=a,b`), spinner sur le bouton seulement ; refus =
     bascule sur le premier prix refusé + un seul toast (une ligne
     « Prix N : message » par prix refusé).
 - Étape 2 : les photos (`MenuPhotoSlots`, 3 requises) sont passées sous extras,

@@ -27,7 +27,7 @@ import { MenuExtrasEditor } from "./menu-form/MenuExtrasEditor";
 import { MenuStockAvailability } from "./menu-form/MenuStockAvailability";
 import { MenuPhotoSlots } from "./menu-form/MenuPhotoSlots";
 import { MenuPricePreviewCard } from "./menu-form/MenuPricePreviewCard";
-import { useMenuPriceCheck } from "./menu-form/useMenuPricePreview";
+import { useMenuPriceCheck, LOADING_NEXT } from "./menu-form/useMenuPricePreview";
 import { menuPriceStepActions } from "./menu-form/menuPriceStepActions";
 import { t as tr, useLanguage } from "@/src/i18n";
 
@@ -138,6 +138,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   React.useEffect(() => {
     if (visible && existingMenu) {
       setNom(existingMenu.name || existingMenu.titre || "");
+      priceCheck.prefetchOnNextPrices();
       setPrices(toPrices(existingMenu));
       setSelectedPriceIdx(0);
 
@@ -383,7 +384,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                 focusProps={focusProps}
                 clearError={clearError}
                 validated={priceCheck.isValidated(selectedPriceIdx)}
-                checking={priceCheck.loadingIdx !== null}
+                checking={priceCheck.loadingIdx === selectedPriceIdx}
                 onValidate={priceActions.validateSelected}
                 onRemove={priceCheck.removeAt}
               />
@@ -391,7 +392,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
               {/* Apercu B4 : prix affiche, retrait, montant recu (backend). */}
               <MenuPricePreviewCard
                 preview={priceCheck.previewAt(selectedPriceIdx)}
-                loading={priceCheck.loadingIdx !== null}
+                loading={priceCheck.cardLoading(selectedPriceIdx)}
               />
             </DismissKeyboardWrapper>
           )}
@@ -459,9 +460,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         <TouchableOpacity
           style={[styles.nextBtn, isBusy && styles.nextBtnDisabled]}
           onPress={goNext}
-          disabled={isBusy}
+          disabled={isBusy || priceCheck.loadingIdx !== null}
         >
-          {isLoading ? (
+          {isLoading || priceCheck.loadingIdx === LOADING_NEXT ? (
             <ActivityIndicator color="white" />
           ) : (
             <Text style={styles.nextBtnText}>

@@ -19,7 +19,7 @@ export const MenuStockAvailability: React.FC<{
   <>
       {/* Ligne 1 : disponibilité (Disponible / Indisponible côte à côte) */}
       <Text
-        style={[styles.fieldLabel, { marginTop: Theme.spacing.md }]}
+        style={[styles.fieldLabel, { marginTop: Theme.spacing.sm, marginBottom: Theme.spacing.sm }]}
       >
         {t("Disponibilité")}
       </Text>
@@ -66,7 +66,7 @@ export const MenuStockAvailability: React.FC<{
 
       {/* Ligne 2 : stock — chiffres horizontaux scrollables + gros chiffre + -/+ */}
       <View style={styles.stockSection}>
-        <Text style={styles.fieldLabel}>{t("Stock disponible")}</Text>
+        <Text style={[styles.fieldLabel, { marginBottom: Theme.spacing.sm }]}>{t("Stock disponible")}</Text>
         <View style={styles.stockSectionHead}>
           {/* Chiffres horizontaux scrollables, puis le stepper */}
           <ScrollView

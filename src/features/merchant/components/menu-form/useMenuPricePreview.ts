@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -25,6 +25,9 @@ export interface PriceCheckResult {
 }
 
 const num = (raw?: string) => Number(raw);
+/** `loadingIdx` : index du prix (bouton ✓), ou vérification groupée. */
+export const LOADING_NEXT = -1;
+export const LOADING_INIT = -2;
 const valid = (n: number) => Number.isFinite(n) && n > 0;
 
 /**
@@ -77,19 +80,39 @@ export function useMenuPriceCheck(prices: DraftPrice[]) {
     [prices, fastFoodId, url],
   );
 
-  const checkAll = useCallback(async (): Promise<PriceCheckResult | null> => {
-    const idxs = prices.map((_, i) => i).filter((i) => valid(num(prices[i].price)));
-    if (!idxs.length || !fastFoodId) return { ok: true, firstBad: -1, message: null };
-    setLoadingIdx(-1);
-    try {
-      const res = await axios.get(url, {
-        params: { prices: idxs.map((i) => num(prices[i].price)).join(",") },
+  /**
+   * Vérifie tous les prix renseignés. Seuls les prix sans aperçu valable sont
+   * demandés (en une requête) ; si tout est déjà vérifié, aucune requête.
+   * `mode` : "next" = bouton Suivant (spinner sur le bouton seulement),
+   * "init" = ouverture d'un menu existant (spinner sur les cartes).
+   */
+  const checkAll = useCallback(
+    async (mode: "next" | "init" = "next"): Promise<PriceCheckResult | null> => {
+      const idxs = prices.map((_, i) => i).filter((i) => valid(num(prices[i].price)));
+      const known = new Map<number, MenuPricePreview>();
+      idxs.forEach((i) => {
+        const p = previewAt(i);
+        if (p) known.set(i, p);
       });
-      const items: (MenuPricePreview | null)[] = res.data?.items ?? [];
-      store(idxs.map((i, k) => [i, items[k] ?? null]));
-      const bad = idxs.filter((_, k) => items[k] && !items[k]!.accepted);
+      const missing = idxs.filter((i) => !known.has(i));
+      if (missing.length && fastFoodId) {
+        setLoadingIdx(mode === "init" ? LOADING_INIT : LOADING_NEXT);
+        try {
+          const res = await axios.get(url, {
+            params: { prices: missing.map((i) => num(prices[i].price)).join(",") },
+          });
+          const items: (MenuPricePreview | null)[] = res.data?.items ?? [];
+          store(missing.map((i, k) => [i, items[k] ?? null]));
+          missing.forEach((i, k) => items[k] && known.set(i, items[k]!));
+        } catch {
+          return null;
+        } finally {
+          setLoadingIdx(null);
+        }
+      }
+      const bad = idxs.filter((i) => known.get(i) && !known.get(i)!.accepted);
       if (!bad.length) return { ok: true, firstBad: -1, message: null };
-      const msgOf = (i: number) => items[idxs.indexOf(i)]?.message || "";
+      const msgOf = (i: number) => known.get(i)?.message || "";
       const message =
         bad.length === 1
           ? msgOf(bad[0])
@@ -97,16 +120,37 @@ export function useMenuPriceCheck(prices: DraftPrice[]) {
               .map((i) => `${tr("Prix {{a}}", { a: i + 1 })} : ${msgOf(i)}`)
               .join("\n");
       return { ok: false, firstBad: bad[0], message };
-    } catch {
-      return null;
-    } finally {
-      setLoadingIdx(null);
-    }
-  }, [prices, fastFoodId, url]);
+    },
+    [prices, previews, fastFoodId, url],
+  );
+
+  // Menu existant ouvert : ses prix sont vérifiés dès qu'ils sont posés.
+  const prefetch = useRef(false);
+  const prefetchOnNextPrices = () => {
+    prefetch.current = true;
+  };
+  useEffect(() => {
+    if (!prefetch.current) return;
+    prefetch.current = false;
+    checkAll("init");
+  }, [prices]);
+
+  /** Spinner des cartes : bouton ✓ du prix affiché, ou ouverture du menu. */
+  const cardLoading = (idx: number) =>
+    loadingIdx === idx || loadingIdx === LOADING_INIT;
 
   /** Retrait d'un prix : décale les aperçus des prix suivants. */
   const removeAt = (idx: number) =>
     setPreviews((prev) => prev.filter((_, i) => i !== idx));
 
-  return { previewAt, isValidated, checkOne, checkAll, removeAt, loadingIdx };
+  return {
+    previewAt,
+    isValidated,
+    checkOne,
+    checkAll,
+    removeAt,
+    loadingIdx,
+    prefetchOnNextPrices,
+    cardLoading,
+  };
 }

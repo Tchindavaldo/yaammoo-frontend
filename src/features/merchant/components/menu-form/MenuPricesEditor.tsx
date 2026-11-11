@@ -57,6 +57,9 @@ export const MenuPricesEditor: React.FC<Props> = ({
   const [descHeights, setDescHeights] = useState<number[]>([]);
   // Hauteur mesurée de l'input prix → hauteur min de la description (même ligne).
   const [priceColH, setPriceColH] = useState(0);
+  // Plus petite hauteur de contenu vue (une ligne) : la description garde la
+  // hauteur de l'input prix et ne grandit que des lignes en plus.
+  const [baseContentH, setBaseContentH] = useState(0);
   const current = prices[selectedIdx] || { price: "", description: "" };
   const [pricePh, descPh] = placeholders()[Math.min(selectedIdx, 2)];
 
@@ -141,7 +144,8 @@ export const MenuPricesEditor: React.FC<Props> = ({
             {
               height: Math.min(
                 DESC_MAX,
-                Math.max(priceColH || DESC_MIN, descHeights[selectedIdx] || 0),
+                (priceColH || DESC_MIN) +
+                  Math.max(0, (descHeights[selectedIdx] || 0) - (baseContentH || Infinity)),
               ),
             },
             ...fieldStyle(`desc${selectedIdx}`),
@@ -155,6 +159,7 @@ export const MenuPricesEditor: React.FC<Props> = ({
           }}
           onContentSizeChange={(e) => {
             const h = e.nativeEvent.contentSize.height;
+            if (!baseContentH || h < baseContentH) setBaseContentH(h);
             setDescHeights((prev) => {
               if (prev[selectedIdx] === h) return prev;
               const next = [...prev];
@@ -168,7 +173,7 @@ export const MenuPricesEditor: React.FC<Props> = ({
         />
         {!validated ? (
           <TouchableOpacity
-            style={[styles.itemActionBtn, styles.itemValidateBtn]}
+            style={[styles.itemActionBtn, styles.itemValidateBtn, { height: priceColH || DESC_MIN }]}
             onPress={onValidate}
             disabled={checking || !current.price}
           >
@@ -180,7 +185,10 @@ export const MenuPricesEditor: React.FC<Props> = ({
           </TouchableOpacity>
         ) : (
           selectedIdx > 0 && (
-            <TouchableOpacity style={styles.itemActionBtn} onPress={remove}>
+            <TouchableOpacity
+              style={[styles.itemActionBtn, { height: priceColH || DESC_MIN }]}
+              onPress={remove}
+            >
               <Ionicons name="trash-outline" size={18} color={Theme.colors.danger} />
             </TouchableOpacity>
           )

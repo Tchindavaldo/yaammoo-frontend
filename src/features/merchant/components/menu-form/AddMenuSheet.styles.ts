@@ -179,7 +179,7 @@ export const styles = StyleSheet.create({
   priceDescRow: {
     flexDirection: "row",
     gap: 8,
-    alignItems: "stretch",
+    alignItems: "flex-start",
   },
   priceCol: {
     width: 90,

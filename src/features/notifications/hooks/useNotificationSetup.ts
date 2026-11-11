@@ -13,6 +13,7 @@ import { useNotificationContext } from "../context/NotificationContext";
 import { getNotificationRoute } from "../utils/notificationRouting";
 import { auth } from "@/src/services/firebase";
 import { getDeviceId } from "../services/deviceId";
+import { auth } from "@/src/services/firebase";
 import { t, useLanguage } from "@/src/i18n";
 
 Notifications.setNotificationHandler({
@@ -27,7 +28,15 @@ Notifications.setNotificationHandler({
 
 const routeFromData = (data: any): string => {
   if (!data) return "/(tabs)/notifications";
-  return getNotificationRoute({ type: data.type, route: data.route } as any);
+  // Push d'un AUTRE compte (changement de compte sur ce téléphone) : on n'ouvre
+  // pas sa commande, la page Notifications suffit.
+  const me = auth.currentUser?.uid;
+  if (data.userId && me && data.userId !== me) return "/(tabs)/notifications";
+  return getNotificationRoute({
+    type: data.type,
+    route: data.route,
+    orderId: data.orderId || undefined,
+  } as any);
 };
 
 export const useNotificationSetup = () => {

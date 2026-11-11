@@ -114,6 +114,11 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 
 **Response (tap sur la notif)**
 - `addNotificationResponseReceivedListener` → lit `data.route` ou le dérive du `type` → `router.push(route)`.
+- Commande client : `orderId` est ajouté à la route (`/(tabs)/orders?section=…&orderId=…`) ;
+  `CartStatusPanel` (hook `useFocusOrderFromNotification`) ouvre la fiche de CETTE
+  commande sur son statut réel. Même chose depuis la liste in-app.
+- `data.userId` (destinataire) ≠ compte connecté → page Notifications seulement.
+  Le backend détache aussi le device des autres comptes à chaque `push-token/add`.
 
 **Initial (app killed → ouverte via notif)**
 - `getLastNotificationResponseAsync()` au setup → si présent, navigate vers la route.

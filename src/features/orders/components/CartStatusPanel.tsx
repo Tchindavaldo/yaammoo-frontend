@@ -15,6 +15,7 @@ import { DS } from "@/src/theme/ds";
 import { ClientOrderCard } from "@/src/features/orders/components/ClientOrderCard";
 import { ClientOrderSkeleton } from "@/src/features/orders/components/ClientOrderSkeleton";
 import { OrderBottomSheet } from "@/src/features/orders/components/OrderBottomSheet";
+import { useFocusOrderFromNotification } from "@/src/features/orders/hooks/useFocusOrderFromNotification";
 import {
   OrderTrackingHeader,
   type TrackedFastFood,
@@ -51,6 +52,8 @@ interface CartStatusPanelProps {
   topOffset?: number;
   bottomOffset?: number;
   initialStatus?: "pending" | "active" | "finished" | "delivered";
+  /** Commande à ouvrir (tap sur une notification). */
+  focusOrderId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,6 +63,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
   topOffset = 0,
   bottomOffset = 0,
   initialStatus = "pending",
+  focusOrderId,
 }) => {
   const i18nLang = useLanguage();
   const {
@@ -95,6 +99,14 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
     [],
   );
   const [detailVisible, setDetailVisible] = useState(false);
+
+  // Notification touchée : fiche de la commande ouverte sur son vrai statut.
+  useFocusOrderFromNotification(focusOrderId, { pending, active, finished, delivered }, (status, order) => {
+    setActiveStatus(status);
+    setSelectedOrderDetails(order);
+    setSelectedGroupOrders([]);
+    setDetailVisible(true);
+  });
 
   // Liste courante selon l'onglet actif
   const statusList: Commande[] = useMemo(() => {

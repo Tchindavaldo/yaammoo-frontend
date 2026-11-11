@@ -1,6 +1,20 @@
 import { Notification } from "../context/NotificationContext";
 
+/**
+ * Route d'une notification. Commande client : `orderId` est ajouté pour que
+ * l'onglet Commandes ouvre directement la fiche de CETTE commande, sur le
+ * statut où elle se trouve réellement.
+ */
 export const getNotificationRoute = (notif: Partial<Notification> | null | undefined): string => {
+  const route = baseRoute(notif);
+  const orderId = (notif as any)?.orderId;
+  if (orderId && route.startsWith("/(tabs)/orders")) {
+    return `${route}${route.includes("?") ? "&" : "?"}orderId=${encodeURIComponent(orderId)}`;
+  }
+  return route;
+};
+
+const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
   if (!notif) return "/(tabs)/notifications";
   // `route` porté par la notif (backend). Peut être partiel ("settings?section=…")
   // → on préfixe "/(tabs)/" si ce n'est pas déjà un chemin absolu.

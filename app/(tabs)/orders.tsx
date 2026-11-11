@@ -21,7 +21,7 @@ export default function OrdersScreen() {
   const { isSignedIn } = useAuthGate();
   const [headerHeight, setHeaderHeight] = useState(70);
   // Deep-link `?section=` (notifications, home) : statut ouvert au montage.
-  const { section } = useLocalSearchParams<{ section?: string }>();
+  const { section, orderId } = useLocalSearchParams<{ section?: string; orderId?: string }>();
   const initialStatus = STATUSES.includes(section as any)
     ? (section as (typeof STATUSES)[number])
     : "pending";
@@ -49,6 +49,7 @@ export default function OrdersScreen() {
             key={initialStatus}
             topOffset={headerHeight}
             initialStatus={initialStatus}
+            focusOrderId={orderId}
           />
         </BlurTarget>
       </BlurScope>

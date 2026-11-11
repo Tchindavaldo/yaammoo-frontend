@@ -19,7 +19,7 @@ export const MenuStockAvailability: React.FC<{
   <>
       {/* Ligne 1 : disponibilité (Disponible / Indisponible côte à côte) */}
       <Text
-        style={[styles.fieldLabel, { marginTop: Theme.spacing.lg }]}
+        style={[styles.fieldLabel, { marginTop: Theme.spacing.md }]}
       >
         {t("Disponibilité")}
       </Text>

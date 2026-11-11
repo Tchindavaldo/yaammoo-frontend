@@ -16,9 +16,9 @@ const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} F`;
 export const MenuPricePreviewCard: React.FC<{ price: string }> = ({ price }) => {
   useLanguage();
   const { preview, loading } = useMenuPricePreview(price);
-  if (!preview && !loading) return null;
-
-  const value = (n?: number) => (preview && n != null ? fmt(n) : "…");
+  // Carte toujours visible : cases vides (« — ») tant qu'aucun montant n'est saisi.
+  const value = (n?: number) =>
+    preview && n != null ? fmt(n) : loading ? "…" : "—";
 
   return (
     <View style={styles.wrap}>

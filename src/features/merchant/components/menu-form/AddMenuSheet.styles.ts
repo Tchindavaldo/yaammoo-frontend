@@ -88,7 +88,7 @@ export const styles = StyleSheet.create({
   },
   imageSlot: {
     flex: 1,
-    aspectRatio: 1,
+    aspectRatio: 1.35,
     borderRadius: 12,
     overflow: "hidden",
     backgroundColor: Theme.colors.gray[100],
@@ -179,7 +179,7 @@ export const styles = StyleSheet.create({
   priceDescRow: {
     flexDirection: "row",
     gap: 8,
-    alignItems: "center",
+    alignItems: "stretch",
   },
   priceCol: {
     width: 90,

@@ -712,13 +712,22 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const scrollRef = useRef<ScrollView>(null);
   const onScrollSettled = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const y = e.nativeEvent.contentOffset.y;
+      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+      const y = contentOffset.y;
+      // Bas de liste atteignable. ⚠️ Sans borne, un scroll rapide finissant en
+      // bout de liste (rebond) visait un offset hors contenu : la ScrollView
+      // restait figée et plus aucun scroll ne passait.
+      const maxY = Math.max(0, contentSize.height - layoutMeasurement.height);
+      if (y <= 0 || y >= maxY - 1) return; // rebond haut / bas : on n'y touche pas
       const rel = y - SNAP_ANCHOR;
       if (rel <= 0) return; // au-dessus de la 1re carte → ne pas toucher
       const residual = rel % CARD_STRIDE;
       if (residual < 4 || residual > CARD_STRIDE - 4) return; // déjà ~aligné
       // Scrolle vers le haut OU le bas vers le bord de carte le plus proche.
-      const target = SNAP_ANCHOR + Math.round(rel / CARD_STRIDE) * CARD_STRIDE;
+      const target = Math.min(
+        maxY,
+        SNAP_ANCHOR + Math.round(rel / CARD_STRIDE) * CARD_STRIDE,
+      );
       scrollRef.current?.scrollTo({ y: target, animated: true });
     },
     [SNAP_ANCHOR, CARD_STRIDE],

@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **24 règles numérotées R1 → R24.** Toute nouvelle règle ajoutée à ce fichier
+> **25 règles numérotées R1 → R25.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -363,3 +363,14 @@ TOUJOURS ce message « Nouveautés », sans le changer :
 > Corrections de bugs, améliorations de la stabilité et de l'interface utilisateur.
 
 Il vit dans `distribution/whatsnew/whatsnew-fr-FR` (lu par le workflow).
+
+## R25 — Maquettes : un seul canvas « Yaammoo — Design » (OBLIGATOIRE)
+
+Toute nouvelle maquette / variante d'interface se crée dans le canvas Design
+existant, **jamais dans un nouvel artifact** :
+https://claude.ai/artifact/EQX6WSUfNmPW1dgnb8GJti
+
+- Un nouveau sujet (écran, flux) = une **nouvelle page** du canvas
+  (`pages` de `project/canvas.json`), ses artboards rattachés via `page`.
+- Un sujet existant (ex. Portefeuille, Retrait) : ajouter les artboards sur
+  sa page.

@@ -145,11 +145,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       const extrasData = existingMenu.extra || existingMenu.extras || [];
       setExtras(extrasData.map(toItem));
 
-      setAvailability(
-        existingMenu.status || existingMenu.disponibilite === "Disponible"
-          ? "available"
-          : "unavailable",
-      );
+      // `status` est une chaîne : la tester en booléen donnait toujours « Disponible ».
+      const off = existingMenu.status === "unavailable" || (!existingMenu.status && existingMenu.disponibilite === "Indisponible");
+      setAvailability(off ? "unavailable" : "available");
 
       setStock((existingMenu?.stock ?? 0).toString());
 

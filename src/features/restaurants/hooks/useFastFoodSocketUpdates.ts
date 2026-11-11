@@ -23,6 +23,10 @@ export function useFastFoodSocketUpdates(
         prev.map((ff) => {
           if (ff.id !== ffId) return ff;
           const list = Array.isArray(ff.menu) ? ff.menu : [];
+          // Menu passé indisponible : il sort du catalogue, comme au chargement.
+          if (rawMenu?.status === "unavailable") {
+            return { ...ff, menu: list.filter((m: any) => m.id !== menu.id) };
+          }
           const idx = list.findIndex((m: any) => m.id === menu.id);
           const nextMenu =
             idx >= 0

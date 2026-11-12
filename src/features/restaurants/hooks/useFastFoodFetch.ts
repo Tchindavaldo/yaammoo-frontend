@@ -2,6 +2,7 @@
 import { Config } from "@/src/api/config";
 import { trackHomePage } from "@/src/services/analytics/homePages";
 import { trackBootStep } from "@/src/services/bootTelemetry";
+import { trackHomeFetch } from "@/src/services/netTelemetry";
 import { getOptionalIdToken } from "@/src/services/idToken";
 import type { AppBanner, FastFood } from "@/src/types";
 import { sinceBoot } from "@/src/utils/bootClock";
@@ -193,6 +194,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
 
       if (response.data && response.data.data) {
         const raw: any[] = response.data.data;
+        trackHomeFetch({ firstPage: isFirstPage, ms: Date.now() - startedAt, ok: true, count: raw.length });
         // Statistiques : profondeur du scroll du home, ou recherche.
         trackHomePage(isFirstPage, raw.length, q);
         if (isFirstPage) {
@@ -239,6 +241,12 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
     } catch (err: any) {
       if (guarded && myRun !== runIdRef.current) return;
       console.error("Error fetching fast foods:", err);
+      trackHomeFetch({
+        firstPage: isFirstPage,
+        ms: Date.now() - startedAt,
+        ok: false,
+        error: { code: err?.code, message: err?.message, status: err?.response?.status },
+      });
       setError(tr("Connection internet indisponible, vérifiez votre réseau"));
       // Echec d'une page suivante : rien ne s'insera, le prochain bas
       // pourra reessayer au lieu de rester verrouille. Le loader s'eteint

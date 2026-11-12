@@ -1,5 +1,6 @@
 import NetInfo from "@react-native-community/netinfo";
 import { Platform } from "react-native";
+import { trackNetState } from "./netTelemetry";
 
 /**
  * Etat reel de la connectivite.
@@ -74,8 +75,9 @@ export function trackInFlight(): {
 }
 
 /** Avorte tout ce qui est en vol : plus rien ne peut aboutir. */
-function abortInFlight() {
-  if (inFlight.size === 0) return;
+function abortInFlight(): number {
+  const n = inFlight.size;
+  if (n === 0) return 0;
   console.log(`[net] abandon de ${inFlight.size} requete(s) en vol`);
   inFlight.forEach((controller) => {
     try {
@@ -85,6 +87,7 @@ function abortInFlight() {
     }
   });
   inFlight.clear();
+  return n;
 }
 
 /**
@@ -114,11 +117,12 @@ export function onNetworkStateChange(
 }
 
 /** Diffuse l'etat courant aux abonnes d'affichage. */
-function emitState() {
+function emitState(source = "netinfo") {
   const online = reachable !== false;
   // Hors ligne : rien de ce qui est parti ne peut aboutir. On l'avorte pour que
   // les loaders s'eteignent au lieu de tourner sans fin.
-  if (!online) abortInFlight();
+  const aborted = online ? 0 : abortInFlight();
+  trackNetState(online, source, aborted);
   stateListeners.forEach((listener) => {
     try {
       listener(online);
@@ -345,7 +349,7 @@ function settle(next: boolean) {
 
   const restored = reachable === false && next === true;
   reachable = next;
-  emitState();
+  emitState("sonde");
 
   if (restored) {
     restoreListeners.forEach((listener) => {
@@ -415,7 +419,7 @@ export function reportSocketConnected() {
   const restored = reachable === false;
   reachable = true;
   settled = true;
-  emitState();
+  emitState("socket");
 
   if (restored) {
     restoreListeners.forEach((listener) => {
@@ -459,7 +463,7 @@ export function reportNetworkFailure() {
   console.log("[net] coupure detectee par echec de requete");
   reachable = false;
   settled = true;
-  emitState();
+  emitState("echec-requete");
   // On redemande un verdict : si c'etait un faux positif (serveur momentanement
   // injoignable alors que le lien est bon), la sonde remet `reachable` a true et
   // declenche `onNetworkRestored`.

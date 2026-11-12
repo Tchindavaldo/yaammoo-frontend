@@ -1148,5 +1148,11 @@
   "Nom et prix": "Name and price",
   "Extras, stock, statut et photos": "Extras, stock, status and photos",
   "Impossible de vérifier le prix": "Unable to check the price",
-  "Prix non accepté": "Price not accepted"
+  "Prix non accepté": "Price not accepted",
+  "Nouveau design": "New design",
+  "Ouverte": "Open",
+  "SEMAINE": "WEEK",
+  "SOLDE": "BALANCE",
+  "AUJOURD’HUI": "TODAY",
+  "Bientôt disponible": "Coming soon"
 }

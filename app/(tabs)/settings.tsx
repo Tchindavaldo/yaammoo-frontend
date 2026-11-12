@@ -178,6 +178,12 @@ export default function SettingsScreen() {
         {isMerchant && (
           <>
             <SettingGrid title={t("Boutique")}>
+              {/* Apercu du nouveau design du profil marchand (en cours). */}
+              <SettingGridItem
+                icon="sparkles-outline"
+                title={t("Nouveau design")}
+                onPress={() => router.push("/shop/new-design")}
+              />
               {/* Commandes reçues par la boutique (page marchand). */}
               <SettingGridItem
                 icon="receipt-outline"

@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
 import { useToast } from "./useToast";
+import { showToast } from "@/src/services/globalToast";
 import { useShopPosition } from "../edit-boutique/useShopPosition";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -31,7 +32,9 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
   const { userData, setUserData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(70);
-  const { toastVisible, toastConfig, toastAnimY, showToast } = useToast();
+  // Toast GLOBAL (R22) : en haut, comme le reste de l'app. Le toast local
+  // reste inactif (jamais visible) pour ne pas casser CreateBoutiquePanel.
+  const { toastVisible, toastConfig, toastAnimY } = useToast();
   // Position GPS de la boutique (meme champ que l'edition).
   const { shopPosition, locating, captureShopPosition } = useShopPosition(
     (message) => showToast(message, "error"),

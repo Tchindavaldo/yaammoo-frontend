@@ -162,6 +162,9 @@ export const ShopCreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
             setAdvanceDays={s.setAdvanceDays}
             pickupAllowed={s.pickupAllowed}
             setPickupAllowed={s.setPickupAllowed}
+            hasShopPosition={!!s.shopPosition}
+            locating={s.locating}
+            onCaptureShopPosition={s.captureShopPosition}
             loading={s.loading}
             onSubmit={s.handleCreate}
           />

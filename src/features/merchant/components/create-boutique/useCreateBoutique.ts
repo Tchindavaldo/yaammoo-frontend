@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
 import { useToast } from "./useToast";
+import { useShopPosition } from "../edit-boutique/useShopPosition";
 import { t, useLanguage } from "@/src/i18n";
 
 export type { Zone } from "./parseBoutique";
@@ -30,6 +31,11 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
   const { userData, setUserData } = useAuth();
   const [loading, setLoading] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(70);
+  const { toastVisible, toastConfig, toastAnimY, showToast } = useToast();
+  // Position GPS de la boutique (meme champ que l'edition).
+  const { shopPosition, locating, captureShopPosition } = useShopPosition(
+    (message) => showToast(message, "error"),
+  );
 
   // Infos boutique
   const [name, setName] = useState("");
@@ -79,8 +85,6 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
   const [showOpenPicker, setShowOpenPicker] = useState(false);
   const [showClosePicker, setShowClosePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-
-  const { toastVisible, toastConfig, toastAnimY, showToast } = useToast();
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString([], {
@@ -213,6 +217,13 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
       });
 
       if (response.data && response.data.success) {
+        // Position : enregistree par l'endpoint d'edition, qui l'accepte
+        // (latitude + longitude ensemble). Un echec ne bloque pas la creation.
+        if (shopPosition) {
+          await axios
+            .post(`${Config.apiUrl}/fastfood/${response.data.data.id}`, shopPosition)
+            .catch((e) => console.warn("Position boutique non enregistree:", e));
+        }
         if (userData) {
           setUserData({
             ...userData,
@@ -311,5 +322,8 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
     pickImage,
     handleCreate,
     closeModal: onCancel,
+    shopPosition,
+    locating,
+    captureShopPosition,
   };
 };

@@ -3,6 +3,7 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import type { BackTone } from "./ShopNewHeader";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 
@@ -11,13 +12,13 @@ import { DS } from "@/src/theme/ds";
  * ligne Portefeuille. DESIGN SEUL : rien n'est branche, montant = EXEMPLE.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
-const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: BackTone }[] = [
-  { icon: "restaurant-outline", label: "Menu", info: "18 plats", tone: "plain" },
-  { icon: "wine-outline", label: "Boissons", info: "6 boissons", tone: "black" },
-  { icon: "people-outline", label: "Personnel", info: "3 membres", tone: "grey" },
-  { icon: "notifications-outline", label: "Notifications", info: "Activées" },
-  { icon: "chatbubbles-outline", label: "Messages", info: "2 non lus", hot: true },
-  { icon: "information-circle-outline", label: "Information", info: "Ouverte" },
+const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: BackTone; href: string }[] = [
+  { icon: "restaurant-outline", label: "Menu", href: "/shop/menu", info: "18 plats", tone: "plain" },
+  { icon: "wine-outline", label: "Boissons", href: "/shop/drinks", info: "6 boissons", tone: "black" },
+  { icon: "people-outline", label: "Personnel", href: "/shop/staff", info: "3 membres", tone: "grey" },
+  { icon: "notifications-outline", label: "Notifications", href: "/shop/notifications", info: "Activées" },
+  { icon: "chatbubbles-outline", label: "Messages", href: "/shop/messages", info: "2 non lus", hot: true },
+  { icon: "information-circle-outline", label: "Information", href: "/shop/edit", info: "Ouverte" },
 ];
 
 /** Essai : Menu / Boissons / Personnel changent le bouton retour du header. */
@@ -31,7 +32,7 @@ export function ShopManageGrid({ onTone, variant = "S1D" }: { onTone?: (t: BackT
       <Text style={{ paddingHorizontal: 6, fontSize: 16, fontWeight: "600", color: DS.ink }}>{t("Gestion")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {TILES.map((x) => (
-          <Pressable key={x.label} onPress={() => x.tone && onTone?.(x.tone)} style={{ flexBasis: "31%", flexGrow: 1, padding: variant === "S1A" ? 8 : 10, borderRadius: 18, backgroundColor: DS.surface, gap: variant === "S1C" ? 4 : 5 }}>
+          <Pressable key={x.label} onPress={() => (onTone ? x.tone && onTone(x.tone) : router.push(x.href as any))} style={{ flexBasis: "31%", flexGrow: 1, padding: variant === "S1A" ? 8 : 10, borderRadius: 18, backgroundColor: DS.surface, gap: variant === "S1C" ? 4 : 5 }}>
             {variant === "S1C" ? (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Text numberOfLines={1} style={{ flex: 1, fontSize: 12, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>

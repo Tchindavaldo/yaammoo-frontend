@@ -28,11 +28,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { onPendingPushTap, takePendingPushTap } from "@/src/features/notifications/services/pendingPushTap";
 import { t, useLanguage } from "@/src/i18n";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { isMerchantNotification } from "@/src/features/notifications/utils/notificationAudience";
 
 export default function NotificationsScreen() {
   const i18nLang = useLanguage();
   const {
-    notifications,
+    notifications: allNotifications,
     loading,
     refresh,
     markAsRead,
@@ -49,6 +51,12 @@ export default function NotificationsScreen() {
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
 
+  // Seules les notifications du mode actif (marchand / client).
+  const { isMerchantMode } = useMerchantMode();
+  const notifications = useMemo(
+    () => allNotifications.filter((n) => isMerchantNotification(n) === isMerchantMode),
+    [allNotifications, isMerchantMode],
+  );
   const unreadCount = notifications.filter((n) => !isReadFlag(n)).length;
   const sections = useMemo(
     () => groupNotificationsByDate(notifications),

@@ -1,5 +1,4 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { showToast } from "@/src/services/globalToast";
 import { APP_VERSION } from "@/src/api/version";
 import { currentOtaLabel } from "@/src/services/otaTelemetry";
@@ -60,7 +59,6 @@ export default function SettingsScreen() {
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
-  const { isMerchantMode } = useMerchantMode();
 
   // Personnel = page entière `app/shop/staff` (tuile ou deep-link) : on y
   // redirige puis on referme le drapeau local.
@@ -175,75 +173,6 @@ export default function SettingsScreen() {
             onPress={() => open("userBonus")}
           />
         </SettingGrid>
-
-        {/* Boutique - only show for merchants (AVANT Livraison) */}
-        {isMerchant && !isMerchantMode && (
-          <>
-            <SettingGrid title={t("Boutique")}>
-              {/* Apercu du nouveau design du profil marchand (en cours). */}
-              <SettingGridItem
-                icon="sparkles-outline"
-                title={t("Nouveau design")}
-                onPress={() => router.push("/shop/new-design")}
-              />
-              {/* Memes pages, grille Gestion en variante S1C (2) / S1A (3). */}
-              <SettingGridItem
-                icon="sparkles-outline"
-                title={t("Nouveau design 2")}
-                onPress={() => router.push({ pathname: "/shop/new-design", params: { v: "2" } })}
-              />
-              <SettingGridItem
-                icon="sparkles-outline"
-                title={t("Nouveau design 3")}
-                onPress={() => router.push({ pathname: "/shop/new-design", params: { v: "3" } })}
-              />
-              {/* Commandes reçues par la boutique (page marchand). */}
-              <SettingGridItem
-                icon="receipt-outline"
-                title={t("Commandes")}
-                onPress={() => router.push("/shop/orders")}
-              />
-              <SettingGridItem
-                icon="storefront-outline"
-                title="Information"
-                onPress={() => router.push("/shop/edit")}
-              />
-              <SettingGridItem
-                icon="restaurant-outline"
-                title={t("Menu")}
-                onPress={() => router.push("/shop/menu")}
-              />
-              {/* Boissons de la boutique (proposées avec tous les plats ou certains). */}
-              <SettingGridItem
-                icon="wine-outline"
-                title={t("Boissons")}
-                onPress={() => router.push("/shop/drinks")}
-              />
-              <SettingGridItem
-                icon="people-outline"
-                title={t("Personnel")}
-                onPress={() => open("staffManage")}
-              />
-              <SettingGridItem
-                icon="chatbubbles-outline"
-                title={t("Messages")}
-                onPress={() => router.push("/shop/messages")}
-              />
-              <SettingGridItem
-                icon="megaphone-outline"
-                title="Notifications"
-                onPress={() => router.push("/shop/notifications")}
-              />
-              {!appleReviewMode && (
-                <SettingGridItem
-                  icon="wallet-outline"
-                  title={t("Portefeuille boutique")}
-                  onPress={() => router.push("/shop/wallet")}
-                />
-              )}
-            </SettingGrid>
-          </>
-        )}
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
         {/* Masquee pour un marchand. */}

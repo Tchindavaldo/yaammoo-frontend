@@ -6,7 +6,7 @@ import { SettingsHeaderProfile } from "@/src/features/profile/components/Setting
 import { ShopOrdersSection } from "@/src/features/profile/components/shop-hero/ShopOrdersSection";
 import { ShopHeroCard } from "@/src/features/profile/components/shop-hero/ShopHeroCard";
 import { ShopPageFrame } from "@/src/features/merchant/components/shop/ShopPageFrame";
-import { ShopManageSection } from "@/src/features/profile/components/shop-hero/ShopManageSection";
+import { ShopBoutiqueTabs } from "@/src/features/profile/components/shop-hero/ShopBoutiqueTabs";
 import { showToast } from "@/src/services/globalToast";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
@@ -38,7 +38,7 @@ export default function NewDesignScreen() {
       >
         <ShopHeroCard />
         <ShopOrdersSection />
-        <ShopManageSection />
+        <ShopBoutiqueTabs />
       </ScrollView>
     </View>
     </ShopPageFrame>

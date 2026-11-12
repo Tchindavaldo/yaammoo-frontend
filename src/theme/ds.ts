@@ -42,6 +42,8 @@ export const DS = {
   track: "#E4E4E8",
   idle: "#D6D6DB",
   accentInk: "#cb3f10",
+  /** Jaune du reseau MTN (pastille de solde). */
+  mtn: "#f5b301",
   accentText: "#B23A0E",
   accentTint: "rgba(236,73,19,0.1)",
   accentWash: "rgba(236,73,19,0.07)",

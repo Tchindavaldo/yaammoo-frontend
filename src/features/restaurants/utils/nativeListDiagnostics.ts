@@ -11,6 +11,16 @@ import { Sentry } from "@/src/services/sentry";
  * de page (`kind: "apply"`). Detail des champs : `architecture/restaurants.md`.
  */
 
+/** Evenement de diagnostic du home natif (tag `diag:home`). */
+export const trackHome = (message: string, data: Record<string, unknown>) => {
+  Sentry.withScope((scope) => {
+    scope.setLevel("info");
+    scope.setTag("diag", "home");
+    scope.setContext("home", data);
+    Sentry.captureMessage(`home ${message}`);
+  });
+};
+
 let announced = false;
 
 /** Une fois par lancement : preuve que la build embarque bien la liste native. */
@@ -36,6 +46,9 @@ let logSeq = 0;
  */
 export const reportNativeDiagnostics = (r: Record<string, any>) => {
   const json = JSON.stringify(r);
+  // DIAGNOSTIC temporaire (squelettes figes a l'arrivee) : rapport natif vers
+  // Sentry, tag `diag:home`. A retirer une fois la cause trouvee.
+  trackHome("native.report", { kind: r?.kind, report: json.slice(0, 7000) });
   const count = Math.max(1, Math.ceil(json.length / LOG_CHUNK));
   logSeq += 1;
   for (let i = 0; i < count; i++) {

@@ -1,8 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router, type Href } from "expo-router";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
@@ -10,17 +9,17 @@ import { DS } from "@/src/theme/ds";
 /**
  * « Nouveau design » : reste de la section Boutique (maquette G1), au style
  * des groupes de la page « Nouveau rôle » (StaffRoleSheet, copie R16).
- * Infos de droite = EXEMPLES (pas encore branche au backend).
+ * DESIGN SEUL : lignes non cliquables, infos de droite = EXEMPLES.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
-type Item = { icon: Ion; label: string; info: string; to: Href; hot?: boolean; wallet?: boolean };
+type Item = { icon: Ion; label: string; info: string; hot?: boolean; wallet?: boolean };
 const ITEMS: Item[] = [
-  { icon: "information-circle-outline", label: "Information", info: "Ouverte", to: "/shop/edit" },
-  { icon: "restaurant-outline", label: "Menu", info: "18 plats", to: "/shop/menu" },
-  { icon: "wine-outline", label: "Boissons", info: "6", to: "/shop/drinks" },
-  { icon: "people-outline", label: "Personnel", info: "3 membres", to: "/shop/staff" },
-  { icon: "chatbubbles-outline", label: "Messages", info: "2 non lus", to: "/shop/messages", hot: true },
-  { icon: "wallet-outline", label: "Portefeuille boutique", info: "128 500 F", to: "/shop/wallet", wallet: true },
+  { icon: "information-circle-outline", label: "Information", info: "Ouverte" },
+  { icon: "restaurant-outline", label: "Menu", info: "18 plats" },
+  { icon: "wine-outline", label: "Boissons", info: "6" },
+  { icon: "people-outline", label: "Personnel", info: "3 membres" },
+  { icon: "chatbubbles-outline", label: "Messages", info: "2 non lus", hot: true },
+  { icon: "wallet-outline", label: "Portefeuille boutique", info: "128 500 F", wallet: true },
 ];
 
 export function ShopManageSection() {
@@ -37,10 +36,8 @@ export function ShopManageSection() {
       </View>
       <View style={{ borderRadius: 20, padding: 6, gap: 4, backgroundColor: DS.surface }}>
         {items.map((i) => (
-          <Pressable
+          <View
             key={i.label}
-            onPress={() => router.push(i.to)}
-            accessibilityRole="button"
             style={{ height: 48, paddingLeft: 12, paddingRight: 10, borderRadius: 14, backgroundColor: DS.bg, flexDirection: "row", alignItems: "center", gap: 12 }}
           >
             <Ionicons name={i.icon} size={19} color={i.hot ? DS.accent : DS.ink} />
@@ -49,7 +46,7 @@ export function ShopManageSection() {
               {t(i.info)}
             </Text>
             <Ionicons name="chevron-forward" size={14} color={DS.faint} />
-          </Pressable>
+          </View>
         ))}
       </View>
     </View>

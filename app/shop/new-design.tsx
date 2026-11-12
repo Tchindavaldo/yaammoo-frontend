@@ -34,6 +34,9 @@ export default function NewDesignScreen() {
           paddingTop: headerHeight + 16,
           paddingHorizontal: 16,
           gap: 18,
+          // Le conteneur Boutique (dernier) prend tout l'espace restant.
+          flexGrow: 1,
+          paddingBottom: 16,
         }}
       >
         <ShopHeroCard />

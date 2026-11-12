@@ -9,7 +9,9 @@ import { DS } from "@/src/theme/ds";
 
 /**
  * « Nouveau design » : section Boutique en chips (maquette B1). Chaque chip
- * affiche son contenu dessous ; seul Portefeuille est dessine (maquette Q1).
+ * affiche son contenu dessous ; seul Portefeuille est dessine (maquette Q1b).
+ * Conteneur gris (comme le hero) qui prend tout l'espace restant de la page :
+ * chips + cartes en haut, « Retirer » tout en bas.
  * DESIGN SEUL : rien n'est branche, montants = EXEMPLES.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
@@ -29,12 +31,12 @@ export function ShopBoutiqueTabs() {
   const chips = CHIPS.filter((c) => !(c.key === "wallet" && appleReviewMode));
   const [sel, setSel] = useState<Key>(appleReviewMode ? "info" : "wallet");
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ flex: 1, gap: 10, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 28, backgroundColor: DS.surface }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ marginHorizontal: -16 }}
-        contentContainerStyle={{ gap: 6, paddingHorizontal: 16 }}
+        style={{ marginHorizontal: -10, flexGrow: 0 }}
+        contentContainerStyle={{ gap: 6, paddingHorizontal: 10 }}
       >
         {chips.map((c) => {
           const on = c.key === sel;
@@ -43,7 +45,7 @@ export function ShopBoutiqueTabs() {
               key={c.key}
               onPress={() => setSel(c.key)}
               accessibilityRole="button"
-              style={{ height: 36, paddingLeft: 10, paddingRight: 14, borderRadius: 18, backgroundColor: on ? DS.ink : DS.surface, flexDirection: "row", alignItems: "center", gap: 6 }}
+              style={{ height: 36, paddingLeft: 10, paddingRight: 14, borderRadius: 18, backgroundColor: on ? DS.ink : DS.bg, flexDirection: "row", alignItems: "center", gap: 6 }}
             >
               <Ionicons name={c.icon} size={15} color={on ? DS.onInk : DS.ink} />
               <Text style={{ fontSize: 13, fontWeight: "600", color: on ? DS.onInk : DS.ink }}>{t(c.label)}</Text>
@@ -51,30 +53,38 @@ export function ShopBoutiqueTabs() {
           );
         })}
       </ScrollView>
-      {sel === "wallet" ? <WalletTab /> : <View style={{ height: 150, borderRadius: 28, backgroundColor: DS.surface }} />}
+      {sel === "wallet" ? <WalletTab /> : <View style={{ height: 150, borderRadius: 16, backgroundColor: DS.bg }} />}
     </View>
   );
 }
 
 const NETS = [
-  { name: "ORANGE", color: DS.accent, value: "48 500 F", delta: "+ 4 500 F", up: true },
-  { name: "MTN", color: DS.mtn, value: "80 000 F", delta: "− 20 000 F", up: false },
+  { name: "ORANGE", color: DS.accent, value: "48 500 F", delta: "+ 4 500 F", up: true, orders: "46 200 F", fees: "2 300 F", pct: 95 },
+  { name: "MTN", color: DS.mtn, value: "80 000 F", delta: "− 20 000 F", up: false, orders: "76 400 F", fees: "3 600 F", pct: 95.5 },
 ];
 
 function WalletTab() {
   return (
-    <View style={{ padding: 10, gap: 10, borderRadius: 28, backgroundColor: DS.surface }}>
+    <View style={{ flex: 1, justifyContent: "space-between", gap: 10 }}>
       <View style={{ flexDirection: "row", gap: 6 }}>
         {NETS.map((n) => (
-          <View key={n.name} style={{ flex: 1, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 16, backgroundColor: DS.bg, gap: 6 }}>
+          <View key={n.name} style={{ flex: 1, padding: 12, borderRadius: 16, backgroundColor: DS.bg, gap: 5 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: n.color }} />
               <Text style={{ fontSize: 10, fontWeight: "600", letterSpacing: 0.6, color: DS.muted }}>{n.name}</Text>
             </View>
-            <Text style={{ fontSize: 20, fontWeight: "600", color: DS.ink }}>{n.value}</Text>
-            <Text numberOfLines={1} style={{ fontSize: 12, fontWeight: "600", color: n.up ? DS.ink : DS.accentInk }}>
-              {n.delta} <Text style={{ fontWeight: "500", color: DS.faint }}>{t("aujourd'hui")}</Text>
-            </Text>
+            <View>
+              <Text style={{ fontSize: 22, fontWeight: "600", color: DS.ink }}>{n.value}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: "600", marginTop: 2, color: n.up ? DS.ink : DS.accentInk }}>
+                {n.delta} <Text style={{ fontWeight: "500", color: DS.faint }}>{t("aujourd'hui")}</Text>
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", height: 6, borderRadius: 3, overflow: "hidden", backgroundColor: DS.track, marginVertical: 3 }}>
+              <View style={{ width: `${n.pct}%`, backgroundColor: DS.accent }} />
+              <View style={{ width: `${100 - n.pct}%`, backgroundColor: DS.ink }} />
+            </View>
+            <Legend color={DS.accent} label={t("Commandes")} value={n.orders} />
+            <Legend color={DS.ink} label={t("Frais de retrait")} value={n.fees} />
           </View>
         ))}
       </View>
@@ -85,6 +95,16 @@ function WalletTab() {
       >
         <Text style={{ fontSize: 14, fontWeight: "600", color: DS.onInk }}>{t("Retirer")}</Text>
       </Pressable>
+    </View>
+  );
+}
+
+function Legend({ color, label, value }: { color: string; label: string; value: string }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+      <Text numberOfLines={1} style={{ flex: 1, fontSize: 11, color: DS.muted }}>{label}</Text>
+      <Text style={{ fontSize: 11, fontWeight: "600", color: DS.text2 }}>{value}</Text>
     </View>
   );
 }

@@ -1,0 +1,320 @@
+"use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+// Copie de PorteFeuillePanel pour l'onglet Portefeuille (mode marchand) :
+// pas de bouton de retrait en bas, il est dans le header (onRegisterWithdraw).
+import { showToast } from "@/src/services/globalToast";
+import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
+import { WalletDayStatItem } from "@/src/features/merchant/components/WalletDayStatItem";
+import { WalletDayStatSkeleton } from "@/src/features/merchant/components/WalletDayStatSkeleton";
+import { WithdrawSheet } from "@/src/features/merchant/components/withdraw/WithdrawSheet";
+import { useWithdraw } from "@/src/features/merchant/hooks/useWithdraw";
+import { useMerchantWallet } from "@/src/features/merchant/context/MerchantWalletContext";
+import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
+import { WalletNetworkCards } from "./WalletNetworkCards";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { t, useLanguage } from "@/src/i18n";
+
+type FilterType = "all" | "credit" | "debit" | "transfer";
+
+// Barre de filtres masquée pour l'instant (Historique/Dépôt/Retrait/Transfert).
+// Repasser à `true` pour la réafficher lors d'une future implémentation.
+const SHOW_FILTERS = false;
+
+interface PorteFeuilleProps {
+  /** Rafraîchit le contexte marchand parent (ex. après un retrait). Optionnel. */
+  onRefresh?: () => void;
+  /** Remonte le solde courant au header parent. */
+  onBalanceChange?: (balance: number) => void;
+  /** Expose au parent l'action "ouvrir le retrait" (déclenchée depuis la pilule du header). */
+  onRegisterWithdraw?: (open: () => void) => void;
+  /** Hauteur du header de page : la liste scrolle dessous (effet blur du header). */
+  topOffset?: number;
+}
+
+export const MerchantWalletTabPanel: React.FC<PorteFeuilleProps> = ({
+  onRefresh,
+  onBalanceChange,
+  onRegisterWithdraw,
+  topOffset = 0,
+}) => {
+  useLanguage();
+  const [selectedFilter, setSelectedFilter] = useState<FilterType>("all");
+  // Hauteur mesurée de la barre fixe (solde + retrait) pour décaler la liste.
+  const [barHeight, setBarHeight] = useState(0);
+
+  // Stats portefeuille : source de vérité globale (patchée par les events socket).
+  const {
+    stats,
+    loading,
+    refresh: refreshStats,
+    ensureLoaded,
+    loaded,
+  } = useMerchantWallet();
+
+  // Les stats ne se chargent plus au boot : cet ecran les demande a son
+  // ouverture.
+  useEffect(() => {
+    ensureLoaded();
+  }, [ensureLoaded]);
+
+  const refreshAll = useCallback(() => {
+    refreshStats();
+    onRefresh?.();
+  }, [refreshStats, onRefresh]);
+
+  // Solde global réel (fourni par le backend) et ses deux soldes par réseau.
+  const balance = stats?.balance ?? 0;
+  const balances = stats?.balances ?? { mtn: 0, orange: 0 };
+
+  // Retrait : feuille en 3 etapes, POST /wallet/withdraw + verdict socket
+  // (geres dans le hook).
+  const w = useWithdraw(balances);
+  const { withdrawError, setWithdrawError } = w;
+
+  // Toast d'erreur retrait (global : la feuille porte son `GlobalToastHost`).
+  useEffect(() => {
+    if (withdrawError) {
+      showToast(withdrawError, "error");
+      setWithdrawError(null);
+    }
+  }, [withdrawError, setWithdrawError]);
+
+  // Remonte le solde au header parent dès qu'il change.
+  useEffect(() => {
+    onBalanceChange?.(balance);
+  }, [balance, onBalanceChange]);
+
+  // Expose l'ouverture du retrait au header (pilule "Retirer"). Une seule fois au montage.
+  const openWithdrawRef = useRef(w.openWithdraw);
+  openWithdrawRef.current = w.openWithdraw;
+  useEffect(() => {
+    onRegisterWithdraw?.(() => openWithdrawRef.current());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Liste = une ligne par jour (series), déjà triée par le backend.
+  const series = stats?.series ?? [];
+
+  const filters: { key: FilterType; label: string; icon: string }[] = [
+    { key: "all", label: t("Historique"), icon: "time-outline" },
+    { key: "credit", label: t("Dépôt"), icon: "cash-outline" },
+    { key: "debit", label: t("Retrait"), icon: "arrow-back-circle-outline" },
+    { key: "transfer", label: t("Transfert"), icon: "arrow-redo-circle-outline" },
+  ];
+
+  const handleComingSoon = (label: string) => {
+    showToast(t("La fonctionnalité \"{{a}}\" arrive prochainement.", { a: label }), "info");
+  };
+
+  const listTopPad = topOffset + barHeight;
+
+  return (
+    <View style={styles.container}>
+      {/* Filtres segment */}
+      {SHOW_FILTERS && (
+        <View style={styles.balanceCard}>
+          <View style={styles.segmentRow}>
+            {filters.map((f) => (
+              <TouchableOpacity
+                key={f.key}
+                style={[
+                  styles.segment,
+                  selectedFilter === f.key && styles.segmentActive,
+                ]}
+                onPress={() => {
+                  if (f.key === "credit" || f.key === "transfer") {
+                    handleComingSoon(f.label);
+                  } else {
+                    setSelectedFilter(f.key);
+                  }
+                }}
+              >
+                <Ionicons
+                  name={f.icon as any}
+                  size={16}
+                  color={
+                    selectedFilter === f.key
+                      ? Theme.colors.primary
+                      : Theme.colors.gray[400]
+                  }
+                />
+                <Text
+                  style={[
+                    styles.segmentLabel,
+                    selectedFilter === f.key && styles.segmentLabelActive,
+                  ]}
+                >
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Flou Android (SDK 57) : la capsule de retrait floute la liste. */}
+      <BlurScope>
+      {/* Chiffre d'affaires par jour (une ligne par jour) */}
+      <BlurTarget style={{ flex: 1 }}>
+      <FlatList
+        data={series}
+        renderItem={({ item }) => <WalletDayStatItem stat={item} />}
+        keyExtractor={(item) => item.period}
+        // ⚠️ `loaded &&` : le premier chargement affiche le squelette, pas la
+        // roue du pull-to-refresh, qui ne doit apparaitre que sur un geste.
+        refreshing={loaded && loading}
+        onRefresh={refreshAll}
+        progressViewOffset={listTopPad}
+        scrollIndicatorInsets={{ top: listTopPad }}
+        contentContainerStyle={[styles.listContent, { paddingTop: listTopPad + Theme.spacing.sm }]}
+        ListEmptyComponent={
+          !loaded ? (
+            <>
+              <WalletDayStatSkeleton />
+              <WalletDayStatSkeleton />
+              <WalletDayStatSkeleton />
+              <WalletDayStatSkeleton />
+            </>
+          ) : (
+          <View style={styles.emptyState}>
+            <Ionicons
+              name="receipt-outline"
+              size={60}
+              color={Theme.colors.gray[200]}
+            />
+            <Text style={styles.emptyTitle}>{t("Pas d'activité")}</Text>
+            <TouchableOpacity
+              style={styles.emptyBtn}
+              onPress={() =>
+                showToast(t("Passez votre première commande depuis l'accueil."), "info")
+              }
+            >
+              <Text style={styles.emptyBtnText}>{t("Passer une commande")}</Text>
+            </TouchableOpacity>
+          </View>
+          )
+        }
+      />
+      </BlurTarget>
+
+      {/* Barre fixe (Solde + Retrait) calée sous le header de page. */}
+      <View
+        style={[styles.fixedBar, { top: topOffset }]}
+        onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+      >
+        {/* Par réseau : commandes + frais de retrait = total (le solde global
+            est dans le sous-titre du header). */}
+        {stats?.breakdown && (
+          <WalletNetworkCards breakdown={stats.breakdown} />
+        )}
+      </View>
+      </BlurScope>
+
+      {/* Feuille de RETRAIT (3 etapes, modele du panier groupe). */}
+      <WithdrawSheet w={w} balances={balances} percents={stats?.withdrawFeePercent} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Theme.colors.white,
+  },
+  // Barre fixe Solde + Retrait, calée sous le header de page.
+  fixedBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    backgroundColor: Theme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.gray[100],
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: DS.bg,
+    borderTopWidth: 1,
+    borderTopColor: DS.line,
+  },
+  withdrawBtn: {
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: DS.accent,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  withdrawBtnText: {
+    color: DS.onInk,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  balanceCard: {
+    backgroundColor: Theme.colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.gray[100],
+  },
+  segmentRow: {
+    flexDirection: "row",
+    paddingHorizontal: Theme.spacing.md,
+    paddingBottom: Theme.spacing.sm,
+    justifyContent: "space-around",
+  },
+  segment: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Theme.spacing.sm,
+    gap: 4,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  segmentActive: {
+    borderBottomColor: Theme.colors.primary,
+  },
+  segmentLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: Theme.colors.gray[400],
+  },
+  segmentLabelActive: {
+    color: Theme.colors.primary,
+  },
+  listContent: {
+    paddingVertical: Theme.spacing.sm,
+    // ShopPageFrame reserve deja la safe-area basse.
+    paddingBottom: Theme.spacing.sm,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingTop: 80,
+    gap: 12,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: Theme.colors.gray[500],
+  },
+  emptyBtn: {
+    backgroundColor: Theme.colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 8,
+  },
+  emptyBtnText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+});

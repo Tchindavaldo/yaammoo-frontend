@@ -204,21 +204,24 @@ export function startNetworkWatch() {
 
     // `isConnected === false` est un fait materiel (aucune interface active) :
     // il tranche sans attendre la sonde.
-    let next: boolean | null;
+    // ⚠️ NetInfo ne tranche QUE la coupure materielle (aucune interface). Son
+    // `isInternetReachable: true` n'est PAS cru : sur Android il reflete la
+    // validation systeme, qui reste vraie quand les donnees mobiles sont
+    // epuisees ou l'operateur en panne. Il ecrasait alors le « hors ligne » de
+    // notre sonde, les requetes partaient et restaient pendantes (home et
+    // splash figes). Le « en ligne » ne vient que de notre sonde (ou du socket).
+    let next: boolean | null = reachable;
     if (state.isConnected === false) {
       next = false;
-    } else if (state.isInternetReachable === null) {
-      // Sonde non aboutie. Sur un changement d'interface on ne conserve PAS
-      // l'ancien verdict : il portait sur un autre lien.
-      next = switched ? null : settled ? reachable : null;
-      if (switched) {
-        settled = false;
-        // Cadence serree jusqu'a ce que la nouvelle interface soit tranchee.
-        startProbeLoop(PROBE_FAST_MS);
-        probe();
-      }
+    } else if (switched) {
+      // L'ancien verdict portait sur un autre lien : on re-sonde vite.
+      settled = false;
+      startProbeLoop(PROBE_FAST_MS);
+      probe();
+    } else if (state.isInternetReachable === false) {
+      next = false;
     } else {
-      next = Boolean(state.isConnected && state.isInternetReachable);
+      probe();
     }
 
     if (next !== null) settled = true;
@@ -293,7 +296,11 @@ function probe() {
     // Web : reponse opaque, resolue seulement si le serveur a repondu.
     ...(IS_WEB && { mode: "no-cors" as const }),
   })
-    .then((response) => settle(IS_WEB ? true : response.ok))
+    .then((response) =>
+      // ⚠️ 204 exige : un forfait epuise redirige vers le portail operateur,
+      // qui repond 200 — `response.ok` y voyait a tort une connexion valide.
+      settle(IS_WEB ? true : response.status === 204),
+    )
     .catch(() => settle(false))
     .finally(() => {
       clearTimeout(killer);

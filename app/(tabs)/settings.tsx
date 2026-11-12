@@ -19,6 +19,7 @@ import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBa
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { Theme } from "@/src/theme";
 import { DS } from "@/src/theme/ds";
@@ -61,6 +62,7 @@ export default function SettingsScreen() {
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
+  const { isMerchantMode, setMerchantMode } = useMerchantMode();
 
   // Personnel = page entière `app/shop/staff` (tuile ou deep-link) : on y
   // redirige puis on referme le drapeau local.
@@ -162,6 +164,16 @@ export default function SettingsScreen() {
           <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => handleComingSoon(t("Mon profil"))} />
           <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
           <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
+          {isMerchant && (
+            <ProfileListRow
+              icon="swap-horizontal"
+              title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
+              onPress={() => {
+                setMerchantMode(!isMerchantMode);
+                router.navigate("/(tabs)");
+              }}
+            />
+          )}
         </ProfileListGroup>
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}

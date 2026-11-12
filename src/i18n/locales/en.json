@@ -1216,5 +1216,7 @@
   "Oui": "Yes",
   "Touchez un jour de début puis de fin": "Tap a start day, then an end day",
   "Conditions": "Terms",
-  "Supprimer le compte": "Delete account"
+  "Supprimer le compte": "Delete account",
+  "Passer en mode client": "Switch to customer mode",
+  "Passer en mode marchand": "Switch to merchant mode"
 }

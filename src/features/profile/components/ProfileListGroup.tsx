@@ -16,9 +16,7 @@ export const ProfileListGroup: React.FC<{ title: string; children: React.ReactNo
       <Text style={styles.title}>{title}</Text>
       <View style={styles.card}>
         {rows.map((row, i) => (
-          <View key={i} style={i < rows.length - 1 && styles.divider}>
-            {row}
-          </View>
+          <React.Fragment key={i}>{row}</React.Fragment>
         ))}
       </View>
     </View>
@@ -42,10 +40,10 @@ export const ProfileListRow: React.FC<{
 const styles = StyleSheet.create({
   group: { gap: 8, marginTop: 16 },
   title: { marginHorizontal: 6, fontSize: 15, fontWeight: "600", color: DS.ink },
-  card: { borderRadius: 16, backgroundColor: DS.surface, overflow: "hidden" },
-  divider: { borderBottomWidth: 1, borderBottomColor: DS.line },
-  row: { height: 44, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 12 },
-  pressed: { backgroundColor: DS.line },
+  // P1f : carte gris tres leger, aucun trait entre les lignes.
+  card: { borderRadius: 16, backgroundColor: DS.surfaceSoft, overflow: "hidden" },
+  row: { height: 46, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14 },
+  pressed: { backgroundColor: DS.surface },
   label: { flex: 1, fontSize: 14, fontWeight: "500", color: DS.ink },
   hint: { maxWidth: 140, fontSize: 12.5, color: DS.faint },
 });

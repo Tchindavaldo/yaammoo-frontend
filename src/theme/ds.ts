@@ -38,6 +38,8 @@ export const DS = {
   muted: "#6C6C70",
   faint: "#8E8E93",
   surface: "#F5F5F7",
+  /** Fond de carte tres leger (listes du profil, maquette P1f). */
+  surfaceSoft: "#FAFAFB",
   line: "#ECECF0",
   track: "#E4E4E8",
   idle: "#D6D6DB",

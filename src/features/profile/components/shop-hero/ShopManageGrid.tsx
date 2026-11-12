@@ -12,16 +12,17 @@ import { DS } from "@/src/theme/ds";
  * ligne Portefeuille. DESIGN SEUL : rien n'est branche, montant = EXEMPLE.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
-const TILES: { icon: Ion; label: string; info: string; hot?: boolean}[] = [
-  { icon: "restaurant-outline", label: "Menu", info: "18 plats" },
-  { icon: "wine-outline", label: "Boissons", info: "6 boissons" },
-  { icon: "people-outline", label: "Personnel", info: "3 membres" },
+const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: BackTone }[] = [
+  { icon: "restaurant-outline", label: "Menu", info: "18 plats", tone: "plain" },
+  { icon: "wine-outline", label: "Boissons", info: "6 boissons", tone: "black" },
+  { icon: "people-outline", label: "Personnel", info: "3 membres", tone: "grey" },
   { icon: "notifications-outline", label: "Notifications", info: "Activées" },
   { icon: "chatbubbles-outline", label: "Messages", info: "2 non lus", hot: true },
   { icon: "information-circle-outline", label: "Information", info: "Ouverte" },
 ];
 
-export function ShopManageGrid() {
+/** Essai : Menu / Boissons / Personnel changent le bouton retour du header. */
+export function ShopManageGrid({ onTone }: { onTone?: (t: BackTone) => void }) {
   useLanguage();
   const { appleReviewMode } = useFastFoods();
   return (
@@ -29,7 +30,7 @@ export function ShopManageGrid() {
       <Text style={{ paddingHorizontal: 6, fontSize: 16, fontWeight: "600", color: DS.ink }}>{t("Gestion")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {TILES.map((x) => (
-          <View key={x.label} style={{ flexBasis: "31%", flexGrow: 1, padding: 10, borderRadius: 18, backgroundColor: DS.surface, gap: 5 }}>
+          <Pressable key={x.label} onPress={() => x.tone && onTone?.(x.tone)} style={{ flexBasis: "31%", flexGrow: 1, padding: 10, borderRadius: 18, backgroundColor: DS.surface, gap: 5 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: DS.bg, alignItems: "center", justifyContent: "center" }}>
                 <Ionicons name={x.icon} size={12} color={DS.ink} />
@@ -37,7 +38,7 @@ export function ShopManageGrid() {
               <Text numberOfLines={1} style={{ flex: 1, fontSize: 11.5, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>
             </View>
             <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: x.hot ? "600" : "500", color: x.hot ? DS.accentInk : DS.muted }}>{t(x.info)}</Text>
-          </View>
+          </Pressable>
         ))}
       </View>
       {!appleReviewMode && (

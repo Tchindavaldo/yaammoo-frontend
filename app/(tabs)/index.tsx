@@ -44,6 +44,7 @@ import {
 import { homePageOf } from "@/src/services/analytics/homePages";
 import { track } from "@/src/services/analytics/analytics";
 import { t, useLanguage } from "@/src/i18n";
+import { trackBoot } from "@/src/services/netTelemetry";
 
 /** Boutique « vue » : visible a 50 % au moins (meme seuil que la liste native). */
 const SHOP_VIEWABILITY = { itemVisiblePercentThreshold: 50 };
@@ -71,6 +72,7 @@ export default function HomeScreen() {
   // `/settings/app-version` ont le droit de partir. Les badges panier et
   // notifications tiennent sur leur cache en attendant ces reponses.
   useEffect(() => {
+    trackBoot("home monte");
     void ensureProfileRefreshed();
     ensureNotificationsLoaded();
     ensureOrdersLoaded();

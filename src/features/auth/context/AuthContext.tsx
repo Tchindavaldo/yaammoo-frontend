@@ -15,6 +15,7 @@ import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
 import { Config } from "@/src/api/config";
 import { sinceBoot } from "@/src/utils/bootClock";
+import { trackBoot } from "@/src/services/netTelemetry";
 import { t, useLanguage } from "@/src/i18n";
 
 interface AuthContextType {
@@ -75,8 +76,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   useEffect(() => {
+    trackBoot("auth ecoute");
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("🔵 [AuthContext] onAuthStateChanged déclenché");
+      trackBoot("auth firebase repond", { hasUser: !!firebaseUser });
+      console.log("[AuthContext] onAuthStateChanged déclenché");
       setUser(firebaseUser);
       if (firebaseUser) {
         console.log(
@@ -89,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         //    immédiatement et débloquer l'app (marche hors-ligne, pas d'attente réseau).
         const stored = await storage.get("user_data");
         const hasFreshCache = stored && stored.uid === firebaseUser.uid;
+        trackBoot("auth cache profil", { hit: !!hasFreshCache, hadStored: !!stored });
         if (hasFreshCache) {
           console.log("✅ [AuthContext] Profil chargé depuis le cache (affichage immédiat)");
           setUserData(stored);
@@ -135,6 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error("❌ [AuthContext] Refresh profil échoué:", error);
           // Hors-ligne : on garde le cache déjà affiché (rien à faire).
         } finally {
+          trackBoot("auth profil api fini");
           setLoading(false);
         }
       } else {

@@ -59,6 +59,11 @@ export function trackSplashReleased(waitMs: number) {
   send("splash libere sans app-version", { waitSeconds: waitMs / 1000, online: lastOnline });
 }
 
+/** Etape du demarrage (auth Firebase, cache profil, montage du home). */
+export function trackBoot(step: string, data: Record<string, unknown> = {}) {
+  send(`boot ${step}`, { ...data, online: lastOnline });
+}
+
 /** Fin de `/settings/app-version` (requete qui bloque le splash). */
 export function trackAppVersion(ms: number, ok: boolean, error?: { code?: string; message?: string }) {
   send(ok ? "app-version ok" : "app-version echec", { seconds: Number((ms / 1000).toFixed(2)), ok, error });

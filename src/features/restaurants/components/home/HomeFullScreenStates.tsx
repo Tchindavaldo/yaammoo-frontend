@@ -16,19 +16,18 @@ import { t, useLanguage } from "@/src/i18n";
 type OnLayout = (event: LayoutChangeEvent) => void;
 
 /**
- * Écran de chargement plein du home — RÉSERVÉ au tout premier affichage (la
+ * Loader du premier chargement du home (en-tete et navbar restent visibles) — RÉSERVÉ au tout premier affichage (la
  * condition vit dans l'écran : voir la garde `!searchQuery`).
  */
-export const HomeLoadingScreen: React.FC<{ onLayout: OnLayout }> = ({ onLayout }) => {
+export const HomeLoadingScreen: React.FC = () => {
   useLanguage();
+  // Rendu SOUS l'en-tete et au-dessus de la navbar (l'ecran les garde visibles).
   return (
-  <SafeAreaView style={styles.container} onLayout={onLayout}>
     <View style={styles.centered}>
       <ActivityIndicator size="large" color={Theme.colors.primary} />
       <Text style={styles.loadingText}>{t("Recherche des meilleurs plats...")}</Text>
     </View>
-  </SafeAreaView>
-);
+  );
 };
 
 /**

@@ -212,16 +212,33 @@ export default function HomeScreen() {
   const fullLoading =
     (loading && fastFoods.length === 0 && !searchQuery) || forceLoading;
 
-  // Navbar masquee pendant l'ecran de chargement plein : elle apparait en meme
-  // temps que l'en-tete et les squelettes.
+  // En-tete et navbar restent visibles pendant le chargement plein : seul le
+  // contenu (sous l'en-tete) est remplace par le loader.
   useEffect(() => {
-    navigation.setOptions({
-      tabBarStyle: fullLoading ? [tabBarStyle, { display: "none" }] : tabBarStyle,
-    });
-  }, [navigation, fullLoading, tabBarStyle]);
+    navigation.setOptions({ tabBarStyle });
+  }, [navigation, tabBarStyle]);
+
+  const header = (
+    <HomeHeader
+      unreadCount={unreadCount}
+      searchOpen={searchOpen}
+      onSearchToggle={() => setSearchOpen(!searchOpen)}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      selectedCategory={selectedCategory}
+      onCategorySelect={setSelectedCategory}
+    />
+  );
 
   if (fullLoading) {
-    return <HomeLoadingScreen onLayout={onLayoutRootView} />;
+    return (
+      <View style={styles.container} onLayout={onLayoutRootView}>
+        {header}
+        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight }}>
+          <HomeLoadingScreen />
+        </View>
+      </View>
+    );
   }
 
   // Échec du chargement initial : page entière remplacée (voir HomeErrorScreen).
@@ -231,15 +248,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
-      <HomeHeader
-        unreadCount={unreadCount}
-        searchOpen={searchOpen}
-        onSearchToggle={() => setSearchOpen(!searchOpen)}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
-      />
+      {header}
       {/* ⚠️ Groupe de revelation partage par la BANNIERE et la PREMIERE
           boutique uniquement (cf. DesignRouter) : les deux sortent a la meme
           frame. La boutique 0 n'attend rien de plus qu'avant — seule la

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
-import { ShopNewHeader, type PillTone } from "@/src/features/profile/components/shop-hero/ShopNewHeader";
+import { ShopNewHeader } from "@/src/features/profile/components/shop-hero/ShopNewHeader";
 import { ShopOrdersSection } from "@/src/features/profile/components/shop-hero/ShopOrdersSection";
 import { ShopHeroCard } from "@/src/features/profile/components/shop-hero/ShopHeroCard";
 import { ShopPageFrame } from "@/src/features/merchant/components/shop/ShopPageFrame";
@@ -19,12 +19,11 @@ import { DS } from "@/src/theme/ds";
 export default function NewDesignScreen() {
   useLanguage();
   const [headerHeight, setHeaderHeight] = useState(150);
-  const [tone, setTone] = useState<PillTone>("white");
   return (
     <ShopPageFrame>
     <View style={{ flex: 1, backgroundColor: DS.bg }}>
       <TabHeader onHeightChange={setHeaderHeight}>
-        <ShopNewHeader tone={tone} />
+        <ShopNewHeader />
       </TabHeader>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -39,7 +38,7 @@ export default function NewDesignScreen() {
       >
         <ShopHeroCard />
         <ShopOrdersSection />
-        <ShopManageGrid onTone={setTone} />
+        <ShopManageGrid />
       </ScrollView>
     </View>
     </ShopPageFrame>

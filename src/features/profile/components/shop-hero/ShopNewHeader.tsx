@@ -1,6 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Copie de SettingsHeaderProfile pour le « Nouveau design » (maquette H9) :
-// a gauche retour + Home, a droite nom de la boutique + e-mail + logo/initiale
+// a gauche rond noir retour (vers l'accueil), a droite nom de la boutique + e-mail + logo/initiale
 // avec pastille. Home -> accueil ; nom + photo = vraie boutique (GET /fastfood/:id).
 // La pastille (bottom sheet) n'est pas encore branchee.
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -12,12 +12,7 @@ import { router } from "expo-router";
 import { broadcastService } from "@/src/features/merchant/services/broadcastService";
 import { t, useLanguage } from "@/src/i18n";
 
-/** Essai de fond du bouton retour/Home (choisi via la grille Gestion). */
-export type PillTone = "white" | "black" | "orange";
-
-export function ShopNewHeader({ tone = "white" }: { tone?: PillTone }) {
-  const pillBg = tone === "black" ? DS.ink : tone === "orange" ? DS.accent : undefined;
-  const fg = pillBg ? DS.onInk : DS.ink;
+export function ShopNewHeader() {
   useLanguage();
   const { user, userData } = useAuth();
   const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || "";
@@ -41,10 +36,9 @@ export function ShopNewHeader({ tone = "white" }: { tone?: PillTone }) {
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={t("Retour à l'accueil")}
-        style={[styles.pill, pillBg ? { backgroundColor: pillBg, borderColor: pillBg } : null]}
+        style={styles.pill}
       >
-        <Ionicons name="chevron-back" size={14} color={pillBg ? fg : DS.muted} />
-        <Ionicons name="home-outline" size={18} color={fg} />
+        <Ionicons name="chevron-back" size={18} color={DS.onInk} />
       </Pressable>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{name}</Text>
@@ -66,17 +60,7 @@ export function ShopNewHeader({ tone = "white" }: { tone?: PillTone }) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 14 },
-  pill: {
-    height: 40,
-    paddingLeft: 10,
-    paddingRight: 14,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: DS.line,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
+  pill: { width: 40, height: 40, borderRadius: 20, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" },
   info: { flex: 1, minWidth: 0, alignItems: "flex-end" },
   name: { fontSize: 17, fontWeight: "800", color: DS.ink },
   contact: { marginTop: 3, fontSize: 13, fontWeight: "500", color: DS.muted },

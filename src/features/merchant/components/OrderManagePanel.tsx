@@ -32,6 +32,8 @@ import { MerchantFilterSheet } from "./MerchantFilterSheet";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "./MerchantOrderCard";
 import { MerchantOrderSkeleton } from "./MerchantOrderSkeleton";
 import { OtherDatesNotice } from "./OtherDatesNotice";
+
+const SHOW_OTHER_DATES_NOTICE = false;
 import { DS } from "@/src/theme/ds";
 import { t as tr, dateLocale, useLanguage } from "@/src/i18n";
 
@@ -1096,7 +1098,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
       {/* Rappel des commandes sur d'AUTRES dates, calé juste au-dessus de la
           barre de filtres (masqué pendant le squelette : compteurs périmés). */}
-      {!(loading && !pullRefreshing) && hasOtherDates && (
+      {/* Pastille « X commandes non traitees » desactivee pour l'instant :
+          repasser SHOW_OTHER_DATES_NOTICE a true pour la reafficher. */}
+      {SHOW_OTHER_DATES_NOTICE && !(loading && !pullRefreshing) && hasOtherDates && (
         <View
           style={[styles.noticeDock, { bottom: tabBarHeight + FILTER_BAR_HEIGHT }]}
           pointerEvents="box-none"

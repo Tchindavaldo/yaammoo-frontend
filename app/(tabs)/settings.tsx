@@ -12,7 +12,7 @@ import { LogoutModal } from "@/src/features/profile/components/LogoutModal";
 import { LanguageSheet } from "@/src/features/profile/components/LanguageSheet";
 import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
 import { SettingGridItem } from "@/src/features/profile/components/SettingGridItem";
-import { SettingGridSwitch } from "@/src/features/profile/components/SettingGridSwitch";
+import { ProfileListGroup, ProfileListRow } from "@/src/features/profile/components/ProfileListGroup";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBanner";
@@ -155,24 +155,12 @@ export default function SettingsScreen() {
           )}
         </SettingGrid>
 
-        {/* Compte */}
-        <SettingGrid title={t("Compte")}>
-          <SettingGridItem
-            icon="person-outline"
-            title={t("Mon profil")}
-            onPress={() => handleComingSoon(t("Mon profil"))}
-          />
-          <SettingGridItem
-            icon="key-outline"
-            title={t("Sécurité")}
-            onPress={() => handleComingSoon("Sécurité")}
-          />
-          <SettingGridItem
-            icon="gift-outline"
-            title={t("Bonus")}
-            onPress={() => open("userBonus")}
-          />
-        </SettingGrid>
+        {/* Compte, Préférences, Aide : listes groupees (maquette P1). */}
+        <ProfileListGroup title={t("Compte")}>
+          <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => handleComingSoon(t("Mon profil"))} />
+          <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
+          <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
+        </ProfileListGroup>
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
         {/* Masquee pour un marchand. */}
@@ -200,52 +188,33 @@ export default function SettingsScreen() {
         </SettingGrid>
         )}
 
-        {/* Préférences */}
-        {/* 1 colonne : une tuile par ligne, icone et libelle cote a cote. */}
-        <SettingGrid title={t("Préférences")} columns={1}>
-          <SettingGridSwitch
+        <ProfileListGroup title={t("Préférences")}>
+          <ProfileListRow
             icon="notifications-outline"
             title="Notifications"
-            value={notifEnabled}
-            onValueChange={handleNotifToggle}
+            hint={notifEnabled ? t("Activées") : t("Désactivées")}
+            onPress={() => handleNotifToggle(!notifEnabled)}
           />
-          <SettingGridSwitch
+          <ProfileListRow
             icon="moon-outline"
             title={t("Mode sombre")}
-            value={darkMode}
-            onValueChange={setDarkMode}
+            hint={darkMode ? t("Oui") : t("Non")}
+            onPress={() => setDarkMode(!darkMode)}
           />
-          <SettingGridItem
+          <ProfileListRow
             icon="language-outline"
             title={t("Langue")}
             hint={LANGUAGES.find((l) => l.code === getLanguage())?.label}
             onPress={() => setLanguageVisible(true)}
           />
-        </SettingGrid>
+        </ProfileListGroup>
 
-        {/* Aide */}
-        <SettingGrid title={t("Aide")}>
-          <SettingGridItem
-            icon="help-circle-outline"
-            title={t("Assistance")}
-            onPress={() => handleComingSoon("Assistance")}
-          />
-          <SettingGridItem
-            icon="chatbox-outline"
-            title={t("Signaler un problème")}
-            onPress={() => handleComingSoon(t("Signaler un problème"))}
-          />
-          <SettingGridItem
-            icon="flag-outline"
-            title={t("Faire une suggestion")}
-            onPress={() => handleComingSoon(t("Faire une suggestion"))}
-          />
-          <SettingGridItem
-            icon="call-outline"
-            title={t("Contactez-nous")}
-            onPress={() => router.push("/account/support")}
-          />
-        </SettingGrid>
+        <ProfileListGroup title={t("Aide")}>
+          <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => handleComingSoon("Assistance")} />
+          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => handleComingSoon(t("Signaler un problème"))} />
+          <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => handleComingSoon(t("Faire une suggestion"))} />
+          <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
+        </ProfileListGroup>
 
         {/* Legal */}
         <SettingGrid title={t("Légal")}>

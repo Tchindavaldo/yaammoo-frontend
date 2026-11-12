@@ -12,7 +12,12 @@ import { router } from "expo-router";
 import { broadcastService } from "@/src/features/merchant/services/broadcastService";
 import { t, useLanguage } from "@/src/i18n";
 
-export function ShopNewHeader() {
+/** Essai de fond du bouton retour/Home (choisi via la grille Gestion). */
+export type PillTone = "white" | "black" | "orange";
+
+export function ShopNewHeader({ tone = "white" }: { tone?: PillTone }) {
+  const pillBg = tone === "black" ? DS.ink : tone === "orange" ? DS.accent : undefined;
+  const fg = pillBg ? DS.onInk : DS.ink;
   useLanguage();
   const { user, userData } = useAuth();
   const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || "";
@@ -36,10 +41,10 @@ export function ShopNewHeader() {
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={t("Retour à l'accueil")}
-        style={styles.pill}
+        style={[styles.pill, pillBg ? { backgroundColor: pillBg, borderColor: pillBg } : null]}
       >
-        <Ionicons name="chevron-back" size={14} color={DS.muted} />
-        <Ionicons name="home-outline" size={18} color={DS.ink} />
+        <Ionicons name="chevron-back" size={14} color={pillBg ? fg : DS.muted} />
+        <Ionicons name="home-outline" size={18} color={fg} />
       </Pressable>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{name}</Text>

@@ -83,8 +83,6 @@ function WalletTab() {
               <View style={{ width: `${n.pct}%`, backgroundColor: DS.accent }} />
               <View style={{ width: `${100 - n.pct}%`, backgroundColor: DS.ink }} />
             </View>
-            <Legend color={DS.accent} label={t("Commandes")} value={n.orders} />
-            <Legend color={DS.ink} label={t("Frais de retrait")} value={n.fees} />
           </View>
         ))}
       </View>
@@ -95,16 +93,6 @@ function WalletTab() {
       >
         <Text style={{ fontSize: 14, fontWeight: "600", color: DS.onInk }}>{t("Retirer")}</Text>
       </Pressable>
-    </View>
-  );
-}
-
-function Legend({ color, label, value }: { color: string; label: string; value: string }) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
-      <Text numberOfLines={1} style={{ flex: 1, fontSize: 11, color: DS.muted }}>{label}</Text>
-      <Text style={{ fontSize: 11, fontWeight: "600", color: DS.text2 }}>{value}</Text>
     </View>
   );
 }

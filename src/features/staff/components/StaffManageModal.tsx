@@ -245,12 +245,14 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
 
       {/* Haut fixe : carte, onglets et ligne « Rôles de la boutique ». */}
       <View style={[styles.fixedTop, { paddingTop: headerHeight + 8 }]}>
+        {/* Carte hero (gerant, compteurs) masquee pour l'instant.
         <StaffSummaryCard
           ownerName={ownerName}
           roles={roles.length}
           members={members.length}
           drivers={drv.drivers.length}
         />
+        */}
         <StaffTabs
           tab={tab}
           onChange={setTab}

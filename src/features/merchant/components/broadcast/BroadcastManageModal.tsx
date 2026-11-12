@@ -138,7 +138,8 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
           />
         }
       >
-        <BroadcastWeekCard plan={plan} quota={quota} now={now} />
+        {/* Hero statistiques (semaine) masque pour l'instant. */}
+        {/* <BroadcastWeekCard plan={plan} quota={quota} now={now} /> */}
         <BroadcastQuotaTiles plan={plan} quota={quota} now={now} />
         <BroadcastHistory
           items={items}

@@ -21,10 +21,12 @@ import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsS
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -37,7 +39,7 @@ import { LANGUAGES, getLanguage, t, useLanguage } from "@/src/i18n";
 // Sections desactivees pour l'instant (repasser a true pour les reafficher).
 // Une section dont aucun item n'est affiche est masquee avec son titre.
 const SHOW_ACTIVITIES = false;
-const SHOW_DELIVERY = true;
+const SHOW_DELIVERY = false; // Livraison masquee pour l'instant
 
 export default function SettingsScreen() {
   useLanguage();
@@ -216,29 +218,18 @@ export default function SettingsScreen() {
           <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
         </ProfileListGroup>
 
-        {/* Legal */}
-        <SettingGrid title={t("Légal")}>
-          <SettingGridItem
-            icon="document-text-outline"
-            title={t("Politique & Conditions")}
-            onPress={() => handleComingSoon(t("Politique & Conditions"))}
-          />
-          <SettingGridItem
-            icon="lock-closed-outline"
-            title={t("Confidentialité")}
-            onPress={() => handleComingSoon("Confidentialité")}
-          />
-        </SettingGrid>
-
-        {/* Zone de danger */}
-        <SettingGrid title={t("Zone de danger")}>
-          <SettingGridItem
-            icon="trash-outline"
-            title={t("Supprimer mon compte")}
-            tone="danger"
-            onPress={() => open("deleteAccount")}
-          />
-        </SettingGrid>
+        {/* Legal + suppression : liens en pied de page (maquette P1). */}
+        <View style={styles.legalRow}>
+          <Pressable onPress={() => handleComingSoon(t("Politique & Conditions"))} hitSlop={8}>
+            <Text style={styles.legalText}>{t("Conditions")}</Text>
+          </Pressable>
+          <Pressable onPress={() => handleComingSoon("Confidentialité")} hitSlop={8}>
+            <Text style={styles.legalText}>{t("Confidentialité")}</Text>
+          </Pressable>
+          <Pressable onPress={() => open("deleteAccount")} hitSlop={8}>
+            <Text style={[styles.legalText, styles.legalDanger]}>{t("Supprimer le compte")}</Text>
+          </Pressable>
+        </View>
 
         {/* App version — reflete TOUJOURS `app.json` (via `APP_VERSION`), jamais
             une valeur en dur a remettre a jour manuellement. Annee courante idem. */}
@@ -285,6 +276,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  legalRow: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 16, marginTop: 20 },
+  legalText: { fontSize: 12, color: DS.faint },
+  legalDanger: { color: DS.danger },
   versionBlock: {
     alignItems: "center",
     padding: Theme.spacing.xl,

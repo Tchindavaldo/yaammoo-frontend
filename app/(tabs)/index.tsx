@@ -35,6 +35,8 @@ import { isHomeListAvailable } from "@/modules/home-list";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { MerchantHome } from "@/src/features/profile/components/shop-hero/MerchantHome";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import {
@@ -59,7 +61,12 @@ const seenBanners = new Set<string>();
  * (verrou de page) et `components/home/` (en-tete, ecrans plein, styles).
  * Voir architecture/restaurants.md.
  */
-export default function HomeScreen() {
+export default function HomeTab() {
+  const { isMerchantMode } = useMerchantMode();
+  return isMerchantMode ? <MerchantHome /> : <HomeScreen />;
+}
+
+function HomeScreen() {
   useLanguage();
   const onLayoutRootView = useHideSplash();
   const { ensureProfileRefreshed } = useAuth();

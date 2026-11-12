@@ -6,6 +6,7 @@ import { useCurrentPlaceLabel } from "@/src/features/location/hooks/useCurrentPl
 import { RestaurantHeader } from "../RestaurantHeader";
 import { CATEGORIES } from "../../utils/homeListConfig";
 import { t, useLanguage } from "@/src/i18n";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 
 interface Props {
   unreadCount: number;
@@ -35,6 +36,7 @@ export const HomeHeader: React.FC<Props> = ({
   const { user, userData } = useAuth();
   const router = useRouter();
   const placeLabel = useCurrentPlaceLabel();
+  const { isMerchant, setMerchantMode } = useMerchantMode();
 
   return (
     <RestaurantHeader
@@ -45,6 +47,7 @@ export const HomeHeader: React.FC<Props> = ({
       }
       userPhoto={(userData as any)?.photoUrl || (userData as any)?.photo || ""}
       location={placeLabel}
+      onMerchantMode={isMerchant ? () => setMerchantMode(true) : undefined}
       unreadCount={unreadCount}
       onNotifPress={() => router.push("/(tabs)/notifications")}
       onProfilePress={() => router.push("/(tabs)/settings")}

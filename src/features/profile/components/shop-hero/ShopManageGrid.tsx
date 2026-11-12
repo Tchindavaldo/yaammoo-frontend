@@ -3,7 +3,6 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 import type { BackTone } from "./ShopNewHeader";
 import { Ionicons } from "@expo/vector-icons";
-import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 
@@ -27,7 +26,6 @@ export type GridVariant = "S1D" | "S1C" | "S1A";
 
 export function ShopManageGrid({ onTone, variant = "S1D" }: { onTone?: (t: BackTone) => void; variant?: GridVariant }) {
   useLanguage();
-  const { appleReviewMode } = useFastFoods();
   return (
     <View style={{ gap: 10 }}>
       <Text style={{ paddingHorizontal: 6, fontSize: 16, fontWeight: "600", color: DS.ink }}>{t("Gestion")}</Text>
@@ -53,16 +51,6 @@ export function ShopManageGrid({ onTone, variant = "S1D" }: { onTone?: (t: BackT
           </Pressable>
         ))}
       </View>
-      {!appleReviewMode && (
-        <View style={{ borderRadius: 20, padding: 6, backgroundColor: DS.surface }}>
-          <View style={{ height: 48, paddingLeft: 12, paddingRight: 10, borderRadius: 14, backgroundColor: DS.bg, flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Ionicons name="wallet-outline" size={19} color={DS.ink} />
-            <Text numberOfLines={1} style={{ flex: 1, fontSize: 14.5, fontWeight: "600", color: DS.ink }}>{t("Consulter le portefeuille")}</Text>
-            <Text style={{ fontSize: 13, color: DS.faint }}>128 500 F</Text>
-            <Ionicons name="chevron-forward" size={14} color={DS.faint} />
-          </View>
-        </View>
-      )}
     </View>
   );
 }

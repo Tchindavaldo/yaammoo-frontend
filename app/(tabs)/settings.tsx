@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { showToast } from "@/src/services/globalToast";
 import { APP_VERSION } from "@/src/api/version";
 import { currentOtaLabel } from "@/src/services/otaTelemetry";
@@ -59,6 +60,7 @@ export default function SettingsScreen() {
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
+  const { isMerchantMode } = useMerchantMode();
 
   // Personnel = page entière `app/shop/staff` (tuile ou deep-link) : on y
   // redirige puis on referme le drapeau local.
@@ -175,7 +177,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Boutique - only show for merchants (AVANT Livraison) */}
-        {isMerchant && (
+        {isMerchant && !isMerchantMode && (
           <>
             <SettingGrid title={t("Boutique")}>
               {/* Apercu du nouveau design du profil marchand (en cours). */}

@@ -9,9 +9,10 @@ export default function ShopCreateScreen() {
   const router = useRouter();
   const { userData } = useAuth();
 
-  // Boutique créée (fastFoodId posé) : on bascule sur ses commandes.
+  // Boutique créée (fastFoodId posé) : retour au home, qui passe en mode
+  // marchand (MerchantModeContext repart en marchand quand fastFoodId change).
   useEffect(() => {
-    if (userData?.fastFoodId) router.replace("/shop/orders");
+    if (userData?.fastFoodId) router.navigate("/(tabs)");
   }, [userData?.fastFoodId, router]);
 
   return (

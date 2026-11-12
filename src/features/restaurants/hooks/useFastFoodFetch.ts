@@ -94,7 +94,18 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
    * ne verrait que les pages déjà chargées, donc une boutique du fond du
    * catalogue serait introuvable — une régression silencieuse.
    */
-  const fetchPage = useCallback(async (cursor?: string, q?: string) => {
+  /**
+   * Premiere page (hors recherche) deja en vol.
+   *
+   * ⚠️ Au retour du reseau, deux declencheurs partaient a la meme seconde
+   * (constate dans Sentry, `diag:net`) : deux premieres pages remplacaient la
+   * liste coup sur coup, et la liste native restait figee en squelette sur les
+   * rangees dont elle attendait les images. Un second appel reutilise le premier.
+   */
+  const firstPageInFlightRef = useRef<Promise<void> | null>(null);
+
+
+  const fetchPageOnce = useCallback(async (cursor?: string, q?: string) => {
     const isFirstPage = !cursor;
     /**
      * Numero de troncature au moment du DEPART de cette requete.
@@ -302,6 +313,18 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
     staggerQueueRef,
     pendingPageRef,
   ]);
+
+  const fetchPage = useCallback(async (cursor?: string, q?: string) => {
+    if (!cursor && !q) {
+      if (firstPageInFlightRef.current) return firstPageInFlightRef.current;
+      const run = fetchPageOnce(cursor, q).finally(() => {
+        firstPageInFlightRef.current = null;
+      });
+      firstPageInFlightRef.current = run;
+      return run;
+    }
+    return fetchPageOnce(cursor, q);
+  }, [fetchPageOnce]);
 
   /**
    * Rafraichit SILENCIEUSEMENT les boutiques deja chargees, sans toucher ni au

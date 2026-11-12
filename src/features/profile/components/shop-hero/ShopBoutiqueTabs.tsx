@@ -28,7 +28,6 @@ const ROWS: { icon: Ion; label: string }[] = [
 ];
 
 const GEN_ROWS: { icon: Ion; label: string }[] = [
-  { icon: "information-circle-outline", label: "Informations sur la boutique" },
   { icon: "create-outline", label: "Modifier les informations" },
   { icon: "chatbubbles-outline", label: "Consulter les messages" },
   { icon: "notifications-outline", label: "Gestion des notifications" },

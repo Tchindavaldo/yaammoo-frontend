@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet as RNStyleSheet
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/src/features/auth/context/AuthContext';
 import { useAuthGate } from '@/src/features/auth/context/AuthGateContext';
 import { GuestGate } from '@/src/features/auth/components/GuestGate';
@@ -24,9 +23,6 @@ import { t, dateLocale, useLanguage } from "@/src/i18n";
 // depuis Settings (modals). Les statuts se changent via les chips du panel.
 export default function BoutiqueScreen() {
   const i18nLang = useLanguage();
-  const router = useRouter();
-  // `create=1` (bandeau du profil) : ouvre la creation sans l'ecran d'intro.
-  const { create } = useLocalSearchParams<{ create?: string }>();
   const { userData, loading: authLoading } = useAuth();
   const { isSignedIn } = useAuthGate();
   const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder, ensureLoaded } = useMerchant();
@@ -95,7 +91,7 @@ export default function BoutiqueScreen() {
   if (!userData?.fastFoodId && !loading) {
     return (
      <View style={{ flex: 1, backgroundColor: 'white' }}>
-        <NoBoutiquePanel direct={create === "1"} onExit={() => router.back()} />
+        <NoBoutiquePanel />
      </View>
     );
   }

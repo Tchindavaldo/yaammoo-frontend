@@ -5,9 +5,10 @@
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { broadcastService } from "@/src/features/merchant/services/broadcastService";
+import React from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useShopIdentity } from "@/src/features/merchant/hooks/useShopIdentity";
+import { Image } from "expo-image";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -17,15 +18,7 @@ export function MerchantHomeHeader() {
   const { user, userData } = useAuth();
   const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || "";
   const fastFoodId = userData?.fastFoodId;
-  const [shop, setShop] = useState<{ name: string; imageUrl: string | null } | null>(null);
-  useEffect(() => {
-    if (!fastFoodId) return;
-    let alive = true;
-    broadcastService.getShop(fastFoodId).then((s) => alive && setShop(s), () => {});
-    return () => {
-      alive = false;
-    };
-  }, [fastFoodId]);
+  const shop = useShopIdentity(fastFoodId);
   const name = shop?.name || "";
 
   return (
@@ -40,7 +33,7 @@ export function MerchantHomeHeader() {
       </View>
       <View style={styles.avatar}>
         {shop?.imageUrl ? (
-          <Image source={{ uri: shop.imageUrl }} style={styles.logo} />
+          <Image source={{ uri: shop.imageUrl }} style={styles.logo} cachePolicy="memory-disk" transition={0} />
         ) : (
           <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
         )}

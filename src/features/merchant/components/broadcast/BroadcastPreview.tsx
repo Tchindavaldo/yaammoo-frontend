@@ -26,7 +26,7 @@ export const BroadcastPreview: React.FC<Props> = ({ shop, title, body, imageUri 
   const hasTitle = title.trim().length > 0;
   const hasBody = body.trim().length > 0;
   const shopName = shop?.name.trim() || "";
-  const shownTitle = hasTitle ? title.trim() : t("Titre de la notification");
+  const shownTitle = hasTitle ? title.trim() : t("Titre de l'annonce");
 
   return (
     <View style={styles.stage}>

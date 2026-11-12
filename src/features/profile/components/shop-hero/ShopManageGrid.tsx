@@ -16,7 +16,7 @@ const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: Bac
   { icon: "restaurant-outline", label: "Menu", href: "/shop/menu", info: "18 plats", tone: "plain" },
   { icon: "wine-outline", label: "Boissons", href: "/shop/drinks", info: "6 boissons", tone: "black" },
   { icon: "people-outline", label: "Personnel", href: "/shop/staff", info: "3 membres", tone: "grey" },
-  { icon: "notifications-outline", label: "Notifications", href: "/shop/notifications", info: "Activées" },
+  { icon: "megaphone-outline", label: "Annonces", href: "/shop/notifications", info: "8 restantes" },
   { icon: "chatbubbles-outline", label: "Messages", href: "/shop/messages", info: "2 non lus", hot: true },
   { icon: "information-circle-outline", label: "Information", href: "/shop/edit", info: "Ouverte" },
 ];

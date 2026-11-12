@@ -1178,5 +1178,12 @@
   "Nouveau design 2": "New design 2",
   "Nouveau design 3": "New design 3",
   "Mode client": "Customer mode",
-  "Mode marchand": "Merchant mode"
+  "Mode marchand": "Merchant mode",
+  "Annonces": "Announcements",
+  "Écrire une annonce": "Write an announcement",
+  "Annonce envoyée": "Announcement sent",
+  "Impossible de charger vos annonces": "Could not load your announcements",
+  "Aucune annonce envoyée": "No announcement sent",
+  "Titre de l'annonce": "Announcement title",
+  "8 restantes": "8 left"
 }

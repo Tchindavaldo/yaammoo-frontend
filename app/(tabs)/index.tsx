@@ -63,7 +63,7 @@ const seenBanners = new Set<string>();
  * Voir architecture/restaurants.md.
  */
 export default function HomeTab() {
-  const { isMerchantMode } = useMerchantMode();
+  const { isMerchant, isMerchantMode } = useMerchantMode();
   useEffect(() => {
     setShopImpressionsPaused(isMerchantMode);
   }, [isMerchantMode]);
@@ -81,8 +81,10 @@ export default function HomeTab() {
       >
         <HomeScreen />
       </View>
-      {isMerchantMode && (
-        <View style={StyleSheet.absoluteFill}>
+      {/* Home marchand garde monte lui aussi (masque en mode client) : header
+          et sections stables d'une bascule a l'autre. */}
+      {isMerchant && (
+        <View style={[StyleSheet.absoluteFill, { display: isMerchantMode ? "flex" : "none" }]}>
           <MerchantHome />
         </View>
       )}

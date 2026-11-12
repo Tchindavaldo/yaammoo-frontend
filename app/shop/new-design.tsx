@@ -2,13 +2,12 @@
 import React, { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
-import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
+import { ShopNewHeader } from "@/src/features/profile/components/shop-hero/ShopNewHeader";
 import { ShopOrdersSection } from "@/src/features/profile/components/shop-hero/ShopOrdersSection";
 import { ShopHeroCard } from "@/src/features/profile/components/shop-hero/ShopHeroCard";
 import { ShopPageFrame } from "@/src/features/merchant/components/shop/ShopPageFrame";
 import { ShopManageGrid } from "@/src/features/profile/components/shop-hero/ShopManageGrid";
-import { showToast } from "@/src/services/globalToast";
-import { t, useLanguage } from "@/src/i18n";
+import { useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 
 /**
@@ -24,14 +23,12 @@ export default function NewDesignScreen() {
     <ShopPageFrame>
     <View style={{ flex: 1, backgroundColor: DS.bg }}>
       <TabHeader onHeightChange={setHeaderHeight}>
-        <SettingsHeaderProfile
-          onAddAccount={() => showToast(t("Bientôt disponible"), "info")}
-        />
+        <ShopNewHeader />
       </TabHeader>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: headerHeight + 16,
+          paddingTop: headerHeight + 6,
           paddingHorizontal: 16,
           gap: 18,
           // Le conteneur Boutique (dernier) prend tout l'espace restant.

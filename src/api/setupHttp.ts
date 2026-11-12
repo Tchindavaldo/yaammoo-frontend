@@ -86,8 +86,12 @@ export function setupHttp() {
       !config.headers["Authorization"] &&
       config.url?.startsWith(Config.apiUrl)
     ) {
-      const { auth } = require("@/src/services/firebase");
-      const token = await auth.currentUser?.getIdToken().catch(() => null);
+      // ⚠️ Delai borne (`getOptionalIdToken`) : hors ligne avec un token
+      // expire, `getIdToken()` attend le reseau ~60 s. Constate dans Sentry
+      // (`diag:net`) : coupure connue en 0 s, mais splash fige 58 s, le temps
+      // que ce rafraichissement abandonne.
+      const { getOptionalIdToken } = require("@/src/services/idToken");
+      const token = await getOptionalIdToken();
       if (token) config.headers["Authorization"] = `Bearer ${token}`;
     }
     return config;

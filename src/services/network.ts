@@ -1,5 +1,5 @@
 import NetInfo from "@react-native-community/netinfo";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import { trackNetState } from "./netTelemetry";
 import { isSplashHidden } from "@/src/hooks/useHideSplash";
 
@@ -464,6 +464,12 @@ export function reportSocketDisconnected() {
  */
 export function reportNetworkFailure() {
   if (reachable === false) return;
+  // ⚠️ App hors premier plan (arriere-plan, ecran verrouille) : iOS coupe les
+  // sockets de l'app, la requete en cours echoue sans que le reseau soit en
+  // cause. Constate dans Sentry (`source: echec-requete`, `in_foreground: false`) :
+  // bandeau « pas de connexion » bref au retour dans l'app. La sonde reste seule
+  // juge dans ce cas.
+  if (AppState.currentState !== "active") return;
   console.log("[net] coupure detectee par echec de requete");
   reachable = false;
   settled = true;

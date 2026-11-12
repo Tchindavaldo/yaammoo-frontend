@@ -12,7 +12,11 @@ import { router } from "expo-router";
 import { broadcastService } from "@/src/features/merchant/services/broadcastService";
 import { t, useLanguage } from "@/src/i18n";
 
-export function ShopNewHeader() {
+/** Essai du bouton retour (choisi via la grille Gestion) : fleche seule / rond noir / rond gris. */
+export type BackTone = "plain" | "black" | "grey";
+
+export function ShopNewHeader({ tone = "plain" }: { tone?: BackTone }) {
+  const circleBg = tone === "black" ? DS.ink : tone === "grey" ? DS.surface : undefined;
   useLanguage();
   const { user, userData } = useAuth();
   const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || "";
@@ -36,9 +40,9 @@ export function ShopNewHeader() {
         hitSlop={8}
         accessibilityRole="button"
         accessibilityLabel={t("Retour à l'accueil")}
-        style={styles.pill}
+        style={[styles.pill, circleBg ? { backgroundColor: circleBg, alignItems: "center" } : null]}
       >
-        <Ionicons name="chevron-back" size={18} color={DS.onInk} />
+        <Ionicons name="chevron-back" size={circleBg ? 20 : 26} color={tone === "black" ? DS.onInk : DS.ink} />
       </Pressable>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{name}</Text>
@@ -60,7 +64,7 @@ export function ShopNewHeader() {
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 14 },
-  pill: { width: 40, height: 40, borderRadius: 20, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" },
+  pill: { width: 40, height: 40, borderRadius: 20, alignItems: "flex-start", justifyContent: "center" },
   info: { flex: 1, minWidth: 0, alignItems: "flex-end" },
   name: { fontSize: 17, fontWeight: "800", color: DS.ink },
   contact: { marginTop: 3, fontSize: 13, fontWeight: "500", color: DS.muted },

@@ -43,6 +43,7 @@ export function trackSocket(
       return sentryEvent;
     });
 
-    Sentry.captureMessage(`Socket ${event}`);
+    // Envoi Sentry coupe (quota) : breadcrumb seulement.
+    Sentry.addBreadcrumb({ category: "socket", message: `Socket ${event}`, level: "info" });
   });
 }

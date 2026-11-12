@@ -17,7 +17,8 @@ export const trackHome = (message: string, data: Record<string, unknown>) => {
     scope.setLevel("info");
     scope.setTag("diag", "home");
     scope.setContext("home", data);
-    Sentry.captureMessage(`home ${message}`);
+    // Envoi Sentry coupe (quota) : breadcrumb seulement.
+    Sentry.addBreadcrumb({ category: "home", message, level: "info" });
   });
 };
 
@@ -28,7 +29,8 @@ export const announceNativeList = () => {
   if (announced) return;
   announced = true;
   console.log("[NATIVE] liste native du home active");
-  Sentry.captureMessage("home-list: liste native active", {
+  // Envoi Sentry coupe (quota).
+  if (false) Sentry.captureMessage("home-list: liste native active", {
     level: "info",
     tags: { home_list: "native" },
   });

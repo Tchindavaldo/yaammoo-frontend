@@ -85,7 +85,8 @@ function report() {
       return event;
     });
 
-    Sentry.captureMessage("Boot timings");
+    // Envoi Sentry coupe (quota) : breadcrumb seulement.
+    Sentry.addBreadcrumb({ category: "boot", message: "Boot timings", level: "info" });
   });
 }
 

@@ -65,7 +65,8 @@ export function tagCurrentUpdate() {
   // qu'aucune mise a jour n'est disponible — exactement le cas qu'on veut
   // observer. Groupe par updateId, donc une issue par version livree.
   const kind = Updates.isEmbeddedLaunch ? "embedded" : "updated";
-  captureOtaEvent(`OTA boot ${kind}`, ["ota", "boot", kind], {
+  // Envoi coupe (quota Sentry) : les erreurs OTA restent envoyees.
+  if (false) captureOtaEvent(`OTA boot ${kind}`, ["ota", "boot", kind], {
     tags: { "ota.event": "boot" },
     extra: {
       message: updateMessage(),

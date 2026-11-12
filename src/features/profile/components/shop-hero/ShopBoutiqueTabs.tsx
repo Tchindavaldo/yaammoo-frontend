@@ -15,15 +15,33 @@ import { DS } from "@/src/theme/ds";
  * DESIGN SEUL : rien n'est branche, montants = EXEMPLES.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
-type Key = "info" | "menu" | "drinks" | "staff" | "messages" | "wallet";
+type Key = "info" | "messages" | "wallet";
 const CHIPS: { key: Key; icon: Ion; label: string }[] = [
-  { key: "info", icon: "information-circle-outline", label: "Information" },
-  { key: "menu", icon: "restaurant-outline", label: "Menu" },
-  { key: "drinks", icon: "wine-outline", label: "Boissons" },
-  { key: "staff", icon: "people-outline", label: "Personnel" },
+  { key: "info", icon: "information-circle-outline", label: "Boutique" },
   { key: "messages", icon: "chatbubbles-outline", label: "Messages" },
   { key: "wallet", icon: "wallet-outline", label: "Portefeuille" },
 ];
+const ROWS: { icon: Ion; label: string }[] = [
+  { icon: "create-outline", label: "Modifier les informations" },
+  { icon: "restaurant-outline", label: "Gestion des menus" },
+  { icon: "wine-outline", label: "Gestion des boissons" },
+  { icon: "people-outline", label: "Gestion du personnel" },
+];
+
+/** Liste empilee (maquette R1) — non branchee, design seul. */
+function InfoTab() {
+  return (
+    <View style={{ gap: 4 }}>
+      {ROWS.map((r) => (
+        <View key={r.label} style={{ height: 48, paddingLeft: 12, paddingRight: 10, borderRadius: 14, backgroundColor: DS.bg, flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <Ionicons name={r.icon} size={19} color={DS.ink} />
+          <Text numberOfLines={1} style={{ flex: 1, fontSize: 14.5, fontWeight: "600", color: DS.ink }}>{t(r.label)}</Text>
+          <Ionicons name="chevron-forward" size={14} color={DS.faint} />
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export function ShopBoutiqueTabs() {
   useLanguage();
@@ -53,7 +71,7 @@ export function ShopBoutiqueTabs() {
           );
         })}
       </ScrollView>
-      {sel === "wallet" ? <WalletTab /> : <View style={{ height: 150, borderRadius: 16, backgroundColor: DS.bg }} />}
+      {sel === "wallet" ? <WalletTab /> : sel === "info" ? <InfoTab /> : <View style={{ height: 150, borderRadius: 16, backgroundColor: DS.bg }} />}
     </View>
   );
 }

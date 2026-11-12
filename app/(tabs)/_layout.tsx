@@ -116,13 +116,6 @@ export default function TabLayout() {
               href: null,
             }}
           />
-          {/* Apercu du nouveau design du profil marchand (sans onglet). */}
-          <Tabs.Screen
-            name="new-design"
-            options={{
-              href: null,
-            }}
-          />
           <Tabs.Screen
             name="driver"
             options={{

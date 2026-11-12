@@ -5,21 +5,23 @@ import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { ShopOrdersSection } from "@/src/features/profile/components/shop-hero/ShopOrdersSection";
 import { ShopHeroCard } from "@/src/features/profile/components/shop-hero/ShopHeroCard";
-import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
+import { ShopPageFrame } from "@/src/features/merchant/components/shop/ShopPageFrame";
+import { ShopManageSection } from "@/src/features/profile/components/shop-hero/ShopManageSection";
 import { showToast } from "@/src/services/globalToast";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 
 /**
  * Settings → Boutique → « Nouveau design » : apercu du futur profil marchand
- * (header du profil actuel + hero), AVEC la navbar (route (tabs) sans onglet).
+ * (header du profil actuel + sections), SANS navbar (Stack `app/shop` :
+ * retour par glissement depuis le bord gauche / geste systeme).
  * Le reste sera ajoute au fur et a mesure.
  */
 export default function NewDesignScreen() {
   useLanguage();
   const [headerHeight, setHeaderHeight] = useState(150);
-  const tabBarHeight = useTabBarHeight();
   return (
+    <ShopPageFrame>
     <View style={{ flex: 1, backgroundColor: DS.bg }}>
       <TabHeader onHeightChange={setHeaderHeight}>
         <SettingsHeaderProfile
@@ -30,15 +32,15 @@ export default function NewDesignScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: headerHeight + 16,
-          // La navbar flotte sur le bas : fin de page juste au-dessus (R19).
-          paddingBottom: tabBarHeight + 8,
           paddingHorizontal: 16,
           gap: 18,
         }}
       >
         <ShopHeroCard />
         <ShopOrdersSection />
+        <ShopManageSection />
       </ScrollView>
     </View>
+    </ShopPageFrame>
   );
 }

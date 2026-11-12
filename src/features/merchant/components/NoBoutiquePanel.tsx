@@ -13,14 +13,24 @@ import { t, useLanguage } from "@/src/i18n";
  * appel à l'action ; au clic sur « Continuer », bascule vers l'écran PLEINE PAGE
  * de création (`CreateBoutiquePanel`) coiffé du header global.
  */
-export const NoBoutiquePanel = () => {
+interface Props {
+  /** Ouvre directement la creation (bandeau du profil) ; Annuler = retour. */
+  direct?: boolean;
+  onExit?: () => void;
+}
+
+export const NoBoutiquePanel = ({ direct = false, onExit }: Props) => {
   useLanguage();
   // Hauteur REELLE de la navbar, safe-area comprise (source unique R19).
   const tabBarHeight = useTabBarHeight();
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(direct);
 
   if (creating) {
-    return <CreateBoutiquePanel onCancel={() => setCreating(false)} />;
+    return (
+      <CreateBoutiquePanel
+        onCancel={() => (direct && onExit ? onExit() : setCreating(false))}
+      />
+    );
   }
 
   return (

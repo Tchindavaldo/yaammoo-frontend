@@ -132,7 +132,11 @@ export default function SettingsScreen() {
       >
         {/* Sans boutique : bandeau de creation en haut du profil. */}
         {!isMerchant && (
-          <CreateShopBanner onPress={() => router.push("/(tabs)/boutique")} />
+          <CreateShopBanner
+            onPress={() =>
+              router.push({ pathname: "/(tabs)/boutique", params: { create: "1" } })
+            }
+          />
         )}
 
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}

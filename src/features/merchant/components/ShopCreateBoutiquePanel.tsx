@@ -6,7 +6,8 @@ import { View } from "react-native";
 import { useFooterBottomInset } from "@/src/hooks/usePageBottomInset";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
-import { styles } from "./create-boutique/styles";
+// Styles de l'edition : racine de page entiere (flex 1, fond blanc).
+import { styles } from "./edit-boutique/styles";
 import { useCreateBoutique } from "./create-boutique/useCreateBoutique";
 import { groupZonesByLieu } from "./create-boutique/groupZones";
 import { hourToDate } from "./create-boutique/parseBoutique";

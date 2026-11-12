@@ -50,6 +50,10 @@ interface BoutiqueInfoPageProps {
   setAdvanceDays: (v: string) => void;
   pickupAllowed: boolean;
   setPickupAllowed: (v: boolean) => void;
+  /** Position GPS (page /shop/create) ; absent = champ masque. */
+  hasShopPosition?: boolean;
+  locating?: boolean;
+  onCaptureShopPosition?: () => void;
   loading: boolean;
   onSubmit: () => void;
   /** Hauteur du header au-dessus (TabHeader), pour caler le KeyboardAvoidingView. */
@@ -83,6 +87,9 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   setAdvanceDays,
   pickupAllowed,
   setPickupAllowed,
+  hasShopPosition = false,
+  locating = false,
+  onCaptureShopPosition,
   loading,
   onSubmit,
   keyboardOffset = 0,
@@ -290,6 +297,44 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           </View>
         </View>
       </View>
+
+      {/* Position GPS de la boutique (comme l'edition) : distance affichée
+          aux clients du home. Masquee si l'ecran ne fournit pas la capture. */}
+      {!!onCaptureShopPosition && (
+        <View style={{ marginTop: 16 }}>
+          <Text style={styles.floatingLabel}>{t("Position de la boutique")}</Text>
+          <TouchableOpacity
+            style={[
+              styles.glassInput,
+              {
+                borderRadius: 20,
+                minHeight: 46,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+              },
+            ]}
+            onPress={onCaptureShopPosition}
+            disabled={locating}
+            activeOpacity={0.7}
+          >
+            {locating ? (
+              <ActivityIndicator size="small" color={DS.accent} />
+            ) : (
+              <Ionicons
+                name={hasShopPosition ? "checkmark-circle" : "navigate-outline"}
+                size={18}
+                color={hasShopPosition ? DS.success : DS.accent}
+              />
+            )}
+            <Text style={{ flex: 1, fontSize: 14, color: DS.text2 }} numberOfLines={2}>
+              {hasShopPosition
+                ? t("Position enregistrée · appuyez pour la remplacer par votre position actuelle")
+                : t("Utiliser ma position actuelle (à faire depuis la boutique)")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Récupération à la boutique (déplacé depuis la page 2) */}
       <View

@@ -1165,5 +1165,9 @@
   "Modifier les informations": "Edit information",
   "Gestion des menus": "Manage menus",
   "Gestion des boissons": "Manage drinks",
-  "Gestion du personnel": "Manage staff"
+  "Gestion du personnel": "Manage staff",
+  "Général": "General",
+  "Informations sur la boutique": "Shop information",
+  "Consulter les messages": "View messages",
+  "Gestion des notifications": "Manage notifications"
 }

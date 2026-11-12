@@ -18,21 +18,27 @@ type Ion = React.ComponentProps<typeof Ionicons>["name"];
 type Key = "info" | "messages" | "wallet";
 const CHIPS: { key: Key; icon: Ion; label: string }[] = [
   { key: "info", icon: "information-circle-outline", label: "Boutique" },
-  { key: "messages", icon: "chatbubbles-outline", label: "Messages" },
+  { key: "messages", icon: "settings-outline", label: "Général" },
   { key: "wallet", icon: "wallet-outline", label: "Portefeuille" },
 ];
 const ROWS: { icon: Ion; label: string }[] = [
-  { icon: "create-outline", label: "Modifier les informations" },
   { icon: "restaurant-outline", label: "Gestion des menus" },
   { icon: "wine-outline", label: "Gestion des boissons" },
   { icon: "people-outline", label: "Gestion du personnel" },
 ];
 
+const GEN_ROWS: { icon: Ion; label: string }[] = [
+  { icon: "information-circle-outline", label: "Informations sur la boutique" },
+  { icon: "create-outline", label: "Modifier les informations" },
+  { icon: "chatbubbles-outline", label: "Consulter les messages" },
+  { icon: "notifications-outline", label: "Gestion des notifications" },
+];
+
 /** Liste empilee (maquette R1) — non branchee, design seul. */
-function InfoTab() {
+function InfoTab({ rows = ROWS }: { rows?: { icon: Ion; label: string }[] }) {
   return (
     <View style={{ gap: 4 }}>
-      {ROWS.map((r) => (
+      {rows.map((r) => (
         <View key={r.label} style={{ height: 48, paddingLeft: 12, paddingRight: 10, borderRadius: 14, backgroundColor: DS.bg, flexDirection: "row", alignItems: "center", gap: 12 }}>
           <Ionicons name={r.icon} size={19} color={DS.ink} />
           <Text numberOfLines={1} style={{ flex: 1, fontSize: 14.5, fontWeight: "600", color: DS.ink }}>{t(r.label)}</Text>
@@ -71,7 +77,7 @@ export function ShopBoutiqueTabs() {
           );
         })}
       </ScrollView>
-      {sel === "wallet" ? <WalletTab /> : sel === "info" ? <InfoTab /> : <View style={{ height: 150, borderRadius: 16, backgroundColor: DS.bg }} />}
+      {sel === "wallet" ? <WalletTab /> : sel === "info" ? <InfoTab /> : sel === "messages" ? <InfoTab rows={GEN_ROWS} /> : <View style={{ height: 150, borderRadius: 16, backgroundColor: DS.bg }} />}
     </View>
   );
 }

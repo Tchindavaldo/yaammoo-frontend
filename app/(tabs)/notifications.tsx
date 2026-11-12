@@ -69,12 +69,13 @@ export default function NotificationsScreen() {
     const open = () => {
       const n = takePendingPushTap();
       if (!n) return;
+      if (isMerchantNotification(n)) setMerchantMode(true);
       setSelectedNotif(n);
       setDetailVisible(true);
     };
     open();
     return onPendingPushTap(open);
-  }, []);
+  }, [setMerchantMode]);
 
   const handleNotifPress = (notif: Notification) => {
     if (!isReadFlag(notif)) {

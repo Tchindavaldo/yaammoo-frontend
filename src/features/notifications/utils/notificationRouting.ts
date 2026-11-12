@@ -28,13 +28,13 @@ const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
     if (legacy) return `/(tabs)/orders?section=${legacy[1]}`;
     // Nouvelle commande (→ marchand) : page Commandes de la boutique (Profil),
     // pas l'onglet Commandes du client.
-    if (/boutique/.test(String(rawRoute))) return "/shop/orders";
+    if (/boutique/.test(String(rawRoute))) return "/(tabs)/boutique";
     return rawRoute.startsWith("/") ? rawRoute : `/(tabs)/${rawRoute}`;
   }
   // Minuscules : le push `bonus.activation_changed` envoie `type: "Bonus"`.
   switch (String(notif.type ?? "").toLowerCase()) {
     case "order_new":
-      return "/shop/orders";
+      return "/(tabs)/boutique";
     case "order_cancel_by_user":
     case "order_cancel_by_merchant":
       return "/(tabs)/notifications";
@@ -45,7 +45,7 @@ const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
       return "/(tabs)/orders?section=pending";
     // Demande de livraison reçue (→ marchand) : ouvre le modal "Livreurs".
     case "driver_application":
-      return "/(tabs)/settings?section=drivers";
+      return "/shop/staff?section=drivers";
     // Demande décidée (→ candidat) : ouvre le modal "Mes demandes".
     case "driver_application_decided":
     case "driver_removed":

@@ -19,6 +19,8 @@ export interface Notification {
   createdAt: string;
   idGroup?: string;
   type?: string;
+  /** Destinataire : boutique (`merchant`) ou client. Pose par le backend. */
+  audience?: "merchant" | "client";
   route?: string;
   orderId?: string;
   /** Notification envoyée par une boutique (`boutique_broadcast`) : image jointe. */

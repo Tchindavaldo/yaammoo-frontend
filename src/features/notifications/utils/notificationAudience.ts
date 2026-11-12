@@ -2,11 +2,13 @@ import type { Notification } from "../context/NotificationContext";
 
 /**
  * Notification destinee au MARCHAND (boutique) plutot qu'au client.
- * L'onglet Notifications n'affiche que celles du mode actif.
+ * Source : `audience` pose par le backend. Notifications plus anciennes (sans
+ * `audience`) : deduit du type.
  */
-const MERCHANT_TYPES = new Set(["order_new", "order_cancel_by_user", "driver_application"]);
+const LEGACY_MERCHANT_TYPES = new Set(["order_new", "order_cancel_by_user", "driver_application", "pricing_alert"]);
 
 export function isMerchantNotification(n: Notification): boolean {
+  if (n.audience) return n.audience === "merchant";
   if (n.route && /boutique/.test(String(n.route))) return true;
-  return MERCHANT_TYPES.has(String(n.type ?? "").toLowerCase());
+  return LEGACY_MERCHANT_TYPES.has(String(n.type ?? "").toLowerCase());
 }

@@ -44,6 +44,7 @@ const openFromPush = (router: ReturnType<typeof useRouter>, data: any) => {
     title: data.title,
     message: data.body || data.message,
     type: data.type,
+    audience: data.audience === "merchant" ? "merchant" : data.audience === "client" ? "client" : undefined,
     route: data.route,
     orderId: data.orderId || undefined,
     isRead: true,

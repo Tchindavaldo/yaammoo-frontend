@@ -1,6 +1,7 @@
 import NetInfo from "@react-native-community/netinfo";
 import { Platform } from "react-native";
 import { trackNetState } from "./netTelemetry";
+import { isSplashHidden } from "@/src/hooks/useHideSplash";
 
 /**
  * Etat reel de la connectivite.
@@ -326,7 +327,10 @@ function settle(next: boolean) {
   // suite : rien a perdre a croire une bonne nouvelle verifiee.
   if (!next && reachable !== false) {
     failures += 1;
-    if (failures < FAILURES_BEFORE_OFFLINE) {
+    // Sous le splash, un seul echec suffit : l'utilisateur attend devant un
+    // ecran fige, et deux sondes de 3 s depassaient la securite de 6 s.
+    const needed = isSplashHidden() ? FAILURES_BEFORE_OFFLINE : 1;
+    if (failures < needed) {
       settled = true;
       return;
     }

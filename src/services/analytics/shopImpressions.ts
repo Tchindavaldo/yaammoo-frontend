@@ -15,6 +15,13 @@ type Visible = { since: number; position: number; page?: number };
 
 const visible = new Map<string, Visible>();
 
+// Home client recouvert (mode marchand) : rien n'est vu, rien n'est compte.
+let paused = false;
+export function setShopImpressionsPaused(on: boolean): void {
+  paused = on;
+  if (on) clearVisibleShops();
+}
+
 const close = (id: string, v: Visible, at: number) => {
   const visibleMs = at - v.since;
   if (visibleMs < MIN_VISIBLE_MS) return;
@@ -37,6 +44,7 @@ export function setVisibleShops(
   positions: number[],
   pageOf?: (position: number) => number,
 ): void {
+  if (paused) return;
   const at = Date.now();
   const next = new Set(ids);
   for (const [id, v] of visible) {

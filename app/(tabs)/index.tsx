@@ -8,7 +8,7 @@ import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { FlashList } from "@shopify/flash-list";
 import React, { useCallback, useEffect, useState } from "react";
-import { Animated, RefreshControl, View } from "react-native";
+import { Animated, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
@@ -41,6 +41,7 @@ import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import {
   clearVisibleShops,
+  setShopImpressionsPaused,
   setVisibleShops,
 } from "@/src/services/analytics/shopImpressions";
 import { homePageOf } from "@/src/services/analytics/homePages";
@@ -63,7 +64,30 @@ const seenBanners = new Set<string>();
  */
 export default function HomeTab() {
   const { isMerchantMode } = useMerchantMode();
-  return isMerchantMode ? <MerchantHome /> : <HomeScreen />;
+  useEffect(() => {
+    setShopImpressionsPaused(isMerchantMode);
+  }, [isMerchantMode]);
+  // Home client TOUJOURS monte et mis en page en plein ecran, meme en mode
+  // marchand (recouvert par le home marchand). Le demonter / le masquer a
+  // chaque bascule laissait la liste native des boutiques sans images
+  // (squelettes figes jusqu'au pull-to-refresh).
+  return (
+    <View style={{ flex: 1 }}>
+      <View
+        style={{ flex: 1 }}
+        pointerEvents={isMerchantMode ? "none" : "auto"}
+        importantForAccessibility={isMerchantMode ? "no-hide-descendants" : "auto"}
+        accessibilityElementsHidden={isMerchantMode}
+      >
+        <HomeScreen />
+      </View>
+      {isMerchantMode && (
+        <View style={StyleSheet.absoluteFill}>
+          <MerchantHome />
+        </View>
+      )}
+    </View>
+  );
 }
 
 function HomeScreen() {

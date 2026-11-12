@@ -79,7 +79,7 @@ function AppContent() {
   // qui couvre les versions NATIVES : celles-la exigent un passage par le store
   // et ne peuvent pas etre livrees par `expo-updates`.
   useOtaUpdates();
-  const { user, userData, loading } = useAuth();
+  const { user, userData, loading, isSignedIn } = useAuth();
   // Invite ayant touche « Explorer sans compte » sur l'ecran d'accueil.
   const { guestBrowsing } = useAuthGate();
   // `checked` passe a true des que le backend a repondu OU a echoue — on ne
@@ -103,8 +103,7 @@ function AppContent() {
   useAnalytics();
   const { setup: setupNotifications } = useNotificationSetup();
 
-  // Connecté = Firebase user présent ET profil chargé.
-  const isSignedIn = !!user && !!userData;
+  // Connecté = profil en cache (prime sur tout), confirmé ensuite par Firebase.
   // Localisation : demandée APRÈS la permission notifications (enchaînée dans
   // l'effet ci-dessous), puis renvoyée au retour au premier plan.
   const { capture: captureLocation } = useUserLocationSync(isSignedIn);

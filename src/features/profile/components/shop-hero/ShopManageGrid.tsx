@@ -7,17 +7,17 @@ import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 
 /**
- * « Nouveau design » : section Gestion (maquette S1A) — grille 3x2 puis une
+ * « Nouveau design » : section Gestion (maquette S1D) — grille 3x2 puis une
  * ligne Portefeuille. DESIGN SEUL : rien n'est branche, montant = EXEMPLE.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
-const TILES: { icon: Ion; label: string }[] = [
-  { icon: "restaurant-outline", label: "Menu" },
-  { icon: "wine-outline", label: "Boissons" },
-  { icon: "people-outline", label: "Personnel" },
-  { icon: "notifications-outline", label: "Notifications" },
-  { icon: "chatbubbles-outline", label: "Messages" },
-  { icon: "information-circle-outline", label: "Information" },
+const TILES: { icon: Ion; label: string; info: string; hot?: boolean }[] = [
+  { icon: "restaurant-outline", label: "Menu", info: "18 plats" },
+  { icon: "wine-outline", label: "Boissons", info: "6 boissons" },
+  { icon: "people-outline", label: "Personnel", info: "3 membres" },
+  { icon: "notifications-outline", label: "Notifications", info: "Activées" },
+  { icon: "chatbubbles-outline", label: "Messages", info: "2 non lus", hot: true },
+  { icon: "information-circle-outline", label: "Information", info: "Ouverte" },
 ];
 
 export function ShopManageGrid() {
@@ -28,11 +28,14 @@ export function ShopManageGrid() {
       <Text style={{ paddingHorizontal: 6, fontSize: 16, fontWeight: "600", color: DS.ink }}>{t("Gestion")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {TILES.map((x) => (
-          <View key={x.label} style={{ flexBasis: "31%", flexGrow: 1, padding: 8, borderRadius: 18, backgroundColor: DS.surface, flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: DS.bg, alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name={x.icon} size={14} color={DS.ink} />
+          <View key={x.label} style={{ flexBasis: "31%", flexGrow: 1, padding: 10, borderRadius: 18, backgroundColor: DS.surface, gap: 5 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: DS.bg, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name={x.icon} size={12} color={DS.ink} />
+              </View>
+              <Text numberOfLines={1} style={{ flex: 1, fontSize: 11.5, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>
             </View>
-            <Text numberOfLines={1} style={{ flex: 1, fontSize: 12, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>
+            <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: x.hot ? "600" : "500", color: x.hot ? DS.accentInk : DS.muted }}>{t(x.info)}</Text>
           </View>
         ))}
       </View>

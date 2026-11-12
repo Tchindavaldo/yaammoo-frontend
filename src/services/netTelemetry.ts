@@ -12,12 +12,15 @@ import { sinceBoot } from "@/src/utils/bootClock";
 /** Etat reseau courant, joint a chaque evenement de chargement. */
 let lastOnline: boolean | null = null;
 let lastAborted = 0;
+/** Ecran courant : `splash` jusqu'a son masquage, puis `app`. */
+let phase: "splash" | "app" = "splash";
 
 function send(message: string, data: Record<string, unknown>) {
   Sentry.withScope((scope) => {
     scope.setLevel("info");
     scope.setTag("diag", "net");
-    scope.setContext("net", { ...data, at: Number(sinceBoot()) });
+    scope.setTag("phase", phase);
+    scope.setContext("net", { ...data, phase, online: data.online ?? lastOnline, at: Number(sinceBoot()) });
     Sentry.captureMessage(message);
   });
 }
@@ -43,4 +46,20 @@ export function trackNetState(online: boolean, source: string, aborted = 0) {
   lastOnline = online;
   if (aborted) lastAborted += aborted;
   send(online ? "net en ligne" : "net hors ligne", { online, source, aborted });
+}
+
+/** Splash masque : duree totale et etat reseau a cet instant. */
+export function trackSplashHidden() {
+  send("splash masque", { seconds: Number(sinceBoot()), online: lastOnline, abortedBefore: lastAborted });
+  phase = "app";
+}
+
+/** La verification de version n'a pas repondu a temps : splash libere de force. */
+export function trackSplashReleased(waitMs: number) {
+  send("splash libere sans app-version", { waitSeconds: waitMs / 1000, online: lastOnline });
+}
+
+/** Fin de `/settings/app-version` (requete qui bloque le splash). */
+export function trackAppVersion(ms: number, ok: boolean, error?: { code?: string; message?: string }) {
+  send(ok ? "app-version ok" : "app-version echec", { seconds: Number((ms / 1000).toFixed(2)), ok, error });
 }

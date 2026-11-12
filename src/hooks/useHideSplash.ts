@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import * as SplashScreen from "expo-splash-screen";
+import { trackSplashHidden } from "@/src/services/netTelemetry";
 
 // Vrai une fois que le splash natif a été caché (1re fois). Sert à savoir si on
 // est encore "sous le splash" (boot) : tant que c'est faux, les bascules de
@@ -37,6 +38,7 @@ export function useHideSplash() {
     requestAnimationFrame(() => {
       splashHidden = true;
       SplashScreen.hideAsync().catch(() => {});
+      trackSplashHidden();
       splashListeners.forEach((cb) => cb());
       splashListeners.clear();
     });

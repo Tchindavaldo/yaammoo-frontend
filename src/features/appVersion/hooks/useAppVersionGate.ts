@@ -3,6 +3,7 @@ import axios from "axios";
 import { Config } from "@/src/api/config";
 import { sinceBoot } from "@/src/utils/bootClock";
 import { trackBootStep } from "@/src/services/bootTelemetry";
+import { trackAppVersion, trackSplashReleased } from "@/src/services/netTelemetry";
 
 export interface AppVersionGate {
   clientVersion: string;
@@ -40,12 +41,15 @@ export function useAppVersionGate() {
     const startedAt = Date.now();
     const release = setTimeout(() => {
       console.log(`[boot t=${sinceBoot()}s] app-version sans reponse : splash libere`);
+      trackSplashReleased(SPLASH_WAIT_MS);
       setChecked(true);
     }, SPLASH_WAIT_MS);
     try {
       const { data } = await axios.get(`${Config.apiUrl}/settings/app-version`);
       setGate(data?.data ?? null);
-    } catch (error) {
+      trackAppVersion(Date.now() - startedAt, true);
+    } catch (error: any) {
+      trackAppVersion(Date.now() - startedAt, false, { code: error?.code, message: error?.message });
       console.error("[appVersion] vérification impossible :", error);
       setGate(null);
     } finally {

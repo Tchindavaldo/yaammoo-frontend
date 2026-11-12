@@ -51,10 +51,11 @@ export default function NotificationsScreen() {
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
 
-  // Seules les notifications du mode actif (marchand / client).
-  const { isMerchantMode } = useMerchantMode();
+  // Mode marchand : notifications marchand seules. Mode client : toutes (une
+  // notification marchand ouverte depuis le mode client bascule en marchand).
+  const { isMerchantMode, setMerchantMode } = useMerchantMode();
   const notifications = useMemo(
-    () => allNotifications.filter((n) => isMerchantNotification(n) === isMerchantMode),
+    () => (isMerchantMode ? allNotifications.filter(isMerchantNotification) : allNotifications),
     [allNotifications, isMerchantMode],
   );
   const unreadCount = notifications.filter((n) => !isReadFlag(n)).length;
@@ -86,6 +87,7 @@ export default function NotificationsScreen() {
   const handleNotifAction = (notif: Notification) => {
     setDetailVisible(false);
     const route = getNotificationRoute(notif);
+    if (isMerchantNotification(notif)) setMerchantMode(true);
     router.push(route as any);
   };
 

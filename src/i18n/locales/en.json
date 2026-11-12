@@ -1154,5 +1154,8 @@
   "SEMAINE": "WEEK",
   "SOLDE": "BALANCE",
   "AUJOURD’HUI": "TODAY",
-  "Bientôt disponible": "Coming soon"
+  "Bientôt disponible": "Coming soon",
+  "Tout voir": "See all",
+  "Livrées": "Delivered",
+  "Non livrées": "Not delivered"
 }

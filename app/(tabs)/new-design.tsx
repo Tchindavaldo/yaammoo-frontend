@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { ScrollView, View } from "react-native";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
+import { ShopOrdersSection } from "@/src/features/profile/components/shop-hero/ShopOrdersSection";
 import { ShopHeroCard } from "@/src/features/profile/components/shop-hero/ShopHeroCard";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { showToast } from "@/src/services/globalToast";
@@ -32,9 +33,11 @@ export default function NewDesignScreen() {
           // La navbar flotte sur le bas : fin de page juste au-dessus (R19).
           paddingBottom: tabBarHeight + 8,
           paddingHorizontal: 16,
+          gap: 18,
         }}
       >
         <ShopHeroCard />
+        <ShopOrdersSection />
       </ScrollView>
     </View>
   );

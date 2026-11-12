@@ -182,7 +182,7 @@ export default function SettingsScreen() {
               <SettingGridItem
                 icon="sparkles-outline"
                 title={t("Nouveau design")}
-                onPress={() => router.push("/shop/new-design")}
+                onPress={() => router.push("/new-design")}
               />
               {/* Commandes reçues par la boutique (page marchand). */}
               <SettingGridItem

@@ -1,29 +1,23 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-// Bottom sheet de choix de periode du hero marchand : raccourcis (semaine,
-// mois, annee), un mois precis (annee au choix), ou une semaine / un
-// intervalle de jours sur un calendrier fait main.
+// Bottom sheet de choix de periode du hero marchand (maquettes A1 + A3 du
+// canvas, page « Période ») : deux vues de MEME hauteur, pour que la bascule
+// ne fasse pas sauter le sheet.
+//  - racine : 5 raccourcis (un tap = applique et ferme) + « Choisir une période › » ;
+//  - calendrier : 1er tap = debut, 2e tap = fin, puis « Afficher ».
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import {
-  MONTHS,
-  MONTHS_SHORT,
-  ShopPeriod,
-  fromISO,
-  monthGrid,
-  monthPeriod,
-  periodLabel,
-  presetPeriod,
-  toISO,
-  weekPeriod,
-} from "./shopPeriod";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { MONTHS, ShopPeriod, fromISO, monthGrid, periodLabel, presetPeriod, toISO } from "./shopPeriod";
 
 const PRESETS = ["week", "lastWeek", "month", "lastMonth", "year"] as const;
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
+// Hauteur commune aux deux vues (titre + contenu), calee sur le calendrier
+// le plus haut (6 semaines + bouton).
+const BODY_HEIGHT = 370;
 
 interface Props {
   visible: boolean;
@@ -35,21 +29,19 @@ interface Props {
 export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onChange }) => {
   useLanguage();
   const insets = useSheetSafeInsets();
-  const now = new Date();
-  const todayISO = toISO(now);
-  const [year, setYear] = useState(now.getFullYear());
-  const [cal, setCal] = useState({ y: now.getFullYear(), m: now.getMonth() });
-  // Intervalle en cours de saisie : 1er tap = debut, 2e tap = fin.
+  const todayISO = toISO(new Date());
+  const [view, setView] = useState<"root" | "range">("root");
+  const [cal, setCal] = useState({ y: 0, m: 0 });
   const [draft, setDraft] = useState<{ from: string; to: string | null } | null>(null);
 
-  // A l'ouverture : calendrier et annee recales sur la periode active.
+  // A l'ouverture : vue racine, calendrier cale sur la periode active.
   useEffect(() => {
     if (!visible) return;
-    const d = fromISO(value.from);
-    setYear(d.getFullYear());
+    const d = fromISO(value.to > todayISO ? todayISO : value.to);
+    setView("root");
     setCal({ y: d.getFullYear(), m: d.getMonth() });
     setDraft(value.kind === "range" ? { from: value.from, to: value.to } : null);
-  }, [visible, value]);
+  }, [visible, value, todayISO]);
 
   const pick = (p: ShopPeriod) => {
     onChange(p);
@@ -67,156 +59,120 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
       const d = new Date(c.y, c.m + n, 1);
       return { y: d.getFullYear(), m: d.getMonth() };
     });
+  const nextDisabled = toISO(new Date(cal.y, cal.m + 1, 1)) > todayISO;
 
-  const rangeEnd = draft?.to ?? draft?.from;
-  const inDraft = (iso: string) => !!draft && iso >= draft.from && iso <= (rangeEnd as string);
+  const end = draft?.to ?? draft?.from;
+  const draftPeriod: ShopPeriod | null = draft ? { kind: "range", from: draft.from, to: end as string } : null;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
+      <View style={[styles.sheet, { paddingBottom: insets.bottom + 8 }]}>
         <View style={styles.grabber} />
-        <Text style={styles.title}>{t("Période")}</Text>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Raccourcis */}
-          <View style={styles.wrapRow}>
-            {PRESETS.map((k) => {
-              const active = value.kind === k;
-              return (
-                <Pressable key={k} onPress={() => pick(presetPeriod(k))} style={[styles.chip, active && styles.chipActive]}>
-                  <Text style={[styles.chipText, active && styles.chipTextActive]}>{periodLabel(presetPeriod(k))}</Text>
+        <View style={{ height: BODY_HEIGHT }}>
+          {view === "root" ? (
+            <>
+              <View style={styles.head}>
+                <Text style={styles.title}>{t("Période")}</Text>
+              </View>
+              <View style={styles.card}>
+                {PRESETS.map((k, i) => {
+                  const p = presetPeriod(k);
+                  const active = value.kind === k;
+                  return (
+                    <Pressable key={k} onPress={() => pick(p)} style={[styles.row, i < PRESETS.length - 1 && styles.divider]}>
+                      <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>{periodLabel(p)}</Text>
+                      <Text style={styles.rowHint}>{periodLabel({ kind: "range", from: p.from, to: p.to > todayISO ? todayISO : p.to }, true)}</Text>
+                      {active && <Ionicons name="checkmark" size={16} color={DS.accent} />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View style={[styles.card, { marginTop: 10 }]}>
+                <Pressable onPress={() => setView("range")} style={styles.row}>
+                  <Text style={[styles.rowLabel, value.kind === "range" && styles.rowLabelActive]}>{t("Choisir une période")}</Text>
+                  {value.kind === "range" && <Text style={styles.rowHint}>{periodLabel(value)}</Text>}
+                  <Ionicons name="chevron-forward" size={14} color={DS.idle} />
                 </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Un mois precis */}
-          <View style={styles.block}>
-            <View style={styles.blockHead}>
-              <Text style={styles.blockTitle}>{t("Un mois")}</Text>
-              <Stepper label={String(year)} onPrev={() => setYear(year - 1)} onNext={() => setYear(year + 1)} />
-            </View>
-            <View style={styles.wrapRow}>
-              {MONTHS_SHORT.map((m, i) => {
-                const p = monthPeriod(year, i);
-                const future = p.from > todayISO;
-                const active = value.kind !== "range" && value.from === p.from && value.to === p.to;
-                return (
-                  <Pressable
-                    key={m}
-                    disabled={future}
-                    onPress={() => pick(p)}
-                    style={[styles.month, active && styles.chipActive, future && styles.disabled]}
-                  >
-                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{t(m)}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Semaine ou jours */}
-          <View style={styles.block}>
-            <View style={styles.blockHead}>
-              <Text style={styles.blockTitle}>{t("Semaine ou jours")}</Text>
-              <Stepper label={`${t(MONTHS[cal.m])} ${cal.y}`} onPrev={() => stepCal(-1)} onNext={() => stepCal(1)} />
-            </View>
-            <Text style={styles.hint}>{t("Touchez « Sem. » pour une semaine, ou un jour de début puis un jour de fin.")}</Text>
-            <View style={styles.calRow}>
-              <View style={styles.weekCell} />
-              {WEEKDAYS.map((w, i) => (
-                <Text key={i} style={[styles.dayCell, styles.weekday]}>{w}</Text>
-              ))}
-            </View>
-            {monthGrid(cal.y, cal.m).map((row, ri) => {
-              const firstDay = row.find(Boolean) as Date;
-              const wk = weekPeriod(firstDay);
-              return (
-                <View key={ri} style={styles.calRow}>
-                  <Pressable
-                    disabled={wk.from > todayISO}
-                    onPress={() => setDraft({ from: wk.from, to: wk.to })}
-                    style={[styles.weekCell, wk.from > todayISO && styles.disabled]}
-                  >
-                    <Text style={styles.weekText}>{t("Sem.")}</Text>
-                  </Pressable>
-                  {row.map((d, di) => {
-                    if (!d) return <View key={di} style={styles.dayCell} />;
-                    const iso = toISO(d);
-                    const future = iso > todayISO;
-                    const sel = inDraft(iso);
-                    const edge = !!draft && (iso === draft.from || iso === rangeEnd);
-                    return (
-                      <Pressable key={di} disabled={future} onPress={() => tapDay(iso)} style={[styles.dayCell, sel && styles.daySel, edge && styles.dayEdge]}>
-                        <Text style={[styles.dayText, iso === todayISO && styles.today, future && styles.futureText, edge && styles.edgeText]}>
-                          {d.getDate()}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              );
-            })}
-            <Pressable
-              disabled={!draft}
-              onPress={() => draft && pick({ kind: "range", from: draft.from, to: draft.to ?? draft.from })}
-              style={[styles.apply, !draft && styles.disabled]}
-            >
-              <Text style={styles.applyText}>
-                {draft ? `${t("Afficher")} ${periodLabel({ kind: "range", from: draft.from, to: draft.to ?? draft.from })}` : t("Choisissez des jours")}
-              </Text>
-            </Pressable>
-          </View>
-        </ScrollView>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.head}>
+                <Pressable onPress={() => setView("root")} hitSlop={8} style={styles.round}>
+                  <Ionicons name="chevron-back" size={18} color={DS.ink} />
+                </Pressable>
+                <Text style={[styles.title, { flex: 1 }]}>{t("Choisir une période")}</Text>
+                <Pressable onPress={() => stepCal(-1)} hitSlop={6} style={styles.step}>
+                  <Ionicons name="chevron-back" size={14} color={DS.ink} />
+                </Pressable>
+                <Text style={styles.stepLabel}>{`${t(MONTHS[cal.m])} ${cal.y}`}</Text>
+                <Pressable onPress={() => stepCal(1)} disabled={nextDisabled} hitSlop={6} style={[styles.step, nextDisabled && styles.disabled]}>
+                  <Ionicons name="chevron-forward" size={14} color={DS.ink} />
+                </Pressable>
+              </View>
+              <View style={styles.calRow}>
+                {WEEKDAYS.map((w, i) => (
+                  <Text key={i} style={[styles.cell, styles.weekday]}>{w}</Text>
+                ))}
+              </View>
+              <View style={{ flex: 1 }}>
+                {monthGrid(cal.y, cal.m).map((row, ri) => (
+                  <View key={ri} style={styles.calRow}>
+                    {row.map((d, di) => {
+                      if (!d) return <View key={di} style={styles.cell} />;
+                      const iso = toISO(d);
+                      const future = iso > todayISO;
+                      const inRange = !!draft && iso >= draft.from && iso <= (end as string);
+                      const edge = !!draft && (iso === draft.from || iso === end);
+                      return (
+                        <Pressable key={di} disabled={future} onPress={() => tapDay(iso)} style={[styles.cell, inRange && styles.inRange, edge && styles.edge]}>
+                          <Text style={[styles.day, iso === todayISO && styles.today, future && styles.future, edge && styles.edgeText]}>{d.getDate()}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ))}
+              </View>
+              <Pressable disabled={!draftPeriod} onPress={() => draftPeriod && pick(draftPeriod)} style={[styles.apply, !draftPeriod && styles.disabled]}>
+                <Text style={styles.applyText}>
+                  {draftPeriod ? `${t("Afficher")} ${periodLabel(draftPeriod)}` : t("Touchez un jour de début puis de fin")}
+                </Text>
+              </Pressable>
+            </>
+          )}
+        </View>
       </View>
       <GlobalToastHost modal />
     </Modal>
   );
 };
 
-const Stepper = ({ label, onPrev, onNext }: { label: string; onPrev: () => void; onNext: () => void }) => (
-  <View style={styles.stepper}>
-    <Pressable onPress={onPrev} hitSlop={8} style={styles.stepBtn}>
-      <Ionicons name="chevron-back" size={16} color={DS.ink} />
-    </Pressable>
-    <Text style={styles.stepLabel}>{label}</Text>
-    <Pressable onPress={onNext} hitSlop={8} style={styles.stepBtn}>
-      <Ionicons name="chevron-forward" size={16} color={DS.ink} />
-    </Pressable>
-  </View>
-);
-
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: DS.sheetScrim },
-  sheet: { maxHeight: "88%", backgroundColor: DS.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 8 },
-  grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: DS.track },
-  title: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4, fontSize: 18, fontWeight: "700", color: DS.ink },
-  content: { padding: 16, gap: 14 },
-  wrapRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { height: 34, paddingHorizontal: 14, borderRadius: 17, borderWidth: 1, borderColor: DS.line, justifyContent: "center" },
-  chipActive: { backgroundColor: DS.accentTint, borderColor: "transparent" },
-  chipText: { fontSize: 13, fontWeight: "600", color: DS.ink },
-  chipTextActive: { color: DS.accentInk },
-  block: { gap: 10, padding: 12, borderRadius: 20, backgroundColor: DS.surface },
-  blockHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  blockTitle: { fontSize: 14, fontWeight: "700", color: DS.ink },
-  month: { flexBasis: "22%", flexGrow: 1, height: 38, borderRadius: 12, backgroundColor: DS.bg, alignItems: "center", justifyContent: "center" },
+  sheet: { backgroundColor: DS.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: 8, paddingHorizontal: 16 },
+  grabber: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: DS.track, marginBottom: 14 },
+  head: { height: 40, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  title: { fontSize: 18, fontWeight: "700", color: DS.ink },
+  card: { borderRadius: 16, backgroundColor: DS.surface, overflow: "hidden" },
+  row: { height: 48, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14 },
+  divider: { borderBottomWidth: 1, borderBottomColor: DS.line },
+  rowLabel: { flex: 1, fontSize: 14.5, fontWeight: "500", color: DS.ink },
+  rowLabelActive: { fontWeight: "600", color: DS.accentInk },
+  rowHint: { fontSize: 12.5, color: DS.faint },
+  round: { width: 32, height: 32, borderRadius: 16, backgroundColor: DS.surface, alignItems: "center", justifyContent: "center" },
+  step: { width: 28, height: 28, borderRadius: 14, backgroundColor: DS.surface, alignItems: "center", justifyContent: "center" },
+  stepLabel: { minWidth: 92, textAlign: "center", fontSize: 13, fontWeight: "600", color: DS.ink },
   disabled: { opacity: 0.35 },
-  stepper: { flexDirection: "row", alignItems: "center", gap: 6 },
-  stepBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: DS.bg, alignItems: "center", justifyContent: "center" },
-  stepLabel: { minWidth: 70, textAlign: "center", fontSize: 13, fontWeight: "600", color: DS.ink },
-  hint: { fontSize: 11.5, color: DS.muted },
-  calRow: { flexDirection: "row", alignItems: "center", gap: 2 },
-  weekCell: { width: 38, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: DS.bg },
-  weekText: { fontSize: 10.5, fontWeight: "700", color: DS.accentInk },
-  dayCell: { flex: 1, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", textAlign: "center", textAlignVertical: "center" },
-  weekday: { fontSize: 11, fontWeight: "600", color: DS.faint },
-  daySel: { backgroundColor: DS.accentTint },
-  dayEdge: { backgroundColor: DS.accent },
-  dayText: { fontSize: 13, fontWeight: "600", color: DS.ink },
+  calRow: { flexDirection: "row" },
+  cell: { flex: 1, height: 40, alignItems: "center", justifyContent: "center", textAlign: "center", textAlignVertical: "center" },
+  weekday: { height: 26, fontSize: 11, fontWeight: "600", color: DS.faint },
+  inRange: { backgroundColor: DS.accentTint },
+  edge: { backgroundColor: DS.accent, borderRadius: 12 },
+  day: { fontSize: 13.5, fontWeight: "600", color: DS.ink },
   today: { color: DS.accentInk, fontWeight: "800" },
-  futureText: { color: DS.faint },
+  future: { color: DS.idle },
   edgeText: { color: DS.onInk },
-  apply: { marginTop: 4, height: 44, borderRadius: 22, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" },
-  applyText: { fontSize: 14, fontWeight: "700", color: DS.onInk },
+  apply: { height: 48, borderRadius: 24, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" },
+  applyText: { fontSize: 14.5, fontWeight: "700", color: DS.onInk },
 });

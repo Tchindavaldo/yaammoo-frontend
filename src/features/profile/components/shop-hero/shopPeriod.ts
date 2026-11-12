@@ -60,8 +60,21 @@ const dayLabel = (iso: string) => {
   return `${d.getDate()} ${t(MONTHS_SHORT[d.getMonth()])}`;
 };
 
-/** Libelle court du bouton de periode. */
-export const periodLabel = (p: ShopPeriod): string => {
+const datesLabel = (p: ShopPeriod) => {
+  const a = fromISO(p.from);
+  const b = fromISO(p.to);
+  if (p.from === p.to) return dayLabel(p.from);
+  // Mois complet : nom du mois. Annee complete : l'annee.
+  if (a.getDate() === 1 && b.getDate() === new Date(b.getFullYear(), b.getMonth() + 1, 0).getDate()) {
+    if (a.getFullYear() === b.getFullYear() && a.getMonth() === 0 && b.getMonth() === 11) return String(a.getFullYear());
+    if (a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth()) return `${t(MONTHS[a.getMonth()])} ${a.getFullYear()}`;
+  }
+  return `${dayLabel(p.from)} – ${dayLabel(p.to)}`;
+};
+
+/** Libelle court de la periode ; `datesOnly` : les dates, jamais « Cette semaine ». */
+export const periodLabel = (p: ShopPeriod, datesOnly = false): string => {
+  if (datesOnly) return datesLabel(p);
   switch (p.kind) {
     case "week":
       return t("Cette semaine");
@@ -78,7 +91,7 @@ export const periodLabel = (p: ShopPeriod): string => {
       return `${t(MONTHS[d.getMonth()])} ${d.getFullYear()}`;
     }
     default:
-      return p.from === p.to ? dayLabel(p.from) : `${dayLabel(p.from)} – ${dayLabel(p.to)}`;
+      return datesLabel(p);
   }
 };
 

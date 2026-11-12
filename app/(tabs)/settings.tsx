@@ -15,6 +15,7 @@ import { SettingGridItem } from "@/src/features/profile/components/SettingGridIt
 import { SettingGridSwitch } from "@/src/features/profile/components/SettingGridSwitch";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBanner";
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
@@ -129,6 +130,11 @@ export default function SettingsScreen() {
           paddingHorizontal: 16,
         }}
       >
+        {/* Sans boutique : bandeau de creation en haut du profil. */}
+        {!isMerchant && (
+          <CreateShopBanner onPress={() => router.push("/(tabs)/boutique")} />
+        )}
+
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
         <SettingGrid title={t("Mes activités")}>
           {/* Les commandes du client sont l'onglet « Commandes » de la navbar :

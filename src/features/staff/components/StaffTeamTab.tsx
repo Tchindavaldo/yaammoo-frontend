@@ -102,7 +102,8 @@ export const StaffTeamTab: React.FC<Props> = ({
         </>
       )}
 
-      <StaffDriversCard drivers={drivers} pending={pending} onPress={onOpenDrivers} />
+      {/* Masquee pendant le chargement : seul le loader occupe la page. */}
+      {loaded && <StaffDriversCard drivers={drivers} pending={pending} onPress={onOpenDrivers} />}
     </>
   );
 };
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
   },
   link: { flexDirection: "row", alignItems: "center", gap: 4 },
   linkText: { fontSize: 14, fontWeight: "700", color: ST.accentText },
-  loader: { paddingVertical: 36, alignItems: "center" },
+  loader: { paddingTop: 160, paddingBottom: 36, alignItems: "center" },
   empty: {
     alignItems: "center",
     gap: 8,

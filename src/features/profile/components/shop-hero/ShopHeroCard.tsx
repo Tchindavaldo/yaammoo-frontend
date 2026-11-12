@@ -1,6 +1,9 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { ShopPeriodSheet } from "./ShopPeriodSheet";
+import { ShopPeriod, defaultPeriod, periodLabel, periodStatLabel } from "./shopPeriod";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -12,17 +15,23 @@ import { t, useLanguage } from "@/src/i18n";
  * NOTE : apercu de design, donnees d'EXEMPLE (pas encore branchees au backend).
  */
 const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
-const SAMPLE = { name: "Chez Mama Ndolé", perDayK: [18, 32, 15, 27, 41, 45, 0], todayIndex: 5 };
+const SAMPLE = { perDayK: [18, 32, 15, 27, 41, 45, 0], todayIndex: 5 };
 const BAR_MAX = 70;
 
 export const ShopHeroCard: React.FC = () => {
   useLanguage();
+  // Periode affichee (defaut : cette semaine), choisie dans le bottom sheet.
+  const [period, setPeriod] = useState<ShopPeriod>(defaultPeriod);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const max = Math.max(...SAMPLE.perDayK.slice(0, SAMPLE.todayIndex + 1), 1);
 
   return (
     <View style={styles.card}>
       <View style={styles.top}>
-        <Text style={styles.name} numberOfLines={1}>{SAMPLE.name}</Text>
+        <Pressable onPress={() => setSheetOpen(true)} hitSlop={6} accessibilityRole="button" style={styles.periodBtn}>
+          <Text style={styles.name} numberOfLines={1}>{periodLabel(period)}</Text>
+          <Ionicons name="chevron-down" size={14} color={DS.ink} />
+        </Pressable>
         <View style={styles.chip}>
           <View style={styles.chipDot} />
           <Text style={styles.chipText}>{t("Ouverte")} · 22h</Text>
@@ -57,9 +66,11 @@ export const ShopHeroCard: React.FC = () => {
 
       <View style={styles.stats}>
         <Stat value="45 000 F" label={t("AUJOURD’HUI")} />
-        <Stat value="178 000 F" label={t("SEMAINE")} />
+        <Stat value="178 000 F" label={periodStatLabel(period)} />
         <Stat value="128 500 F" label={t("SOLDE")} />
       </View>
+
+      <ShopPeriodSheet visible={sheetOpen} value={period} onClose={() => setSheetOpen(false)} onChange={setPeriod} />
     </View>
   );
 };
@@ -74,7 +85,8 @@ const Stat = ({ value, label }: { value: string; label: string }) => (
 const styles = StyleSheet.create({
   card: { gap: 10, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 28, backgroundColor: DS.surface },
   top: { height: 32, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 6, gap: 8 },
-  name: { flex: 1, fontSize: 16, fontWeight: "600", color: DS.ink, letterSpacing: -0.2 },
+  periodBtn: { flexShrink: 1, flexDirection: "row", alignItems: "center", gap: 4 },
+  name: { flexShrink: 1, fontSize: 16, fontWeight: "600", color: DS.ink, letterSpacing: -0.2 },
   chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 12, borderRadius: 14, backgroundColor: DS.bg },
   chipDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: DS.accent },
   chipText: { fontSize: 12, fontWeight: "600", color: DS.ink },

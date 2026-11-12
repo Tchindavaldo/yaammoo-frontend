@@ -47,6 +47,8 @@ type OrderStatus = "pending" | "proccess" | "finish";
 export interface DateOption {
   iso: string;
   label: string;
+  /** Commandes de ce jour dans l'onglet de statut actif (pastille du chip). */
+  count?: number;
 }
 
 interface OrderManagePanelProps {
@@ -440,18 +442,31 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   // viennent de TOUTES les commandes, en cohérence avec le rappel `hasFuture` :
   // les scoper à l'onglet ouvrirait un sheet sans la date qu'on vient
   // d'annoncer.
+  // Pastille des chips de dates : commandes de CHAQUE jour dans l'onglet de
+  // statut actif (le statut est deja filtre en haut du sheet).
+  const perDayStatusCount = useMemo(() => {
+    const m: Record<string, number> = {};
+    orders.forEach((o) => {
+      if (!statusMap[selectedStatus].includes(o.status)) return;
+      const iso = getOrderDateISO(o);
+      m[iso] = (m[iso] ?? 0) + 1;
+    });
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, selectedStatus]);
+
   const futureDateOptions = useMemo(
     () =>
       allDateISOs
         .filter((d) => d > todayISO)
         .sort()
-        .map((iso) => ({ iso, label: formatDateLabel(iso) })),
+        .map((iso) => ({ iso, label: formatDateLabel(iso), count: perDayStatusCount[iso] ?? 0 })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allDateISOs],
+    [allDateISOs, perDayStatusCount],
   );
   const pastDateOptions = useMemo(
-    () => pastDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })),
-    [pastDateISOs],
+    () => pastDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso), count: perDayStatusCount[iso] ?? 0 })),
+    [pastDateISOs, perDayStatusCount],
   );
 
   // Badges des cards de dates du filter sheet : NOMBRE DE COMMANDES du lot

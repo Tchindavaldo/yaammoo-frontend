@@ -150,14 +150,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     alignItems: "center",
   },
+  // Fond opaque : le chip actif est translucide, sans ce fond les chips qui
+  // defilent dessous transparaissaient (textes superposes).
   floatWrap: {
     position: "absolute",
     top: 0,
     bottom: 0,
     justifyContent: "center",
+    backgroundColor: DS.bg,
+    borderRadius: 16,
   },
-  floatLeft: { left: 0 },
-  floatRight: { right: 0 },
+  floatLeft: { left: 0, paddingRight: 6 },
+  floatRight: { right: 0, paddingLeft: 6 },
   chip: {
     flexDirection: "row",
     alignItems: "center",

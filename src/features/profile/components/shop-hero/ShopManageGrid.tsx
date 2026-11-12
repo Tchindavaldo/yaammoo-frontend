@@ -22,7 +22,10 @@ const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: Bac
 ];
 
 /** Essai : Menu / Boissons / Personnel changent le bouton retour du header. */
-export function ShopManageGrid({ onTone }: { onTone?: (t: BackTone) => void }) {
+/** Variante de case : S1D (defaut), S1C, S1A (maquettes du canvas). */
+export type GridVariant = "S1D" | "S1C" | "S1A";
+
+export function ShopManageGrid({ onTone, variant = "S1D" }: { onTone?: (t: BackTone) => void; variant?: GridVariant }) {
   useLanguage();
   const { appleReviewMode } = useFastFoods();
   return (
@@ -30,14 +33,23 @@ export function ShopManageGrid({ onTone }: { onTone?: (t: BackTone) => void }) {
       <Text style={{ paddingHorizontal: 6, fontSize: 16, fontWeight: "600", color: DS.ink }}>{t("Gestion")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {TILES.map((x) => (
-          <Pressable key={x.label} onPress={() => x.tone && onTone?.(x.tone)} style={{ flexBasis: "31%", flexGrow: 1, padding: 10, borderRadius: 18, backgroundColor: DS.surface, gap: 5 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: DS.bg, alignItems: "center", justifyContent: "center" }}>
-                <Ionicons name={x.icon} size={12} color={DS.ink} />
+          <Pressable key={x.label} onPress={() => x.tone && onTone?.(x.tone)} style={{ flexBasis: "31%", flexGrow: 1, padding: variant === "S1A" ? 8 : 10, borderRadius: 18, backgroundColor: DS.surface, gap: variant === "S1C" ? 4 : 5 }}>
+            {variant === "S1C" ? (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text numberOfLines={1} style={{ flex: 1, fontSize: 12, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>
+                <Ionicons name={x.icon} size={14} color={DS.ink} />
               </View>
-              <Text numberOfLines={1} style={{ flex: 1, fontSize: 11.5, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>
-            </View>
-            <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: x.hot ? "600" : "500", color: x.hot ? DS.accentInk : DS.muted }}>{t(x.info)}</Text>
+            ) : (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: variant === "S1A" ? 8 : 6 }}>
+                <View style={{ width: variant === "S1A" ? 28 : 22, height: variant === "S1A" ? 28 : 22, borderRadius: 14, backgroundColor: DS.bg, alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name={x.icon} size={variant === "S1A" ? 14 : 12} color={DS.ink} />
+                </View>
+                <Text numberOfLines={1} style={{ flex: 1, fontSize: variant === "S1A" ? 12 : 11.5, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>
+              </View>
+            )}
+            {variant !== "S1A" && (
+              <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: x.hot ? "600" : "500", color: x.hot ? DS.accentInk : DS.muted }}>{t(x.info)}</Text>
+            )}
           </Pressable>
         ))}
       </View>

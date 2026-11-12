@@ -1,6 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { ScrollView, View } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { ShopNewHeader, type BackTone } from "@/src/features/profile/components/shop-hero/ShopNewHeader";
 import { ShopOrdersSection } from "@/src/features/profile/components/shop-hero/ShopOrdersSection";
@@ -19,6 +20,7 @@ import { DS } from "@/src/theme/ds";
 export default function NewDesignScreen() {
   useLanguage();
   const [headerHeight, setHeaderHeight] = useState(150);
+  const { v } = useLocalSearchParams<{ v?: string }>();
   const [tone, setTone] = useState<BackTone>("plain");
   return (
     <ShopPageFrame>
@@ -39,7 +41,7 @@ export default function NewDesignScreen() {
       >
         <ShopHeroCard />
         <ShopOrdersSection />
-        <ShopManageGrid onTone={setTone} />
+        <ShopManageGrid onTone={setTone} variant={v === "2" ? "S1C" : v === "3" ? "S1A" : "S1D"} />
       </ScrollView>
     </View>
     </ShopPageFrame>

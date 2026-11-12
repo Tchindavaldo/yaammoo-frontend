@@ -184,6 +184,17 @@ export default function SettingsScreen() {
                 title={t("Nouveau design")}
                 onPress={() => router.push("/shop/new-design")}
               />
+              {/* Memes pages, grille Gestion en variante S1C (2) / S1A (3). */}
+              <SettingGridItem
+                icon="sparkles-outline"
+                title={t("Nouveau design 2")}
+                onPress={() => router.push({ pathname: "/shop/new-design", params: { v: "2" } })}
+              />
+              <SettingGridItem
+                icon="sparkles-outline"
+                title={t("Nouveau design 3")}
+                onPress={() => router.push({ pathname: "/shop/new-design", params: { v: "3" } })}
+              />
               {/* Commandes reçues par la boutique (page marchand). */}
               <SettingGridItem
                 icon="receipt-outline"

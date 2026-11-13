@@ -7,11 +7,14 @@ import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useEffect, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Dimensions, Easing, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { MONTHS, fromISO, monthGrid, toISO } from "@/src/features/profile/components/shop-hero/shopPeriod";
 
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
+// Meme hauteur que la carte de commande (CheckoutSheet SHEET_HEIGHT) : pas de debordement.
+const SHEET_HEIGHT = 384;
+const EXIT = Dimensions.get("window").height;
 
 interface Props {
   visible: boolean;
@@ -30,6 +33,24 @@ export const PickupDateSheet: React.FC<Props> = ({ visible, value, maxDays, onCl
   const lastISO = toISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() + (maxDays && maxDays > 0 ? maxDays : 7)));
   const [cal, setCal] = useState({ y: now.getFullYear(), m: now.getMonth() });
   const [day, setDay] = useState<string>(todayISO);
+  // Voile en fade + sheet qui glisse (comme le panier) ; Modal garde monte pendant la sortie.
+  const [mounted, setMounted] = useState(visible);
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(EXIT)).current;
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.parallel([
+        Animated.timing(slide, { toValue: 0, duration: 380, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(fade, { toValue: 1, duration: 220, useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(slide, { toValue: EXIT, duration: 320, useNativeDriver: true }),
+        Animated.timing(fade, { toValue: 0, duration: 320, useNativeDriver: true }),
+      ]).start(({ finished }) => finished && setMounted(false));
+    }
+  }, [visible, fade, slide]);
 
   useEffect(() => {
     if (!visible) return;
@@ -49,9 +70,10 @@ export const PickupDateSheet: React.FC<Props> = ({ visible, value, maxDays, onCl
   const d = fromISO(day);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { paddingBottom: insets.bottom }]}>
+    <Modal visible={mounted} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
+      <Animated.View style={[styles.backdrop, { opacity: fade }]} pointerEvents="none" />
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      <Animated.View style={[styles.sheet, { height: SHEET_HEIGHT + insets.bottom, paddingBottom: insets.bottom, transform: [{ translateY: slide }] }]}>
         <View style={styles.head}>
           <Text style={[styles.title, { flex: 1 }]} numberOfLines={1}>{t("Jour du retrait")}</Text>
           <Pressable onPress={() => step(-1)} disabled={prevOff} hitSlop={6} style={[styles.step, prevOff && styles.disabled]}>
@@ -87,7 +109,7 @@ export const PickupDateSheet: React.FC<Props> = ({ visible, value, maxDays, onCl
             {day === todayISO ? t("Récupérer aujourd'hui") : `${t("Récupérer le")} ${d.getDate()} ${t(MONTHS[d.getMonth()])}`}
           </Text>
         </Pressable>
-      </View>
+      </Animated.View>
       <GlobalToastHost modal />
     </Modal>
   );
@@ -96,19 +118,19 @@ export const PickupDateSheet: React.FC<Props> = ({ visible, value, maxDays, onCl
 const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: DS.sheetScrim },
   sheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: DS.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, paddingHorizontal: 16 },
-  head: { height: 40, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
+  head: { height: 36, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 6 },
   title: { fontSize: 18, fontWeight: "700", color: DS.ink },
   step: { width: 28, height: 28, borderRadius: 14, backgroundColor: DS.surface, alignItems: "center", justifyContent: "center" },
   stepLabel: { minWidth: 92, textAlign: "center", fontSize: 13, fontWeight: "600", color: DS.ink },
   disabled: { opacity: 0.35 },
   row: { flexDirection: "row" },
-  cell: { flex: 1, height: 36, alignItems: "center", justifyContent: "center", textAlign: "center", textAlignVertical: "center" },
-  weekday: { height: 26, fontSize: 11, fontWeight: "600", color: DS.faint },
+  cell: { flex: 1, height: 34, alignItems: "center", justifyContent: "center", textAlign: "center", textAlignVertical: "center" },
+  weekday: { height: 22, fontSize: 11, fontWeight: "600", color: DS.faint },
   on: { backgroundColor: DS.accent, borderRadius: 12 },
   day: { fontSize: 13.5, fontWeight: "600", color: DS.ink },
   today: { color: DS.accentInk, fontWeight: "800" },
   off: { color: DS.idle },
   onText: { color: DS.onInk },
-  apply: { height: 48, marginTop: 8, borderRadius: 24, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" },
+  apply: { height: 48, marginTop: "auto", borderRadius: 24, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" },
   applyText: { fontSize: 14.5, fontWeight: "700", color: DS.onInk },
 });

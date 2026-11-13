@@ -15,6 +15,7 @@ import { SettingGridItem } from "@/src/features/profile/components/SettingGridIt
 import { ProfileListGroup, ProfileListRow, ProfileTiles } from "@/src/features/profile/components/ProfileListGroup";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { MerchantSwitchBanner } from "@/src/features/profile/components/MerchantSwitchBanner";
 import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBanner";
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
@@ -63,6 +64,14 @@ export default function SettingsScreen() {
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
   const { isMerchantMode, setMerchantMode } = useMerchantMode();
+  // Apercu de variantes de mise en page (temporaire) : bascule au tap de
+  // « Faire une suggestion » (lists), « Signaler un problème » (titles),
+  // « Assistance » (card).
+  const [layout, setLayout] = useState<"lists" | "titles" | "card">("titles");
+  const switchMode = () => {
+    setMerchantMode(!isMerchantMode);
+    router.navigate("/(tabs)");
+  };
 
   // Personnel = page entière `app/shop/staff` (tuile ou deep-link) : on y
   // redirige puis on referme le drapeau local.
@@ -134,11 +143,6 @@ export default function SettingsScreen() {
           paddingHorizontal: 16,
         }}
       >
-        {/* Sans boutique : bandeau de creation en haut du profil. */}
-        {!isMerchant && (
-          <CreateShopBanner onPress={() => router.push("/shop/create")} />
-        )}
-
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
         <SettingGrid title={t("Mes activités")}>
           {/* Les commandes du client sont l'onglet « Commandes » de la navbar :
@@ -159,25 +163,37 @@ export default function SettingsScreen() {
           )}
         </SettingGrid>
 
-        {/* Compte, Préférences, Aide : listes groupees (maquette P1). */}
-        <ProfileListGroup>
-          <ProfileTiles
-            items={[
-              { icon: "person-outline", title: t("Mon profil"), onPress: () => handleComingSoon(t("Mon profil")) },
-              { icon: "key-outline", title: t("Sécurité"), onPress: () => handleComingSoon("Sécurité") },
-              { icon: "gift-outline", title: t("Bonus"), onPress: () => open("userBonus") },
-            ]}
-          />
-        </ProfileListGroup>
-        {isMerchant && (
+        {/* Compte, Préférences, Aide (maquette P1a2 + variantes). */}
+        {layout === "lists" ? (
+          <ProfileListGroup title={t("Compte")}>
+            <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => handleComingSoon(t("Mon profil"))} />
+            <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
+            <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
+            {isMerchant && (
+              <ProfileListRow
+                icon="swap-horizontal"
+                title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
+                onPress={switchMode}
+              />
+            )}
+          </ProfileListGroup>
+        ) : (
+          <ProfileListGroup>
+            <ProfileTiles
+              items={[
+                { icon: "person-outline", title: t("Mon profil"), onPress: () => handleComingSoon(t("Mon profil")) },
+                { icon: "key-outline", title: t("Sécurité"), onPress: () => handleComingSoon("Sécurité") },
+                { icon: "gift-outline", title: t("Bonus"), onPress: () => open("userBonus") },
+              ]}
+            />
+          </ProfileListGroup>
+        )}
+        {isMerchant && layout === "titles" && (
           <ProfileListGroup>
             <ProfileListRow
               icon="swap-horizontal"
               title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
-              onPress={() => {
-                setMerchantMode(!isMerchantMode);
-                router.navigate("/(tabs)");
-              }}
+              onPress={switchMode}
             />
           </ProfileListGroup>
         )}
@@ -208,7 +224,7 @@ export default function SettingsScreen() {
         </SettingGrid>
         )}
 
-        <ProfileListGroup>
+        <ProfileListGroup title={layout === "card" ? undefined : t("Préférences")}>
           <ProfileListRow
             icon="notifications-outline"
             title="Notifications"
@@ -229,12 +245,23 @@ export default function SettingsScreen() {
           />
         </ProfileListGroup>
 
-        <ProfileListGroup>
-          <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => handleComingSoon("Assistance")} />
-          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => handleComingSoon(t("Signaler un problème"))} />
-          <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => handleComingSoon(t("Faire une suggestion"))} />
+        <ProfileListGroup title={layout === "card" ? undefined : t("Aide")}>
+          <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => setLayout("card")} />
+          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => setLayout("titles")} />
+          <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => setLayout("lists")} />
           <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
         </ProfileListGroup>
+
+        {/* Bas de page : creer sa boutique (sans boutique), ou bascule de mode
+            en carte (variante « card »). */}
+        {!isMerchant && (
+          <View style={styles.bottomCard}>
+            <CreateShopBanner onPress={() => router.push("/shop/create")} />
+          </View>
+        )}
+        {isMerchant && layout === "card" && (
+          <MerchantSwitchBanner isMerchantMode={isMerchantMode} onPress={switchMode} />
+        )}
 
         {/* Legal + suppression : liens en pied de page (maquette P1). */}
         <View style={styles.legalRow}>
@@ -294,6 +321,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  // CreateShopBanner porte un marginBottom 22 (prevu pour le haut de page).
+  bottomCard: { marginTop: 16, marginBottom: -22 },
   legalRow: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 16, marginTop: 20 },
   legalText: { fontSize: 12, color: DS.faint },
   legalDanger: { color: DS.danger },

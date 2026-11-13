@@ -30,6 +30,8 @@ interface Props {
   onClose: () => void;
   onSelect: (account: AccountEntry) => void;
   onAddAccount: () => void;
+  /** Corbeille du compte courant : seul ce bouton ouvre la suppression. */
+  onDeleteAccount: () => void;
 }
 
 export function AccountSheet({
@@ -38,6 +40,7 @@ export function AccountSheet({
   onClose,
   onSelect,
   onAddAccount,
+  onDeleteAccount,
 }: Props) {
   useLanguage();
   const insets = useSheetSafeInsets();
@@ -129,7 +132,16 @@ export function AccountSheet({
               </Text>
             </View>
             {a.current && (
-              <Ionicons name="checkmark" size={20} color={DS.accent} />
+              <TouchableOpacity
+                onPress={onDeleteAccount}
+                disabled={isLoggingOut}
+                hitSlop={8}
+                style={styles.trash}
+                accessibilityRole="button"
+                accessibilityLabel={t("Supprimer le compte")}
+              >
+                <Ionicons name="trash-outline" size={18} color={DS.danger} />
+              </TouchableOpacity>
             )}
           </TouchableOpacity>
         ))}
@@ -225,6 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  trash: { width: 36, height: 36, borderRadius: 18, backgroundColor: DS.bg, justifyContent: "center", alignItems: "center" },
   avatarText: { color: DS.onInk, fontSize: 15, fontWeight: "800" },
   addAvatar: {
     backgroundColor: DS.bg,

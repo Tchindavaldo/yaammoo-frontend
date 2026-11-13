@@ -1,7 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { showToast } from "@/src/services/globalToast";
-import { APP_VERSION } from "@/src/api/version";
-import { currentOtaLabel } from "@/src/services/otaTelemetry";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -29,10 +27,8 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -65,12 +61,9 @@ export default function SettingsScreen() {
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
   const { isMerchantMode, setMerchantMode } = useMerchantMode();
-  // Apercu de variantes (temporaire), meme design en listes :
-  // « Faire une suggestion » = carte en bas ; « Assistance » = bascule dans
-  // Compte ; « Signaler un problème » = bascule seule apres Aide ;
-  // « Sécurité » = espaces reduits + carte ; « Mon profil » = carte compacte.
-  const [layout, setLayout] = useState<"card" | "inAccount" | "ownSection" | "compact" | "strip">("card");
-  const compact = layout === "compact";
+  // Deux designs : « Faire une suggestion » = grande carte de bascule en bas
+  // (par defaut) ; « Mon profil » = carte compacte sur une ligne.
+  const [layout, setLayout] = useState<"card" | "strip">("card");
   const switchMode = () => {
     setMerchantMode(!isMerchantMode);
     router.navigate("/(tabs)");
@@ -129,6 +122,7 @@ export default function SettingsScreen() {
       <TabHeader onHeightChange={setHeaderHeight}>
         <SettingsHeaderProfile
           onAddAccount={() => handleComingSoon(t("Ajouter un compte"))}
+          onDeleteAccount={() => open("deleteAccount")}
         />
       </TabHeader>
 
@@ -139,7 +133,7 @@ export default function SettingsScreen() {
         contentContainerStyle={{
           // 8 + marginTop 8 du titre de section = 16 sous le header, comme
           // l'en-tete de jour de Notifications.
-          paddingTop: compact ? headerHeight - 8 : headerHeight + 8,
+          paddingTop: headerHeight + 8,
           // La navbar flotte sur le bas : la fin de page s'arrete juste
           // au-dessus d'elle, sans marge en plus (R19).
           paddingBottom: tabBarHeight + 8,
@@ -168,17 +162,10 @@ export default function SettingsScreen() {
 
         {/* Compte, Préférences, Aide : listes separees par un trait (variantes
             d'apercu, cf. `layout`). */}
-        <ProfileListGroup compact={compact}>
+        <ProfileListGroup>
           <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => setLayout("strip")} />
-          <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => setLayout("compact")} />
+          <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
           <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
-          {isMerchant && layout === "inAccount" && (
-            <ProfileListRow
-              icon="swap-horizontal"
-              title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
-              onPress={switchMode}
-            />
-          )}
         </ProfileListGroup>
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
@@ -207,8 +194,8 @@ export default function SettingsScreen() {
         </SettingGrid>
         )}
 
-        <View style={[styles.sectionLine, compact && styles.sectionLineCompact]} />
-        <ProfileListGroup compact={compact}>
+        <View style={styles.sectionLine} />
+        <ProfileListGroup>
           <ProfileListRow
             icon="notifications-outline"
             title="Notifications"
@@ -229,26 +216,13 @@ export default function SettingsScreen() {
           />
         </ProfileListGroup>
 
-        <View style={[styles.sectionLine, compact && styles.sectionLineCompact]} />
-        <ProfileListGroup compact={compact}>
-          <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => setLayout("inAccount")} />
-          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => setLayout("ownSection")} />
+        <View style={styles.sectionLine} />
+        <ProfileListGroup>
+          <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => handleComingSoon("Assistance")} />
+          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => handleComingSoon(t("Signaler un problème"))} />
           <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => setLayout("card")} />
           <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
         </ProfileListGroup>
-
-        {isMerchant && layout === "ownSection" && (
-          <>
-            <View style={styles.sectionLine} />
-            <ProfileListGroup>
-              <ProfileListRow
-              icon="swap-horizontal"
-              title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
-              onPress={switchMode}
-            />
-            </ProfileListGroup>
-          </>
-        )}
 
         {/* Bas de page : creer sa boutique (sans boutique), ou bascule de mode
             en carte (variante « card »). */}
@@ -257,36 +231,13 @@ export default function SettingsScreen() {
             <CreateShopBanner onPress={() => router.push("/shop/create")} />
           </View>
         )}
-        {isMerchant && (layout === "card" || layout === "compact") && (
+        {isMerchant && layout === "card" && (
           <MerchantSwitchBanner isMerchantMode={isMerchantMode} onPress={switchMode} />
         )}
         {isMerchant && layout === "strip" && (
           <MerchantSwitchStrip isMerchantMode={isMerchantMode} onPress={switchMode} />
         )}
 
-        {/* Legal + suppression : liens en pied de page (maquette P1). */}
-        <View style={styles.legalRow}>
-          <Pressable onPress={() => handleComingSoon(t("Politique & Conditions"))} hitSlop={8}>
-            <Text style={styles.legalText}>{t("Conditions")}</Text>
-          </Pressable>
-          <Pressable onPress={() => handleComingSoon("Confidentialité")} hitSlop={8}>
-            <Text style={styles.legalText}>{t("Confidentialité")}</Text>
-          </Pressable>
-          <Pressable onPress={() => open("deleteAccount")} hitSlop={8}>
-            <Text style={[styles.legalText, styles.legalDanger]}>{t("Supprimer le compte")}</Text>
-          </Pressable>
-        </View>
-
-        {/* App version — reflete TOUJOURS `app.json` (via `APP_VERSION`), jamais
-            une valeur en dur a remettre a jour manuellement. Annee courante idem. */}
-        <View style={styles.versionBlock}>
-          <Text style={styles.versionText}>Yaammoo v{APP_VERSION}</Text>
-          {/* Identifie l'OTA reçue : message de publication + date. */}
-          <Text style={styles.versionSubtext}>{currentOtaLabel()}</Text>
-          <Text style={styles.versionSubtext}>
-            © {new Date().getFullYear()} {t("Yaammoo. Tous droits réservés.")}
-          </Text>
-        </View>
       </ScrollView>
       </BlurTarget>
       </BlurScope>
@@ -322,26 +273,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  // CreateShopBanner porte un marginBottom 22 (prevu pour le haut de page).
-  // Variante « lists » : un trait entre les sections.
+  // Un trait entre les sections.
   sectionLine: { height: 1, backgroundColor: DS.line, marginTop: 16 },
-  sectionLineCompact: { marginTop: 4 },
+  // CreateShopBanner porte un marginBottom 22 (prevu pour le haut de page).
   bottomCard: { marginTop: 16, marginBottom: -22 },
-  legalRow: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 16, marginTop: 20 },
-  legalText: { fontSize: 12, color: DS.faint },
-  legalDanger: { color: DS.danger },
-  versionBlock: {
-    alignItems: "center",
-    padding: Theme.spacing.xl,
-    paddingBottom: 0,
-  },
-  versionText: {
-    fontSize: 13,
-    color: Theme.colors.gray[400],
-  },
-  versionSubtext: {
-    fontSize: 11,
-    color: Theme.colors.gray[300],
-    marginTop: 4,
-  },
 });

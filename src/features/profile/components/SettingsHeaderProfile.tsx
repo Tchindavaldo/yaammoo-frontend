@@ -12,9 +12,10 @@ import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   onAddAccount: () => void;
+  onDeleteAccount: () => void;
 }
 
-export function SettingsHeaderProfile({ onAddAccount }: Props) {
+export function SettingsHeaderProfile({ onAddAccount, onDeleteAccount }: Props) {
   useLanguage();
   const { user, userData } = useAuth();
   const accounts = useAccounts();
@@ -71,6 +72,10 @@ export function SettingsHeaderProfile({ onAddAccount }: Props) {
         onAddAccount={() => {
           setSheetOpen(false);
           onAddAccount();
+        }}
+        onDeleteAccount={() => {
+          setSheetOpen(false);
+          onDeleteAccount();
         }}
       />
     </View>

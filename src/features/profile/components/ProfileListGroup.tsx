@@ -8,11 +8,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
 
-export const ProfileListGroup: React.FC<{ title?: string; compact?: boolean; children: React.ReactNode }> = ({ title, compact, children }) => {
+export const ProfileListGroup: React.FC<{ title?: string; children: React.ReactNode }> = ({ title, children }) => {
   const rows = React.Children.toArray(children).filter(Boolean);
   if (rows.length === 0) return null;
   return (
-    <View style={[styles.group, compact && styles.groupCompact]}>
+    <View style={styles.group}>
       {!!title && <Text style={styles.title}>{title}</Text>}
       <View style={styles.card}>
         {rows.map((row, i) => (
@@ -55,7 +55,6 @@ const styles = StyleSheet.create({
   tilePressed: { opacity: 0.7 },
   tileLabel: { fontSize: 13.5, fontWeight: "600", color: DS.ink },
   group: { gap: 8, marginTop: 16 },
-  groupCompact: { marginTop: 4 },
   title: { marginHorizontal: 6, fontSize: 15, fontWeight: "600", color: DS.ink },
   // P1f : carte gris tres leger, aucun trait entre les lignes.
   card: { borderRadius: 16, backgroundColor: DS.bg, overflow: "hidden" },

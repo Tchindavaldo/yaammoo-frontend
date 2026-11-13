@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { LETTERS, Legend, Slide, SlideBody, SlideStats } from "./SlideParts";
+import { LETTERS, Legend, Slide, SlideBody } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
 
@@ -11,13 +11,13 @@ import { t } from "@/src/i18n";
  */
 // [nouveaux, revenus]
 const DAYS: [number, number][] = [[3, 4], [5, 6], [2, 3], [4, 5], [6, 7], [7, 8], [2, 2]];
-const BAR_MAX = 110;
+const BAR_MAX = 165;
 
 export const LoyaltySlide: React.FC = () => {
   const max = Math.max(...DAYS.map(([a, b]) => a + b));
   return (
     <Slide>
-      <SlideBody style={styles.body}>
+      <SlideBody full style={styles.body}>
         <View style={styles.chart}>
           {DAYS.map(([n, r], i) => (
             <View key={i} style={styles.col}>
@@ -36,13 +36,6 @@ export const LoyaltySlide: React.FC = () => {
           ]}
         />
       </SlideBody>
-      <SlideStats
-        items={[
-          { value: "29", label: t("NOUVEAUX") },
-          { value: "35", label: t("REVENUS") },
-          { value: "9 j", label: t("RETOUR MOYEN") },
-        ]}
-      />
     </Slide>
   );
 };

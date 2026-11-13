@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { LETTERS, Slide, SlideBody, SlideStats } from "./SlideParts";
+import { LETTERS, Slide, SlideBody } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
 
@@ -20,7 +20,7 @@ export const HeatmapSlide: React.FC = () => {
   const shades = [DS.surface, DS.accentAlpha(0.2), DS.accentAlpha(0.45), DS.accentAlpha(0.7), DS.accent];
   return (
     <Slide>
-      <SlideBody style={styles.body}>
+      <SlideBody full style={styles.body}>
         {LETTERS.map((l, d) => (
           <View key={d} style={styles.row}>
             <Text style={styles.letter}>{l}</Text>
@@ -38,13 +38,6 @@ export const HeatmapSlide: React.FC = () => {
           </View>
         </View>
       </SlideBody>
-      <SlideStats
-        items={[
-          { value: t("Sam.") + " 19h", label: t("CRÉNEAU FORT") },
-          { value: t("Lun.") + " 15h", label: t("CRÉNEAU CREUX") },
-          { value: "412", label: t("COMMANDES") },
-        ]}
-      />
     </Slide>
   );
 };
@@ -53,7 +46,7 @@ const styles = StyleSheet.create({
   body: { paddingVertical: 8, paddingHorizontal: 10, justifyContent: "space-between" },
   row: { flexDirection: "row", alignItems: "center", gap: 3 },
   letter: { width: 12, fontSize: 9, fontWeight: "600", color: DS.faint },
-  cell: { flex: 1, height: 16, borderRadius: 4 },
+  cell: { flex: 1, height: 22, borderRadius: 5 },
   hours: { flex: 1, flexDirection: "row", justifyContent: "space-between" },
   hour: { fontSize: 9, color: DS.faint },
 });

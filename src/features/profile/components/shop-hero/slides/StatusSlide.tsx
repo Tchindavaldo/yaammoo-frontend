@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { LETTERS, Legend, Slide, SlideBody, SlideStats } from "./SlideParts";
+import { LETTERS, Legend, Slide, SlideBody } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
 
@@ -11,13 +11,13 @@ const DAYS: [number, number, number, number][] = [
   [5, 3, 0, 1], [8, 6, 1, 1], [4, 2, 0, 1], [7, 5, 1, 0], [10, 7, 2, 1], [11, 8, 3, 1], [2, 1, 1, 0],
 ];
 const COLORS = [DS.ink, DS.faint, DS.idle, DS.accent];
-const BAR_MAX = 115;
+const BAR_MAX = 170;
 
 export const StatusSlide: React.FC = () => {
   const max = Math.max(...DAYS.map((d) => d.reduce((a, b) => a + b, 0)));
   return (
     <Slide>
-      <SlideBody style={styles.body}>
+      <SlideBody full style={styles.body}>
         <View style={styles.chart}>
           {DAYS.map((d, i) => (
             <View key={i} style={styles.col}>
@@ -39,13 +39,6 @@ export const StatusSlide: React.FC = () => {
           ]}
         />
       </SlideBody>
-      <SlideStats
-        items={[
-          { value: "47", label: t("LIVRÉES") },
-          { value: "32", label: t("SUR PLACE") },
-          { value: "5 %", label: t("ANNULATION") },
-        ]}
-      />
     </Slide>
   );
 };

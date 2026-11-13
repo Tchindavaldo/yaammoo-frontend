@@ -22,7 +22,8 @@ import { t, useLanguage } from "@/src/i18n";
  *
  * NOTE : donnees d'EXEMPLE dans chaque slide (pas encore branchees au backend).
  */
-const TITLES = ["Ventes", "Conversion", "Panier moyen", "Classements", "Statuts", "Affluence", "Fidélité", "Délais"];
+// Titre de chaque slide ; le chiffre cle s'affiche a cote quand la slide n'a pas de cases.
+const TITLES: [string, string?][] = [["Ventes"], ["Conversion", "7 %"], ["Panier moyen", "3 000 F"], ["Classements"], ["Statuts", "5 % annulées"], ["Affluence"], ["Fidélité"], ["Délais"]];
 
 export const ShopHeroCard: React.FC = () => {
   useLanguage();
@@ -57,7 +58,7 @@ export const ShopHeroCard: React.FC = () => {
           <Ionicons name="chevron-down" size={14} color={DS.ink} />
         </Pressable>
         <View style={styles.chip}>
-          <Text style={styles.chipText}>{t(title)}</Text>
+          <Text style={styles.chipText}>{title[1] ? `${t(title[0])} · ${title[1]}` : t(title[0])}</Text>
         </View>
       </View>
 

@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Slide, SlideBody, SlideStats } from "./SlideParts";
+import { Slide, SlideBody } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
 
@@ -43,7 +43,7 @@ export const RankingSlide: React.FC = () => {
   const max = d.rows[0][1];
   return (
     <Slide>
-      <SlideBody style={styles.body}>
+      <SlideBody full style={styles.body}>
         <View style={styles.tabs}>
           {TABS.map((tb) => {
             const on = tb.key === tab;
@@ -67,8 +67,10 @@ export const RankingSlide: React.FC = () => {
             </View>
           ))}
         </View>
+        <Text style={styles.summary} numberOfLines={1}>
+          {`${d.stats[0].value} ${t(d.stats[0].label).toLowerCase()} · ${d.stats[2].value} ${t(d.stats[2].label).toLowerCase()}`}
+        </Text>
       </SlideBody>
-      <SlideStats items={d.stats.map((s) => ({ value: s.value, label: t(s.label) }))} />
     </Slide>
   );
 };
@@ -80,11 +82,12 @@ const styles = StyleSheet.create({
   tabOn: { backgroundColor: DS.ink },
   tabText: { fontSize: 11.5, fontWeight: "600", color: DS.ink },
   tabTextOn: { color: DS.onInk },
-  rows: { gap: 9 },
+  rows: { flex: 1, gap: 12 },
+  summary: { textAlign: "right", fontSize: 11, fontWeight: "500", color: DS.muted },
   item: { gap: 3 },
   head: { flexDirection: "row", justifyContent: "space-between" },
   name: { flexShrink: 1, fontSize: 12, color: DS.ink },
   value: { fontSize: 12, fontWeight: "700", color: DS.ink },
-  track: { height: 8, borderRadius: 4, backgroundColor: DS.line },
-  fill: { height: 8, borderRadius: 4 },
+  track: { height: 10, borderRadius: 5, backgroundColor: DS.line },
+  fill: { height: 10, borderRadius: 5 },
 });

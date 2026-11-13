@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Slide, SlideBody, SlideStats } from "./SlideParts";
+import { Slide, SlideBody } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
 
@@ -16,7 +16,7 @@ const fmt = (n: number) => n.toLocaleString("fr-FR").replace(/ | /g, " ");
 
 export const FunnelSlide: React.FC = () => (
   <Slide>
-    <SlideBody style={styles.body}>
+    <SlideBody full style={styles.body}>
       {STEPS.map((s, i) => {
         const pct = i === 0 ? null : Math.round((s.value / STEPS[i - 1].value) * 100);
         const last = i === STEPS.length - 1;
@@ -34,13 +34,6 @@ export const FunnelSlide: React.FC = () => (
         );
       })}
     </SlideBody>
-    <SlideStats
-      items={[
-        { value: "1 265", label: t("VUES") },
-        { value: "412", label: t("OUVERTURES") },
-        { value: "7 %", label: t("CONVERSION") },
-      ]}
-    />
   </Slide>
 );
 
@@ -51,5 +44,5 @@ const styles = StyleSheet.create({
   label: { flexShrink: 1, fontSize: 12, color: DS.ink },
   value: { fontSize: 12, fontWeight: "700", color: DS.ink },
   pct: { fontWeight: "400", color: DS.faint },
-  bar: { height: 16, borderRadius: 6 },
+  bar: { height: 26, borderRadius: 6 },
 });

@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Legend, Slide, SlideBody, SlideStats } from "./SlideParts";
+import { Legend, Slide, SlideBody } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
 
@@ -13,7 +13,7 @@ const SAMPLE = { growth: 20, ordersShare: 55, basketShare: 45 };
 
 export const BasketSlide: React.FC = () => (
   <Slide>
-    <SlideBody style={styles.body}>
+    <SlideBody full style={styles.body}>
       <Text style={styles.kicker} numberOfLines={1}>{t("POURQUOI LE CHIFFRE D'AFFAIRES A MONTÉ")}</Text>
       <View style={styles.headline}>
         <Text style={styles.big}>+{SAMPLE.growth} %</Text>
@@ -34,13 +34,6 @@ export const BasketSlide: React.FC = () => (
         ]}
       />
     </SlideBody>
-    <SlideStats
-      items={[
-        { value: "81", label: t("COMMANDES") },
-        { value: "3 000 F", label: t("PANIER MOYEN") },
-        { value: "+225 F", label: t("PAR COMMANDE"), tone: "up" },
-      ]}
-    />
   </Slide>
 );
 
@@ -50,7 +43,7 @@ const styles = StyleSheet.create({
   headline: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   big: { fontSize: 24, fontWeight: "700", color: DS.ink },
   sub: { flexShrink: 1, fontSize: 11, color: DS.muted },
-  split: { flexDirection: "row", height: 24, borderRadius: 7, overflow: "hidden" },
+  split: { flexDirection: "row", height: 40, borderRadius: 7, overflow: "hidden" },
   part: { justifyContent: "center", paddingLeft: 8 },
   partText: { fontSize: 11, fontWeight: "700", color: DS.onInk },
 });

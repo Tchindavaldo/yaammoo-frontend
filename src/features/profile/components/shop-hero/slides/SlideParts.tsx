@@ -9,10 +9,12 @@ import { DS } from "@/src/theme/ds";
  * ainsi la meme hauteur (pas de saut au glissement).
  */
 export const BODY_H = 190;
+/** Hauteur d'une slide sans cases : zone graphique + cases + leur ecart. */
+export const FULL_H = BODY_H + 60;
 export const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
 
-export const SlideBody: React.FC<{ children: React.ReactNode; style?: ViewStyle }> = ({ children, style }) => (
-  <View style={[styles.body, style]}>{children}</View>
+export const SlideBody: React.FC<{ children: React.ReactNode; style?: ViewStyle; full?: boolean }> = ({ children, style, full }) => (
+  <View style={[styles.body, full && { height: FULL_H }, style]}>{children}</View>
 );
 
 export const SlideStats: React.FC<{ items: { value: string; label: string; tone?: "up" }[] }> = ({ items }) => (

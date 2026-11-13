@@ -79,7 +79,7 @@ xcrun agvtool new-version -all "$BUILD_NUMBER"
 # IMPORTANT — deux workflows Xcode Cloud, une seule app :
 #   - workflow PROD (branche main) : OTA_CHANNEL absente → "production",
 #     action Archive en « TestFlight and App Store ».
-#   - workflow TEST (branche develop) : OTA_CHANNEL=test, action Archive en
+#   - workflow TEST (branche dev) : OTA_CHANNEL=test, action Archive en
 #     « TestFlight (Internal Testing Only) » → build impossible à soumettre
 #     à l'App Store.
 # Le canal gravé ici décide AUSSI du backend appelé (src/api/config.ts) :

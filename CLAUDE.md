@@ -314,7 +314,7 @@ sur cette branche (`gh` absent : API GitHub `POST …/actions/workflows/eas-upda
 
 **Canal `production` = vrais clients : publié UNIQUEMENT depuis `main`** (le
 workflow refuse toute autre branche). Le canal `test` (builds TestFlight internes,
-backend de test) se publie depuis `develop`. Détail : `architecture/http-versioning.md`.
+backend de test) se publie depuis `dev`. Détail : `architecture/http-versioning.md`.
 
 ## R21 — Plusieurs options : DEMANDER, ne rien inventer (OBLIGATOIRE)
 

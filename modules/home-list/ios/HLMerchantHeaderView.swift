@@ -115,10 +115,14 @@ final class HLMerchantHeaderView: UIView {
       ])
       aereReviews.attributedText = HLRun("\(shop.votes) avis", HLFont.w700(10), HLAereColor.text2)
       // `MerchantHeader.tsx` : « Livraison » gris, valeur en accent.
-      aereDelivery.attributedText = shop.deliveryLabel.isEmpty ? nil : HLText([
-        HLRun("Livraison ", HLFont.w700(10), HLColor.muted),
-        HLRun(shop.deliveryLabel, HLFont.w800(10), HLColor.accent),
-      ])
+      // « 12h 13h 14h » : 1er créneau (le plus proche) en accent, suivants en gris.
+      let slots = shop.deliveryLabel.split(separator: " ").map(String.init)
+      var runs = [HLRun("Livraison ", HLFont.w700(10), HLColor.muted)]
+      if let first = slots.first { runs.append(HLRun(first, HLFont.w800(10), HLColor.accent)) }
+      if slots.count > 1 {
+        runs.append(HLRun(" " + slots.dropFirst().joined(separator: " "), HLFont.w700(10), HLColor.muted))
+      }
+      aereDelivery.attributedText = shop.deliveryLabel.isEmpty ? nil : HLText(runs)
       setNeedsLayout()
       return
     }

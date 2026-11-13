@@ -149,9 +149,30 @@ const toMinutes = (hour: string) => {
   return parseInt(h, 10) * 60 + (parseInt(m, 10) || 0);
 };
 
+/** Nombre maximum de créneaux affichés dans l'en-tête marchand. */
+const MAX_HEADER_SLOTS = 3;
+
 /**
- * Libellé de livraison de l'en-tête boutique : prochain créneau périodique
- * (« 12h », délai de commande `orderLeadTime` compris, demain si tous sont
+ * Prochains créneaux encore commandables AUJOURD'HUI (heure − orderLeadTime >
+ * maintenant), le plus proche en premier, 3 au plus : ["12h", "13h", "14h"].
+ * Plus aucun aujourd'hui → le premier de demain seulement : ["12h"].
+ * `hours` : "HH:MM" triées.
+ */
+export const getUpcomingDeliveryTimes = (
+  hours: string[],
+  orderLeadTime: number = 0,
+): string[] => {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const label = (h: string) => `${h.split(":")[0]}h`;
+  const today = hours.filter((h) => nowMin < toMinutes(h) - orderLeadTime);
+  if (today.length === 0) return hours.length ? [label(hours[0])] : [];
+  return today.slice(0, MAX_HEADER_SLOTS).map(label);
+};
+
+/**
+ * Libellé de livraison de l'en-tête boutique : prochains créneaux périodiques
+ * séparés par une espace (« 12h 13h 14h », le 1er = le plus proche, délai de commande `orderLeadTime` compris, demain si tous sont
  * passés), « express » si la boutique n'a que de l'express, `null` sans
  * aucune livraison. Ancien format `string[]` = créneaux périodiques.
  */
@@ -165,7 +186,7 @@ export const getShopDeliveryLabel = (
     .map(extractHour)
     .filter(Boolean)
     .sort((a, b) => toMinutes(a) - toMinutes(b));
-  if (periodic.length > 0) return getNextDeliveryTime(periodic, orderLeadTime);
+  if (periodic.length > 0) return getUpcomingDeliveryTimes(periodic, orderLeadTime).join(" ");
   if (raw.some((h) => h?.express === true)) return "express";
   return null;
 };

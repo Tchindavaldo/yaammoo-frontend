@@ -327,8 +327,10 @@ la position posée par la boutique ; `null` si l'une manque). Voir
 
 ## Livraison dans l'en-tête boutique (design aéré)
 
-Sous la note, alignée à droite : « Livraison 13h » (prochain créneau
-**périodique**, `orderLeadTime` compris, demain si tous sont passés),
+Sous la note, alignée à droite : « Livraison 13h 14h 15h » (jusqu'à 3
+prochains créneaux **périodiques** du jour, `orderLeadTime` compris ; le plus
+proche en accent, les suivants en gris ; plus aucun aujourd'hui → le seul
+premier créneau de demain),
 « Livraison express » si la boutique n'a que de l'express, rien sans livraison.
 
 - Calcul unique en JS : `getShopDeliveryLabel` / `useShopDeliveryLabel`
@@ -339,7 +341,7 @@ Sous la note, alignée à droite : « Livraison 13h » (prochain créneau
   (posé par `setupHttp`) : un appel sans cet en-tête (curl, navigateur) reçoit
   des heures seules, sans express. Voir `BACKEND/architecture/merchants.md`.
 - FlashList : props `deliveryHours` / `orderLeadTime` de `MerchantHeader`
-  (Design4/5/7). Liste native : champ `deliveryLabel` (« 13h » / « express »,
+  (Design4/5/7). Liste native : champ `deliveryLabel` (« 13h 14h 15h » séparés par une espace / « express »,
   "" = rien) de `HomeListRow`, rendu par `HLMerchantHeaderView` (iOS et
   Android) ; une build native antérieure l'ignore.
 

@@ -216,7 +216,11 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
             </View>
             {delivery ? (
               <Text style={styles.aereDelivery}>
-                {t("Livraison")} <Text style={styles.aereDeliveryValue}>{delivery}</Text>
+                {/* 1er créneau (le plus proche) en accent, les suivants en gris. */}
+                {t("Livraison")} <Text style={styles.aereDeliveryValue}>{delivery.split(" ")[0]}</Text>
+                {delivery.includes(" ") ? (
+                  <Text style={styles.aereDeliveryNext}> {delivery.split(" ").slice(1).join(" ")}</Text>
+                ) : null}
               </Text>
             ) : null}
           </View>
@@ -354,6 +358,7 @@ const styles = StyleSheet.create({
   aereReviewsText: { fontSize: 10, fontWeight: '700', color: DS.text2 },
   aereDelivery: { fontSize: 10, fontWeight: '700', color: DS.muted },
   aereDeliveryValue: { fontWeight: '800', color: DS.accentDeep },
+  aereDeliveryNext: { fontWeight: '700', color: DS.faint },
   ratingMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statChip: {
     flexDirection: 'row',

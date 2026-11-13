@@ -150,10 +150,13 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
       aereReviews.text = HLRuns().run("${shop.votes} avis", 700, 10f, HLAereColor.text2).build()
       // `MerchantHeader.tsx` : « Livraison » gris, valeur en accent.
       aereDelivery.text = if (showDelivery) {
-        HLRuns()
+        // « 12h 13h 14h » : 1er créneau (le plus proche) en accent, suivants en gris.
+        val slots = shop.deliveryLabel.split(" ").filter { it.isNotEmpty() }
+        val runs = HLRuns()
           .run("Livraison ", 700, 10f, HLColor.muted)
-          .run(shop.deliveryLabel, 800, 10f, HLColor.accent)
-          .build()
+          .run(slots.firstOrNull() ?: "", 800, 10f, HLColor.accent)
+        if (slots.size > 1) runs.run(" " + slots.drop(1).joinToString(" "), 700, 10f, HLColor.muted)
+        runs.build()
       } else {
         null
       }

@@ -174,7 +174,7 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
 };
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: DS.sheetScrim },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: DS.sheetScrim },
   sheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: DS.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, paddingHorizontal: 16 },
   head: { height: 40, flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 },
   title: { fontSize: 18, fontWeight: "700", color: DS.ink },

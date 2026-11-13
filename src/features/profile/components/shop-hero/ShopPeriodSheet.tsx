@@ -2,7 +2,7 @@
 // Bottom sheet de choix de periode du hero marchand (maquettes A1 + A3 du
 // canvas, page « Période ») : deux vues de MEME hauteur, pour que la bascule
 // ne fasse pas sauter le sheet.
-//  - racine : 4 raccourcis (semaine passee, ce mois, 1er / 2e semestre) (un tap = applique et ferme), « Sélectionner un mois › » et « Sélectionner une période › » ;
+//  - racine : 4 raccourcis (cette semaine, ce mois, 1er / 2e semestre) (un tap = applique et ferme), « Sélectionner un mois › » et « Sélectionner une période › » ;
 //  - mois : les 12 mois de l'annee (fleches pour changer d'annee), un tap = applique ;
 //  - calendrier : 1er tap = debut, 2e tap = fin, puis « Afficher ».
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
@@ -15,7 +15,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { MONTHS, ShopPeriod, fromISO, monthGrid, monthPeriod, periodLabel, presetPeriod, toISO } from "./shopPeriod";
 
-const PRESETS = ["lastWeek", "month", "s1", "s2"] as const;
+const PRESETS = ["week", "month", "s1", "s2"] as const;
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 // Hauteur commune aux deux vues (titre + contenu), calee sur le calendrier
 // le plus haut (6 semaines + bouton).

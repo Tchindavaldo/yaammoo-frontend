@@ -2,8 +2,8 @@
 // Semaines du lundi au dimanche ; dates en ISO local `YYYY-MM-DD`.
 import { t } from "@/src/i18n";
 
-export type PeriodKind = "lastWeek" | "month" | "s1" | "s2" | "pickMonth" | "range";
-export type PresetKind = "lastWeek" | "month" | "s1" | "s2";
+export type PeriodKind = "week" | "month" | "s1" | "s2" | "pickMonth" | "range";
+export type PresetKind = "week" | "month" | "s1" | "s2";
 
 export interface ShopPeriod {
   kind: PeriodKind;
@@ -42,8 +42,8 @@ export const monthPeriod = (y: number, m: number, kind: PeriodKind = "pickMonth"
 export const presetPeriod = (kind: PresetKind, now = new Date()): ShopPeriod => {
   const y = now.getFullYear();
   switch (kind) {
-    case "lastWeek":
-      return weekPeriod(addDays(now, -7), "lastWeek");
+    case "week":
+      return weekPeriod(now, "week");
     case "month":
       return monthPeriod(y, now.getMonth(), "month");
     case "s1":
@@ -93,8 +93,8 @@ const datesLabel = (p: ShopPeriod) => {
 export const periodLabel = (p: ShopPeriod, datesOnly = false): string => {
   if (datesOnly) return datesLabel(p);
   switch (p.kind) {
-    case "lastWeek":
-      return t("Semaine passée");
+    case "week":
+      return t("Cette semaine");
     case "month":
       return t("Ce mois");
     case "s1":

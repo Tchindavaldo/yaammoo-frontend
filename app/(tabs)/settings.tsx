@@ -160,7 +160,7 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Compte, Préférences, Aide : listes groupees (maquette P1). */}
-        <ProfileListGroup title={t("Compte")}>
+        <ProfileListGroup>
           <ProfileTiles
             items={[
               { icon: "person-outline", title: t("Mon profil"), onPress: () => handleComingSoon(t("Mon profil")) },

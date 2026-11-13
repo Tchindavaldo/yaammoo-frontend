@@ -51,7 +51,6 @@ export const ShopHeroCard: React.FC = () => {
 
   return (
     <View style={styles.wrap}>
-    <View style={styles.card}>
       <View style={styles.top}>
         <Pressable onPress={() => setSheetOpen(true)} hitSlop={6} accessibilityRole="button" style={styles.periodBtn}>
           <Text style={styles.name} numberOfLines={1}>{periodLabel(period)}</Text>
@@ -63,6 +62,7 @@ export const ShopHeroCard: React.FC = () => {
         </View>
       </View>
 
+    <View style={styles.card}>
       <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
         {width > 0 && (
           <ScrollView
@@ -95,10 +95,10 @@ export const ShopHeroCard: React.FC = () => {
 const styles = StyleSheet.create({
   wrap: { gap: 8 },
   card: { gap: 10, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 28, backgroundColor: DS.surface },
-  top: { height: 32, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 6, gap: 8 },
+  top: { height: 32, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 4, gap: 8 },
   periodBtn: { flexShrink: 1, flexDirection: "row", alignItems: "center", gap: 4 },
   name: { flexShrink: 1, fontSize: 16, fontWeight: "600", color: DS.ink, letterSpacing: -0.2 },
-  chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 12, borderRadius: 14, backgroundColor: DS.bg },
+  chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 12, borderRadius: 14, backgroundColor: DS.surface },
   chipDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: DS.accent },
   chipText: { fontSize: 12, fontWeight: "600", color: DS.ink },
   dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 5 },

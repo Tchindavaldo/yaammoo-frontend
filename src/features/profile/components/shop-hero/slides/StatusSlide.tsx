@@ -11,7 +11,7 @@ const DAYS: [number, number, number, number][] = [
   [5, 3, 0, 1], [8, 6, 1, 1], [4, 2, 0, 1], [7, 5, 1, 0], [10, 7, 2, 1], [11, 8, 3, 1], [2, 1, 1, 0],
 ];
 const COLORS = [DS.ink, DS.faint, DS.idle, DS.accent];
-const BAR_MAX = 70;
+const BAR_MAX = 115;
 
 export const StatusSlide: React.FC = () => {
   const max = Math.max(...DAYS.map((d) => d.reduce((a, b) => a + b, 0)));

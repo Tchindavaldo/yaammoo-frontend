@@ -7,7 +7,7 @@ import { t } from "@/src/i18n";
 
 /** S15 — delai moyen commande -> remise, par jour (minutes). Donnees d'EXEMPLE. */
 const MINUTES = [18, 22, 16, 25, 28, 34, 15];
-const BAR_MAX = 70;
+const BAR_MAX = 115;
 
 export const DelaySlide: React.FC = () => {
   const max = Math.max(...MINUTES);

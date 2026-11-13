@@ -54,15 +54,19 @@ export const RankingSlide: React.FC = () => {
             );
           })}
         </View>
-        {d.rows.map(([name, v], i) => (
-          <View key={name} style={styles.row}>
-            <View style={styles.track}>
-              <View style={[styles.fill, { width: `${(v / max) * 100}%`, backgroundColor: i === 0 ? DS.accentTint : DS.surface }]} />
-              <Text style={styles.name} numberOfLines={1}>{name}</Text>
+        <View style={styles.rows}>
+          {d.rows.map(([name, v], i) => (
+            <View key={name} style={styles.item}>
+              <View style={styles.head}>
+                <Text style={styles.name} numberOfLines={1}>{name}</Text>
+                <Text style={styles.value}>{v}</Text>
+              </View>
+              <View style={styles.track}>
+                <View style={[styles.fill, { width: `${(v / max) * 100}%`, backgroundColor: i === 0 ? DS.accent : DS.ink }]} />
+              </View>
             </View>
-            <Text style={[styles.value, i === 0 && styles.first]}>{v}</Text>
-          </View>
-        ))}
+          ))}
+        </View>
       </SlideBody>
       <SlideStats items={d.stats.map((s) => ({ value: s.value, label: t(s.label) }))} />
     </Slide>
@@ -70,16 +74,17 @@ export const RankingSlide: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  body: { justifyContent: "space-between", paddingVertical: 8, paddingHorizontal: 10 },
-  tabs: { flexDirection: "row", gap: 4 },
-  tab: { flex: 1, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: DS.surface },
+  body: { gap: 12, paddingVertical: 10, paddingHorizontal: 12 },
+  tabs: { flexDirection: "row", gap: 6 },
+  tab: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 14, backgroundColor: DS.surface },
   tabOn: { backgroundColor: DS.ink },
-  tabText: { fontSize: 10, fontWeight: "600", color: DS.muted },
+  tabText: { fontSize: 11.5, fontWeight: "600", color: DS.ink },
   tabTextOn: { color: DS.onInk },
-  row: { flexDirection: "row", alignItems: "center", gap: 8, height: 18 },
-  track: { flex: 1, height: 18, justifyContent: "center" },
-  fill: { position: "absolute", left: 0, top: 0, bottom: 0, borderRadius: 5 },
-  name: { paddingLeft: 6, fontSize: 11, fontWeight: "600", color: DS.ink },
-  value: { width: 32, textAlign: "right", fontSize: 11, fontWeight: "700", color: DS.ink },
-  first: { color: DS.accentInk },
+  rows: { gap: 9 },
+  item: { gap: 3 },
+  head: { flexDirection: "row", justifyContent: "space-between" },
+  name: { flexShrink: 1, fontSize: 12, color: DS.ink },
+  value: { fontSize: 12, fontWeight: "700", color: DS.ink },
+  track: { height: 8, borderRadius: 4, backgroundColor: DS.line },
+  fill: { height: 8, borderRadius: 4 },
 });

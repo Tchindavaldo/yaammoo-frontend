@@ -8,7 +8,7 @@ import { DS } from "@/src/theme/ds";
  * graphique de hauteur fixe + une rangee de 3 chiffres. Toutes les slides ont
  * ainsi la meme hauteur (pas de saut au glissement).
  */
-export const BODY_H = 120;
+export const BODY_H = 190;
 export const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
 
 export const SlideBody: React.FC<{ children: React.ReactNode; style?: ViewStyle }> = ({ children, style }) => (

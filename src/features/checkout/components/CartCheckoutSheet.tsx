@@ -48,6 +48,7 @@ import { CartCheckoutFooter } from "./CartCheckoutFooter";
 // Overlay
 import { CheckoutLocationOverlay } from "./CheckoutLocationOverlay";
 import { CheckoutContactOverlay } from "./CheckoutContactOverlay";
+import { PickupDateSheet } from "./PickupDateSheet";
 import { CheckoutPeriodOverlay } from "./CheckoutPeriodOverlay";
 import { CheckoutExpressOverlay } from "./CheckoutExpressOverlay";
 import { CheckoutVoiceNoteOverlay } from "./CheckoutVoiceNoteOverlay";
@@ -94,6 +95,9 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   // Commande SANS livraison (retrait) : le numero est exige par le backend. Sans
   // numero, on ouvre l'overlay contact puis on reprend l'action demandee.
   const pendingAction = useRef<null | "cart" | "buy">(null);
+  // Numero saisi pour une commande sur place, en attente du jour du retrait.
+  const [pickupPhone, setPickupPhone] = useState<string | null>(null);
+  const [pickupChosen, setPickupChosen] = useState(false);
   const [resumeAction, setResumeAction] = useState<null | "cart" | "buy">(null);
   const actionsRef = useRef<{ cart?: () => void; buy?: () => void }>({});
   const [isPeriodPopupVisible, setIsPeriodPopupVisible] = useState(false);
@@ -323,11 +327,13 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
   if (!menu) return null;
 
+  // Sur place : numero puis jour du retrait (commande possible pour un jour futur).
   const needsPickupPhone = () =>
-    (!delivery.statut || delivery.type === "aucune") && !delivery.phone;
+    (!delivery.statut || delivery.type === "aucune") && (!delivery.phone || !pickupChosen);
   const askPhoneThen = (action: "cart" | "buy") => {
     pendingAction.current = action;
-    setIsContactPopupVisible(true);
+    if (delivery.phone) setPickupPhone(delivery.phone);
+    else setIsContactPopupVisible(true);
   };
 
   const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
@@ -537,6 +543,11 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
               phone={delivery.phone || ""}
               pickup={!delivery.statut || delivery.type === "aucune"}
               onSelectPhone={(ph) => {
+                // Sur place : apres le numero, demander le jour du retrait.
+                if (ph && (!delivery.statut || delivery.type === "aucune")) {
+                  setPickupPhone(ph);
+                  return;
+                }
                 setDelivery({ ...delivery, phone: ph });
                 if (ph && pendingAction.current) {
                   setResumeAction(pendingAction.current);
@@ -545,6 +556,25 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
               }}
             />
           )}
+
+          <PickupDateSheet
+            visible={!!pickupPhone}
+            value={delivery.date}
+            maxDays={advanceDays}
+            onClose={() => {
+              setPickupPhone(null);
+              pendingAction.current = null;
+            }}
+            onPick={(date) => {
+              setDelivery({ ...delivery, phone: pickupPhone || delivery.phone, date });
+              setPickupPhone(null);
+              setPickupChosen(true);
+              if (pendingAction.current) {
+                setResumeAction(pendingAction.current);
+                pendingAction.current = null;
+              }
+            }}
+          />
 
           {isPeriodPopupVisible && (
             <CheckoutPeriodOverlay

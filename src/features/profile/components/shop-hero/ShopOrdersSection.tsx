@@ -1,28 +1,31 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
 import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
-import { toISO } from "./shopPeriod";
+import { ShopPeriod, periodLabel, toISO } from "./shopPeriod";
+import { ShopPeriodSheet } from "./ShopPeriodSheet";
 
 /**
  * « Nouveau design » : section Commandes (maquette O5), 6 statuts en grille
  * 3 colonnes + « Tout voir » vers la page commandes marchand.
- * Commandes du jour de la boutique (MerchantContext), date de livraison du
- * jour (a defaut, date de creation). Hors panier (pendingToBuy).
+ * Commandes de la boutique (MerchantContext) sur la periode choisie (defaut :
+ * aujourd'hui ; appui sur le titre = choix de la date). Jour d'une commande =
+ * date de livraison / retrait (a defaut, date de creation). Hors panier.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
 type Tile = { label: string; icon: Ion; hot?: boolean; match: (status: string, delivered: boolean) => boolean };
 const TILES: Tile[] = [
   { label: "En attente", icon: "time-outline", hot: true, match: (s) => s === "pending" },
-  { label: "En cours", icon: "flame-outline", match: (s) => s === "processing" },
-  { label: "Terminées", icon: "checkmark", match: (s, d) => s === "finished" && d },
-  { label: "Livrées", icon: "bicycle-outline", match: (s, d) => (s === "delivered" || s === "delivering") && d },
+  { label: "En cours", icon: "flame-outline", match: (s) => s === "processing" || s === "delivering" },
+  // Terminees = pretes, pas encore remises (livraison ou retrait).
+  { label: "Terminées", icon: "checkmark", match: (s) => s === "finished" },
+  { label: "Livrées", icon: "bicycle-outline", match: (s, d) => s === "delivered" && d },
   { label: "Non livrées", icon: "close", match: (s) => s.startsWith("cancel") },
-  { label: "Sur place", icon: "storefront-outline", match: (s, d) => (s === "finished" || s === "delivered") && !d },
+  { label: "Sur place", icon: "storefront-outline", match: (s, d) => s === "delivered" && !d },
 ];
 
 export function ShopOrdersSection() {
@@ -31,24 +34,30 @@ export function ShopOrdersSection() {
   useEffect(() => {
     ensureLoaded();
   }, [ensureLoaded]);
+  const todayISO = toISO(new Date());
+  const [period, setPeriod] = useState<ShopPeriod>({ kind: "range", from: todayISO, to: todayISO });
+  const [sheetOpen, setSheetOpen] = useState(false);
   const counts = useMemo(() => {
-    const today = toISO(new Date());
     const list = (orders || []).filter((o: any) => {
       if (!o || o.status === "pendingToBuy") return false;
       const day = o.delivery?.date || (o.createdAt ? toISO(new Date(o.createdAt)) : "");
-      return day === today;
+      return day >= period.from && day <= period.to;
     });
     return TILES.map((tile) => list.filter((o: any) => tile.match(String(o.status || ""), o.delivery?.status === true)).length);
-  }, [orders]);
+  }, [orders, period]);
+  const label = period.from === period.to && period.from === todayISO ? t("Aujourd'hui") : periodLabel(period);
   // Onglet « Commandes » du marchand (navbar visible), pas la page plein ecran.
   const open = () => router.navigate("/(tabs)/boutique");
   return (
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 6 }}>
-        <Text style={{ fontSize: 16, fontWeight: "600", color: DS.ink }}>
-          {t("Commandes")}
-          <Text style={{ fontSize: 12, color: DS.faint }}>{"  " + t("Aujourd'hui")}</Text>
-        </Text>
+        <Pressable onPress={() => setSheetOpen(true)} hitSlop={8} accessibilityRole="button" style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          <Text style={{ fontSize: 16, fontWeight: "600", color: DS.ink }}>
+            {t("Commandes")}
+            <Text style={{ fontSize: 12, color: DS.faint }}>{"  " + label}</Text>
+          </Text>
+          <Ionicons name="chevron-down" size={13} color={DS.faint} />
+        </Pressable>
         <Pressable onPress={open} hitSlop={10} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
           <Text style={{ fontSize: 13, fontWeight: "600", color: DS.accentInk }}>{t("Tout voir")}</Text>
           <Ionicons name="chevron-forward" size={14} color={DS.accentInk} />
@@ -71,6 +80,7 @@ export function ShopOrdersSection() {
           </Pressable>
         ))}
       </View>
+      <ShopPeriodSheet visible={sheetOpen} value={period} onClose={() => setSheetOpen(false)} onChange={setPeriod} />
     </View>
   );
 }

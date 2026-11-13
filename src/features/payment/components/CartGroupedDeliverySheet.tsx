@@ -38,6 +38,7 @@ import { CartGroupedPaymentBody } from "./CartGroupedPaymentBody";
 import { CartPaymentOverlay } from "./CartPaymentOverlay";
 import { C, styles as sheetStyles } from "./CartPaymentSheet.styles";
 import { t, useLanguage } from "@/src/i18n";
+import { GroupedPickupDateSheet } from "./GroupedPickupDateSheet";
 
 /** Hauteur de la capsule flottante (`CartPaymentOverlay.styles.capsule`). */
 const CAPSULE_HEIGHT = 70;
@@ -173,6 +174,9 @@ export const CartGroupedDeliverySheet: React.FC<
    */
   // Overlay ouvert par `DeliveryTab` (un seul a la fois).
   const [overlay, setOverlay] = React.useState<GroupedDeliveryOverlay>(null);
+  // Jour du retrait (sur place) : choisi une fois avant le paiement.
+  const [pickupOpen, setPickupOpen] = React.useState(false);
+  const [pickupChosen, setPickupChosen] = React.useState(false);
   const pendingPayPhone = React.useRef<string | null>(null);
 
   const guardedConfirm = React.useCallback(
@@ -510,6 +514,11 @@ export const CartGroupedDeliverySheet: React.FC<
       showError(t("Indiquez un numéro de contact pour que la boutique puisse vous joindre"));
       return;
     }
+    // Retrait : demander le jour ou il passe recuperer (commande future possible).
+    if (step === 3 && delivery.type === "aucune" && !pickupChosen) {
+      setPickupOpen(true);
+      return;
+    }
     if (step === 3 && delivery.type !== "aucune") {
       const manque = !delivery.address && !delivery.note
         ? t("Indiquez le lieu de livraison")
@@ -528,7 +537,7 @@ export const CartGroupedDeliverySheet: React.FC<
       }
     }
     setStep((s) => (s + 1) as 1 | 2 | 3 | 4);
-  }, [step, delivery, hasExpressZones, showError]);
+  }, [step, delivery, hasExpressZones, showError, pickupChosen]);
 
   // Commandes du lot, et frais de la course groupee : une seule course est
   // facturee, la plus chere.
@@ -822,6 +831,19 @@ export const CartGroupedDeliverySheet: React.FC<
         deliveryOffer={deliveryOffer}
         fastFoodId={fastFoodId}
         onError={showError}
+      />
+
+      <GroupedPickupDateSheet
+        visible={pickupOpen}
+        value={delivery.date}
+        maxDays={advanceDays}
+        onClose={() => setPickupOpen(false)}
+        onPick={(date) => {
+          setDelivery({ ...delivery, date });
+          setPickupChosen(true);
+          setPickupOpen(false);
+          setStep(4);
+        }}
       />
 
       {/* Rendu EN DERNIER, dans le Modal : le toast passe ainsi au-dessus du

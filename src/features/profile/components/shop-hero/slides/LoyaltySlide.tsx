@@ -30,6 +30,7 @@ export const LoyaltySlide: React.FC<{ stats: MerchantStats; bucket: Bucket; vers
           {s.map((p, i) => (
             <View key={p.start} style={styles.col}>
               <Grow p={grow} style={styles.stack}>
+                {!p.newClients && !p.returning && <View style={{ height: 6, backgroundColor: DS.track }} />}
                 <View style={{ height: Math.round((p.newClients / max) * BAR_MAX), backgroundColor: DS.accent }} />
                 <View style={{ height: Math.round((p.returning / max) * BAR_MAX), backgroundColor: DS.ink }} />
               </Grow>

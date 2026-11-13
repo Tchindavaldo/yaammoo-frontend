@@ -36,6 +36,7 @@ export const StatusSlide: React.FC<{ stats: MerchantStats; bucket: Bucket; versi
           {rows.map((d, i) => (
             <View key={i} style={styles.col}>
               <Grow p={grow} style={styles.stack}>
+                {d.every((x) => !x) && <View style={{ height: 6, backgroundColor: DS.track }} />}
                 {[3, 2, 1, 0].map((k) =>
                   d[k] ? <View key={k} style={{ height: Math.round((d[k] / max) * BAR_MAX), backgroundColor: COLORS[k] }} /> : null,
                 )}

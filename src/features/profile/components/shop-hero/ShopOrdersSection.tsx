@@ -23,7 +23,8 @@ const SAMPLE: { label: string; n: number; icon: Ion; hot?: boolean }[] = [
 
 export function ShopOrdersSection() {
   useLanguage();
-  const open = () => router.push("/shop/orders");
+  // Onglet « Commandes » du marchand (navbar visible), pas la page plein ecran.
+  const open = () => router.navigate("/(tabs)/boutique");
   return (
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 6 }}>

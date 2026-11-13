@@ -38,8 +38,13 @@ export const DelaySlide: React.FC<{ stats: MerchantStats; bucket: Bucket; versio
             <Animated.View style={{ opacity: grow }}>
               <Svg width={w} height={BODY_H}>
                 {known.length > 1 && <Polyline points={pts} fill="none" stroke={DS.ink} strokeWidth={2.5} />}
+                {/* Sans mesure : ligne de base a 0, comme les barres vides des Ventes. */}
+                {known.length === 0 && s.length > 0 && (
+                  <Polyline points={xs.map((x) => `${x},${TOP + plotH}`).join(" ")} fill="none" stroke={DS.track} strokeWidth={2.5} />
+                )}
                 {s.map((p, i) => (
                   <React.Fragment key={p.start}>
+                    {p.delayMin == null && known.length === 0 && <Circle cx={xs[i]} cy={TOP + plotH} r={4} fill={DS.track} />}
                     {p.delayMin != null && (
                       <>
                         <Circle cx={xs[i]} cy={ys[i]} r={4} fill={p.delayMin === max ? DS.accent : DS.ink} />

@@ -125,7 +125,8 @@ nouveau binaire et ne peuvent pas etre poussees en OTA.
   pas seule).
   `DARK` et `POSITION` basculent fond clair/sombre et haut/bas.
 
-Publier : `eas update --branch production --environment production --message "..."`.
+Publier : workflow GitHub `.github/workflows/eas-update.yml` (CLAUDE.md R20).
+Canal `production` depuis `main` uniquement, canal `test` depuis `dev`.
 ⚠️ Depuis le SDK 55, `--environment` est **obligatoire**. Le SDK 56 active aussi
 par defaut le diff de bytecode Hermes (`EXUpdatesEnableBsdiffPatchSupport`).
 
@@ -146,8 +147,29 @@ l'activation, l'URL et le runtimeVersion.
 Le **canal** (`expo-channel-name`) n'est PAS fige dans le plist : le `prebuild`
 d'un build EAS local regenere le fichier et y ecrit le canal du profil lance
 (`development`, `preview`...), ecrasant toute valeur commitee. `ci_post_clone.sh`
-le pose donc lui-meme a `production` a chaque build Xcode Cloud, comme il le fait
-pour le runtimeVersion. Les deux chaines cessent ainsi de se disputer le fichier.
+le pose donc lui-meme a chaque build Xcode Cloud, comme il le fait pour le
+runtimeVersion. Les deux chaines cessent ainsi de se disputer le fichier.
+
+#### Deux workflows Xcode Cloud, une seule app (prod / test)
+
+| Workflow | Branche | `OTA_CHANNEL` (Environment Variables) | Action Archive | Backend appele |
+|---|---|---|---|---|
+| **PROD** | `main` | absente → `production` | TestFlight and App Store | `yaammoo-backend.fly.dev` (base prod) |
+| **TEST** | `dev` | `test` | **TestFlight (Internal Testing Only)** | `yaammoo-backend-test.fly.dev` (base test) |
+
+- `ci_post_clone.sh` refuse toute autre valeur que `production` / `test`.
+- Une build « Internal Testing Only » n'est **pas soumettable** a l'App Store :
+  une build test ne peut pas partir chez les clients.
+- **Le backend suit le canal** (`src/api/config.ts`) : `Updates.channel === "test"`
+  → backend test, tout autre canal → backend prod. Le canal est grave dans le
+  binaire (plist), pas dans le JS : une OTA ne peut jamais faire changer une
+  build de backend.
+- **Les OTA sont cloisonnees par canal** : une OTA `test` n'atteint que les
+  builds test, une OTA `production` que les builds prod.
+- **Verrou** (`.github/workflows/eas-update.yml`) : le canal `production` ne se
+  publie QUE depuis `main` ; le workflow echoue sur toute autre branche. Le canal
+  `test` charge les variables de l'environnement EAS `preview` (EAS n'a que
+  development / preview / production).
 
 `ci_post_clone.sh` recopie `expo.runtimeVersion` d'`app.json` dans
 `EXUpdatesRuntimeVersion` a chaque build : sans cela le binaire embarquerait un

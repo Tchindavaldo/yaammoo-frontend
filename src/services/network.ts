@@ -1,5 +1,7 @@
 import NetInfo from "@react-native-community/netinfo";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
+import { trackNetState } from "./netTelemetry";
+import { isSplashHidden } from "@/src/hooks/useHideSplash";
 
 /**
  * Etat reel de la connectivite.
@@ -74,8 +76,9 @@ export function trackInFlight(): {
 }
 
 /** Avorte tout ce qui est en vol : plus rien ne peut aboutir. */
-function abortInFlight() {
-  if (inFlight.size === 0) return;
+function abortInFlight(): number {
+  const n = inFlight.size;
+  if (n === 0) return 0;
   console.log(`[net] abandon de ${inFlight.size} requete(s) en vol`);
   inFlight.forEach((controller) => {
     try {
@@ -85,6 +88,7 @@ function abortInFlight() {
     }
   });
   inFlight.clear();
+  return n;
 }
 
 /**
@@ -114,11 +118,12 @@ export function onNetworkStateChange(
 }
 
 /** Diffuse l'etat courant aux abonnes d'affichage. */
-function emitState() {
+function emitState(source = "netinfo") {
   const online = reachable !== false;
   // Hors ligne : rien de ce qui est parti ne peut aboutir. On l'avorte pour que
   // les loaders s'eteignent au lieu de tourner sans fin.
-  if (!online) abortInFlight();
+  const aborted = online ? 0 : abortInFlight();
+  trackNetState(online, source, aborted);
   stateListeners.forEach((listener) => {
     try {
       listener(online);
@@ -204,21 +209,24 @@ export function startNetworkWatch() {
 
     // `isConnected === false` est un fait materiel (aucune interface active) :
     // il tranche sans attendre la sonde.
-    let next: boolean | null;
+    // ⚠️ NetInfo ne tranche QUE la coupure materielle (aucune interface). Son
+    // `isInternetReachable: true` n'est PAS cru : sur Android il reflete la
+    // validation systeme, qui reste vraie quand les donnees mobiles sont
+    // epuisees ou l'operateur en panne. Il ecrasait alors le « hors ligne » de
+    // notre sonde, les requetes partaient et restaient pendantes (home et
+    // splash figes). Le « en ligne » ne vient que de notre sonde (ou du socket).
+    let next: boolean | null = reachable;
     if (state.isConnected === false) {
       next = false;
-    } else if (state.isInternetReachable === null) {
-      // Sonde non aboutie. Sur un changement d'interface on ne conserve PAS
-      // l'ancien verdict : il portait sur un autre lien.
-      next = switched ? null : settled ? reachable : null;
-      if (switched) {
-        settled = false;
-        // Cadence serree jusqu'a ce que la nouvelle interface soit tranchee.
-        startProbeLoop(PROBE_FAST_MS);
-        probe();
-      }
+    } else if (switched) {
+      // L'ancien verdict portait sur un autre lien : on re-sonde vite.
+      settled = false;
+      startProbeLoop(PROBE_FAST_MS);
+      probe();
+    } else if (state.isInternetReachable === false) {
+      next = false;
     } else {
-      next = Boolean(state.isConnected && state.isInternetReachable);
+      probe();
     }
 
     if (next !== null) settled = true;
@@ -293,7 +301,11 @@ function probe() {
     // Web : reponse opaque, resolue seulement si le serveur a repondu.
     ...(IS_WEB && { mode: "no-cors" as const }),
   })
-    .then((response) => settle(IS_WEB ? true : response.ok))
+    .then((response) =>
+      // ⚠️ 204 exige : un forfait epuise redirige vers le portail operateur,
+      // qui repond 200 — `response.ok` y voyait a tort une connexion valide.
+      settle(IS_WEB ? true : response.status === 204),
+    )
     .catch(() => settle(false))
     .finally(() => {
       clearTimeout(killer);
@@ -315,7 +327,10 @@ function settle(next: boolean) {
   // suite : rien a perdre a croire une bonne nouvelle verifiee.
   if (!next && reachable !== false) {
     failures += 1;
-    if (failures < FAILURES_BEFORE_OFFLINE) {
+    // Sous le splash, un seul echec suffit : l'utilisateur attend devant un
+    // ecran fige, et deux sondes de 3 s depassaient la securite de 6 s.
+    const needed = isSplashHidden() ? FAILURES_BEFORE_OFFLINE : 1;
+    if (failures < needed) {
       settled = true;
       return;
     }
@@ -338,7 +353,7 @@ function settle(next: boolean) {
 
   const restored = reachable === false && next === true;
   reachable = next;
-  emitState();
+  emitState("sonde");
 
   if (restored) {
     restoreListeners.forEach((listener) => {
@@ -408,7 +423,7 @@ export function reportSocketConnected() {
   const restored = reachable === false;
   reachable = true;
   settled = true;
-  emitState();
+  emitState("socket");
 
   if (restored) {
     restoreListeners.forEach((listener) => {
@@ -449,10 +464,16 @@ export function reportSocketDisconnected() {
  */
 export function reportNetworkFailure() {
   if (reachable === false) return;
+  // ⚠️ App hors premier plan (arriere-plan, ecran verrouille) : iOS coupe les
+  // sockets de l'app, la requete en cours echoue sans que le reseau soit en
+  // cause. Constate dans Sentry (`source: echec-requete`, `in_foreground: false`) :
+  // bandeau « pas de connexion » bref au retour dans l'app. La sonde reste seule
+  // juge dans ce cas.
+  if (AppState.currentState !== "active") return;
   console.log("[net] coupure detectee par echec de requete");
   reachable = false;
   settled = true;
-  emitState();
+  emitState("echec-requete");
   // On redemande un verdict : si c'etait un faux positif (serveur momentanement
   // injoignable alors que le lien est bon), la sonde remet `reachable` a true et
   // declenche `onNetworkRestored`.

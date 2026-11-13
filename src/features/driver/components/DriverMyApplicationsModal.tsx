@@ -32,6 +32,7 @@ const STATUS_META: Record<
   pending: { get label() { return tr("En attente"); }, color: "#d97706", icon: "time-outline" },
   accepted: { get label() { return tr("Acceptée"); }, color: "#16a34a", icon: "checkmark-circle" },
   refused: { get label() { return tr("Refusée"); }, color: Theme.colors.danger, icon: "close-circle" },
+  invited: { get label() { return tr("Invitation reçue"); }, color: Theme.colors.primary, icon: "mail-outline" },
 };
 
 // Dédup par fastFoodId : ne garde qu'UNE demande par boutique (la plus récente).
@@ -132,6 +133,20 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
     }
   };
 
+  // Invitation d'une boutique : accepter = devenir son livreur.
+  const answer = async (app: DriverApplication, decision: "accepted" | "refused") => {
+    setRelaunching((p) => ({ ...p, [app.id]: true }));
+    try {
+      await driverService.answerInvitation(app.id, decision);
+      setApps((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: decision } : a)));
+      setToast({ message: decision === "accepted" ? tr("Vous êtes maintenant livreur") : tr("Invitation refusée"), type: "success" });
+    } catch {
+      setToast({ message: tr("Échec, réessayez"), type: "error" });
+    } finally {
+      setRelaunching((p) => ({ ...p, [app.id]: false }));
+    }
+  };
+
   if (!visible) return null;
 
   return (
@@ -182,6 +197,19 @@ export const DriverMyApplicationsModal: React.FC<DriverMyApplicationsModalProps>
                     </View>
                   </View>
 
+                  {app.status === "invited" &&
+                    (relaunching[app.id] ? (
+                      <ActivityIndicator size="small" color={Theme.colors.primary} />
+                    ) : (
+                      <View style={{ flexDirection: "row", gap: 6 }}>
+                        <TouchableOpacity style={[styles.relaunchBtn, { backgroundColor: Theme.colors.gray[300] }]} onPress={() => answer(app, "refused")}>
+                          <Text style={styles.relaunchText}>{tr("Refuser")}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.relaunchBtn} onPress={() => answer(app, "accepted")}>
+                          <Text style={styles.relaunchText}>{tr("Accepter")}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ))}
                   {app.status === "refused" &&
                     (relaunching[app.id] ? (
                       <ActivityIndicator size="small" color={Theme.colors.primary} />

@@ -31,6 +31,8 @@ import { MerchantFilterSheet } from "../MerchantFilterSheet";
 import { MERCHANT_CARD_HEIGHT, MerchantOrderCard } from "../MerchantOrderCard";
 import { MerchantOrderSkeleton } from "../MerchantOrderSkeleton";
 import { OtherDatesNotice } from "../OtherDatesNotice";
+
+const SHOW_OTHER_DATES_NOTICE = false;
 import { DS } from "@/src/theme/ds";
 import { useFooterBottomInset } from "@/src/hooks/usePageBottomInset";
 import { t as tr, dateLocale, useLanguage } from "@/src/i18n";
@@ -51,6 +53,8 @@ type OrderStatus = "pending" | "proccess" | "finish";
 export interface DateOption {
   iso: string;
   label: string;
+  /** Commandes de ce jour dans l'onglet de statut actif (pastille du chip). */
+  count?: number;
 }
 
 interface ShopOrderManagePanelProps {
@@ -445,18 +449,31 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
   // viennent de TOUTES les commandes, en cohérence avec le rappel `hasFuture` :
   // les scoper à l'onglet ouvrirait un sheet sans la date qu'on vient
   // d'annoncer.
+  // Pastille des chips de dates : commandes de CHAQUE jour dans l'onglet de
+  // statut actif (le statut est deja filtre en haut du sheet).
+  const perDayStatusCount = useMemo(() => {
+    const m: Record<string, number> = {};
+    orders.forEach((o) => {
+      if (!statusMap[selectedStatus].includes(o.status)) return;
+      const iso = getOrderDateISO(o);
+      m[iso] = (m[iso] ?? 0) + 1;
+    });
+    return m;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orders, selectedStatus]);
+
   const futureDateOptions = useMemo(
     () =>
       allDateISOs
         .filter((d) => d > todayISO)
         .sort()
-        .map((iso) => ({ iso, label: formatDateLabel(iso) })),
+        .map((iso) => ({ iso, label: formatDateLabel(iso), count: perDayStatusCount[iso] ?? 0 })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allDateISOs],
+    [allDateISOs, perDayStatusCount],
   );
   const pastDateOptions = useMemo(
-    () => pastDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso) })),
-    [pastDateISOs],
+    () => pastDateISOs.map((iso) => ({ iso, label: formatDateLabel(iso), count: perDayStatusCount[iso] ?? 0 })),
+    [pastDateISOs, perDayStatusCount],
   );
 
   // Badges des cards de dates du filter sheet : NOMBRE DE COMMANDES du lot
@@ -719,13 +736,22 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
   const scrollRef = useRef<ScrollView>(null);
   const onScrollSettled = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const y = e.nativeEvent.contentOffset.y;
+      const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+      const y = contentOffset.y;
+      // Bas de liste atteignable. ⚠️ Sans borne, un scroll rapide finissant en
+      // bout de liste (rebond) visait un offset hors contenu : la ScrollView
+      // restait figée et plus aucun scroll ne passait.
+      const maxY = Math.max(0, contentSize.height - layoutMeasurement.height);
+      if (y <= 0 || y >= maxY - 1) return; // rebond haut / bas : on n'y touche pas
       const rel = y - SNAP_ANCHOR;
       if (rel <= 0) return; // au-dessus de la 1re carte → ne pas toucher
       const residual = rel % CARD_STRIDE;
       if (residual < 4 || residual > CARD_STRIDE - 4) return; // déjà ~aligné
       // Scrolle vers le haut OU le bas vers le bord de carte le plus proche.
-      const target = SNAP_ANCHOR + Math.round(rel / CARD_STRIDE) * CARD_STRIDE;
+      const target = Math.min(
+        maxY,
+        SNAP_ANCHOR + Math.round(rel / CARD_STRIDE) * CARD_STRIDE,
+      );
       scrollRef.current?.scrollTo({ y: target, animated: true });
     },
     [SNAP_ANCHOR, CARD_STRIDE],
@@ -1094,7 +1120,9 @@ export const ShopOrderManagePanel: React.FC<ShopOrderManagePanelProps> = ({
 
       {/* Rappel des commandes sur d'AUTRES dates, calé juste au-dessus de la
           barre de filtres (masqué pendant le squelette : compteurs périmés). */}
-      {!(loading && !pullRefreshing) && hasOtherDates && (
+      {/* Pastille « X commandes non traitees » desactivee pour l'instant :
+          repasser SHOW_OTHER_DATES_NOTICE a true pour la reafficher. */}
+      {SHOW_OTHER_DATES_NOTICE && !(loading && !pullRefreshing) && hasOtherDates && (
         <View
           style={[styles.noticeDock, { bottom: tabBarHeight + FILTER_BAR_HEIGHT }]}
           pointerEvents="box-none"

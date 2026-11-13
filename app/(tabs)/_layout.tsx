@@ -17,7 +17,20 @@ import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { useActivateFastFoods } from "@/src/features/restaurants/context/FastFoodContext";
+import { MerchantModeProvider, useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+
 export default function TabLayout() {
+  return (
+    <MerchantModeProvider>
+      <TabLayoutInner />
+    </MerchantModeProvider>
+  );
+}
+
+function TabLayoutInner() {
+  // Mode marchand : Panier et Commandes client masques ; Commandes = boutique,
+  // Portefeuille = onglet. Mode client : navbar habituelle.
+  const { isMerchantMode: m } = useMerchantMode();
   useLanguage();
   const colorScheme = useColorScheme();
 
@@ -83,6 +96,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="cart"
             options={{
+              href: m ? null : undefined,
               tabBarLabel: t("Panier"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
@@ -100,6 +114,7 @@ export default function TabLayout() {
           <Tabs.Screen
             name="orders"
             options={{
+              href: m ? null : undefined,
               tabBarLabel: t("Commandes"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
@@ -113,7 +128,21 @@ export default function TabLayout() {
           <Tabs.Screen
             name="boutique"
             options={{
-              href: null,
+              href: m ? undefined : null,
+              tabBarLabel: t("Commandes"),
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons size={focused ? 22 : 20} name={focused ? "receipt" : "receipt-outline"} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="wallet"
+            options={{
+              href: m ? undefined : null,
+              tabBarLabel: t("Portefeuille"),
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons size={focused ? 22 : 20} name={focused ? "wallet" : "wallet-outline"} color={color} />
+              ),
             }}
           />
           <Tabs.Screen

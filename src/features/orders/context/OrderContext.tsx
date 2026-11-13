@@ -9,6 +9,7 @@ import { sanitizeOrder } from "../utils/sanitizeOrder";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import { t, useLanguage } from "@/src/i18n";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 
 /** Cache des commandes, pour un badge panier juste des la premiere frame. */
 const ORDERS_CACHE_KEY = "orders_cache";
@@ -352,6 +353,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     delivered: getFilteredByStatus(["delivered"]),
     stats,
   };
+
+  // Connexion revenue : rechargement avec loader (app ouverte hors-ligne).
+  useRefetchOnReconnect(() => fetchOrders(false));
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;
 };

@@ -38,10 +38,14 @@ export const DS = {
   muted: "#6C6C70",
   faint: "#8E8E93",
   surface: "#F5F5F7",
+  /** Fond de carte tres leger (listes du profil, maquette P1f). */
+  surfaceSoft: "#FAFAFB",
   line: "#ECECF0",
   track: "#E4E4E8",
   idle: "#D6D6DB",
   accentInk: "#cb3f10",
+  /** Jaune du reseau MTN (pastille de solde). */
+  mtn: "#f5b301",
   accentText: "#B23A0E",
   accentTint: "rgba(236,73,19,0.1)",
   accentWash: "rgba(236,73,19,0.07)",
@@ -69,6 +73,8 @@ export const DS = {
   successStrong: "#16a34a",
   successInk: "#15803d",
   successTint: "rgba(22,163,74,0.1)",
+  /** Vert lisible sur fond noir (hausses dans le hero stats). */
+  successOnDark: "#4ADE80",
   danger: "#ef4444",
   info: "#3b82f6",
   dangerInk: "#B42318",

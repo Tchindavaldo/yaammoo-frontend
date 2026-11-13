@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   /** Android < 12 : pas de flou natif, on opacifie pour rester lisible. */
-  capsuleBlurFallback: { backgroundColor: "rgba(17,17,17,0.96)" },
+  capsuleBlurFallback: { backgroundColor: DS.ink },
   contentRow: {
     flex: 1,
     flexDirection: "row",
@@ -566,7 +566,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   /** Android < 12 : sans flou natif, le voile se rabat sur un fond sombre. */
-  veilFallback: { backgroundColor: "rgba(0,0,0,0.72)" },
+  // Android (sans flou) : voile BLANC, comme la capsule d'auth.
+  veilFallback: { backgroundColor: DS.bg },
   /** Teinte sombre posee sur le flou, qui seul ne noircit pas assez. */
   veilTint: {
     ...StyleSheet.absoluteFill,

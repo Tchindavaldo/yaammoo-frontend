@@ -23,6 +23,7 @@ import {
   balanceKey,
 } from "../services/walletNetwork";
 import { useLanguage } from "@/src/i18n";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 
 /** Payload normalisé d'un event wallet (wallet.credited / wallet.withdrawal). */
 export interface WalletEvent {
@@ -220,6 +221,9 @@ export const MerchantWalletProvider: React.FC<{ children: React.ReactNode }> = (
     },
     [applyEvent],
   );
+
+  // Connexion revenue : rechargement avec loader (app ouverte hors-ligne).
+  useRefetchOnReconnect(() => userData?.fastFoodId && refresh(true));
 
   return (
     <MerchantWalletContext.Provider

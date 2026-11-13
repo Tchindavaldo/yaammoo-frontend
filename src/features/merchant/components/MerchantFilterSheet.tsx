@@ -344,6 +344,7 @@ export const MerchantFilterSheet: React.FC<MerchantFilterSheetProps> = ({
                       items={scopeDates.map((d) => ({
                         key: d.iso,
                         label: d.label,
+                        count: d.count,
                       }))}
                       activeKey={activeDate}
                       onSelect={(iso) => onSelectDate(iso)}

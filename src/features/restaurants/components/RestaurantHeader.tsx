@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Theme } from "../../../theme";
 import { DS } from "@/src/theme/ds";
 import { LocationPill } from "./LocationPill";
+import { t } from "@/src/i18n";
 
 interface RestaurantHeaderProps {
   userName?: string;
@@ -33,6 +34,8 @@ interface RestaurantHeaderProps {
   onProfilePress?: () => void;
   onCartPress?: () => void;
   onOrdersPress?: () => void;
+  /** Compte marchand en mode client : remplace la localisation par « Mode marchand ». */
+  onMerchantMode?: () => void;
 }
 
 export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
@@ -51,6 +54,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   onProfilePress,
   onCartPress,
   onOrdersPress,
+  onMerchantMode,
 }) => {
   const insets = useSafeAreaInsets();
   // Android : pas de cible de flou sur le home (la liste ne passe pas sous le
@@ -73,7 +77,14 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
       {/* Barre d'outils : localisation à gauche, actions (panier / commandes / notif / profil) à droite */}
       <View style={styles.toolbar1}>
         <View style={styles.colLocation}>
-          <LocationPill location={location} />
+          {onMerchantMode ? (
+            <TouchableOpacity style={styles.modePill} onPress={onMerchantMode} activeOpacity={0.8}>
+              <Ionicons name="swap-horizontal" size={15} color={DS.ink} />
+              <Text style={styles.modePillText}>{t("Mode marchand")}</Text>
+            </TouchableOpacity>
+          ) : (
+            <LocationPill location={location} />
+          )}
         </View>
 
         <View style={styles.actions}>
@@ -167,6 +178,8 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
+  modePill: { alignSelf: "flex-start", height: 34, paddingHorizontal: 12, borderRadius: 17, backgroundColor: DS.surface, flexDirection: "row", alignItems: "center", gap: 6 },
+  modePillText: { fontSize: 12.5, fontWeight: "600", color: DS.ink },
   container: {
     position: "absolute",
     top: 0,

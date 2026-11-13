@@ -12,22 +12,44 @@ import { Users } from "@/src/types";
 import { useNotificationContext } from "../context/NotificationContext";
 import { getNotificationRoute } from "../utils/notificationRouting";
 import { auth } from "@/src/services/firebase";
+import { setPendingPushTap } from "../services/pendingPushTap";
 import { getDeviceId } from "../services/deviceId";
 import { t, useLanguage } from "@/src/i18n";
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  // Push destinée à un AUTRE compte que celui connecté : jamais affichée.
+  handleNotification: async (n) => {
+    const target = (n.request.content.data as any)?.userId;
+    const me = auth.currentUser?.uid;
+    const mine = !target || !me || target === me;
+    return {
+      shouldShowAlert: mine,
+      shouldPlaySound: mine,
+      shouldSetBadge: mine,
+      shouldShowBanner: mine,
+      shouldShowList: mine,
+    };
+  },
 });
 
-const routeFromData = (data: any): string => {
-  if (!data) return "/(tabs)/notifications";
-  return getNotificationRoute({ type: data.type, route: data.route } as any);
+/** Push touchée → page Notifications + mini sheet de récap (jamais la page cible directement). */
+const openFromPush = (router: ReturnType<typeof useRouter>, data: any) => {
+  router.push("/(tabs)/notifications" as any);
+  if (!data) return;
+  // Push d'un AUTRE compte (changement de compte sur ce téléphone) : rien à ouvrir.
+  const me = auth.currentUser?.uid;
+  if (data.userId && me && data.userId !== me) return;
+  setPendingPushTap({
+    id: data.notificationId || `push-${Date.now()}`,
+    title: data.title,
+    message: data.body || data.message,
+    type: data.type,
+    audience: data.audience === "merchant" ? "merchant" : data.audience === "client" ? "client" : undefined,
+    route: data.route,
+    orderId: data.orderId || undefined,
+    isRead: true,
+    createdAt: new Date().toISOString(),
+  });
 };
 
 export const useNotificationSetup = () => {
@@ -40,9 +62,8 @@ export const useNotificationSetup = () => {
   // Tap sur la notif (app background / foreground)
   useEffect(() => {
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as any;
-      const route = routeFromData(data);
-      router.push(route as any);
+      const content = response.notification.request.content;
+      openFromPush(router, { title: content.title, body: content.body, ...(content.data as any) });
     });
 
     // Notif reçue app ouverte : pas de refresh auto (seul le pull-to-refresh le déclenche).
@@ -58,9 +79,8 @@ export const useNotificationSetup = () => {
       try {
         const last = await Notifications.getLastNotificationResponseAsync();
         if (last) {
-          const data = last.notification.request.content.data as any;
-          const route = routeFromData(data);
-          router.push(route as any);
+          const content = last.notification.request.content;
+          openFromPush(router, { title: content.title, body: content.body, ...(content.data as any) });
         }
       } catch { }
     })();

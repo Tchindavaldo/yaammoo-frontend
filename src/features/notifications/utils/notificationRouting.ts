@@ -1,6 +1,20 @@
 import { Notification } from "../context/NotificationContext";
 
+/**
+ * Route d'une notification. Commande client : `orderId` est ajouté pour que
+ * l'onglet Commandes ouvre directement la fiche de CETTE commande, sur le
+ * statut où elle se trouve réellement.
+ */
 export const getNotificationRoute = (notif: Partial<Notification> | null | undefined): string => {
+  const route = baseRoute(notif);
+  const orderId = (notif as any)?.orderId;
+  if (orderId && route.startsWith("/(tabs)/orders")) {
+    return `${route}${route.includes("?") ? "&" : "?"}orderId=${encodeURIComponent(orderId)}`;
+  }
+  return route;
+};
+
+const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
   if (!notif) return "/(tabs)/notifications";
   // `route` porté par la notif (backend). Peut être partiel ("settings?section=…")
   // → on préfixe "/(tabs)/" si ce n'est pas déjà un chemin absolu.
@@ -14,13 +28,13 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
     if (legacy) return `/(tabs)/orders?section=${legacy[1]}`;
     // Nouvelle commande (→ marchand) : page Commandes de la boutique (Profil),
     // pas l'onglet Commandes du client.
-    if (/boutique/.test(String(rawRoute))) return "/shop/orders";
+    if (/boutique/.test(String(rawRoute))) return "/(tabs)/boutique";
     return rawRoute.startsWith("/") ? rawRoute : `/(tabs)/${rawRoute}`;
   }
   // Minuscules : le push `bonus.activation_changed` envoie `type: "Bonus"`.
   switch (String(notif.type ?? "").toLowerCase()) {
     case "order_new":
-      return "/shop/orders";
+      return "/(tabs)/boutique";
     case "order_cancel_by_user":
     case "order_cancel_by_merchant":
       return "/(tabs)/notifications";
@@ -31,7 +45,7 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
       return "/(tabs)/orders?section=pending";
     // Demande de livraison reçue (→ marchand) : ouvre le modal "Livreurs".
     case "driver_application":
-      return "/(tabs)/settings?section=drivers";
+      return "/shop/drivers";
     // Demande décidée (→ candidat) : ouvre le modal "Mes demandes".
     case "driver_application_decided":
     case "driver_removed":

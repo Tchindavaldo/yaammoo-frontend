@@ -15,6 +15,7 @@ import { Users } from "@/src/types";
 import { userFirestore } from "../services/userFirestore";
 import { Config } from "@/src/api/config";
 import { sinceBoot } from "@/src/utils/bootClock";
+import { trackBoot } from "@/src/services/netTelemetry";
 import { t, useLanguage } from "@/src/i18n";
 
 interface AuthContextType {
@@ -28,6 +29,8 @@ interface AuthContextType {
    * sous le splash, le profil en cache suffit.
    */
   ensureProfileRefreshed: () => Promise<void>;
+  /** Connecte : cache du profil d'abord, confirme ensuite par Firebase. */
+  isSignedIn: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -39,6 +42,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<Users | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Firebase a-t-il deja repondu (onAuthStateChanged) ? */
+  const [firebaseResolved, setFirebaseResolved] = useState(false);
+  const firebaseResolvedRef = useRef(false);
+
+  // CACHE D'ABORD (OBLIGATOIRE) : le profil en cache prime sur tout. Lu des le
+  // montage, SANS attendre Firebase (constate dans Sentry : hors ligne, Firebase
+  // met ~59 s a repondre, et le splash attendait tout ce temps alors que le
+  // cache etait la). Firebase confirme ensuite en arriere-plan ; s'il dit
+  // « personne de connecte », le profil est efface (retour a l'accueil).
+  useEffect(() => {
+    (async () => {
+      const stored = await storage.get("user_data");
+      if (firebaseResolvedRef.current) return; // Firebase a deja tranche
+      trackBoot("auth cache au montage", { hit: !!stored });
+      if (stored) {
+        setUserData(stored);
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   /**
    * Le profil a-t-il deja ete rafraichi depuis l'API dans cette session ?
@@ -75,8 +98,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   useEffect(() => {
+    trackBoot("auth ecoute");
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log("🔵 [AuthContext] onAuthStateChanged déclenché");
+      trackBoot("auth firebase repond", { hasUser: !!firebaseUser });
+      firebaseResolvedRef.current = true;
+      setFirebaseResolved(true);
+      console.log("[AuthContext] onAuthStateChanged déclenché");
       setUser(firebaseUser);
       if (firebaseUser) {
         console.log(
@@ -89,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         //    immédiatement et débloquer l'app (marche hors-ligne, pas d'attente réseau).
         const stored = await storage.get("user_data");
         const hasFreshCache = stored && stored.uid === firebaseUser.uid;
+        trackBoot("auth cache profil", { hit: !!hasFreshCache, hadStored: !!stored });
         if (hasFreshCache) {
           console.log("✅ [AuthContext] Profil chargé depuis le cache (affichage immédiat)");
           setUserData(stored);
@@ -135,6 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error("❌ [AuthContext] Refresh profil échoué:", error);
           // Hors-ligne : on garde le cache déjà affiché (rien à faire).
         } finally {
+          trackBoot("auth profil api fini");
           setLoading(false);
         }
       } else {
@@ -211,6 +240,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUserData: handleUpdateUserData,
         deleteAccount,
         ensureProfileRefreshed,
+        // Connecte = profil present ET (Firebase confirme OU pas encore repondu :
+        // le cache fait foi en attendant).
+        isSignedIn: !!userData && (!!user || !firebaseResolved),
       }}
     >
       {children}

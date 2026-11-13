@@ -16,7 +16,7 @@ import { GuestGate } from "@/src/features/auth/components/GuestGate";
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { groupNotificationsByDate } from "@/src/features/notifications/utils/groupNotificationsByDate";
 import { DS } from "@/src/theme/ds";
 import {
@@ -26,12 +26,15 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { onPendingPushTap, takePendingPushTap } from "@/src/features/notifications/services/pendingPushTap";
 import { t, useLanguage } from "@/src/i18n";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { isMerchantNotification } from "@/src/features/notifications/utils/notificationAudience";
 
 export default function NotificationsScreen() {
   const i18nLang = useLanguage();
   const {
-    notifications,
+    notifications: allNotifications,
     loading,
     refresh,
     markAsRead,
@@ -48,11 +51,31 @@ export default function NotificationsScreen() {
   const [selectedNotif, setSelectedNotif] = useState<Notification | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
 
+  // Mode marchand : notifications marchand seules. Mode client : toutes (une
+  // notification marchand ouverte depuis le mode client bascule en marchand).
+  const { isMerchantMode, setMerchantMode } = useMerchantMode();
+  const notifications = useMemo(
+    () => (isMerchantMode ? allNotifications.filter(isMerchantNotification) : allNotifications),
+    [allNotifications, isMerchantMode],
+  );
   const unreadCount = notifications.filter((n) => !isReadFlag(n)).length;
   const sections = useMemo(
     () => groupNotificationsByDate(notifications),
     [notifications, i18nLang],
   );
+
+  // Push touchée : ouvre le mini sheet de récap de cette notification.
+  useEffect(() => {
+    const open = () => {
+      const n = takePendingPushTap();
+      if (!n) return;
+      if (isMerchantNotification(n)) setMerchantMode(true);
+      setSelectedNotif(n);
+      setDetailVisible(true);
+    };
+    open();
+    return onPendingPushTap(open);
+  }, [setMerchantMode]);
 
   const handleNotifPress = (notif: Notification) => {
     if (!isReadFlag(notif)) {
@@ -65,6 +88,7 @@ export default function NotificationsScreen() {
   const handleNotifAction = (notif: Notification) => {
     setDetailVisible(false);
     const route = getNotificationRoute(notif);
+    if (isMerchantNotification(notif)) setMerchantMode(true);
     router.push(route as any);
   };
 

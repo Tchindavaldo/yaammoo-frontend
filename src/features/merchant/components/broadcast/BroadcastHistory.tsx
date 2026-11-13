@@ -56,7 +56,7 @@ export const BroadcastHistory: React.FC<Props> = ({ items, now, loading, onReuse
             <ActivityIndicator color={BC.muted} />
           ) : (
             <>
-              <Text style={styles.emptyTitle}>{t("Aucune notification envoyée")}</Text>
+              <Text style={styles.emptyTitle}>{t("Aucune annonce envoyée")}</Text>
               <Text style={styles.emptyText}>{t("Vos envois apparaîtront ici.")}</Text>
             </>
           )}

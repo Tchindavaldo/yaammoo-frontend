@@ -8,7 +8,7 @@ import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import { FlashList } from "@shopify/flash-list";
 import React, { useCallback, useEffect, useState } from "react";
-import { Animated, RefreshControl, View } from "react-native";
+import { Animated, RefreshControl, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
@@ -35,15 +35,19 @@ import { isHomeListAvailable } from "@/modules/home-list";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { MerchantHome } from "@/src/features/profile/components/shop-hero/MerchantHome";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import {
   clearVisibleShops,
+  setShopImpressionsPaused,
   setVisibleShops,
 } from "@/src/services/analytics/shopImpressions";
 import { homePageOf } from "@/src/services/analytics/homePages";
 import { track } from "@/src/services/analytics/analytics";
 import { t, useLanguage } from "@/src/i18n";
+import { trackBoot } from "@/src/services/netTelemetry";
 
 /** Boutique « vue » : visible a 50 % au moins (meme seuil que la liste native). */
 const SHOP_VIEWABILITY = { itemVisiblePercentThreshold: 50 };
@@ -58,7 +62,37 @@ const seenBanners = new Set<string>();
  * (verrou de page) et `components/home/` (en-tete, ecrans plein, styles).
  * Voir architecture/restaurants.md.
  */
-export default function HomeScreen() {
+export default function HomeTab() {
+  const { isMerchant, isMerchantMode } = useMerchantMode();
+  useEffect(() => {
+    setShopImpressionsPaused(isMerchantMode);
+  }, [isMerchantMode]);
+  // Home client TOUJOURS monte et mis en page en plein ecran, meme en mode
+  // marchand (recouvert par le home marchand). Le demonter / le masquer a
+  // chaque bascule laissait la liste native des boutiques sans images
+  // (squelettes figes jusqu'au pull-to-refresh).
+  return (
+    <View style={{ flex: 1 }}>
+      <View
+        style={{ flex: 1 }}
+        pointerEvents={isMerchantMode ? "none" : "auto"}
+        importantForAccessibility={isMerchantMode ? "no-hide-descendants" : "auto"}
+        accessibilityElementsHidden={isMerchantMode}
+      >
+        <HomeScreen />
+      </View>
+      {/* Home marchand garde monte lui aussi (masque en mode client) : header
+          et sections stables d'une bascule a l'autre. */}
+      {isMerchant && (
+        <View style={[StyleSheet.absoluteFill, { display: isMerchantMode ? "flex" : "none" }]}>
+          <MerchantHome />
+        </View>
+      )}
+    </View>
+  );
+}
+
+function HomeScreen() {
   useLanguage();
   const onLayoutRootView = useHideSplash();
   const { ensureProfileRefreshed } = useAuth();
@@ -71,6 +105,7 @@ export default function HomeScreen() {
   // `/settings/app-version` ont le droit de partir. Les badges panier et
   // notifications tiennent sur leur cache en attendant ces reponses.
   useEffect(() => {
+    trackBoot("home monte");
     void ensureProfileRefreshed();
     ensureNotificationsLoaded();
     ensureOrdersLoaded();
@@ -212,16 +247,33 @@ export default function HomeScreen() {
   const fullLoading =
     (loading && fastFoods.length === 0 && !searchQuery) || forceLoading;
 
-  // Navbar masquee pendant l'ecran de chargement plein : elle apparait en meme
-  // temps que l'en-tete et les squelettes.
+  // En-tete et navbar restent visibles pendant le chargement plein : seul le
+  // contenu (sous l'en-tete) est remplace par le loader.
   useEffect(() => {
-    navigation.setOptions({
-      tabBarStyle: fullLoading ? [tabBarStyle, { display: "none" }] : tabBarStyle,
-    });
-  }, [navigation, fullLoading, tabBarStyle]);
+    navigation.setOptions({ tabBarStyle });
+  }, [navigation, tabBarStyle]);
+
+  const header = (
+    <HomeHeader
+      unreadCount={unreadCount}
+      searchOpen={searchOpen}
+      onSearchToggle={() => setSearchOpen(!searchOpen)}
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      selectedCategory={selectedCategory}
+      onCategorySelect={setSelectedCategory}
+    />
+  );
 
   if (fullLoading) {
-    return <HomeLoadingScreen onLayout={onLayoutRootView} />;
+    return (
+      <View style={styles.container} onLayout={onLayoutRootView}>
+        {header}
+        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight }}>
+          <HomeLoadingScreen />
+        </View>
+      </View>
+    );
   }
 
   // Échec du chargement initial : page entière remplacée (voir HomeErrorScreen).
@@ -231,15 +283,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container} onLayout={onLayoutRootView}>
-      <HomeHeader
-        unreadCount={unreadCount}
-        searchOpen={searchOpen}
-        onSearchToggle={() => setSearchOpen(!searchOpen)}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedCategory={selectedCategory}
-        onCategorySelect={setSelectedCategory}
-      />
+      {header}
       {/* ⚠️ Groupe de revelation partage par la BANNIERE et la PREMIERE
           boutique uniquement (cf. DesignRouter) : les deux sortent a la meme
           frame. La boutique 0 n'attend rien de plus qu'avant — seule la

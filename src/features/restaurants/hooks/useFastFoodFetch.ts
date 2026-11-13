@@ -2,6 +2,7 @@
 import { Config } from "@/src/api/config";
 import { trackHomePage } from "@/src/services/analytics/homePages";
 import { trackBootStep } from "@/src/services/bootTelemetry";
+import { trackHomeFetch } from "@/src/services/netTelemetry";
 import { getOptionalIdToken } from "@/src/services/idToken";
 import type { AppBanner, FastFood } from "@/src/types";
 import { sinceBoot } from "@/src/utils/bootClock";
@@ -93,7 +94,18 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
    * ne verrait que les pages déjà chargées, donc une boutique du fond du
    * catalogue serait introuvable — une régression silencieuse.
    */
-  const fetchPage = useCallback(async (cursor?: string, q?: string) => {
+  /**
+   * Premiere page (hors recherche) deja en vol.
+   *
+   * ⚠️ Au retour du reseau, deux declencheurs partaient a la meme seconde
+   * (constate dans Sentry, `diag:net`) : deux premieres pages remplacaient la
+   * liste coup sur coup, et la liste native restait figee en squelette sur les
+   * rangees dont elle attendait les images. Un second appel reutilise le premier.
+   */
+  const firstPageInFlightRef = useRef<Promise<void> | null>(null);
+
+
+  const fetchPageOnce = useCallback(async (cursor?: string, q?: string) => {
     const isFirstPage = !cursor;
     /**
      * Numero de troncature au moment du DEPART de cette requete.
@@ -193,6 +205,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
 
       if (response.data && response.data.data) {
         const raw: any[] = response.data.data;
+        trackHomeFetch({ firstPage: isFirstPage, ms: Date.now() - startedAt, ok: true, count: raw.length });
         // Statistiques : profondeur du scroll du home, ou recherche.
         trackHomePage(isFirstPage, raw.length, q);
         if (isFirstPage) {
@@ -239,6 +252,12 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
     } catch (err: any) {
       if (guarded && myRun !== runIdRef.current) return;
       console.error("Error fetching fast foods:", err);
+      trackHomeFetch({
+        firstPage: isFirstPage,
+        ms: Date.now() - startedAt,
+        ok: false,
+        error: { code: err?.code, message: err?.message, status: err?.response?.status },
+      });
       setError(tr("Connection internet indisponible, vérifiez votre réseau"));
       // Echec d'une page suivante : rien ne s'insera, le prochain bas
       // pourra reessayer au lieu de rester verrouille. Le loader s'eteint
@@ -294,6 +313,18 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
     staggerQueueRef,
     pendingPageRef,
   ]);
+
+  const fetchPage = useCallback(async (cursor?: string, q?: string) => {
+    if (!cursor && !q) {
+      if (firstPageInFlightRef.current) return firstPageInFlightRef.current;
+      const run = fetchPageOnce(cursor, q).finally(() => {
+        firstPageInFlightRef.current = null;
+      });
+      firstPageInFlightRef.current = run;
+      return run;
+    }
+    return fetchPageOnce(cursor, q);
+  }, [fetchPageOnce]);
 
   /**
    * Rafraichit SILENCIEUSEMENT les boutiques deja chargees, sans toucher ni au

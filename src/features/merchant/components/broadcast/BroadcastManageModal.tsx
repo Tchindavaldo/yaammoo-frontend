@@ -43,7 +43,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
   useLanguage();
   const [toast, setToast] = useState<ToastState>(null);
   const onLoadError = useCallback(
-    () => setToast({ message: t("Impossible de charger vos notifications"), type: "error" }),
+    () => setToast({ message: t("Impossible de charger vos annonces"), type: "error" }),
     [],
   );
   const { plan, cities, items, shop, loaded, refreshing, sending, refresh, send } = useBroadcast(
@@ -106,7 +106,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
     const result = await send(d);
     setToast(
       result.ok
-        ? { message: t("Notification envoyée"), type: "success" }
+        ? { message: t("Annonce envoyée"), type: "success" }
         : { message: result.message, type: "error" },
     );
     return result.ok;
@@ -117,7 +117,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
       <View style={[styles.contentBg, { top: headerHeight }]} pointerEvents="none" />
 
       <TabHeader
-        title="Notifications"
+        title={t("Annonces")}
         subtitle={t("{{a}} restante{{b}} aujourd’hui", { a: quota.dayLeft, b: quota.dayLeft > 1 ? "s" : "" })}
         right={<HeaderPill label={t("Retour")} icon="arrow-back-outline" onPress={onClose} />}
         onHeightChange={setHeaderHeight}
@@ -138,7 +138,8 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
           />
         }
       >
-        <BroadcastWeekCard plan={plan} quota={quota} now={now} />
+        {/* Hero statistiques (semaine) masque pour l'instant. */}
+        {/* <BroadcastWeekCard plan={plan} quota={quota} now={now} /> */}
         <BroadcastQuotaTiles plan={plan} quota={quota} now={now} />
         <BroadcastHistory
           items={items}
@@ -161,7 +162,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
         >
           <Ionicons name="create-outline" size={18} color={canWrite ? "#fff" : "#8A8A90"} />
           <Text style={[styles.fabText, { color: canWrite ? "#fff" : "#8A8A90" }]}>
-            {canWrite ? t("Écrire une notification") : t("Quota du jour atteint")}
+            {canWrite ? t("Écrire une annonce") : t("Quota du jour atteint")}
           </Text>
         </Pressable>
       </View>

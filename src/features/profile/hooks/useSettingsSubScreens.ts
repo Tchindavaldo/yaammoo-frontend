@@ -99,8 +99,13 @@ export function useSettingsSubScreens(isSignedIn: boolean) {
       Object.prototype.hasOwnProperty.call(SECTION_TARGET, section)
     ) {
       const target = SECTION_TARGET[section];
-      if (target === "staffManage") setStaffTab(section === "drivers" ? "drivers" : "team");
-      setVisible((v) => ({ ...v, [target]: true }));
+      // Livreurs : page a part (Gestion → Livreurs), plus un onglet de Personnel.
+      if (section === "drivers") {
+        setTimeout(() => router.push("/shop/drivers"), 0);
+      } else {
+        if (target === "staffManage") setStaffTab("team");
+        setVisible((v) => ({ ...v, [target]: true }));
+      }
     }
   }
 

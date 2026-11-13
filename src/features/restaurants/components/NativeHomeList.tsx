@@ -35,6 +35,7 @@ import { formatDistanceKm } from "@/src/utils/formatDistance";
 import {
   announceNativeList,
   reportNativeDiagnostics,
+  trackHome,
 } from "../utils/nativeListDiagnostics";
 import { setVisibleShops } from "@/src/services/analytics/shopImpressions";
 import { homePageOf } from "@/src/services/analytics/homePages";
@@ -314,6 +315,16 @@ export const NativeHomeList: React.FC<Props> = ({
     if (sameRows && sameEnd) return;
 
     sentRef.current = { rows, ghostCount, hasMore, footerText, footerIsEmpty, loading };
+    trackHome("updateRows", {
+      start,
+      sent: rows.length - start,
+      total: rows.length,
+      hasMore,
+      ghostCount,
+      loading,
+      banners: (banners ?? []).length,
+      firstReplaced: start === 0 && !!prev,
+    });
     view
       .updateRows({
         start,

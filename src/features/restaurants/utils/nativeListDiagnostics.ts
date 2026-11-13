@@ -11,6 +11,17 @@ import { Sentry } from "@/src/services/sentry";
  * de page (`kind: "apply"`). Detail des champs : `architecture/restaurants.md`.
  */
 
+/** Evenement de diagnostic du home natif (tag `diag:home`). */
+export const trackHome = (message: string, data: Record<string, unknown>) => {
+  Sentry.withScope((scope) => {
+    scope.setLevel("info");
+    scope.setTag("diag", "home");
+    scope.setContext("home", data);
+    // Envoi Sentry coupe (quota) : breadcrumb seulement.
+    Sentry.addBreadcrumb({ category: "home", message, level: "info" });
+  });
+};
+
 let announced = false;
 
 /** Une fois par lancement : preuve que la build embarque bien la liste native. */
@@ -18,7 +29,8 @@ export const announceNativeList = () => {
   if (announced) return;
   announced = true;
   console.log("[NATIVE] liste native du home active");
-  Sentry.captureMessage("home-list: liste native active", {
+  // Envoi Sentry coupe (quota).
+  if (false) Sentry.captureMessage("home-list: liste native active", {
     level: "info",
     tags: { home_list: "native" },
   });
@@ -36,6 +48,9 @@ let logSeq = 0;
  */
 export const reportNativeDiagnostics = (r: Record<string, any>) => {
   const json = JSON.stringify(r);
+  // DIAGNOSTIC temporaire (squelettes figes a l'arrivee) : rapport natif vers
+  // Sentry, tag `diag:home`. A retirer une fois la cause trouvee.
+  trackHome("native.report", { kind: r?.kind, report: json.slice(0, 7000) });
   const count = Math.max(1, Math.ceil(json.length / LOG_CHUNK));
   logSeq += 1;
   for (let i = 0; i < count; i++) {

@@ -6,6 +6,7 @@ import { Transaction } from '@/src/types';
 import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 import { useLazyFetch } from '@/src/hooks/useLazyFetch';
 import { t as tr, useLanguage } from "@/src/i18n";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 
 interface WalletContextType {
   transactions: Transaction[];
@@ -82,6 +83,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return [transaction, ...prev];
     });
   }, [loaded]);
+
+  // Connexion revenue : rechargement avec loader (app ouverte hors-ligne).
+  useRefetchOnReconnect(() => fetchData(true));
 
   return (
     <WalletContext.Provider

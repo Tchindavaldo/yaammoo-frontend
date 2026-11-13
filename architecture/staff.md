@@ -28,13 +28,15 @@ src/features/staff/
     ├── StaffHeader.tsx           # En-tête blanc plein (titre, sous-titre, Retour), copie de TabHeader sans flou
     ├── StaffSummaryCard.tsx      # Carte d'en-tête : gérant (nom du propriétaire) + anneau rôles / membres / livreurs
     ├── StaffSlotsCard.tsx        # Anneau segmenté des postes (react-native-svg) + barre des livreurs
-    ├── StaffTabs.tsx             # Contrôle segmenté Équipe / Livreurs (pastille = demandes en attente)
     ├── StaffTeamTab.tsx          # « Rôles de la boutique » + cartes de rôle + carte Livreurs + état vide
     ├── StaffRoleCard.tsx         # Carte d'un rôle « Par rôle » (sombre si accès complet), avatars empilés
     │                             #   + résumé même pour 1 membre ; pastille « Voir » → feuille des membres
     ├── StaffRoleMembersSheet.tsx # Feuille d'un rôle : titre, « Modifier », membres en bloc Bento, suppression si vide
     ├── StaffMemberRow.tsx        # Ligne membre (invitation / accès coupé / chevron)
     ├── StaffDriversCard.tsx      # Carte grise « Livreurs » de l'onglet Équipe → ouvre l'onglet Livreurs
+    ├── StaffDriverCreateSheet.tsx # Page « Nouveau livreur » : créer un compte / ajouter / inviter (POST /driver/recruit/:fastFoodId)
+    ├── StaffDriversPage.tsx      # Page « Livreurs » (app/shop/drivers.tsx, Gestion → Livreurs) : demandes, livreurs, Ajouter
+    ├── StaffDriversSheet.tsx     # Feuille de la carte Livreurs de Personnel (liste) ; « Gérer » → page Livreurs
     ├── StaffDriversTab.tsx       # Demandes reçues (Refuser / Accepter) + Mes livreurs (retirer)
     ├── StaffSheet.tsx            # Feuille du bas générique (fiche membre)
     ├── StaffPage.tsx             # Page entière des formulaires membre / rôle, dans un <Modal> plein écran
@@ -91,3 +93,11 @@ un plan.
   par-dessus ; un rôle créé depuis là est présélectionné.
 - **Fiche** : « Suspendre » et l'interrupteur « Accès actif » font le même PATCH
   `active` ; « Retirer de la boutique » passe par une confirmation.
+
+- **Ajouter un livreur** (bouton bas de l'onglet Livreurs) : `StaffDriverCreateSheet`,
+  trois modes (créer le compte, ajouter un compte existant, inviter). L'invité répond
+  dans « Mes demandes » (`DriverMyApplicationsModal`, statut `invited`).
+
+- **Plus d'onglet Livreurs dans Personnel** : la carte Livreurs ouvre `StaffDriversSheet` ;
+  la gestion (demandes, retrait, ajout) est la page `/shop/drivers` (Gestion → Livreurs).
+  `?section=drivers` redirige vers cette page.

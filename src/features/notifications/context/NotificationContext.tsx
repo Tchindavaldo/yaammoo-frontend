@@ -7,6 +7,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { storage } from "../../../utils/storage";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { t, useLanguage } from "@/src/i18n";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 
 export interface Notification {
   id: string;
@@ -18,6 +19,8 @@ export interface Notification {
   createdAt: string;
   idGroup?: string;
   type?: string;
+  /** Destinataire : boutique (`merchant`) ou client. Pose par le backend. */
+  audience?: "merchant" | "client";
   route?: string;
   orderId?: string;
   /** Notification envoyée par une boutique (`boutique_broadcast`) : image jointe. */
@@ -290,6 +293,9 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     ensureLoaded,
     isRead,
   };
+
+  // Connexion revenue : rechargement avec loader (app ouverte hors-ligne).
+  useRefetchOnReconnect(() => fetchNotifications(false));
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 };

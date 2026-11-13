@@ -73,7 +73,7 @@ function Doodle({
 
 export default function WelcomeScreen() {
   useLanguage();
-  const { user, userData, loading } = useAuth();
+  const { loading, isSignedIn } = useAuth();
   const { checked: versionChecked } = useAppVersion();
   const { browseAsGuest } = useAuthGate();
 
@@ -83,7 +83,6 @@ export default function WelcomeScreen() {
   // connecte le verrait passer en attendant la home, ou l'ecran de mise a jour
   // le remplacerait sous ses yeux. Connecte, il reste sous le splash et c'est
   // la home qui le leve.
-  const isSignedIn = !!user && !!userData;
   const isDestination = versionChecked && !loading && !isSignedIn;
   const hideSplash = useHideSplash();
   const [fontsLoaded] = useFonts({

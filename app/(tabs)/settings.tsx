@@ -233,6 +233,7 @@ export default function SettingsScreen() {
             </ProfileListGroup>
           </>
         )}
+        {layout === "strip" && <View style={styles.sectionLine} />}
         {!isMerchant && layout === "strip" && (
           <CreateShopStrip onPress={() => router.push("/shop/create")} />
         )}

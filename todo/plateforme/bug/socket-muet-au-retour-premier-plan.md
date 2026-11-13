@@ -1,6 +1,8 @@
-# Socket muet au retour au premier plan
+# Socket muet au retour au premier plan (IMPLÉMENTÉ)
 
-[ ] L'app ne reçoit plus les events émis pendant son absence (téléphone éteint,
+[x] IMPLÉMENTÉ : cooldown retiré, catch-up `AppState` à chaque retour + recyclage
+    du lien zombie (cf. architecture/socket-events-client.md).
+    Constat d'origine : L'app ne reçoit plus les events émis pendant son absence (téléphone éteint,
       passage en arrière-plan prolongé) — à confirmer par la télémétrie avant
       toute correction.
     - Instrumentation en place : `src/services/socketTelemetry.ts` remonte

@@ -1,8 +1,17 @@
+import * as Updates from "expo-updates";
+
 // ─── URL du backend ──────────────────────────────────────────────────────────
-// En build release (TestFlight / App Store / prod), __DEV__ vaut false → on force
-// TOUJOURS l'URL de prod. Impossible d'envoyer une build prod avec une IP locale.
-// En dev (Expo Go / dev build), on utilise PROD_API_URL ou ton IP locale ci-dessous.
+// En build release (TestFlight / App Store / prod), __DEV__ vaut false : l'URL
+// dépend du CANAL OTA gravé dans le binaire (`Updates.channel`, posé par
+// `scripts/xcode-cloud/ci_post_clone.sh` sur iOS, par eas.json sur Android).
+//   - canal "test"    → backend de TEST (base de test), builds TestFlight internes
+//   - tout autre canal → backend PROD (vrais clients)
+// Le canal vit dans le natif, pas dans le JS : une OTA (même publiée sur le
+// mauvais canal) ne peut jamais faire changer une build de backend.
+// En dev (Expo Go / dev build), on utilise DEV_API_URL ci-dessous.
 const PROD_API_URL = "https://yaammoo-backend.fly.dev";
+const TEST_API_URL = "https://yaammoo-backend-test.fly.dev";
+const RELEASE_API_URL = Updates.channel === "test" ? TEST_API_URL : PROD_API_URL;
 
 // URL utilisée UNIQUEMENT en développement. Change-la avec ton IP locale au besoin.
 // const DEV_API_URL = "http://192.168.1.122:5000";
@@ -13,8 +22,8 @@ const DEV_API_URL = "https://yaammoo-backend.fly.dev";
 // const DEV_API_URL = "http://localhost:5000";
 
 export const Config = {
-  // Sélection automatique : prod en release, locale en dev.
-  apiUrl: __DEV__ ? DEV_API_URL : PROD_API_URL,
+  // Sélection automatique : selon le canal en release, locale en dev.
+  apiUrl: __DEV__ ? DEV_API_URL : RELEASE_API_URL,
 
   // ─── Itinéraire (onglet « Suivi ») ─────────────────────────────────────────
   // Clé OpenRouteService (offre gratuite), lue dans `.env` : EXPO_PUBLIC_ORS_KEY.

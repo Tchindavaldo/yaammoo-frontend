@@ -12,7 +12,7 @@ on:
       channel:
         description: Canal EAS cible
         type: choice
-        options: [production, preview, development]
+        options: [production, test, preview, development]
         default: production
       message:
         description: Message de la mise a jour
@@ -23,6 +23,15 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
+      # VERROU : le canal `production` atteint les VRAIS clients. Il ne se
+      # publie QUE depuis `main` (main = prod). Toute autre branche est refusée
+      # avant même l'installation.
+      - name: Verrou canal production
+        if: inputs.channel == 'production' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::OTA production refusee : lancer le workflow depuis main (branche actuelle : ${{ github.ref_name }})."
+          exit 1
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -47,4 +56,6 @@ jobs:
       # `--environment` : charge les variables EAS du meme nom que le canal
       # (EXPO_PUBLIC_ORS_KEY…). `.env` est gitignore, absent du runner : sans
       # cela, l'OTA partirait sans cle et effacerait l'itineraire du Suivi.
-      - run: eas update --channel "${{ inputs.channel }}" --environment "${{ inputs.channel }}" --message "${{ inputs.message }}" --non-interactive
+      # EAS n'a que 3 environnements (development, preview, production) : le
+      # canal `test` charge donc les variables de `preview`.
+      - run: eas update --channel "${{ inputs.channel }}" --environment "${{ inputs.channel == 'test' && 'preview' || inputs.channel }}" --message "${{ inputs.message }}" --non-interactive

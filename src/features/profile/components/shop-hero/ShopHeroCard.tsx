@@ -1,29 +1,53 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ShopPeriodSheet } from "./ShopPeriodSheet";
 import { ShopPeriod, defaultPeriod, periodLabel, periodStatLabel } from "./shopPeriod";
+import { RevenueSlide } from "./slides/RevenueSlide";
+import { FunnelSlide } from "./slides/FunnelSlide";
+import { BasketSlide } from "./slides/BasketSlide";
+import { RankingSlide } from "./slides/RankingSlide";
+import { StatusSlide } from "./slides/StatusSlide";
+import { HeatmapSlide } from "./slides/HeatmapSlide";
+import { LoyaltySlide } from "./slides/LoyaltySlide";
+import { DelaySlide } from "./slides/DelaySlide";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 
 /**
- * Hero du nouveau design du profil marchand (maquette K1a du canvas Design) :
- * nom + statut, encaisse par jour de la semaine (barres, montant au-dessus),
- * puis 3 chiffres (aujourd'hui, semaine, solde).
+ * Hero du home marchand (page « Stats hero » du canvas Design) : en-tete fixe
+ * (periode + pastille), puis un carrousel de graphiques a glisser, avec des
+ * points indiquant la slide courante. Ordre : H1, S13, H3, T1, S7, S6, S12, S15.
  *
- * NOTE : apercu de design, donnees d'EXEMPLE (pas encore branchees au backend).
+ * NOTE : donnees d'EXEMPLE dans chaque slide (pas encore branchees au backend).
  */
-const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
-const SAMPLE = { perDayK: [18, 32, 15, 27, 41, 45, 0], todayIndex: 5 };
-const BAR_MAX = 70;
+const TITLES = [null, "Conversion", "Panier moyen", "Classements", "Statuts", "Affluence", "Fidélité", "Délais"];
 
 export const ShopHeroCard: React.FC = () => {
   useLanguage();
-  // Periode affichee (defaut : cette semaine), choisie dans le bottom sheet.
   const [period, setPeriod] = useState<ShopPeriod>(defaultPeriod);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const max = Math.max(...SAMPLE.perDayK.slice(0, SAMPLE.todayIndex + 1), 1);
+  const [width, setWidth] = useState(0);
+  const [index, setIndex] = useState(0);
+
+  const slides = [
+    <RevenueSlide key="h1" periodLabel={periodStatLabel(period)} />,
+    <FunnelSlide key="s13" />,
+    <BasketSlide key="h3" />,
+    <RankingSlide key="t1" />,
+    <StatusSlide key="s7" />,
+    <HeatmapSlide key="s6" />,
+    <LoyaltySlide key="s12" />,
+    <DelaySlide key="s15" />,
+  ];
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!width) return;
+    const i = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (i !== index) setIndex(i);
+  };
+  const title = TITLES[index];
 
   return (
     <View style={styles.card}>
@@ -33,54 +57,38 @@ export const ShopHeroCard: React.FC = () => {
           <Ionicons name="chevron-down" size={14} color={DS.ink} />
         </Pressable>
         <View style={styles.chip}>
-          <View style={styles.chipDot} />
-          <Text style={styles.chipText}>{t("Ouverte")} · 22h</Text>
+          {title ? null : <View style={styles.chipDot} />}
+          <Text style={styles.chipText}>{title ? t(title) : `${t("Ouverte")} · 22h`}</Text>
         </View>
       </View>
 
-      <View style={styles.chart}>
-        {LETTERS.map((l, i) => {
-          const future = i > SAMPLE.todayIndex;
-          const today = i === SAMPLE.todayIndex;
-          const v = SAMPLE.perDayK[i];
-          return (
-            <View key={i} style={styles.col}>
-              <Text style={[styles.value, today && styles.accentText]}>
-                {future ? "" : `${v}k`}
-              </Text>
-              <View
-                style={[
-                  styles.bar,
-                  {
-                    height: future ? 6 : Math.max(6, Math.round((v / max) * BAR_MAX)),
-                    backgroundColor: today ? DS.accent : future ? DS.track : DS.ink,
-                    opacity: today || future ? 1 : 0.8,
-                  },
-                ]}
-              />
-              <Text style={[styles.letter, today && styles.accentText]}>{l}</Text>
-            </View>
-          );
-        })}
+      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+        {width > 0 && (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onScroll}
+            scrollEventThrottle={32}
+            nestedScrollEnabled
+          >
+            {slides.map((s, i) => (
+              <View key={i} style={{ width }}>{s}</View>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
-      <View style={styles.stats}>
-        <Stat value="45 000 F" label={t("AUJOURD’HUI")} />
-        <Stat value="178 000 F" label={periodStatLabel(period)} />
-        <Stat value="128 500 F" label={t("SOLDE")} />
+      <View style={styles.dots}>
+        {slides.map((_, i) => (
+          <View key={i} style={[styles.dot, i === index && styles.dotOn]} />
+        ))}
       </View>
 
       <ShopPeriodSheet visible={sheetOpen} value={period} onClose={() => setSheetOpen(false)} onChange={setPeriod} />
     </View>
   );
 };
-
-const Stat = ({ value, label }: { value: string; label: string }) => (
-  <View style={styles.stat}>
-    <Text style={styles.statValue} numberOfLines={1}>{value}</Text>
-    <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
-  </View>
-);
 
 const styles = StyleSheet.create({
   card: { gap: 10, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 28, backgroundColor: DS.surface },
@@ -90,14 +98,7 @@ const styles = StyleSheet.create({
   chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 12, borderRadius: 14, backgroundColor: DS.bg },
   chipDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: DS.accent },
   chipText: { fontSize: 12, fontWeight: "600", color: DS.ink },
-  chart: { flexDirection: "row", alignItems: "flex-end", gap: 8, height: 120, paddingTop: 10, paddingHorizontal: 12, borderRadius: 16, backgroundColor: DS.bg },
-  col: { flex: 1, height: "100%", alignItems: "center", justifyContent: "flex-end", gap: 4 },
-  value: { fontSize: 11, fontWeight: "600", color: DS.muted },
-  bar: { width: "100%", maxWidth: 26, borderTopLeftRadius: 7, borderTopRightRadius: 7, borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
-  letter: { fontSize: 10, fontWeight: "600", color: DS.faint, paddingTop: 4, paddingBottom: 8 },
-  accentText: { color: DS.accentInk },
-  stats: { flexDirection: "row", gap: 6 },
-  stat: { flex: 1, gap: 1, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: DS.bg },
-  statValue: { fontSize: 16, fontWeight: "600", color: DS.ink },
-  statLabel: { fontSize: 10, fontWeight: "500", letterSpacing: 0.4, color: DS.muted },
+  dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 5 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: DS.idle },
+  dotOn: { width: 16, backgroundColor: DS.ink },
 });

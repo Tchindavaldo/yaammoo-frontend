@@ -14,7 +14,7 @@ import { ProfileListGroup, ProfileListRow } from "@/src/features/profile/compone
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { MerchantSwitchStrip } from "@/src/features/profile/components/MerchantSwitchStrip";
-import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBanner";
+import { CreateShopStrip } from "@/src/features/profile/components/CreateShopStrip";
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
 import { useSettingsTabBarStyle } from "@/src/features/profile/hooks/useSettingsTabBarStyle";
@@ -225,10 +225,16 @@ export default function SettingsScreen() {
 
         {/* Bas de page : creer sa boutique (sans boutique), ou bascule de mode
             en carte (variante « card »). */}
-        {!isMerchant && (
-          <View style={styles.bottomCard}>
-            <CreateShopBanner onPress={() => router.push("/shop/create")} />
-          </View>
+        {!isMerchant && layout === "section" && (
+          <>
+            <View style={styles.sectionLine} />
+            <ProfileListGroup>
+              <ProfileListRow icon="storefront-outline" title={t("Créer ma boutique")} onPress={() => router.push("/shop/create")} />
+            </ProfileListGroup>
+          </>
+        )}
+        {!isMerchant && layout === "strip" && (
+          <CreateShopStrip onPress={() => router.push("/shop/create")} />
         )}
         {isMerchant && layout === "section" && (
           <>
@@ -283,6 +289,4 @@ const styles = StyleSheet.create({
   },
   // Un trait entre les sections.
   sectionLine: { height: 1, backgroundColor: DS.line, marginTop: 16 },
-  // CreateShopBanner porte un marginBottom 22 (prevu pour le haut de page).
-  bottomCard: { marginTop: 16, marginBottom: -22 },
 });

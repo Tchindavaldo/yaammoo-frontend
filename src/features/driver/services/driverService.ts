@@ -167,6 +167,28 @@ export const driverService = {
   },
 
   /**
+   * Le marchand ajoute un livreur : `create` (compte créé si absent),
+   * `add` (compte existant, accepté tout de suite) ou `invite` (il doit accepter).
+   * Renvoie le message d'erreur du backend, ou null si c'est bon.
+   */
+  async recruitDriver(
+    fastFoodId: string,
+    body: { mode: "create" | "add" | "invite"; phoneNumber: string; prenom?: string; nom?: string; email?: string; password?: string },
+  ): Promise<string | null> {
+    try {
+      await axios.post(`${Config.apiUrl}/driver/recruit/${fastFoodId}`, body, { headers: await authHeaders() });
+      return null;
+    } catch (error: any) {
+      return error?.response?.data?.message || "Erreur réseau";
+    }
+  },
+
+  /** Le user invité accepte ou refuse l'invitation d'une boutique. */
+  async answerInvitation(applicationId: string, decision: "accepted" | "refused"): Promise<void> {
+    await axios.put(`${Config.apiUrl}/driver/invitations/${applicationId}`, { decision }, { headers: await authHeaders() });
+  },
+
+  /**
    * Infos d'un livreur (protégé). Le backend adapte le contenu au demandeur
    * (scope public / merchant / self) d'après le token. Voir DriverProfile.
    */
@@ -244,7 +266,7 @@ export interface DriverApplication {
   userId: string;
   fastFoodId: string;
   fastFoodName?: string;
-  status: "pending" | "accepted" | "refused";
+  status: "pending" | "accepted" | "refused" | "invited";
   createdAt?: string;
   updatedAt?: string;
   // Le backend enrichit avec le user (lookup par userId).

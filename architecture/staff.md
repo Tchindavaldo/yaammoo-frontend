@@ -35,6 +35,7 @@ src/features/staff/
     ├── StaffRoleMembersSheet.tsx # Feuille d'un rôle : titre, « Modifier », membres en bloc Bento, suppression si vide
     ├── StaffMemberRow.tsx        # Ligne membre (invitation / accès coupé / chevron)
     ├── StaffDriversCard.tsx      # Carte grise « Livreurs » de l'onglet Équipe → ouvre l'onglet Livreurs
+    ├── StaffDriverCreateSheet.tsx # Page « Nouveau livreur » : créer un compte / ajouter / inviter (POST /driver/recruit/:fastFoodId)
     ├── StaffDriversTab.tsx       # Demandes reçues (Refuser / Accepter) + Mes livreurs (retirer)
     ├── StaffSheet.tsx            # Feuille du bas générique (fiche membre)
     ├── StaffPage.tsx             # Page entière des formulaires membre / rôle, dans un <Modal> plein écran
@@ -91,3 +92,7 @@ un plan.
   par-dessus ; un rôle créé depuis là est présélectionné.
 - **Fiche** : « Suspendre » et l'interrupteur « Accès actif » font le même PATCH
   `active` ; « Retirer de la boutique » passe par une confirmation.
+
+- **Ajouter un livreur** (bouton bas de l'onglet Livreurs) : `StaffDriverCreateSheet`,
+  trois modes (créer le compte, ajouter un compte existant, inviter). L'invité répond
+  dans « Mes demandes » (`DriverMyApplicationsModal`, statut `invited`).

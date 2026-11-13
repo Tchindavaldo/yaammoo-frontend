@@ -33,16 +33,6 @@ export const RankingSlide: React.FC = () => {
   return (
     <Slide>
       <SlideBody full style={styles.body}>
-        <View style={styles.tabs}>
-          {TABS.map((tb) => {
-            const on = tb.key === tab;
-            return (
-              <Pressable key={tb.key} onPress={() => setTab(tb.key)} hitSlop={4} style={[styles.tab, on && styles.tabOn]}>
-                <Text style={[styles.tabText, on && styles.tabTextOn]} numberOfLines={1}>{t(tb.label)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
         <View style={styles.rows}>
           {d.rows.map(([name, v, amount], i) => (
             <View key={name} style={styles.item}>
@@ -58,6 +48,16 @@ export const RankingSlide: React.FC = () => {
               </View>
             </View>
           ))}
+        </View>
+        <View style={styles.tabs}>
+          {TABS.map((tb) => {
+            const on = tb.key === tab;
+            return (
+              <Pressable key={tb.key} onPress={() => setTab(tb.key)} hitSlop={4} style={[styles.tab, on && styles.tabOn]}>
+                <Text style={[styles.tabText, on && styles.tabTextOn]} numberOfLines={1}>{t(tb.label)}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       </SlideBody>
     </Slide>

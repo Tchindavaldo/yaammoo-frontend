@@ -26,6 +26,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
+      # VERROU : la piste Play `production` atteint les VRAIS clients. Elle ne
+      # se build QUE depuis `main` (main = prod). Toute autre branche est
+      # refusee avant meme l'installation.
+      - name: Verrou piste production
+        if: inputs.track == 'production' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Build Play production refuse : lancer le workflow depuis main (branche actuelle : ${{ github.ref_name }})."
+          exit 1
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4

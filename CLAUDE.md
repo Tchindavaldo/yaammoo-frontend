@@ -101,7 +101,18 @@ L'architecture doit rester **propre, moderne, modulaire**. Règles non négociab
 > Elle n'a rien à voir avec l'organisation des dossiers/features dans le code.
 > Quand on dit "isoler un travail", on parle de **l'isoler sur sa propre branche Git**.
 
-**Règle d'or : ne jamais coder directement sur `main`.** Sur `main`, créer la
+**Deux branches principales, jamais de code directement dessus :**
+
+| Branche | Rôle | Builds / OTA | Backend appelé |
+|---|---|---|---|
+| `main` | **PROD** (vrais clients) | Xcode Cloud prod (TestFlight + App Store), Play `production`, OTA `production` | prod |
+| `dev` | **TEST** (testeurs internes) | Xcode Cloud DEV (TestFlight Internal Testing Only), OTA `test` | test |
+
+Cycle : `feature/…` ou `debug/…` → fusion dans `dev` → test sur les builds
+`dev` → fusion de `dev` dans `main` → build / OTA prod. Les workflows refusent
+toute publication prod hors de `main` (`eas-update.yml`, `android-release.yml`).
+
+**Règle d'or : ne jamais coder directement sur `main` ni sur `dev`.** Créer la
 branche avec le bon préfixe AVANT de toucher au code, puis travailler dessus.
 
 **Déjà sur une branche de travail (`feature/…`, `debug/…`) : on CONTINUE dessus.**
@@ -125,9 +136,9 @@ Toujours préfixer les branches selon leur nature :
 Règles de création :
 - **Branche de debug** (sur `main`, ou demandée) : `debug/`, créée depuis la
   branche d'où vient le problème (pas depuis `main`).
-- **Tout travail de feature / changement moyen ou important** part de `main`
-  UNIQUEMENT si on est sur `main` ; sinon il continue sur la branche courante
-  (voir la règle d'or).
+- **Tout travail de feature / changement moyen ou important** part de `dev`
+  UNIQUEMENT si on est sur `main` ou `dev` ; sinon il continue sur la branche
+  courante (voir la règle d'or).
 
 ## R6 — État & Contextes (OBLIGATOIRE)
 
@@ -361,7 +372,8 @@ payé, de l'argent perdu, un litige.
 ## R24 — Build Android Play Store : notes de version FIXES (OBLIGATOIRE)
 
 Le build de production passe par `.github/workflows/android-release.yml`
-(toutes les ABIs, x86 inclus pour les émulateurs). Chaque soumission porte
+(toutes les ABIs, x86 inclus pour les émulateurs), lancé depuis `main` pour la
+piste `production` (le workflow refuse toute autre branche). Chaque soumission porte
 TOUJOURS ce message « Nouveautés », sans le changer :
 
 > Corrections de bugs, améliorations de la stabilité et de l'interface utilisateur.

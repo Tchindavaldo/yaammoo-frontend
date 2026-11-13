@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/react-native";
+import * as Updates from "expo-updates";
 import { Config } from "@/src/api/config";
 
 /**
@@ -20,6 +21,9 @@ export function initSentry() {
 
   Sentry.init({
     dsn: Config.sentryDsn,
+    // Separe les crashs des builds de TEST (canal "test", backend de test) de
+    // ceux de la PROD sur le dashboard : filtre "environment".
+    environment: Updates.channel === "test" ? "test" : "production",
     // Capture les erreurs JS non gérées ET les crashs natifs.
     enableNative: true,
     // Désactive l'envoi en dev pour ne pas polluer le dashboard.

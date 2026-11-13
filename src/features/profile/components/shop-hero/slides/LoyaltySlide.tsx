@@ -18,6 +18,12 @@ export const LoyaltySlide: React.FC = () => {
   return (
     <Slide>
       <SlideBody full style={styles.body}>
+        <Legend
+          items={[
+            { color: DS.accent, label: t("Nouveaux") },
+            { color: DS.ink, label: t("Revenus") },
+          ]}
+        />
         <View style={styles.chart}>
           {DAYS.map(([n, r], i) => (
             <View key={i} style={styles.col}>
@@ -29,12 +35,6 @@ export const LoyaltySlide: React.FC = () => {
             </View>
           ))}
         </View>
-        <Legend
-          items={[
-            { color: DS.accent, label: t("Nouveaux") },
-            { color: DS.ink, label: t("Revenus") },
-          ]}
-        />
       </SlideBody>
     </Slide>
   );
@@ -42,7 +42,7 @@ export const LoyaltySlide: React.FC = () => {
 
 const styles = StyleSheet.create({
   body: { paddingTop: 10, paddingHorizontal: 12, paddingBottom: 8, justifyContent: "space-between" },
-  chart: { flexDirection: "row", alignItems: "flex-end", gap: 8, flex: 1 },
+  chart: { flexDirection: "row", alignItems: "flex-end", gap: 8, flex: 1, marginTop: 8 },
   col: { flex: 1, alignItems: "center", justifyContent: "flex-end", gap: 4 },
   stack: { width: "100%", maxWidth: 22, borderRadius: 6, overflow: "hidden" },
   letter: { fontSize: 10, fontWeight: "600", color: DS.faint },

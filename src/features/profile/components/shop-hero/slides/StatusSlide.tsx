@@ -18,6 +18,14 @@ export const StatusSlide: React.FC = () => {
   return (
     <Slide>
       <SlideBody full style={styles.body}>
+        <Legend
+          items={[
+            { color: COLORS[0], label: t("Livrées") },
+            { color: COLORS[1], label: t("Sur place") },
+            { color: COLORS[2], label: t("En cours") },
+            { color: COLORS[3], label: t("Annulées") },
+          ]}
+        />
         <View style={styles.chart}>
           {DAYS.map((d, i) => (
             <View key={i} style={styles.col}>
@@ -30,14 +38,6 @@ export const StatusSlide: React.FC = () => {
             </View>
           ))}
         </View>
-        <Legend
-          items={[
-            { color: COLORS[0], label: t("Livrées") },
-            { color: COLORS[1], label: t("Sur place") },
-            { color: COLORS[2], label: t("En cours") },
-            { color: COLORS[3], label: t("Annulées") },
-          ]}
-        />
       </SlideBody>
     </Slide>
   );
@@ -45,7 +45,7 @@ export const StatusSlide: React.FC = () => {
 
 const styles = StyleSheet.create({
   body: { paddingTop: 10, paddingHorizontal: 12, paddingBottom: 8, justifyContent: "space-between" },
-  chart: { flexDirection: "row", alignItems: "flex-end", gap: 8, flex: 1 },
+  chart: { flexDirection: "row", alignItems: "flex-end", gap: 8, flex: 1, marginTop: 8 },
   col: { flex: 1, alignItems: "center", justifyContent: "flex-end", gap: 4 },
   stack: { width: "100%", maxWidth: 22, borderRadius: 6, overflow: "hidden" },
   letter: { fontSize: 10, fontWeight: "600", color: DS.faint },

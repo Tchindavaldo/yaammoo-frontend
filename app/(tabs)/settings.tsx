@@ -14,7 +14,6 @@ import { ProfileListGroup, ProfileListRow } from "@/src/features/profile/compone
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { MerchantSwitchStrip } from "@/src/features/profile/components/MerchantSwitchStrip";
-import { MerchantSwitchBanner } from "@/src/features/profile/components/MerchantSwitchBanner";
 import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBanner";
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
 import { useSettingsSubScreens } from "@/src/features/profile/hooks/useSettingsSubScreens";
@@ -61,9 +60,9 @@ export default function SettingsScreen() {
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
   const { isMerchantMode, setMerchantMode } = useMerchantMode();
-  // Deux designs : « Faire une suggestion » = grande carte de bascule en bas
-  // (par defaut) ; « Mon profil » = carte compacte sur une ligne.
-  const [layout, setLayout] = useState<"card" | "strip">("card");
+  // Deux designs : « Signaler un problème » = bascule de mode seule dans sa
+  // section apres Aide (par defaut) ; « Mon profil » = carte compacte.
+  const [layout, setLayout] = useState<"section" | "strip">("section");
   const switchMode = () => {
     setMerchantMode(!isMerchantMode);
     router.navigate("/(tabs)");
@@ -219,8 +218,8 @@ export default function SettingsScreen() {
         <View style={styles.sectionLine} />
         <ProfileListGroup>
           <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => handleComingSoon("Assistance")} />
-          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => handleComingSoon(t("Signaler un problème"))} />
-          <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => setLayout("card")} />
+          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => setLayout("section")} />
+          <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => handleComingSoon(t("Faire une suggestion"))} />
           <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
         </ProfileListGroup>
 
@@ -231,8 +230,17 @@ export default function SettingsScreen() {
             <CreateShopBanner onPress={() => router.push("/shop/create")} />
           </View>
         )}
-        {isMerchant && layout === "card" && (
-          <MerchantSwitchBanner isMerchantMode={isMerchantMode} onPress={switchMode} />
+        {isMerchant && layout === "section" && (
+          <>
+            <View style={styles.sectionLine} />
+            <ProfileListGroup>
+              <ProfileListRow
+                icon="swap-horizontal"
+                title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
+                onPress={switchMode}
+              />
+            </ProfileListGroup>
+          </>
         )}
         {isMerchant && layout === "strip" && (
           <MerchantSwitchStrip isMerchantMode={isMerchantMode} onPress={switchMode} />

@@ -104,7 +104,7 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
                   const p = presetPeriod(k);
                   const active = value.kind === k;
                   return (
-                    <Pressable key={k} onPress={() => pick(p)} style={styles.row}>
+                    <Pressable key={k} onPress={() => pick(p)} style={[styles.row, i < PRESETS.length - 1 && styles.divider]}>
                       <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>{periodLabel(p)}</Text>
                       <Text style={styles.rowHint}>{periodLabel({ kind: "range", from: p.from, to: p.to > todayISO ? todayISO : p.to }, true)}</Text>
                       {active && <Ionicons name="checkmark" size={16} color={DS.accent} />}
@@ -180,6 +180,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "700", color: DS.ink },
   card: { borderRadius: 16, backgroundColor: DS.surface, overflow: "hidden" },
   row: { height: 48, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14 },
+  divider: { borderBottomWidth: 1, borderBottomColor: DS.line },
   rowLabel: { flex: 1, fontSize: 14.5, fontWeight: "500", color: DS.ink },
   rowLabelActive: { fontWeight: "600", color: DS.accentInk },
   rowHint: { fontSize: 12.5, color: DS.faint },

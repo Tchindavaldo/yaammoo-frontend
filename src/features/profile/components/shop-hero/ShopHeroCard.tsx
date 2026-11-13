@@ -3,12 +3,12 @@ import React, { useState } from "react";
 import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ShopPeriodSheet } from "./ShopPeriodSheet";
-import { ShopPeriod, defaultPeriod, periodLabel, periodStatLabel, previousPeriodLabel } from "./shopPeriod";
+import { ShopPeriod, defaultPeriod, periodLabel, periodStatLabel } from "./shopPeriod";
+import { useMerchantStats } from "./useMerchantStats";
 import { RevenueSlide } from "./slides/RevenueSlide";
-import { FunnelSlide } from "./slides/FunnelSlide";
-import { BasketSlide } from "./slides/BasketSlide";
+import { FunnelSlide, conversionRate } from "./slides/FunnelSlide";
 import { RankingSlide } from "./slides/RankingSlide";
-import { StatusSlide } from "./slides/StatusSlide";
+import { StatusSlide, cancelRate } from "./slides/StatusSlide";
 import { HeatmapSlide } from "./slides/HeatmapSlide";
 import { LoyaltySlide } from "./slides/LoyaltySlide";
 import { DelaySlide } from "./slides/DelaySlide";
@@ -18,12 +18,9 @@ import { t, useLanguage } from "@/src/i18n";
 /**
  * Hero du home marchand (page « Stats hero » du canvas Design) : en-tete fixe
  * (periode + pastille), puis un carrousel de graphiques a glisser, avec des
- * points indiquant la slide courante. Ordre : H1, S13, H3, T1, S7, S6, S12, S15.
- *
- * NOTE : donnees d'EXEMPLE dans chaque slide (pas encore branchees au backend).
+ * points indiquant la slide courante. Ordre : H1, S13, T1, S7, S6, S12, S15.
+ * Donnees : GET /fastFood/:id/stats (useMerchantStats).
  */
-// Titre de chaque slide ; le chiffre cle s'affiche a cote quand la slide n'a pas de cases.
-const TITLES: [string, string?][] = [["Ventes"], ["Conversion", "7 %"], ["Panier moyen", "3 000 F"], ["Classements"], ["Statuts", "5 % annulées"], ["Affluence"], ["Fidélité"], ["Délais"]];
 
 export const ShopHeroCard: React.FC = () => {
   useLanguage();
@@ -31,16 +28,18 @@ export const ShopHeroCard: React.FC = () => {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [width, setWidth] = useState(0);
   const [index, setIndex] = useState(0);
+  const { stats, bucket, version } = useMerchantStats(period);
 
+  // Titre de chaque slide ; le chiffre cle s'affiche a cote quand la slide n'a pas de cases.
+  const titles: [string, string?][] = [["Ventes"], ["Conversion", conversionRate(stats.funnel)], ["Classements"], ["Statuts", cancelRate(stats)], ["Affluence"], ["Fidélité"], ["Délais"]];
   const slides = [
-    <RevenueSlide key="h1" periodLabel={periodStatLabel(period)} />,
-    <FunnelSlide key="s13" />,
-    <BasketSlide key="h3" current={periodLabel(period)} previous={previousPeriodLabel(period)} />,
-    <RankingSlide key="t1" />,
-    <StatusSlide key="s7" />,
-    <HeatmapSlide key="s6" />,
-    <LoyaltySlide key="s12" />,
-    <DelaySlide key="s15" />,
+    <RevenueSlide key="h1" stats={stats} bucket={bucket} version={version} periodLabel={periodStatLabel(period)} />,
+    <FunnelSlide key="s13" stats={stats} version={version} />,
+    <RankingSlide key="t1" stats={stats} version={version} />,
+    <StatusSlide key="s7" stats={stats} bucket={bucket} version={version} />,
+    <HeatmapSlide key="s6" stats={stats} version={version} />,
+    <LoyaltySlide key="s12" stats={stats} bucket={bucket} version={version} />,
+    <DelaySlide key="s15" stats={stats} bucket={bucket} version={version} />,
   ];
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -48,7 +47,7 @@ export const ShopHeroCard: React.FC = () => {
     const i = Math.round(e.nativeEvent.contentOffset.x / width);
     if (i !== index) setIndex(i);
   };
-  const title = TITLES[index];
+  const title = titles[index] ?? titles[0];
 
   return (
     <View style={styles.wrap}>

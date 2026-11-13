@@ -1,20 +1,22 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { LETTERS, Legend, Slide, SlideBody } from "./SlideParts";
+import { Grow, Legend, Slide, SlideBody, useGrow } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
+import { Bucket, axisLabel } from "../shopPeriod";
+import { MerchantStats } from "../useMerchantStats";
 
 /**
- * S12 — clients du jour : nouveaux (1re commande dans la boutique) et revenus
- * (avaient deja commande avant). Donnees d'EXEMPLE.
+ * S12 — clients par bucket : nouveaux (1re commande dans la boutique) et
+ * revenus (avaient deja commande avant).
  */
-// [nouveaux, revenus]
-const DAYS: [number, number][] = [[3, 4], [5, 6], [2, 3], [4, 5], [6, 7], [7, 8], [2, 2]];
 const BAR_MAX = 110;
 
-export const LoyaltySlide: React.FC = () => {
-  const max = Math.max(...DAYS.map(([a, b]) => a + b));
+export const LoyaltySlide: React.FC<{ stats: MerchantStats; bucket: Bucket; version: number }> = ({ stats, bucket, version }) => {
+  const grow = useGrow(version);
+  const s = stats.series;
+  const max = Math.max(...s.map((p) => p.newClients + p.returning), 1);
   return (
     <Slide>
       <SlideBody full style={styles.body}>
@@ -25,13 +27,13 @@ export const LoyaltySlide: React.FC = () => {
           ]}
         />
         <View style={styles.chart}>
-          {DAYS.map(([n, r], i) => (
-            <View key={i} style={styles.col}>
-              <View style={styles.stack}>
-                <View style={{ height: Math.round((n / max) * BAR_MAX), backgroundColor: DS.accent }} />
-                <View style={{ height: Math.round((r / max) * BAR_MAX), backgroundColor: DS.ink }} />
-              </View>
-              <Text style={styles.letter}>{LETTERS[i]}</Text>
+          {s.map((p, i) => (
+            <View key={p.start} style={styles.col}>
+              <Grow p={grow} style={styles.stack}>
+                <View style={{ height: Math.round((p.newClients / max) * BAR_MAX), backgroundColor: DS.accent }} />
+                <View style={{ height: Math.round((p.returning / max) * BAR_MAX), backgroundColor: DS.ink }} />
+              </Grow>
+              <Text style={styles.letter}>{axisLabel(bucket, p.start, i)}</Text>
             </View>
           ))}
         </View>

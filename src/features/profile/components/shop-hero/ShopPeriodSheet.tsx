@@ -2,7 +2,8 @@
 // Bottom sheet de choix de periode du hero marchand (maquettes A1 + A3 du
 // canvas, page « Période ») : deux vues de MEME hauteur, pour que la bascule
 // ne fasse pas sauter le sheet.
-//  - racine : 5 raccourcis (un tap = applique et ferme) + « Choisir une période › » ;
+//  - racine : 4 raccourcis (semaine passee, ce mois, 1er / 2e semestre) (un tap = applique et ferme), « Sélectionner un mois › » et « Sélectionner une période › » ;
+//  - mois : les 12 mois de l'annee (fleches pour changer d'annee), un tap = applique ;
 //  - calendrier : 1er tap = debut, 2e tap = fin, puis « Afficher ».
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
@@ -12,9 +13,9 @@ import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { MONTHS, ShopPeriod, fromISO, monthGrid, periodLabel, presetPeriod, toISO } from "./shopPeriod";
+import { MONTHS, ShopPeriod, fromISO, monthGrid, monthPeriod, periodLabel, presetPeriod, toISO } from "./shopPeriod";
 
-const PRESETS = ["week", "lastWeek", "month", "lastMonth", "year"] as const;
+const PRESETS = ["lastWeek", "month", "s1", "s2"] as const;
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 // Hauteur commune aux deux vues (titre + contenu), calee sur le calendrier
 // le plus haut (6 semaines + bouton).
@@ -31,7 +32,7 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
   useLanguage();
   const insets = useSheetSafeInsets();
   const todayISO = toISO(new Date());
-  const [view, setView] = useState<"root" | "range">("root");
+  const [view, setView] = useState<"root" | "range" | "months">("root");
   const [cal, setCal] = useState({ y: 0, m: 0 });
   const [draft, setDraft] = useState<{ from: string; to: string | null } | null>(null);
 
@@ -73,6 +74,7 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
       const d = new Date(c.y, c.m + n, 1);
       return { y: d.getFullYear(), m: d.getMonth() };
     });
+  const nextYearDisabled = cal.y + 1 > new Date().getFullYear();
   const nextDisabled = toISO(new Date(cal.y, cal.m + 1, 1)) > todayISO;
 
   const end = draft?.to ?? draft?.from;
@@ -113,11 +115,44 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
                 })}
               </View>
               <View style={[styles.card, { marginTop: 10 }]}>
+                <Pressable onPress={() => setView("months")} style={[styles.row, styles.divider]}>
+                  <Text style={[styles.rowLabel, value.kind === "pickMonth" && styles.rowLabelActive]}>{t("Sélectionner un mois")}</Text>
+                  {value.kind === "pickMonth" && <Text style={styles.rowHint}>{periodLabel(value)}</Text>}
+                  <Ionicons name="chevron-forward" size={14} color={DS.idle} />
+                </Pressable>
                 <Pressable onPress={() => setView("range")} style={styles.row}>
                   <Text style={[styles.rowLabel, value.kind === "range" && styles.rowLabelActive]}>{t("Sélectionner une période")}</Text>
                   {value.kind === "range" && <Text style={styles.rowHint}>{periodLabel(value)}</Text>}
                   <Ionicons name="chevron-forward" size={14} color={DS.idle} />
                 </Pressable>
+              </View>
+            </>
+          ) : view === "months" ? (
+            <>
+              <View style={styles.head}>
+                <Pressable onPress={() => setView("root")} hitSlop={8} style={styles.round}>
+                  <Ionicons name="chevron-back" size={18} color={DS.ink} />
+                </Pressable>
+                <Text style={[styles.title, { flex: 1 }]} numberOfLines={1}>{t("Mois")}</Text>
+                <Pressable onPress={() => setCal((c) => ({ ...c, y: c.y - 1 }))} hitSlop={6} style={styles.step}>
+                  <Ionicons name="chevron-back" size={14} color={DS.ink} />
+                </Pressable>
+                <Text style={styles.stepLabel}>{cal.y}</Text>
+                <Pressable onPress={() => setCal((c) => ({ ...c, y: c.y + 1 }))} disabled={nextYearDisabled} hitSlop={6} style={[styles.step, nextYearDisabled && styles.disabled]}>
+                  <Ionicons name="chevron-forward" size={14} color={DS.ink} />
+                </Pressable>
+              </View>
+              <View style={styles.months}>
+                {MONTHS.map((name, m) => {
+                  const p = monthPeriod(cal.y, m);
+                  const future = p.from > todayISO;
+                  const active = value.kind !== "range" && value.from === p.from && value.to === p.to;
+                  return (
+                    <Pressable key={m} disabled={future} onPress={() => pick(p)} style={[styles.month, active && styles.edge, future && styles.disabled]}>
+                      <Text style={[styles.monthText, active && styles.edgeText]}>{t(name)}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </>
           ) : (
@@ -197,6 +232,9 @@ const styles = StyleSheet.create({
   today: { color: DS.accentInk, fontWeight: "800" },
   future: { color: DS.idle },
   edgeText: { color: DS.onInk },
+  months: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  month: { width: "31.5%", height: 56, borderRadius: 14, backgroundColor: DS.surface, alignItems: "center", justifyContent: "center" },
+  monthText: { fontSize: 14, fontWeight: "600", color: DS.ink },
   apply: { height: 48, borderRadius: 24, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" },
   applyText: { fontSize: 14.5, fontWeight: "700", color: DS.onInk },
 });

@@ -1,6 +1,6 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
-import React from "react";
-import { StyleSheet, Text, View, ViewStyle } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { DS } from "@/src/theme/ds";
 
 /**
@@ -12,6 +12,30 @@ export const BODY_H = 125;
 /** Hauteur d'une slide sans cases : zone graphique + cases + leur ecart. */
 export const FULL_H = BODY_H + 60;
 export const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
+
+/** Progression 0 -> 1 relancee a chaque nouvelle `version` (donnees recues). */
+export const useGrow = (version: number) => {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    v.setValue(0);
+    Animated.timing(v, { toValue: 1, duration: 650, useNativeDriver: true }).start();
+  }, [version, v]);
+  return v;
+};
+
+/** Element qui pousse depuis le bas (`up`) ou depuis la gauche (`right`). */
+export const Grow: React.FC<{ p: Animated.Value; dir?: "up" | "right"; style?: ViewStyle | ViewStyle[]; children?: React.ReactNode }> = ({ p, dir = "up", style, children }) => (
+  <Animated.View
+    style={[
+      style,
+      dir === "up"
+        ? { transformOrigin: "bottom", transform: [{ scaleY: p }] }
+        : { transformOrigin: "left", transform: [{ scaleX: p }] },
+    ]}
+  >
+    {children}
+  </Animated.View>
+);
 
 export const SlideBody: React.FC<{ children: React.ReactNode; style?: ViewStyle; full?: boolean }> = ({ children, style, full }) => (
   <View style={[styles.body, full && { height: FULL_H }, style]}>{children}</View>

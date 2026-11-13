@@ -1278,5 +1278,13 @@
   "Chaque client dépense": "Each customer spends",
   "225 F de plus": "225 F more",
   "par commande. Ça rapporte": "per order. That brings in",
-  "sur la période, sans aucun client en plus.": "over the period, with no extra customer."
+  "sur la période, sans aucun client en plus.": "over the period, with no extra customer.",
+  "1er semestre": "1st half",
+  "2e semestre": "2nd half",
+  "SEMESTRE": "HALF-YEAR",
+  "Sélectionner un mois": "Select a month",
+  "Mois": "Month",
+  "Impossible de charger les statistiques": "Could not load statistics",
+  "Aucune donnée sur la période": "No data for this period",
+  "annulées": "cancelled"
 }

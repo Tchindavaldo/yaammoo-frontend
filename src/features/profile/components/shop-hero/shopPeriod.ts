@@ -2,7 +2,8 @@
 // Semaines du lundi au dimanche ; dates en ISO local `YYYY-MM-DD`.
 import { t } from "@/src/i18n";
 
-export type PeriodKind = "week" | "lastWeek" | "month" | "lastMonth" | "year" | "pickMonth" | "range";
+export type PeriodKind = "lastWeek" | "month" | "s1" | "s2" | "pickMonth" | "range";
+export type PresetKind = "lastWeek" | "month" | "s1" | "s2";
 
 export interface ShopPeriod {
   kind: PeriodKind;
@@ -38,22 +39,38 @@ export const monthPeriod = (y: number, m: number, kind: PeriodKind = "pickMonth"
   to: toISO(new Date(y, m + 1, 0)),
 });
 
-export const presetPeriod = (kind: "week" | "lastWeek" | "month" | "lastMonth" | "year", now = new Date()): ShopPeriod => {
+export const presetPeriod = (kind: PresetKind, now = new Date()): ShopPeriod => {
+  const y = now.getFullYear();
   switch (kind) {
-    case "week":
-      return weekPeriod(now, "week");
     case "lastWeek":
       return weekPeriod(addDays(now, -7), "lastWeek");
     case "month":
-      return monthPeriod(now.getFullYear(), now.getMonth(), "month");
-    case "lastMonth":
-      return monthPeriod(now.getFullYear(), now.getMonth() - 1, "lastMonth");
-    case "year":
-      return { kind, from: `${now.getFullYear()}-01-01`, to: `${now.getFullYear()}-12-31` };
+      return monthPeriod(y, now.getMonth(), "month");
+    case "s1":
+      return { kind, from: `${y}-01-01`, to: `${y}-06-30` };
+    case "s2":
+      return { kind, from: `${y}-07-01`, to: `${y}-12-31` };
   }
 };
 
-export const defaultPeriod = () => presetPeriod("week");
+export const defaultPeriod = () => presetPeriod("month");
+
+/** Decoupage du graphique : jours (<= 7 j), semaines (<= 62 j), sinon mois. */
+export type Bucket = "day" | "week" | "month";
+export const bucketOf = (p: ShopPeriod): Bucket => {
+  const days = Math.round((fromISO(p.to).getTime() - fromISO(p.from).getTime()) / 86400000) + 1;
+  return days <= 7 ? "day" : days <= 62 ? "week" : "month";
+};
+
+const DAY_LETTERS = ["D", "L", "M", "M", "J", "V", "S"];
+const MONTH_LETTERS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+/** Etiquette d'axe d'un bucket : lettre du jour, S1..S6, ou initiale du mois. */
+export const axisLabel = (bucket: Bucket, startISO: string, index: number): string => {
+  const d = fromISO(startISO);
+  if (bucket === "day") return DAY_LETTERS[d.getDay()];
+  if (bucket === "week") return `S${index + 1}`;
+  return MONTH_LETTERS[d.getMonth()];
+};
 
 const dayLabel = (iso: string) => {
   const d = fromISO(iso);
@@ -76,16 +93,14 @@ const datesLabel = (p: ShopPeriod) => {
 export const periodLabel = (p: ShopPeriod, datesOnly = false): string => {
   if (datesOnly) return datesLabel(p);
   switch (p.kind) {
-    case "week":
-      return t("Cette semaine");
     case "lastWeek":
       return t("Semaine passée");
     case "month":
       return t("Ce mois");
-    case "lastMonth":
-      return t("Mois passé");
-    case "year":
-      return t("Cette année");
+    case "s1":
+      return t("1er semestre");
+    case "s2":
+      return t("2e semestre");
     case "pickMonth": {
       const d = fromISO(p.from);
       return `${t(MONTHS[d.getMonth()])} ${d.getFullYear()}`;
@@ -96,14 +111,11 @@ export const periodLabel = (p: ShopPeriod, datesOnly = false): string => {
 };
 
 /** Libelle du chiffre central du hero (total de la periode). */
-export const periodStatLabel = (p: ShopPeriod): string =>
-  p.kind === "week" || p.kind === "lastWeek"
-    ? t("SEMAINE")
-    : p.kind === "month" || p.kind === "lastMonth" || p.kind === "pickMonth"
-      ? t("MOIS")
-      : p.kind === "year"
-        ? t("ANNÉE")
-        : t("PÉRIODE");
+export const periodStatLabel = (p: ShopPeriod): string => {
+  const b = bucketOf(p);
+  if (p.kind === "s1" || p.kind === "s2") return t("SEMESTRE");
+  return b === "day" ? t("SEMAINE") : p.kind === "month" || p.kind === "pickMonth" ? t("MOIS") : t("PÉRIODE");
+};
 
 /** Grille d'un mois : lignes de 7 jours (lundi en tete), `null` hors mois. */
 export const monthGrid = (y: number, m: number): (Date | null)[][] => {
@@ -116,20 +128,4 @@ export const monthGrid = (y: number, m: number): (Date | null)[][] => {
   const rows: (Date | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
   return rows;
-};
-
-/** Libelle de la periode precedente de meme duree (comparaison du hero). */
-export const previousPeriodLabel = (p: ShopPeriod): string => {
-  switch (p.kind) {
-    case "week":
-      return t("Semaine passée");
-    case "lastWeek":
-      return t("Semaine d'avant");
-    case "month":
-      return t("Mois passé");
-    case "year":
-      return t("Année passée");
-    default:
-      return t("Période d'avant");
-  }
 };

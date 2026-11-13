@@ -1,31 +1,32 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { LETTERS, Slide, SlideBody } from "./SlideParts";
+import { Animated, StyleSheet, Text, View } from "react-native";
+import { LETTERS, Slide, SlideBody, useGrow } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
-import { t } from "@/src/i18n";
+import { MerchantStats } from "../useMerchantStats";
 
-/** S6 — affluence jours x heures (10h -> 23h). Donnees d'EXEMPLE. */
+/** S6 — affluence jours x heures (10h -> 23h) : nombre de commandes. */
 const HOURS = 14;
-// Intensite 0..4 par jour, generee de facon deterministe (pics midi et soir, week-end plus fort).
-const level = (day: number, h: number) => {
-  const hour = 10 + h;
-  const base = hour >= 12 && hour <= 14 ? 2 : hour >= 18 && hour <= 21 ? 3 : hour === 15 || hour === 16 ? 0 : 1;
-  const weekend = day >= 4 && day <= 5 ? 1 : 0;
-  const quiet = day === 0 && (hour === 15 || hour === 16) ? -1 : 0;
-  return Math.max(0, Math.min(4, base + weekend + quiet));
-};
+const FIRST_HOUR = 10;
 
-export const HeatmapSlide: React.FC = () => {
+export const HeatmapSlide: React.FC<{ stats: MerchantStats; version: number }> = ({ stats, version }) => {
+  const grow = useGrow(version);
   const shades = [DS.surface, DS.accentAlpha(0.2), DS.accentAlpha(0.45), DS.accentAlpha(0.7), DS.accent];
+  const grid = Array.from({ length: 7 }, () => Array<number>(HOURS).fill(0));
+  stats.heatmap.forEach((c) => {
+    const h = c.hour - FIRST_HOUR;
+    if (c.dow >= 0 && c.dow < 7 && h >= 0 && h < HOURS) grid[c.dow][h] += c.count;
+  });
+  const max = Math.max(...grid.flat(), 1);
+  const level = (n: number) => (n === 0 ? 0 : Math.max(1, Math.ceil((n / max) * 4)));
   return (
     <Slide>
       <SlideBody full style={styles.body}>
         {LETTERS.map((l, d) => (
           <View key={d} style={styles.row}>
             <Text style={styles.letter}>{l}</Text>
-            {Array.from({ length: HOURS }, (_, h) => (
-              <View key={h} style={[styles.cell, { backgroundColor: shades[level(d, h)] }]} />
+            {grid[d].map((n, h) => (
+              <Animated.View key={h} style={[styles.cell, { backgroundColor: shades[level(n)], opacity: grow }]} />
             ))}
           </View>
         ))}

@@ -1,46 +1,61 @@
 "use no memo"; // langue a chaud (cf. architecture/i18n.md)
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { LETTERS, Slide, SlideBody, SlideStats } from "./SlideParts";
+import { Grow, Slide, SlideBody, SlideStats, useGrow } from "./SlideParts";
 import { DS } from "@/src/theme/ds";
 import { t } from "@/src/i18n";
+import { Bucket, axisLabel, toISO } from "../shopPeriod";
+import { MerchantStats, compact, money } from "../useMerchantStats";
 
-/** H1 — encaisse par jour (maquette K1a). Donnees d'EXEMPLE. */
-const SAMPLE = { perDayK: [18, 32, 15, 27, 41, 45, 0], todayIndex: 5 };
+/** H1 — encaisse par jour / semaine / mois (credits marchand). */
 const BAR_MAX = 70;
 
-export const RevenueSlide: React.FC<{ periodLabel: string }> = ({ periodLabel }) => {
-  const max = Math.max(...SAMPLE.perDayK.slice(0, SAMPLE.todayIndex + 1), 1);
+/** Index du bucket qui contient aujourd'hui (-1 si hors periode). */
+export const currentIndex = (series: { start: string }[]) => {
+  const today = toISO(new Date());
+  let idx = -1;
+  series.forEach((p, i) => {
+    if (p.start <= today) idx = i;
+  });
+  return idx;
+};
+
+export const RevenueSlide: React.FC<{ stats: MerchantStats; bucket: Bucket; version: number; periodLabel: string }> = ({ stats, bucket, version, periodLabel }) => {
+  const grow = useGrow(version);
+  const s = stats.series;
+  const now = currentIndex(s);
+  const today = toISO(new Date());
+  const max = Math.max(...s.map((p) => p.revenue), 1);
   return (
     <Slide>
       <SlideBody style={styles.chart}>
-        {LETTERS.map((l, i) => {
-          const future = i > SAMPLE.todayIndex;
-          const today = i === SAMPLE.todayIndex;
-          const v = SAMPLE.perDayK[i];
+        {s.map((p, i) => {
+          const future = p.start > today;
+          const cur = i === now && !future;
           return (
-            <View key={i} style={styles.col}>
-              <Text style={[styles.value, today && styles.accentText]}>{future ? "" : `${v}k`}</Text>
-              <View
+            <View key={p.start} style={styles.col}>
+              <Text style={[styles.value, cur && styles.accentText]} numberOfLines={1}>{future ? "" : compact(p.revenue)}</Text>
+              <Grow
+                p={grow}
                 style={[
                   styles.bar,
                   {
-                    height: future ? 6 : Math.max(6, Math.round((v / max) * BAR_MAX)),
-                    backgroundColor: today ? DS.accent : future ? DS.track : DS.ink,
-                    opacity: today || future ? 1 : 0.8,
+                    height: future ? 6 : Math.max(6, Math.round((p.revenue / max) * BAR_MAX)),
+                    backgroundColor: cur ? DS.accent : future ? DS.track : DS.ink,
+                    opacity: cur || future ? 1 : 0.8,
                   },
                 ]}
               />
-              <Text style={[styles.letter, today && styles.accentText]}>{l}</Text>
+              <Text style={[styles.letter, cur && styles.accentText]}>{axisLabel(bucket, p.start, i)}</Text>
             </View>
           );
         })}
       </SlideBody>
       <SlideStats
         items={[
-          { value: "45 000 F", label: t("AUJOURD’HUI") },
-          { value: "178 000 F", label: periodLabel },
-          { value: "128 500 F", label: t("SOLDE") },
+          { value: money(stats.revenueToday), label: t("AUJOURD’HUI") },
+          { value: money(stats.revenue), label: periodLabel },
+          { value: money(stats.balance), label: t("SOLDE") },
         ]}
       />
     </Slide>

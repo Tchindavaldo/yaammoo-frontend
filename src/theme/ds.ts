@@ -73,6 +73,8 @@ export const DS = {
   successStrong: "#16a34a",
   successInk: "#15803d",
   successTint: "rgba(22,163,74,0.1)",
+  /** Vert lisible sur fond noir (hausses dans le hero stats). */
+  successOnDark: "#4ADE80",
   danger: "#ef4444",
   info: "#3b82f6",
   dangerInk: "#B42318",

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { NativeScrollEvent, NativeSyntheticEvent, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ShopPeriodSheet } from "./ShopPeriodSheet";
-import { ShopPeriod, defaultPeriod, periodLabel, periodStatLabel } from "./shopPeriod";
+import { ShopPeriod, defaultPeriod, periodLabel, periodStatLabel, previousPeriodLabel } from "./shopPeriod";
 import { RevenueSlide } from "./slides/RevenueSlide";
 import { FunnelSlide } from "./slides/FunnelSlide";
 import { BasketSlide } from "./slides/BasketSlide";
@@ -35,7 +35,7 @@ export const ShopHeroCard: React.FC = () => {
   const slides = [
     <RevenueSlide key="h1" periodLabel={periodStatLabel(period)} />,
     <FunnelSlide key="s13" />,
-    <BasketSlide key="h3" />,
+    <BasketSlide key="h3" current={periodLabel(period)} previous={previousPeriodLabel(period)} />,
     <RankingSlide key="t1" />,
     <StatusSlide key="s7" />,
     <HeatmapSlide key="s6" />,

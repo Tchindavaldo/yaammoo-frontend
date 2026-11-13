@@ -1271,5 +1271,12 @@
   "contre": "vs",
   "Ventes": "Sales",
   "cmd": "orders",
-  "vues": "views"
+  "vues": "views",
+  "Semaine d'avant": "Week before",
+  "Année passée": "Last year",
+  "Période d'avant": "Previous period",
+  "Chaque client dépense": "Each customer spends",
+  "225 F de plus": "225 F more",
+  "par commande. Ça rapporte": "per order. That brings in",
+  "sur la période, sans aucun client en plus.": "over the period, with no extra customer."
 }

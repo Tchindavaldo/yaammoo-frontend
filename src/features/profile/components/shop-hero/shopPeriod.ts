@@ -117,3 +117,19 @@ export const monthGrid = (y: number, m: number): (Date | null)[][] => {
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
   return rows;
 };
+
+/** Libelle de la periode precedente de meme duree (comparaison du hero). */
+export const previousPeriodLabel = (p: ShopPeriod): string => {
+  switch (p.kind) {
+    case "week":
+      return t("Semaine passée");
+    case "lastWeek":
+      return t("Semaine d'avant");
+    case "month":
+      return t("Mois passé");
+    case "year":
+      return t("Année passée");
+    default:
+      return t("Période d'avant");
+  }
+};

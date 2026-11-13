@@ -22,9 +22,9 @@ const TILES: Tile[] = [
   { label: "En attente", icon: "time-outline", hot: true, match: (s) => s === "pending" },
   { label: "En cours", icon: "flame-outline", match: (s) => s === "processing" || s === "delivering" },
   // Terminees = pretes, pas encore remises (livraison ou retrait).
-  { label: "Terminées", icon: "checkmark", match: (s) => s === "finished" },
+  { label: "Non livrées", icon: "checkmark", match: (s) => s === "finished" },
   { label: "Livrées", icon: "bicycle-outline", match: (s, d) => s === "delivered" && d },
-  { label: "Non livrées", icon: "close", match: (s) => s.startsWith("cancel") },
+  { label: "Annulées", icon: "close", match: (s) => s.startsWith("cancel") },
   { label: "Sur place", icon: "storefront-outline", match: (s, d) => s === "delivered" && !d },
 ];
 

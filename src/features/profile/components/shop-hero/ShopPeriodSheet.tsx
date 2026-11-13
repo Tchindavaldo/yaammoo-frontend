@@ -18,7 +18,7 @@ const PRESETS = ["week", "lastWeek", "month", "lastMonth", "year"] as const;
 const WEEKDAYS = ["L", "M", "M", "J", "V", "S", "D"];
 // Hauteur commune aux deux vues (titre + contenu), calee sur le calendrier
 // le plus haut (6 semaines + bouton).
-const BODY_HEIGHT = 370;
+const BODY_HEIGHT = 350;
 
 interface Props {
   visible: boolean;
@@ -94,7 +94,10 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
           {view === "root" ? (
             <>
               <View style={styles.head}>
-                <Text style={styles.title}>{t("Période")}</Text>
+                <Text style={[styles.title, { flex: 1 }]}>{t("Choisir une période")}</Text>
+                <Pressable onPress={onClose} hitSlop={8} style={styles.round} accessibilityRole="button">
+                  <Ionicons name="close" size={18} color={DS.ink} />
+                </Pressable>
               </View>
               <View style={styles.card}>
                 {PRESETS.map((k, i) => {
@@ -111,7 +114,7 @@ export const ShopPeriodSheet: React.FC<Props> = ({ visible, value, onClose, onCh
               </View>
               <View style={[styles.card, { marginTop: 10 }]}>
                 <Pressable onPress={() => setView("range")} style={styles.row}>
-                  <Text style={[styles.rowLabel, value.kind === "range" && styles.rowLabelActive]}>{t("Choisir une période")}</Text>
+                  <Text style={[styles.rowLabel, value.kind === "range" && styles.rowLabelActive]}>{t("Sélectionner une période")}</Text>
                   {value.kind === "range" && <Text style={styles.rowHint}>{periodLabel(value)}</Text>}
                   <Ionicons name="chevron-forward" size={14} color={DS.idle} />
                 </Pressable>
@@ -185,7 +188,7 @@ const styles = StyleSheet.create({
   stepLabel: { minWidth: 92, textAlign: "center", fontSize: 13, fontWeight: "600", color: DS.ink },
   disabled: { opacity: 0.35 },
   calRow: { flexDirection: "row" },
-  cell: { flex: 1, height: 40, alignItems: "center", justifyContent: "center", textAlign: "center", textAlignVertical: "center" },
+  cell: { flex: 1, height: 36, alignItems: "center", justifyContent: "center", textAlign: "center", textAlignVertical: "center" },
   weekday: { height: 26, fontSize: 11, fontWeight: "600", color: DS.faint },
   inRange: { backgroundColor: DS.accentTint },
   edge: { backgroundColor: DS.accent, borderRadius: 12 },

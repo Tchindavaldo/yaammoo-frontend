@@ -1218,5 +1218,6 @@
   "Conditions": "Terms",
   "Supprimer le compte": "Delete account",
   "Passer en mode client": "Switch to customer mode",
-  "Passer en mode marchand": "Switch to merchant mode"
+  "Passer en mode marchand": "Switch to merchant mode",
+  "Sélectionner une période": "Select a period"
 }

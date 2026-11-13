@@ -45,7 +45,7 @@ const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
       return "/(tabs)/orders?section=pending";
     // Demande de livraison reçue (→ marchand) : ouvre le modal "Livreurs".
     case "driver_application":
-      return "/shop/staff?section=drivers";
+      return "/shop/drivers";
     // Demande décidée (→ candidat) : ouvre le modal "Mes demandes".
     case "driver_application_decided":
     case "driver_removed":

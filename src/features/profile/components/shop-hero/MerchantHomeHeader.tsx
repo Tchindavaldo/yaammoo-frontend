@@ -9,6 +9,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useShopIdentity } from "@/src/features/merchant/hooks/useShopIdentity";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -31,7 +32,8 @@ export function MerchantHomeHeader() {
         <Text style={styles.name} numberOfLines={1}>{name}</Text>
         {!!contact && <Text style={styles.contact} numberOfLines={1}>{contact}</Text>}
       </View>
-      <View style={styles.avatar}>
+      {/* Avatar : ouvre les infos de la boutique (modification). */}
+      <Pressable onPress={() => router.push("/shop/edit")} hitSlop={6} accessibilityRole="button" accessibilityLabel={t("Informations de la boutique")} style={styles.avatar}>
         {shop?.imageUrl ? (
           <Image source={{ uri: shop.imageUrl }} style={styles.logo} cachePolicy="memory-disk" transition={0} />
         ) : (
@@ -40,7 +42,7 @@ export function MerchantHomeHeader() {
         <View style={styles.badge}>
           <Ionicons name="chevron-down" size={10} color={DS.onInk} />
         </View>
-      </View>
+      </Pressable>
     </View>
   );
 }

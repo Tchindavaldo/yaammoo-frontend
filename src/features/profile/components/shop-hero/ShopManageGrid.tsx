@@ -18,7 +18,7 @@ const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: Bac
   { icon: "people-outline", label: "Personnel", href: "/shop/staff", info: "3 membres", tone: "grey" },
   { icon: "megaphone-outline", label: "Annonces", href: "/shop/notifications", info: "8 restantes" },
   { icon: "chatbubbles-outline", label: "Messages", href: "/shop/messages", info: "2 non lus", hot: true },
-  { icon: "information-circle-outline", label: "Information", href: "/shop/edit", info: "Ouverte" },
+  { icon: "bicycle-outline", label: "Livreurs", href: "/shop/drivers", info: "Demandes et équipe" },
 ];
 
 /** Essai : Menu / Boissons / Personnel changent le bouton retour du header. */

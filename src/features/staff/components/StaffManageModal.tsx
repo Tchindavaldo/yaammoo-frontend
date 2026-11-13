@@ -6,23 +6,20 @@ import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } 
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { StaffHeader } from "./StaffHeader";
 import { Toast } from "@/src/components/Toast";
-import type { DriverApplication, DriverInfo } from "@/src/features/driver/services/driverService";
 import { useStaff } from "../hooks/useStaff";
 import { useStaffDrivers } from "../hooks/useStaffDrivers";
 import { STAFF_FREE_PLAN } from "../services/staffService";
 import type { StaffMember, StaffMemberDraft, StaffRole, StaffRoleDraft, StaffTab } from "../types/staff.types";
-import { memberName, personName, plural } from "../utils/staffFormat";
+import { memberName, plural } from "../utils/staffFormat";
 import { isFullAccess } from "../utils/staffPermissions";
 import { StaffConfirmDialog, type StaffConfirm } from "./StaffConfirmDialog";
-import { StaffDriversTab } from "./StaffDriversTab";
+import { StaffDriversSheet } from "./StaffDriversSheet";
+import { router } from "expo-router";
 import { StaffMemberCreateSheet } from "./StaffMemberCreateSheet";
-import { StaffDriverCreateSheet, type DriverRecruitDraft } from "./StaffDriverCreateSheet";
-import { driverService } from "@/src/features/driver/services/driverService";
 import { StaffMemberSheet } from "./StaffMemberSheet";
 import { StaffRoleSheet } from "./StaffRoleSheet";
 import { StaffSummaryCard } from "./StaffSummaryCard";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { StaffTabs } from "./StaffTabs";
 import { ORPHAN_KEY, StaffTeamHead, StaffTeamTab } from "./StaffTeamTab";
 import { StaffRoleMembersSheet } from "./StaffRoleMembersSheet";
 import { ST } from "./staffTheme";
@@ -62,8 +59,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   const [tab, setTab] = useState<StaffTab>(initialTab);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [driverCreating, setDriverCreating] = useState(false);
-  const [recruiting, setRecruiting] = useState(false);
+  const [driversOpen, setDriversOpen] = useState(false);
   const [createRoleId, setCreateRoleId] = useState<string | null>(null);
   const [roleSheet, setRoleSheet] = useState<RoleSheetState>(null);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -119,7 +115,6 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
   if (!visible) return null;
 
   const membersFull = members.length >= plan.memberLimit;
-  const driversFull = drv.drivers.length >= plan.driverLimit;
   // Safe-area basse réservée par ShopPageFrame.
   const fabBottom = 16;
   const member = memberId ? members.find((m) => m.id === memberId) || null : null;
@@ -136,29 +131,6 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
     }
     setCreateRoleId(roles.length === 1 ? roles[0].id : null);
     setCreating(true);
-  };
-
-  const openDriverCreate = () => {
-    if (driversFull) {
-      setToast({ message: t("Toutes les places de livreur sont prises"), type: "error" });
-      return;
-    }
-    setDriverCreating(true);
-  };
-
-  const submitDriver = async (draft: DriverRecruitDraft) => {
-    const fastFoodId = userData?.fastFoodId;
-    if (!fastFoodId) return false;
-    setRecruiting(true);
-    const error = await driverService.recruitDriver(fastFoodId, draft);
-    setRecruiting(false);
-    if (error) {
-      setToast({ message: error, type: "error" });
-      return false;
-    }
-    setToast({ message: draft.mode === "invite" ? t("Invitation envoyée") : t("Livreur ajouté"), type: "success" });
-    drv.refresh();
-    return true;
   };
 
   const submitMember = async (draft: StaffMemberDraft) => {
@@ -233,29 +205,6 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
     return res.ok;
   };
 
-  const decide = async (app: DriverApplication, decision: "accepted" | "refused") => {
-    if (decision === "accepted" && driversFull) {
-      setToast({ message: t("Toutes les places de livreur sont prises"), type: "error" });
-      return;
-    }
-    const res = await drv.decide(app, decision);
-    notify(res.ok, decision === "accepted" ? t("Livreur accepté") : t("Demande refusée"), res.ok ? "" : res.message);
-  };
-
-  const removeDriver = (d: DriverInfo) =>
-    ask(
-      {
-        title: t("Retirer ce livreur ?"),
-        message: t("{{a}} ne pourra plus livrer les commandes de votre boutique.", { a: personName(d.infos) }),
-        confirmLabel: t("Retirer"),
-      },
-      async () => {
-        const res = await drv.removeDriver(d.driverId);
-        notify(res.ok, t("Livreur retiré"), res.ok ? "" : res.message);
-        return res.ok;
-      },
-    );
-
   const refresh = () => Promise.all([staff.refresh(), drv.refresh()]);
 
   return (
@@ -280,16 +229,8 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
           drivers={drv.drivers.length}
         />
         */}
-        <StaffTabs
-          tab={tab}
-          onChange={setTab}
-          members={members.length}
-          drivers={drv.drivers.length}
-          pending={drv.applications.length}
-        />
-        {tab === "team" && (
-          <StaffTeamHead onNewRole={() => setRoleSheet({ role: null, forCreate: false })} />
-        )}
+
+        <StaffTeamHead onNewRole={() => setRoleSheet({ role: null, forCreate: false })} />
       </View>
 
       {/* Seules les listes défilent, tronquées au bord de la safe-area basse. */}
@@ -301,8 +242,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
           <RefreshControl refreshing={staff.refreshing || drv.refreshing} onRefresh={refresh} />
         }
       >
-        {tab === "team" ? (
-          <StaffTeamTab
+        <StaffTeamTab
             loaded={staff.loaded}
             roles={sortedRoles}
             membersOf={membersOf}
@@ -312,34 +252,12 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
             pending={drv.applications.length}
             onOpenRole={setExpanded}
             onNewRole={() => setRoleSheet({ role: null, forCreate: false })}
-            onOpenDrivers={() => setTab("drivers")}
+            onOpenDrivers={() => setDriversOpen(true)}
           />
-        ) : (
-          <StaffDriversTab
-            applications={drv.applications}
-            drivers={drv.drivers}
-            loaded={drv.loaded}
-            deciding={drv.deciding}
-            removingId={drv.removingId}
-            onDecide={decide}
-            onRemove={removeDriver}
-          />
-        )}
       </ScrollView>
 
       <View style={[styles.fabWrap, { bottom: fabBottom }]} pointerEvents="box-none">
-        {tab === "drivers" ? (
-          <Pressable
-            onPress={openDriverCreate}
-            style={({ pressed }) => [styles.fab, driversFull ? styles.fabOff : styles.fabOn, pressed && !driversFull && { opacity: 0.85 }]}
-            accessibilityRole="button"
-          >
-            <Ionicons name="bicycle-outline" size={18} color={driversFull ? "#8A8A90" : "#fff"} />
-            <Text style={[styles.fabText, { color: driversFull ? "#8A8A90" : "#fff" }]}>
-              {driversFull ? t("Toutes les places sont prises") : t("Ajouter un livreur")}
-            </Text>
-          </Pressable>
-        ) : (
+
           <Pressable
             onPress={openCreate}
             style={({ pressed }) => [
@@ -354,7 +272,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
               {membersFull ? t("Tous les postes sont pris") : t("Ajouter un membre")}
             </Text>
           </Pressable>
-        )}
+
       </View>
 
       {expanded && (
@@ -377,6 +295,17 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
         />
       )}
 
+      {driversOpen && (
+        <StaffDriversSheet
+          drivers={drv.drivers}
+          onManage={() => {
+            setDriversOpen(false);
+            router.push("/shop/drivers");
+          }}
+          onClose={() => setDriversOpen(false)}
+        />
+      )}
+
       {member && (
         <StaffMemberSheet
           key={member.id}
@@ -396,11 +325,11 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
       {/* Pages entières (formulaires) : un seul <Modal> couvre header et tab
           bar ; la page rôle s'empile au-dessus de la page membre. */}
       <Modal
-        visible={creating || driverCreating || !!roleSheet}
+        visible={creating || !!roleSheet}
         animationType="slide"
         presentationStyle="fullScreen"
         statusBarTranslucent
-        onRequestClose={() => (roleSheet ? setRoleSheet(null) : driverCreating ? setDriverCreating(false) : setCreating(false))}
+        onRequestClose={() => (roleSheet ? setRoleSheet(null) : setCreating(false))}
       >
       <View style={styles.pages}>
       {creating && (
@@ -418,15 +347,6 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
         />
       )}
 
-      {driverCreating && (
-        <StaffDriverCreateSheet
-          slotLabel={t("Livreur {{a}} sur {{b}}", { a: drv.drivers.length + 1, b: plan.driverLimit })}
-          saving={recruiting}
-          onSubmit={submitDriver}
-          onClose={() => setDriverCreating(false)}
-        />
-      )}
-
       {roleSheet && (
         <StaffRoleSheet
           key={roleSheet.role?.id || "new"}
@@ -439,7 +359,7 @@ export const StaffManageModal: React.FC<Props> = ({ visible, onClose, initialTab
         />
       )}
       </View>
-      {toast && (creating || driverCreating || !!roleSheet) && (
+      {toast && (creating || !!roleSheet) && (
         <Toast message={toast.message} type={toast.type} onHide={() => setToast(null)} />
       )}
         {/* Toast global au premier plan (Android). */}

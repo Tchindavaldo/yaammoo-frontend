@@ -8,7 +8,7 @@ import { DS } from "@/src/theme/ds";
  * graphique de hauteur fixe + une rangee de 3 chiffres. Toutes les slides ont
  * ainsi la meme hauteur (pas de saut au glissement).
  */
-export const BODY_H = 190;
+export const BODY_H = 125;
 /** Hauteur d'une slide sans cases : zone graphique + cases + leur ecart. */
 export const FULL_H = BODY_H + 60;
 export const LETTERS = ["L", "M", "M", "J", "V", "S", "D"];

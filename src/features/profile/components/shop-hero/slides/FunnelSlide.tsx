@@ -44,5 +44,5 @@ const styles = StyleSheet.create({
   label: { flexShrink: 1, fontSize: 12, color: DS.ink },
   value: { fontSize: 12, fontWeight: "700", color: DS.ink },
   pct: { fontWeight: "400", color: DS.faint },
-  bar: { height: 26, borderRadius: 6 },
+  bar: { height: 18, borderRadius: 6 },
 });

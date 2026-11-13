@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   body: { paddingVertical: 8, paddingHorizontal: 10, justifyContent: "space-between" },
   row: { flexDirection: "row", alignItems: "center", gap: 3 },
   letter: { width: 12, fontSize: 9, fontWeight: "600", color: DS.faint },
-  cell: { flex: 1, height: 22, borderRadius: 5 },
+  cell: { flex: 1, height: 15, borderRadius: 4 },
   hours: { flex: 1, flexDirection: "row", justifyContent: "space-between" },
   hour: { fontSize: 9, color: DS.faint },
 });

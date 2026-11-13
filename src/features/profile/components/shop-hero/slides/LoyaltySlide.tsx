@@ -11,7 +11,7 @@ import { t } from "@/src/i18n";
  */
 // [nouveaux, revenus]
 const DAYS: [number, number][] = [[3, 4], [5, 6], [2, 3], [4, 5], [6, 7], [7, 8], [2, 2]];
-const BAR_MAX = 165;
+const BAR_MAX = 110;
 
 export const LoyaltySlide: React.FC = () => {
   const max = Math.max(...DAYS.map(([a, b]) => a + b));

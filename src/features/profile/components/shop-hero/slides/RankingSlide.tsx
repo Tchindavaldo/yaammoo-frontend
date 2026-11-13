@@ -65,18 +65,18 @@ export const RankingSlide: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  body: { gap: 12, paddingVertical: 10, paddingHorizontal: 12 },
+  body: { gap: 10, paddingVertical: 10, paddingHorizontal: 12 },
   tabs: { flexDirection: "row", gap: 6 },
   tab: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 14, backgroundColor: DS.surface },
   tabOn: { backgroundColor: DS.ink },
   tabText: { fontSize: 11.5, fontWeight: "600", color: DS.ink },
   tabTextOn: { color: DS.onInk },
-  rows: { flex: 1, gap: 12 },
+  rows: { flex: 1, gap: 6 },
   amount: { fontWeight: "500", color: DS.muted },
   item: { gap: 3 },
   head: { flexDirection: "row", justifyContent: "space-between" },
   name: { flexShrink: 1, fontSize: 12, color: DS.ink },
   value: { fontSize: 12, fontWeight: "700", color: DS.ink },
-  track: { height: 10, borderRadius: 5, backgroundColor: DS.line },
-  fill: { height: 10, borderRadius: 5 },
+  track: { height: 8, borderRadius: 4, backgroundColor: DS.line },
+  fill: { height: 8, borderRadius: 4 },
 });

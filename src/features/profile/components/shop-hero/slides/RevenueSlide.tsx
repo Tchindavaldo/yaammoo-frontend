@@ -7,7 +7,7 @@ import { t } from "@/src/i18n";
 
 /** H1 — encaisse par jour (maquette K1a). Donnees d'EXEMPLE. */
 const SAMPLE = { perDayK: [18, 32, 15, 27, 41, 45, 0], todayIndex: 5 };
-const BAR_MAX = 115;
+const BAR_MAX = 70;
 
 export const RevenueSlide: React.FC<{ periodLabel: string }> = ({ periodLabel }) => {
   const max = Math.max(...SAMPLE.perDayK.slice(0, SAMPLE.todayIndex + 1), 1);

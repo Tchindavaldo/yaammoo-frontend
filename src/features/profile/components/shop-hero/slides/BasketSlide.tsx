@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   headline: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   big: { fontSize: 24, fontWeight: "700", color: DS.ink },
   sub: { flexShrink: 1, fontSize: 11, color: DS.muted },
-  split: { flexDirection: "row", height: 40, borderRadius: 7, overflow: "hidden" },
+  split: { flexDirection: "row", height: 32, borderRadius: 7, overflow: "hidden" },
   part: { justifyContent: "center", paddingLeft: 8 },
   partText: { fontSize: 11, fontWeight: "700", color: DS.onInk },
 });

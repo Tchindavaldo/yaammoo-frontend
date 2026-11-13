@@ -8,12 +8,12 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
 
-export const ProfileListGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+export const ProfileListGroup: React.FC<{ title?: string; children: React.ReactNode }> = ({ title, children }) => {
   const rows = React.Children.toArray(children).filter(Boolean);
   if (rows.length === 0) return null;
   return (
     <View style={styles.group}>
-      <Text style={styles.title}>{title}</Text>
+      {!!title && <Text style={styles.title}>{title}</Text>}
       <View style={styles.card}>
         {rows.map((row, i) => (
           <React.Fragment key={i}>{row}</React.Fragment>
@@ -37,11 +37,27 @@ export const ProfileListRow: React.FC<{
   </Pressable>
 );
 
+/** Tuiles sur une ligne (maquette P1a2) : icone au-dessus du libelle. */
+export const ProfileTiles: React.FC<{ items: { icon: Ion; title: string; onPress: () => void }[] }> = ({ items }) => (
+  <View style={styles.tiles}>
+    {items.map((it) => (
+      <Pressable key={it.title} onPress={it.onPress} accessibilityRole="button" style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}>
+        <Ionicons name={it.icon} size={20} color={DS.ink} />
+        <Text style={styles.tileLabel} numberOfLines={1}>{it.title}</Text>
+      </Pressable>
+    ))}
+  </View>
+);
+
 const styles = StyleSheet.create({
+  tiles: { flexDirection: "row", gap: 8 },
+  tile: { flex: 1, height: 72, borderRadius: 16, backgroundColor: DS.surface, justifyContent: "center", gap: 8, paddingHorizontal: 12 },
+  tilePressed: { opacity: 0.7 },
+  tileLabel: { fontSize: 13.5, fontWeight: "600", color: DS.ink },
   group: { gap: 8, marginTop: 16 },
   title: { marginHorizontal: 6, fontSize: 15, fontWeight: "600", color: DS.ink },
   // P1f : carte gris tres leger, aucun trait entre les lignes.
-  card: { borderRadius: 16, backgroundColor: DS.surfaceSoft, overflow: "hidden" },
+  card: { borderRadius: 16, backgroundColor: DS.bg, overflow: "hidden" },
   row: { height: 46, flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14 },
   pressed: { backgroundColor: DS.surface },
   label: { flex: 1, fontSize: 14, fontWeight: "500", color: DS.ink },

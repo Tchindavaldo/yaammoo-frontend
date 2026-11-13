@@ -12,7 +12,7 @@ import { LogoutModal } from "@/src/features/profile/components/LogoutModal";
 import { LanguageSheet } from "@/src/features/profile/components/LanguageSheet";
 import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
 import { SettingGridItem } from "@/src/features/profile/components/SettingGridItem";
-import { ProfileListGroup, ProfileListRow } from "@/src/features/profile/components/ProfileListGroup";
+import { ProfileListGroup, ProfileListRow, ProfileTiles } from "@/src/features/profile/components/ProfileListGroup";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBanner";
@@ -161,10 +161,16 @@ export default function SettingsScreen() {
 
         {/* Compte, Préférences, Aide : listes groupees (maquette P1). */}
         <ProfileListGroup title={t("Compte")}>
-          <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => handleComingSoon(t("Mon profil"))} />
-          <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
-          <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
-          {isMerchant && (
+          <ProfileTiles
+            items={[
+              { icon: "person-outline", title: t("Mon profil"), onPress: () => handleComingSoon(t("Mon profil")) },
+              { icon: "key-outline", title: t("Sécurité"), onPress: () => handleComingSoon("Sécurité") },
+              { icon: "gift-outline", title: t("Bonus"), onPress: () => open("userBonus") },
+            ]}
+          />
+        </ProfileListGroup>
+        {isMerchant && (
+          <ProfileListGroup>
             <ProfileListRow
               icon="swap-horizontal"
               title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
@@ -173,8 +179,8 @@ export default function SettingsScreen() {
                 router.navigate("/(tabs)");
               }}
             />
-          )}
-        </ProfileListGroup>
+          </ProfileListGroup>
+        )}
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
         {/* Masquee pour un marchand. */}
@@ -202,7 +208,7 @@ export default function SettingsScreen() {
         </SettingGrid>
         )}
 
-        <ProfileListGroup title={t("Préférences")}>
+        <ProfileListGroup>
           <ProfileListRow
             icon="notifications-outline"
             title="Notifications"
@@ -223,7 +229,7 @@ export default function SettingsScreen() {
           />
         </ProfileListGroup>
 
-        <ProfileListGroup title={t("Aide")}>
+        <ProfileListGroup>
           <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => handleComingSoon("Assistance")} />
           <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => handleComingSoon(t("Signaler un problème"))} />
           <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => handleComingSoon(t("Faire une suggestion"))} />

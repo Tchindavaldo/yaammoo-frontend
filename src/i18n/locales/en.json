@@ -1269,5 +1269,7 @@
   "ZONES": "AREAS",
   "Zones": "Areas",
   "contre": "vs",
-  "Ventes": "Sales"
+  "Ventes": "Sales",
+  "cmd": "orders",
+  "vues": "views"
 }

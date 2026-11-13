@@ -14,28 +14,17 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "drivers", label: "Livreurs" },
   { key: "zones", label: "Zones" },
 ];
-const DATA: Record<Tab, { rows: [string, number][]; stats: { value: string; label: string }[] }> = {
-  dishes: {
-    rows: [["Burger maison", 42], ["Poulet DG", 31], ["Shawarma", 24], ["Frites", 18]],
-    stats: [{ value: "127", label: "PLATS VENDUS" }, { value: "Burger", label: "N° 1" }, { value: "3", label: "JAMAIS VENDUS" }],
-  },
-  views: {
-    rows: [["Burger maison", 380], ["Shawarma", 251], ["Poulet DG", 198], ["Pizza", 120]],
-    stats: [{ value: "1 265", label: "VUES" }, { value: "Burger", label: "N° 1" }, { value: "30 %", label: "PART DU N° 1" }],
-  },
-  clients: {
-    rows: [["Aïcha N.", 9], ["Paul M.", 7], ["Kevin T.", 6], ["Grâce B.", 5]],
-    stats: [{ value: "64", label: "CLIENTS" }, { value: "Aïcha", label: "N° 1" }, { value: "27 000 F", label: "DÉPENSÉS PAR LE N° 1" }],
-  },
-  drivers: {
-    rows: [["Junior", 34], ["Boris", 27], ["Serge", 14], ["Alain", 6]],
-    stats: [{ value: "81", label: "LIVRAISONS" }, { value: "Junior", label: "N° 1" }, { value: "4", label: "LIVREURS" }],
-  },
-  zones: {
-    rows: [["Bastos", 28], ["Mvan", 21], ["Essos", 17], ["Biyem-Assi", 9]],
-    stats: [{ value: "12", label: "ZONES" }, { value: "Bastos", label: "N° 1" }, { value: "35 %", label: "PART DU N° 1" }],
-  },
+// [nom, nombre, montant depense en F (clients, livreurs, zones)]
+type Row = [string, number, number?];
+// Unite du nombre : commandes partout, sauf l'onglet Vues.
+const DATA: Record<Tab, { unit: "cmd" | "vues"; rows: Row[] }> = {
+  dishes: { unit: "cmd", rows: [["Burger maison", 42], ["Poulet DG", 31], ["Shawarma", 24], ["Frites", 18]] },
+  views: { unit: "vues", rows: [["Burger maison", 380], ["Shawarma", 251], ["Poulet DG", 198], ["Pizza", 120]] },
+  clients: { unit: "cmd", rows: [["Aïcha N.", 9, 27000], ["Paul M.", 7, 19500], ["Kevin T.", 6, 16000], ["Grâce B.", 5, 13500]] },
+  drivers: { unit: "cmd", rows: [["Junior", 34, 98000], ["Boris", 27, 76500], ["Serge", 14, 41000], ["Alain", 6, 17500]] },
+  zones: { unit: "cmd", rows: [["Bastos", 28, 86000], ["Mvan", 21, 59500], ["Essos", 17, 47000], ["Biyem-Assi", 9, 25500]] },
 };
+const money = (n: number) => `${n.toLocaleString("fr-FR").replace(/\u202f|\u00a0/g, " ")} F`;
 
 export const RankingSlide: React.FC = () => {
   const [tab, setTab] = useState<Tab>("dishes");
@@ -55,11 +44,14 @@ export const RankingSlide: React.FC = () => {
           })}
         </View>
         <View style={styles.rows}>
-          {d.rows.map(([name, v], i) => (
+          {d.rows.map(([name, v, amount], i) => (
             <View key={name} style={styles.item}>
               <View style={styles.head}>
                 <Text style={styles.name} numberOfLines={1}>{name}</Text>
-                <Text style={styles.value}>{v}</Text>
+                <Text style={styles.value}>
+                  {`${v} ${t(d.unit)}`}
+                  {amount ? <Text style={styles.amount}>{`  ·  ${money(amount)}`}</Text> : null}
+                </Text>
               </View>
               <View style={styles.track}>
                 <View style={[styles.fill, { width: `${(v / max) * 100}%`, backgroundColor: i === 0 ? DS.accent : DS.ink }]} />
@@ -67,9 +59,6 @@ export const RankingSlide: React.FC = () => {
             </View>
           ))}
         </View>
-        <Text style={styles.summary} numberOfLines={1}>
-          {`${d.stats[0].value} ${t(d.stats[0].label).toLowerCase()} · ${d.stats[2].value} ${t(d.stats[2].label).toLowerCase()}`}
-        </Text>
       </SlideBody>
     </Slide>
   );
@@ -83,7 +72,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 11.5, fontWeight: "600", color: DS.ink },
   tabTextOn: { color: DS.onInk },
   rows: { flex: 1, gap: 12 },
-  summary: { textAlign: "right", fontSize: 11, fontWeight: "500", color: DS.muted },
+  amount: { fontWeight: "500", color: DS.muted },
   item: { gap: 3 },
   head: { flexDirection: "row", justifyContent: "space-between" },
   name: { flexShrink: 1, fontSize: 12, color: DS.ink },

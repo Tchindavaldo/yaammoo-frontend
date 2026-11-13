@@ -22,7 +22,7 @@ import { t, useLanguage } from "@/src/i18n";
  *
  * NOTE : donnees d'EXEMPLE dans chaque slide (pas encore branchees au backend).
  */
-const TITLES = [null, "Conversion", "Panier moyen", "Classements", "Statuts", "Affluence", "Fidélité", "Délais"];
+const TITLES = ["Ventes", "Conversion", "Panier moyen", "Classements", "Statuts", "Affluence", "Fidélité", "Délais"];
 
 export const ShopHeroCard: React.FC = () => {
   useLanguage();
@@ -57,8 +57,7 @@ export const ShopHeroCard: React.FC = () => {
           <Ionicons name="chevron-down" size={14} color={DS.ink} />
         </Pressable>
         <View style={styles.chip}>
-          {title ? null : <View style={styles.chipDot} />}
-          <Text style={styles.chipText}>{title ? t(title) : `${t("Ouverte")} · 22h`}</Text>
+          <Text style={styles.chipText}>{t(title)}</Text>
         </View>
       </View>
 
@@ -99,7 +98,6 @@ const styles = StyleSheet.create({
   periodBtn: { flexShrink: 1, flexDirection: "row", alignItems: "center", gap: 4 },
   name: { flexShrink: 1, fontSize: 16, fontWeight: "600", color: DS.ink, letterSpacing: -0.2 },
   chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 12, borderRadius: 14, backgroundColor: DS.surface },
-  chipDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: DS.accent },
   chipText: { fontSize: 12, fontWeight: "600", color: DS.ink },
   dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 5 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: DS.idle },

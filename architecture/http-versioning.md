@@ -171,6 +171,13 @@ runtimeVersion. Les deux chaines cessent ainsi de se disputer le fichier.
   `test` charge les variables de l'environnement EAS `preview` (EAS n'a que
   development / preview / production).
 
+#### Android : deux workflows GitHub (prod / test)
+
+| Workflow | Branche | Profil EAS (canal) | Destination | Backend appele |
+|---|---|---|---|---|
+| `android-release.yml` | `main` pour la piste `production` | `production` | Play Store (piste choisie) | prod |
+| `android-test.yml` | `dev` uniquement | `test` (canal `test`, variables EAS `preview`) | **Internal App Sharing** (lien direct, jamais promouvable) | test |
+
 `ci_post_clone.sh` recopie `expo.runtimeVersion` d'`app.json` dans
 `EXUpdatesRuntimeVersion` a chaque build : sans cela le binaire embarquerait un
 runtimeVersion perime, et ne recevrait plus aucun update.

@@ -16,6 +16,11 @@
     "production": {
       "autoIncrement": true,
       "channel": "production"
+    },
+    "test": {
+      "extends": "production",
+      "channel": "test",
+      "environment": "preview"
     }
   },
   "submit": {

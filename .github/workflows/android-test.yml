@@ -1,0 +1,75 @@
+# Build Android de TEST : profil EAS `test` (canal OTA `test`, backend de test,
+# variables EAS `preview`), compile SUR LE RUNNER (`eas build --local`), puis
+# envoye en Google Play Internal App Sharing : lien d'installation direct pour
+# les testeurs, JAMAIS promouvable en production (pas une piste du Play Store).
+#
+# Lance depuis `dev` UNIQUEMENT (verrou ci-dessous). Le lien de telechargement
+# s'affiche dans le resume du run (et dans le log de l'etape d'envoi).
+#
+# Prerequis : les memes secrets que android-release.yml (EXPO_TOKEN,
+# GOOGLE_PLAY_SERVICE_ACCOUNT_JSON, SENTRY_AUTH_TOKEN). Le compte de service
+# doit avoir le droit « Internal app sharing » dans la Play Console, et les
+# testeurs activer « Partage interne d'applications » dans le Play Store.
+name: Android Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Verrou branche dev
+        if: github.ref != 'refs/heads/dev'
+        run: |
+          echo "::error::Build Android de test refuse : lancer le workflow depuis dev (branche actuelle : ${{ github.ref_name }})."
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      # Memes reglages Gradle que android-release.yml (memoire R8, toutes ABIs).
+      - run: |
+          mkdir -p ~/.gradle
+          echo "org.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError" >> ~/.gradle/gradle.properties
+          echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a,x86,x86_64" >> ~/.gradle/gradle.properties
+
+      - run: eas build --platform android --profile test --local --non-interactive --output app.aab
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-test-aab
+          path: app.aab
+
+      - id: share
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.rauval.yaammoo
+          releaseFiles: app.aab
+          track: internalsharing
+
+      - name: Lien d'installation
+        run: |
+          echo "Lien Internal App Sharing : ${{ steps.share.outputs.internalSharingDownloadUrl }}"
+          echo "### Lien d'installation (test) : ${{ steps.share.outputs.internalSharingDownloadUrl }}" >> "$GITHUB_STEP_SUMMARY"

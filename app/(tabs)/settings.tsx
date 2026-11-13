@@ -12,9 +12,10 @@ import { LogoutModal } from "@/src/features/profile/components/LogoutModal";
 import { LanguageSheet } from "@/src/features/profile/components/LanguageSheet";
 import { SettingGrid } from "@/src/features/profile/components/SettingGrid";
 import { SettingGridItem } from "@/src/features/profile/components/SettingGridItem";
-import { ProfileListGroup, ProfileListRow, ProfileTiles } from "@/src/features/profile/components/ProfileListGroup";
+import { ProfileListGroup, ProfileListRow } from "@/src/features/profile/components/ProfileListGroup";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { MerchantSwitchStrip } from "@/src/features/profile/components/MerchantSwitchStrip";
 import { MerchantSwitchBanner } from "@/src/features/profile/components/MerchantSwitchBanner";
 import { CreateShopBanner } from "@/src/features/profile/components/CreateShopBanner";
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
@@ -64,10 +65,12 @@ export default function SettingsScreen() {
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
   const { isMerchantMode, setMerchantMode } = useMerchantMode();
-  // Apercu de variantes de mise en page (temporaire) : bascule au tap de
-  // « Faire une suggestion » (lists), « Signaler un problème » (titles),
-  // « Assistance » (card).
-  const [layout, setLayout] = useState<"lists" | "titles" | "card">("titles");
+  // Apercu de variantes (temporaire), meme design en listes :
+  // « Faire une suggestion » = carte en bas ; « Assistance » = bascule dans
+  // Compte ; « Signaler un problème » = bascule seule apres Aide ;
+  // « Sécurité » = espaces reduits + carte ; « Mon profil » = carte compacte.
+  const [layout, setLayout] = useState<"card" | "inAccount" | "ownSection" | "compact" | "strip">("card");
+  const compact = layout === "compact";
   const switchMode = () => {
     setMerchantMode(!isMerchantMode);
     router.navigate("/(tabs)");
@@ -136,7 +139,7 @@ export default function SettingsScreen() {
         contentContainerStyle={{
           // 8 + marginTop 8 du titre de section = 16 sous le header, comme
           // l'en-tete de jour de Notifications.
-          paddingTop: headerHeight + 8,
+          paddingTop: compact ? headerHeight - 8 : headerHeight + 8,
           // La navbar flotte sur le bas : la fin de page s'arrete juste
           // au-dessus d'elle, sans marge en plus (R19).
           paddingBottom: tabBarHeight + 8,
@@ -163,33 +166,20 @@ export default function SettingsScreen() {
           )}
         </SettingGrid>
 
-        {/* Compte, Préférences, Aide (maquette P1a2 + variantes). */}
-        {layout === "lists" ? (
-          <ProfileListGroup>
-            <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => handleComingSoon(t("Mon profil"))} />
-            <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
-            <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
-          </ProfileListGroup>
-        ) : (
-          <ProfileListGroup>
-            <ProfileTiles
-              items={[
-                { icon: "person-outline", title: t("Mon profil"), onPress: () => handleComingSoon(t("Mon profil")) },
-                { icon: "key-outline", title: t("Sécurité"), onPress: () => handleComingSoon("Sécurité") },
-                { icon: "gift-outline", title: t("Bonus"), onPress: () => open("userBonus") },
-              ]}
-            />
-          </ProfileListGroup>
-        )}
-        {isMerchant && layout === "titles" && (
-          <ProfileListGroup>
+        {/* Compte, Préférences, Aide : listes separees par un trait (variantes
+            d'apercu, cf. `layout`). */}
+        <ProfileListGroup compact={compact}>
+          <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => setLayout("strip")} />
+          <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => setLayout("compact")} />
+          <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
+          {isMerchant && layout === "inAccount" && (
             <ProfileListRow
               icon="swap-horizontal"
               title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
               onPress={switchMode}
             />
-          </ProfileListGroup>
-        )}
+          )}
+        </ProfileListGroup>
 
         {/* Livraison (tout user) : devenir livreur, ou gérer ses livraisons si déjà livreur */}
         {/* Masquee pour un marchand. */}
@@ -217,8 +207,8 @@ export default function SettingsScreen() {
         </SettingGrid>
         )}
 
-        {layout === "lists" && <View style={styles.sectionLine} />}
-        <ProfileListGroup title={layout === "titles" ? t("Préférences") : undefined}>
+        <View style={[styles.sectionLine, compact && styles.sectionLineCompact]} />
+        <ProfileListGroup compact={compact}>
           <ProfileListRow
             icon="notifications-outline"
             title="Notifications"
@@ -239,13 +229,26 @@ export default function SettingsScreen() {
           />
         </ProfileListGroup>
 
-        {layout === "lists" && <View style={styles.sectionLine} />}
-        <ProfileListGroup title={layout === "titles" ? t("Aide") : undefined}>
-          <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => setLayout("card")} />
-          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => setLayout("titles")} />
-          <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => setLayout("lists")} />
+        <View style={[styles.sectionLine, compact && styles.sectionLineCompact]} />
+        <ProfileListGroup compact={compact}>
+          <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => setLayout("inAccount")} />
+          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => setLayout("ownSection")} />
+          <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => setLayout("card")} />
           <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
         </ProfileListGroup>
+
+        {isMerchant && layout === "ownSection" && (
+          <>
+            <View style={styles.sectionLine} />
+            <ProfileListGroup>
+              <ProfileListRow
+              icon="swap-horizontal"
+              title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
+              onPress={switchMode}
+            />
+            </ProfileListGroup>
+          </>
+        )}
 
         {/* Bas de page : creer sa boutique (sans boutique), ou bascule de mode
             en carte (variante « card »). */}
@@ -254,8 +257,11 @@ export default function SettingsScreen() {
             <CreateShopBanner onPress={() => router.push("/shop/create")} />
           </View>
         )}
-        {isMerchant && layout !== "titles" && (
+        {isMerchant && (layout === "card" || layout === "compact") && (
           <MerchantSwitchBanner isMerchantMode={isMerchantMode} onPress={switchMode} />
+        )}
+        {isMerchant && layout === "strip" && (
+          <MerchantSwitchStrip isMerchantMode={isMerchantMode} onPress={switchMode} />
         )}
 
         {/* Legal + suppression : liens en pied de page (maquette P1). */}
@@ -319,6 +325,7 @@ const styles = StyleSheet.create({
   // CreateShopBanner porte un marginBottom 22 (prevu pour le haut de page).
   // Variante « lists » : un trait entre les sections.
   sectionLine: { height: 1, backgroundColor: DS.line, marginTop: 16 },
+  sectionLineCompact: { marginTop: 4 },
   bottomCard: { marginTop: 16, marginBottom: -22 },
   legalRow: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 16, marginTop: 20 },
   legalText: { fontSize: 12, color: DS.faint },

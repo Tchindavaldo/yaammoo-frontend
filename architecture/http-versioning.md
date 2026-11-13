@@ -155,7 +155,7 @@ runtimeVersion. Les deux chaines cessent ainsi de se disputer le fichier.
 | Workflow | Branche | `OTA_CHANNEL` (Environment Variables) | Action Archive | Backend appele |
 |---|---|---|---|---|
 | **PROD** | `main` | absente → `production` | TestFlight and App Store | `yaammoo-backend.fly.dev` (base prod) |
-| **TEST** | `dev` | `test` | **TestFlight (Internal Testing Only)** | `yaammoo-backend-test.fly.dev` (base test) |
+| **TEST** | `dev` | `test` | **TestFlight (Internal Testing Only)** | `yaammoo-backend-dev.fly.dev` (base test) |
 
 - `ci_post_clone.sh` refuse toute autre valeur que `production` / `test`.
 - Une build « Internal Testing Only » n'est **pas soumettable** a l'App Store :

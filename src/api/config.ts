@@ -10,7 +10,7 @@ import * as Updates from "expo-updates";
 // mauvais canal) ne peut jamais faire changer une build de backend.
 // En dev (Expo Go / dev build), on utilise DEV_API_URL ci-dessous.
 const PROD_API_URL = "https://yaammoo-backend.fly.dev";
-const TEST_API_URL = "https://yaammoo-backend-test.fly.dev";
+const TEST_API_URL = "https://yaammoo-backend-dev.fly.dev";
 const RELEASE_API_URL = Updates.channel === "test" ? TEST_API_URL : PROD_API_URL;
 
 // URL utilisée UNIQUEMENT en développement. Change-la avec ton IP locale au besoin.

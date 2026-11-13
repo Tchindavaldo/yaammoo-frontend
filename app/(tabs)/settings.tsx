@@ -165,17 +165,10 @@ export default function SettingsScreen() {
 
         {/* Compte, Préférences, Aide (maquette P1a2 + variantes). */}
         {layout === "lists" ? (
-          <ProfileListGroup title={t("Compte")}>
+          <ProfileListGroup>
             <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => handleComingSoon(t("Mon profil"))} />
             <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
             <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
-            {isMerchant && (
-              <ProfileListRow
-                icon="swap-horizontal"
-                title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
-                onPress={switchMode}
-              />
-            )}
           </ProfileListGroup>
         ) : (
           <ProfileListGroup>
@@ -224,7 +217,8 @@ export default function SettingsScreen() {
         </SettingGrid>
         )}
 
-        <ProfileListGroup title={layout === "card" ? undefined : t("Préférences")}>
+        {layout === "lists" && <View style={styles.sectionLine} />}
+        <ProfileListGroup title={layout === "titles" ? t("Préférences") : undefined}>
           <ProfileListRow
             icon="notifications-outline"
             title="Notifications"
@@ -245,7 +239,8 @@ export default function SettingsScreen() {
           />
         </ProfileListGroup>
 
-        <ProfileListGroup title={layout === "card" ? undefined : t("Aide")}>
+        {layout === "lists" && <View style={styles.sectionLine} />}
+        <ProfileListGroup title={layout === "titles" ? t("Aide") : undefined}>
           <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => setLayout("card")} />
           <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => setLayout("titles")} />
           <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => setLayout("lists")} />
@@ -259,7 +254,7 @@ export default function SettingsScreen() {
             <CreateShopBanner onPress={() => router.push("/shop/create")} />
           </View>
         )}
-        {isMerchant && layout === "card" && (
+        {isMerchant && layout !== "titles" && (
           <MerchantSwitchBanner isMerchantMode={isMerchantMode} onPress={switchMode} />
         )}
 
@@ -322,6 +317,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   // CreateShopBanner porte un marginBottom 22 (prevu pour le haut de page).
+  // Variante « lists » : un trait entre les sections.
+  sectionLine: { height: 1, backgroundColor: DS.line, marginTop: 16 },
   bottomCard: { marginTop: 16, marginBottom: -22 },
   legalRow: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 16, marginTop: 20 },
   legalText: { fontSize: 12, color: DS.faint },

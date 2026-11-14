@@ -180,3 +180,14 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 ## Piège connu — backends multiples
 
 Le client se connecte à `Config.apiUrl`. En dev local (`192.168.x.x:5000`), le socket est **isolé** du backend de prod (fly.io). Tester un `POST /notification/add` via curl sur la mauvaise URL n'émettra **aucun** event vers l'app. Vérifier `Config.apiUrl` avant tout debug socket.
+
+
+## `fastfoodsChanged` — recharge ciblee du home
+
+`{ ids: string[] | null, reason }` (broadcast global) : une boutique, ses zones / prix / creneaux / express, son regime de livraison, ou un reglage global (prix, interrupteur plateforme, boutiques masquees) a change. `catalogEvents.ts` appelle `requestFastfoodsRefresh(ids)` (`src/services/fastfoodRefreshBus.ts`) ; `useFastFoodRefreshByIds` (FastFoodContext) recharge :
+- `ids` : `GET /fastFood/all?ids=…` avec le jeton (offre de livraison, regime effectif), upsert ; une boutique absente de la reponse sort de la liste ;
+- `null` : `refreshLoadedSilently` (toutes les boutiques chargees).
+
+Meme canal sur un refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : ex. `delivery_price_mismatch`, message « Les prix de livraison de cette boutique viennent de changer… ».
+
+`fastfoodUpdated` porte desormais la vue home de la boutique (zones du regime effectif), sans `deliveryOffer`.

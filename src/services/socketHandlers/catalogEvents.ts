@@ -1,6 +1,7 @@
 import type { Socket } from "socket.io-client";
 import { withAck } from "../socketAck";
 import { logEvent } from "./logEvent";
+import { requestFastfoodsRefresh } from "../fastfoodRefreshBus";
 
 type Fn = (...args: any[]) => unknown;
 
@@ -22,6 +23,7 @@ const EVENTS = [
   "globalMenuDeleted",
   "newFastfood",
   "fastfoodUpdated",
+  "fastfoodsChanged",
 ];
 
 /**
@@ -90,6 +92,13 @@ export const registerCatalogEvents = (
     logEvent("fastfoodUpdated:", data);
     const ff = data?.fastFood ?? data;
     if (ff?.id) upsertGlobalFastFood(ff);
+  }));
+
+  // fastfoodsChanged { ids: string[] | null } → recharge ces boutiques (null =
+  // toutes) avec le jeton du user : zones, prix, regime, offre de livraison.
+  socket.on("fastfoodsChanged", withAck((data: any) => {
+    logEvent("fastfoodsChanged:", data);
+    requestFastfoodsRefresh(Array.isArray(data?.ids) ? data.ids : null);
   }));
 
   return () => EVENTS.forEach((e) => socket.off(e));

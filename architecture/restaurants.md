@@ -805,3 +805,8 @@ successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toute
 - **Rétrocompatibilité** vérifiée dans les deux sens : ancien front / nouveau
   back (pas de `limit` → catalogue complet) et nouveau front / ancien back
   (pas de `nextCursor` → `hasMore` false, pas de `loadMore`).
+
+
+## Mise a jour en direct des prix et zones
+
+Voir `socket-events-client.md` (`fastfoodsChanged`) : `hooks/useFastFoodRefreshByIds.ts` ecoute `src/services/fastfoodRefreshBus.ts` et recharge les boutiques signalees (socket ou refus de paiement).

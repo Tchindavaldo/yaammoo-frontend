@@ -8,6 +8,8 @@ import { StyleSheet, Text, View } from "react-native";
 import { useAccounts } from "../hooks/useAccounts";
 import { AccountSheet } from "./AccountSheet";
 import { AccountSwitcherPill } from "./AccountSwitcherPill";
+import { LegalReadSheet } from "@/src/features/legal/components/LegalReadSheet";
+import { useLegal } from "@/src/features/legal/context/LegalContext";
 import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
@@ -20,6 +22,8 @@ export function SettingsHeaderProfile({ onAddAccount, onDeleteAccount }: Props) 
   const { user, userData } = useAuth();
   const accounts = useAccounts();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [legalOpen, setLegalOpen] = useState(false);
+  const { hasUpdate: legalUpdate } = useLegal();
 
   const firebaseName = user?.displayName || "";
   const initiale =
@@ -77,7 +81,13 @@ export function SettingsHeaderProfile({ onAddAccount, onDeleteAccount }: Props) 
           setSheetOpen(false);
           onDeleteAccount();
         }}
+        onOpenLegal={() => {
+          setSheetOpen(false);
+          setLegalOpen(true);
+        }}
+        legalUpdate={legalUpdate}
       />
+      <LegalReadSheet visible={legalOpen} onClose={() => setLegalOpen(false)} />
     </View>
   );
 }

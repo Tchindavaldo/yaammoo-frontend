@@ -1345,5 +1345,12 @@
   "Le remboursement sera traité par notre équipe.": "Our team will process your refund.",
   "Tu recevras {{a}} F (frais de paiement retenus : {{b}} F).": "You will receive {{a}} F (payment fees kept: {{b}} F).",
   "Tu recevras {{a}} F sur le {{p}}, le numéro qui a payé (frais de paiement retenus : {{b}} F).": "You will receive {{a}} F on {{p}}, the number that paid (payment fees kept: {{b}} F).",
-  "Groupée avec ta commande": "Grouped with your order"
+  "Groupée avec ta commande": "Grouped with your order",
+  "Conditions d'utilisation et confidentialité": "Terms of use and privacy",
+  "Version {{v}}": "Version {{v}}",
+  "Version {{v}} du {{d}}": "Version {{v}} of {{d}}",
+  "Accepté le {{d}}": "Accepted on {{d}}",
+  "J'accepte les conditions générales d'utilisation": "I accept the terms of use",
+  "J'ai lu la politique de confidentialité": "I have read the privacy policy",
+  "Les conditions ont été mises à jour. Merci de les vérifier puis de valider à nouveau.": "The terms have been updated. Please review them and confirm again."
 }

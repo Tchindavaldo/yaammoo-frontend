@@ -4,6 +4,8 @@ import React, { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameSheet";
 import { ProfileNameProvider } from "@/src/features/profile/hooks/useProfileNameSheet";
+import { LegalProvider } from "@/src/features/legal/context/LegalContext";
+import { LegalAcceptanceModal } from "@/src/features/legal/components/LegalAcceptanceModal";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
@@ -47,6 +49,7 @@ function TabLayoutInner() {
   }, [activateHome]);
 
   return (
+    <LegalProvider>
     <ProfileNameProvider>
       {/* Plus de cible de flou par ecran (`screenLayout`) : Android ne floute
           plus rien, la tab bar y est opaque (`useTabBarStyle`). */}
@@ -183,7 +186,10 @@ function TabLayoutInner() {
         </Tabs>
         {/* Au-dessus des onglets (tab bar comprise) : le flou couvre tout l'ecran. */}
         <ProfileNameSheet />
+        {/* Conditions d'utilisation : bloquant tant que non acceptées. */}
+        <LegalAcceptanceModal />
       </View>
     </ProfileNameProvider>
+    </LegalProvider>
   );
 }

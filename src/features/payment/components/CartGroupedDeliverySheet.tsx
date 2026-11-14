@@ -1,58 +1,32 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
-import { AppBlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { Toast } from "@/src/components/Toast";
 import type { CartZoneGroup } from "@/src/features/orders/utils/groupCartOrders";
 import { Livraison } from "@/src/types";
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import {
-  ActivityIndicator,
-  Animated,
-  Easing,
-  Keyboard,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Animated, Modal, Pressable, StyleSheet } from "react-native";
 // Safe-area basse : source unique (R19), cf. blur-safe-area.md §4.
 import { useSheetSafeInsets as useSafeAreaInsets } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { CartPaymentState } from "../hooks/useCartPayment";
 import { useGroupedDeliveryData } from "../hooks/useGroupedDeliveryData";
+import { useGroupedDetailCapsule } from "../hooks/useGroupedDetailCapsule";
 import {
   CartGroupedDeliveryOverlays,
   type GroupedDeliveryOverlay,
 } from "./CartGroupedDeliveryOverlays";
-import {
-  CAPSULE_BOTTOM_OFFSET,
-  styles,
-} from "./CartGroupedDeliverySheet.styles";
+import { styles } from "./CartGroupedDeliverySheet.styles";
 import { CartGroupedDetailCapsule } from "./CartGroupedDetailCapsule";
 import { CartGroupedPaymentBody } from "./CartGroupedPaymentBody";
-import { CartPaymentOverlay } from "./CartPaymentOverlay";
 import { C, styles as sheetStyles } from "./CartPaymentSheet.styles";
 import { t, useLanguage } from "@/src/i18n";
 import { GroupedPickupDateSheet } from "./GroupedPickupDateSheet";
 import { GroupedPickupHourSheet } from "./GroupedPickupHourSheet";
+import { GroupedLegacyPayOverlay } from "./GroupedLegacyPayOverlay";
+import { GroupedSheetActionRow } from "./GroupedSheetActionRow";
 import { isPickupHourValid } from "@/src/features/checkout/utils/pickupHours";
 import { hasExpressZones as hasExpressZonesOf } from "@/src/features/checkout/utils/expressZones";
-
-/** Hauteur de la capsule flottante (`CartPaymentOverlay.styles.capsule`). */
-const CAPSULE_HEIGHT = 70;
-/** Respiration entre le haut du voile et la capsule, qui y touchait. */
-const VEIL_TOP_GAP = 10;
-/**
- * Ecart entre la capsule et le haut du clavier. On n'ajoute PAS `insets.bottom`
- * ici : clavier ouvert, il couvre deja l'indicateur d'accueil, et l'inset
- * repoussait la capsule d'une trentaine de pixels pour rien.
- */
-const CAPSULE_KEYBOARD_GAP = 8;
 
 interface CartGroupedDeliverySheetProps {
   visible: boolean;
@@ -65,14 +39,10 @@ interface CartGroupedDeliverySheetProps {
    * commandes groupées. Les livraisons groupées partent d'un même point.
    */
   fastFoodId?: string;
-  /**
-   * Livraison commune validée : appliquée à toutes les commandes du lot.
-   * Le sheet passe alors à SON TROISIÈME calque (paiement) — il ne se ferme
-   * plus, les trois étapes vivant dans un seul `Modal`.
-   */
+  /** Livraison commune validée : appliquée à toutes les commandes du lot. */
   onValidate: (delivery: Livraison) => void;
 
-  // --- Étape 3 : paiement (mêmes props que `CartPaymentSheet`) ---
+  // --- Paiement (mêmes props que `CartPaymentSheet`) ---
   // Pas de `totalAmount` : le montant se DEDUIT du lot (articles + la course
   // unique), le total du panier compterait une course par zone.
   phone: string;
@@ -94,23 +64,15 @@ interface CartGroupedDeliverySheetProps {
 
 /**
  * Bottom sheet du parcours de commande GROUPÉ — ouvert par « commander » quand
- * le panier porte plusieurs courses.
+ * le panier porte plusieurs courses. Un seul `Modal`, pages 1 a 4
+ * (`CartGroupedPaymentBody`) : groupage, type, informations, montants ; la
+ * page 4 ouvre sa capsule de saisie dediee (`CartGroupedDetailCapsule`).
  *
- * Il tient SES TROIS ÉTAPES en calques superposés dans un seul `Modal` :
- * 1. groupage (`CartGroupingStep`, écran 02 du design) ;
- * 2. livraison commune — la section delivery du sheet de commande réutilisée
- *    telle quelle (`DeliveryTab` + ses cinq overlays) ;
- * 3. paiement (`CartPaymentBody` + la capsule `CartPaymentOverlay`), le même
- *    corps que le sheet de paiement autonome.
+ * `deliveryHours` / `expressZones` / `openTime` / `closeTime` /
+ * `orderLeadTime` / `deliveryOffer` viennent de `useGroupedDeliveryData`.
  *
- * Les trois calques sont montés d'emblée : le passage de l'un à l'autre n'est
- * qu'un fondu croisé sur du contenu déjà peint. Enchaîner des `Modal` coûtait
- * une animation de fermeture complète, faisait clignoter l'étape suivante, et
- * présenter le second pendant la sortie du premier échouait silencieusement.
- *
- * `deliveryHours` / `orderLeadTime` / `deliveryOffer` viennent de
- * `useGroupedDeliveryData`, comme `CartCheckoutSheet` les charge pour une
- * commande individuelle.
+ * Modules extraits (R4) : `GroupedSheetActionRow` (navigation),
+ * `useGroupedDetailCapsule`, `GroupedLegacyPayOverlay` (ancienne page 5).
  */
 export const CartGroupedDeliverySheet: React.FC<
   CartGroupedDeliverySheetProps
@@ -122,7 +84,6 @@ export const CartGroupedDeliverySheet: React.FC<
   onValidate,
   onClose,
   onHide,
-  onError,
   phone,
   onPhoneChange,
   network,
@@ -137,11 +98,7 @@ export const CartGroupedDeliverySheet: React.FC<
   useLanguage();
   const insets = useSafeAreaInsets();
 
-  /**
-   * Toast rendu DANS le Modal du sheet. Celui du panier vit sous le voile noir
-   * et devient illisible des que le sheet est ouvert : les erreurs declenchees
-   * ici s'affichent donc au premier plan, au-dessus du voile.
-   */
+  // Toast rendu DANS le Modal : celui du panier est etouffe par le voile.
   const [localToast, setLocalToast] = React.useState<string | null>(null);
   const showError = React.useCallback(
     (message: string) => setLocalToast(message),
@@ -152,8 +109,7 @@ export const CartGroupedDeliverySheet: React.FC<
   // Reste monté le temps de l'animation de sortie.
   const [mounted, setMounted] = React.useState(visible);
 
-  // Livraison commune en cours de composition. Express par défaut, comme le
-  // choix « tout livrer ensemble » le suggère (un seul livreur, tout de suite).
+  // Livraison commune en cours de composition. Express par défaut.
   const [delivery, setDelivery] = React.useState<Livraison>(
     () => new Livraison(true, 0, "express"),
   );
@@ -161,7 +117,7 @@ export const CartGroupedDeliverySheet: React.FC<
   /**
    * Paiement lance : on remonte d'abord la livraison commune au panier (qui la
    * pousse dans les commandes et arme le paiement), puis on declenche la
-   * transaction. La page etant unique, les deux se font au meme clic.
+   * transaction.
    */
   const handleConfirm = React.useCallback(
     (payPhone: string) => {
@@ -171,22 +127,18 @@ export const CartGroupedDeliverySheet: React.FC<
     [onValidate, onConfirm, delivery],
   );
 
-  /**
-   * Livraison incomplete : le paiement ne part pas. Le message dit CE QUI
-   * manque, sinon le clic reste sans effet visible.
-   */
-  // Overlay ouvert par `DeliveryTab` (un seul a la fois).
+  // Overlay ouvert (un seul a la fois).
   const [overlay, setOverlay] = React.useState<GroupedDeliveryOverlay>(null);
-  // Jour du retrait (sur place) : choisi une fois avant le paiement.
+  // Sur place : jour puis heure de passage.
   const [pickupOpen, setPickupOpen] = React.useState(false);
   const [pickupChosen, setPickupChosen] = React.useState(false);
   const [pickupHourOpen, setPickupHourOpen] = React.useState(false);
   const pendingPayPhone = React.useRef<string | null>(null);
 
+  /** Livraison incomplete : le paiement ne part pas, le message dit ce qui manque. */
   const guardedConfirm = React.useCallback(
     async (payPhone: string) => {
-      // Retrait (sans livraison) : numero de contact exige. On ouvre l'overlay
-      // contact, puis le paiement reprend des que le numero est saisi.
+      // Retrait : numero de contact exige ; le paiement reprend apres saisie.
       if (delivery.type === "aucune" && !delivery.phone) {
         pendingPayPhone.current = payPhone;
         setOverlay("contact");
@@ -224,60 +176,17 @@ export const CartGroupedDeliverySheet: React.FC<
     if (overlay === null && !delivery.phone) pendingPayPhone.current = null;
   }, [overlay, delivery.phone]);
 
+  // Ancien `handlePay` (capsule de la page 5) retire : jamais appele, la
+  // saisie passe par `CartGroupedDetailCapsule`. Plus d'envoi local en cours.
+  const isProcessing = false;
 
   /**
-   * Envoi en cours cote capsule du footer. Local, comme l'etait `isProcessing`
-   * de `CartPaymentOverlay` : il couvre l'aller-retour AVANT que le hook ne
-   * bascule `paymentState` sur « waiting ».
-   */
-  const [isProcessing, setIsProcessing] = React.useState(false);
-
-  /**
-   * Validation du numero — reprend `handlePay` de `CartPaymentOverlay` : champ
-   * vide = message et rien d'autre, sinon on ferme le clavier, on `trim()` et
-   * on lance la transaction.
-   */
-  const handlePay = React.useCallback(async () => {
-    const p = phone.trim();
-    if (!p) {
-      showError(t("Veuillez remplir le numéro de paiement"));
-      return;
-    }
-    try {
-      setIsProcessing(true);
-      Keyboard.dismiss();
-      await guardedConfirm(p);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [phone, guardedConfirm, showError]);
-
-  /**
-   * Une seule commande : rien a arbitrer entre livraison groupee ou separee,
-   * la page de groupage (1) n'a pas de sens. Le parcours demarre directement
-   * sur le type de livraison (2) et le retour s'arrete la.
-   */
-  /**
-   * "Deja groupe" : toutes les commandes du lot tombent dans un seul
-   * `CartZoneGroup` — meme type + zone + creneau (`groupCartOrdersByZone`,
-   * qui regroupe deja sur ces criteres). Des lors, la page groupage (1) n'a
-   * rien a arbitrer : on demarre direct sur le type de livraison (2).
+   * "Deja groupe" : toutes les commandes tombent dans un seul `CartZoneGroup`.
+   * La page groupage (1) n'a rien a arbitrer : on demarre sur le type (2).
    */
   const singleOrder = groups.length <= 1;
-
-  /**
-   * PAGE courante du parcours de livraison. Le sheet ayant une hauteur reduite,
-   * la livraison ne tient plus d'un bloc : 1 = groupage, 2 = type de livraison,
-   * 3 = informations, 4 = montants, 5 = recapitulatif et paiement.
-   */
   const [step, setStep] = React.useState<1 | 2 | 3 | 4>(singleOrder ? 2 : 1);
 
-  /**
-   * Le sheet reste MONTE en permanence (anim de sortie) : recalculer `step`
-   * seulement a la fermeture le figeait sur la valeur de l'ouverture
-   * precedente. On le repositionne aussi a l'OUVERTURE, sur les `groups` du
-   * nouveau lot.
-   */
   // Paiement en attente de verdict : rouvert tel quel (étape et capsule gardées).
   const inFlightRef = React.useRef(false);
   inFlightRef.current =
@@ -287,13 +196,6 @@ export const CartGroupedDeliverySheet: React.FC<
     setStep(singleOrder ? 2 : 1);
   }, [visible, singleOrder]);
 
-  /**
-   * Capsule DEDIEE de l'etape 4 (« Le detail de votre commande ») : sa propre
-   * copie autonome (`CartGroupedDetailCapsule`), ouverte par « Continuer ».
-   * L'etape 5 et sa capsule d'origine sont inchangees.
-   */
-  const [detailCapsule, setDetailCapsule] = React.useState(false);
-
   // Paiement parti : plus de fermeture au tap ni de changement de reseau.
   const isBusy =
     paymentState === "waiting" ||
@@ -301,55 +203,11 @@ export const CartGroupedDeliverySheet: React.FC<
     paymentState === "success" ||
     paymentState === "success_created";
 
-  React.useEffect(() => {
-    if (step !== 4) setDetailCapsule(false);
-  }, [step]);
+  const [detailCapsule, setDetailCapsule] = useGroupedDetailCapsule(step, isBusy, isKeyboardVisible);
 
   /**
-   * Clavier referme alors que la capsule de l'etape 4 etait ouverte : elle se
-   * retire en fondu, comme celle de l'etape 5. Le garde est indispensable —
-   * `autoFocus` demande le clavier au montage, sans lui l'effet la refermerait
-   * dans l'intervalle ou il n'est pas encore visible.
-   */
-  /**
-   * Transaction TERMINEE : la capsule se ferme. En echec, le hook repasse a
-   * « total » et la capsule se rouvrait aussitot en saisie au lieu de se
-   * retirer — le drapeau retient qu'une transaction etait partie.
-   */
-  const detailWasBusy = React.useRef(false);
-  React.useEffect(() => {
-    if (isBusy) {
-      detailWasBusy.current = true;
-      return;
-    }
-    if (detailWasBusy.current) {
-      detailWasBusy.current = false;
-      setDetailCapsule(false);
-    }
-  }, [isBusy]);
-
-  const detailKbWasVisible = React.useRef(false);
-  React.useEffect(() => {
-    if (!detailCapsule) {
-      detailKbWasVisible.current = false;
-      return;
-    }
-    // Transaction partie : la capsule et son voile RESTENT — c'est la qu'on
-    // suit l'attente, le message USSD puis le succes. Le clavier peut se
-    // fermer, la capsule ne doit pas partir avec lui.
-    if (isBusy) return;
-    if (isKeyboardVisible) detailKbWasVisible.current = true;
-    else if (detailKbWasVisible.current) setDetailCapsule(false);
-  }, [detailCapsule, isKeyboardVisible, isBusy]);
-
-  /**
-   * Clavier referme alors qu'on saisissait : on repasse au repos. La capsule
-   * flottante se demonte aussitot (elle ne redescend pas — le champ du footer
-   * garde le numero), et un futur focus pourra la faire remonter.
-   *
-   * Le garde `keyboardWasVisible` est indispensable : `autoFocus` demande le
-   * clavier au montage de la capsule, et sans lui l'effet la refermerait dans
-   * l'intervalle ou il n'est pas encore visible.
+   * Clavier referme alors qu'on saisissait : on repasse au repos (garde
+   * `keyboardWasVisible` : `autoFocus` demande le clavier au montage).
    */
   const keyboardWasVisible = React.useRef(false);
   React.useEffect(() => {
@@ -361,16 +219,7 @@ export const CartGroupedDeliverySheet: React.FC<
     else if (keyboardWasVisible.current) setPaymentState("total");
   }, [isKeyboardVisible, paymentState, setPaymentState]);
 
-  /**
-   * Sortie EN FONDU de la capsule flottante et de son voile. Sans elle, la
-   * fermeture du clavier les faisait disparaitre d'un coup, en pleine descente
-   * du clavier : le calque reste monte le temps du fondu, puis se retire.
-   */
-  /**
-   * Capsule de l'ancienne page 5, CONSERVEE mais plus atteinte : le parcours
-   * s'arrete a la page 4, dont la capsule dediee porte desormais la saisie.
-   * Sans ce `false`, les deux s'affichaient l'une sur l'autre.
-   */
+  /** Capsule de l'ancienne page 5 : CONSERVEE mais plus atteinte (`false`). */
   const showPayOverlay =
     false &&
     step === 4 &&
@@ -379,96 +228,6 @@ export const CartGroupedDeliverySheet: React.FC<
       paymentState === "ussd_sent" ||
       paymentState === "success" ||
       paymentState === "success_created");
-  const payOverlayAnim = React.useRef(new Animated.Value(0)).current;
-  const [payOverlayMounted, setPayOverlayMounted] = React.useState(false);
-
-  /**
-   * Glissement d'ENTREE de la capsule, distinct du fondu. Le clavier s'ouvrant
-   * d'emblee (`autoFocus`), la capsule etait deja en haut quand le fondu se
-   * terminait : on ne la voyait pas monter. Cette valeur reste a 1 a la sortie,
-   * qui doit rester un fondu sur place.
-   */
-  const payEnterAnim = React.useRef(new Animated.Value(0)).current;
-
-  /**
-   * Dernier etat REELLEMENT affiche par la capsule. Pendant le fondu de sortie,
-   * `paymentState` est deja repasse a « total » : sans ce gel, la capsule
-   * basculait sur l'ecran « Total a payer » en pleine disparition, alors qu'il
-   * n'a plus lieu d'etre ici (le montant est sur les cards).
-   */
-  const lastPayState = React.useRef<CartPaymentState>("input");
-
-  /**
-   * Hauteur clavier GELEE pour la capsule. Son `bottom` suit `keyboardHeight` :
-   * a la fermeture, elle redescendait donc avec le clavier pendant son fondu.
-   * On memorise la derniere hauteur vue en saisie et on l'utilise telle quelle
-   * pendant la sortie — le fondu se joue sur place, sans translation.
-   */
-  const veilKb = React.useRef(new Animated.Value(0)).current;
-  React.useEffect(() => {
-    if (!showPayOverlay) return; // Sortie : on cesse de suivre, la valeur reste.
-    // Ouverture : la capsule s'ouvre clavier ferme (tap sur le leurre du
-    // footer). On repart de 0, sinon le voile s'affiche d'emblee a la hauteur
-    // gelee de la fermeture precedente au lieu de grandir avec le clavier.
-    veilKb.setValue(0);
-    const id = (keyboardHeight as Animated.Value).addListener(({ value }) => {
-      veilKb.setValue(value);
-    });
-    return () => (keyboardHeight as Animated.Value).removeListener(id);
-  }, [showPayOverlay, keyboardHeight, veilKb]);
-
-  React.useEffect(() => {
-    if (showPayOverlay) lastPayState.current = paymentState;
-  }, [showPayOverlay, paymentState]);
-
-  React.useEffect(() => {
-    if (showPayOverlay) {
-      setPayOverlayMounted(true);
-      // Glissement depuis le bas, joue a chaque ouverture.
-      payEnterAnim.setValue(0);
-      Animated.timing(payEnterAnim, {
-        toValue: 1,
-        duration: 260,
-        useNativeDriver: false,
-      }).start();
-      Animated.timing(payOverlayAnim, {
-        toValue: 1,
-        duration: 160,
-        // `useNativeDriver: false` OBLIGATOIRE : cette opacite cohabite, dans
-        // le meme noeud de style, avec `height` / `bottom` calcules sur
-        // `keyboardHeight`. En natif, Animated basculerait tout le noeud —
-        // donc `keyboardHeight` — cote natif, et le ressort JS qui la pilote
-        // dans `cart.tsx` planterait.
-        useNativeDriver: false,
-      }).start();
-      return;
-    }
-    // Sortie : simple fondu. La capsule reste accrochee au clavier et redescend
-    // avec lui — la figer sur place supprimait ce mouvement.
-    Animated.timing(payOverlayAnim, {
-      toValue: 0,
-      // Sortie DOUCE : le clavier natif descend vite et on ne peut pas le
-      // ralentir ; on etale le fondu pour que le retrait ne paraisse pas sec.
-      duration: 450,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (finished) setPayOverlayMounted(false);
-    });
-  }, [showPayOverlay, payOverlayAnim, payEnterAnim]);
-
-  // Sortie ETAGEE : la capsule s'efface en premier (fin de course de l'anim),
-  // le voile la suit — on la voit partir, puis le flou se retire.
-  const capsuleOpacity = payOverlayAnim.interpolate({
-    inputRange: [0.5, 1],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
-  const veilOpacity = payOverlayAnim.interpolate({
-    inputRange: [0, 0.5],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
 
   React.useEffect(() => {
     if (visible) {
@@ -480,8 +239,7 @@ export const CartGroupedDeliverySheet: React.FC<
         friction: 11,
       }).start();
     } else {
-      // Sortie en fondu court, comme le sheet de groupage : le sheet de
-      // paiement enchaîne derrière, un glissement ferait un temps mort.
+      // Sortie en fondu court : le paiement enchaine derriere.
       Animated.timing(anim, {
         toValue: 0,
         duration: 160,
@@ -492,8 +250,7 @@ export const CartGroupedDeliverySheet: React.FC<
     }
   }, [visible, anim]);
 
-  // Donnees de livraison de la boutique de reference (creneaux, offre), mises
-  // en cache pour ne pas repartir de `null` a chaque ouverture.
+  // Donnees de livraison de la boutique de reference (creneaux, offre).
   const {
     rawHours,
     expressZones,
@@ -505,18 +262,15 @@ export const CartGroupedDeliverySheet: React.FC<
     pickupAllowed,
   } = useGroupedDeliveryData(fastFoodId);
 
-  // Des zones express existent-elles (liste `expressZones`, sans heure) ? Sans
-  // elles, la ligne « Zone express » n'a rien a proposer et reste masquee.
+  // Zones express (liste boutique, sans heure).
   const hasExpressZones = hasExpressZonesOf(expressZones);
 
   /**
-   * Passage a la page suivante. Depuis la page « Informations » (3), on refuse
-   * d'avancer tant que les champs requis par le type de livraison choisi sont
-   * vides : sans ce garde-fou le user arrivait au paiement avec une livraison
-   * incomplete, et le seul message venait de `guardedConfirm`, bien trop tard.
+   * Page suivante. Depuis « Informations » (3), on refuse d'avancer tant que
+   * les champs requis par le type de livraison sont vides.
    */
   const goNext = React.useCallback(() => {
-    // Retrait : seul le numero de contact est exige (la boutique joint le client).
+    // Retrait : numero de contact exige (la boutique joint le client).
     if (step === 3 && delivery.type === "aucune" && !delivery.phone) {
       showError(t("Indiquez un numéro de contact pour que la boutique puisse vous joindre"));
       return;
@@ -554,22 +308,17 @@ export const CartGroupedDeliverySheet: React.FC<
     setStep((s) => (s + 1) as 1 | 2 | 3 | 4);
   }, [step, delivery, hasExpressZones, showError, pickupChosen, openTime, closeTime, orderLeadTime]);
 
-  // Commandes du lot, et frais de la course groupee : une seule course est
-  // facturee, la plus chere.
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);
   /**
-   * Course facturee. Des qu'une zone / un creneau est choisi dans le sheet, ce
-   * choix s'applique a TOUTES les commandes du lot : les montants affiches
-   * suivent donc `delivery` en temps reel, et non les livraisons d'origine des
-   * commandes (qui ne seront plus celles envoyees au paiement).
+   * Course facturee : le choix fait dans le sheet s'applique a TOUTES les
+   * commandes du lot, les montants suivent donc `delivery` en temps reel.
    */
-  const prixChoisi =
+  const fraisGroupes =
     delivery.type === "aucune"
       ? 0
       : Number(
           delivery.type === "express" ? delivery.expressPrix : delivery.prix,
         ) || 0;
-  const fraisGroupes = prixChoisi;
   /** Total des articles du lot, hors livraison (source de verite du backend). */
   const articlesTotal = groups.reduce((s, g) => s + g.articles, 0);
 
@@ -609,21 +358,12 @@ export const CartGroupedDeliverySheet: React.FC<
           sheetStyles.sheet,
           styles.sheet,
           {
-            // Pied pose sur la bande safe-area (source unique, R19), sans
-            // marge en plus : aligne sur les autres sheets et pages.
+            // Pied pose sur la bande safe-area (source unique, R19).
             paddingBottom: insets.bottom,
             transform: [{ translateY }],
           },
         ]}
       >
-        {/* Titre du sheet : seul en-tete, sans sous-titre ni croix — le sheet
-            se ferme par le voile. */}
-        {/* <Text style={styles.sheetTitle}>Livraison et paiement</Text> */}
-
-        {/* CINQ PAGES : `CartGroupedPaymentBody` peint celle de `step`
-            (groupage, type, informations, montants, puis paiement) ; la capsule
-            de saisie est ancree hors du sheet, juste dessous — d'ou `payLayer`,
-            qui lui reserve sa place en bas. */}
         <BlurTarget
           style={[styles.body, styles.payLayer, { backgroundColor: C.sheet }]}
         >
@@ -654,178 +394,38 @@ export const CartGroupedDeliverySheet: React.FC<
             step={step}
           />
 
-          {/* Navigation entre les pages. Sur la DERNIERE, « Continuer » cede la
-              place a la capsule de paiement : seul le retour subsiste, sans
-              quoi on ne pourrait plus revenir corriger les montants. */}
-          <View style={styles.actionRow}>
-            {step > (singleOrder ? 2 : 1) && !isBusy && (
-              <TouchableOpacity
-                style={styles.backBtn}
-                onPress={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4)}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="arrow-back" size={20} color={C.ink} />
-              </TouchableOpacity>
-            )}
-            {step < 4 ? (
-              <TouchableOpacity
-                style={[styles.primaryBtn, styles.actionRowPrimary]}
-                onPress={goNext}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.primaryBtnLabel}>{t("Continuer")}</Text>
-              </TouchableOpacity>
-            ) : (
-              /* DERNIERE page : la capsule PREND LA PLACE du bouton, comme
-                 l'ancienne page 5 — meme hauteur, meme largeur restante, le
-                 footer ne bouge pas d'une page a l'autre.
-
-                 Ce n'est PAS un champ de saisie : c'est un leurre. Le tap ouvre
-                 la capsule flottante (voile a hauteur du sheet, capsule
-                 centree), seul vrai champ, qui prend le focus. */
-              <TouchableOpacity
-                style={styles.payCapsule}
-                onPress={() => setDetailCapsule(true)}
-                disabled={isBusy || isProcessing}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="call-outline" size={16} color="#fff" />
-                <Text
-                  style={[
-                    styles.payCapsuleInput,
-                    !phone && styles.payCapsulePlaceholder,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {phone || t("Numéro de paiement")}
-                </Text>
-                <TouchableOpacity
-                  style={styles.payCapsuleBtn}
-                  onPress={() => setDetailCapsule(true)}
-                  disabled={isBusy || isProcessing}
-                  activeOpacity={0.85}
-                >
-                  {isProcessing || isBusy ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="arrow-forward" size={17} color="#fff" />
-                  )}
-                </TouchableOpacity>
-              </TouchableOpacity>
-            )}
-          </View>
+          <GroupedSheetActionRow
+            step={step}
+            firstStep={singleOrder ? 2 : 1}
+            isBusy={isBusy}
+            isProcessing={isProcessing}
+            phone={phone}
+            onBack={() => setStep((s) => (s - 1) as 1 | 2 | 3 | 4)}
+            onNext={goNext}
+            onOpenCapsule={() => setDetailCapsule(true)}
+          />
         </BlurTarget>
         <SafeAreaDebugBand />
       </Animated.View>
 
-      {/* Capsule flottante, rendue HORS du sheet pour remonter avec le clavier
-          sans etre rognee. Elle sert a DEUX moments :
-          - clavier ouvert (`input`) : elle monte au-dessus du clavier, son
-            champ et celui du footer partageant `phone` — la saisie est donc
-            la meme des deux cotes ;
-          - transaction (attente, USSD, succes).
-          Clavier ferme au repos, elle est DEMONTEE net : le champ du bas porte
-          deja le numero saisi, la faire redescendre n'apporterait rien. */}
-      {payOverlayMounted && (
-        <Animated.View
-          pointerEvents="box-none"
-          style={[sheetStyles.capsuleSlot, { transform: [{ translateY }] }]}
-        >
-          {/* Voile FLOUTE de la zone basse : il part du bas de l'ecran et monte
-            jusqu'au bord superieur de la capsule (sa position + sa hauteur),
-            couvrant la zone occupee par le clavier. Rendu AVANT la capsule, il
-            passe donc dessous. */}
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.keyboardVeil,
-              {
-                opacity: veilOpacity,
-                /* Comme la capsule, la hauteur est GELEE en sortie : sinon le
-                   voile se retracte avec le clavier et semble partir avant
-                   elle, alors qu'il doit partir apres. */
-                height: Animated.add(
-                  veilKb,
-                  CAPSULE_BOTTOM_OFFSET +
-                    CAPSULE_KEYBOARD_GAP +
-                    CAPSULE_HEIGHT +
-                    VEIL_TOP_GAP,
-                ),
-              },
-            ]}
-          >
-            <AppBlurView
-              intensity={65}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-              fallbackStyle={styles.keyboardVeilFallback}
-            />
-            {/* Teinte posee SUR le flou : l'intensite seule ne noircit pas
-                assez, la zone du clavier restait claire. */}
-            <View pointerEvents="none" style={styles.keyboardVeilTint} />
-          </Animated.View>
-          {/* Calque de fondu PROPRE a la capsule : elle s'efface avant le
-              voile, on la voit partir puis le flou se retire. */}
-          <Animated.View
-            pointerEvents="box-none"
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                opacity: capsuleOpacity,
-                transform: [
-                  {
-                    translateY: payEnterAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [34, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <CartPaymentOverlay
-              phone={phone}
-              onPhoneChange={onPhoneChange}
-              onConfirm={guardedConfirm}
-              totalAmount={articlesTotal + fraisGroupes}
-              /* Pendant le fondu de sortie, on rejoue le DERNIER etat affiche :
-               `paymentState` est deja retombe a « total » et la capsule
-               montrait « Total a payer » en pleine disparition. */
-              paymentState={
-                showPayOverlay ? paymentState : lastPayState.current
-              }
-              setPaymentState={setPaymentState}
-              network={network}
-              onNetworkChange={onNetworkChange}
-              ussdMessage={ussdMessage}
-              onClose={onClose}
-              onError={showError}
-              /* TOUJOURS `true` : l'apparence « clavier ouvert » est l'etat par
-               defaut de la capsule dans ce parcours. En repassant a `false` a
-               la fermeture du clavier, elle faisait surgir la croix de
-               fermeture et changeait l'icone du bouton — des elements caches
-               pendant la saisie qui reapparaissaient brutalement. */
-              isKeyboardVisible
-              /* SEUL vrai champ du parcours : il prend le focus des l'ouverture,
-               le footer n'etant qu'un leurre. Plus de concurrence entre deux
-               `TextInput`, donc plus de clignotement ni de curseur invisible. */
-              autoFocus
-              /* Android < 12 : pas de flou natif, on opacifie le fond pour que la
-             capsule reste lisible. */
-              blurFallbackStyle={styles.payCapsuleBlurFallback}
-              /* En sortie on fige la hauteur : sinon la capsule redescend avec le
-               clavier au lieu de disparaitre sur place. */
-              bottom={Animated.add(
-                veilKb,
-                CAPSULE_BOTTOM_OFFSET + CAPSULE_KEYBOARD_GAP,
-              )}
-            />
-          </Animated.View>
-        </Animated.View>
-      )}
+      <GroupedLegacyPayOverlay
+        show={showPayOverlay}
+        paymentState={paymentState}
+        setPaymentState={setPaymentState}
+        keyboardHeight={keyboardHeight}
+        translateY={translateY}
+        phone={phone}
+        onPhoneChange={onPhoneChange}
+        onConfirm={guardedConfirm}
+        totalAmount={articlesTotal + fraisGroupes}
+        network={network}
+        onNetworkChange={onNetworkChange}
+        ussdMessage={ussdMessage}
+        onClose={onClose}
+        onError={showError}
+      />
 
-      {/* Capsule DEDIEE de l'etape 4 — copie autonome, independante de celle
-          de l'etape 5 (qui reste inchangee juste au-dessus). */}
+      {/* Capsule DEDIEE de l'etape 4. */}
       <CartGroupedDetailCapsule
         visible={detailCapsule}
         phone={phone}
@@ -884,8 +484,7 @@ export const CartGroupedDeliverySheet: React.FC<
         }}
       />
 
-      {/* Rendu EN DERNIER, dans le Modal : le toast passe ainsi au-dessus du
-          voile noir et des overlays, au lieu d'etre etouffe par eux. */}
+      {/* Rendu EN DERNIER, dans le Modal : au-dessus du voile et des overlays. */}
       {localToast && (
         <Toast
           message={localToast}

@@ -1,6 +1,7 @@
 # Prix express : unique par zone, pas par heure
 
-[ ] settings boutique : le prix express doit être unique par zone, pas par heure
+[x] (fait le 14/11/2026 : `expressZones` au niveau boutique, migration
+    backend 073 appliquée en TEST, prod à faire au déploiement main) settings boutique : le prix express doit être unique par zone, pas par heure
     - l'express = "livré dès que la cmd est terminée" → il n'y a pas de créneau,
       donc aucune raison d'avoir un prix différent selon l'heure
     - aujourd'hui `expressZonesByHour` stocke un prix par (heure, lieu).

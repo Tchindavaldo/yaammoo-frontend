@@ -67,9 +67,9 @@ export const BroadcastComposer: React.FC<Props> = ({
   useLanguage();
   const [title, setTitle] = useState(initial.title);
   const [body, setBody] = useState(initial.body);
-  const [bodyOn, setBodyOn] = useState(!!initial.body);
+  const [bodyOn, setBodyOn] = useState(true);
   const [imageUri, setImageUri] = useState<string | null>(initial.imageUri);
-  const [pickOn, setPickOn] = useState(!!initial.imageUri);
+  const [pickOn, setPickOn] = useState(true);
   const [galleryUri, setGalleryUri] = useState<string | null>(
     initial.imageUri && !menuImages.includes(initial.imageUri) ? initial.imageUri : null,
   );
@@ -124,9 +124,8 @@ export const BroadcastComposer: React.FC<Props> = ({
   const onBackdrop = () => (keyboardOpen ? Keyboard.dismiss() : close());
 
   const toggleBody = () => {
-    const next = !bodyOn;
-    setBodyOn(next);
-    if (next) setTimeout(() => bodyRef.current?.focus(), 50);
+    // Pas de focus auto : le clavier ne s'ouvre qu'au toucher d'un champ.
+    setBodyOn(!bodyOn);
   };
 
   const pickFromGallery = async () => {
@@ -196,7 +195,8 @@ export const BroadcastComposer: React.FC<Props> = ({
           />
         )}
 
-        <BroadcastPreview shop={shop} title={title} body={bodyOn ? body : ""} imageUri={imageUri} />
+        {/* Le push n'affiche que boutique + titre : pas de message dans l'aperçu. */}
+        <BroadcastPreview shop={shop} title={title} body="" imageUri={imageUri} />
 
         <TextInput
           value={title}

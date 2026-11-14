@@ -1311,5 +1311,12 @@
   "Impossible de charger les livreurs": "Could not load drivers",
   "Jour du retrait": "Pickup day",
   "Récupérer aujourd'hui": "Pick up today",
-  "Récupérer le": "Pick up on"
+  "Récupérer le": "Pick up on",
+  "Dimanche": "Sunday",
+  "Lundi": "Monday",
+  "Mardi": "Tuesday",
+  "Mercredi": "Wednesday",
+  "Jeudi": "Thursday",
+  "Vendredi": "Friday",
+  "Samedi": "Saturday"
 }

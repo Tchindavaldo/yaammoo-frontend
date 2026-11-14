@@ -53,6 +53,9 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
       orderLeadTime: ff.orderLeadTime,
       advanceDays: ff.advanceDays,
       deliveryOffer: ff.deliveryOffer ?? null,
+      // Regime de livraison vu par le client ('fastfood' | 'platform'), pose sur
+      // la commande : le backend le compare au regime actuel avant paiement.
+      deliveryBy: ff.deliveryBy,
       // Retrait boutique autorisé ou non (GET /fastfood/all) : gate la card
       // « Aucun » de l'onglet Livraison du checkout.
       pickupAllowed: ff.pickupAllowed,

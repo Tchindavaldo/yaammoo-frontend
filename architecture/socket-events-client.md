@@ -190,4 +190,4 @@ Le client se connecte à `Config.apiUrl`. En dev local (`192.168.x.x:5000`), le 
 
 Bus : `src/services/fastfoodRefreshBus.ts`, ecoute par `hooks/useFastFoodRefreshByIds.ts` (FastFoodContext).
 
-Refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : `GET /fastFood/all?ids=…` en arriere-plan (l'offre du user en depend). Codes `delivery_price_mismatch` / `display_price_changed` : message « Les prix de livraison de cette boutique viennent de changer… ».
+Refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : `GET /fastFood/all?ids=…` en arriere-plan (l'offre du user en depend). Codes `delivery_price_mismatch` / `delivery_mode_changed` (regime vu `order.deliveryBy`, pose par `DesignRouter` -> `useCheckout`, garde par `sanitizeOrder`, ≠ regime actuel) : message « Les prix de livraison de cette boutique viennent de changer… ».

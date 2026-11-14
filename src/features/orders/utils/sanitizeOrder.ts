@@ -96,6 +96,9 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
   if (o.bonusCode) sanitized.bonusCode = o.bonusCode;
   // Regime de livraison vu a la creation (compare au regime actuel au paiement).
   if (o.deliveryBy) sanitized.deliveryBy = o.deliveryBy;
+  // Commande renvoyée par l'app = choix refait par le client : plus « à revoir »
+  // (le backend le repose au prochain recalcul si besoin).
+  sanitized.needsReview = false;
 
   if (o.createdAt) sanitized.createdAt = o.createdAt;
   if (o.updatedAt) sanitized.updatedAt = o.updatedAt;

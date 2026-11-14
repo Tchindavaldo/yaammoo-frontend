@@ -97,6 +97,7 @@ un plan.
 - **Ajouter un livreur** (bouton bas de l'onglet Livreurs) : `StaffDriverCreateSheet`,
   trois modes (créer le compte, ajouter un compte existant, inviter). L'invité répond
   dans « Mes demandes » (`DriverMyApplicationsModal`, statut `invited`).
+  Puces « Par numéro » / « Par email » pour Ajouter / Inviter ; le backend cherche le compte d'abord et, s'il n'existe pas, son message (404, « Créez-le avec Créer un compte ») s'affiche en toast. Créer un compte : numéro requis.
 
 - **Plus d'onglet Livreurs dans Personnel** : la carte Livreurs ouvre `StaffDriversSheet` ;
   la gestion (demandes, retrait, ajout) est la page `/shop/drivers` (Gestion → Livreurs).

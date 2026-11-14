@@ -161,7 +161,8 @@ export const BroadcastComposer: React.FC<Props> = ({
   const translateY = enter.interpolate({ inputRange: [0, 1], outputRange: [40, 0] });
 
   return (
-    <View style={StyleSheet.absoluteFill}>
+    // Au-dessus du TabHeader de la page (zIndex 1000) : voile ET carte.
+    <View style={[StyleSheet.absoluteFill, styles.layer]}>
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: enter }]}>
         <Pressable
           style={[StyleSheet.absoluteFill, styles.backdrop]}
@@ -258,18 +259,30 @@ export const BroadcastComposer: React.FC<Props> = ({
           <Text style={styles.counter}>
             {title.length}/{TITLE_MAX}
           </Text>
-          <Pressable
-            onPress={submit}
-            disabled={!canSend}
-            style={[styles.send, { backgroundColor: canSend ? BC.ink : "#E5E5EA" }]}
-            accessibilityLabel={tr("Envoyer")}
-          >
-            {sending ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Ionicons name="arrow-up" size={20} color={canSend ? "#fff" : "#8A8A90"} />
-            )}
-          </Pressable>
+          {/* Clavier ouvert : le bouton ferme le clavier (flèche vers le bas) ;
+              clavier fermé : il envoie (flèche vers le haut). */}
+          {keyboardOpen ? (
+            <Pressable
+              onPress={() => Keyboard.dismiss()}
+              style={[styles.send, { backgroundColor: BC.ink }]}
+              accessibilityLabel={tr("Fermer le clavier")}
+            >
+              <Ionicons name="arrow-down" size={20} color="#fff" />
+            </Pressable>
+          ) : (
+            <Pressable
+              onPress={submit}
+              disabled={!canSend}
+              style={[styles.send, { backgroundColor: canSend ? BC.ink : "#E5E5EA" }]}
+              accessibilityLabel={tr("Envoyer")}
+            >
+              {sending ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Ionicons name="arrow-up" size={20} color={canSend ? "#fff" : "#8A8A90"} />
+              )}
+            </Pressable>
+          )}
         </View>
       </Animated.View>
     </View>
@@ -298,6 +311,7 @@ const ToolButton = ({
 );
 
 const styles = StyleSheet.create({
+  layer: { zIndex: 1001, elevation: 1001 },
   backdrop: { backgroundColor: "rgba(20,20,22,0.34)" },
   card: {
     position: "absolute",

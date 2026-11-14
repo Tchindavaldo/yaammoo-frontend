@@ -173,7 +173,7 @@ export const driverService = {
    */
   async recruitDriver(
     fastFoodId: string,
-    body: { mode: "create" | "add" | "invite"; phoneNumber: string; prenom?: string; nom?: string; email?: string; password?: string },
+    body: { mode: "create" | "add" | "invite"; phoneNumber?: string; prenom?: string; nom?: string; email?: string; password?: string },
   ): Promise<string | null> {
     try {
       await axios.post(`${Config.apiUrl}/driver/recruit/${fastFoodId}`, body, { headers: await authHeaders() });

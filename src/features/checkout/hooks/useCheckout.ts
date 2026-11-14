@@ -1,5 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { transactionErrorMessage } from "@/src/features/payment/utils/transactionErrorMessage";
 import { Menu, Commande, Embalage, Boisson, Livraison } from "../../../types";
 import { useAuth } from "../../auth/context/AuthContext";
 import axios from "axios";
@@ -9,7 +10,7 @@ import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { menuPriceOptions } from "../utils/menuPrices";
 import { computeCheckoutPrices } from "../utils/checkoutPrices";
-import { hasExpressZones } from "../utils/expressZones";
+import { checkStock, checkDelivery } from "../utils/checkoutValidation";
 import { t, useLanguage } from "@/src/i18n";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
@@ -332,30 +333,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     }
   }, [createOrder, onChange, menu, userData, drinkQuantities, isInitialized]);
 
-  const validateStock = useCallback((): string | null => {
-    if (!menu) return null;
-    const menuStock = (menu as any).stock;
-    if (typeof menuStock !== 'number') return null;
-    if (menuStock < quantity) return t("Stock insuffisant. Disponible : {{a}}", { a: menuStock });
-    return null;
-  }, [menu, quantity]);
-
-  const validateDelivery = useCallback((): string | null => {
-    const type = delivery.type;
-    if (!delivery.statut || type === 'aucune') return null;
-    if (!delivery.address && !delivery.note) return t("Adresse de livraison requise");
-    if (!delivery.phone) return t("Numéro de contact requis");
-    if (type === 'standard' && !delivery.hour) return t("Période de livraison requise");
-    // Express : exiger le choix d'une zone SI des zones express sont disponibles
-    // (le prix vient exclusivement de la zone choisie, pas d'un défaut).
-    if (type === 'express') {
-      // Liste `expressZones` de la boutique : un prix par lieu, sans heure.
-      if (hasExpressZones((menu as any)?.expressZones) && !delivery.expressLieu) {
-        return t("Zone de livraison express requise");
-      }
-    }
-    return null;
-  }, [delivery, menu]);
+  const validateStock = useCallback((): string | null => checkStock(menu, quantity), [menu, quantity]);
+  const validateDelivery = useCallback((): string | null => checkDelivery(delivery, menu), [delivery, menu]);
 
   const ussdCode = paymentNetwork === 'orange' ? '#150#' : '*126#';
 
@@ -425,16 +404,9 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
         setPaymentState('input');
       }
     } catch (error: any) {
-      const data = error.response?.data;
-      const raw = data?.message;
-      let message = Array.isArray(raw)
-        ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
-        : raw;
-      // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
-      message = message || data?.error || (error.response ? t("Service momentanément indisponible. Réessayez dans un instant.") : t("Connexion impossible. Vérifiez votre réseau et réessayez."));
-      // Le délai d'attente est déjà inclus dans le message du backend.
-      console.log('Payment error details:', data);
-      // Erreur → afficher le Toast et revenir à l'input (overlays restent ouverts).
+      // Refus 422 du pre-check : les boutiques du panier sont rechargees.
+      const message = transactionErrorMessage(error);
+      console.log('Payment error details:', error.response?.data);
       setPaymentError(message);
       setPaymentState('input');
     }

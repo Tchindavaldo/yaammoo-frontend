@@ -7,6 +7,7 @@ import { useFastFoodFetch } from "../hooks/useFastFoodFetch";
 import { useFastFoodHomeSettings } from "../hooks/useFastFoodHomeSettings";
 import { useFastFoodPagination } from "../hooks/useFastFoodPagination";
 import { useFastFoodSocketUpdates } from "../hooks/useFastFoodSocketUpdates";
+import { useFastFoodRefreshByIds } from "../hooks/useFastFoodRefreshByIds";
 import { type HomeClientSettings } from "../utils/homeClientSettings";
 import React, {
   createContext,
@@ -193,6 +194,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     applyDeliveryOffer,
     clearDeliveryOfferForBonus,
   } = useFastFoodSocketUpdates(setFastFoods);
+  // Signal `fastfoodsChanged` / refus de paiement : recharge ciblee du home.
+  useFastFoodRefreshByIds({ setFastFoods, upsertFastFoodFromSocket, refreshLoadedSilently });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(t("Tout"));
   // Langue changee : les noms de categories changent, on revient sur « Tout ».

@@ -120,7 +120,10 @@ export default function OrdersScreen() {
         entry = {
           id: ffId,
           name: ff?.nom || ff?.name || fetched?.name || t("Boutique"),
-          image: ff?.image || ff?.logo || ff?.coverImage || fetched?.image,
+          // Boutique sans logo en base : photo du plat commandé à défaut.
+          image:
+            ff?.image || ff?.logo || ff?.coverImage || fetched?.image ||
+            o.menu?.image || o.menu?.coverImage || o.menu?.images?.[0] || undefined,
           orderCount: 0,
           total: 0,
         };

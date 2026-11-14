@@ -12,6 +12,7 @@ import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import type { CartPaymentState } from "../hooks/useCartPayment";
 import { useGroupedDeliveryData } from "../hooks/useGroupedDeliveryData";
 import { useGroupedDetailCapsule } from "../hooks/useGroupedDetailCapsule";
+import { usePickupPrefill } from "../hooks/usePickupPrefill";
 import {
   CartGroupedDeliveryOverlays,
   type GroupedDeliveryOverlay,
@@ -180,10 +181,7 @@ export const CartGroupedDeliverySheet: React.FC<
   // saisie passe par `CartGroupedDetailCapsule`. Plus d'envoi local en cours.
   const isProcessing = false;
 
-  /**
-   * "Deja groupe" : toutes les commandes tombent dans un seul `CartZoneGroup`.
-   * La page groupage (1) n'a rien a arbitrer : on demarre sur le type (2).
-   */
+  // "Deja groupe" (un seul `CartZoneGroup`) : on demarre sur le type (2).
   const singleOrder = groups.length <= 1;
   const [step, setStep] = React.useState<1 | 2 | 3 | 4>(singleOrder ? 2 : 1);
 
@@ -191,6 +189,7 @@ export const CartGroupedDeliverySheet: React.FC<
   const inFlightRef = React.useRef(false);
   inFlightRef.current =
     paymentState === "waiting" || paymentState === "ussd_sent";
+  usePickupPrefill(visible, groups, inFlightRef.current, setDelivery, setPickupChosen);
   React.useEffect(() => {
     if (inFlightRef.current) return;
     setStep(singleOrder ? 2 : 1);

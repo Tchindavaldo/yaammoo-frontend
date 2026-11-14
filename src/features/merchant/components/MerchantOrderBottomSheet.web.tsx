@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
+import { pickupLabel } from "@/src/features/checkout/utils/pickupHours";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 480;
@@ -116,8 +117,9 @@ function buildUser(order: Commande): DeliveryUser {
     orderCount: (order as any).rank || 1,
     rating: 4,
     phone: order.delivery?.phone || (order as any).livraison?.phone || order.userData?.phoneNumber?.toString() || t("Non fourni"),
+    // Retrait : "Sur place · sam. 15 nov. · 14:30" (jour + heure de passage).
     creneau: !order.delivery?.status
-      ? t("Sur place")
+      ? pickupLabel(order.delivery?.date, order.delivery?.time)
       : order.delivery?.type === 'express'
         ? "Express"
         : t("Période ({{a}})", { a: order.delivery?.time || (order as any).livraison?.hour || t("Dès que possible") }),

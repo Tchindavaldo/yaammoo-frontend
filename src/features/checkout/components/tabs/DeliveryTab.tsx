@@ -6,6 +6,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { styles } from "../CheckoutSheet.styles";
 import { DS } from "@/src/theme/ds";
 import { t, dateLocale, useLanguage } from "@/src/i18n";
+import { hasExpressZones as hasExpressZonesOf } from "../../utils/expressZones";
 
 interface DeliveryTabProps {
   delivery: Livraison;
@@ -16,6 +17,8 @@ interface DeliveryTabProps {
   onOpenExpress?: () => void;
   onOpenVoiceNote?: () => void;
   availableHours?: any[];
+  /** Zones EXPRESS de la boutique (`expressZones`) : une liste, sans heure. */
+  expressZones?: unknown;
   deliveryOffer?: DeliveryOffer | null;
   /** Retrait boutique autorisé (GET /fastfood/all). `false` = masquer la card
    * « Aucun » (le user ne peut PAS venir prendre la cmd en boutique). */
@@ -30,7 +33,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   onOpenPeriod,
   onOpenExpress,
   onOpenVoiceNote,
-  availableHours,
+  expressZones,
   deliveryOffer,
   pickupAllowed,
 }) => {
@@ -41,14 +44,9 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   const isVoiceNoteFilled = !!delivery.voiceNoteUri;
   const isExpressFilled = !!delivery.expressLieu;
 
-  // Y a-t-il des zones express dans les données ? (nouveau format uniquement)
-  // Si non (ancien format string[] ou absence), on masque la card Express.
-  const hasExpressZones = Array.isArray(availableHours)
-    ? availableHours.some(
-        (h: any) =>
-          h && typeof h === "object" && h.express && h.expressZones?.length > 0,
-      )
-    : false;
+  // La boutique livre-t-elle en express quelque part ? (liste `expressZones`,
+  // sans heure). Si non, on masque la card Express.
+  const hasExpressZones = hasExpressZonesOf(expressZones);
 
   const getBtnStyle = (filled: boolean) => [
     styles.infoBtnLarge,

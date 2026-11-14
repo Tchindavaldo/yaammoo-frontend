@@ -618,9 +618,18 @@ export default function OrdersScreen() {
    * `expressLieu` / `hour`).
    */
   const toOrderDelivery = (d: any) => {
-    // Retrait : le numero de contact est exige par le backend.
+    // Retrait : le numero de contact est exige par le backend ; le JOUR et
+    // l'HEURE de retrait choisis sont transmis (sans eux, `sanitizeOrder`
+    // retombait sur la date du jour : une commande prevue samedi partait pour
+    // aujourd'hui).
     if (!d || d.type === "aucune")
-      return { status: false, type: "aucune", ...(d?.phone && { phone: d.phone }) };
+      return {
+        status: false,
+        type: "aucune",
+        ...(d?.phone && { phone: d.phone }),
+        ...(d?.date && { date: d.date }),
+        ...(d?.pickupTime && { time: d.pickupTime }),
+      };
     const express = d.type === "express";
     return {
       status: true,

@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **25 règles numérotées R1 → R25.** Toute nouvelle règle ajoutée à ce fichier
+> **26 règles numérotées R1 → R26.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -390,3 +390,14 @@ https://claude.ai/artifact/EQX6WSUfNmPW1dgnb8GJti
   (`pages` de `project/canvas.json`), ses artboards rattachés via `page`.
 - Un sujet existant (ex. Portefeuille, Retrait) : ajouter les artboards sur
   sa page.
+
+## R26 — Fichier > 500 lignes croisé : découpé AUTOMATIQUEMENT (OBLIGATOIRE)
+
+Tout fichier de code **modifié** pendant une tâche et qui dépasse le plafond
+R4 (500 lignes) est **découpé dans la même tâche**, sans attendre qu'on le
+demande ni le signaler comme « à faire plus tard ».
+
+- Découper par responsabilité (R4) : sous-composant, hook, util pur, styles.
+- Le comportement ne change pas ; on le dit en 1 phrase dans le compte rendu.
+- Le code mort (jamais appelé) croisé à cette occasion est retiré.
+- Exclus : fichiers de données (`locales/*.json`) et docs `architecture/*.md`.

@@ -1320,5 +1320,19 @@
   "Mercredi": "Wednesday",
   "Jeudi": "Thursday",
   "Vendredi": "Friday",
-  "Samedi": "Saturday"
+  "Samedi": "Saturday",
+  "Date": "Date",
+  "Heure de passage": "Pickup time",
+  "Boutique fermée pour le reste de la journée": "Shop closed for the rest of the day",
+  "Choisissez une heure": "Choose a time",
+  "Passer à": "Pick up at",
+  "Choisissez d'abord le jour du retrait": "Choose the pickup day first",
+  "· touchez un tarif pour le modifier": "· tap a price to edit it",
+  "dim.": "Sun",
+  "lun.": "Mon",
+  "mar.": "Tue",
+  "mer.": "Wed",
+  "jeu.": "Thu",
+  "ven.": "Fri",
+  "sam.": "Sat"
 }

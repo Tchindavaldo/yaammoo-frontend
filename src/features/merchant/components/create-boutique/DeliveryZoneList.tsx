@@ -23,7 +23,8 @@ interface DeliveryZoneListProps {
 
 /**
  * Liste des zones de livraison : une card par lieu, nom de la zone en bandeau
- * superieur, puis les heures en tableau Periodique / Express aligne.
+ * superieur, puis les heures en tableau Periodique / Express aligne. Le prix
+ * express est celui du LIEU (sans heure), repris sur chaque ligne.
  */
 export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
   groups,
@@ -142,7 +143,13 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                   </Text>
                 </View>
 
-                {g.hours.map((hh, hi) => {
+                {/* Lieu servi seulement en express : une ligne sans heure. */}
+                {(g.hours.length > 0
+                  ? g.hours
+                  : g.expressPrix !== undefined
+                    ? [{ hour: "", expressPrix: g.expressPrix } as ZoneHourEntry]
+                    : []
+                ).map((hh, hi, rows) => {
                   const isSelected =
                     selectedHour === hh.hour && selectedLieu === g.lieu;
                   return (
@@ -154,7 +161,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                         flexDirection: "row",
                         alignItems: "center",
                         paddingVertical: 8,
-                        borderBottomWidth: hi === g.hours.length - 1 ? 0 : 1,
+                        borderBottomWidth: hi === rows.length - 1 ? 0 : 1,
                         borderBottomColor: DS.slate50,
                         backgroundColor: isSelected ? DS.accentSoft : "transparent",
                         borderRadius: isSelected ? 8 : 0,
@@ -184,7 +191,7 @@ export const DeliveryZoneList: React.FC<DeliveryZoneListProps> = ({
                             color: "#0f172a",
                           }}
                         >
-                          {hh.hour}
+                          {hh.hour || "--:--"}
                         </Text>
                       </View>
                       <Text style={cellValue}>

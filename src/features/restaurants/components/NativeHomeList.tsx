@@ -189,7 +189,7 @@ const rowFor = (ff: FastFood): HomeListRow => {
   const deliveryTime = getNextDeliveryTime(f?.deliveryHours, f?.orderLeadTime ?? 0);
   // En-tete : prochain creneau periodique / express / rien (MerchantHeader).
   const deliveryLabel =
-    getShopDeliveryLabel(f?.deliveryHours, f?.orderLeadTime ?? 0) ?? "";
+    getShopDeliveryLabel(f?.deliveryHours, f?.orderLeadTime ?? 0, f?.expressZones) ?? "";
   const lang = getLanguage();
   const cached = rowCache.get(ff);
   if (
@@ -370,10 +370,13 @@ export const NativeHomeList: React.FC<Props> = ({
       onMenuPress({
         ...ff.menu[idx],
         deliveryHours: ff.deliveryHours,
+        expressZones: ff.expressZones ?? [],
         orderLeadTime: ff.orderLeadTime,
         advanceDays: ff.advanceDays,
         deliveryOffer: ff.deliveryOffer ?? null,
         pickupAllowed: ff.pickupAllowed,
+        openTime: ff.openTime,
+        closeTime: ff.closeTime,
       } as Menu);
     },
     [onMenuPress],

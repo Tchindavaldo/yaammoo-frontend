@@ -8,7 +8,12 @@ import {
   isLocalUri,
 } from "@/src/features/merchant/services/uploadImage";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
+import {
+  buildDeliveryPayload,
+  buildExpressPayload,
+} from "@/src/features/merchant/services/buildDeliveryPayload";
+import type { Zone } from "./parseBoutique";
+import { lieuKey } from "./groupZones";
 import { useToast } from "./useToast";
 import { showToast } from "@/src/services/globalToast";
 import { useShopPosition } from "../edit-boutique/useShopPosition";
@@ -69,15 +74,11 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
   const [periodicZonesByHour, setPeriodicZonesByHour] = useState<
     Record<string, { lieu: string; prix: string }[]>
   >({});
-  const [expressZonesByHour, setExpressZonesByHour] = useState<
-    Record<string, { lieu: string; prix: string }[]>
-  >({});
+  /** Zones EXPRESS de la boutique : une liste, SANS heure (un prix par lieu). */
+  const [expressZones, setExpressZones] = useState<Zone[]>([]);
   const [periodicEnabled, setPeriodicEnabled] = useState<
     Record<string, boolean>
   >({});
-  const [expressEnabled, setExpressEnabled] = useState<Record<string, boolean>>(
-    {},
-  );
   const [periodicDraft, setPeriodicDraft] = useState({ lieu: "", prix: "" });
   const [expressDraft, setExpressDraft] = useState({ lieu: "", prix: "" });
   const [periodicEditIdx, setPeriodicEditIdx] = useState<number | null>(null);
@@ -108,28 +109,37 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
     setPeriodicEditIdx(null);
   };
 
+  /** Retire la ligne express du lieu en cours d'edition. */
   const deleteExpress = () => {
-    if (!activeHour || expressEditIdx === null) return;
-    setExpressZonesByHour((prev) => ({
-      ...prev,
-      [activeHour]: (prev[activeHour] || []).filter(
-        (_, i) => i !== expressEditIdx,
-      ),
-    }));
+    if (expressEditIdx === null) return;
+    setExpressZones((prev) => prev.filter((_, i) => i !== expressEditIdx));
     setExpressDraft({ lieu: "", prix: "" });
     setExpressEditIdx(null);
   };
 
   /**
+   * Corbeille du formulaire : retire le CRENEAU edite s'il y en a un, sinon la
+   * ligne express du lieu. Supprimer un creneau ne touche jamais l'express du
+   * lieu, qui vaut pour toutes les heures.
+   */
+  const deleteZoneForm = () => {
+    if (periodicEditIdx !== null) deletePeriodic();
+    else if (expressEditIdx !== null) deleteExpress();
+  };
+
+  /**
    * Enregistre le lieu saisi dans les listes periodique et/ou express selon les
-   * cases cochees. `hour` = heure cible (activeHour en edition, newHour en ajout).
+   * cases cochees. `hour` = heure cible du PERIODIQUE (activeHour en edition,
+   * newHour en ajout). L'express n'a pas d'heure : un seul prix par lieu.
    */
   const saveZoneForm = (hour: string) => {
-    if (!hour) return;
     const lieu = (periodicDraft.lieu || expressDraft.lieu).trim();
     if (!lieu) return;
+    // Le periodique exige une heure ; l'express seul s'en passe.
+    if (formPeriodic && !hour) return;
+    if (!formPeriodic && !formExpress) return;
 
-    if (!deliveryHours.includes(hour)) {
+    if (formPeriodic && !deliveryHours.includes(hour)) {
       setDeliveryHours((prev) => [...prev, hour].sort());
     }
 
@@ -144,14 +154,19 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
       setPeriodicEnabled((prev) => ({ ...prev, [hour]: true }));
     }
     if (formExpress) {
+      // Un seul prix express par lieu : on remplace la ligne du lieu s'il est
+      // deja servi en express, sinon on l'ajoute.
       const item = { lieu, prix: expressDraft.prix.trim() };
-      setExpressZonesByHour((prev) => {
-        const list = prev[hour] ? [...prev[hour]] : [];
-        if (expressEditIdx === null) list.push(item);
-        else list[expressEditIdx] = item;
-        return { ...prev, [hour]: list };
+      setExpressZones((prev) => {
+        const list = [...prev];
+        const idx =
+          expressEditIdx !== null
+            ? expressEditIdx
+            : list.findIndex((z) => lieuKey(z.lieu) === lieuKey(lieu));
+        if (idx >= 0 && idx < list.length) list[idx] = item;
+        else list.push(item);
+        return list;
       });
-      setExpressEnabled((prev) => ({ ...prev, [hour]: true }));
     }
 
     setPeriodicDraft({ lieu: "", prix: "" });
@@ -209,14 +224,10 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
         pickupAllowed,
         deliveryHours:
           deliveryHours.length > 0
-            ? buildDeliveryPayload(
-                deliveryHours,
-                periodicEnabled,
-                periodicZonesByHour,
-                expressEnabled,
-                expressZonesByHour,
-              )
+            ? buildDeliveryPayload(deliveryHours, periodicEnabled, periodicZonesByHour)
             : undefined,
+        // Liste express de la boutique, sans heure (un prix par lieu).
+        expressZones: buildExpressPayload(expressZones),
       });
 
       if (response.data && response.data.success) {
@@ -295,9 +306,8 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
     formExpress,
     setFormExpress,
     periodicZonesByHour,
-    expressZonesByHour,
+    expressZones,
     periodicEnabled,
-    expressEnabled,
     periodicDraft,
     setPeriodicDraft,
     expressDraft,
@@ -321,6 +331,7 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
     formatTime,
     deletePeriodic,
     deleteExpress,
+    deleteZoneForm,
     saveZoneForm,
     pickImage,
     handleCreate,

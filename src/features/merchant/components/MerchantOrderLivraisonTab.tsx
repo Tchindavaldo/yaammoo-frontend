@@ -139,7 +139,7 @@ export function LivraisonTab({ user }: { user: DeliveryUser }) {
               coords={coords}
               address={user.addr}
               deliveryType={
-                user.creneau === t('Sur place') ? 'surplace'
+                user.creneau.startsWith(t('Sur place')) ? 'surplace'
                   : user.creneau.includes('Express') ? 'express'
                   : 'time'
               }

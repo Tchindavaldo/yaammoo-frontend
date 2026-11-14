@@ -76,6 +76,9 @@ export class Livraison {
     // Code bonus livraison (saisi par le user ou issu de l'offre détectée) —
     // envoyé tel quel à la racine du payload order sous `bonusCode`.
     public bonusCode: string | null = null,
+    // Sur place : heure "HH:mm" à laquelle le client passe récupérer, dans les
+    // horaires de la boutique. Envoyée en `delivery.time` (backend : facultative).
+    public pickupTime: string = "",
   ) {}
 }
 
@@ -116,6 +119,21 @@ export class Menu {
   ) {}
 }
 
+/**
+ * Liste officielle des statuts de commande. Toute autre valeur est refusée à
+ * la compilation (évite les statuts fantômes qui tombent dans le mauvais onglet).
+ * Cycle : pendingToBuy (panier) → pending → processing → finished → delivering → delivered.
+ */
+export type OrderStatus =
+  | "pendingToBuy"
+  | "pending"
+  | "processing"
+  | "finished"
+  | "delivering"
+  | "delivered"
+  | "cancelByFastFood"
+  | "cancelByUser";
+
 export class Commande {
   constructor(
     public userId: string,
@@ -127,7 +145,7 @@ export class Commande {
     public drink: any[],
     public delivery: any,
     public total: number,
-    public status: string,
+    public status: OrderStatus,
     public userData?: any,
     public createdAt?: string,
     public updatedAt?: string,

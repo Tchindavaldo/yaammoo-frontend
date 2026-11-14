@@ -29,6 +29,9 @@ interface CartGroupedPaymentBodyProps {
   isBusy: boolean;
   /** Retrait boutique autorisé (GET /fastfood/all) — gate la card « Sur place ». */
   pickupAllowed?: boolean;
+  /** Sur place : tuiles Date et Heure. */
+  onOpenPickupDate?: () => void;
+  onOpenPickupHour?: () => void;
   /**
    * PAGE affichee (1 a 5). Le sheet a une hauteur reduite : la livraison
    * groupee ne tient plus sur un seul ecran, elle se parcourt en cinq temps.
@@ -66,6 +69,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
   onNetworkChange,
   isBusy,
   pickupAllowed,
+  onOpenPickupDate,
+  onOpenPickupHour,
   step,
 }) => (
   <ScrollView
@@ -102,6 +107,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
       onNetworkChange={onNetworkChange}
       isBusy={isBusy}
       pickupAllowed={pickupAllowed}
+      onOpenPickupDate={onOpenPickupDate}
+      onOpenPickupHour={onOpenPickupHour}
       section={
         step === 1
           ? "group"

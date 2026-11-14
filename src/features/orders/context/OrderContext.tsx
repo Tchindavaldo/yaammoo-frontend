@@ -293,7 +293,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const rankedStatuses = ["pending", "processing", "active", "in_progress", "accept"];
+  const rankedStatuses = ["pending", "processing"];
 
   const getFilteredByStatus = useCallback((statusList: string[]) => {
     const filtered = orders.filter((o) =>
@@ -318,13 +318,13 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       counts: {
         total: orders.length,
         pending: s(["pending"]).length,
-        processing: s(["processing", "active", "in_progress", "accept"]).length,
+        processing: s(["processing"]).length,
         finished: s(["finished", "delivering"]).length,
         delivered: s(["delivered"]).length,
       },
       amounts: {
         pending: total(["pending"]),
-        processing: total(["processing", "active", "in_progress", "accept"]),
+        processing: total(["processing"]),
         finished: total(["finished", "delivering"]),
         delivered: total(["delivered"]),
       }
@@ -348,7 +348,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     saveOrder,
     pendingToBuy: getFilteredByStatus(["pendingtobuy"]),
     pending: getFilteredByStatus(["pending"]),
-    active: getFilteredByStatus(["processing", "active", "in_progress", "accept"]),
+    active: getFilteredByStatus(["processing"]),
     finished: getFilteredByStatus(["finished", "delivering"]),
     delivered: getFilteredByStatus(["delivered"]),
     stats,

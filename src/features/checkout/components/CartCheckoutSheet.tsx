@@ -290,22 +290,31 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
     // Fusionne les donnees boutique dans le menu. Le cache partage evite le
     // second rendu ou la card « Zone » apparait apres coup.
+    // Horaires d'ouverture : bornent l'heure de retrait sur place.
+    const hoursOf = (data: any) => ({
+      openTime: data?.openTime ?? ctxFastFood?.openTime,
+      closeTime: data?.closeTime ?? ctxFastFood?.closeTime,
+    });
     const merge = (data: any) =>
       setMenuWithDeliveryHours(
-        data?.deliveryHours || data?.orderLeadTime
+        data?.deliveryHours || data?.orderLeadTime || data?.expressZones
           ? ({
               ...menu,
               deliveryHours: data.deliveryHours,
+              // Zones EXPRESS de la boutique : une liste, sans heure.
+              expressZones: data.expressZones ?? [],
               orderLeadTime: data.orderLeadTime,
               advanceDays: data.advanceDays,
               deliveryOffer,
               // Retrait boutique autorisé ? (/all d'abord, sinon /:id)
               pickupAllowed: ctxFastFood?.pickupAllowed ?? data?.pickupAllowed,
+              ...hoursOf(data),
             } as any)
           : ({
               ...menu,
               deliveryOffer,
               pickupAllowed: ctxFastFood?.pickupAllowed ?? data?.pickupAllowed,
+              ...hoursOf(data),
             } as any),
       );
 
@@ -337,6 +346,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
   };
 
   const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
+  // Zones EXPRESS de la boutique : une liste, sans heure (un prix par lieu).
+  const expressZones = (menuWithDeliveryHours as any)?.expressZones || [];
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
   const advanceDays = (menuWithDeliveryHours as any)?.advanceDays;
   const deliveryOffer = (menuWithDeliveryHours as any)?.deliveryOffer || null;
@@ -461,6 +472,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     onOpenExpress={() => setIsExpressPopupVisible(true)}
                     onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
                     availableHours={rawHours}
+                    expressZones={expressZones}
                     deliveryOffer={deliveryOffer}
                     pickupAllowed={pickupAllowed}
                   />
@@ -561,12 +573,16 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
             visible={!!pickupPhone}
             value={delivery.date}
             maxDays={advanceDays}
+            time={delivery.pickupTime}
+            openTime={(menuWithDeliveryHours as any)?.openTime}
+            closeTime={(menuWithDeliveryHours as any)?.closeTime}
+            leadMinutes={orderLeadTime}
             onClose={() => {
               setPickupPhone(null);
               pendingAction.current = null;
             }}
-            onPick={(date) => {
-              setDelivery({ ...delivery, phone: pickupPhone || delivery.phone, date });
+            onPick={(date, pickupTime) => {
+              setDelivery({ ...delivery, phone: pickupPhone || delivery.phone, date, pickupTime });
               setPickupPhone(null);
               setPickupChosen(true);
               if (pendingAction.current) {
@@ -610,7 +626,7 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   bonusCode: bonusCode ?? null,
                 })
               }
-              availableHours={rawHours}
+              expressZones={expressZones}
               deliveryOffer={deliveryOffer}
               fastFoodId={(menu as any)?.fastFoodId}
               onError={showError}

@@ -1,6 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { verifyBonusCode } from "@/src/features/checkout/services/verifyBonusCode";
+import { expressZonesOf } from "@/src/features/checkout/utils/expressZones";
 import { DeliveryOffer } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
@@ -32,11 +33,6 @@ const SCREEN_HEIGHT = Dimensions.get("window").height;
 // `paddingVertical` du conteneur (marge haute et basse).
 const SHEET_HEIGHT = GROUPED_SHEET_HEIGHT + 90;
 
-interface ExpressZone {
-  lieu: string;
-  prix: string;
-}
-
 interface GroupedExpressOverlayProps {
   onClose: () => void;
   selectedLieu: string;
@@ -45,7 +41,8 @@ interface GroupedExpressOverlayProps {
     prix?: number,
     bonusCode?: string | null,
   ) => void;
-  availableHours?: any[];
+  /** Zones EXPRESS de la boutique (`expressZones`) : une liste, sans heure. */
+  expressZones?: unknown;
   deliveryOffer?: DeliveryOffer | null;
   /** Boutique visée — transmise à `POST /bonus/verify`. */
   fastFoodId?: string | null;
@@ -58,15 +55,15 @@ interface GroupedExpressOverlayProps {
  * Contrairement à la période (créneau horaire), l'express est immédiat :
  * pas de dates ni d'heures, seulement le choix d'une zone (lieu + prix).
  *
- * Les zones proviennent des `expressZones` de chaque entrée `deliveryHours`,
- * dédupliquées par lieu. Si aucune zone express n'existe (ancien format
- * backend / app), la liste est vide — le parent masque la card dans ce cas.
+ * Les zones proviennent de `expressZones` (boutique, un prix par lieu, sans
+ * heure — backend migration 073). Si aucune zone express n'existe, la liste est
+ * vide — le parent masque la card dans ce cas.
  */
 export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
   onClose,
   selectedLieu,
   onSelectExpress,
-  availableHours,
+  expressZones,
   deliveryOffer,
   fastFoodId,
   onError,
@@ -133,27 +130,8 @@ export const GroupedExpressOverlay: React.FC<GroupedExpressOverlayProps> = ({
     [fade, onClose],
   );
 
-  const buildZones = (): ExpressZone[] => {
-    if (!availableHours || availableHours.length === 0) return [];
-    // Ancien format (string[]) → pas de zones express possibles.
-    if (typeof availableHours[0] === "string") return [];
-
-    const seen = new Set<string>();
-    const zones: ExpressZone[] = [];
-    availableHours.forEach((entry: any) => {
-      if (entry.express && entry.expressZones?.length > 0) {
-        entry.expressZones.forEach((z: any) => {
-          const lieu = z.lieu || "";
-          if (!lieu || seen.has(lieu)) return;
-          seen.add(lieu);
-          zones.push({ lieu, prix: z.prix || "" });
-        });
-      }
-    });
-    return zones;
-  };
-
-  const zones = buildZones();
+  // Un lieu = un prix, celui que le backend facture (`zoneDeliveryPrice`).
+  const zones = expressZonesOf(expressZones);
 
   const [selectedValue, setSelectedValue] = useState<string>(
     selectedLieu || "",

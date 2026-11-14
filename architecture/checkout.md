@@ -48,6 +48,8 @@ yaammoo/src/features/checkout/
 │   └── verifyBonusCode.ts              # POST /bonus/verify — vérif d'un code bonus (lecture seule)
 └── utils/
     ├── cartDeliveryTotal.ts            # Total panier + mutualisation des frais de livraison
+    ├── expressZones.ts                 # expressZonesOf / hasExpressZones (liste boutique, sans heure)
+    ├── pickupHours.ts                  # Heures de retrait sur place + libellés « Sur place · jour · heure »
     └── periodDate.ts                   # extractPeriodDate() — date ISO extraite de "YYYY-MM-DD|HH:mm|lieu"
 ```
 
@@ -110,8 +112,8 @@ yaammoo/src/features/checkout/
 > Pas de card "Commande livrée dès que terminée" : le texte est porté par le
 > sous-texte du bouton de sélection Express ("Livré dès que terminée").
 
-> Card **Zone** (lieu express) : affichée UNIQUEMENT si le backend a fourni des
-> `expressZones` (nouveau format `deliveryHours`). Sinon masquée (rétrocompat).
+> Card **Zone** (lieu express) : affichée UNIQUEMENT si la boutique a des
+> `expressZones` (liste au niveau boutique, SANS heure — `utils/expressZones.ts`).
 > Ouvre `CheckoutExpressOverlay`. La card n'affiche AUCUNE donnée (titre "Zone"),
 > seuls ses bords se surlignent en orange quand une zone est sélectionnée.
 ```
@@ -183,21 +185,29 @@ par le fond orange clair quand la carte est remplie. Le bandeau « retrait bouti
 > `GroupedDeliveryTab` (sheet de livraison groupée) applique **exactement** les
 > mêmes règles — c'est une copie dédiée, cf. R16.
 
-**Formats `deliveryHours`** : le backend sert ce champ en ancien (`string[]`) ou
-nouveau format (`{ hour, periodic, periodicZones, express, expressZones }`) selon
-la version du client (voir [http-versioning.md](./http-versioning.md)). Sans
-`expressZones`, la card Zone est masquée (aucun prix par défaut n'est appliqué).
-
-**Format des données de zone** (nouveau format) :
+**Format des zones** : `deliveryHours` porte le PÉRIODIQUE par créneau ;
+l'EXPRESS est la liste `expressZones` de la boutique, un prix par lieu, sans
+heure (migration backend 073). Le menu en est enrichi (`DesignRouter`,
+`NativeHomeList`, `CartCheckoutSheet`, `useGroupedDeliveryData`) avec
+`openTime`/`closeTime`.
 ```json
 {
-  "hour": "08:00",
-  "periodic": true,
-  "periodicZones": [{ "lieu": "Bonanjo", "prix": "500" }],
-  "express": true,
+  "deliveryHours": [{ "hour": "08:00", "periodic": true, "periodicZones": [{ "lieu": "Bonanjo", "prix": "500" }] }],
   "expressZones": [{ "lieu": "Bonanjo", "prix": "1000" }]
 }
 ```
+
+### Sur place : jour + heure de passage
+
+`PickupDateSheet` (home/panier individuel) : calendrier du jour PUIS rangée
+d'heures sous le calendrier ; `GroupedPickupDateSheet` + `GroupedPickupHourSheet`
+(panier groupé : la tuile « Lieu » devient « Date », la tuile « Heure » ouvre
+la liste). Heures libres au pas de 15 min dans `openTime → closeTime`
+(fermeture après minuit gérée), futures + `orderLeadTime` le jour même —
+`utils/pickupHours.ts`. Stockée dans `delivery.pickupTime`, envoyée en
+`delivery.time` (avec `delivery.date`) ; aucune incidence sur l'argent (pas de
+course en retrait). Affichage marchand/client : `pickupLabel()` →
+« Sur place · sam. 15 nov. · 14:30 ».
 
 **Payload `delivery` envoyé au backend** (`POST /order`, `PUT /order/tabs/:userId`) —
 construit dans `useCheckout.createOrder()` :

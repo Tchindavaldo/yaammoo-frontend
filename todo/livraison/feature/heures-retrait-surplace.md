@@ -1,6 +1,8 @@
 # Heures de récupération « sur place »
 
-[ ] ⚠️ IMPORTANT — gérer les heures de récupération de commande "sur place"
+[x] (fait le 14/11/2026 : jour + heure libre dans openTime/closeTime,
+    `utils/pickupHours.ts`, tuiles Date/Heure du panier groupé, affichage
+    « Sur place · jour · heure ») ⚠️ IMPORTANT — gérer les heures de récupération de commande "sur place"
     - au passage de commande, option livraison "Sur place" : la card Heure
       (ajoutée dans CartDeliverySegmentStep, page infos) est posée mais n'ouvre
       encore rien

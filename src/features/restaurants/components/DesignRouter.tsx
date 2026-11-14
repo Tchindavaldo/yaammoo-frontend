@@ -48,12 +48,17 @@ const DesignRouterBase: React.FC<DesignRouterProps> = ({ fastFood, onMenuClick, 
     onMenuClick({
       ...menu,
       deliveryHours: ff.deliveryHours,
+      // Zones EXPRESS de la boutique : une liste, sans heure (un prix par lieu).
+      expressZones: ff.expressZones ?? [],
       orderLeadTime: ff.orderLeadTime,
       advanceDays: ff.advanceDays,
       deliveryOffer: ff.deliveryOffer ?? null,
       // Retrait boutique autorisé ou non (GET /fastfood/all) : gate la card
       // « Aucun » de l'onglet Livraison du checkout.
       pickupAllowed: ff.pickupAllowed,
+      // Horaires d'ouverture : bornent l'heure de retrait sur place.
+      openTime: ff.openTime,
+      closeTime: ff.closeTime,
     } as Menu);
   };
 

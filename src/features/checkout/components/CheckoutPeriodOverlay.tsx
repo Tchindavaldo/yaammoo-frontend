@@ -167,12 +167,11 @@ export const CheckoutPeriodOverlay: React.FC<CheckoutPeriodOverlayProps> = ({
       const hour = entry.hour;
       if (!hour) return;
 
+      // PERIODIQUE seul : l'express n'a pas de creneau (liste `expressZones`
+      // de la boutique). Afficher un lieu express comme un creneau faisait
+      // payer un prix que le backend refusait (`delivery_price_mismatch`).
       if (entry.periodic && entry.periodicZones?.length > 0) {
         entry.periodicZones.forEach((z: any) => {
-          periods.push({ hour, lieu: z.lieu || "", prix: z.prix || "" });
-        });
-      } else if (entry.express && entry.expressZones?.length > 0) {
-        entry.expressZones.forEach((z: any) => {
           periods.push({ hour, lieu: z.lieu || "", prix: z.prix || "" });
         });
       } else {

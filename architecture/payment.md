@@ -233,8 +233,11 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
      cliquable** avec le sous-texte « Retrait indisponible » quand
      `pickupAllowed === false` (porté par `useGroupedDeliveryData`, sans grisé) ;
   3. **informations** (`section: "infos"`) — lieu, zone express ou créneau,
-     contact. **Plus de tuile « Note vocale »** : l'enregistrement se fait
-     directement dans l'overlay du lieu (voir ci-dessous) ;
+     contact (tuiles construites par `segmentTiles.ts`). **Sur place** : la
+     tuile « Lieu » devient « Date » (`GroupedPickupDateSheet`) et « Heure »
+     ouvre `GroupedPickupHourSheet` (heures dans les horaires de la boutique) ;
+     « Continuer » exige jour + heure. **Plus de tuile « Note vocale »** :
+     l'enregistrement se fait directement dans l'overlay du lieu ;
   4. **détail et paiement** (`section: "montants"`) — trois cards : la première
      porte **deux colonnes séparées par un filet** (« Cmd » + montant des
      articles, « Course » + frais ou « Offerte »), comme le récap du bas de la
@@ -255,8 +258,11 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
 
   > **PAGE 5 conservée mais plus atteinte** : le bloc `section: "recap"` de
   > `CartDeliverySegmentStep` (choix du réseau seul) reste dans le fichier — la
-  > page 4 a repris son rôle. Idem pour `CartGroupedDetailCapsule.tsx`, gardé
-  > pour d'éventuelles évolutions.
+  > page 4 a repris son rôle. Idem pour la capsule de l'ancienne page 5,
+  > extraite dans `GroupedLegacyPayOverlay.tsx` (`show` toujours `false`).
+  >
+  > **Découpage R4** du sheet : navigation dans `GroupedSheetActionRow.tsx`,
+  > fermetures de la capsule de l'étape 4 dans `hooks/useGroupedDetailCapsule.ts`.
 
 - **Capsule de paiement du parcours groupé** — `CartGroupedDetailCapsule.tsx`,
   **copie autonome** de `CartPaymentOverlay` (R16), ouverte par le bouton `next`
@@ -277,7 +283,7 @@ propre logique, **isolée de useCheckout** (données propres, aucun partage).
     jamais démontée, seulement masquée en opacité, et les messages
     (`waiting` / `ussd_sent` / succès) se posent par-dessus. La capsule ne se
     ferme qu'à la **fin** de la transaction, succès **comme erreur**
-    (`detailWasBusy` dans le sheet).
+    (`useGroupedDetailCapsule`).
 
 - **Note vocale enregistrée SUR PLACE** — `GroupedLocationOverlay.tsx` porte un
   bouton micro à gauche de son bouton de validation : un appui démarre

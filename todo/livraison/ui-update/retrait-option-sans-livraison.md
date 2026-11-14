@@ -1,5 +1,8 @@
 # Retirer l'option « sans livraison » de l'onglet delivery
 
+[ ] PARTIEL (vérifié le 14/11/2026) : la card « Aucun » de `DeliveryTab` n'est plus cliquable si le
+    marchand a désactivé le retrait (`pickupAllowed === false`), mais reste sélectionnable sinon.
+
 [ ] ⚠️ IMPORTANT — À GÉRER AVANT LE DÉPLOIEMENT FINAL EN PROD
     retirer l'option "sans livraison" de l'onglet delivery
     - aujourd'hui le user peut choisir "à emporter" alors que le prix affiché inclut déjà la livraison

@@ -7,6 +7,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
+import { pickupLabel } from "@/src/features/checkout/utils/pickupHours";
 
 /**
  * Onglet « Livraison » du détail client (`OrderBottomSheet`) : créneau,
@@ -41,7 +42,7 @@ export function OrderLivraisonTab({ order }: { order: Commande }) {
               label={t("Créneau")}
               value={
                 !order.delivery?.status
-                  ? t("Sur place")
+                  ? pickupLabel(order.delivery?.date, order.delivery?.time)
                   : order.delivery?.type === "express"
                     ? "Express"
                     : t("Période ({{a}})", { a: order.delivery?.time || t("Dès que possible") })

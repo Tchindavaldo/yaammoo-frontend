@@ -175,7 +175,7 @@ export const CartStatusPanel: React.FC<CartStatusPanelProps> = ({
       if (getOrderDateISO(o) !== activeDateISO) return;
       const st = (o.status || "").toLowerCase();
       if (st === "pending") entry!.counts.pending += 1;
-      else if (["processing", "active", "in_progress"].includes(st))
+      else if (st === "processing")
         entry!.counts.active += 1;
       else if (["finished", "delivering", "delivered"].includes(st))
         entry!.counts.finished += 1;

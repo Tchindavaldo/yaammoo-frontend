@@ -124,9 +124,8 @@ export const BroadcastComposer: React.FC<Props> = ({
   const onBackdrop = () => (keyboardOpen ? Keyboard.dismiss() : close());
 
   const toggleBody = () => {
-    const next = !bodyOn;
-    setBodyOn(next);
-    if (next) setTimeout(() => bodyRef.current?.focus(), 50);
+    // Pas de focus auto : le clavier ne s'ouvre qu'au toucher d'un champ.
+    setBodyOn(!bodyOn);
   };
 
   const pickFromGallery = async () => {

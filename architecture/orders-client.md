@@ -16,6 +16,11 @@ yaammoo/src/features/orders/
 │   ├── useOrderTracking.ts    # Onglet « Suivi » : GET /driver/tracking + socket driverLocationUpdated + position du client
 │   ├── useTrackingRoute.ts    # Itinéraire restant (recalcul seulement hors trajet)
 │   ├── useCartFastFoodInfos.ts # Nom + image des boutiques du panier absentes du home (GET /fastFood/:id)
+│   ├── useCartFastFoods.ts     # cart.tsx : boutiques du panier (filtre du haut), sélection ; sans logo → photo du plat
+│   ├── useCartFilters.ts       # cart.tsx : filtres zone / période / heure (remis à zéro au focus)
+│   ├── useKeyboardTracking.ts  # cart.tsx : hauteur animée + visibilité du clavier
+│   (+ utils/cartScreenUtils.ts, utils/commonPickup.ts, components/CartDeleteCapsule.tsx,
+│    components/CartScreen.styles.ts ; parcours « commander » : payment/hooks/useCartOrderFlow.ts)
 │   └── useClientFilterOptions.ts # Options + compteurs du ClientFilterSheet (dates, périodes, chips)
 ├── services/
 │   ├── ratingService.ts       # API notation (menu + livreur) : rate, stats, avis

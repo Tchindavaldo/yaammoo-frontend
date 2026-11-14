@@ -401,3 +401,6 @@ demande ni le signaler comme « à faire plus tard ».
 - Le comportement ne change pas ; on le dit en 1 phrase dans le compte rendu.
 - Le code mort (jamais appelé) croisé à cette occasion est retiré.
 - Exclus : fichiers de données (`locales/*.json`) et docs `architecture/*.md`.
+- **Appliqué par le harness** : `.claude/hooks/enforce-file-size.sh`
+  (PostToolUse Edit/Write) renvoie un message bloquant dès qu'un fichier de
+  code modifié dépasse 500 lignes.

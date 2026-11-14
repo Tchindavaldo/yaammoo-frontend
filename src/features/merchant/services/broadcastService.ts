@@ -21,6 +21,19 @@ export const FREE_PLAN: BroadcastPlan = {
   audiences: AUDIENCES,
 };
 
+/** `plan.audienceLimits` du backend (migration 070) ; entrées invalides ignorées. */
+const normalizeAudienceLimits = (raw: any): BroadcastPlan["audienceLimits"] => {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: NonNullable<BroadcastPlan["audienceLimits"]> = {};
+  for (const a of AUDIENCES) {
+    const l = raw[a];
+    if (l && Number(l.dayLimit) >= 0 && Number(l.weekLimit) >= 0) {
+      out[a] = { dayLimit: Number(l.dayLimit), weekLimit: Number(l.weekLimit) };
+    }
+  }
+  return out;
+};
+
 const isAudience = (a: unknown): a is BroadcastAudience =>
   AUDIENCES.includes(a as BroadcastAudience);
 
@@ -30,6 +43,7 @@ const normalizePlan = (raw: any): BroadcastPlan => ({
   dayLimit: Number(raw?.dayLimit) >= 0 ? Number(raw.dayLimit) : FREE_PLAN.dayLimit,
   weekLimit: Number(raw?.weekLimit) >= 0 ? Number(raw.weekLimit) : FREE_PLAN.weekLimit,
   audiences: Array.isArray(raw?.audiences) ? raw.audiences.filter(isAudience) : FREE_PLAN.audiences,
+  audienceLimits: normalizeAudienceLimits(raw?.audienceLimits),
 });
 
 const normalizeItem = (raw: any): BroadcastItem | null => {

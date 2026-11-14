@@ -9,6 +9,7 @@ import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { menuPriceOptions } from "../utils/menuPrices";
 import { computeCheckoutPrices } from "../utils/checkoutPrices";
+import { hasExpressZones } from "../utils/expressZones";
 import { t, useLanguage } from "@/src/i18n";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
@@ -164,7 +165,11 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
           // livraison indéfiniment à chaque réédition. Pour en bénéficier de
           // nouveau, le user resaisit un code → POST /bonus/verify tranche.
         } else {
+          // Sur place : jour, heure de retrait et contact restaurés à la réouverture.
           d.type = 'aucune';
+          if (dData.date) d.date = dData.date;
+          if (dData.time) d.pickupTime = dData.time;
+          if (dData.phone) d.phone = dData.phone;
         }
         setDelivery(d);
       }
@@ -238,6 +243,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     // Numero de contact envoye aussi en RETRAIT : exige par le backend
     // (validateOrder : `delivery.phone` requis pour une commande en retrait).
     if (delivery.phone) deliveryData.phone = delivery.phone;
+    // Sur place : heure de retrait (backend : `delivery.time` facultative en retrait).
+    if (!hasDelivery && delivery.pickupTime) deliveryData.time = delivery.pickupTime;
 
     if (hasDelivery && finalDeliveryType) {
       deliveryData.type = finalDeliveryType;
@@ -342,14 +349,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     // Express : exiger le choix d'une zone SI des zones express sont disponibles
     // (le prix vient exclusivement de la zone choisie, pas d'un défaut).
     if (type === 'express') {
-      const hours = (menu as any)?.deliveryHours;
-      const hasExpressZones =
-        Array.isArray(hours) &&
-        hours.some(
-          (h: any) =>
-            h && typeof h === 'object' && h.express && h.expressZones?.length > 0,
-        );
-      if (hasExpressZones && !delivery.expressLieu) {
+      // Liste `expressZones` de la boutique : un prix par lieu, sans heure.
+      if (hasExpressZones((menu as any)?.expressZones) && !delivery.expressLieu) {
         return t("Zone de livraison express requise");
       }
     }

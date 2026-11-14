@@ -35,6 +35,8 @@ interface MerchantHeaderProps {
   distanceKm?: number | null;
   /** Creneaux de la boutique : « Livraison 12h » / « Livraison express » sous la note (design aere). */
   deliveryHours?: any[];
+  /** Zones express de la boutique (`expressZones`, sans heure). */
+  expressZones?: unknown;
   orderLeadTime?: number;
 }
 
@@ -48,11 +50,12 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   isOpen = true,
   distanceKm,
   deliveryHours,
+  expressZones,
   orderLeadTime = 0,
 }) => {
   useLanguage();
   const distance = formatDistanceKm(distanceKm);
-  const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime);
+  const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime, expressZones);
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec
   // les cartes) et son PROPRE avatar.
   //

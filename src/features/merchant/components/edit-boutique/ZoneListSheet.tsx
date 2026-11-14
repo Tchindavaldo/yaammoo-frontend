@@ -71,11 +71,8 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
   const view = useMemo(() => {
     if (!current) return null;
 
-    // Express : prix le plus bas parmi les heures qui en proposent un.
-    const expressPrices = current.hours
-      .map((h) => toNumber(h.expressPrix))
-      .filter((n): n is number => n !== null);
-    const expressLo = expressPrices.length ? Math.min(...expressPrices) : null;
+    // Express : UN prix par lieu, sans heure (la course part des que c'est pret).
+    const express = toNumber(current.expressPrix);
 
     // Programme : les creneaux periodiques, tries par heure.
     const slots = current.hours
@@ -83,11 +80,8 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
       .slice()
       .sort((a, b) => a.hour.localeCompare(b.hour));
     return {
-      expressPrice: expressLo !== null ? fmt(expressLo) : "—",
-      expressNote:
-        expressLo !== null
-          ? t("{{a}} heure{{b}}", { a: expressPrices.length, b: expressPrices.length > 1 ? "s" : "" })
-          : t("Non desservi"),
+      expressPrice: express !== null ? fmt(express) : "—",
+      expressNote: express !== null ? t("Dès que prête") : t("Non desservi"),
       slots,
     };
   }, [current, i18nLang]);
@@ -193,6 +187,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
                   slots={view.slots}
                   expressPrice={view.expressPrice}
                   expressNote={view.expressNote}
+                  expressPrix={current.expressPrix}
                   selectedHour={selectedHour}
                   selectedLieu={selectedLieu}
                   onSelect={onSelect}
@@ -202,7 +197,7 @@ export const ZoneListSheet: React.FC<ZoneListSheetProps> = ({
               </View>
 
               <Text style={st.footer}>
-                {current.lieu} {t("· touchez un créneau pour le modifier")}
+                {current.lieu} {t("· touchez un tarif pour le modifier")}
               </Text>
             </>
           )}

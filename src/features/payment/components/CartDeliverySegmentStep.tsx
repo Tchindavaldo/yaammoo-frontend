@@ -7,6 +7,7 @@ import type { GroupedDeliveryType } from "./CartDeliveryTypeStep";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
 import { t as tr, useLanguage } from "@/src/i18n";
+import { pickupDayLabel } from "@/src/features/checkout/utils/pickupHours";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")}`;
 
@@ -63,6 +64,9 @@ interface CartDeliverySegmentStepProps {
   /** Retrait boutique autorisé (GET /fastfood/all). `false` = card « Sur place »
    * non cliquable, sous-texte « Retrait indisponible ». */
   pickupAllowed?: boolean;
+  /** Sur place : ouvre le calendrier du jour / la liste des heures. */
+  onOpenPickupDate?: () => void;
+  onOpenPickupHour?: () => void;
 }
 
 /**
@@ -98,6 +102,8 @@ export const CartDeliverySegmentStep: React.FC<
   isBusy,
   pickupAllowed,
   onNetworkChange,
+  onOpenPickupDate,
+  onOpenPickupHour,
 }) => {
   useLanguage();
   const type = (delivery.type || "express") as GroupedDeliveryType;
@@ -159,16 +165,15 @@ export const CartDeliverySegmentStep: React.FC<
       onPress: onOpenLocation,
     });
   } else {
-    // "Sur place" : pas d'adresse à livrer, la card sert juste de rappel.
+    // "Sur place" : pas d'adresse, la tuile devient le JOUR du retrait.
     tiles.push({
-      key: "location",
-      icon: "location-outline",
-      label: tr("Lieu"),
-      recapLabel: tr("Lieu"),
-      value: tr("Récupérer sur place"),
-      filled: true,
-      // Retrait : rien a choisir, la card n'ouvre pas l'overlay du lieu.
-      onPress: () => {},
+      key: "pickupDate",
+      icon: "calendar-outline",
+      label: tr("Date"),
+      recapLabel: tr("Jour du retrait"),
+      value: pickupDayLabel(delivery.date) || tr("À remplir"),
+      filled: !!delivery.date,
+      onPress: onOpenPickupDate || (() => {}),
     });
   }
 
@@ -200,15 +205,15 @@ export const CartDeliverySegmentStep: React.FC<
   }
 
   if (type === "aucune") {
-    // Heure de retrait en boutique : card posee, n'ouvre rien pour l'instant.
+    // Heure de passage, libre dans les horaires de la boutique.
     tiles.push({
       key: "pickupHour",
       icon: "time-outline",
       label: tr("Heure"),
       recapLabel: tr("Heure de retrait"),
-      value: tr("À remplir"),
-      filled: false,
-      onPress: () => {},
+      value: delivery.pickupTime || tr("À remplir"),
+      filled: !!delivery.pickupTime,
+      onPress: onOpenPickupHour || (() => {}),
     });
   }
 

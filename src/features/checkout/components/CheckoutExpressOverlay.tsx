@@ -15,6 +15,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 import { verifyBonusCode } from "../services/verifyBonusCode";
+import { expressZonesOf } from "../utils/expressZones";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -22,11 +23,6 @@ import { t, useLanguage } from "@/src/i18n";
 // (voir `CheckoutSheet` / `CartCheckoutSheet`) : l'overlay ajoute donc le meme
 // inset, sinon il s'arrete au-dessus du bord bas du sheet.
 const SHEET_HEIGHT = 384;
-
-interface ExpressZone {
-  lieu: string;
-  prix: string;
-}
 
 interface CheckoutExpressOverlayProps {
   onClose: () => void;
@@ -36,7 +32,8 @@ interface CheckoutExpressOverlayProps {
     prix?: number,
     bonusCode?: string | null,
   ) => void;
-  availableHours?: any[];
+  /** Zones EXPRESS de la boutique (`expressZones`) : une liste, sans heure. */
+  expressZones?: unknown;
   deliveryOffer?: DeliveryOffer | null;
   /** Boutique visée — transmise à `POST /bonus/verify`. */
   fastFoodId?: string | null;
@@ -49,15 +46,15 @@ interface CheckoutExpressOverlayProps {
  * Contrairement à la période (créneau horaire), l'express est immédiat :
  * pas de dates ni d'heures, seulement le choix d'une zone (lieu + prix).
  *
- * Les zones proviennent des `expressZones` de chaque entrée `deliveryHours`,
- * dédupliquées par lieu. Si aucune zone express n'existe (ancien format
- * backend / app), la liste est vide — le parent masque la card dans ce cas.
+ * Les zones proviennent de `expressZones` (boutique, un prix par lieu, sans
+ * heure — backend migration 073). Si aucune zone express n'existe, la liste est
+ * vide — le parent masque la card dans ce cas.
  */
 export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   onClose,
   selectedLieu,
   onSelectExpress,
-  availableHours,
+  expressZones,
   deliveryOffer,
   fastFoodId,
   onError,
@@ -92,27 +89,8 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
     [fade, onClose],
   );
 
-  const buildZones = (): ExpressZone[] => {
-    if (!availableHours || availableHours.length === 0) return [];
-    // Ancien format (string[]) → pas de zones express possibles.
-    if (typeof availableHours[0] === "string") return [];
-
-    const seen = new Set<string>();
-    const zones: ExpressZone[] = [];
-    availableHours.forEach((entry: any) => {
-      if (entry.express && entry.expressZones?.length > 0) {
-        entry.expressZones.forEach((z: any) => {
-          const lieu = z.lieu || "";
-          if (!lieu || seen.has(lieu)) return;
-          seen.add(lieu);
-          zones.push({ lieu, prix: z.prix || "" });
-        });
-      }
-    });
-    return zones;
-  };
-
-  const zones = buildZones();
+  // Un lieu = un prix, celui que le backend facture (`zoneDeliveryPrice`).
+  const zones = expressZonesOf(expressZones);
 
   const [selectedValue, setSelectedValue] = useState<string>(selectedLieu || "");
   const [bonusCode, setBonusCode] = useState("");

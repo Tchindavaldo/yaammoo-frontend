@@ -291,6 +291,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   if (!menu) return null;
 
   const rawHours = (menuWithDeliveryHours as any)?.deliveryHours || [];
+  // Zones EXPRESS de la boutique : une liste, sans heure (un prix par lieu).
+  const expressZones = (menuWithDeliveryHours as any)?.expressZones || [];
   const orderLeadTime = (menuWithDeliveryHours as any)?.orderLeadTime || 0;
   const advanceDays = (menuWithDeliveryHours as any)?.advanceDays;
   const deliveryOffer = (menuWithDeliveryHours as any)?.deliveryOffer || null;
@@ -462,6 +464,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                     onOpenExpress={() => setIsExpressPopupVisible(true)}
                     onOpenVoiceNote={() => setIsVoiceNotePopupVisible(true)}
                     availableHours={rawHours}
+                    expressZones={expressZones}
                     deliveryOffer={deliveryOffer}
                     pickupAllowed={pickupAllowed}
                   />
@@ -518,12 +521,16 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             visible={!!pickupPhone}
             value={delivery.date}
             maxDays={advanceDays}
+            time={delivery.pickupTime}
+            openTime={(menuWithDeliveryHours as any)?.openTime}
+            closeTime={(menuWithDeliveryHours as any)?.closeTime}
+            leadMinutes={orderLeadTime}
             onClose={() => {
               setPickupPhone(null);
               pendingAction.current = null;
             }}
-            onPick={(date) => {
-              setDelivery({ ...delivery, phone: pickupPhone || delivery.phone, date });
+            onPick={(date, pickupTime) => {
+              setDelivery({ ...delivery, phone: pickupPhone || delivery.phone, date, pickupTime });
               setPickupPhone(null);
               setPickupChosen(true);
               if (pendingAction.current) {
@@ -567,7 +574,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   bonusCode: bonusCode ?? null,
                 })
               }
-              availableHours={rawHours}
+              expressZones={expressZones}
               deliveryOffer={deliveryOffer}
               fastFoodId={(menu as any)?.fastFoodId}
               onError={showError}

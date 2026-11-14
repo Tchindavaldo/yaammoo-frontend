@@ -49,6 +49,8 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
       };
       // Numero de contact garde aussi en RETRAIT (exige par le backend).
       if (d.phone) base.phone = d.phone;
+      // Sur place : heure de retrait "HH:mm" (backend : facultative en retrait).
+      if (!hasDelivery && d.time) base.time = d.time;
       if (hasDelivery) {
         if (d.type) base.type = d.type;
         if (d.location) base.location = d.location;

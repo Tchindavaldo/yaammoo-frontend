@@ -160,9 +160,12 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
               {/* Heure + prix périodique + prix express sur une même ligne */}
               <View style={[styles.inputGroup, { marginTop: 14 }]}>
                 <View style={{ flexDirection: "row", gap: 10 }}>
-                  <View style={{ flex: 1.2 }}>
+                  {/* L'heure ne sert qu'au PERIODIQUE : l'express n'a pas
+                      d'heure (un prix par lieu). Grisee si seul l'express est coche. */}
+                  <View style={{ flex: 1.2, opacity: formPeriodic ? 1 : 0.4 }}>
                     <Text style={styles.floatingLabel}>{tr("Heure")}</Text>
                     <TouchableOpacity
+                      disabled={!formPeriodic}
                       style={[
                         styles.glassInput,
                         styles.timeInput,

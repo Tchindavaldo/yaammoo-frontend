@@ -76,6 +76,11 @@ export const useGroupedDeliveryData = (fastFoodId?: string) => {
     fastFoodName:
       ffData?.nom || ffData?.name || listedFf?.nom || listedFf?.name || "",
     rawHours: ffData?.deliveryHours || [],
+    /** Zones EXPRESS de la boutique : une liste, sans heure (un prix par lieu). */
+    expressZones: (ffData?.expressZones || []) as { lieu: string; prix: string | number }[],
+    /** Horaires d'ouverture : bornent l'heure de retrait sur place. */
+    openTime: (ffData?.openTime ?? listedFf?.openTime) as string | undefined,
+    closeTime: (ffData?.closeTime ?? listedFf?.closeTime) as string | undefined,
     orderLeadTime: ffData?.orderLeadTime || 0,
     advanceDays: ffData?.advanceDays as number | undefined,
     deliveryOffer: listedFf?.deliveryOffer ?? null,

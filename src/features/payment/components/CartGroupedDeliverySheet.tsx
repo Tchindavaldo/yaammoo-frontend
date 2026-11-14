@@ -39,6 +39,9 @@ import { CartPaymentOverlay } from "./CartPaymentOverlay";
 import { C, styles as sheetStyles } from "./CartPaymentSheet.styles";
 import { t, useLanguage } from "@/src/i18n";
 import { GroupedPickupDateSheet } from "./GroupedPickupDateSheet";
+import { GroupedPickupHourSheet } from "./GroupedPickupHourSheet";
+import { isPickupHourValid } from "@/src/features/checkout/utils/pickupHours";
+import { hasExpressZones as hasExpressZonesOf } from "@/src/features/checkout/utils/expressZones";
 
 /** Hauteur de la capsule flottante (`CartPaymentOverlay.styles.capsule`). */
 const CAPSULE_HEIGHT = 70;
@@ -177,6 +180,7 @@ export const CartGroupedDeliverySheet: React.FC<
   // Jour du retrait (sur place) : choisi une fois avant le paiement.
   const [pickupOpen, setPickupOpen] = React.useState(false);
   const [pickupChosen, setPickupChosen] = React.useState(false);
+  const [pickupHourOpen, setPickupHourOpen] = React.useState(false);
   const pendingPayPhone = React.useRef<string | null>(null);
 
   const guardedConfirm = React.useCallback(
@@ -490,17 +494,20 @@ export const CartGroupedDeliverySheet: React.FC<
 
   // Donnees de livraison de la boutique de reference (creneaux, offre), mises
   // en cache pour ne pas repartir de `null` a chaque ouverture.
-  const { rawHours, orderLeadTime, advanceDays, deliveryOffer, pickupAllowed } =
-    useGroupedDeliveryData(fastFoodId);
+  const {
+    rawHours,
+    expressZones,
+    openTime,
+    closeTime,
+    orderLeadTime,
+    advanceDays,
+    deliveryOffer,
+    pickupAllowed,
+  } = useGroupedDeliveryData(fastFoodId);
 
-  // Des zones express existent-elles (nouveau format `deliveryHours`) ? Sans
+  // Des zones express existent-elles (liste `expressZones`, sans heure) ? Sans
   // elles, la ligne « Zone express » n'a rien a proposer et reste masquee.
-  const hasExpressZones = Array.isArray(rawHours)
-    ? rawHours.some(
-        (h: any) =>
-          h && typeof h === "object" && h.express && h.expressZones?.length > 0,
-      )
-    : false;
+  const hasExpressZones = hasExpressZonesOf(expressZones);
 
   /**
    * Passage a la page suivante. Depuis la page « Informations » (3), on refuse
@@ -514,9 +521,17 @@ export const CartGroupedDeliverySheet: React.FC<
       showError(t("Indiquez un numéro de contact pour que la boutique puisse vous joindre"));
       return;
     }
-    // Retrait : demander le jour ou il passe recuperer (commande future possible).
+    // Retrait : jour puis heure de passage obligatoires (tuiles Date / Heure).
     if (step === 3 && delivery.type === "aucune" && !pickupChosen) {
       setPickupOpen(true);
+      return;
+    }
+    if (
+      step === 3 &&
+      delivery.type === "aucune" &&
+      !isPickupHourValid(delivery.pickupTime, openTime, closeTime, delivery.date, orderLeadTime)
+    ) {
+      setPickupHourOpen(true);
       return;
     }
     if (step === 3 && delivery.type !== "aucune") {
@@ -537,7 +552,7 @@ export const CartGroupedDeliverySheet: React.FC<
       }
     }
     setStep((s) => (s + 1) as 1 | 2 | 3 | 4);
-  }, [step, delivery, hasExpressZones, showError, pickupChosen]);
+  }, [step, delivery, hasExpressZones, showError, pickupChosen, openTime, closeTime, orderLeadTime]);
 
   // Commandes du lot, et frais de la course groupee : une seule course est
   // facturee, la plus chere.
@@ -630,6 +645,12 @@ export const CartGroupedDeliverySheet: React.FC<
             onNetworkChange={onNetworkChange}
             isBusy={isBusy}
             pickupAllowed={pickupAllowed}
+            onOpenPickupDate={() => setPickupOpen(true)}
+            onOpenPickupHour={() =>
+              pickupChosen
+                ? setPickupHourOpen(true)
+                : showError(t("Choisissez d'abord le jour du retrait"))
+            }
             step={step}
           />
 
@@ -826,6 +847,7 @@ export const CartGroupedDeliverySheet: React.FC<
         delivery={delivery}
         setDelivery={setDelivery}
         availableHours={rawHours}
+        expressZones={expressZones}
         orderLeadTime={orderLeadTime}
         advanceDays={advanceDays}
         deliveryOffer={deliveryOffer}
@@ -839,10 +861,26 @@ export const CartGroupedDeliverySheet: React.FC<
         maxDays={advanceDays}
         onClose={() => setPickupOpen(false)}
         onPick={(date) => {
-          setDelivery({ ...delivery, date });
+          // Un autre jour peut rendre l'heure caduque : elle se re-choisit.
+          const keep = isPickupHourValid(delivery.pickupTime, openTime, closeTime, date, orderLeadTime);
+          setDelivery({ ...delivery, date, pickupTime: keep ? delivery.pickupTime : "" });
           setPickupChosen(true);
           setPickupOpen(false);
-          setStep(4);
+          if (!keep) setPickupHourOpen(true);
+        }}
+      />
+
+      <GroupedPickupHourSheet
+        visible={pickupHourOpen}
+        day={delivery.date}
+        value={delivery.pickupTime}
+        openTime={openTime}
+        closeTime={closeTime}
+        leadMinutes={orderLeadTime}
+        onClose={() => setPickupHourOpen(false)}
+        onPick={(pickupTime) => {
+          setDelivery({ ...delivery, pickupTime });
+          setPickupHourOpen(false);
         }}
       />
 

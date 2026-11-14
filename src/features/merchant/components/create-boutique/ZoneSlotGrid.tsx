@@ -13,6 +13,8 @@ interface ZoneSlotGridProps {
   slots: ZoneHourEntry[];
   expressPrice: string;
   expressNote: string;
+  /** Prix express brut du lieu ; defini = carte express cliquable (edition). */
+  expressPrix?: string;
   selectedHour: string | null;
   selectedLieu: string | null;
   onSelect: (lieu: string, entry: ZoneHourEntry) => void;
@@ -34,6 +36,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
   slots,
   expressPrice,
   expressNote,
+  expressPrix,
   selectedHour,
   selectedLieu,
   onSelect,
@@ -88,9 +91,21 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
 
   const cards: React.ReactNode[] = [];
 
+  // Carte express : un seul prix pour le lieu, sans heure. Cliquable quand il
+  // existe, pour le modifier ou le retirer (hour "" = ligne express seule).
   if (safePage === 0)
     cards.push(
-      <View key="express" style={[st.priceCard, st.priceCardExpress]}>
+      <TouchableOpacity
+        key="express"
+        disabled={expressPrix === undefined}
+        onPress={() => onSelect(lieu, { hour: "", expressPrix })}
+        activeOpacity={0.7}
+        style={[
+          st.priceCard,
+          st.priceCardExpress,
+          selectedHour === "" && selectedLieu === lieu && st.priceCardActive,
+        ]}
+      >
         <View style={st.tag}>
           <View style={[st.tagDot, { backgroundColor: DS.accent }]} />
           <Text style={[st.tagText, { color: DS.accent }]}>Express</Text>
@@ -99,7 +114,7 @@ export const ZoneSlotGrid: React.FC<ZoneSlotGridProps> = ({
         <Text style={st.priceNote} numberOfLines={1}>
           {expressNote}
         </Text>
-      </View>,
+      </TouchableOpacity>,
     );
   // Pages suivantes : la premiere carte ramene a la page precedente.
   else

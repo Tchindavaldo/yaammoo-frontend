@@ -76,6 +76,9 @@ export class Livraison {
     // Code bonus livraison (saisi par le user ou issu de l'offre détectée) —
     // envoyé tel quel à la racine du payload order sous `bonusCode`.
     public bonusCode: string | null = null,
+    // Sur place : heure "HH:mm" à laquelle le client passe récupérer, dans les
+    // horaires de la boutique. Envoyée en `delivery.time` (backend : facultative).
+    public pickupTime: string = "",
   ) {}
 }
 

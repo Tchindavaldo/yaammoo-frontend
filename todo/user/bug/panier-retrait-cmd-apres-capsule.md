@@ -1,15 +1,10 @@
 # Panier : ne retirer visuellement les cmd qu'APRÈS le dernier message de la capsule
 
-[ ] panier : ne retirer visuellement les cmd qu'APRÈS le dernier message de la capsule
-    - concerne les DEUX chemins : "Tout commander" (panier global) et le buy
-      individuel d'une cmd depuis le panier (CartCheckoutSheet)
-    - aujourd'hui dès que le paiement aboutit, le socket (userOrderUpdated /
-      newFastFoodOrders) sort les cmd de `pendingToBuy` immédiatement : la liste
-      se vide sous les yeux du user pendant que la capsule affiche encore
-      "Paiement réussi..." puis "Commande créée avec succès"
-    - la capsule elle-même ne disparaît plus (sa condition ne dépend plus de
-      `pendingToBuy.length`), mais les cartes du panier, elles, s'évaporent trop tôt
-    - attendu : garder l'affichage des cmd concernées jusqu'à la fin de l'état
-      `success_created`, puis les retirer d'un coup au reset
-    - piste : geler la liste rendue pendant `paymentState !== "total"` (snapshot
-      local des cmd au lancement du paiement) et ne la relâcher qu'au resetPayment
+[x] (fait le 14/11/2026 : `cart.tsx` gèle la liste `pendingToBuy` tant que
+    `paymentState !== "total"`, puis la relâche d'un coup au retour au repos ;
+    vaut pour « Tout commander », le parcours groupé et le paiement par zone)
+    panier : ne retirer visuellement les cmd qu'APRÈS le dernier message de la capsule
+    - avant : dès le succès, le socket sortait les cmd de `pendingToBuy` et la
+      liste se vidait pendant que la capsule affichait encore « Paiement réussi »
+    - NOTE : le buy individuel (CartCheckoutSheet) a son propre état de paiement
+      (useCheckout), non couvert par ce gel : à vérifier si le cas se présente

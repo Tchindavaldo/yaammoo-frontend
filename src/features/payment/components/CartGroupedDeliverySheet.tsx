@@ -279,12 +279,13 @@ export const CartGroupedDeliverySheet: React.FC<
       setPickupOpen(true);
       return;
     }
-    if (
-      step === 3 &&
-      delivery.type === "aucune" &&
-      !isPickupHourValid(delivery.pickupTime, openTime, closeTime, delivery.date, 0) // heure deja choisie : redemandee seulement si vide ou passee
-    ) {
+    if (step === 3 && delivery.type === "aucune" && !delivery.pickupTime) {
       setPickupHourOpen(true);
+      return;
+    }
+    // Heure passee ou trop proche (delai de preparation) : toast, la tuile Heure la change.
+    if (step === 3 && delivery.type === "aucune" && !isPickupHourValid(delivery.pickupTime, openTime, closeTime, delivery.date, orderLeadTime)) {
+      showError(t("Cette heure de retrait n'est plus valide : choisissez une nouvelle heure"));
       return;
     }
     if (step === 3 && delivery.type !== "aucune") {
@@ -461,7 +462,7 @@ export const CartGroupedDeliverySheet: React.FC<
         onClose={() => setPickupOpen(false)}
         onPick={(date) => {
           // Un autre jour peut rendre l'heure caduque : elle se re-choisit.
-          const keep = isPickupHourValid(delivery.pickupTime, openTime, closeTime, date, 0);
+          const keep = isPickupHourValid(delivery.pickupTime, openTime, closeTime, date, orderLeadTime);
           setDelivery({ ...delivery, date, pickupTime: keep ? delivery.pickupTime : "" });
           setPickupChosen(true);
           setPickupOpen(false);

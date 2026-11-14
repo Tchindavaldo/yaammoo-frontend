@@ -16,7 +16,7 @@ bloquante uniquement avant une commande).
 
 [x] Vérification au chargement de Home, une fois le user chargé (pas avant)
 [x] Ne pas déclencher tant que le profil n'est pas récupéré (éviter le faux positif)
-[ ] Modale non fermable (pas de dismiss, pas de retour arrière) tant que non rempli — fermable sur le home, imposée avant commande
+[x] (comportement voulu, validé le 14/11/2026) fermable sur le home, imposée avant toute commande
 [x] Champs : prénom + nom, tous deux obligatoires, trim + longueur minimale
 [x] Validation : refuser vide, espaces seuls, caractères invalides
 [x] À la soumission : `updateUser()` puis mise à jour de l'AuthContext

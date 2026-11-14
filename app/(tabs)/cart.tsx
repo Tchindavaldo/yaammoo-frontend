@@ -1,5 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useFocusEffect } from "expo-router";
 import {
   StyleSheet,
@@ -70,7 +70,7 @@ export default function OrdersScreen() {
     // Renommé : `refreshing` est déjà pris par le pull-to-refresh local.
     refreshing: ordersRefreshing,
     orders,
-    pendingToBuy,
+    pendingToBuy: livePendingToBuy,
     refresh,
     deleteOrder,
     updateLocalOrder,
@@ -80,6 +80,14 @@ export default function OrdersScreen() {
   const { userData } = useAuth();
   const { isSignedIn } = useAuthGate();
   const requireName = useRequireName();
+
+  // Paiement en cours : liste GELEE. Le socket sort les commandes payees de
+  // `pendingToBuy` des le succes ; on les garde affichees jusqu'au retour au
+  // repos (fin de la capsule, `paymentState === "total"`), puis d'un coup.
+  const [freezeCart, setFreezeCart] = useState(false);
+  const frozenCart = useRef(livePendingToBuy);
+  if (!freezeCart) frozenCart.current = livePendingToBuy;
+  const pendingToBuy = freezeCart ? frozenCart.current : livePendingToBuy;
 
   // Total panier (réactif) — calculé tôt pour alimenter le hook de paiement.
   // Les frais de livraison sont mutualisés : une seule livraison facturée par
@@ -395,6 +403,8 @@ export default function OrdersScreen() {
     },
     [requireName],
   );
+
+  useEffect(() => setFreezeCart(paymentState !== "total"), [paymentState]);
 
   // Après succès complet (success_created) : rafraîchir + revenir au repos.
   useEffect(() => {

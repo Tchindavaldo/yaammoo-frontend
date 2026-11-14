@@ -466,7 +466,7 @@ export const CartGroupedDeliverySheet: React.FC<
           setDelivery({ ...delivery, date, pickupTime: keep ? delivery.pickupTime : "" });
           setPickupChosen(true);
           setPickupOpen(false);
-          if (!keep) setPickupHourOpen(true);
+          if (!keep) setTimeout(() => setPickupHourOpen(true), 400); // iOS : 2 Modals a la fois = voile bloquant
         }}
       />
 

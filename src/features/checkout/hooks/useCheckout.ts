@@ -313,6 +313,10 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     if (hasDelivery && delivery.bonusCode) {
       returnedOrder.bonusCode = delivery.bonusCode;
     }
+    // Regime de livraison vu (home) : refus `delivery_mode_changed` s'il a
+    // bascule avant le paiement. Une commande du panier garde le sien.
+    const seenDeliveryBy = (menu as any).deliveryBy ?? initialOrder?.deliveryBy;
+    if (seenDeliveryBy) returnedOrder.deliveryBy = seenDeliveryBy;
 
     if (initialOrder) {
       if (initialOrder.id) {

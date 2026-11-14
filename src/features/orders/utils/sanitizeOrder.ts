@@ -94,6 +94,8 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
 
   // Code bonus livraison : justifie côté backend un total sans frais de port.
   if (o.bonusCode) sanitized.bonusCode = o.bonusCode;
+  // Regime de livraison vu a la creation (compare au regime actuel au paiement).
+  if (o.deliveryBy) sanitized.deliveryBy = o.deliveryBy;
 
   if (o.createdAt) sanitized.createdAt = o.createdAt;
   if (o.updatedAt) sanitized.updatedAt = o.updatedAt;

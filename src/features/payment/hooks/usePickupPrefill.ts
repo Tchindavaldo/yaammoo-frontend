@@ -17,6 +17,10 @@ export const usePickupPrefill = (
     if (!visible || inFlight) return;
     const p = commonPickup(groups.flatMap((g) => g.entries.map((e) => e.order)));
     if (!p) {
+      // Heures differentes : tuiles Date / Heure vides, a choisir.
+      setDelivery((d) =>
+        Object.assign(Object.create(Object.getPrototypeOf(d)), d, { date: "", pickupTime: "" }),
+      );
       setPickupChosen(false);
       return;
     }

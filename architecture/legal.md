@@ -15,3 +15,13 @@ backend depuis la base (`GET /legal/current`, migration 077).
   confidentialité » du menu compte (`AccountSheet`, pastille du header du
   Profil). Pastille orange sur la ligne si `hasUpdate`.
 - `components/LegalText.tsx` : rendu du texte brut (titres en gras).
+
+## Adhésion du Marchand à la création de boutique (Annexe 3)
+
+`create-boutique/MerchantAdhesionBlock` (qualité, dénomination légale facultative,
+adresse, case d'acceptation, lien « Lire les conditions » → `MerchantLegalSheet`,
+copie de `LegalReadSheet`, la page `app/shop/create` étant hors du `LegalProvider`).
+État : `create-boutique/useMerchantAdhesion` (branché dans `useCreateBoutique`) :
+`validate()` bloque « Créer ma boutique » tant que qualité, adresse et case
+manquent ; `save(fastFoodId)` appelle `POST /legal/merchant-adhesion` juste après
+`POST /fastFood`. Monté dans `ShopCreateBoutiquePanel` et `CreateBoutiquePanel`.

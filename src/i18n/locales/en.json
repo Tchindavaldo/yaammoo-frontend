@@ -1352,5 +1352,18 @@
   "Accepté le {{d}}": "Accepted on {{d}}",
   "J'accepte les conditions générales d'utilisation": "I accept the terms of use",
   "J'ai lu la politique de confidentialité": "I have read the privacy policy",
-  "Les conditions ont été mises à jour. Merci de les vérifier puis de valider à nouveau.": "The terms have been updated. Please review them and confirm again."
+  "Les conditions ont été mises à jour. Merci de les vérifier puis de valider à nouveau.": "The terms have been updated. Please review them and confirm again.",
+  "Votre qualité": "Your role",
+  "Gérant": "Manager",
+  "Directeur": "Director",
+  "Dénomination légale de l'entreprise (facultatif)": "Company legal name (optional)",
+  "Ex. : RAUVAL SARL": "E.g. RAUVAL SARL",
+  "Adresse de la boutique": "Shop address",
+  "Quartier, rue, repère": "Area, street, landmark",
+  "J'ai lu et j'accepte les Conditions générales, l'Annexe 1 (Marchands) et les conditions des Partenaires de paiement. Cette validation vaut signature.": "I have read and accept the General Terms, Appendix 1 (Merchants) and the Payment Partners' terms. This confirmation is my signature.",
+  "Lire les conditions": "Read the terms",
+  "Indiquez votre qualité (gérant, directeur ou propriétaire)": "Select your role (manager, director or owner)",
+  "Indiquez l'adresse de la boutique": "Enter the shop address",
+  "Cochez la case d'acceptation des conditions": "Tick the box to accept the terms",
+  "Conditions indisponibles, réessayez dans un instant": "Terms unavailable, try again in a moment"
 }

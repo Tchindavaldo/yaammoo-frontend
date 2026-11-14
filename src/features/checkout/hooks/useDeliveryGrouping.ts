@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Livraison } from "@/src/types";
-import { checkDeliveryGroup, DeliveryProbe } from "../services/deliveryGroupCheck";
+import { cachedPaidDepartures, DeliveryProbe, isPaidDeparture } from "../services/deliveryGroupCheck";
 
 /** Départ visé par la livraison choisie (même découpage que `createOrder`). */
 export const deliveryProbeOf = (delivery: Livraison, fastFoodId?: string | null): DeliveryProbe | null => {
@@ -19,9 +19,12 @@ export const deliveryProbeOf = (delivery: Livraison, fastFoodId?: string | null)
 };
 
 /**
- * Groupage : à chaque zone / créneau choisi, vérifie si le client a déjà payé
- * ce départ. Pendant la requête `delivery.grouping = "checking"` (loader sur la
- * carte), puis `"grouped"` (course offerte) ou `null`.
+ * Groupage : la carte Zone / Période lit les départs déjà payés AU TOUCHER
+ * (`DeliveryTab`, loader sur la carte), puis ouvre la liste qui marque la
+ * ligne concernée. Ici, sans requête : la livraison choisie est comparée à
+ * cette liste → `delivery.grouping = "grouped"` (course à 0) ou `null`.
+ * `groupingShopId` / `groupingUserId` (UI seulement, jamais envoyés) donnent
+ * à `DeliveryTab` de quoi lancer la lecture.
  */
 export const useDeliveryGrouping = (
   delivery: Livraison,
@@ -30,19 +33,12 @@ export const useDeliveryGrouping = (
   userId?: string | null,
 ) => {
   const probe = deliveryProbeOf(delivery, fastFoodId);
-  const key = probe && userId ? JSON.stringify(probe) : "";
+  const grouped = isPaidDeparture(cachedPaidDepartures(userId, fastFoodId), probe) ? "grouped" : null;
   useEffect(() => {
-    if (!key || !userId) {
-      setDelivery(d => (d.grouping ? { ...d, grouping: null } : d));
-      return;
-    }
-    let alive = true;
-    setDelivery(d => ({ ...d, grouping: "checking" }));
-    checkDeliveryGroup(userId, JSON.parse(key)).then(grouped => {
-      if (alive) setDelivery(d => ({ ...d, grouping: grouped ? "grouped" : null }));
-    });
-    return () => {
-      alive = false;
-    };
-  }, [key, userId]);
+    setDelivery(d =>
+      d.grouping === grouped && d.groupingShopId === (fastFoodId ?? null) && d.groupingUserId === (userId ?? null)
+        ? d
+        : { ...d, grouping: grouped, groupingShopId: fastFoodId ?? null, groupingUserId: userId ?? null },
+    );
+  }, [grouped, fastFoodId, userId]);
 };

@@ -503,20 +503,25 @@ défilent horizontalement.
 
 ## Groupage (course offerte)
 
-Après le choix d'une zone express ou d'un créneau, `useDeliveryGrouping`
-(appelé par `useCheckout`) interroge `GET /order/delivery-group/:userId`
-(`services/deliveryGroupCheck.ts`) : le client a-t-il déjà payé ce départ,
-pas encore parti ? Pendant la requête `delivery.grouping = "checking"` : la
-carte Zone / Période (`tabs/DeliveryInfoCard.tsx`) affiche un loader au centre.
-Réponse oui : `delivery.grouping = "grouped"`, la course affiche « Groupée avec
-ta commande » (même affichage et même calcul que la livraison offerte, `checkoutPrices.ts`).
-`grouping` n'est jamais envoyé au backend. Panier : `computeCartTotal` ne
+Toucher la carte Zone ou Période (`tabs/DeliveryTab.tsx`) lit d'abord les
+départs déjà payés et pas encore partis de la boutique
+(`GET /order/delivery-group/:userId?fastFoodId`, `fetchPaidDepartures`) : le
+texte de la carte disparaît, un loader occupe son centre
+(`tabs/DeliveryInfoCard.tsx`), puis la liste (`CheckoutExpressOverlay` /
+`CheckoutPeriodOverlay`) s'ouvre seule et marque « Groupée avec ta commande »
+sur la ligne concernée (`hooks/usePaidSlot.ts`, liste gardée en cache par
+`deliveryGroupCheck.ts`). `useDeliveryGrouping` (appelé par `useCheckout`)
+compare ensuite, sans requête, la livraison choisie à cette liste :
+`delivery.grouping = "grouped"`, la course affiche « Groupée avec ta commande »
+(même calcul que la livraison offerte, `checkoutPrices.ts`).
+`grouping`, `groupingShopId`, `groupingUserId` : UI seulement, jamais envoyés
+(`sanitizeOrder` liste les champs). Panier : `computeCartTotal` ne
 mutualise pas une commande dont le total exclut déjà la course.
 
-**Panier groupé (étapes)** : `payment/hooks/useCartPaidDepartures` lit, à
-l'ouverture du sheet, les départs déjà payés de la boutique
+**Panier groupé (étapes)** : `payment/hooks/useCartPaidDepartures` lit, au
+toucher de la card Zone express / Créneau, les départs déjà payés de la boutique
 (`GET /order/delivery-group/:userId?fastFoodId`, sans `zone` :
-`data.departures`). Loader au centre des cards Zone express / Créneau pendant la lecture (non cliquables). Les listes
+`data.departures`). Loader au centre de la card touchée pendant la lecture, puis sa liste s'ouvre seule. Les listes
 `GroupedPeriodOverlay` / `GroupedExpressOverlay` marquent « Groupée avec ta
 commande » sur le créneau / la zone concernés (`isGroupedSlot`). Livraison
 choisie = départ payé : course à 0, `delivery.grouping = "grouped"` sur la

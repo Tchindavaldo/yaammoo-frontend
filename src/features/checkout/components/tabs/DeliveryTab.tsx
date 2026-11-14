@@ -8,6 +8,7 @@ import { DS } from "@/src/theme/ds";
 import { t, dateLocale, useLanguage } from "@/src/i18n";
 import { hasExpressZones as hasExpressZonesOf } from "../../utils/expressZones";
 import { DeliveryInfoCard } from "./DeliveryInfoCard";
+import { fetchPaidDepartures } from "../../services/deliveryGroupCheck";
 
 interface DeliveryTabProps {
   delivery: Livraison;
@@ -64,7 +65,18 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   // plus le prix réel — barré — à la suite de « Livré dès que terminée ».
   // Groupage (un départ déjà payé couvre la course) : même affichage « Offert ».
   const deliveryFree = !!deliveryOffer?.active || delivery.grouping === "grouped";
-  const groupingChecking = delivery.grouping === "checking";
+  // Groupage : toucher Zone / Période lit d'abord les départs déjà payés
+  // (loader au centre de la carte), puis ouvre la liste qui les marque.
+  const [opening, setOpening] = React.useState<"express" | "period" | null>(null);
+  const openAfterCheck = async (key: "express" | "period", open?: () => void) => {
+    if (opening) return;
+    if (delivery.groupingUserId && delivery.groupingShopId) {
+      setOpening(key);
+      await fetchPaidDepartures(delivery.groupingUserId, delivery.groupingShopId);
+      setOpening(null);
+    }
+    open?.();
+  };
 
   // Parse `delivery.hour` au format "YYYY-MM-DD|HH:mm|lieu" → { date, heure }
   const parseHour = (raw: string) => {
@@ -102,7 +114,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
             <View style={localStyles.expressCardsCol}>
               <DeliveryInfoCard icon="location-outline" title={t("Lieux")} filled={isLocationFilled} onPress={onOpenLocation} style={{ flex: 1 }} />
               {hasExpressZones && (
-                <DeliveryInfoCard icon="flash-outline" title={t("Zone")} filled={isExpressFilled} onPress={onOpenExpress} loading={groupingChecking} style={{ flex: 1 }} />
+                <DeliveryInfoCard icon="flash-outline" title={t("Zone")} filled={isExpressFilled} onPress={() => openAfterCheck("express", onOpenExpress)} loading={opening === "express"} style={{ flex: 1 }} />
               )}
               <DeliveryInfoCard icon="call-outline" title={t("Contact")} filled={isContactFilled} onPress={onOpenContact} style={{ flex: 1 }} />
               <DeliveryInfoCard icon="mic-outline" title={t("vocale")} filled={isVoiceNoteFilled} onPress={onOpenVoiceNote} style={{ flex: 1 }} />
@@ -114,7 +126,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
         {deliveryType === "standard" && (
           <View style={styles.infoGrid4}>
             <DeliveryInfoCard icon="location-outline" title={t("Lieux")} filled={isLocationFilled} onPress={onOpenLocation} />
-            <DeliveryInfoCard icon="time-outline" title={t("Période")} filled={isPeriodFilled} onPress={onOpenPeriod} loading={groupingChecking} />
+            <DeliveryInfoCard icon="time-outline" title={t("Période")} filled={isPeriodFilled} onPress={() => openAfterCheck("period", onOpenPeriod)} loading={opening === "period"} />
             <DeliveryInfoCard icon="call-outline" title={t("Contact")} filled={isContactFilled} onPress={onOpenContact} />
             <DeliveryInfoCard icon="mic-outline" title={t("Vocale")} filled={isVoiceNoteFilled} onPress={onOpenVoiceNote} />
           </View>

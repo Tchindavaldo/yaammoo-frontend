@@ -311,7 +311,7 @@ export const CartGroupedDeliverySheet: React.FC<
 
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);
   // Course du lot (suit `delivery`) ; 0 si le départ est déjà payé (groupage).
-  const paidDep = useCartPaidDepartures(visible, fastFoodId, delivery, setDelivery);
+  const paidDep = useCartPaidDepartures(fastFoodId, delivery, setDelivery);
   const fraisGroupes = delivery.type === "aucune" || paidDep.grouped ? 0 : Number(delivery.type === "express" ? delivery.expressPrix : delivery.prix) || 0;
   /** Total des articles du lot, hors livraison (source de verite du backend). */
   const articlesTotal = groups.reduce((s, g) => s + g.articles, 0);
@@ -370,12 +370,12 @@ export const CartGroupedDeliverySheet: React.FC<
             articlesTotal={articlesTotal}
             livraison={fraisGroupes}
             courseGrouped={paidDep.grouped}
-            courseChecking={paidDep.checking}
+            courseChecking={paidDep.loadingKey}
             onSplit={onSplit}
             onOpenLocation={() => setOverlay("location")}
             onOpenContact={() => setOverlay("contact")}
-            onOpenPeriod={() => setOverlay("period")}
-            onOpenExpress={() => setOverlay("express")}
+            onOpenPeriod={() => paidDep.openAfterCheck("period", () => setOverlay("period"))}
+            onOpenExpress={() => paidDep.openAfterCheck("express", () => setOverlay("express"))}
             onOpenVoiceNote={() => setOverlay("voiceNote")}
             network={network}
             onNetworkChange={onNetworkChange}

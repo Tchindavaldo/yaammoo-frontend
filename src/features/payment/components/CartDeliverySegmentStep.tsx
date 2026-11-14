@@ -31,7 +31,7 @@ interface CartDeliverySegmentStepProps {
   /** Frais de la course unique, le lot etant groupe. */
   livraison: number;
   courseGrouped?: boolean;
-  courseChecking?: boolean;
+  courseChecking?: "express" | "period" | null;
   /** Tout livrer ensemble — reste sur le sheet, une seule course. */
   onGroupAll: () => void;
   /** Livraisons differentes — chaque zone reprend son propre bouton. */
@@ -333,7 +333,7 @@ export const CartDeliverySegmentStep: React.FC<
                 onPress: t.onPress,
                 // Groupage : départs déjà payés en lecture, la card Zone
                 // express / Créneau attend avant d'ouvrir sa liste.
-                loading: !!courseChecking && (t.key === "express" || t.key === "period"),
+                loading: !!courseChecking && t.key === courseChecking,
               }),
             )}
           </View>

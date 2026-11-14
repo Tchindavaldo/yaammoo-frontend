@@ -32,15 +32,26 @@ export interface PaidDeparture {
   time: string | null;
 }
 
+// Dernière liste lue par boutique (cache de service, pas d'état UI) : la carte
+// Zone / Créneau la charge au toucher, la liste qui s'ouvre ensuite la relit.
+const lastDepartures = new Map<string, PaidDeparture[]>();
+
 /** Départs déjà payés et pas encore partis de cette boutique. Erreur : []. */
 export const fetchPaidDepartures = async (userId: string, fastFoodId: string): Promise<PaidDeparture[]> => {
+  let list: PaidDeparture[] = [];
   try {
     const { data } = await axios.get(`${Config.apiUrl}/order/delivery-group/${userId}`, { params: { fastFoodId } });
-    return Array.isArray(data?.data?.departures) ? data.data.departures : [];
+    list = Array.isArray(data?.data?.departures) ? data.data.departures : [];
   } catch {
-    return [];
+    list = [];
   }
+  lastDepartures.set(`${userId}|${fastFoodId}`, list);
+  return list;
 };
+
+/** Liste lue au dernier toucher de la carte (vide si jamais lue). */
+export const cachedPaidDepartures = (userId?: string | null, fastFoodId?: string | null): PaidDeparture[] =>
+  (userId && fastFoodId && lastDepartures.get(`${userId}|${fastFoodId}`)) || [];
 
 const norm = (v?: string | null) => String(v ?? "").trim().toLowerCase();
 

@@ -19,8 +19,8 @@ interface CartGroupedPaymentBodyProps {
   livraison: number;
   /** Départ déjà payé (groupage) : course « Groupée avec ta commande ». */
   courseGrouped?: boolean;
-  /** Lecture des départs déjà payés en cours : loader sur la course. */
-  courseChecking?: boolean;
+  /** Card (Zone express / Créneau) dont la lecture des départs payés est en cours. */
+  courseChecking?: "express" | "period" | null;
   onSplit: () => void;
   onOpenLocation: () => void;
   onOpenContact: () => void;

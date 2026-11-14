@@ -4,15 +4,16 @@ import { Livraison } from "@/src/types";
 import { deliveryProbeOf } from "@/src/features/checkout/hooks/useDeliveryGrouping";
 import { DeliveryProbe, fetchPaidDepartures, isPaidDeparture, PaidDeparture } from "@/src/features/checkout/services/deliveryGroupCheck";
 
+type SlotKey = "express" | "period";
+
 /**
- * Groupage dans le panier groupé : départs que le client a déjà payés chez
- * cette boutique et qui ne sont pas encore partis. Lus à l'ouverture du sheet
- * (`checking` = loader au centre des cards Zone express / Créneau). `grouped` : la livraison choisie
- * rejoint l'un d'eux, sa course est donc à 0. `isGroupedSlot` marque les zones
- * et créneaux concernés dans les listes de choix.
+ * Groupage dans le panier groupé. Toucher la card Zone express / Créneau lit
+ * les départs que le client a déjà payés chez cette boutique et qui ne sont pas
+ * encore partis (`loadingKey` = loader au centre de CETTE card), puis ouvre sa
+ * liste, qui marque la ligne concernée (`isGroupedSlot`). `grouped` : la
+ * livraison choisie rejoint l'un d'eux, sa course est donc à 0.
  */
 export const useCartPaidDepartures = (
-  visible: boolean,
   fastFoodId: string | undefined,
   delivery: Livraison,
   setDelivery: React.Dispatch<React.SetStateAction<Livraison>>,
@@ -20,21 +21,17 @@ export const useCartPaidDepartures = (
   const { userData } = useAuth();
   const uid = userData?.uid;
   const [departures, setDepartures] = useState<PaidDeparture[]>([]);
-  const [checking, setChecking] = useState(false);
+  const [loadingKey, setLoadingKey] = useState<SlotKey | null>(null);
 
-  useEffect(() => {
-    if (!visible || !uid || !fastFoodId) return;
-    let alive = true;
-    setChecking(true);
-    fetchPaidDepartures(uid, fastFoodId).then(list => {
-      if (!alive) return;
-      setDepartures(list);
-      setChecking(false);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [visible, uid, fastFoodId]);
+  const openAfterCheck = async (key: SlotKey, open: () => void) => {
+    if (loadingKey) return;
+    if (uid && fastFoodId) {
+      setLoadingKey(key);
+      setDepartures(await fetchPaidDepartures(uid, fastFoodId));
+      setLoadingKey(null);
+    }
+    open();
+  };
 
   const grouped = !!fastFoodId && isPaidDeparture(departures, deliveryProbeOf(delivery, fastFoodId));
   // Porté sur la livraison commune : `useCartOrderFlow` aligne les totaux
@@ -44,5 +41,5 @@ export const useCartPaidDepartures = (
     setDelivery(d => ((d.grouping ?? null) === next ? d : { ...d, grouping: next }));
   }, [grouped]);
   const isGroupedSlot = (probe: Omit<DeliveryProbe, "fastFoodId">) => !!fastFoodId && isPaidDeparture(departures, { ...probe, fastFoodId });
-  return { grouped, checking, isGroupedSlot };
+  return { grouped, loadingKey, isGroupedSlot, openAfterCheck };
 };

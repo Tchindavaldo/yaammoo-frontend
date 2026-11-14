@@ -82,6 +82,10 @@ export class Livraison {
     // Groupage (UI seulement, jamais envoyé) : le client a déjà payé ce
     // départ (zone + créneau), pas encore parti → course offerte.
     public grouping: "checking" | "grouped" | null = null,
+    // Groupage (UI seulement) : boutique et client de la commande, pour lire
+    // les départs déjà payés au toucher de la carte Zone / Période.
+    public groupingShopId: string | null = null,
+    public groupingUserId: string | null = null,
   ) {}
 }
 

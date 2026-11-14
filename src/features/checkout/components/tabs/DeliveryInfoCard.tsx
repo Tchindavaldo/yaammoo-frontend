@@ -8,7 +8,7 @@ import { DS } from "@/src/theme/ds";
 /**
  * Carte d'info de l'onglet Livraison (Lieux, Zone, Période, Contact, Vocale).
  * `loading` : le texte disparaît, un loader occupe le centre de la carte
- * (vérification du groupage après le choix d'une zone / d'un créneau).
+ * (lecture des départs déjà payés avant d’ouvrir la liste des zones / créneaux).
  */
 export const DeliveryInfoCard: React.FC<{
   icon: keyof typeof Ionicons.glyphMap;

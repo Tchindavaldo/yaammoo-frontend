@@ -15,6 +15,7 @@ import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { DeliveryOffer } from "@/src/types";
 import { DeliveryValidateRow } from "./shared/DeliveryValidateRow";
 import { verifyBonusCode } from "../services/verifyBonusCode";
+import { usePaidSlot } from "../hooks/usePaidSlot";
 import { expressZonesOf } from "../utils/expressZones";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
@@ -60,6 +61,8 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
   onError,
 }) => {
   useLanguage();
+  // Groupage : départ déjà payé, ligne marquée « Groupée avec ta commande ».
+  const isPaidSlot = usePaidSlot(fastFoodId);
   const insets = useSheetInsets();
   const sheetHeight = SHEET_HEIGHT + insets.bottom;
 
@@ -244,7 +247,9 @@ export const CheckoutExpressOverlay: React.FC<CheckoutExpressOverlayProps> = ({
                       </Text>
                     </View>
                     {item.prix ? (
-                      isFree ? (
+                      isPaidSlot({ zone: item.lieu || "", type: "express", date: new Date().toISOString().split("T")[0] }) ? (
+                        <Text style={styles.freePrix}>{t("Groupée avec ta commande")}</Text>
+                      ) : isFree ? (
                         <View style={styles.pricePair}>
                           <Text style={styles.strikePrix}>{item.prix} F</Text>
                           <Text style={styles.freePrix}>{t("Offert")}</Text>

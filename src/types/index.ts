@@ -129,8 +129,7 @@ export type OrderStatus =
   | "delivering"
   | "delivered"
   | "cancelByFastFood"
-  | "cancelByUser"
-  | "cancelled";
+  | "cancelByUser";
 
 export class Commande {
   constructor(

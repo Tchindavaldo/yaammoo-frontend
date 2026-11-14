@@ -189,25 +189,35 @@ export const CartDeliverySegmentStep: React.FC<
     onPress: () => void;
     /** Card affichée mais non cliquable (retrait boutique désactivé). */
     disabled?: boolean;
+    /** Loader au centre de la card, à la place du texte (groupage en lecture). */
+    loading?: boolean;
   }) => (
     <TouchableOpacity
       key={c.key}
       style={[styles.choiceCard, c.active && styles.cardActive]}
       onPress={c.onPress}
-      disabled={c.disabled}
+      disabled={c.disabled || c.loading}
       activeOpacity={0.85}
     >
-      <View style={styles.choiceDot}>
-        <Ionicons name={c.icon} size={16} color={C.accent} />
-      </View>
-      <View style={styles.choiceText}>
-        <Text style={styles.choiceTitle} numberOfLines={1}>
-          {c.title}
-        </Text>
-        <Text style={styles.choiceSub} numberOfLines={2}>
-          {c.sub}
-        </Text>
-      </View>
+      {c.loading ? (
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator size="small" color={DS.accent} />
+        </View>
+      ) : (
+        <>
+          <View style={styles.choiceDot}>
+            <Ionicons name={c.icon} size={16} color={C.accent} />
+          </View>
+          <View style={styles.choiceText}>
+            <Text style={styles.choiceTitle} numberOfLines={1}>
+              {c.title}
+            </Text>
+            <Text style={styles.choiceSub} numberOfLines={2}>
+              {c.sub}
+            </Text>
+          </View>
+        </>
+      )}
     </TouchableOpacity>
   );
 
@@ -321,6 +331,9 @@ export const CartDeliverySegmentStep: React.FC<
                       : tr("À remplir"),
                 active: t.filled,
                 onPress: t.onPress,
+                // Groupage : départs déjà payés en lecture, la card Zone
+                // express / Créneau attend avant d'ouvrir sa liste.
+                loading: !!courseChecking && (t.key === "express" || t.key === "period"),
               }),
             )}
           </View>
@@ -359,19 +372,15 @@ export const CartDeliverySegmentStep: React.FC<
                     <Text style={styles.choiceTitle} numberOfLines={1}>
                       {tr("Course")}
                     </Text>
-                    {courseChecking && type !== "aucune" ? (
-                      <ActivityIndicator size="small" color={DS.accent} />
-                    ) : (
-                      <Text style={styles.choiceSub} numberOfLines={1}>
-                        {type === "aucune"
-                          ? tr("Sur place")
-                          : courseGrouped
-                            ? tr("Groupée avec ta commande")
-                            : livraison > 0
-                              ? `${fmt(livraison)} F`
-                              : tr("Offerte")}
-                      </Text>
-                    )}
+                    <Text style={styles.choiceSub} numberOfLines={1}>
+                      {type === "aucune"
+                        ? tr("Sur place")
+                        : courseGrouped
+                          ? tr("Groupée avec ta commande")
+                          : livraison > 0
+                            ? `${fmt(livraison)} F`
+                            : tr("Offerte")}
+                    </Text>
                   </View>
                 </View>
               </View>

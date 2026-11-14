@@ -516,7 +516,7 @@ mutualise pas une commande dont le total exclut déjà la course.
 **Panier groupé (étapes)** : `payment/hooks/useCartPaidDepartures` lit, à
 l'ouverture du sheet, les départs déjà payés de la boutique
 (`GET /order/delivery-group/:userId?fastFoodId`, sans `zone` :
-`data.departures`). Loader sur la carte Course pendant la lecture. Les listes
+`data.departures`). Loader au centre des cards Zone express / Créneau pendant la lecture (non cliquables). Les listes
 `GroupedPeriodOverlay` / `GroupedExpressOverlay` marquent « Groupée avec ta
 commande » sur le créneau / la zone concernés (`isGroupedSlot`). Livraison
 choisie = départ payé : course à 0, `delivery.grouping = "grouped"` sur la

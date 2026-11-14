@@ -7,7 +7,7 @@ import { DeliveryProbe, fetchPaidDepartures, isPaidDeparture, PaidDeparture } fr
 /**
  * Groupage dans le panier groupé : départs que le client a déjà payés chez
  * cette boutique et qui ne sont pas encore partis. Lus à l'ouverture du sheet
- * (`checking` = loader sur la carte Course). `grouped` : la livraison choisie
+ * (`checking` = loader au centre des cards Zone express / Créneau). `grouped` : la livraison choisie
  * rejoint l'un d'eux, sa course est donc à 0. `isGroupedSlot` marque les zones
  * et créneaux concernés dans les listes de choix.
  */

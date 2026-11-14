@@ -114,6 +114,8 @@ final class HLMerchantHeaderView: UIView {
         HLRun(shop.ratingText, HLFont.w800(13), HLAereColor.ink),
       ])
       aereReviews.attributedText = HLRun("\(shop.votes) avis", HLFont.w700(10), HLAereColor.text2)
+      aereReviews.isHidden = shop.votes <= 0
+      aereReviewsBg.isHidden = shop.votes <= 0
       // `MerchantHeader.tsx` : « Livraison » gris, valeur en accent.
       // « 12h 13h 14h » : 1er créneau (le plus proche) en accent, suivants en gris.
       let slots = shop.deliveryLabel.split(separator: " ").map(String.init)

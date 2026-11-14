@@ -211,7 +211,7 @@ class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
         titleRight.text = HLRuns()
           .icon("star", 12f, HLColor.starYellow).gap(4f)
           .run(m.rating, 700, 11f, Color.BLACK).gap(4f)
-          .run("(${m.votes} avis)", 600, 11f, HLColor.metaMuted)
+          .run(if (m.votes > 0) "(${m.votes} avis)" else "", 600, 11f, HLColor.metaMuted)
           .build()
         lineLeft.text = HLRuns()
           .run("Livraison ", 700, 11f, HLColor.metaText)

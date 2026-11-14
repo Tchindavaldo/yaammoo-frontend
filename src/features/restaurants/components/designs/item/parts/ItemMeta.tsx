@@ -43,7 +43,7 @@ export const ItemMeta: React.FC<{
   deliveryFeeLabel = "",
 }) => {
   useLanguage();
-  const rating = (menu as any)?.rating ?? 4.5;
+  const rating = (menu as any)?.rating ?? 0;
   const votes = (menu as any)?.votes ?? 0;
   // Appel conserve : le hook fait partie de l'ordre des hooks du composant.
   useNextDeliveryTime(deliveryHours, orderLeadTime);

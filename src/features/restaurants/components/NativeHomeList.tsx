@@ -145,7 +145,8 @@ const toRow = (
     deliveryTime,
     // « 1,2 km » apres « Ouvert » ; vide = position inconnue (rien d'affiche).
     distance: formatDistanceKm(f?.distanceKm) ?? "",
-    ratingText: `${Number(f?.stats?.rating ?? 4.5).toFixed(1)}/5`,
+    // Sans avis : « Nouveau » (la vue native masque alors le nombre d'avis).
+    ratingText: (f?.stats?.votes ?? 0) > 0 ? `${Number(f?.stats?.rating ?? 0).toFixed(1)}/5` : tr("Nouveau"),
     deliveryLabel,
     menus: (ff.menu ?? []).map((m: any, i: number) => {
       const stock = Math.round(m?.stock ?? 0);
@@ -157,7 +158,7 @@ const toRow = (
         fallbackImage: fallbackFor(design, i),
         price: `${m?.prix1 ?? 0} F`,
         stock,
-        rating: String(m?.rating ?? 4.5),
+        rating: (m?.votes ?? 0) > 0 ? String(m?.rating ?? 0) : tr("Nouveau"),
         votes: Math.round(m?.votes ?? 0),
         feeLabel: fee,
         metaFeeLabel: fee === FEE_FREE ? tr("gratuite") : fee,

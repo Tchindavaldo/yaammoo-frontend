@@ -17,6 +17,10 @@ interface CartGroupedPaymentBodyProps {
   articlesTotal: number;
   /** Frais de la course unique. */
   livraison: number;
+  /** Départ déjà payé (groupage) : course « Groupée avec ta commande ». */
+  courseGrouped?: boolean;
+  /** Lecture des départs déjà payés en cours : loader sur la course. */
+  courseChecking?: boolean;
   onSplit: () => void;
   onOpenLocation: () => void;
   onOpenContact: () => void;
@@ -59,6 +63,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
   deliveryCount,
   articlesTotal,
   livraison,
+  courseGrouped,
+  courseChecking,
   onSplit,
   onOpenLocation,
   onOpenContact,
@@ -94,6 +100,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
       deliveryCount={deliveryCount}
       articlesTotal={articlesTotal}
       livraison={livraison}
+      courseGrouped={courseGrouped}
+      courseChecking={courseChecking}
       onGroupAll={() => {}}
       onSplit={onSplit}
       onOpenLocation={onOpenLocation}

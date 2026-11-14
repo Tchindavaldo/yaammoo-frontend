@@ -23,3 +23,34 @@ export const checkDeliveryGroup = async (userId: string, probe: DeliveryProbe): 
     return false;
   }
 };
+
+/** Départ déjà payé et pas encore parti (même découpage que `DeliveryProbe`). */
+export interface PaidDeparture {
+  zone: string;
+  type: "time" | "express";
+  date: string | null;
+  time: string | null;
+}
+
+/** Départs déjà payés et pas encore partis de cette boutique. Erreur : []. */
+export const fetchPaidDepartures = async (userId: string, fastFoodId: string): Promise<PaidDeparture[]> => {
+  try {
+    const { data } = await axios.get(`${Config.apiUrl}/order/delivery-group/${userId}`, { params: { fastFoodId } });
+    return Array.isArray(data?.data?.departures) ? data.data.departures : [];
+  } catch {
+    return [];
+  }
+};
+
+const norm = (v?: string | null) => String(v ?? "").trim().toLowerCase();
+
+/** Ce départ (zone, type, date [, heure]) est-il déjà payé ? Même clé que le backend. */
+export const isPaidDeparture = (list: PaidDeparture[], probe: DeliveryProbe | null): boolean =>
+  !!probe &&
+  list.some(
+    d =>
+      norm(d.zone) === norm(probe.zone) &&
+      d.type === probe.type &&
+      String(d.date ?? "") === String(probe.date ?? "") &&
+      (probe.type !== "time" || String(d.time ?? "").trim() === String(probe.time ?? "").trim()),
+  );

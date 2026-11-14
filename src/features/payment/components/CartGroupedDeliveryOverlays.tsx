@@ -23,6 +23,7 @@ interface CartGroupedDeliveryOverlaysProps {
   orderLeadTime: number;
   advanceDays?: number;
   deliveryOffer: any;
+  isGroupedSlot?: (probe: { zone: string; type: "time" | "express"; date: string; time?: string }) => boolean;
   fastFoodId?: string;
   onError?: (message: string) => void;
   /**
@@ -49,6 +50,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
   orderLeadTime,
   advanceDays,
   deliveryOffer,
+  isGroupedSlot,
   fastFoodId,
   onError,
 }) => (
@@ -95,6 +97,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
         orderLeadTime={orderLeadTime}
         advanceDays={advanceDays}
         deliveryOffer={deliveryOffer}
+        isGroupedSlot={isGroupedSlot}
         fastFoodId={fastFoodId}
         onError={onError}
       />
@@ -114,6 +117,7 @@ export const CartGroupedDeliveryOverlays: React.FC<
         }
         expressZones={expressZones}
         deliveryOffer={deliveryOffer}
+        isGroupedSlot={isGroupedSlot}
         fastFoodId={fastFoodId}
         onError={onError}
       />

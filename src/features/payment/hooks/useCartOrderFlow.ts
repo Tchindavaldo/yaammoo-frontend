@@ -186,7 +186,8 @@ export const useCartOrderFlow = ({ pendingToBuy, zoneGroups, cartTotal, userData
       }
     }
     // items = commandes payées, sanitizées comme l'envoi historique (sanitizeOrder).
-    const cours = Number(commune?.prix) || 0;
+    // Départ déjà payé (groupage) : la course n'est pas due, total = base.
+    const cours = commune?.grouping === "grouped" ? 0 : Number(commune?.prix) || 0;
     const items = ordersToPay.map((o) =>
       sanitizeOrder(
         commune

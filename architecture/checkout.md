@@ -508,7 +508,17 @@ Après le choix d'une zone express ou d'un créneau, `useDeliveryGrouping`
 (`services/deliveryGroupCheck.ts`) : le client a-t-il déjà payé ce départ,
 pas encore parti ? Pendant la requête `delivery.grouping = "checking"` : la
 carte Zone / Période (`tabs/DeliveryInfoCard.tsx`) affiche un loader au centre.
-Réponse oui : `delivery.grouping = "grouped"`, la course passe en « Offert »
-(même affichage et même calcul que la livraison offerte, `checkoutPrices.ts`).
+Réponse oui : `delivery.grouping = "grouped"`, la course affiche « Groupée avec
+ta commande » (même affichage et même calcul que la livraison offerte, `checkoutPrices.ts`).
 `grouping` n'est jamais envoyé au backend. Panier : `computeCartTotal` ne
 mutualise pas une commande dont le total exclut déjà la course.
+
+**Panier groupé (étapes)** : `payment/hooks/useCartPaidDepartures` lit, à
+l'ouverture du sheet, les départs déjà payés de la boutique
+(`GET /order/delivery-group/:userId?fastFoodId`, sans `zone` :
+`data.departures`). Loader sur la carte Course pendant la lecture. Les listes
+`GroupedPeriodOverlay` / `GroupedExpressOverlay` marquent « Groupée avec ta
+commande » sur le créneau / la zone concernés (`isGroupedSlot`). Livraison
+choisie = départ payé : course à 0, `delivery.grouping = "grouped"` sur la
+livraison commune, et `useCartOrderFlow` aligne les totaux (course à 0).
+Styles des deux overlays sortis dans `*.styles.ts` (R4).

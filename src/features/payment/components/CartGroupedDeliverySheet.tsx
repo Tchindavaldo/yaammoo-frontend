@@ -13,6 +13,7 @@ import type { CartPaymentState } from "../hooks/useCartPayment";
 import { useGroupedDeliveryData } from "../hooks/useGroupedDeliveryData";
 import { useGroupedDetailCapsule } from "../hooks/useGroupedDetailCapsule";
 import { usePickupPrefill } from "../hooks/usePickupPrefill";
+import { useCartPaidDepartures } from "../hooks/useCartPaidDepartures";
 import {
   CartGroupedDeliveryOverlays,
   type GroupedDeliveryOverlay,
@@ -309,16 +310,9 @@ export const CartGroupedDeliverySheet: React.FC<
   }, [step, delivery, hasExpressZones, showError, pickupChosen, openTime, closeTime, orderLeadTime]);
 
   const cmd = groups.reduce((s, g) => s + g.entries.length, 0);
-  /**
-   * Course facturee : le choix fait dans le sheet s'applique a TOUTES les
-   * commandes du lot, les montants suivent donc `delivery` en temps reel.
-   */
-  const fraisGroupes =
-    delivery.type === "aucune"
-      ? 0
-      : Number(
-          delivery.type === "express" ? delivery.expressPrix : delivery.prix,
-        ) || 0;
+  // Course du lot (suit `delivery`) ; 0 si le départ est déjà payé (groupage).
+  const paidDep = useCartPaidDepartures(visible, fastFoodId, delivery, setDelivery);
+  const fraisGroupes = delivery.type === "aucune" || paidDep.grouped ? 0 : Number(delivery.type === "express" ? delivery.expressPrix : delivery.prix) || 0;
   /** Total des articles du lot, hors livraison (source de verite du backend). */
   const articlesTotal = groups.reduce((s, g) => s + g.articles, 0);
 
@@ -375,6 +369,8 @@ export const CartGroupedDeliverySheet: React.FC<
             deliveryCount={groups.length}
             articlesTotal={articlesTotal}
             livraison={fraisGroupes}
+            courseGrouped={paidDep.grouped}
+            courseChecking={paidDep.checking}
             onSplit={onSplit}
             onOpenLocation={() => setOverlay("location")}
             onOpenContact={() => setOverlay("contact")}
@@ -452,6 +448,7 @@ export const CartGroupedDeliverySheet: React.FC<
         advanceDays={advanceDays}
         deliveryOffer={deliveryOffer}
         fastFoodId={fastFoodId}
+        isGroupedSlot={paidDep.isGroupedSlot}
         onError={showError}
       />
 

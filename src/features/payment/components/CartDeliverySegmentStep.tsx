@@ -2,7 +2,8 @@
 import { Livraison } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { DS } from "@/src/theme/ds";
 import type { GroupedDeliveryType } from "./CartDeliveryTypeStep";
 import { styles } from "./CartGroupedDeliverySheet.styles";
 import { C } from "./CartPaymentSheet.styles";
@@ -29,6 +30,8 @@ interface CartDeliverySegmentStepProps {
   articlesTotal: number;
   /** Frais de la course unique, le lot etant groupe. */
   livraison: number;
+  courseGrouped?: boolean;
+  courseChecking?: boolean;
   /** Tout livrer ensemble — reste sur le sheet, une seule course. */
   onGroupAll: () => void;
   /** Livraisons differentes — chaque zone reprend son propre bouton. */
@@ -88,6 +91,8 @@ export const CartDeliverySegmentStep: React.FC<
   deliveryCount,
   articlesTotal,
   livraison,
+  courseGrouped,
+  courseChecking,
   onGroupAll,
   onSplit,
   onOpenLocation,
@@ -354,13 +359,19 @@ export const CartDeliverySegmentStep: React.FC<
                     <Text style={styles.choiceTitle} numberOfLines={1}>
                       {tr("Course")}
                     </Text>
-                    <Text style={styles.choiceSub} numberOfLines={1}>
-                      {type === "aucune"
-                        ? tr("Sur place")
-                        : livraison > 0
-                          ? `${fmt(livraison)} F`
-                          : tr("Offerte")}
-                    </Text>
+                    {courseChecking && type !== "aucune" ? (
+                      <ActivityIndicator size="small" color={DS.accent} />
+                    ) : (
+                      <Text style={styles.choiceSub} numberOfLines={1}>
+                        {type === "aucune"
+                          ? tr("Sur place")
+                          : courseGrouped
+                            ? tr("Groupée avec ta commande")
+                            : livraison > 0
+                              ? `${fmt(livraison)} F`
+                              : tr("Offerte")}
+                      </Text>
+                    )}
                   </View>
                 </View>
               </View>

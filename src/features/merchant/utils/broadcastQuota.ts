@@ -32,7 +32,7 @@ export const computeQuota = (
 
   for (const it of items) {
     const t = new Date(it.sentAt).getTime();
-    if (isNaN(t) || t < weekStart || t > now.getTime()) continue;
+    if (isNaN(t) || t < weekStart) continue;
     const idx = Math.floor((startOfDay(new Date(t)).getTime() - weekStart) / 86400000);
     if (idx >= 0 && idx < 7) perDay[idx] += 1;
   }
@@ -71,10 +71,24 @@ export const audienceLeft = (
   return out;
 };
 
-/** Temps restant avant minuit, pour la tuile « Remise à zéro ». */
-export const untilMidnight = (now: Date): { h: number; m: string } => {
-  const mins = 24 * 60 - (now.getHours() * 60 + now.getMinutes());
-  return { h: Math.floor(mins / 60), m: String(mins % 60).padStart(2, "0") };
+const dayNames = (): string[] => [
+  tr("Dimanche"), tr("Lundi"), tr("Mardi"), tr("Mercredi"), tr("Jeudi"), tr("Vendredi"), tr("Samedi"),
+];
+
+/**
+ * Prochaine remise à zéro du quota : minuit ce soir, ou lundi 00:00 si le
+ * quota de la semaine est épuisé. Heure « 00h00 » + jour « Samedi 15 Novembre ».
+ */
+export const nextReset = (
+  quota: BroadcastQuota,
+  now: Date,
+): { hour: string; day: string } => {
+  const d =
+    quota.weekLeft <= 0
+      ? new Date(startOfWeek(now).getTime() + 7 * 86400000)
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const hour = `${String(d.getHours()).padStart(2, "0")}h${String(d.getMinutes()).padStart(2, "0")}`;
+  return { hour, day: `${dayNames()[d.getDay()]} ${d.getDate()} ${monthNames()[d.getMonth()]}` };
 };
 
 export const monthLabel = (now: Date): string => monthNames()[now.getMonth()];

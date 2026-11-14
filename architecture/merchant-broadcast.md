@@ -70,6 +70,9 @@ de la semaine (lundi 00:00), et `dayLeft = min(dayLimit - jour, weekLimit - sema
 Par audience (`plan.audienceLimits`, backend migration 070) : `audienceLeft`
 donne `min(dayLeft global, reste du plafond de l'audience)`, affiché en chiffre
 sur chaque puce du composeur (en orange à 0). Audience sans plafond = reste global.
+Envoi tout juste fait : compté tout de suite (pas d'exclusion des dates « futures », l'heure serveur peut devancer l'horloge de l'écran).
+Tuile « Remise à zéro » : date de la prochaine remise (`nextReset`) — minuit ce soir, ou lundi 00:00 si la semaine est épuisée ; heure en grand, jour + date dessous.
+Composeur : message et image ouverts d'office (outils colorés), un toucher les masque ; l'aperçu n'affiche que boutique + titre, comme le push.
 C'est un **affichage** : le backend applique le quota (refus 429, message
 affiché tel quel en toast). Quota du jour atteint : le bouton passe gris.
 

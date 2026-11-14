@@ -79,6 +79,9 @@ export class Livraison {
     // Sur place : heure "HH:mm" à laquelle le client passe récupérer, dans les
     // horaires de la boutique. Envoyée en `delivery.time` (backend : facultative).
     public pickupTime: string = "",
+    // Groupage (UI seulement, jamais envoyé) : le client a déjà payé ce
+    // départ (zone + créneau), pas encore parti → course offerte.
+    public grouping: "checking" | "grouped" | null = null,
   ) {}
 }
 

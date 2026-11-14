@@ -10,6 +10,7 @@ import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { menuPriceOptions } from "../utils/menuPrices";
 import { computeCheckoutPrices } from "../utils/checkoutPrices";
+import { useDeliveryGrouping } from "./useDeliveryGrouping";
 import { checkStock, checkDelivery } from "../utils/checkoutValidation";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -179,6 +180,9 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     }
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
 
+  // Groupage : départ déjà payé → course offerte (loader sur la carte).
+  useDeliveryGrouping(delivery, setDelivery, (menu as any)?.fastFoodId, userData?.uid);
+
   const prices = useMemo(
     () => computeCheckoutPrices({ menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery }),
     [menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery],
@@ -277,16 +281,6 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       email: userData?.infos?.email || user?.email || "inconnu@email.com",
       phoneNumber: Number(userData?.infos?.numero) || 0,
     };
-    // Trace des sources de clientData — décommenter pour diagnostiquer un nom
-    // ou un email manquant sur une commande.
-    // console.log("📦 [useCheckout] userData sources →", {
-    //   "infos.prenom": userData?.infos?.prenom,
-    //   "infos.nom": userData?.infos?.nom,
-    //   "infos.email": userData?.infos?.email,
-    //   "firebase.displayName": user?.displayName,
-    //   "firebase.email": user?.email,
-    // });
-    // console.log("📦 [useCheckout] clientData envoyé →", clientData);
 
     const returnedOrder: any = {
       userId: userData?.uid || "unknown_user",

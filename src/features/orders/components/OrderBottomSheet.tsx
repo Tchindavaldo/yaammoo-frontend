@@ -234,10 +234,10 @@ export const OrderBottomSheet: React.FC<Props> = ({
       return (
         <ScrollView
           style={styles.content}
-          contentContainerStyle={{ paddingBottom: 0 }}
+          contentContainerStyle={{ paddingBottom: 0, flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
         >
-          <OrderLivraisonTab order={selectedOrder!} />
+          <OrderLivraisonTab order={selectedOrder!} onCancelled={handleDismiss} />
         </ScrollView>
       );
     }

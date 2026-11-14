@@ -499,3 +499,16 @@ Un plat a N prix (`menu.prices[]`). Lecture via `src/features/checkout/utils/men
 du checkout home sont calculés par `utils/checkoutPrices.ts` (`computeCheckoutPrices`,
 extrait de `useCheckout`). Les pastilles de prix des récaps (`RecapBody`, `CartRecapBody`)
 défilent horizontalement.
+
+
+## Groupage (course offerte)
+
+Après le choix d'une zone express ou d'un créneau, `useDeliveryGrouping`
+(appelé par `useCheckout`) interroge `GET /order/delivery-group/:userId`
+(`services/deliveryGroupCheck.ts`) : le client a-t-il déjà payé ce départ,
+pas encore parti ? Pendant la requête `delivery.grouping = "checking"` : la
+carte Zone / Période (`tabs/DeliveryInfoCard.tsx`) affiche un loader au centre.
+Réponse oui : `delivery.grouping = "grouped"`, la course passe en « Offert »
+(même affichage et même calcul que la livraison offerte, `checkoutPrices.ts`).
+`grouping` n'est jamais envoyé au backend. Panier : `computeCartTotal` ne
+mutualise pas une commande dont le total exclut déjà la course.

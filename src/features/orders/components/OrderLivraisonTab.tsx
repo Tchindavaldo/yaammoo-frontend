@@ -8,13 +8,14 @@ import { BikeAnimation } from "../../merchant/components/BikeAnimation";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { pickupLabel } from "@/src/features/checkout/utils/pickupHours";
+import { OrderCancelButton } from "./OrderCancelButton";
 
 /**
  * Onglet « Livraison » du détail client (`OrderBottomSheet`) : créneau,
  * téléphone, carte d'état (vélo / sur place / express / programmée), note et
  * message vocal. Sorti d'`OrderBottomSheet` (R4), rendu inchangé.
  */
-export function OrderLivraisonTab({ order }: { order: Commande }) {
+export function OrderLivraisonTab({ order, onCancelled }: { order: Commande; onCancelled?: () => void }) {
   useLanguage();
   // expo-audio : lecteur libere par le hook au demontage.
   const voice = useVoiceNotePlayer(order.delivery?.voiceNoteUri);
@@ -106,6 +107,10 @@ export function OrderLivraisonTab({ order }: { order: Commande }) {
           <Text style={styles.infoValSm}>{t("Aucun message vocal")}</Text>
         </View>
       )}
+
+      {/* Bas du sheet, contre la safe-area : annulation (commande en attente). */}
+      <View style={{ flex: 1 }} />
+      <OrderCancelButton order={order} onDone={onCancelled} />
     </>
   );
 }

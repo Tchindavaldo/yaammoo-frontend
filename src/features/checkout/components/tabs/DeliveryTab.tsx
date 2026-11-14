@@ -7,6 +7,7 @@ import { styles } from "../CheckoutSheet.styles";
 import { DS } from "@/src/theme/ds";
 import { t, dateLocale, useLanguage } from "@/src/i18n";
 import { hasExpressZones as hasExpressZonesOf } from "../../utils/expressZones";
+import { DeliveryInfoCard } from "./DeliveryInfoCard";
 
 interface DeliveryTabProps {
   delivery: Livraison;
@@ -48,19 +49,6 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   // sans heure). Si non, on masque la card Express.
   const hasExpressZones = hasExpressZonesOf(expressZones);
 
-  const getBtnStyle = (filled: boolean) => [
-    styles.infoBtnLarge,
-    { backgroundColor: DS.slate100, borderColor: "#cbd5e1", borderWidth: 1 },
-    filled && {
-      borderColor: DS.accent,
-      borderWidth: 2,
-      backgroundColor: DS.accentAlpha(0.05),
-    },
-  ];
-
-  const getIconColor = (filled: boolean) => (filled ? DS.accent : "#94a3b8");
-  const getTextColor = (filled: boolean) => (filled ? DS.accent : "#0f172a");
-
   const deliveryType = delivery.type;
 
   // Prix de la période (Heure) et prix express, indépendants l'un de l'autre.
@@ -74,7 +62,9 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
   // Livraison offerte détectée (offre backend active) : la card Express affiche
   // « Offert » à la place du prix. Dès qu'une zone est choisie, on affiche en
   // plus le prix réel — barré — à la suite de « Livré dès que terminée ».
-  const deliveryFree = !!deliveryOffer?.active;
+  // Groupage (un départ déjà payé couvre la course) : même affichage « Offert ».
+  const deliveryFree = !!deliveryOffer?.active || delivery.grouping === "grouped";
+  const groupingChecking = delivery.grouping === "checking";
 
   // Parse `delivery.hour` au format "YYYY-MM-DD|HH:mm|lieu" → { date, heure }
   const parseHour = (raw: string) => {
@@ -105,94 +95,17 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
     >
       {/* Zone haute (cartes infos) */}
       <View style={localStyles.topZone}>
-        {/* Layout Express : 3 cartes sur une ligne */}
+        {/* Layout Express : cartes sur une ligne. Zone : seulement si des
+            zones express existent ; loader pendant la vérification du groupage. */}
         {deliveryType === "express" && (
           <View style={localStyles.expressRow}>
             <View style={localStyles.expressCardsCol}>
-              <TouchableOpacity
-                style={[getBtnStyle(isLocationFilled), { flex: 1 }]}
-                onPress={onOpenLocation}
-              >
-                <Ionicons
-                  name="location-outline"
-                  size={20}
-                  color={getIconColor(isLocationFilled)}
-                />
-                <View style={styles.infoBtnText}>
-                  <Text
-                    style={[
-                      styles.infoBtnTitle,
-                      { color: getTextColor(isLocationFilled) },
-                    ]}
-                  >
-                    {t("Lieux")}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              {/* Card zone express : uniquement si des zones express existent.
-                  Bords surlignés quand sélectionné, aucune donnée affichée. */}
+              <DeliveryInfoCard icon="location-outline" title={t("Lieux")} filled={isLocationFilled} onPress={onOpenLocation} style={{ flex: 1 }} />
               {hasExpressZones && (
-                <TouchableOpacity
-                  style={[getBtnStyle(isExpressFilled), { flex: 1 }]}
-                  onPress={onOpenExpress}
-                >
-                  <Ionicons
-                    name="flash-outline"
-                    size={20}
-                    color={getIconColor(isExpressFilled)}
-                  />
-                  <View style={styles.infoBtnText}>
-                    <Text
-                      style={[
-                        styles.infoBtnTitle,
-                        { color: getTextColor(isExpressFilled) },
-                      ]}
-                    >
-                      {t("Zone")}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+                <DeliveryInfoCard icon="flash-outline" title={t("Zone")} filled={isExpressFilled} onPress={onOpenExpress} loading={groupingChecking} style={{ flex: 1 }} />
               )}
-              <TouchableOpacity
-                style={[getBtnStyle(isContactFilled), { flex: 1 }]}
-                onPress={onOpenContact}
-              >
-                <Ionicons
-                  name="call-outline"
-                  size={20}
-                  color={getIconColor(isContactFilled)}
-                />
-                <View style={styles.infoBtnText}>
-                  <Text
-                    style={[
-                      styles.infoBtnTitle,
-                      { color: getTextColor(isContactFilled) },
-                    ]}
-                  >
-                    {t("Contact")}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[getBtnStyle(isVoiceNoteFilled), { flex: 1 }]}
-                onPress={onOpenVoiceNote}
-              >
-                <Ionicons
-                  name="mic-outline"
-                  size={20}
-                  color={getIconColor(isVoiceNoteFilled)}
-                />
-                <View style={styles.infoBtnText}>
-                  <Text
-                    style={[
-                      styles.infoBtnTitle,
-                      { color: getTextColor(isVoiceNoteFilled) },
-                    ]}
-                  >
-                    {t("vocale")}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              <DeliveryInfoCard icon="call-outline" title={t("Contact")} filled={isContactFilled} onPress={onOpenContact} style={{ flex: 1 }} />
+              <DeliveryInfoCard icon="mic-outline" title={t("vocale")} filled={isVoiceNoteFilled} onPress={onOpenVoiceNote} style={{ flex: 1 }} />
             </View>
           </View>
         )}
@@ -200,86 +113,10 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
         {/* Layout Standard : 4 cartes */}
         {deliveryType === "standard" && (
           <View style={styles.infoGrid4}>
-            <TouchableOpacity
-              style={getBtnStyle(isLocationFilled)}
-              onPress={onOpenLocation}
-            >
-              <Ionicons
-                name="location-outline"
-                size={20}
-                color={getIconColor(isLocationFilled)}
-              />
-              <View style={styles.infoBtnText}>
-                <Text
-                  style={[
-                    styles.infoBtnTitle,
-                    { color: getTextColor(isLocationFilled) },
-                  ]}
-                >
-                  {t("Lieux")}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={getBtnStyle(isPeriodFilled)}
-              onPress={onOpenPeriod}
-            >
-              <Ionicons
-                name="time-outline"
-                size={20}
-                color={getIconColor(isPeriodFilled)}
-              />
-              <View style={styles.infoBtnText}>
-                <Text
-                  style={[
-                    styles.infoBtnTitle,
-                    { color: getTextColor(isPeriodFilled) },
-                  ]}
-                >
-                  {t("Période")}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={getBtnStyle(isContactFilled)}
-              onPress={onOpenContact}
-            >
-              <Ionicons
-                name="call-outline"
-                size={20}
-                color={getIconColor(isContactFilled)}
-              />
-              <View style={styles.infoBtnText}>
-                <Text
-                  style={[
-                    styles.infoBtnTitle,
-                    { color: getTextColor(isContactFilled) },
-                  ]}
-                >
-                  {t("Contact")}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={getBtnStyle(isVoiceNoteFilled)}
-              onPress={onOpenVoiceNote}
-            >
-              <Ionicons
-                name="mic-outline"
-                size={20}
-                color={getIconColor(isVoiceNoteFilled)}
-              />
-              <View style={styles.infoBtnText}>
-                <Text
-                  style={[
-                    styles.infoBtnTitle,
-                    { color: getTextColor(isVoiceNoteFilled) },
-                  ]}
-                >
-                  {t("Vocale")}
-                </Text>
-              </View>
-            </TouchableOpacity>
+            <DeliveryInfoCard icon="location-outline" title={t("Lieux")} filled={isLocationFilled} onPress={onOpenLocation} />
+            <DeliveryInfoCard icon="time-outline" title={t("Période")} filled={isPeriodFilled} onPress={onOpenPeriod} loading={groupingChecking} />
+            <DeliveryInfoCard icon="call-outline" title={t("Contact")} filled={isContactFilled} onPress={onOpenContact} />
+            <DeliveryInfoCard icon="mic-outline" title={t("Vocale")} filled={isVoiceNoteFilled} onPress={onOpenVoiceNote} />
           </View>
         )}
 

@@ -86,6 +86,24 @@ platformMargin = net − itemsReal − driverAmount                          ←
 seulement en régime `fastfood`). Le marchand touche TOUJOURS son prix réel ; la
 marge est la seule variable d'ajustement.
 
+**Course partagée** (panier groupé) : une seule course par départ. Les autres
+commandes ont `courseBilled = false`, `driverAmount = 0` (dans les DEUX
+régimes) et `itemsCharged = total − delivery.prix` (la course a été déduite du
+montant encaissé). **Groupage** (départ déjà payé et pas encore parti,
+`paidDeliveryGroups`) : la course de la nouvelle commande est **offerte**
+(total = base, `free_reason = 'grouped'`, `courseBilled = false`). Corrigé le 14/11/2026 : avant, `itemsCharged` gardait la
+course (marge tracée gonflée) et, en plateforme, le livreur était dû une fois
+par commande du départ.
+
+### Annulation d'une commande payée (détail : [order-cancel.md](./order-cancel.md))
+
+```
+frais réels = ⌈dépôt % × base⌉ + ⌈commission MW % × base⌉   (la réserve paie le payout)
+client annule (pending)          : rendu = base − frais réels
+marchand annule (avant livraison): rendu = base ; frais réels débités du marchand
+reprise marchand = merchant_debit (solde peut devenir négatif)
+```
+
 ## 3. Les frais — ne jamais les confondre
 
 | Frais | Quand | Formule (P = montant payé) |

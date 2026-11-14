@@ -49,7 +49,8 @@ yaammoo/src/features/orders/
     ├── OrderBottomSheet.tsx   # Bottom sheet détail d'une commande (assemblage : animations, onglets)
     ├── OrderSheetHeader.tsx   # En-tête du sheet : avatar boutique, adresse ou chips « Cmd N » (+N)
     ├── OrderSheetTabBar.tsx   # Barre d'onglets (défile si trop d'onglets)
-    ├── OrderLivraisonTab.tsx  # Tab « Livraison »
+    ├── OrderLivraisonTab.tsx  # Tab « Livraison » (+ bouton d'annulation en bas)
+    ├── OrderCancelButton.tsx  # « Annuler la commande » (pending) : devis GET /order/cancel-quote, puis PUT /order cancelByUser
     ├── OrderCommandesTab.tsx  # Tab « Commandes »
     ├── OrderTrackingTab.tsx   # Tab « Suivi » (carte + arrivée estimée + distance)
     └── OrderTrackingMap(.native).tsx # Carte du suivi : copie R16 de MapComponent (natif), cadre simple (web)

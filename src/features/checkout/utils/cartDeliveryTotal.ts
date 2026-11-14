@@ -39,6 +39,21 @@ export const deliveryGroupKey = (order: AnyOrder): string | null => {
   return `time|${fastFoodId}|${zone}|${d.date || ""}|${time}`;
 };
 
+/** Base hors livraison : plat × qté + extras cochés + boissons cochées × qté. */
+const baseOf = (order: AnyOrder): number => {
+  const prices = order?.menu?.prices;
+  const idx = Math.max(0, (Number(order?.selectedPriceIndex) || 1) - 1);
+  const unit = Array.isArray(prices) ? Number(prices[idx]?.price) || 0 : 0;
+  const qty = Math.max(1, Number(order?.quantity) || 1);
+  const extras = (order?.extra || []).reduce((s: number, e: AnyOrder) => (e?.status === true ? s + (Number(e.prix) || 0) : s), 0);
+  const drinks = (order?.drink || []).reduce((s: number, d: AnyOrder) => (d?.status === true ? s + (Number(d.prix) || 0) * Math.max(1, Number(d.quantite) || 1) : s), 0);
+  return unit * qty + extras + drinks;
+};
+
+/** Le total exclut-il déjà la course ? (offerte côté backend) */
+const courseExcluded = (order: AnyOrder): boolean =>
+  deliveryPriceOf(order) > 0 && Math.abs((Number(order?.total) || 0) - baseOf(order)) <= 1;
+
 /** Prix de livraison porté par une commande (0 si aucune / offerte). */
 const deliveryPriceOf = (order: AnyOrder): number => {
   const d = deliveryOf(order);
@@ -77,8 +92,9 @@ export const computeCartTotal = (orders: AnyOrder[]): number => {
     // Le `total` porte déjà sa propre livraison.
     total += Number(order?.total) || 0;
 
-    // Livraison offerte → aucun frais dans son total, rien à mutualiser.
-    if (order?.bonusCode) continue;
+    // Livraison offerte (code bonus, ou groupage avec un départ déjà payé :
+    // le backend a retiré la course du total) → rien à mutualiser.
+    if (order?.bonusCode || courseExcluded(order)) continue;
 
     const key = deliveryGroupKey(order);
     if (!key) continue;

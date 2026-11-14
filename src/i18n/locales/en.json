@@ -1337,5 +1337,11 @@
   "jeu.": "Thu",
   "ven.": "Fri",
   "sam.": "Sat",
-  "Nouveau": "New"
+  "Nouveau": "New",
+  "Annuler la commande ?": "Cancel this order?",
+  "Oui, annuler": "Yes, cancel",
+  "Commande annulée. Le remboursement est en cours.": "Order cancelled. Your refund is on its way.",
+  "Annulation impossible. Réessayez.": "Could not cancel. Please try again.",
+  "Le remboursement sera traité par notre équipe.": "Our team will process your refund.",
+  "Tu recevras {{a}} F (frais de paiement retenus : {{b}} F).": "You will receive {{a}} F (payment fees kept: {{b}} F)."
 }

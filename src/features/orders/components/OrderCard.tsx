@@ -87,15 +87,6 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         <View style={styles.contentBody}>
            {activePanel === 'menu' && (
              <View>
-               {/* Panier recalculé par le backend : plat, prix ou zone disparus. */}
-               {isPending && (order as any).needsReview && (
-                 <View style={styles.infoRow}>
-                   <Ionicons name="alert-circle-outline" size={14} color={DS.dangerInk} />
-                   <Text style={[styles.infoText, { color: DS.dangerInk, fontWeight: 'bold' }]} numberOfLines={2}>
-                     {t("Prix ou livraison changés : modifie cette commande")}
-                   </Text>
-                 </View>
-               )}
                {/* Total Price */}
                 <View style={styles.infoRow}>
                   <Ionicons name="wallet-outline" size={14} color="black" />

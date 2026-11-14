@@ -43,7 +43,7 @@ interface MerchantHeaderProps {
 export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   name,
   image,
-  rating = 4.5,
+  rating = 0,
   orderCount = 0,
   reviewCount = 0,
   syncWithImage,
@@ -212,10 +212,13 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
           <View style={styles.ratingBlock}>
             <View style={styles.aereRating}>
               <Ionicons name="star" size={13} color={DS.star} />
-              <Text style={styles.aereScore}>{rating.toFixed(1)}/5</Text>
-              <View style={styles.aereReviews}>
-                <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
-              </View>
+              {/* Sans avis : « Nouveau », jamais une note inventee. */}
+              <Text style={styles.aereScore}>{reviewCount > 0 ? `${rating.toFixed(1)}/5` : t("Nouveau")}</Text>
+              {reviewCount > 0 ? (
+                <View style={styles.aereReviews}>
+                  <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
+                </View>
+              ) : null}
             </View>
             {delivery ? (
               <Text style={styles.aereDelivery}>

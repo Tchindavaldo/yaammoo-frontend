@@ -148,6 +148,8 @@ class HLMerchantHeaderView(context: Context) : HLBox(context) {
         .run(shop.ratingText, 800, 13f, HLAereColor.ink)
         .build()
       aereReviews.text = HLRuns().run("${shop.votes} avis", 700, 10f, HLAereColor.text2).build()
+      // Sans avis : la note vaut « Nouveau » (JS), pas de pastille « 0 avis ».
+      if (shop.votes <= 0) aereReviews.visibility = View.INVISIBLE
       // `MerchantHeader.tsx` : « Livraison » gris, valeur en accent.
       aereDelivery.text = if (showDelivery) {
         // « 12h 13h 14h » : 1er créneau (le plus proche) en accent, suivants en gris.

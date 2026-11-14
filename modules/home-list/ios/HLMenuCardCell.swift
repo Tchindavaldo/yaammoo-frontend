@@ -197,7 +197,7 @@ final class HLMenuCardCell: UICollectionViewCell {
       titleRight.attributedText = HLText([
         HLKerned(HLIcons.attributed("star", size: 12, color: HLColor.starYellow), 4),
         HLKerned(HLRun(m.rating, HLFont.w700(11), .black), 4),
-        HLRun("(\(m.votes) avis)", HLFont.w600(11), HLColor.metaMuted),
+        HLRun(m.votes > 0 ? "(\(m.votes) avis)" : "", HLFont.w600(11), HLColor.metaMuted),
       ])
       lineLeft.attributedText = HLText([
         HLRun("Livraison ", HLFont.w700(11), HLColor.metaText),

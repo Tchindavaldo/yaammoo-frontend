@@ -10,6 +10,7 @@ import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import { t, useLanguage } from "@/src/i18n";
 import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
+import { onCartRefresh } from "@/src/services/fastfoodRefreshBus";
 
 /** Cache des commandes, pour un badge panier juste des la premiere frame. */
 const ORDERS_CACHE_KEY = "orders_cache";
@@ -156,6 +157,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     () => fetchOrders(true),
     !!userData,
   );
+
+  // Refus de paiement « prix changes » : panier relu en silence (recalcule en base).
+  useEffect(() => onCartRefresh(() => { fetchOrders(true); }), [fetchOrders]);
 
   const addOrder = async (orderData: any): Promise<{ success: boolean; message?: string }> => {
     try {

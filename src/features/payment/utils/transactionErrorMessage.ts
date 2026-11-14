@@ -1,4 +1,4 @@
-import { requestFastfoodsRefresh } from "@/src/services/fastfoodRefreshBus";
+import { requestCartRefresh, requestFastfoodsRefresh } from "@/src/services/fastfoodRefreshBus";
 import { t } from "@/src/i18n";
 
 /**
@@ -10,11 +10,16 @@ import { t } from "@/src/i18n";
  *
  * Refus du pre-check (422) avec `fastFoodIds` : les prix affiches n'etaient
  * plus a jour (ex. `delivery_price_mismatch`). On recharge ces boutiques pour
- * que la commande suivante parte aux bons prix, sans attendre un rafraichissement.
+ * que la commande suivante parte aux bons prix, et le panier (deja recalcule
+ * en base par le backend), sans attendre un rafraichissement.
  */
 export function transactionErrorMessage(error: any): string {
   const data = error?.response?.data;
-  if (Array.isArray(data?.fastFoodIds)) requestFastfoodsRefresh(data.fastFoodIds);
+  if (Array.isArray(data?.fastFoodIds)) {
+    requestFastfoodsRefresh(data.fastFoodIds);
+    // Panier recalcule par le backend : on le relit aussi (socket peut-etre rate).
+    requestCartRefresh();
+  }
   const raw = data?.message;
   const message = Array.isArray(raw)
     ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ")

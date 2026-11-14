@@ -47,3 +47,21 @@ export function onFastfoodsRemove(listener: RemoveListener): () => void {
     removeListeners.delete(listener);
   };
 }
+
+/**
+ * Panier a recharger (en silence) : refus de paiement « prix changes ». Le
+ * backend a deja recalcule le panier en base ; si le socket `userOrderUpdated`
+ * a ete rate, ce GET le rattrape tout de suite. Ecoute par OrderContext.
+ */
+const cartListeners = new Set<() => void>();
+
+export function requestCartRefresh(): void {
+  cartListeners.forEach((l) => l());
+}
+
+export function onCartRefresh(listener: () => void): () => void {
+  cartListeners.add(listener);
+  return () => {
+    cartListeners.delete(listener);
+  };
+}

@@ -190,4 +190,9 @@ Le client se connecte à `Config.apiUrl`. En dev local (`192.168.x.x:5000`), le 
 
 Bus : `src/services/fastfoodRefreshBus.ts`, ecoute par `hooks/useFastFoodRefreshByIds.ts` (FastFoodContext).
 
-Refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : `GET /fastFood/all?ids=…` en arriere-plan (l'offre du user en depend). Codes `delivery_price_mismatch` / `delivery_mode_changed` (regime vu `order.deliveryBy`, pose par `DesignRouter` -> `useCheckout`, garde par `sanitizeOrder`, ≠ regime actuel) : message « Les prix de livraison de cette boutique viennent de changer… ».
+Refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : `GET /fastFood/all?ids=…` en arriere-plan (l'offre du user en depend). Le panier est relu en silence au meme moment (`requestCartRefresh` -> `OrderContext.fetchOrders(true)`) : le backend l'a deja recalcule en base. Codes `price_changed` / `delivery_price_mismatch` / `delivery_mode_changed` (regime vu `order.deliveryBy`, pose par `DesignRouter` -> `useCheckout`, garde par `sanitizeOrder`, ≠ regime actuel) : message « Les prix de livraison de cette boutique viennent de changer… ».
+
+
+## Panier recalcule par le backend
+
+`userOrderUpdated { data: order }` (deja gere par OrderContext) arrive quand une boutique, un plat ou un reglage global change : prix, course et total a jour. `order.needsReview: true` = plat supprime, prix, extra/boisson coche, zone ou creneau disparus : `CartReviewNotice` affiche « Prix ou livraison changes : modifie cette commande » sur la carte (`CartOrderCard`). L'app renvoie `needsReview: false` a l'enregistrement (`sanitizeOrder`) ; le GET qui suit le remet si le probleme demeure.

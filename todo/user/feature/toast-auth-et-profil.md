@@ -1,5 +1,9 @@
 # Toasts : authentification et profil
 
+[ ] PARTIEL (vérifié le 14/11/2026) : erreurs déjà en toast/inline (`register.tsx`, `phone.tsx`,
+    `AuthSheetContent`), mapping Firebase dans `auth/utils/authErrors.ts` et services Google/Apple.
+    Manquent : toasts de succès (connexion, profil créé/mis à jour) et toasts de `userFirestore`.
+
 Audit de tous les points de requête de l'app : s'assurer que chaque appel réseau
 affiche un message clair à l'utilisateur en cas de succès ET d'erreur.
 Actuellement uniquement des `Alert.alert()` génériques — passer aux Toast.

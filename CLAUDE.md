@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **26 règles numérotées R1 → R26.** Toute nouvelle règle ajoutée à ce fichier
+> **27 règles numérotées R1 → R27.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -404,3 +404,19 @@ demande ni le signaler comme « à faire plus tard ».
 - **Appliqué par le harness** : `.claude/hooks/enforce-file-size.sh`
   (PostToolUse Edit/Write) renvoie un message bloquant dès qu'un fichier de
   code modifié dépasse 500 lignes.
+
+## R27 — Socket : il ENVOIE la donnée modifiée, l'app l'APPLIQUE (OBLIGATOIRE)
+
+Un socket qui signale un changement porte **la donnée modifiée** (ex.
+`fastfoodUpdated { fastFood }` = vue home complète de la boutique). L'app
+l'applique telle quelle dans son contexte, **sans refaire de GET**.
+
+- **Interdit** : un socket « ping » (`{ ids }` seul) qui oblige chaque appareil à
+  relancer une requête, quand la donnée peut être envoyée.
+- Seule exception : la donnée ne tient pas dans un socket (réglage global qui
+  change tout le catalogue) ou dépend du user (offre de livraison). L'app relance
+  alors **en silence, en arrière-plan**, le même rafraîchissement que le retour
+  au premier plan (`refreshLoadedSilently`) : jamais de loader, jamais d'écran vidé.
+- Détail : `architecture/socket-events-client.md` (`fastfoodUpdated`,
+  `fastfoodsChanged`, `fastfoodsHidden`). Règle identique côté backend (R24).
+

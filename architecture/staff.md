@@ -35,8 +35,6 @@ src/features/staff/
     ├── StaffMemberRow.tsx        # Ligne membre (invitation / accès coupé / chevron)
     ├── StaffDriversCard.tsx      # Carte grise « Livreurs » de l'onglet Équipe → ouvre l'onglet Livreurs
     ├── StaffDriverCreateSheet.tsx # Page « Nouveau livreur » : créer un compte / ajouter / inviter (POST /driver/recruit/:fastFoodId)
-
-> Ajouter / Inviter un livreur : puces « Par numéro » / « Par email » (`by`). Le backend cherche le compte d'abord ; s'il n'existe pas, son message (404, « Créez-le avec Créer un compte ») s'affiche en toast. Créer un compte : numéro requis.
     ├── StaffDriversPage.tsx      # Page « Livreurs » (app/shop/drivers.tsx, Gestion → Livreurs) : demandes, livreurs, Ajouter
     ├── StaffDriversSheet.tsx     # Feuille de la carte Livreurs de Personnel (liste) ; « Gérer » → page Livreurs
     ├── StaffDriversTab.tsx       # Demandes reçues (Refuser / Accepter) + Mes livreurs (retirer)
@@ -99,6 +97,7 @@ un plan.
 - **Ajouter un livreur** (bouton bas de l'onglet Livreurs) : `StaffDriverCreateSheet`,
   trois modes (créer le compte, ajouter un compte existant, inviter). L'invité répond
   dans « Mes demandes » (`DriverMyApplicationsModal`, statut `invited`).
+  Puces « Par numéro » / « Par email » pour Ajouter / Inviter ; le backend cherche le compte d'abord et, s'il n'existe pas, son message (404, « Créez-le avec Créer un compte ») s'affiche en toast. Créer un compte : numéro requis.
 
 - **Plus d'onglet Livreurs dans Personnel** : la carte Livreurs ouvre `StaffDriversSheet` ;
   la gestion (demandes, retrait, ajout) est la page `/shop/drivers` (Gestion → Livreurs).

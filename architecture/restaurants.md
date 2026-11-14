@@ -809,4 +809,4 @@ successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toute
 
 ## Mise a jour en direct des prix et zones
 
-Voir `socket-events-client.md` (`fastfoodsChanged`) : `hooks/useFastFoodRefreshByIds.ts` ecoute `src/services/fastfoodRefreshBus.ts` et recharge les boutiques signalees (socket ou refus de paiement).
+Voir `socket-events-client.md` (R27) : la boutique modifiee arrive complete par `fastfoodUpdated` et est appliquee sans GET ; `fastfoodsChanged { ids: null }` (reglage global) et un refus de paiement declenchent un rafraichissement silencieux (`hooks/useFastFoodRefreshByIds.ts`).

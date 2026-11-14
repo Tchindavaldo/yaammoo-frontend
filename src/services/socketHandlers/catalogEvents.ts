@@ -1,7 +1,7 @@
 import type { Socket } from "socket.io-client";
 import { withAck } from "../socketAck";
 import { logEvent } from "./logEvent";
-import { requestFastfoodsRefresh } from "../fastfoodRefreshBus";
+import { requestFastfoodsRefresh, requestFastfoodsRemove } from "../fastfoodRefreshBus";
 
 type Fn = (...args: any[]) => unknown;
 
@@ -24,6 +24,7 @@ const EVENTS = [
   "newFastfood",
   "fastfoodUpdated",
   "fastfoodsChanged",
+  "fastfoodsHidden",
 ];
 
 /**
@@ -86,19 +87,29 @@ export const registerCatalogEvents = (
     if (data?.fastFood) upsertGlobalFastFood(data.fastFood);
   }));
 
-  // fastfoodUpdated { fastFood } → mêmes données que newFastfood. upsert
-  // (l'édition d'une boutique met à jour son image/horaires sur la home).
+  // fastfoodUpdated { fastFood } : VUE HOME complete de la boutique modifiee
+  // (fiche, zones / prix / creneaux / express, regime, menus) -> appliquee
+  // telle quelle, sans requete. `deliveryOffer` absent = bonus du user garde.
   socket.on("fastfoodUpdated", withAck((data: any) => {
     logEvent("fastfoodUpdated:", data);
     const ff = data?.fastFood ?? data;
     if (ff?.id) upsertGlobalFastFood(ff);
   }));
 
-  // fastfoodsChanged { ids: string[] | null } → recharge ces boutiques (null =
-  // toutes) avec le jeton du user : zones, prix, regime, offre de livraison.
+  // fastfoodsChanged { ids: null } : reglage GLOBAL (frais, marges, interrupteur
+  // plateforme) -> tout le catalogue change ; rafraichissement silencieux en
+  // arriere-plan, le meme qu'au retour au premier plan. Une liste d'ids (ancien
+  // backend) est rechargee de facon ciblee.
   socket.on("fastfoodsChanged", withAck((data: any) => {
     logEvent("fastfoodsChanged:", data);
     requestFastfoodsRefresh(Array.isArray(data?.ids) ? data.ids : null);
+  }));
+
+  // fastfoodsHidden { ids } : boutiques modifiees devenues invisibles au home
+  // (indisponibles, masquees, sans plat) -> retirees, sans requete.
+  socket.on("fastfoodsHidden", withAck((data: any) => {
+    logEvent("fastfoodsHidden:", data);
+    if (Array.isArray(data?.ids)) requestFastfoodsRemove(data.ids);
   }));
 
   return () => EVENTS.forEach((e) => socket.off(e));

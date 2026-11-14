@@ -182,12 +182,12 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 Le client se connecte à `Config.apiUrl`. En dev local (`192.168.x.x:5000`), le socket est **isolé** du backend de prod (fly.io). Tester un `POST /notification/add` via curl sur la mauvaise URL n'émettra **aucun** event vers l'app. Vérifier `Config.apiUrl` avant tout debug socket.
 
 
-## `fastfoodsChanged` — recharge ciblee du home
+## Boutiques modifiees : donnees dans le socket (R27)
 
-`{ ids: string[] | null, reason }` (broadcast global) : une boutique, ses zones / prix / creneaux / express, son regime de livraison, ou un reglage global (prix, interrupteur plateforme, boutiques masquees) a change. `catalogEvents.ts` appelle `requestFastfoodsRefresh(ids)` (`src/services/fastfoodRefreshBus.ts`) ; `useFastFoodRefreshByIds` (FastFoodContext) recharge :
-- `ids` : `GET /fastFood/all?ids=…` avec le jeton (offre de livraison, regime effectif), upsert ; une boutique absente de la reponse sort de la liste ;
-- `null` : `refreshLoadedSilently` (toutes les boutiques chargees).
+- `fastfoodUpdated { fastFood }` : VUE HOME complete (prix affiches, zones du regime effectif, menus, note) envoyee par le backend a chaque modification de boutique (fiche, zones / prix / creneaux / express, regime). Appliquee par `upsertFastFoodFromSocket`, sans GET. `deliveryOffer` joint seulement pour une campagne globale ; absent, le bonus du user est garde (une campagne affichee est effacee).
+- `fastfoodsHidden { ids }` : boutique modifiee devenue invisible au home -> retiree (`requestFastfoodsRemove`).
+- `fastfoodsChanged { ids: null }` : reglage GLOBAL (frais, marges, interrupteur plateforme) -> `refreshLoadedSilently`, silencieux, en arriere-plan (meme rafraichissement qu'au retour au premier plan).
 
-Meme canal sur un refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : ex. `delivery_price_mismatch`, message « Les prix de livraison de cette boutique viennent de changer… ».
+Bus : `src/services/fastfoodRefreshBus.ts`, ecoute par `hooks/useFastFoodRefreshByIds.ts` (FastFoodContext).
 
-`fastfoodUpdated` porte desormais la vue home de la boutique (zones du regime effectif), sans `deliveryOffer`.
+Refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : `GET /fastFood/all?ids=…` en arriere-plan (l'offre du user en depend). Codes `delivery_price_mismatch` / `display_price_changed` : message « Les prix de livraison de cette boutique viennent de changer… ».

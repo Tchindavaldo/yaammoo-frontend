@@ -1,5 +1,5 @@
 import { Config } from "@/src/api/config";
-import { onFastfoodsRefresh } from "@/src/services/fastfoodRefreshBus";
+import { onFastfoodsRefresh, onFastfoodsRemove } from "@/src/services/fastfoodRefreshBus";
 import { getOptionalIdToken } from "@/src/services/idToken";
 import type { FastFood } from "@/src/types";
 import axios from "axios";
@@ -17,7 +17,9 @@ interface Params {
 }
 
 /**
- * Recharge les boutiques signalees par `fastfoodRefreshBus` :
+ * Applique les signaux de `fastfoodRefreshBus` qui n'ont pas de donnees
+ * (les boutiques modifiees par l'API arrivent deja completes via `fastfoodUpdated`) :
+ * - retrait (`fastfoodsHidden`) : la boutique sort de la liste, sans requete ;
  * - `null` (reglage global, interrupteur plateforme) : toutes les boutiques
  *   chargees, via `refreshLoadedSilently` ;
  * - une liste : `GET /fastfood/all?ids=…` avec le jeton du user (offre de
@@ -71,8 +73,13 @@ export function useFastFoodRefreshByIds({
       else ids.forEach((id) => pending.current.ids.add(id));
       if (!timer.current) timer.current = setTimeout(flush, COALESCE_MS);
     });
+    const offRemove = onFastfoodsRemove((ids) => {
+      const gone = new Set(ids);
+      deps.current.setFastFoods((prev) => prev.filter((ff) => !gone.has(String(ff.id))));
+    });
     return () => {
       off();
+      offRemove();
       if (timer.current) clearTimeout(timer.current);
       timer.current = null;
     };

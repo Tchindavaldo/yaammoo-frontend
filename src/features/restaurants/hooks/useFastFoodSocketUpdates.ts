@@ -72,12 +72,20 @@ export function useFastFoodSocketUpdates(
         );
         if (idx >= 0) {
           const next = [...prev];
+          const prevOffer = (next[idx] as any).deliveryOffer;
           next[idx] = {
             ...next[idx],
             ...normalized,
             // Préserve les menus existants si le payload ne les fournit pas.
             menu: payloadHasMenus ? normalized.menu : next[idx].menu,
           };
+          // Le broadcast joint `deliveryOffer` seulement pour une campagne
+          // globale (valable pour tous). Absent : le bonus du user est garde,
+          // mais une campagne affichee n'existe plus (ex. boutique repassee en
+          // livraison marchand) et doit disparaitre.
+          if (!("deliveryOffer" in rawFastFood) && prevOffer?.reason === "campaign") {
+            (next[idx] as any).deliveryOffer = null;
+          }
           return next;
         }
         // ⚠️ Nouvelle boutique : elle s'insère en TÊTE, pas en fin. Le backend

@@ -49,7 +49,9 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
     setBusy(false);
     const detail = quote?.manual
       ? t("Le remboursement sera traité par notre équipe.")
-      : t("Tu recevras {{a}} F (frais de paiement retenus : {{b}} F).", { a: quote?.refund ?? 0, b: quote?.feesKept ?? 0 });
+      : quote?.phone
+        ? t("Tu recevras {{a}} F sur le {{p}}, le numéro qui a payé (frais de paiement retenus : {{b}} F).", { a: quote?.refund ?? 0, b: quote?.feesKept ?? 0, p: quote.phone })
+        : t("Tu recevras {{a}} F (frais de paiement retenus : {{b}} F).", { a: quote?.refund ?? 0, b: quote?.feesKept ?? 0 });
     Alert.alert(t("Annuler la commande ?"), detail, [
       { text: t("Non"), style: "cancel" },
       { text: t("Oui, annuler"), style: "destructive", onPress: cancel },

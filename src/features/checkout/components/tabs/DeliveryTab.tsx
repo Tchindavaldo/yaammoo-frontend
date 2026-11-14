@@ -172,7 +172,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                     delivery.type === "express" && { color: DS.accent },
                   ]}
                 >
-                  <Text style={localStyles.freeLabel}>{t("Offert")}</Text>
+                  <Text style={localStyles.freeLabel}>{delivery.grouping === "grouped" ? t("Groupée avec ta commande") : t("Offert")}</Text>
                   <Text style={localStyles.strikePrice}> · {expressPrice}F</Text>
                 </Text>
               ) : null}
@@ -214,7 +214,7 @@ export const DeliveryTab: React.FC<DeliveryTabProps> = ({
                       delivery.type === "standard" && { color: DS.accent },
                     ]}
                   >
-                    <Text style={localStyles.freeLabel}>{t("Offert")}</Text>
+                    <Text style={localStyles.freeLabel}>{delivery.grouping === "grouped" ? t("Groupée avec ta commande") : t("Offert")}</Text>
                     <Text style={localStyles.strikePrice}>
                       {" "}
                       · {periodPrice}F

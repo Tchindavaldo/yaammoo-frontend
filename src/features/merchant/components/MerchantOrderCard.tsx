@@ -128,10 +128,8 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
 
   const status = (order.status || "pending").toLowerCase();
   const isPending = status === "pending" || status === "pendingtobuy";
-  const isActive =
-    status === "active" || status === "processing" || status === "in_progress";
-  const isFinished =
-    status === "completed" || status === "finished" || status === "done";
+  const isActive = status === "processing";
+  const isFinished = status === "finished";
   const isDelivering = status === "delivering";
   const isDelivered = status === "delivered";
 

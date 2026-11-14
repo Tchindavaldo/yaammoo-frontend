@@ -205,8 +205,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
 
   const statusMap: Record<OrderStatus, string[]> = {
     pending: ["pending"],
-    proccess: ["processing", "active", "in_progress"],
-    finish: ["completed", "finished", "done", "delivering", "delivered"],
+    proccess: ["processing"],
+    finish: ["finished", "delivering", "delivered"],
   };
 
   const filteredOrders = orders.filter((o) =>

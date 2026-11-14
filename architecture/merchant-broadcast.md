@@ -67,6 +67,9 @@ prérempli (audience comprise si le plan la permet encore).
 
 Calculé côté client à partir des dates d'envoi (`computeQuota`) : envois du jour,
 de la semaine (lundi 00:00), et `dayLeft = min(dayLimit - jour, weekLimit - semaine)`.
+Par audience (`plan.audienceLimits`, backend migration 070) : `audienceLeft`
+donne `min(dayLeft global, reste du plafond de l'audience)`, affiché en chiffre
+sur chaque puce du composeur (en orange à 0). Audience sans plafond = reste global.
 C'est un **affichage** : le backend applique le quota (refus 429, message
 affiché tel quel en toast). Quota du jour atteint : le bouton passe gris.
 

@@ -44,6 +44,33 @@ export const computeQuota = (
   return { dayUsed, weekUsed, dayLeft, weekLeft, perDay, todayIndex };
 };
 
+/**
+ * Envois encore possibles par audience : min(reste global, reste du plafond
+ * propre à l'audience). Affichage seul, le backend fait foi (refus 429).
+ */
+export const audienceLeft = (
+  plan: BroadcastPlan,
+  items: BroadcastItem[],
+  now: Date,
+): Partial<Record<BroadcastItem["audience"], number>> => {
+  const global = computeQuota(plan, items, now).dayLeft;
+  const out: Partial<Record<BroadcastItem["audience"], number>> = {};
+  for (const a of plan.audiences) {
+    const lim = plan.audienceLimits?.[a];
+    if (!lim) {
+      out[a] = global;
+      continue;
+    }
+    const q = computeQuota(
+      { ...plan, dayLimit: lim.dayLimit, weekLimit: lim.weekLimit },
+      items.filter((it) => it.audience === a),
+      now,
+    );
+    out[a] = Math.min(global, q.dayLeft);
+  }
+  return out;
+};
+
 /** Temps restant avant minuit, pour la tuile « Remise à zéro ». */
 export const untilMidnight = (now: Date): { h: number; m: string } => {
   const mins = 24 * 60 - (now.getHours() * 60 + now.getMinutes());

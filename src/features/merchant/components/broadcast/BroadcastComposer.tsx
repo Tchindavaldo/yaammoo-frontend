@@ -36,6 +36,8 @@ interface Props {
   /** Audiences permises par le plan, et villes desservies par la boutique. */
   audiences: BroadcastAudience[];
   cities: string[];
+  /** Envois encore possibles aujourd'hui par audience. */
+  audienceLeft?: Partial<Record<BroadcastAudience, number>>;
   /** Nom et photo de la boutique, pour l'aperçu (null = pas encore chargés). */
   shop: BroadcastShop | null;
   sending: boolean;
@@ -55,6 +57,7 @@ export const BroadcastComposer: React.FC<Props> = ({
   menuImages,
   audiences,
   cities,
+  audienceLeft,
   shop,
   sending,
   restBottom,
@@ -185,6 +188,7 @@ export const BroadcastComposer: React.FC<Props> = ({
             cities={cities}
             audience={audience}
             city={city}
+            left={audienceLeft}
             onChange={(a, c) => {
               setAudience(a);
               setCity(c);

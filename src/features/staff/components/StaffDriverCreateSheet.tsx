@@ -12,7 +12,8 @@ import { t, useLanguage } from "@/src/i18n";
 export type DriverRecruitMode = "create" | "add" | "invite";
 export interface DriverRecruitDraft {
   mode: DriverRecruitMode;
-  phoneNumber: string;
+  /** Requis pour `create` ; `add` / `invite` : numéro OU email. */
+  phoneNumber?: string;
   prenom?: string;
   nom?: string;
   email?: string;
@@ -42,22 +43,30 @@ export const StaffDriverCreateSheet: React.FC<Props> = ({ slotLabel, saving, onS
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // Ajouter / inviter : recherche du compte par numéro ou par email.
+  const [by, setBy] = useState<"phone" | "email">("phone");
 
   const e164 = toE164(phone);
   const phoneError = !phoneFocus && phone.trim().length > 0 && !e164;
   const create = mode === "create";
-  const credsValid = !create || (/^\S+@\S+\.\S+$/.test(email.trim()) && password.length >= 6);
-  const canSubmit = !!e164 && credsValid && !saving;
+  const byEmail = !create && by === "email";
+  const emailValid = /^\S+@\S+\.\S+$/.test(email.trim());
+  const credsValid = !create || (emailValid && password.length >= 6);
+  const canSubmit = (byEmail ? emailValid : !!e164) && credsValid && !saving;
 
   const submit = async () => {
-    if (!canSubmit || !e164) return;
-    const ok = await onSubmit({
-      mode,
-      phoneNumber: e164,
-      ...(create
-        ? { prenom: prenom.trim() || undefined, nom: nom.trim() || undefined, email: email.trim(), password }
-        : {}),
-    });
+    if (!canSubmit) return;
+    const ok = await onSubmit(
+      byEmail
+        ? { mode, email: email.trim() }
+        : {
+            mode,
+            phoneNumber: e164!,
+            ...(create
+              ? { prenom: prenom.trim() || undefined, nom: nom.trim() || undefined, email: email.trim(), password }
+              : {}),
+          },
+    );
     if (ok) onClose();
   };
 
@@ -98,6 +107,35 @@ export const StaffDriverCreateSheet: React.FC<Props> = ({ slotLabel, saving, onS
         <Text style={styles.help}>{t(current.help)}</Text>
       </View>
 
+      {!create && (
+        <View style={styles.chips}>
+          {(["phone", "email"] as const).map((k) => {
+            const on = by === k;
+            return (
+              <Pressable key={k} onPress={() => setBy(k)} style={[styles.chip, on && styles.chipOn]} accessibilityRole="button" accessibilityState={{ selected: on }}>
+                <Text style={[styles.chipText, on && { color: "#fff" }]}>{k === "phone" ? t("Par numéro") : t("Par email")}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      {byEmail ? (
+        <View style={styles.field}>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="nom@exemple.com"
+            placeholderTextColor={ST.faint}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.input}
+            accessibilityLabel="Email"
+          />
+        </View>
+      ) : (
       <View style={styles.field}>
         <Text style={styles.label}>{t("Numéro de téléphone")}</Text>
         <View style={[styles.phoneBox, phoneFocus && styles.focused, phoneError && styles.errored]}>
@@ -118,6 +156,7 @@ export const StaffDriverCreateSheet: React.FC<Props> = ({ slotLabel, saving, onS
         </View>
         {phoneError && <Text style={[styles.help, { color: ST.danger }]}>{t("Numéro invalide : 9 chiffres, ou le numéro complet avec +")}</Text>}
       </View>
+      )}
 
       {create && (
         <>

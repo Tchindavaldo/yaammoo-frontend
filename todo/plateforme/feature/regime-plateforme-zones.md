@@ -1,6 +1,6 @@
 # Régime plateforme : servir à l'app les zones et prix Yaammoo
 
-[ ] DÉCIDÉ le 14/11/2026 : quand Yaammoo livre (`delivery_by = 'platform'`),
+[ ] (backend FAIT le 14/11/2026, dev, non déployé) DÉCIDÉ le 14/11/2026 : quand Yaammoo livre (`delivery_by = 'platform'`),
     l'app propose UNIQUEMENT les zones et prix de la plateforme
     (`platformDeliveryZones` périodique par heure, `platformExpressZones` express),
     jamais ceux du marchand

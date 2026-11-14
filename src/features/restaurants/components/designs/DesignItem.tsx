@@ -88,6 +88,7 @@ export const DesignItem: React.FC<DesignItemProps> = (props) => {
           marginRight={isLast ? 0 : skel.gap}
           deliveryHours={props.deliveryHours}
           orderLeadTime={props.orderLeadTime}
+          deliveryFeeLabel={props.deliveryFeeLabel}
           index={props.index}
         />
       </Animated.View>

@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { Text, View } from "react-native";
 import { useNextDeliveryTime } from "../../../../utils/deliveryUtils";
-import { IS_AERE, SHOW_AVAILABILITY, deliveryFeeLabelFor } from "../config";
+import { IS_AERE, SHOW_AVAILABILITY } from "../config";
 import { V4AereMeta } from "../aere/CardV4Aere";
 import { V5AereMeta } from "../aere/CardV5Aere";
 import { V7AereMeta } from "../aere/CardV7Aere";
@@ -17,6 +17,7 @@ const AERE_META: Record<number, typeof V4AereMeta> = {
 import { sharedStyles as styles } from "../styles/sharedStyles";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
+import { feeText } from "../aere/labels";
 
 /**
  * Bloc d'infos rendu SOUS la carte, hors de celle-ci : nom du menu, livraison
@@ -30,6 +31,7 @@ export const ItemMeta: React.FC<{
   deliveryHours?: string[];
   orderLeadTime?: number;
   index?: number;
+  deliveryFeeLabel?: string;
 }> = ({
   menu,
   variant,
@@ -38,6 +40,7 @@ export const ItemMeta: React.FC<{
   deliveryHours = [],
   orderLeadTime = 0,
   index = 0,
+  deliveryFeeLabel = "",
 }) => {
   useLanguage();
   const rating = (menu as any)?.rating ?? 4.5;
@@ -54,7 +57,7 @@ export const ItemMeta: React.FC<{
           title={menu.titre}
           rating={rating}
           votes={votes}
-          deliveryFeeLabel={deliveryFeeLabelFor(index)}
+          deliveryFeeLabel={deliveryFeeLabel}
         />
       </View>
     );
@@ -112,7 +115,7 @@ export const ItemMeta: React.FC<{
           <Text style={styles.metaText}>
             {t("Livraison")}{" "}
             <Text style={{ color: DS.accentDeep, fontWeight: "900" }}>
-              {index % 3 === 0 ? t("gratuite") : index % 3 === 1 ? "300F" : "1000F"}
+              {feeText(deliveryFeeLabel)}
             </Text>
           </Text>
           <Text style={styles.v4TimeText}>

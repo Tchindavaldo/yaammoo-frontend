@@ -28,6 +28,7 @@ src/features/restaurants/
 ├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
 ├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
 ├── utils/deliveryUtils.ts
+├── utils/shopDeliveryFee.ts        # Libellé livraison des cartes : "gratuit" si deliveryOffer.active, sinon tarif le moins cher des zones (périodiques + express)
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
 ├── utils/homeListConfig.ts         # Home : constantes mesurées (DRAW_DISTANCE, GHOST_COUNT, seuils…), BANNER_ITEM, CATEGORIES
 ├── utils/homeClientSettings.ts     # Home : taille de page + distance de préchargement venues du serveur (`clientSettings`), valeurs de secours, copie gardée
@@ -344,6 +345,15 @@ premier créneau de demain),
   (Design4/5/7). Liste native : champ `deliveryLabel` (« 13h 14h 15h » séparés par une espace / « express »,
   "" = rien) de `HomeListRow`, rendu par `HLMerchantHeaderView` (iOS et
   Android) ; une build native antérieure l'ignore.
+
+## Prix de livraison sur les cartes
+
+- `shopDeliveryFeeLabel(ff)` (`utils/shopDeliveryFee.ts`), passé par chaque `DesignN`
+  à `DesignItem` (`deliveryFeeLabel`), et calculé par `NativeHomeList.toRow` pour la liste native.
+- Offre active (`deliveryOffer.active`, backend) → « gratuite » ; sinon le tarif le moins
+  cher de `deliveryHours[].periodicZones` et `expressZones` ; aucune zone → rien.
+- Le backend sert dans ces champs les zones du régime actif (plateforme ou marchand) :
+  l'app ne lit jamais `platform*`.
 
 ## Recherche — SERVEUR, pas locale
 

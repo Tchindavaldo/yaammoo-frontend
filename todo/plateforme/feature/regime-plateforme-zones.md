@@ -1,16 +1,14 @@
-# Régime plateforme : l'app ignore les zones Yaammoo (À DISCUTER)
+# Régime plateforme : servir à l'app les zones et prix Yaammoo
 
-[ ] ⚠️ IMPORTANT — à rappeler à l'utilisateur, point non encore discuté
-    - en régime `delivery_by = 'platform'` (Yaammoo livre), le backend prend
-      les zones dans `platformDeliveryZones` (périodique) et
-      `platformExpressZones` (express, sans heure, migration 073)
-      — `deliverySource` dans `src/services/pricing/deliveryPricing.js` (backend)
-    - l'app, elle, ne lit QUE `deliveryHours` / `expressZones` de la boutique
-      (checkout home, panier, panier groupé) : en régime plateforme elle
-      proposerait les zones/prix du marchand, pas ceux de Yaammoo
-    - risque : prix de course affiché ≠ prix attendu → paiement refusé
-      (`delivery_price_mismatch`) ou zones inexistantes côté plateforme
-    - à décider : le backend sert-il directement les bonnes zones selon le
-      régime (recommandé : l'app reste muette sur le régime), ou l'app lit-elle
-      `platform*` ? Aucune boutique en régime plateforme en prod au 14/11/2026
+[ ] (backend FAIT le 14/11/2026, dev, non déployé) DÉCIDÉ le 14/11/2026 : quand Yaammoo livre (`delivery_by = 'platform'`),
+    l'app propose UNIQUEMENT les zones et prix de la plateforme
+    (`platformDeliveryZones` périodique par heure, `platformExpressZones` express),
+    jamais ceux du marchand
+    - les zones plateforme sont posées par l'ADMIN, par boutique
+      (`PATCH` delivery config backend, `adminGuard`) ; la bascule en `platform`
+      est refusée tant qu'aucune zone n'est configurée
+    - à faire côté backend : `GET /fastfood/all` et `/fastfood/:id` renvoient,
+      en régime plateforme, ces zones dans `deliveryHours` / `expressZones`
+      (avec prix d'affichage) : l'app n'a rien à changer
+    - côté app : vérifier ensuite checkout home, panier et panier groupé
     - fichier jumeau backend : `todo/plateforme/feature/regime-plateforme-zones.md`

@@ -20,7 +20,8 @@ import React, {
   useState,
 } from "react";
 import { AppState, Image, StyleSheet } from "react-native";
-import { HOME_DESIGN, V4_BACKGROUNDS, V5_BACKGROUNDS, deliveryFeeLabelFor } from "./designs/item/config";
+import { HOME_DESIGN, V4_BACKGROUNDS, V5_BACKGROUNDS } from "./designs/item/config";
+import { FEE_FREE, shopDeliveryFeeLabel } from "../utils/shopDeliveryFee";
 import {
   DELIVERY_ETA,
   feeText,
@@ -117,10 +118,6 @@ const FONTS: HomeListFonts = {
   w900: fontFor(900),
 };
 
-/** Frais de la ligne sous la carte du variant 4 (`ItemMeta`). */
-const metaFeeLabelFor = (i: number) =>
-  i % 3 === 0 ? tr("gratuite") : i % 3 === 1 ? "300F" : "1000F";
-
 const menuIdOf = (ff: FastFood, m: any, i: number) => String(m?.id ?? `${ff.id}_${i}`);
 
 const fallbackFor = (design: number, i: number) =>
@@ -135,6 +132,8 @@ const toRow = (
 ): HomeListRow => {
   const f = ff as any;
   const design = designNumberFor(ff.designIndex);
+  // Livraison reelle de la boutique : offerte, ou son tarif le moins cher.
+  const fee = shopDeliveryFeeLabel(ff);
   return {
     id: String(ff.id),
     design,
@@ -150,7 +149,6 @@ const toRow = (
     deliveryLabel,
     menus: (ff.menu ?? []).map((m: any, i: number) => {
       const stock = Math.round(m?.stock ?? 0);
-      const fee = deliveryFeeLabelFor(i);
       const { value, unit } = stockParts(stock);
       return {
         id: menuIdOf(ff, m, i),
@@ -162,14 +160,14 @@ const toRow = (
         rating: String(m?.rating ?? 4.5),
         votes: Math.round(m?.votes ?? 0),
         feeLabel: fee,
-        metaFeeLabel: metaFeeLabelFor(i),
+        metaFeeLabel: fee === FEE_FREE ? tr("gratuite") : fee,
         // Design aere : memes libelles que la liste JS (`aere/labels.ts`).
         stockValue: value,
         stockUnit: unit,
         stockLow: isStockLow(stock),
         stockRatio: stockRatio(stock),
         feeText: feeText(fee),
-        feeFree: fee === "gratuit",
+        feeFree: fee === FEE_FREE,
         eta: DELIVERY_ETA,
       };
     }),

@@ -1,14 +1,10 @@
-# Retirer l'option « sans livraison » de l'onglet delivery
+# Option « sans livraison »
 
-[ ] PARTIEL (vérifié le 14/11/2026) : la card « Aucun » de `DeliveryTab` n'est plus cliquable si le
-    marchand a désactivé le retrait (`pickupAllowed === false`), mais reste sélectionnable sinon.
-
-[ ] ⚠️ IMPORTANT — À GÉRER AVANT LE DÉPLOIEMENT FINAL EN PROD
-    retirer l'option "sans livraison" de l'onglet delivery
-    - aujourd'hui le user peut choisir "à emporter" alors que le prix affiché inclut déjà la livraison
-      (fondue dans le prix du plat depuis le home) → il paie une course qu'il ne reçoit pas
-    - le backend trace déjà ce cas : order_deliveries.delivered = false → marge pure (cf. backend architecture/pricing.md)
-    - à remplacer plus tard par :
-        - VIP delivery (option premium)
-        - ou réservation d'une place au fastfood pour consommer sur place
-    - à croiser avec la tâche "gestion livraison surplace" plus haut
+[x] (décidé le 14/11/2026 : on GARDE l'option) En régime plateforme, le client
+    qui choisit « sur place » paie quand même la course fondue dans le prix du
+    plat : c'est VOULU, la course non livrée revient à la plateforme
+    (marge, `order_deliveries.delivered = false`, cf. backend `architecture/pricing.md`).
+    En régime marchand, la course est facturée à part et vaut 0 en retrait.
+    - la card « Aucun » reste désactivée quand le marchand a coupé le retrait
+      (`pickupAllowed === false`)
+    - pistes futures éventuelles : VIP delivery, réservation de place sur place

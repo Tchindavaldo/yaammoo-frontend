@@ -18,7 +18,8 @@ export function checkStock(menu: Menu | null | undefined, quantity: number): str
 export function checkDelivery(delivery: Livraison, menu: Menu | null | undefined): string | null {
   const type = delivery.type;
   if (!delivery.statut || type === "aucune") return null;
-  if (!delivery.address && !delivery.note) return t("Adresse de livraison requise");
+  if (!delivery.address && !delivery.note && !delivery.voiceNoteUri)
+    return t("Indiquez une adresse, une description ou une note vocale");
   if (!delivery.phone) return t("Numéro de contact requis");
   if (type === "standard" && !delivery.hour) return t("Période de livraison requise");
   // Express : exiger le choix d'une zone SI des zones express sont disponibles

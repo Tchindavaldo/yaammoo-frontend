@@ -14,7 +14,10 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { getOptionalIdToken } from "@/src/services/idToken";
 
 const STORAGE_KEY = "home_city_v1";
-const RESOLVE_TIMEOUT_MS = 3000;
+// Filet de securite seulement : la 1re page attend la vraie ville (sinon elle
+// partait sans ville = toutes les villes, et le rechargement suivant pouvait
+// etre ignore pendant ce 1er chargement).
+const RESOLVE_TIMEOUT_MS = 12000;
 
 export interface HomeCityEntry { name: string; count: number }
 export interface HomeCitiesData { cities: HomeCityEntry[]; defaultCity: string | null; total: number; merchantCity?: string | null }
@@ -23,7 +26,15 @@ export interface HomeCitiesData { cities: HomeCityEntry[]; defaultCity: string |
 export async function fetchHomeCities(): Promise<HomeCitiesData | null> {
   try {
     const perm = await Location.getForegroundPermissionsAsync().catch(() => null);
-    const pos = perm?.granted ? await Location.getLastKnownPositionAsync().catch(() => null) : null;
+    // Derniere position connue, sinon position actuelle (souvent nulle sur iOS
+    // au demarrage : sans elle, la ville par defaut n'etait pas la bonne).
+    const pos = perm?.granted
+      ? (await Location.getLastKnownPositionAsync().catch(() => null)) ??
+        (await Promise.race([
+          Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).catch(() => null),
+          new Promise<null>(r => setTimeout(() => r(null), 5000)),
+        ]))
+      : null;
     const idToken = await getOptionalIdToken();
     const { data } = await axios.get(`${Config.apiUrl}/fastfood/cities`, {
       headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,

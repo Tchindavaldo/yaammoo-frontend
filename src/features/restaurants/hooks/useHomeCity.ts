@@ -42,8 +42,11 @@ export function useHomeCity() {
   const [city, setCityState] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
   const cityRef = useRef<string | null>(null);
+  // Promesse creee UNE seule fois : `new Promise` dans useRef(...) serait
+  // re-evalue a chaque rendu et ecraserait le resolveur (loader infini).
   const readyResolve = useRef<() => void>(() => {});
-  const cityReady = useRef<Promise<void>>(new Promise<void>(r => { readyResolve.current = r; }));
+  const cityReady = useRef<Promise<void> | null>(null);
+  if (!cityReady.current) cityReady.current = new Promise<void>(r => { readyResolve.current = r; });
 
   const apply = useCallback((c: string | null, isManual: boolean) => {
     cityRef.current = c;

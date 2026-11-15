@@ -32,7 +32,7 @@ export function PayoutNumberSheet({ network, initialPhone, onClose, onVerified }
   const { bottom } = useSheetSafeInsets();
   const phoneRef = React.useRef("");
   return (
-    <Modal visible={!!network} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={!!network} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose} />
       <View style={[styles.sheet, { height: AUTH_SHEET_HEIGHT + bottom, paddingBottom: bottom }]}>
         <Text style={styles.title}>{network === "orange" ? t("Numéro Orange Money") : network === "mtn" ? t("Numéro MTN Mobile Money") : t("Numéro WhatsApp")}</Text>

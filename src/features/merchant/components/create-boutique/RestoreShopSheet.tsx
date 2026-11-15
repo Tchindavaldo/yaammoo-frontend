@@ -25,7 +25,7 @@ export function RestoreShopSheet({ visible, shops, restoringId, onRestore, onCre
   useLanguage();
   const { bottom } = useSheetSafeInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCreateNew}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCreateNew}>
       <Pressable style={styles.backdrop} onPress={onCreateNew} />
       <View style={[styles.sheet, { paddingBottom: bottom }]}>
         <Text style={styles.title}>{t("Vous avez déjà eu une boutique")}</Text>

@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **27 règles numérotées R1 → R27.** Toute nouvelle règle ajoutée à ce fichier
+> **28 règles numérotées R1 → R28.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -420,3 +420,12 @@ l'applique telle quelle dans son contexte, **sans refaire de GET**.
 - Détail : `architecture/socket-events-client.md` (`fastfoodUpdated`,
   `fastfoodsChanged`, `fastfoodsHidden`). Règle identique côté backend (R24).
 
+
+## R28 — Bottom sheet : voile en FONDU, jamais `animationType="slide"` (OBLIGATOIRE)
+
+Toute bottom sheet (`<Modal transparent>` ancrée en bas, voile sombre) s'ouvre
+avec **`animationType="fade"`** : le voile apparaît en fondu, comme toutes les
+sheets de l'app (`DelegateDriverSheet`, `NotificationDetailSheet`…).
+`animationType="slide"` fait monter le VOILE avec la sheet, de bas en haut :
+interdit. Seule une page plein écran (Modal non transparente, ex.
+`LegalReadSheet`) peut glisser. Détail : `architecture/blur-safe-area.md`.

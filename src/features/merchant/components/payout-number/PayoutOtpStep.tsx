@@ -14,6 +14,7 @@ import {
   isRateLimited,
 } from "@/src/features/auth/services/whatsappAuthService";
 import { t, useLanguage } from "@/src/i18n";
+import { DS } from "@/src/theme/ds";
 
 /**
  * COPIE de `auth/components/WhatsAppAuthStep` (R16) pour la verification d'un

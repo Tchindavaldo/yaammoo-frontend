@@ -16,7 +16,7 @@ import { fetchHomeCities, type HomeCitiesData, type HomeCity } from "../../hooks
 interface Props {
   visible: boolean;
   homeCity: HomeCity;
-  /** Lieu precis du client (quartier, arrondissement) : libelle de « Ma localisation ». */
+  /** Lieu precis du client : sert a retirer de la liste la ville ou il se trouve. */
   placeLabel: string;
   onClose: () => void;
 }
@@ -57,7 +57,7 @@ export function HomeCitySheet({ visible, homeCity, placeLabel, onClose }: Props)
         <View style={styles.handle} />
         <Text style={styles.title}>{t("Choisir une ville")}</Text>
         <ScrollView style={styles.list} contentContainerStyle={{ gap: 8 }}>
-          <Row icon="navigate" label={placeLabel || t("Ma localisation")} count={myCity?.count} selected={!homeCity.manual} onPress={() => pick(() => void homeCity.resetToMyLocation())} />
+          <Row icon="navigate" label={t("Ma localisation")} selected={!homeCity.manual} onPress={() => pick(() => void homeCity.resetToMyLocation())} />
           <Row icon="globe-outline" label={t("Toutes les villes")} count={data?.total} selected={homeCity.manual && !homeCity.city} onPress={() => pick(() => void homeCity.chooseCity(null))} />
           {loading && !data ? <ActivityIndicator style={{ marginVertical: 16 }} color={DS.accent} /> : null}
           {(data?.cities ?? []).filter(c => c !== myCity).map(c => (

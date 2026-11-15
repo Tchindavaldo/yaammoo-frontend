@@ -25,6 +25,7 @@ import { HomeLocationBanner } from "@/src/features/restaurants/components/home/H
 import { useLocationAccess } from "@/src/features/location/hooks/useLocationAccess";
 import { SHOW_LOCATION_BANNER } from "@/src/features/location/config";
 import { homeStyles as styles } from "@/src/features/restaurants/components/home/homeScreenStyles";
+import { useCityChangeLoader } from "@/src/features/restaurants/hooks/useCityChangeLoader";
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
 import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListData";
 import { useHomeListRenderers } from "@/src/features/restaurants/hooks/useHomeListRenderers";
@@ -161,7 +162,8 @@ function HomeScreen() {
   const checkout = useHomeCheckout();
 
   // For testing: force loader to persist
-  const [forceLoading] = useState(false);
+  // Changement de ville : loader plein ecran visible au moins un instant.
+  const forceLoading = useCityChangeLoader(homeCity.city);
   const [refreshing, setRefreshing] = useState(false);
 
   const onManualRefresh = async () => {

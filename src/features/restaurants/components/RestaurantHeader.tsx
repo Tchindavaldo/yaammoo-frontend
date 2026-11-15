@@ -86,7 +86,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
               <Text style={styles.modePillText}>{t("Mode marchand")}</Text>
             </TouchableOpacity>
           ) : (
-            <LocationPill location={location} onPress={onLocationPress} />
+            location ? <LocationPill location={location} onPress={onLocationPress} /> : null
           )}
         </View>
 

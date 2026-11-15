@@ -216,6 +216,8 @@ export const useWithdraw = (balances: WalletBalances) => {
     setAmount,
     numbers,
     numbersLoading,
+    loadNumbers,
+    fastFoodId,
     quote,
     quoteLoading,
     withdrawError,

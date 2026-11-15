@@ -120,7 +120,9 @@ export const WithdrawReceiveStep: React.FC<{
   numbers: PayoutNumbers;
   numbersLoading: boolean;
   percents: FeePercents;
-}> = ({ balances, source, target, onSelect, numbers, numbersLoading, percents }) => {
+  /** Carte sans numero : ouvre la verification par code SMS (PayoutNumberSheet). */
+  onAddNumber: (n: WalletNetwork) => void;
+}> = ({ balances, source, target, onSelect, numbers, numbersLoading, percents, onAddNumber }) => {
   useLanguage();
   const other = WALLET_NETWORKS.find((n) => n !== source);
   const srcLabel = networkLabel(source);
@@ -142,7 +144,13 @@ export const WithdrawReceiveStep: React.FC<{
           const phone = numbers[net];
           if (!phone) {
             return (
-              <View key={net} style={[ws.card, ws.cardEmpty]}>
+              <TouchableOpacity
+                key={net}
+                style={[ws.card, ws.cardEmpty]}
+                disabled={numbersLoading}
+                onPress={() => onAddNumber(net)}
+                activeOpacity={0.85}
+              >
                 <View style={[ws.iconDot, ws.iconDotEmpty]}>
                   {numbersLoading ? (
                     <ActivityIndicator size="small" color={DS.slate500} />
@@ -154,9 +162,9 @@ export const WithdrawReceiveStep: React.FC<{
                 <Text style={ws.cardEmptyText}>
                   {numbersLoading
                     ? t("Chargement du numéro…")
-                    : t("Aucun numéro. À ajouter dans les informations de la boutique.")}
+                    : t("Ajouter le numéro")}
                 </Text>
-              </View>
+              </TouchableOpacity>
             );
           }
           const on = target === net;

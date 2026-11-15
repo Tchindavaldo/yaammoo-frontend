@@ -52,6 +52,9 @@ export function useHomeCity() {
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
   const [city, setCityState] = useState<string | null>(null);
   const [manual, setManual] = useState(false);
+  // « Ma localisation » en cours de calcul : le home affiche son loader tout de
+  // suite (sinon les anciennes boutiques restaient le temps de la requete).
+  const [resolving, setResolving] = useState(false);
   const cityRef = useRef<string | null>(null);
   // Promesse creee UNE seule fois : `new Promise` dans useRef(...) serait
   // re-evalue a chaque rendu et ecraserait le resolveur (loader infini).
@@ -95,15 +98,16 @@ export function useHomeCity() {
 
   /** « Ma localisation » : oublie le choix, revient a la ville par defaut. */
   const resetToMyLocation = useCallback(async () => {
+    setResolving(true);
     try { await AsyncStorage.removeItem(STORAGE_KEY); } catch {}
-    apply(await resolveDefault(), false);
+    try { apply(await resolveDefault(), false); } finally { setResolving(false); }
   }, [apply, resolveDefault]);
 
   // Objet stable tant que rien ne change : il entre dans la valeur du contexte
   // FastFood (une nouvelle reference re-rendrait tout le home).
   return useMemo(
-    () => ({ city, manual, isMerchant, cityRef, cityReady, chooseCity, resetToMyLocation }),
-    [city, manual, isMerchant, chooseCity, resetToMyLocation],
+    () => ({ city, manual, resolving, isMerchant, cityRef, cityReady, chooseCity, resetToMyLocation }),
+    [city, manual, resolving, isMerchant, chooseCity, resetToMyLocation],
   );
 }
 

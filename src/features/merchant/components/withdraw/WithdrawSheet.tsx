@@ -28,6 +28,10 @@ import {
   walletLabel,
 } from "../../services/walletNetwork";
 import { WithdrawAmountCapsule } from "./WithdrawAmountCapsule";
+import { PayoutNumberSheet, type PayoutNetwork } from "../payout-number/PayoutNumberSheet";
+import { withdrawService } from "../../services/withdrawService";
+import { apiErrorMessage } from "@/src/api/apiError";
+import { showToast } from "@/src/services/globalToast";
 import { WITHDRAW_SHEET_HEIGHT, ws } from "./WithdrawSheet.styles";
 import { WithdrawStatusCover } from "./WithdrawStatusCover";
 import {
@@ -60,6 +64,16 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
   const insets = useSheetSafeInsets();
   const state = w.withdrawState;
   const open = state !== "idle";
+  const [payoutSheet, setPayoutSheet] = React.useState<PayoutNetwork | null>(null);
+  const saveNumber = async (net: PayoutNetwork, phone: string) => {
+    if (!w.fastFoodId || net === "whatsapp") return;
+    try {
+      await withdrawService.savePayoutNumber(w.fastFoodId, net === "mtn" ? "MTN" : "ORANGEMONEY", phone);
+      await w.loadNumbers();
+    } catch (error) {
+      showToast(apiErrorMessage(error) || t("Numéro non enregistré, réessayez"), "error");
+    }
+  };
 
   // Fermeture : on joue la sortie AVANT de remettre le retrait a zero, sinon
   // la feuille se viderait sous les yeux pendant son fondu.
@@ -172,6 +186,7 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
                 numbers={w.numbers}
                 numbersLoading={w.numbersLoading}
                 percents={percents}
+                onAddNumber={(n) => setPayoutSheet(n === "MTN" ? "mtn" : "orange")}
               />
             )}
             {onRecap && (
@@ -252,6 +267,14 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
             </View>
           </BlurTarget>
 
+          {/* Carte sans numero : verification par code SMS, puis numero
+              enregistre sur la boutique et cartes relues. */}
+          <PayoutNumberSheet
+            network={payoutSheet}
+            initialPhone=""
+            onClose={() => setPayoutSheet(null)}
+            onVerified={(net, phone) => void saveNumber(net, phone)}
+          />
           {/* Cache « en cours » / « reussi » sur TOUTE la feuille. */}
           <WithdrawStatusCover status={coverStatus} detail={coverDetail} onClose={close} />
           <SafeAreaDebugBand />

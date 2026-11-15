@@ -163,7 +163,8 @@ function HomeScreen() {
 
   // For testing: force loader to persist
   // Changement de ville : loader plein ecran visible au moins un instant.
-  const forceLoading = useCityChangeLoader(homeCity.city);
+  const cityChanging = useCityChangeLoader(homeCity.city);
+  const forceLoading = cityChanging || homeCity.resolving;
   const [refreshing, setRefreshing] = useState(false);
 
   const onManualRefresh = async () => {

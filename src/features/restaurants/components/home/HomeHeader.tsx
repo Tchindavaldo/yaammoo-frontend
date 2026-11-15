@@ -37,15 +37,17 @@ export const HomeHeader: React.FC<Props> = ({
   useLanguage();
   const { user, userData } = useAuth();
   const router = useRouter();
-  const { label: placeLabel, city: placeCity } = useCurrentPlaceLabel();
+  const { label: placeLabel, city: placeCity } = useCurrentPlaceLabel("");
   const { isMerchant, setMerchantMode } = useMerchantMode();
   const { homeCity } = useFastFoodContext();
   const [citySheet, setCitySheet] = React.useState(false);
   // Ville choisie a la main : son nom (ou « Toutes les villes »). Sinon
   // (« Ma localisation ») : le lieu PRECIS du client (quartier, arrondissement).
+  // Avant le lieu precis : la ville deja connue, sinon rien (plus de
+  // « Banganté » affiche puis remplace au demarrage).
   const location = homeCity.isMerchant
     ? homeCity.city || placeLabel
-    : homeCity.manual ? homeCity.city || t("Toutes les villes") : placeLabel;
+    : homeCity.manual ? homeCity.city || t("Toutes les villes") : placeLabel || homeCity.city || "";
 
   return (
     <>

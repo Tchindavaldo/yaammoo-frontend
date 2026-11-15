@@ -14,6 +14,8 @@ import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useDeliveryTrackingSync } from "../../location/hooks/useDeliveryTrackingSync";
 import { t, useLanguage } from "@/src/i18n";
 import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
+import { apiErrorMessage } from "@/src/api/apiError";
+import { showToast } from "@/src/services/globalToast";
 
 /** Event socket sur une demande de livraison (création / décision / retrait). */
 export type ApplicationEvent =
@@ -108,8 +110,9 @@ export const DriverProvider: React.FC<{ children: React.ReactNode }> = ({
         prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
       );
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Driver failed to update status:", err);
+      showToast(apiErrorMessage(err) || t("Erreur lors de la mise à jour"), "error");
       return false;
     }
   };

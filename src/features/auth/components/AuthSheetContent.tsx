@@ -77,6 +77,7 @@ export default function AuthSheetContent() {
         // ⚠️ On NE coupe PAS le loader sur succès : on le laisse tourner jusqu'à
         // ce que la home soit montée (l'écran auth se démonte alors tout seul).
         // Évite le flash blanc le temps que la home charge.
+        showToast(t("Connecté avec succès"), "success");
         setUserData(result.userData);
         return;
       } else if (result.error && result.error !== t("Connexion annulée")) {
@@ -96,6 +97,7 @@ export default function AuthSheetContent() {
       const result = await handleAppleSignIn();
       if (result.success && result.userData) {
         // Loader maintenu jusqu'au montage de la home (voir onGoogle).
+        showToast(t("Connecté avec succès"), "success");
         setUserData(result.userData);
         return;
       } else if (result.error && result.error !== t("Connexion annulée")) {
@@ -116,7 +118,10 @@ export default function AuthSheetContent() {
     const cred = await signInWithEmailAndPassword(auth, mail, pwd);
     const data = await authService.getUserById(cred.user.uid);
     // Loader maintenu jusqu'au montage de la home (voir onGoogle).
-    if (data) setUserData(data);
+    if (data) {
+      showToast(t("Connecté avec succès"), "success");
+      setUserData(data);
+    }
   };
 
   const onRegisterWith = async (mail: string, pwd: string) => {
@@ -136,6 +141,7 @@ export default function AuthSheetContent() {
     await userFirestore.createUser(newUser, firebaseUser);
     const data = await userFirestore.getUser(firebaseUser);
     // Loader maintenu jusqu'au montage de la home (voir onGoogle).
+    showToast(t("Compte créé, bienvenue !"), "success");
     setUserData(data ?? newUser);
   };
 
@@ -191,14 +197,20 @@ export default function AuthSheetContent() {
               auth.currentUser,
             );
             const created = await userFirestore.getUser(auth.currentUser);
-            if (created) setUserData(created);
+            if (created) {
+              showToast(t("Compte créé, bienvenue !"), "success");
+              setUserData(created);
+            }
             return;
           }
 
           // ⚠️ Comme Google/Apple : on ne coupe pas le loader et on ne
           // redirige pas ici. Le guard demonte la sheet des que `isSignedIn`
           // passe a true (cf. app/_layout.tsx).
-          if (data) setUserData(data);
+          if (data) {
+            showToast(t("Connecté avec succès"), "success");
+            setUserData(data);
+          }
         }}
         onResend={async () => {
           await requestPhoneCode(whatsappPhone);

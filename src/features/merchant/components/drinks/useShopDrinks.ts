@@ -5,6 +5,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import axios from "axios";
 import { useCallback, useEffect, useState } from "react";
 import { t, useLanguage } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /**
  * Boisson de la BOUTIQUE (backend `fastfoods.drinks`, migration 062).
@@ -65,7 +66,7 @@ export const useShopDrinks = () => {
       setDirty(false);
       showToast(t("Boissons enregistrées"), "success");
     } catch (e: any) {
-      const message = e?.response?.data?.message || e?.message;
+      const message = apiErrorMessage(e) || e?.message;
       console.error("[useShopDrinks] enregistrement:", message);
       showToast(message || t("Impossible d'enregistrer les boissons"), "error");
     } finally {

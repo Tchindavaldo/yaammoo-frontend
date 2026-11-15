@@ -7,6 +7,8 @@ import { useResetOnUserChange } from '@/src/hooks/useResetOnUserChange';
 import { useLazyFetch } from '@/src/hooks/useLazyFetch';
 import { t, useLanguage } from "@/src/i18n";
 import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
+import { apiErrorMessage } from "@/src/api/apiError";
+import { showToast } from "@/src/services/globalToast";
 
 interface MerchantContextType {
   orders: Commande[];
@@ -109,8 +111,9 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         ),
       );
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update status:", err);
+      showToast(apiErrorMessage(err) || t("Erreur lors de la mise à jour"), "error");
       return false;
     }
   };

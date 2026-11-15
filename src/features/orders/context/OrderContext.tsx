@@ -11,6 +11,7 @@ import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import { t, useLanguage } from "@/src/i18n";
 import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 import { onCartRefresh } from "@/src/services/fastfoodRefreshBus";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /** Cache des commandes, pour un badge panier juste des la premiere frame. */
 const ORDERS_CACHE_KEY = "orders_cache";
@@ -173,7 +174,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: false, message: t("Erreur lors de la création.") };
     } catch (err: any) {
       console.error("Add order error:", err);
-      const backendMessage = err.response?.data?.message;
+      const backendMessage = apiErrorMessage(err);
       return {
         success: false,
         message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || t("Erreur réseau")
@@ -226,7 +227,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: true };
     } catch (err: any) {
       console.error("Save order error:", err);
-      const backendMessage = err.response?.data?.message;
+      const backendMessage = apiErrorMessage(err);
       return {
         success: false,
         message: Array.isArray(backendMessage)
@@ -287,7 +288,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: false, message: t("Erreur lors de la validation des commandes") };
     } catch (err: any) {
       console.error("Buy orders error:", err);
-      const backendMessage = err.response?.data?.message;
+      const backendMessage = apiErrorMessage(err);
       return {
         success: false,
         message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || t("Erreur réseau")

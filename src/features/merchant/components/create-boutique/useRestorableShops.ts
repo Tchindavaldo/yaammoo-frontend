@@ -7,6 +7,7 @@ import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { showToast } from "@/src/services/globalToast";
 import { t } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 export interface RestorableShop {
   id: string;
@@ -41,7 +42,7 @@ export function useRestorableShops() {
       // fastFoodId pose : la page de creation repart vers le home marchand.
       if (userData) setUserData({ ...userData, fastFoodId: id, isMarchand: true });
     } catch (e: any) {
-      showToast(e?.response?.data?.message || t("Restauration impossible"), "error");
+      showToast(apiErrorMessage(e) || t("Restauration impossible"), "error");
     } finally {
       setRestoringId(null);
     }

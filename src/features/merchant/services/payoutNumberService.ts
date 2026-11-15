@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Config } from "@/src/api/config";
 import type { PhoneCodeError, PhoneRateLimitError } from "@/src/features/auth/services/whatsappAuthService";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /**
  * Verification d'un numero de retrait (OM / MoMo), code par SMS UNIQUEMENT.
@@ -31,7 +32,7 @@ async function requestCode(path: string, phoneNumber: string, extra: Record<stri
       const retryAfter = Number(error.response.headers?.["retry-after"]);
       throw { rateLimited: true, retryAfter: Number.isFinite(retryAfter) ? retryAfter : 60 } as PhoneRateLimitError;
     }
-    throw { message: error?.response?.data?.message } as Error;
+    throw { message: apiErrorMessage(error) } as Error;
   }
 }
 
@@ -43,6 +44,6 @@ async function verifyCode(path: string, phoneNumber: string, code: string): Prom
       const d = error.response.data ?? {};
       throw { invalidCode: true, reason: d.reason, attemptsRemaining: d.attemptsRemaining } as PhoneCodeError;
     }
-    throw { message: error?.response?.data?.message } as Error;
+    throw { message: apiErrorMessage(error) } as Error;
   }
 }

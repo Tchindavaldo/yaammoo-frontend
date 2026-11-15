@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { t as tr, useLanguage } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 const requiredConfirm = (): string => tr("SUPPRIMER");
 
@@ -71,7 +72,7 @@ export function DeleteAccountModal({ visible, onClose }: Props) {
       // Erreur affichée INLINE dans le modal (pas d'Alert native).
       setError(
         err?.response?.data?.error ||
-          err?.response?.data?.message ||
+          apiErrorMessage(err) ||
           err?.message ||
           tr("Impossible de supprimer le compte. Réessayez ou contactez le support."),
       );

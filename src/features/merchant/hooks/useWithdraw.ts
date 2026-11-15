@@ -8,6 +8,7 @@ import {
   WithdrawalEvent,
 } from "../context/MerchantWalletContext";
 import { t, useLanguage } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /**
  * Etats de la feuille de retrait (`WithdrawSheet`).
@@ -67,7 +68,7 @@ export const useWithdraw = (balances: WalletBalances) => {
     try {
       setNumbers(await withdrawService.getPayoutNumbers(fastFoodId));
     } catch (error: any) {
-      setWithdrawError(error?.response?.data?.message || t("Numéros de la boutique indisponibles"));
+      setWithdrawError(apiErrorMessage(error) || t("Numéros de la boutique indisponibles"));
     } finally {
       setNumbersLoading(false);
     }
@@ -133,7 +134,7 @@ export const useWithdraw = (balances: WalletBalances) => {
       setQuote(q);
       setWithdrawState("recap");
     } catch (error: any) {
-      setWithdrawError(error?.response?.data?.message || t("Frais de retrait indisponibles"));
+      setWithdrawError(apiErrorMessage(error) || t("Frais de retrait indisponibles"));
     } finally {
       setQuoteLoading(false);
     }

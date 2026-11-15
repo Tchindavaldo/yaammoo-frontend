@@ -10,6 +10,7 @@ import type {
   StaffRoleDraft,
 } from "../types/staff.types";
 import { t } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 const BASE = () => `${Config.apiUrl}/staff`;
 
@@ -59,7 +60,7 @@ const list = <T>(data: unknown, map: (raw: any) => T | null): T[] =>
 
 /** Message du backend (numéro déjà membre, rôle encore attribué…), sinon générique. */
 export const staffErrorMessage = (error: any, fallback: string): string => {
-  const msg = error?.response?.data?.message;
+  const msg = apiErrorMessage(error);
   return typeof msg === "string" && msg ? msg : fallback;
 };
 

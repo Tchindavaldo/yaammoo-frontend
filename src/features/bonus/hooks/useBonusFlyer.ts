@@ -33,6 +33,7 @@ function getCompressor(): CompressorModule | null {
 }
 import type { Bonus } from "../types/bonus.types";
 import { t, useLanguage } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
 
@@ -163,7 +164,7 @@ export const useBonusFlyer = (
         return data;
       } catch (e: any) {
         setError(
-          e?.response?.data?.message ??
+          apiErrorMessage(e) ||
             e?.message ??
             t("Téléchargement du flyer impossible."),
         );
@@ -267,7 +268,7 @@ export const useBonusFlyer = (
         return payload;
       } catch (e: any) {
         const msg =
-          e?.response?.data?.message ??
+          apiErrorMessage(e) ||
           e?.message ??
           t("Envoi de la preuve impossible.");
         setError(msg);

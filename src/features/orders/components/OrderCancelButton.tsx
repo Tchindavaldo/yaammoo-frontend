@@ -8,6 +8,7 @@ import { DS } from "@/src/theme/ds";
 import { showToast } from "@/src/services/globalToast";
 import { t, useLanguage } from "@/src/i18n";
 import { useOrders } from "../hooks/useOrders";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /**
  * « Annuler la commande » (onglet Livraison du détail client). Seulement tant
@@ -29,7 +30,7 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
       await refresh(true);
       onDone?.();
     } catch (e: any) {
-      showToast(e?.response?.data?.message || t("Annulation impossible. Réessayez."), "error");
+      showToast(apiErrorMessage(e) || t("Annulation impossible. Réessayez."), "error");
     } finally {
       setBusy(false);
     }
@@ -43,7 +44,7 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
       quote = data?.data;
     } catch (e: any) {
       setBusy(false);
-      showToast(e?.response?.data?.message || t("Annulation impossible. Réessayez."), "error");
+      showToast(apiErrorMessage(e) || t("Annulation impossible. Réessayez."), "error");
       return;
     }
     setBusy(false);

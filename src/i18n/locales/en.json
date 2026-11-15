@@ -1385,5 +1385,18 @@
   "Ma localisation": "My location",
   "Toutes les villes": "All cities",
   "1 resto": "1 restaurant",
-  "{{n}} restos": "{{n}} restaurants"
+  "{{n}} restos": "{{n}} restaurants",
+  "Connecté avec succès": "Signed in successfully",
+  "Compte créé, bienvenue !": "Account created, welcome!",
+  "Profil mis à jour": "Profile updated",
+  "Commande acceptée": "Order accepted",
+  "Commande terminée": "Order completed",
+  "Livraison terminée": "Delivery completed",
+  "Champ invalide : {{f}}": "Invalid field: {{f}}",
+  "Impossible de joindre le serveur. Vérifiez votre connexion.": "Can't reach the server. Check your connection.",
+  "Veuillez vous reconnecter.": "Please sign in again.",
+  "Accès refusé.": "Access denied.",
+  "Ressource introuvable.": "Not found.",
+  "Trop de demandes, réessayez dans un instant.": "Too many requests, try again in a moment.",
+  "Erreur serveur, réessayez.": "Server error, please try again."
 }

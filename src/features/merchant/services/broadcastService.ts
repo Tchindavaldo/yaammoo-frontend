@@ -8,6 +8,7 @@ import type {
   BroadcastState,
 } from "../types/broadcast.types";
 import { t } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 const BASE = () => `${Config.apiUrl}/notification/broadcast`;
 const AUDIENCES: BroadcastAudience[] = ["customers", "city", "all"];
@@ -62,7 +63,7 @@ const normalizeItem = (raw: any): BroadcastItem | null => {
 
 /** Message d'erreur du backend (quota atteint, audience hors plan…), sinon générique. */
 export const broadcastErrorMessage = (error: any, fallback: string): string => {
-  const msg = error?.response?.data?.message;
+  const msg = apiErrorMessage(error);
   return typeof msg === "string" && msg ? msg : fallback;
 };
 

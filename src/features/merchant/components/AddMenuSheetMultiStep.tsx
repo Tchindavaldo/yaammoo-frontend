@@ -30,6 +30,7 @@ import { MenuPricePreviewCard } from "./menu-form/MenuPricePreviewCard";
 import { useMenuPriceCheck, LOADING_NEXT } from "./menu-form/useMenuPricePreview";
 import { menuPriceStepActions } from "./menu-form/menuPriceStepActions";
 import { t as tr, useLanguage } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 type Step = "nameImage" | "details" | "recap";
 
@@ -291,7 +292,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       // Priorité au message précis renvoyé par le backend (champ rejeté,
       // raison métier) — le générique ne sert que de filet si l'API ne
       // renvoie rien d'exploitable.
-      const backendMessage = e?.response?.data?.message || e?.message;
+      const backendMessage = apiErrorMessage(e) || e?.message;
       showToast(backendMessage || tr("Impossible de sauvegarder le menu"), "error");
     } finally {
       setSubmitting(false);

@@ -14,6 +14,8 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { getMissingName, MissingName } from "../utils/missingName";
 import { t as tr, useLanguage } from "@/src/i18n";
+import { showToast } from "@/src/services/globalToast";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /** Delai apres l'arrivee sur le home, le temps que l'ecran s'affiche. */
 const ARRIVAL_DELAY_MS = 700;
@@ -114,14 +116,15 @@ export const ProfileNameProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         await userFirestore.updateUser(updated, firebaseUser);
         await setUserData(updated);
+        showToast(tr("Profil mis à jour"), "success");
         setForced(false);
         const action = pendingAction.current;
         pendingAction.current = null;
         // Laisse la sheet sortir avant d'ouvrir la suite (checkout, paiement).
         if (action) setTimeout(action, 250);
-      } catch (e) {
-        console.error("❌ [ProfileNameSheet] Mise a jour du nom echouee:", e);
-        setError(tr("Enregistrement impossible. Vérifie ta connexion."));
+      } catch (e: any) {
+        console.error("[ProfileNameSheet] Mise a jour du nom echouee:", e);
+        setError(apiErrorMessage(e) || tr("Enregistrement impossible. Vérifie ta connexion."));
       } finally {
         setSaving(false);
       }

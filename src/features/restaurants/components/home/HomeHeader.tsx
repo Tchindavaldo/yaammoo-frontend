@@ -41,8 +41,11 @@ export const HomeHeader: React.FC<Props> = ({
   const { isMerchant, setMerchantMode } = useMerchantMode();
   const { homeCity } = useFastFoodContext();
   const [citySheet, setCitySheet] = React.useState(false);
-  // Choix manuel : la ville (ou « Toutes les villes ») ; sinon le lieu du client.
-  const location = homeCity.manual ? homeCity.city || t("Toutes les villes") : placeLabel;
+  // La pilule affiche la ville DONT le home montre les boutiques (choisie, ou
+  // par defaut : celle du client, sinon la plus proche qui a des boutiques,
+  // meme dans un autre pays). « Toutes les villes » si choisi ; lieu du client
+  // seulement tant qu'aucune ville n'est connue.
+  const location = homeCity.city || (homeCity.manual ? t("Toutes les villes") : placeLabel);
 
   return (
     <>

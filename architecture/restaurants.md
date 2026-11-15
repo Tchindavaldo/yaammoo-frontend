@@ -824,7 +824,9 @@ Voir `socket-events-client.md` (R27) : la boutique modifiee arrive complete par 
 - Toutes les pages du home (`useFastFoodFetch`, y compris
   `refreshLoadedSilently`) envoient `?city=` ; la 1re page attend la ville
   (`cityReady`, 3 s max) ; un changement de ville recharge le home.
-- Pilule : ville choisie (ou « Toutes les villes ») en choix manuel, sinon le
-  lieu du client (`useCurrentPlaceLabel`).
+- Pilule : TOUJOURS la ville dont le home montre les boutiques (choisie, ou par
+  défaut : ville du client si desservie, sinon la plus proche qui a des
+  boutiques, quelle que soit la distance). « Toutes les villes » si choisi ;
+  lieu du client (`useCurrentPlaceLabel`) seulement tant qu'aucune ville n'est connue.
 - Marchand en mode client : pas de choix (la pilule devient « Mode marchand »),
   le home affiche la ville de SA boutique (`merchantCity`).

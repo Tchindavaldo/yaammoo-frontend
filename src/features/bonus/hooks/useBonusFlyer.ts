@@ -165,7 +165,7 @@ export const useBonusFlyer = (
       } catch (e: any) {
         setError(
           apiErrorMessage(e) ||
-            e?.message ??
+            e?.message ||
             t("Téléchargement du flyer impossible."),
         );
         return null;
@@ -269,7 +269,7 @@ export const useBonusFlyer = (
       } catch (e: any) {
         const msg =
           apiErrorMessage(e) ||
-          e?.message ??
+          e?.message ||
           t("Envoi de la preuve impossible.");
         setError(msg);
         // Doublé en échec GLOBAL : sans ça, un envoi qui échoue alors que le

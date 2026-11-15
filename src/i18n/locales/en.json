@@ -1365,5 +1365,9 @@
   "Indiquez votre qualité (gérant, directeur ou propriétaire)": "Select your role (manager, director or owner)",
   "Indiquez l'adresse de la boutique": "Enter the shop address",
   "Cochez la case d'acceptation des conditions": "Tick the box to accept the terms",
-  "Conditions indisponibles, réessayez dans un instant": "Terms unavailable, try again in a moment"
+  "Conditions indisponibles, réessayez dans un instant": "Terms unavailable, try again in a moment",
+  "Un code vous sera envoyé par SMS": "A code will be sent to you by SMS",
+  "Code à {{a}} chiffres envoyé par SMS au {{b}} {{c}}": "{{a}}-digit code sent by SMS to {{b}} {{c}}",
+  "Numéro Orange Money": "Orange Money number",
+  "Numéro MTN Mobile Money": "MTN Mobile Money number"
 }

@@ -1,6 +1,6 @@
 # Gestion de la livraison / consommation sur place
 
-[ ] gestion livraison surplace
+[x] (confirmé le 15/11/2026) gestion livraison surplace : retrait sur place avec jour et heure, au home, au panier et au panier groupé
     - permettre la recuperation surplace
     - permettre l'option de manger sur place
         - gerer ces horaires

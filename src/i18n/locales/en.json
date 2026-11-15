@@ -1378,5 +1378,7 @@
   "Restaurez-la avec ses plats et son historique, ou créez une nouvelle boutique.": "Restore it with its dishes and history, or create a new shop.",
   "Supprimée le {{d}}": "Deleted on {{d}}",
   "Restaurer": "Restore",
-  "Créer une nouvelle boutique": "Create a new shop"
+  "Créer une nouvelle boutique": "Create a new shop",
+  "Chaque code coûte environ {{f}} F, débités de votre portefeuille au coût réel.": "Each code costs about {{f}} F, charged to your wallet at its real cost.",
+  "Chaque code envoyé est débité de votre portefeuille à son coût réel.": "Each code sent is charged to your wallet at its real cost."
 }

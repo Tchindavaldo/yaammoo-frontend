@@ -47,6 +47,8 @@ interface WhatsAppAuthStepProps {
   initialPhone?: string;
   /** Canal du code, affiche dans l'en-tete (SMS seul ou WhatsApp seul). */
   channel?: "sms" | "whatsapp";
+  /** Frais estimes d'un code SMS (F CFA), affiches AVANT l'envoi (CGU 12.5 bis). */
+  feeEstimate?: number | null;
 }
 
 /** Indicatif pays par defaut (Cameroun), affiche en prefixe non editable. */
@@ -80,6 +82,7 @@ export const PayoutOtpStep: React.FC<WhatsAppAuthStepProps> = ({
   onBack,
   initialPhone,
   channel = "sms",
+  feeEstimate,
 }) => {
   useLanguage();
   const [step, setStep] = React.useState<"phone" | "code">("phone");
@@ -231,6 +234,13 @@ export const PayoutOtpStep: React.FC<WhatsAppAuthStepProps> = ({
           ? (channel === "whatsapp" ? t("Un code vous sera envoyé sur WhatsApp") : t("Un code vous sera envoyé par SMS"))
           : (channel === "whatsapp" ? t("Code à {{a}} chiffres envoyé sur WhatsApp au {{b}} {{c}}", { a: CODE_LENGTH, b: DIAL_CODE, c: phone }) : t("Code à {{a}} chiffres envoyé par SMS au {{b}} {{c}}", { a: CODE_LENGTH, b: DIAL_CODE, c: phone }))}
       </Text>
+      {channel === "sms" ? (
+        <Text style={styles.feeText}>
+          {feeEstimate
+            ? t("Chaque code coûte environ {{f}} F, débités de votre portefeuille au coût réel.", { f: feeEstimate })
+            : t("Chaque code envoyé est débité de votre portefeuille à son coût réel.")}
+        </Text>
+      ) : null}
 
       {/* Zone de saisie — affichage seul, alimente par le clavier custom. */}
       <View style={styles.display}>
@@ -321,6 +331,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     alignItems: "center",
   },
+  feeText: { fontSize: 12, lineHeight: 16, color: DS.muted, textAlign: "center", marginTop: 6, paddingHorizontal: 24 },
   headerText: {
     width: "100%",
     textAlign: "center",

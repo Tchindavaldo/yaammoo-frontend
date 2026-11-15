@@ -7,15 +7,25 @@ import type { PhoneCodeError, PhoneRateLimitError } from "@/src/features/auth/se
  * Memes erreurs que la connexion par numero (429 `rateLimited`, 401
  * `invalidCode`) : l'etape OTP copiee les lit telles quelles.
  */
-export const requestPayoutNumberCode = (phoneNumber: string) => requestCode("/wallet/payout-number/request", phoneNumber);
+export const requestPayoutNumberCode = (phoneNumber: string, network: "orange" | "mtn") => requestCode("/wallet/payout-number/request", phoneNumber, { network });
+
+/** Frais estimes d'un code SMS (F CFA), ou null si inconnus. Le debit reel = cout reel. */
+export async function getPayoutNumberFee(): Promise<number | null> {
+  try {
+    const { data } = await axios.get(`${Config.apiUrl}/wallet/payout-number/fee`);
+    return typeof data?.data?.amount === "number" ? data.data.amount : null;
+  } catch {
+    return null;
+  }
+}
 export const verifyPayoutNumberCode = (phoneNumber: string, code: string) => verifyCode("/wallet/payout-number/verify", phoneNumber, code);
 /** WhatsApp de la boutique : code sur WhatsApp UNIQUEMENT. */
 export const requestWhatsappNumberCode = (phoneNumber: string) => requestCode("/whatsapp-number/request", phoneNumber);
 export const verifyWhatsappNumberCode = (phoneNumber: string, code: string) => verifyCode("/whatsapp-number/verify", phoneNumber, code);
 
-async function requestCode(path: string, phoneNumber: string): Promise<void> {
+async function requestCode(path: string, phoneNumber: string, extra: Record<string, string> = {}): Promise<void> {
   try {
-    await axios.post(`${Config.apiUrl}${path}`, { phoneNumber });
+    await axios.post(`${Config.apiUrl}${path}`, { phoneNumber, ...extra });
   } catch (error: any) {
     if (error?.response?.status === 429) {
       const retryAfter = Number(error.response.headers?.["retry-after"]);

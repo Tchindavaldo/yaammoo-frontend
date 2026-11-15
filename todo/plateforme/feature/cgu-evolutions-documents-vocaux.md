@@ -1,5 +1,7 @@
 # CGU : évolutions à faire plus tard (urgence BASSE)
 
+> **PRIORITÉ BASSE** (décision du 15/11/2026) : pas urgent.
+
 Texte de production : `legal/conditions-et-confidentialite.md` (version 1, 14/11/2026).
 Chaque point ci-dessous = une modification mineure (pas de nouvelle acceptation).
 

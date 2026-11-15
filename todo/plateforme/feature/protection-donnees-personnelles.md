@@ -7,9 +7,9 @@
 
 ## Non-revente
 - [x] Aucune revente / cession des données brutes à des tiers ; le mentionner dans la politique de confidentialité (`politique-confidentialite.html`, `privacy.html`).
-- [ ] Vérifier que l'analytics (presence, sessions, scroll, parcours) reste interne ou anonymisé.
+- [x] Vérifier que l'analytics (presence, sessions, scroll, parcours) reste interne ou anonymisé.
 
 ## Droit à la suppression
 - [x] IMPLÉMENTÉ — Bouton « Supprimer mon compte et mes données » dans le profil, avec confirmation (`DeleteAccountModal`).
-- [ ] Endpoint backend de suppression (compte, commandes rattachées anonymisées si nécessaires à la compta, tokens push, analytics).
+- [x] Endpoint backend de suppression (compte, commandes rattachées anonymisées si nécessaires à la compta, tokens push, analytics).
 - [x] Documenter la procédure (délai de traitement, contact) dans la politique de confidentialité.

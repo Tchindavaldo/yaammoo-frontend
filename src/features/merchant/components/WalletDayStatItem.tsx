@@ -11,6 +11,22 @@ interface WalletDayStatItemProps {
   stat: WalletDayStat;
 }
 
+// Libelle de chaque sortie du jour (backend payoutByType). Sans detail (ancien
+// backend) : une seule ligne « débit ».
+const PAYOUT_LABELS: Record<string, string> = {
+  withdrawal: "retrait",
+  merchant_debit: "remboursement",
+  sms_fee: "coût SMS",
+};
+
+function payoutLines(stat: WalletDayStat): [string, number][] {
+  const byType = stat.payoutByType;
+  if (!byType) return stat.payout > 0 ? [["débit", stat.payout]] : [];
+  return Object.entries(byType)
+    .filter(([, amount]) => amount > 0)
+    .map(([type, amount]) => [PAYOUT_LABELS[type] ?? "débit", amount]);
+}
+
 export const WalletDayStatItem: React.FC<WalletDayStatItemProps> = ({ stat }) => {
   useLanguage();
   const hasActivity = stat.count > 0;
@@ -27,12 +43,12 @@ export const WalletDayStatItem: React.FC<WalletDayStatItemProps> = ({ stat }) =>
         </Text>
       </View>
       <View style={styles.amountContainer}>
-        <Text style={[styles.amount, { color: hasActivity ? Theme.colors.success : Theme.colors.gray[400] }]}>
+        <Text style={[styles.amount, { color: !hasActivity ? Theme.colors.gray[400] : stat.net < 0 ? Theme.colors.danger : Theme.colors.success }]}>
           {stat.net.toLocaleString('fr-FR')} F
         </Text>
-        {stat.payout > 0 && (
-          <Text style={styles.payout}>-{stat.payout.toLocaleString('fr-FR')} {t("débit")}</Text>
-        )}
+        {payoutLines(stat).map(([label, amount]) => (
+          <Text key={label} style={styles.payout}>-{amount.toLocaleString('fr-FR')} {t(label)}</Text>
+        ))}
       </View>
     </View>
   );

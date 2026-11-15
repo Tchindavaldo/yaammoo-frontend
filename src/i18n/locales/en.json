@@ -1406,5 +1406,7 @@
   "Ressource introuvable.": "Not found.",
   "Trop de demandes, réessayez dans un instant.": "Too many requests, try again in a moment.",
   "Erreur serveur, réessayez.": "Server error, please try again.",
-  "débit": "debit"
+  "débit": "debit",
+  "remboursement": "refund",
+  "coût SMS": "SMS cost"
 }

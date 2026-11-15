@@ -99,7 +99,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   keyboardOffset = 0,
 }) => {
   useLanguage();
-  // Verification OTP (SMS) du numero de retrait touche : OM ou MoMo.
+  // Verification OTP du numero touche : OM / MoMo (SMS) ou WhatsApp (WhatsApp).
   const [payoutSheet, setPayoutSheet] = React.useState<PayoutNetwork | null>(null);
   return (
   <View style={{ flex: 1 }}>
@@ -197,14 +197,16 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.floatingLabel}>WhatsApp</Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={whatsappNumber}
-            onChangeText={setWhatsappNumber}
-            keyboardType="numeric"
-            placeholder="WhatsApp"
-            placeholderTextColor="#cbd5e1"
-          />
+          {/* WhatsApp : verifie par un code envoye sur WhatsApp seul. */}
+          <TouchableOpacity
+            style={[styles.glassInput, { borderRadius: 20, justifyContent: "center" }]}
+            onPress={() => setPayoutSheet("whatsapp")}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 13, color: whatsappNumber ? "#0f172a" : "#cbd5e1" }} numberOfLines={1}>
+              {whatsappNumber || "WhatsApp"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -414,9 +416,9 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
     </TouchableOpacity>
     <PayoutNumberSheet
       network={payoutSheet}
-      initialPhone={payoutSheet === "orange" ? number : momoNumber}
+      initialPhone={payoutSheet === "orange" ? number : payoutSheet === "mtn" ? momoNumber : whatsappNumber}
       onClose={() => setPayoutSheet(null)}
-      onVerified={(net, phone) => (net === "orange" ? setNumber : setMomoNumber)(phone)}
+      onVerified={(net, phone) => (net === "orange" ? setNumber : net === "mtn" ? setMomoNumber : setWhatsappNumber)(phone)}
     />
   </View>
 );

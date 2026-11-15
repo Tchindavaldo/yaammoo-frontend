@@ -7,9 +7,15 @@ import type { PhoneCodeError, PhoneRateLimitError } from "@/src/features/auth/se
  * Memes erreurs que la connexion par numero (429 `rateLimited`, 401
  * `invalidCode`) : l'etape OTP copiee les lit telles quelles.
  */
-export async function requestPayoutNumberCode(phoneNumber: string): Promise<void> {
+export const requestPayoutNumberCode = (phoneNumber: string) => requestCode("/wallet/payout-number/request", phoneNumber);
+export const verifyPayoutNumberCode = (phoneNumber: string, code: string) => verifyCode("/wallet/payout-number/verify", phoneNumber, code);
+/** WhatsApp de la boutique : code sur WhatsApp UNIQUEMENT. */
+export const requestWhatsappNumberCode = (phoneNumber: string) => requestCode("/whatsapp-number/request", phoneNumber);
+export const verifyWhatsappNumberCode = (phoneNumber: string, code: string) => verifyCode("/whatsapp-number/verify", phoneNumber, code);
+
+async function requestCode(path: string, phoneNumber: string): Promise<void> {
   try {
-    await axios.post(`${Config.apiUrl}/wallet/payout-number/request`, { phoneNumber });
+    await axios.post(`${Config.apiUrl}${path}`, { phoneNumber });
   } catch (error: any) {
     if (error?.response?.status === 429) {
       const retryAfter = Number(error.response.headers?.["retry-after"]);
@@ -19,9 +25,9 @@ export async function requestPayoutNumberCode(phoneNumber: string): Promise<void
   }
 }
 
-export async function verifyPayoutNumberCode(phoneNumber: string, code: string): Promise<void> {
+async function verifyCode(path: string, phoneNumber: string, code: string): Promise<void> {
   try {
-    await axios.post(`${Config.apiUrl}/wallet/payout-number/verify`, { phoneNumber, code });
+    await axios.post(`${Config.apiUrl}${path}`, { phoneNumber, code });
   } catch (error: any) {
     if (error?.response?.status === 401) {
       const d = error.response.data ?? {};

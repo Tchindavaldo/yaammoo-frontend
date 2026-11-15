@@ -174,3 +174,15 @@ hauteur `AUTH_SHEET_HEIGHT`) avec `PayoutOtpStep`, copie de `WhatsAppAuthStep`
 `services/payoutNumberService.ts` → `POST /wallet/payout-number/request|verify`
 (SMS seul). Code valide ⇒ le numéro remplit le champ. Le backend refuse tout
 retrait vers un numéro non vérifié (`payout_number_unverified`).
+
+Le champ WhatsApp suit le même principe : `PayoutNumberSheet` en mode
+`whatsapp` (`PayoutOtpStep channel="whatsapp"`, « Un code vous sera envoyé sur
+WhatsApp »), appels `POST /whatsapp-number/request|verify` (WhatsApp seul).
+
+## Restauration d'une boutique supprimée avec le compte
+
+À l'ouverture de la création (`ShopCreateBoutiquePanel`, `CreateBoutiquePanel`),
+`create-boutique/useRestorableShops` lit `GET /shop-restore`. S'il y a des
+boutiques, `RestoreShopSheet` propose « Restaurer » (`POST /shop-restore/:id`,
+puis `fastFoodId` posé sur le user → retour au home marchand) ou « Créer une
+nouvelle boutique » (ferme la sheet).

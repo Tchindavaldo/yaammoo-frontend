@@ -1369,5 +1369,14 @@
   "Un code vous sera envoyé par SMS": "A code will be sent to you by SMS",
   "Code à {{a}} chiffres envoyé par SMS au {{b}} {{c}}": "{{a}}-digit code sent by SMS to {{b}} {{c}}",
   "Numéro Orange Money": "Orange Money number",
-  "Numéro MTN Mobile Money": "MTN Mobile Money number"
+  "Numéro MTN Mobile Money": "MTN Mobile Money number",
+  "Code à {{a}} chiffres envoyé sur WhatsApp au {{b}} {{c}}": "{{a}}-digit code sent on WhatsApp to {{b}} {{c}}",
+  "Numéro WhatsApp": "WhatsApp number",
+  "Votre boutique a été restaurée": "Your shop has been restored",
+  "Restauration impossible": "Restore failed",
+  "Vous avez déjà eu une boutique": "You already had a shop",
+  "Restaurez-la avec ses plats et son historique, ou créez une nouvelle boutique.": "Restore it with its dishes and history, or create a new shop.",
+  "Supprimée le {{d}}": "Deleted on {{d}}",
+  "Restaurer": "Restore",
+  "Créer une nouvelle boutique": "Create a new shop"
 }

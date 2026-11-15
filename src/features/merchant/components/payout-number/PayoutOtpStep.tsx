@@ -45,6 +45,8 @@ interface WhatsAppAuthStepProps {
   onBack: () => void;
   /** Numero deja enregistre sur la boutique (local, sans indicatif). */
   initialPhone?: string;
+  /** Canal du code, affiche dans l'en-tete (SMS seul ou WhatsApp seul). */
+  channel?: "sms" | "whatsapp";
 }
 
 /** Indicatif pays par defaut (Cameroun), affiche en prefixe non editable. */
@@ -77,6 +79,7 @@ export const PayoutOtpStep: React.FC<WhatsAppAuthStepProps> = ({
   onResend,
   onBack,
   initialPhone,
+  channel = "sms",
 }) => {
   useLanguage();
   const [step, setStep] = React.useState<"phone" | "code">("phone");
@@ -225,8 +228,8 @@ export const PayoutOtpStep: React.FC<WhatsAppAuthStepProps> = ({
           bouton d'action. */}
       <Text style={styles.headerText}>
         {isPhone
-          ? t("Un code vous sera envoyé par SMS")
-          : t("Code à {{a}} chiffres envoyé par SMS au {{b}} {{c}}", { a: CODE_LENGTH, b: DIAL_CODE, c: phone })}
+          ? (channel === "whatsapp" ? t("Un code vous sera envoyé sur WhatsApp") : t("Un code vous sera envoyé par SMS"))
+          : (channel === "whatsapp" ? t("Code à {{a}} chiffres envoyé sur WhatsApp au {{b}} {{c}}", { a: CODE_LENGTH, b: DIAL_CODE, c: phone }) : t("Code à {{a}} chiffres envoyé par SMS au {{b}} {{c}}", { a: CODE_LENGTH, b: DIAL_CODE, c: phone }))}
       </Text>
 
       {/* Zone de saisie — affichage seul, alimente par le clavier custom. */}

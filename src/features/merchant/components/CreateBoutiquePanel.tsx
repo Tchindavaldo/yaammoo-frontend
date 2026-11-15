@@ -19,6 +19,8 @@ import {
 import { t, useLanguage } from "@/src/i18n";
 import { MerchantAdhesionBlock } from "./create-boutique/MerchantAdhesionBlock";
 import { MerchantLegalSheet } from "./create-boutique/MerchantLegalSheet";
+import { RestoreShopSheet } from "./create-boutique/RestoreShopSheet";
+import { useRestorableShops } from "./create-boutique/useRestorableShops";
 
 interface CreateBoutiquePanelProps {
   onCancel: () => void;
@@ -42,6 +44,8 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
   // navbar, safe-area comprise (source unique R19).
   const tabBarHeight = useTabBarHeight();
   const s = useCreateBoutique({ onCancel });
+  // Boutiques supprimees avec le compte : restaurer ou creer une nouvelle.
+  const restorable = useRestorableShops();
   // Sheet de consultation des zones deja saisies.
   const [showZoneList, setShowZoneList] = React.useState(false);
 
@@ -179,6 +183,14 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
           />
         </View>
       </View>
+
+      <RestoreShopSheet
+        visible={restorable.open}
+        shops={restorable.shops}
+        restoringId={restorable.restoringId}
+        onRestore={restorable.restore}
+        onCreateNew={restorable.close}
+      />
 
       <MerchantLegalSheet
         visible={s.adhesion.legalOpen}

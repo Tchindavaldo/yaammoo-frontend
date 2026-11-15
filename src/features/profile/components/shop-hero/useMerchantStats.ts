@@ -1,12 +1,13 @@
 // Stats du hero marchand : GET /fastFood/:fastFoodId/stats (backend, fonction merchant_stats).
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Config } from "@/src/api/config";
 import { auth } from "@/src/services/firebase";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { showToast } from "@/src/services/globalToast";
 import { t } from "@/src/i18n";
 import { Bucket, ShopPeriod, bucketOf } from "./shopPeriod";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 
 export interface StatsPoint {
   start: string;
@@ -54,13 +55,25 @@ export const money = (n: number) => `${Math.round(n).toLocaleString("fr-FR").rep
 export const compact = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(".", ",")}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : `${Math.round(n)}`;
 
-/** Charge les stats de la periode ; `version` change a chaque nouvelle reponse (relance l'animation). */
-export function useMerchantStats(period: ShopPeriod): { stats: MerchantStats; bucket: Bucket; version: number } {
+/**
+ * Charge les stats de la periode ; `version` change a chaque nouvelle reponse (relance l'animation).
+ * Recharge au retour du reseau et a chaque `refreshTick` (pull-to-refresh du home) ;
+ * `onSettled` signale la fin du chargement (arret du spinner).
+ */
+export function useMerchantStats(
+  period: ShopPeriod,
+  refreshTick = 0,
+  onSettled?: () => void,
+): { stats: MerchantStats; bucket: Bucket; version: number } {
   const { userData } = useAuth();
   const fastFoodId = userData?.fastFoodId;
   const bucket = bucketOf(period);
   const [stats, setStats] = useState<MerchantStats>(EMPTY_STATS);
   const [version, setVersion] = useState(0);
+  const [reconnectTick, setReconnectTick] = useState(0);
+  useRefetchOnReconnect(() => setReconnectTick((n) => n + 1));
+  const settledRef = useRef(onSettled);
+  settledRef.current = onSettled;
 
   useEffect(() => {
     if (!fastFoodId) return;
@@ -77,12 +90,14 @@ export function useMerchantStats(period: ShopPeriod): { stats: MerchantStats; bu
         setVersion((v) => v + 1);
       } catch {
         if (alive) showToast(t("Impossible de charger les statistiques"), "error");
+      } finally {
+        if (alive) settledRef.current?.();
       }
     })();
     return () => {
       alive = false;
     };
-  }, [fastFoodId, period.from, period.to, bucket]);
+  }, [fastFoodId, period.from, period.to, bucket, refreshTick, reconnectTick]);
 
   return { stats, bucket, version };
 }

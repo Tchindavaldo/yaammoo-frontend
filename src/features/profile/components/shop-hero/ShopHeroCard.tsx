@@ -22,13 +22,13 @@ import { t, useLanguage } from "@/src/i18n";
  * Donnees : GET /fastFood/:id/stats (useMerchantStats).
  */
 
-export const ShopHeroCard: React.FC = () => {
+export const ShopHeroCard: React.FC<{ refreshTick?: number; onRefreshed?: () => void }> = ({ refreshTick = 0, onRefreshed }) => {
   useLanguage();
   const [period, setPeriod] = useState<ShopPeriod>(defaultPeriod);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [width, setWidth] = useState(0);
   const [index, setIndex] = useState(0);
-  const { stats, bucket, version } = useMerchantStats(period);
+  const { stats, bucket, version } = useMerchantStats(period, refreshTick, onRefreshed);
 
   // Titre de chaque slide ; le chiffre cle s'affiche a cote quand la slide n'a pas de cases.
   const titles: [string, string?][] = [["Ventes"], ["Conversion", conversionRate(stats.funnel)], ["Classements"], ["Statuts", cancelRate(stats)], ["Affluence"], ["Fidélité"], ["Délais"]];

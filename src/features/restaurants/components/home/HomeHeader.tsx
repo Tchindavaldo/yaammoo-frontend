@@ -72,7 +72,7 @@ export const HomeHeader: React.FC<Props> = ({
       selectedCategory={selectedCategory}
       onCategorySelect={onCategorySelect}
     />
-    <HomeCitySheet visible={citySheet} homeCity={homeCity} onClose={() => setCitySheet(false)} />
+    <HomeCitySheet visible={citySheet} homeCity={homeCity} placeLabel={placeLabel} onClose={() => setCitySheet(false)} />
     </>
   );
 };

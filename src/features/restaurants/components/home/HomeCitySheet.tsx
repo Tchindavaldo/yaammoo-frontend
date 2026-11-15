@@ -16,10 +16,12 @@ import { fetchHomeCities, type HomeCitiesData, type HomeCity } from "../../hooks
 interface Props {
   visible: boolean;
   homeCity: HomeCity;
+  /** Lieu precis du client (quartier, arrondissement) : libelle de « Ma localisation ». */
+  placeLabel: string;
   onClose: () => void;
 }
 
-export function HomeCitySheet({ visible, homeCity, onClose }: Props) {
+export function HomeCitySheet({ visible, homeCity, placeLabel, onClose }: Props) {
   useLanguage();
   const { bottom } = useSheetSafeInsets();
   const anim = useSheetAnimation(visible);
@@ -32,6 +34,10 @@ export function HomeCitySheet({ visible, homeCity, onClose }: Props) {
     fetchHomeCities().then(d => { setData(d); setLoading(false); });
   }, [visible]);
 
+  // La ville ou se trouve le client est deja couverte par « Ma localisation »
+  // (son lieu precis y est inclus) : on ne la repete pas dans la liste.
+  const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const myCity = (data?.cities ?? []).find(c => norm(placeLabel).includes(norm(c.name)));
   const pick = (fn: () => void) => { fn(); onClose(); };
   const Row = ({ icon, label, count, selected, onPress }: { icon: any; label: string; count?: number; selected: boolean; onPress: () => void }) => (
     <TouchableOpacity style={[styles.row, selected && styles.rowOn]} onPress={onPress} activeOpacity={0.75}>
@@ -51,10 +57,10 @@ export function HomeCitySheet({ visible, homeCity, onClose }: Props) {
         <View style={styles.handle} />
         <Text style={styles.title}>{t("Choisir une ville")}</Text>
         <ScrollView style={styles.list} contentContainerStyle={{ gap: 8 }}>
-          <Row icon="navigate" label={t("Ma localisation")} selected={!homeCity.manual} onPress={() => pick(() => void homeCity.resetToMyLocation())} />
+          <Row icon="navigate" label={placeLabel || t("Ma localisation")} count={myCity?.count} selected={!homeCity.manual} onPress={() => pick(() => void homeCity.resetToMyLocation())} />
           <Row icon="globe-outline" label={t("Toutes les villes")} count={data?.total} selected={homeCity.manual && !homeCity.city} onPress={() => pick(() => void homeCity.chooseCity(null))} />
           {loading && !data ? <ActivityIndicator style={{ marginVertical: 16 }} color={DS.accent} /> : null}
-          {(data?.cities ?? []).map(c => (
+          {(data?.cities ?? []).filter(c => c !== myCity).map(c => (
             <Row key={c.name} icon="location-sharp" label={c.name} count={c.count} selected={homeCity.manual && homeCity.city === c.name} onPress={() => pick(() => void homeCity.chooseCity(c.name))} />
           ))}
         </ScrollView>

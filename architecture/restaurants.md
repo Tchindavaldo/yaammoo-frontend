@@ -839,3 +839,22 @@ d'activation, ou reglages si refus definitif, et lien « Choisir une ville »
 vers `HomeCitySheet`, pour rester utilisable sans GPS, Apple 5.1.1). A
 l'acceptation, `homeCity.resetToMyLocation()` recalcule la ville par defaut
 avec la vraie position.
+
+---
+
+## Page de recherche (`app/search.tsx`)
+
+Ouverte par la **loupe** du header du home (`RestaurantHeader`, `onSearchPress`,
+à la place de l'ancien bouton panier). Indépendante du `FastFoodContext` : la
+liste du home n'est jamais touchée.
+
+```
+src/features/search/
+├── hooks/useShopSearch.ts          # GET /fastFood/all?q=&limit=50 (debounce 300 ms), boutiques aplaties en plats
+├── utils/searchFilters.ts          # Filtres = CATEGORIES du home (par position), mots-clés sur le nom du plat ; saisie sur plat OU boutique
+└── components/SearchResultRow.tsx  # Gabarit UNIQUE, hauteur fixe SEARCH_ROW_HEIGHT (getItemLayout)
+```
+
+- Liste : `FlatList` à gabarit unique et hauteur fixe (aucune mesure au scroll).
+- Tap sur un plat : même checkout que le home (`useHomeCheckout` + `CheckoutSheet`),
+  menu enrichi des infos de livraison de la boutique ; messages par toast global.

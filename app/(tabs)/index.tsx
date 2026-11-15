@@ -19,6 +19,8 @@ import {
   HomeErrorScreen,
   HomeLoadingScreen,
 } from "@/src/features/restaurants/components/home/HomeFullScreenStates";
+import { HomeLocationRequired } from "@/src/features/restaurants/components/home/HomeLocationRequired";
+import { useFastFoodContext } from "@/src/features/restaurants/context/FastFoodContext";
 import { HomeLocationBanner } from "@/src/features/restaurants/components/home/HomeLocationBanner";
 import { useLocationAccess } from "@/src/features/location/hooks/useLocationAccess";
 import { SHOW_LOCATION_BANNER } from "@/src/features/location/config";
@@ -133,6 +135,20 @@ function HomeScreen() {
     homeSettings,
   } = useFastFoods();
   const locationAccess = useLocationAccess();
+  const { homeCity } = useFastFoodContext();
+  // Sans localisation ni ville choisie a la main : pas de boutiques, ecran
+  // d'activation (+ choix d'une ville). Marchand : ville de sa boutique.
+  const needsLocation =
+    locationAccess.state === "blocked" && !homeCity.manual && !homeCity.isMerchant;
+  // Localisation accordee (bouton, reglages) : ville par defaut recalculee
+  // avec la vraie position.
+  const prevAccess = React.useRef(locationAccess.state);
+  useEffect(() => {
+    if (prevAccess.current === "blocked" && locationAccess.state === "granted" && !homeCity.manual) {
+      void homeCity.resetToMyLocation();
+    }
+    prevAccess.current = locationAccess.state;
+  }, [locationAccess.state, homeCity]);
   const tabBarHeight = useTabBarHeight();
   const tabBarStyle = useTabBarStyle();
   const navigation = useNavigation();
@@ -264,6 +280,26 @@ function HomeScreen() {
       onCategorySelect={setSelectedCategory}
     />
   );
+
+  if (needsLocation || locationAccess.state === "checking") {
+    return (
+      <View style={styles.container} onLayout={onLayoutRootView}>
+        {header}
+        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight }}>
+          {needsLocation ? (
+            <HomeLocationRequired
+              homeCity={homeCity}
+              canAskAgain={locationAccess.canAskAgain}
+              requesting={locationAccess.requesting}
+              onEnable={locationAccess.enable}
+            />
+          ) : (
+            <HomeLoadingScreen />
+          )}
+        </View>
+      </View>
+    );
+  }
 
   if (fullLoading) {
     return (

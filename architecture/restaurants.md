@@ -830,3 +830,12 @@ Voir `socket-events-client.md` (R27) : la boutique modifiee arrive complete par 
   lieu du client (`useCurrentPlaceLabel`) seulement tant qu'aucune ville n'est connue.
 - Marchand en mode client : pas de choix (la pilule devient « Mode marchand »),
   le home affiche la ville de SA boutique (`merchantCity`).
+
+### Home sans localisation
+
+Localisation non accordee, sans ville choisie a la main (et hors marchand) :
+le home n'affiche pas de boutiques mais `HomeLocationRequired` (bouton
+d'activation, ou reglages si refus definitif, et lien « Choisir une ville »
+vers `HomeCitySheet`, pour rester utilisable sans GPS, Apple 5.1.1). A
+l'acceptation, `homeCity.resetToMyLocation()` recalcule la ville par defaut
+avec la vraie position.

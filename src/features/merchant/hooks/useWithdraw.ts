@@ -218,6 +218,8 @@ export const useWithdraw = (balances: WalletBalances) => {
     numbersLoading,
     loadNumbers,
     fastFoodId,
+    /** Numero tout juste verifie : pose directement sur la carte, sans relecture. */
+    setPayoutNumber: (net: WalletNetwork, phone: string) => setNumbers((n) => ({ ...n, [net]: phone })),
     quote,
     quoteLoading,
     withdrawError,

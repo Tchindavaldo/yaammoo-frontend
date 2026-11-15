@@ -68,8 +68,11 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
   const saveNumber = async (net: PayoutNetwork, phone: string) => {
     if (!w.fastFoodId || net === "whatsapp") return;
     try {
-      await withdrawService.savePayoutNumber(w.fastFoodId, net === "mtn" ? "MTN" : "ORANGEMONEY", phone);
-      await w.loadNumbers();
+      const target = net === "mtn" ? "MTN" : "ORANGEMONEY";
+      await withdrawService.savePayoutNumber(w.fastFoodId, target, phone);
+      // Pose directe : la carte passe a la carte « numero connu », sans
+      // rechargement ni spinner.
+      w.setPayoutNumber(target, phone.replace(/\D/g, "").replace(/^237(?=\d{9}$)/, ""));
     } catch (error) {
       showToast(apiErrorMessage(error) || t("Numéro non enregistré, réessayez"), "error");
     }
@@ -268,7 +271,7 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
           </BlurTarget>
 
           {/* Carte sans numero : verification par code SMS, puis numero
-              enregistre sur la boutique et cartes relues. */}
+              enregistre sur la boutique et pose sur la carte. */}
           <PayoutNumberSheet
             network={payoutSheet}
             initialPhone=""

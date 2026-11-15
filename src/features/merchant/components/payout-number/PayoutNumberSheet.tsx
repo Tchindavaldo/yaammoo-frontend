@@ -6,9 +6,10 @@
 // Un code valide => `onVerified(numero local)`, puis fermeture.
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
+import { useSheetAnimation } from "@/src/hooks/useSheetAnimation";
 import { DS } from "@/src/theme/ds";
 import React from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { t, useLanguage } from "@/src/i18n";
 import { AUTH_SHEET_HEIGHT } from "@/src/features/auth/constants";
 import { requestPayoutNumberCode, requestWhatsappNumberCode, verifyPayoutNumberCode, verifyWhatsappNumberCode } from "../../services/payoutNumberService";
@@ -27,14 +28,21 @@ interface Props {
 /** Numero local : sans indicatif 237 ni espaces (ce qu'attend l'etape OTP). */
 const toLocal = (p: string) => p.replace(/\D/g, "").replace(/^237(?=\d{9}$)/, "");
 
-export function PayoutNumberSheet({ network, initialPhone, onClose, onVerified }: Props) {
+export function PayoutNumberSheet({ network: open, initialPhone, onClose, onVerified }: Props) {
+  // Dernier reseau ouvert : garde le contenu pendant l'animation de fermeture.
+  const last = React.useRef<PayoutNetwork | null>(open);
+  if (open) last.current = open;
+  const network = last.current;
   useLanguage();
   const { bottom } = useSheetSafeInsets();
+  const anim = useSheetAnimation(!!open);
   const phoneRef = React.useRef("");
   return (
-    <Modal visible={!!network} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={[styles.sheet, { height: AUTH_SHEET_HEIGHT + bottom, paddingBottom: bottom }]}>
+    <Modal visible={anim.mounted} transparent animationType="none" statusBarTranslucent onRequestClose={onClose}>
+      <Animated.View style={[styles.backdrop, anim.backdropStyle]}>
+        <Pressable style={{ flex: 1 }} onPress={onClose} />
+      </Animated.View>
+      <Animated.View onLayout={anim.onSheetLayout} style={[styles.sheet, anim.sheetStyle, { height: AUTH_SHEET_HEIGHT + bottom, paddingBottom: bottom }]}>
         <Text style={styles.title}>{network === "orange" ? t("Numéro Orange Money") : network === "mtn" ? t("Numéro MTN Mobile Money") : t("Numéro WhatsApp")}</Text>
         {network ? (
           <PayoutOtpStep
@@ -53,14 +61,14 @@ export function PayoutNumberSheet({ network, initialPhone, onClose, onVerified }
             onBack={onClose}
           />
         ) : null}
-      </View>
+      </Animated.View>
       <GlobalToastHost modal />
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: DS.backdrop },
-  sheet: { backgroundColor: DS.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: DS.backdrop },
+  sheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: DS.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   title: { textAlign: "center", fontSize: 16, fontWeight: "700", color: DS.ink, marginTop: 20 },
 });

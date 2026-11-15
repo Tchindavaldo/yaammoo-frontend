@@ -298,7 +298,8 @@ leur copie dédiée (R16) : `shop/ShopOrderManagePanel.tsx` pour « Commandes »
 
 ## Animation d'ouverture des bottom sheets (R28)
 
-`<Modal transparent animationType="fade">` pour toute sheet à voile : le voile
-(`DS.backdrop`) arrive en fondu. Jamais `animationType="slide"` sur une Modal
-transparente (le voile glisserait de bas en haut avec la sheet). Une page plein
+`<Modal transparent animationType="none">` + `useSheetAnimation(visible)` :
+voile (`DS.backdrop`) en fondu, sheet qui monte du bas et redescend à la
+fermeture. Ni `slide` (le voile glisserait avec la sheet) ni `fade` seul (la
+sheet apparaîtrait en fondu). Une page plein
 écran non transparente peut garder `slide`.

@@ -4,10 +4,11 @@
 // nouvelle boutique ».
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
+import { useSheetAnimation } from "@/src/hooks/useSheetAnimation";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { dateLocale, t, useLanguage } from "@/src/i18n";
 import type { RestorableShop } from "./useRestorableShops";
 
@@ -24,10 +25,13 @@ const fmt = (iso: string) => new Date(iso).toLocaleDateString(dateLocale(), { da
 export function RestoreShopSheet({ visible, shops, restoringId, onRestore, onCreateNew }: Props) {
   useLanguage();
   const { bottom } = useSheetSafeInsets();
+  const anim = useSheetAnimation(visible);
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCreateNew}>
-      <Pressable style={styles.backdrop} onPress={onCreateNew} />
-      <View style={[styles.sheet, { paddingBottom: bottom }]}>
+    <Modal visible={anim.mounted} transparent animationType="none" statusBarTranslucent onRequestClose={onCreateNew}>
+      <Animated.View style={[styles.backdrop, anim.backdropStyle]}>
+        <Pressable style={{ flex: 1 }} onPress={onCreateNew} />
+      </Animated.View>
+      <Animated.View onLayout={anim.onSheetLayout} style={[styles.sheet, anim.sheetStyle, { paddingBottom: bottom }]}>
         <Text style={styles.title}>{t("Vous avez déjà eu une boutique")}</Text>
         <Text style={styles.sub}>{t("Restaurez-la avec ses plats et son historique, ou créez une nouvelle boutique.")}</Text>
         <ScrollView style={styles.list} contentContainerStyle={{ gap: 10 }}>
@@ -47,15 +51,15 @@ export function RestoreShopSheet({ visible, shops, restoringId, onRestore, onCre
         <TouchableOpacity style={styles.newBtn} onPress={onCreateNew} disabled={!!restoringId} activeOpacity={0.7}>
           <Text style={styles.newText}>{t("Créer une nouvelle boutique")}</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
       <GlobalToastHost modal />
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: DS.backdrop },
-  sheet: { backgroundColor: DS.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 22, maxHeight: "80%" },
+  backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: DS.backdrop },
+  sheet: { position: "absolute", left: 0, right: 0, bottom: 0, backgroundColor: DS.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 22, maxHeight: "80%" },
   title: { fontSize: 18, fontWeight: "700", color: DS.ink, textAlign: "center" },
   sub: { fontSize: 13, lineHeight: 18, color: DS.text2, textAlign: "center", marginTop: 6 },
   list: { marginTop: 16 },

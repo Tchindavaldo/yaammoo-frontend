@@ -421,11 +421,12 @@ l'applique telle quelle dans son contexte, **sans refaire de GET**.
   `fastfoodsChanged`, `fastfoodsHidden`). Règle identique côté backend (R24).
 
 
-## R28 — Bottom sheet : voile en FONDU, jamais `animationType="slide"` (OBLIGATOIRE)
+## R28 — Bottom sheet : voile en FONDU, sheet qui MONTE du bas (OBLIGATOIRE)
 
-Toute bottom sheet (`<Modal transparent>` ancrée en bas, voile sombre) s'ouvre
-avec **`animationType="fade"`** : le voile apparaît en fondu, comme toutes les
-sheets de l'app (`DelegateDriverSheet`, `NotificationDetailSheet`…).
-`animationType="slide"` fait monter le VOILE avec la sheet, de bas en haut :
-interdit. Seule une page plein écran (Modal non transparente, ex.
+Toute bottom sheet (`<Modal transparent>` ancrée en bas) : le **voile noir
+apparaît en FONDU**, la **sheet MONTE du bas** à l'ouverture et **redescend** à
+la fermeture (comme `AccountSheet`). Modal en `animationType="none"` + hook
+`src/hooks/useSheetAnimation.ts`. `animationType="slide"` fait monter le VOILE
+avec la sheet : interdit ; `"fade"` seul fait apparaître la sheet en fondu :
+interdit aussi. Seule une page plein écran (Modal non transparente, ex.
 `LegalReadSheet`) peut glisser. Détail : `architecture/blur-safe-area.md`.

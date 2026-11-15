@@ -8,6 +8,7 @@ import { useFastFoodHomeSettings } from "../hooks/useFastFoodHomeSettings";
 import { useFastFoodPagination } from "../hooks/useFastFoodPagination";
 import { useFastFoodSocketUpdates } from "../hooks/useFastFoodSocketUpdates";
 import { useFastFoodRefreshByIds } from "../hooks/useFastFoodRefreshByIds";
+import { useHomeCity, type HomeCity } from "../hooks/useHomeCity";
 import { type HomeClientSettings } from "../utils/homeClientSettings";
 import React, {
   createContext,
@@ -127,6 +128,8 @@ interface FastFoodContextType {
    * serveur (`clientSettings`). Voir `utils/homeClientSettings`.
    */
   homeSettings: HomeClientSettings;
+  /** Ville du home (pilule de localisation, sheet des villes). */
+  homeCity: HomeCity;
 }
 
 const FastFoodContext = createContext<FastFoodContextType | undefined>(
@@ -173,6 +176,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     notifyPageLaidOut,
   } = pagination;
   const settings = useFastFoodHomeSettings();
+  // Ville du home : declaree AVANT le fetch, qui attend sa resolution.
+  const homeCity = useHomeCity();
   const { homeSettings } = settings;
   const {
     loading,
@@ -186,7 +191,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     errorRef,
     fetchPage,
     refreshLoadedSilently,
-  } = useFastFoodFetch({ setFastFoods, pagination, settings });
+  } = useFastFoodFetch({ setFastFoods, pagination, settings, homeCity });
   const {
     upsertMenuFromSocket,
     removeMenuFromSocket,
@@ -217,6 +222,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     cursorRef.current = null;
     await fetchPage(undefined, searchRef.current.trim() || undefined);
   }, [fetchPage, cursorRef]);
+
+  // Ville changee (sheet des villes, « Ma localisation ») : home recharge.
+  const shownCityRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (shownCityRef.current === undefined) { shownCityRef.current = homeCity.city; return; }
+    if (shownCityRef.current === homeCity.city) return;
+    shownCityRef.current = homeCity.city;
+    void refresh();
+  }, [homeCity.city, refresh]);
 
   /** Lance reellement la page suivante, une fois toutes les gardes passees. */
   const runLoadMore = useCallback(() => {
@@ -421,6 +435,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       applyDeliveryOffer,
       clearDeliveryOfferForBonus,
       homeSettings,
+      homeCity,
     }),
     [
       fastFoods,
@@ -449,6 +464,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       applyDeliveryOffer,
       clearDeliveryOfferForBonus,
       homeSettings,
+      homeCity,
     ],
   );
 

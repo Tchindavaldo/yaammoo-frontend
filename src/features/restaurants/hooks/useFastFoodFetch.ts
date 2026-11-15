@@ -18,6 +18,7 @@ import { MAX_SERVER_LIMIT } from "../utils/homeClientSettings";
 import { normalizeFastFood } from "../utils/normalizeFastFood";
 import type { FastFoodHomeSettings } from "./useFastFoodHomeSettings";
 import type { FastFoodPagination } from "./useFastFoodPagination";
+import type { HomeCity } from "./useHomeCity";
 import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
@@ -38,9 +39,11 @@ interface Params {
   setFastFoods: Dispatch<SetStateAction<FastFood[]>>;
   pagination: FastFoodPagination;
   settings: FastFoodHomeSettings;
+  /** Ville du home (`useHomeCity`) : `?city=` sur chaque page, 1re page attend sa resolution. */
+  homeCity: Pick<HomeCity, "cityRef" | "cityReady">;
 }
 
-export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params) {
+export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity }: Params) {
   useLanguage();
   const {
     fastFoodsLenRef,
@@ -154,12 +157,14 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
       if (isFirstPage && storedSettingsRef.current) {
         await storedSettingsRef.current;
       }
+      if (isFirstPage) await homeCity.cityReady.current;
       const response = await axios.get(`${Config.apiUrl}/fastFood/all`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
         params: {
           limit: homeSettingsRef.current.pageSize,
           ...(cursor ? { cursor } : {}),
           ...(q ? { q } : {}),
+          ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
         },
       });
 
@@ -367,6 +372,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings }: Params)
           params: {
             limit: Math.min(loadedCount - fresh.size, MAX_SERVER_LIMIT),
             ...(cursor ? { cursor } : {}),
+            ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
           },
         });
 

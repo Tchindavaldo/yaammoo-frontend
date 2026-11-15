@@ -810,3 +810,21 @@ successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toute
 ## Mise a jour en direct des prix et zones
 
 Voir `socket-events-client.md` (R27) : la boutique modifiee arrive complete par `fastfoodUpdated` et est appliquee sans GET ; `fastfoodsChanged { ids: null }` (reglage global) et un refus de paiement declenchent un rafraichissement silencieux (`hooks/useFastFoodRefreshByIds.ts`).
+
+## Choix de la ville (pilule de localisation)
+
+- Appui sur la pilule (`LocationPill`, `RestaurantHeader.onLocationPress`) →
+  `home/HomeCitySheet` : « Ma localisation », « Toutes les villes » (nombre total
+  de restos), puis chaque ville desservie avec son nombre de restos
+  (`GET /fastfood/cities`). Voile en fondu, sheet qui monte (R28).
+- État : `hooks/useHomeCity` (exposé par `FastFoodContext.homeCity`). Ville par
+  défaut = celle du backend (ville du client si desservie, sinon la plus proche,
+  position connue sans demander de permission). Choix manuel retenu sur
+  l'appareil (`AsyncStorage` `home_city_v1`), « Ma localisation » l'oublie.
+- Toutes les pages du home (`useFastFoodFetch`, y compris
+  `refreshLoadedSilently`) envoient `?city=` ; la 1re page attend la ville
+  (`cityReady`, 3 s max) ; un changement de ville recharge le home.
+- Pilule : ville choisie (ou « Toutes les villes ») en choix manuel, sinon le
+  lieu du client (`useCurrentPlaceLabel`).
+- Marchand en mode client : pas de choix (la pilule devient « Mode marchand »),
+  le home affiche la ville de SA boutique (`merchantCity`).

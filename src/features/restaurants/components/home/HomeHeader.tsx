@@ -7,6 +7,8 @@ import { RestaurantHeader } from "../RestaurantHeader";
 import { CATEGORIES } from "../../utils/homeListConfig";
 import { t, useLanguage } from "@/src/i18n";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { useFastFoodContext } from "../../context/FastFoodContext";
+import { HomeCitySheet } from "./HomeCitySheet";
 
 interface Props {
   unreadCount: number;
@@ -37,8 +39,13 @@ export const HomeHeader: React.FC<Props> = ({
   const router = useRouter();
   const placeLabel = useCurrentPlaceLabel();
   const { isMerchant, setMerchantMode } = useMerchantMode();
+  const { homeCity } = useFastFoodContext();
+  const [citySheet, setCitySheet] = React.useState(false);
+  // Choix manuel : la ville (ou « Toutes les villes ») ; sinon le lieu du client.
+  const location = homeCity.manual ? homeCity.city || t("Toutes les villes") : placeLabel;
 
   return (
+    <>
     <RestaurantHeader
       userName={
         [userData?.infos?.prenom, userData?.infos?.nom].filter(Boolean).join(" ") ||
@@ -46,7 +53,8 @@ export const HomeHeader: React.FC<Props> = ({
         t("Utilisateur")
       }
       userPhoto={(userData as any)?.photoUrl || (userData as any)?.photo || ""}
-      location={placeLabel}
+      location={location}
+      onLocationPress={isMerchant ? undefined : () => setCitySheet(true)}
       onMerchantMode={isMerchant ? () => setMerchantMode(true) : undefined}
       unreadCount={unreadCount}
       onNotifPress={() => router.push("/(tabs)/notifications")}
@@ -61,5 +69,7 @@ export const HomeHeader: React.FC<Props> = ({
       selectedCategory={selectedCategory}
       onCategorySelect={onCategorySelect}
     />
+    <HomeCitySheet visible={citySheet} homeCity={homeCity} onClose={() => setCitySheet(false)} />
+    </>
   );
 };

@@ -36,6 +36,8 @@ interface RestaurantHeaderProps {
   onOrdersPress?: () => void;
   /** Compte marchand en mode client : remplace la localisation par « Mode marchand ». */
   onMerchantMode?: () => void;
+  /** Appui sur la pilule de localisation : ouvre le choix de la ville. */
+  onLocationPress?: () => void;
 }
 
 export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
@@ -55,6 +57,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   onCartPress,
   onOrdersPress,
   onMerchantMode,
+  onLocationPress,
 }) => {
   const insets = useSafeAreaInsets();
   // Android : pas de cible de flou sur le home (la liste ne passe pas sous le
@@ -83,7 +86,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
               <Text style={styles.modePillText}>{t("Mode marchand")}</Text>
             </TouchableOpacity>
           ) : (
-            <LocationPill location={location} />
+            <LocationPill location={location} onPress={onLocationPress} />
           )}
         </View>
 

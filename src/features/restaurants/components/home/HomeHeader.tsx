@@ -37,7 +37,7 @@ export const HomeHeader: React.FC<Props> = ({
   useLanguage();
   const { user, userData } = useAuth();
   const router = useRouter();
-  const placeLabel = useCurrentPlaceLabel();
+  const { label: placeLabel, city: placeCity } = useCurrentPlaceLabel();
   const { isMerchant, setMerchantMode } = useMerchantMode();
   const { homeCity } = useFastFoodContext();
   const [citySheet, setCitySheet] = React.useState(false);
@@ -72,7 +72,7 @@ export const HomeHeader: React.FC<Props> = ({
       selectedCategory={selectedCategory}
       onCategorySelect={onCategorySelect}
     />
-    <HomeCitySheet visible={citySheet} homeCity={homeCity} placeLabel={placeLabel} onClose={() => setCitySheet(false)} />
+    <HomeCitySheet visible={citySheet} homeCity={homeCity} placeLabel={placeLabel} placeCity={placeCity} onClose={() => setCitySheet(false)} />
     </>
   );
 };

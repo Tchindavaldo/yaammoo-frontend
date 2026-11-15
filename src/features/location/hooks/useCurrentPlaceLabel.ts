@@ -43,9 +43,12 @@ const isServiceArea = (raw: string) => normalize(raw).includes(SERVICE_AREA_KEY)
  * `SHOW_PLACE_OUTSIDE_SERVICE_AREA`) : « Quartier, Arrondissement » du lieu
  * actuel. Ailleurs, sans permission ou en echec : « Banganté, Cameroun »
  * (seule zone desservie). Ne demande pas la permission.
+ * Renvoie aussi `city`, la ville reelle du geocodage (vide si inconnue).
  */
 export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
   const [label, setLabel] = useState(fallback);
+  // Ville reelle du geocodage (champ city/town/village), meme hors zone.
+  const [city, setCity] = useState("");
   // Permission accordée après le montage (bandeau du home) : libellé relu.
   const [grantTick, setGrantTick] = useState(0);
   useEffect(
@@ -73,6 +76,7 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
 
         let text = "";
         let inZone = false;
+        let cityName = "";
         try {
           const osm = await osmReverse(latitude, longitude);
           inZone = isServiceArea(JSON.stringify(osm ?? {}));
@@ -80,6 +84,7 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
           const zone =
             osm?.city_district || osm?.district || osm?.city || osm?.town || osm?.village;
           text = [quartier, zone].filter(Boolean).join(", ");
+          cityName = osm?.city || osm?.town || osm?.village || "";
         } catch (error) {
           console.warn("[LIEU] Nominatim echec:", error);
         }
@@ -92,6 +97,7 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
           text = [place?.district || place?.street, place?.city]
             .filter(Boolean)
             .join(", ");
+          cityName = place?.city || place?.subregion || "";
         }
 
         // Hors de la zone desservie : on garde la zone en dur, pour que
@@ -100,6 +106,7 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
         if (!inZone && !SHOW_PLACE_OUTSIDE_SERVICE_AREA) text = SERVICE_AREA_LABEL;
         console.log("[LIEU] dans la zone:", inZone, "| libelle affiche:", text);
         if (alive && text) setLabel(text);
+        if (alive && cityName) setCity(cityName);
       } catch (error) {
         console.warn("[LIEU] lieu actuel indisponible:", error);
       }
@@ -109,5 +116,5 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
     };
   }, [grantTick]);
 
-  return label;
+  return { label, city };
 };

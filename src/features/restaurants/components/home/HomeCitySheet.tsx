@@ -18,10 +18,12 @@ interface Props {
   homeCity: HomeCity;
   /** Lieu precis du client : sert a retirer de la liste la ville ou il se trouve. */
   placeLabel: string;
+  /** Ville reelle du geocodage de la position (prioritaire sur le libelle). */
+  placeCity: string;
   onClose: () => void;
 }
 
-export function HomeCitySheet({ visible, homeCity, placeLabel, onClose }: Props) {
+export function HomeCitySheet({ visible, homeCity, placeLabel, placeCity, onClose }: Props) {
   useLanguage();
   const { bottom } = useSheetSafeInsets();
   const anim = useSheetAnimation(visible);
@@ -37,7 +39,11 @@ export function HomeCitySheet({ visible, homeCity, placeLabel, onClose }: Props)
   // La ville ou se trouve le client est deja couverte par « Ma localisation »
   // (son lieu precis y est inclus) : on ne la repete pas dans la liste.
   const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const myCity = (data?.cities ?? []).find(c => norm(placeLabel).includes(norm(c.name)));
+  // 1) ville du geocodage (city/town/village), 2) repli : nom cite dans le libelle.
+  const cities = data?.cities ?? [];
+  const myCity =
+    (placeCity ? cities.find(c => norm(c.name) === norm(placeCity)) ?? cities.find(c => norm(placeCity).includes(norm(c.name)) || norm(c.name).includes(norm(placeCity))) : undefined) ??
+    cities.find(c => norm(placeLabel).includes(norm(c.name)));
   const pick = (fn: () => void) => { fn(); onClose(); };
   const Row = ({ icon, label, count, selected, onPress }: { icon: any; label: string; count?: number; selected: boolean; onPress: () => void }) => (
     <TouchableOpacity style={[styles.row, selected && styles.rowOn]} onPress={onPress} activeOpacity={0.75}>

@@ -35,6 +35,7 @@ const EVENTS = [
   "bonus.created",
   "wallet.credited",
   "wallet.withdrawal",
+  "wallet.debited",
 ];
 
 /**
@@ -146,6 +147,19 @@ export const registerBonusWalletEvents = (
       date: data?.createdAt,
       network: toWalletNetwork(data?.network),
       kioskFee: Number(data?.kioskFee) || 0,
+    });
+  }));
+  // wallet.debited : débit hors retrait (frais SMS) → soldes absolus du backend.
+  socket.on("wallet.debited", withAck((data: any) => {
+    logEvent("wallet.debited:", data);
+    applyWalletEvent({
+      type: "debit",
+      amount: Number(data?.amount) || 0,
+      date: data?.createdAt,
+      network: toWalletNetwork(data?.network),
+      newBalance: typeof data?.newBalance === "number" ? data.newBalance : undefined,
+      newBalances: toBalances(data?.newBalances),
+      newBreakdown: toBreakdown(data?.newBreakdown),
     });
   }));
   // wallet.withdrawal : retrait (3 états, même withdrawalId) → patch solde + overlay.

@@ -31,7 +31,7 @@ export const WalletDayStatItem: React.FC<WalletDayStatItemProps> = ({ stat }) =>
           {stat.net.toLocaleString('fr-FR')} F
         </Text>
         {stat.payout > 0 && (
-          <Text style={styles.payout}>-{stat.payout.toLocaleString('fr-FR')} {t("retrait")}</Text>
+          <Text style={styles.payout}>-{stat.payout.toLocaleString('fr-FR')} {t("débit")}</Text>
         )}
       </View>
     </View>

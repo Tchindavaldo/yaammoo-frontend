@@ -1405,5 +1405,6 @@
   "Accès refusé.": "Access denied.",
   "Ressource introuvable.": "Not found.",
   "Trop de demandes, réessayez dans un instant.": "Too many requests, try again in a moment.",
-  "Erreur serveur, réessayez.": "Server error, please try again."
+  "Erreur serveur, réessayez.": "Server error, please try again.",
+  "débit": "debit"
 }

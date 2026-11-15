@@ -126,6 +126,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 > [`bonus.md`](bonus.md).
 | `wallet.credited` | tous champs, dont `network` (`MTN` \| `ORANGEMONEY`) | `MerchantWalletContext.applyEvent` (patch solde + solde du réseau, payin) — `socketHandlers/bonusWalletEvents.ts` |
 | `wallet.withdrawal` | tous champs, dont `fee`, `sourceNetwork`, `newBalances: { mtn, orange }` | `MerchantWalletContext.handleWithdrawalEvent` (patch soldes + overlay ; débit = `amount + fee`) — `socketHandlers/bonusWalletEvents.ts` |
+| `wallet.debited` | `amount`, `network`, `newBalance`, `newBalances`, `newBreakdown` | `MerchantWalletContext.applyEvent` (débit hors retrait : frais SMS, soldes absolus) — `socketHandlers/bonusWalletEvents.ts` |
 | `newNotification` | `{ notification }` | `NotificationContext.addFromSocket(notif)` |
 | `isRead` | `{ notificationId }` | `refreshNotifications(true)` — sync silencieux multi-device |
 | `driverLocationUpdated` | `{ data: { driverId, latitude, longitude, accuracy, speed, heading, capturedAt, orderIds[] } }` | **Hors `useSocketEvents`** : écouté par `useOrderTracking` tant que l'onglet « Suivi » est ouvert (comme `driverRatingUpdated` dans `DriverInfoTab`), filtré sur `orderIds`. Fire-and-forget : l'onglet relit `GET /driver/tracking/:orderId` à l'ouverture et au retour au premier plan |

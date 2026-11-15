@@ -32,7 +32,8 @@ interface RestaurantHeaderProps {
   unreadCount?: number;
   onNotifPress?: () => void;
   onProfilePress?: () => void;
-  onCartPress?: () => void;
+  /** Ouvre la page de recherche (`app/search.tsx`). Remplace l'ancien bouton panier. */
+  onSearchPress?: () => void;
   onOrdersPress?: () => void;
   /** Compte marchand en mode client : remplace la localisation par « Mode marchand ». */
   onMerchantMode?: () => void;
@@ -54,7 +55,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   unreadCount = 0,
   onNotifPress,
   onProfilePress,
-  onCartPress,
+  onSearchPress,
   onOrdersPress,
   onMerchantMode,
   onLocationPress,
@@ -93,10 +94,10 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.iconBtn}
-            onPress={onCartPress}
+            onPress={onSearchPress}
             activeOpacity={0.8}
           >
-            <Ionicons name="cart" size={16} color="#111" />
+            <Ionicons name="search" size={16} color="#111" />
           </TouchableOpacity>
 
           <TouchableOpacity

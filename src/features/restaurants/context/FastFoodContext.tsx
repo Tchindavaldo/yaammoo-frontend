@@ -224,13 +224,17 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [fetchPage, cursorRef]);
 
   // Ville changee (sheet des villes, « Ma localisation ») : home recharge.
+  // Liste videe d'abord : le loader plein ecran (« Recherche des meilleurs
+  // plats... ») recouvre banniere et boutiques le temps du chargement.
   const shownCityRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     if (shownCityRef.current === undefined) { shownCityRef.current = homeCity.city; return; }
     if (shownCityRef.current === homeCity.city) return;
     shownCityRef.current = homeCity.city;
+    setLoading(true);
+    setFastFoods([]);
     void refresh();
-  }, [homeCity.city, refresh]);
+  }, [homeCity.city, refresh, setLoading, setFastFoods]);
 
   /** Lance reellement la page suivante, une fois toutes les gardes passees. */
   const runLoadMore = useCallback(() => {

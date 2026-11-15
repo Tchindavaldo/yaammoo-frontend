@@ -1408,5 +1408,6 @@
   "Erreur serveur, réessayez.": "Server error, please try again.",
   "débit": "debit",
   "remboursement": "refund",
-  "coût SMS": "SMS cost"
+  "coût SMS": "SMS cost",
+  "Code indisponible": "Code unavailable"
 }

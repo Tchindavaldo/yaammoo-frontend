@@ -16,5 +16,8 @@ export function useCityChangeLoader(city: string | null) {
     const id = setTimeout(() => setActive(false), CITY_LOADER_MS);
     return () => clearTimeout(id);
   }, [city]);
-  return active;
+  // Rendu ou la ville vient de changer (effet pas encore passe) : deja vrai,
+  // sinon une image de l'ancienne liste s'affichait entre deux loaders.
+  const pending = last.current !== undefined && last.current !== city;
+  return active || pending;
 }

@@ -79,6 +79,15 @@ struct HLCardSize {
   let radius: CGFloat
 }
 
+/**
+ Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, 2 cartes
+ dans le style V7 a largeur de demi-ecran. Le JS regroupe les plats par 2.
+ */
+let HLGrid = 8
+
+/** Style visuel d'une carte : la grille reprend le V7. */
+func hlCardStyle(_ type: Int) -> Int { type == HLGrid ? 7 : type }
+
 enum HLLayout {
   /** Cycle des designs de rangee (`utils/designCycle.ts`). */
   static let designCycle = [7, 4, 5]
@@ -91,6 +100,10 @@ enum HLLayout {
     switch design {
     case 4: return HLCardSize(width: 240, height: 240, radius: 16)
     case 5: return HLCardSize(width: 200, height: 250, radius: 16)
+    case HLGrid:
+      // Grille du home filtre : 2 cartes V7 par rangee, ratio de la carte V7.
+      let w = (UIScreen.main.bounds.width - 2 * sidePadding - cardGap) / 2
+      return HLCardSize(width: w, height: w * 190 / 150, radius: 12)
     default: return HLCardSize(width: 150, height: 190, radius: 12)
     }
   }
@@ -112,7 +125,8 @@ enum HLLayout {
   static let metaHeight: CGFloat = 44
 
   static func rowHeight(_ design: Int) -> CGFloat {
-    rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
+    if design == HLGrid { return rowTop + card(design).height + metaHeight + rowBottom }
+    return rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
   }
 
   /** Banniere : marginTop 4 + diapo 210 + marginBottom 30 (puces dedans). */

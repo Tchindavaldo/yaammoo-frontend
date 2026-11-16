@@ -216,7 +216,9 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
     let pad = HLLayout.sidePadding
     let w = bounds.width - 2 * pad
     header.frame = CGRect(x: pad, y: HLLayout.rowTop, width: w, height: HLLayout.headerHeight)
-    let y = HLLayout.rowTop + HLLayout.headerHeight + HLLayout.headerGap
+    // Grille : pas d'en-tete, les 2 cartes remplissent la largeur.
+    header.isHidden = design == HLGrid
+    let y = design == HLGrid ? HLLayout.rowTop : HLLayout.rowTop + HLLayout.headerHeight + HLLayout.headerGap
     menus?.frame = CGRect(x: pad, y: y, width: w, height: cardSize.height + HLLayout.metaHeight)
   }
 
@@ -224,7 +226,7 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
 
   func collectionView(_ cv: UICollectionView, numberOfItemsInSection section: Int) -> Int {
     switch content {
-    case .ghost: return HLGhostMenuCount
+    case .ghost: return design == HLGrid ? 2 : HLGhostMenuCount
     case .shop(let s): return s.menus.count
     case .none: return 0
     }

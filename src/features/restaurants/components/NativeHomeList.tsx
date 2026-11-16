@@ -118,6 +118,9 @@ const FONTS: HomeListFonts = {
   w900: fontFor(900),
 };
 
+/** Rangee grille de la liste native (`HL_GRID` / `HLGrid`). */
+const GRID_DESIGN = 8;
+
 const menuIdOf = (ff: FastFood, m: any, i: number) => String(m?.id ?? `${ff.id}_${i}`);
 
 const fallbackFor = (design: number, i: number) =>
@@ -131,9 +134,12 @@ const toRow = (
   deliveryLabel: string,
 ): HomeListRow => {
   const f = ff as any;
-  const design = designNumberFor(ff.designIndex);
+  // Rangee grille (home filtre par categorie) : 2 plats de boutiques
+  // differentes, design natif `HL_GRID` (8), cartes V7.
+  const design = f?.gridRow ? GRID_DESIGN : designNumberFor(ff.designIndex);
   // Livraison reelle de la boutique : offerte, ou son tarif le moins cher.
   const fee = shopDeliveryFeeLabel(ff);
+  const feeOf = (m: any) => (f?.gridRow && m?.__shop ? shopDeliveryFeeLabel(m.__shop) : fee);
   return {
     id: String(ff.id),
     design,
@@ -149,13 +155,14 @@ const toRow = (
     ratingText: (f?.stats?.votes ?? 0) > 0 ? `${Number(f?.stats?.rating ?? 0).toFixed(1)}/5` : tr("Nouveau"),
     deliveryLabel,
     menus: (ff.menu ?? []).map((m: any, i: number) => {
+      const fee = feeOf(m);
       const stock = Math.round(m?.stock ?? 0);
       const { value, unit } = stockParts(stock);
       return {
         id: menuIdOf(ff, m, i),
         title: m?.titre ?? "",
         image: m?.image || null,
-        fallbackImage: fallbackFor(design, i),
+        fallbackImage: fallbackFor(design === GRID_DESIGN ? 7 : design, i),
         price: `${m?.prix1 ?? 0} F`,
         stock,
         rating: (m?.votes ?? 0) > 0 ? String(m?.rating ?? 0) : tr("Nouveau"),
@@ -360,10 +367,16 @@ export const NativeHomeList: React.FC<Props> = ({
   const handleMenuPress = useCallback(
     (e: { nativeEvent: { shopId: string; menuId: string } }) => {
       const { shopId, menuId } = e.nativeEvent;
-      const ff: any = dataRef.current.fastFoods.find((f) => String(f.id) === shopId);
+      let ff: any = dataRef.current.fastFoods.find((f) => String(f.id) === shopId);
       if (!ff) return;
-      const idx = (ff.menu ?? []).findIndex((m: any, i: number) => menuIdOf(ff, m, i) === menuId);
+      let idx = (ff.menu ?? []).findIndex((m: any, i: number) => menuIdOf(ff, m, i) === menuId);
       if (idx < 0) return;
+      // Rangee grille : chaque plat porte SA boutique (`__shop`).
+      if (ff.gridRow && ff.menu[idx].__shop) {
+        const { __shop, ...menu } = ff.menu[idx];
+        ff = { ...__shop, menu: [menu] };
+        idx = 0;
+      }
       // Meme enrichissement que `DesignRouter.handleMenuClick` : infos de
       // livraison du fastfood parent, deja presentes dans `GET /fastFood/all`.
       onMenuPress({

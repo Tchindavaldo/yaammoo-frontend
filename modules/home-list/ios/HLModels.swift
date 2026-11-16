@@ -144,7 +144,7 @@ struct HLShop: Equatable {
 
   init(_ r: HLShopRecord) {
     id = r.id
-    design = HLLayout.designCycle.contains(r.design) ? r.design : 7
+    design = HLLayout.designCycle.contains(r.design) || r.design == HLGrid ? r.design : 7
     name = r.name
     avatar = r.avatar ?? r.avatarFallback
     orders = r.orders

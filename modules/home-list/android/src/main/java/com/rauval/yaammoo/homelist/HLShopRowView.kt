@@ -88,10 +88,13 @@ class HLShopRowView(
       }
     })
     addAll(header, menus)
+    // Grille : pas d'en-tete, les 2 cartes remplissent la largeur.
+    if (design == HL_GRID) header.visibility = View.GONE
     onPlace = { w, _ ->
       val pad = HLLayout.sidePadding
       header.frame(pad, HLLayout.rowTop, w - 2 * pad, HLLayout.headerHeight)
-      val y = HLLayout.rowTop + HLLayout.headerHeight + HLLayout.headerGap
+      val y = if (design == HL_GRID) HLLayout.rowTop
+        else HLLayout.rowTop + HLLayout.headerHeight + HLLayout.headerGap
       menus.frame(pad, y, w - 2 * pad, cardSize.height + HLLayout.metaHeight)
     }
   }
@@ -256,7 +259,7 @@ class HLShopRowView(
 
   inner class CardAdapter : RecyclerView.Adapter<CardHolder>() {
     override fun getItemCount(): Int = when (val c = content) {
-      is HLRowContent.Ghost -> HL_GHOST_MENU_COUNT
+      is HLRowContent.Ghost -> if (design == HL_GRID) 2 else HL_GHOST_MENU_COUNT
       is HLRowContent.Shop -> c.shop.menus.size
       null -> 0
     }

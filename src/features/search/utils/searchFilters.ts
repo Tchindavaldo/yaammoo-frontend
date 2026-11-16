@@ -6,14 +6,16 @@
 /** Mots-clés par position dans `CATEGORIES` (0 = « Tout », sans filtre). */
 const CATEGORY_KEYWORDS: (RegExp | null)[] = [
   null,
-  /burger|pizza|shawarma|frite|poulet|sandwich|tacos|hot ?dog|nugget|panini|chicken/i,
-  /pizza/i,
+  /poulet|chicken/i,
   /burger/i,
-  /boisson|jus|soda|coca|fanta|bi[eè]re|eau|cocktail|caf[eé]|th[eé]|milk|drink/i,
-  /riz|rice/i,
+  /pizza/i,
 ];
 
+/** Position du tab « Autre » : plats qui ne tombent dans aucune autre categorie. */
+const OTHER_INDEX = 4;
+
 export const matchesCategory = (title: string, categoryIndex: number): boolean => {
+  if (categoryIndex === OTHER_INDEX) return !CATEGORY_KEYWORDS.some((re) => re?.test(title));
   const re = CATEGORY_KEYWORDS[categoryIndex];
   return !re || re.test(title);
 };

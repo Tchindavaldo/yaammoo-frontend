@@ -368,13 +368,16 @@ première page.
 `useFastFoods` ne garde qu'un filtre : les boutiques **sans plat**, pour celles
 arrivées par socket dont le payload peut ne pas porter de menus.
 
-`selectedCategory` filtre côté **backend** : `hooks/useHomeCategoryReload.ts`
-pose `?category=` (valeur fixe par position de tab, `CATEGORY_API`) sur chaque
-requête de `useFastFoodFetch` et recharge le home depuis la 1re page. Le backend
-ne rend que les boutiques ayant un plat de cette catégorie (`menus.category`,
-saisie libre du marchand), avec ces seuls plats. `hooks/useCategoryFilteredShops.ts`
-force alors chaque rangée sur le design V7 aéré (liste native inchangée,
-livrable par OTA). « Tout » = liste et designs inchangés.
+`selectedCategory` filtre côté **backend**. Tabs : Tout / Poulet / Burger / Pizza /
+Autre (alignés sur les suggestions de la sheet menu). `hooks/useHomeCategoryReload.ts`
+pose `?category=<nom>` (ou `?categoryNot=Poulet,Burger,Pizza` pour « Autre ») sur
+chaque requête de `useFastFoodFetch` et recharge le home depuis la 1re page. Le
+backend ne rend que les boutiques ayant un plat de la catégorie, avec ces seuls plats.
+`hooks/useCategoryFilteredShops.ts` regroupe alors les plats **par 2** en rangées
+`gridRow` : la liste native les rend en **grille** (design natif `HL_GRID` = 8,
+`modules/home-list` Android + iOS : pas d'en-tête, 2 cartes V7 aérées à demi-largeur).
+Chaque plat garde sa boutique (`__shop`) pour l'appui et les frais. Code natif :
+nécessite un nouveau build (pas d'OTA). « Tout » = liste et designs inchangés.
 
 ---
 

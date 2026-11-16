@@ -1418,5 +1418,6 @@
   "Poulet": "Chicken",
   "Burger": "Burger",
   "Pizza": "Pizza",
-  "La catégorie ne doit pas être vide": "The category must not be empty"
+  "La catégorie ne doit pas être vide": "The category must not be empty",
+  "Autre": "Other"
 }

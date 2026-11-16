@@ -48,7 +48,7 @@ function SearchContent() {
   const bottomInset = usePageBottomInset();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(0);
-  const { results, loading, error } = useShopSearch(query, category);
+  const { results, loading, error, loadMore } = useShopSearch(query, category);
   const checkout = useHomeCheckout();
 
   // Le toast local du checkout home est remplacé par le toast global (R22).
@@ -130,6 +130,8 @@ function SearchContent() {
         initialNumToRender={12}
         windowSize={11}
         removeClippedSubviews
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         style={{ marginBottom: bottomInset }}

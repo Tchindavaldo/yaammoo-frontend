@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Config } from "@/src/api/config";
 import { getOptionalIdToken } from "@/src/services/idToken";
 import { normalizeFastFood } from "@/src/features/restaurants/utils/normalizeFastFood";
@@ -44,8 +44,7 @@ const toRows = (shops: any[]): SearchRow[] =>
     })),
   );
 
-/** Pages au plus (garde-fou) : le catalogue entier tient largement dedans. */
-const MAX_PAGES = 20;
+const DEBOUNCE_MS = 300;
 
 const listOf = (data: any): any[] =>
   Array.isArray(data?.fastFoods)
@@ -58,60 +57,79 @@ const listOf = (data: any): any[] =>
 
 /**
  * Recherche de la page dédiée : indépendante du FastFoodContext (la liste du
- * home n'est jamais touchée). Le catalogue ENTIER est chargé une fois à
- * l'ouverture (`GET /fastFood/all`, toutes les pages), puis filtré en local à
- * chaque frappe : plat, boutique, mots partiels, sans accents.
- *
- * ⚠️ Pas de `?q=` serveur : il ne cherche que dans le NOM des boutiques, donc
- * « poulet » ne trouvait aucun plat.
+ * home n'est jamais touchée). Recherche SERVEUR `GET /fastFood/all?q=`
+ * (debounce 300 ms, page de 50, suite par curseur avec `loadMore`) : le
+ * backend renvoie les boutiques dont le nom OU un plat correspond. Le filtre
+ * local ne fait que ne garder, dans ces boutiques, que les plats concernés
+ * (et la catégorie choisie).
  */
 export const useShopSearch = (query: string, categoryIndex: number) => {
-  const [rows, setRows] = useState<SearchRow[]>([]);
+  const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+  const cursorRef = useRef<string | null>(null);
+  const runRef = useRef(0);
+  const q = query.trim();
+
+  const fetchPage = useCallback(
+    async (run: number, cursor: string | null) => {
+      const idToken = await getOptionalIdToken();
+      const res: any = await axios.get(`${Config.apiUrl}/fastFood/all`, {
+        headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+        params: { limit: LIMIT, ...(q ? { q } : {}), ...(cursor ? { cursor } : {}) },
+      });
+      if (run !== runRef.current) return null;
+      cursorRef.current = res.data?.nextCursor ?? null;
+      return listOf(res.data).map((ff: any) => normalizeFastFood(ff));
+    },
+    [q],
+  );
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
+    const run = ++runRef.current;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setError(false);
+      cursorRef.current = null;
       try {
-        const idToken = await getOptionalIdToken();
-        const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
-        const all: any[] = [];
-        let cursor: string | null = null;
-        for (let page = 0; page < MAX_PAGES; page++) {
-          const res: any = await axios.get(`${Config.apiUrl}/fastFood/all`, {
-            headers,
-            params: { limit: LIMIT, ...(cursor ? { cursor } : {}) },
-          });
-          if (cancelled) return;
-          all.push(...listOf(res.data));
-          // Lignes affichées dès la 1re page, complétées ensuite.
-          setRows(toRows(all.map((ff: any) => normalizeFastFood(ff))));
-          cursor = res.data?.nextCursor ?? null;
-          if (!cursor) break;
-        }
+        const page = await fetchPage(run, null);
+        if (page) setShops(page);
       } catch (e) {
-        if (cancelled) return;
+        if (run !== runRef.current) return;
         console.warn("[search] echec", e);
         setError(true);
+        setShops([]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (run === runRef.current) setLoading(false);
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    }, q ? DEBOUNCE_MS : 0);
+    return () => clearTimeout(timer);
+  }, [q, fetchPage]);
+
+  const loadMore = useCallback(async () => {
+    if (loading || loadingMore || !cursorRef.current) return;
+    const run = runRef.current;
+    setLoadingMore(true);
+    try {
+      const page = await fetchPage(run, cursorRef.current);
+      if (page) setShops((prev) => [...prev, ...page]);
+    } catch (e) {
+      console.warn("[search] page suivante", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loading, loadingMore, fetchPage]);
 
   const results = useMemo(
     () =>
-      rows.filter(
+      toRows(shops).filter(
         (r) =>
           matchesCategory(r.title, categoryIndex) &&
           matchesQuery(r.title, r.shopName, query, r.description),
       ),
-    [rows, categoryIndex, query],
+    [shops, categoryIndex, query],
   );
 
-  return { results, loading, error };
+  return { results, loading, loadingMore, error, loadMore };
 };

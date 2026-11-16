@@ -3,7 +3,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
-import { useHomeCategoryReload } from "../hooks/useHomeCategoryReload";
+import { categoryApiValue, useHomeCategoryReload } from "../hooks/useHomeCategoryReload";
 import { useFastFoodFetch } from "../hooks/useFastFoodFetch";
 import { useFastFoodHomeSettings } from "../hooks/useFastFoodHomeSettings";
 import { useFastFoodPagination } from "../hooks/useFastFoodPagination";
@@ -147,6 +147,8 @@ const FastFoodContext = createContext<FastFoodContextType | undefined>(
  * `FastFoodContext`.
  */
 const FastFoodActivationContext = createContext<() => void>(() => {});
+const NO_SHOPS: FastFood[] = [];
+
 export const useActivateFastFoods = () => useContext(FastFoodActivationContext);
 
 export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -405,16 +407,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   // ⚠️ `useMemo` OBLIGATOIRE — ne JAMAIS repasser un objet litteral en `value`.
-  //
-  // Un litteral est recree a chaque rendu du provider : TOUS les consommateurs
-  // du contexte se re-rendent alors, meme quand aucune donnee n'a bouge. Sur le
-  // home, cela re-rendait en vagues les cellules visibles de la `FlatList` —
-  // des cartes pourtant immobiles — avec 70 a 190 ms de blocage JS a chaque
-  // vague. C'etait la cause de la micro-saccade au scroll.
+  // Un litteral re-rend tous les consommateurs a chaque rendu (micro-saccade
+  // au scroll du home, 70 a 190 ms de blocage JS par vague).
+  // Tab change : liste de l'ancien tab masquee des ce rendu (l'effet de
+  // rechargement ne la vide qu'apres) -> pas de flash de l'ancienne page.
+  const staleTab = categoryRef.current !== categoryApiValue(selectedCategory);
   const value = useMemo(
     () => ({
-      fastFoods,
-      loading,
+      fastFoods: staleTab ? NO_SHOPS : fastFoods,
+      loading: loading || staleTab,
       loadingMore,
       hasMore,
       loadMore,
@@ -445,6 +446,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       homeCity,
     }),
     [
+      staleTab,
       fastFoods,
       loading,
       loadingMore,

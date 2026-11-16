@@ -18,12 +18,13 @@ import { WorkHeader } from "./WorkHeader";
 /** Onglet du mode travail (navbar Attente / En cours / Termine). */
 export type WorkStage = "pending" | "progress" | "done";
 
-/** Permission exigee par chaque onglet en mode personnel. */
-export const WORK_STAGE_PERMISSION: Record<WorkStage, string> = {
-  pending: "orders.validate",
-  progress: "orders.finish",
-  done: "orders.deliver",
-};
+/**
+ * Mode personnel : les onglets Attente / En cours / Termine s'ouvrent des que
+ * le role a AU MOINS UNE de ces permissions ; chaque action reste grisee sans
+ * sa propre permission (Valider, Terminer, Lancer).
+ */
+export const ORDER_PERMISSIONS = ["orders.validate", "orders.finish", "orders.deliver"];
+export const canSeeOrders = (can: (p: string) => boolean) => ORDER_PERMISSIONS.some(can);
 
 // Personnel : pending / processing / finished+delivering+delivered.
 const STAFF_STATUS = { pending: "pending", progress: "proccess", done: "finish" } as const;
@@ -45,7 +46,7 @@ export function WorkOrdersScreen({ stage }: { stage: WorkStage }) {
   const { isDriverMode, can } = useMerchantMode();
   const [headerHeight, setHeaderHeight] = useState(70);
   const [filterOpen, setFilterOpen] = useState(false);
-  const allowed = isDriverMode || can(WORK_STAGE_PERMISSION[stage]);
+  const allowed = isDriverMode || canSeeOrders(can);
 
   return (
     <View style={styles.container}>

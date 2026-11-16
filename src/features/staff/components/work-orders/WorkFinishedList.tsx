@@ -8,6 +8,7 @@ import { Commande } from "@/src/types";
 import { GroupStatusCounts } from "@/src/features/driver/components/GroupStatusCounts";
 import { MerchantOrderCard } from "@/src/features/merchant/components/MerchantOrderCard";
 import { t as tr } from "@/src/i18n";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { styles } from "./WorkOrderPanel.styles";
 import type { DeliveryData } from "./useWorkOrderData";
 
@@ -43,6 +44,9 @@ export function WorkFinishedList({
   onUpdateStatus,
   onDelegate,
 }: Props) {
+  // « Lancer tout » : grise sans la permission de livrer (onglet ouvert quand meme).
+  const { can } = useMerchantMode();
+  const canDeliver = can("orders.deliver");
   const renderUserGroup = (orders: Commande[], groupId?: string) => {
     const isForced = groupId ? launchedGroups[groupId] : false;
     return (
@@ -214,6 +218,7 @@ export function WorkFinishedList({
                             styles.btnLaunchGroup,
                             launchedGroups["express"] &&
                               styles.btnLaunchGroupLaunched,
+                            !canDeliver && { opacity: 0.4 },
                           ]}
                           onPress={(e) => {
                             e.stopPropagation();
@@ -222,7 +227,7 @@ export function WorkFinishedList({
                               launchableOf(deliveryData!.expressGroups.flat()),
                             );
                           }}
-                          disabled={launchingGroups["express"]}
+                          disabled={launchingGroups["express"] || !canDeliver}
                         >
                           <Text
                             style={[
@@ -312,6 +317,7 @@ export function WorkFinishedList({
                             style={[
                               styles.btnLaunchGroup,
                               isLaunched && styles.btnLaunchGroupLaunched,
+                              !canDeliver && { opacity: 0.4 },
                             ]}
                             onPress={(e) => {
                               e.stopPropagation();
@@ -319,7 +325,7 @@ export function WorkFinishedList({
                                 launchableOf(slot.userGroups.flat()),
                               );
                             }}
-                            disabled={launchingGroups[groupId]}
+                            disabled={launchingGroups[groupId] || !canDeliver}
                           >
                             <Text
                               style={[

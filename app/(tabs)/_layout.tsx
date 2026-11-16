@@ -19,7 +19,7 @@ import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { useActivateFastFoods } from "@/src/features/restaurants/context/FastFoodContext";
-import { WORK_STAGE_PERMISSION, type WorkStage } from "@/src/features/staff/components/WorkOrdersScreen";
+import { canSeeOrders } from "@/src/features/staff/components/WorkOrdersScreen";
 import { showToast } from "@/src/services/globalToast";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 
@@ -34,9 +34,9 @@ function TabLayoutInner() {
   // Notifications / Profil. Onglet hors permissions du role : toast, pas d'ouverture.
   const { isMerchantMode, isWorkMode: w, isDriverMode, can } = useMerchantMode();
   const m = isMerchantMode && !w;
-  const guard = (stage: WorkStage) => ({
+  const guard = () => ({
     tabPress: (e: { preventDefault: () => void }) => {
-      if (!w || isDriverMode || can(WORK_STAGE_PERMISSION[stage])) return;
+      if (!w || isDriverMode || canSeeOrders(can)) return;
       e.preventDefault();
       showToast(t("Accès non permis : vous n'avez pas les droits d'accès à cette page"), "error");
     },
@@ -93,7 +93,7 @@ function TabLayoutInner() {
         >
           <Tabs.Screen
             name="index"
-            listeners={guard("pending")}
+            listeners={guard()}
             options={{
               tabBarLabel: w ? t("Attente") : t("Accueil"),
               tabBarIcon: ({ color, focused }) => (
@@ -159,7 +159,7 @@ function TabLayoutInner() {
           />
           <Tabs.Screen
             name="work-progress"
-            listeners={guard("progress")}
+            listeners={guard()}
             options={{
               href: w ? undefined : null,
               tabBarLabel: t("En cours"),
@@ -170,7 +170,7 @@ function TabLayoutInner() {
           />
           <Tabs.Screen
             name="work-done"
-            listeners={guard("done")}
+            listeners={guard()}
             options={{
               href: w ? undefined : null,
               tabBarLabel: t("Terminé"),

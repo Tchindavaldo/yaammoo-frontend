@@ -16,6 +16,9 @@ import {
   View,
 } from "react-native";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
+import { styles } from "./MerchantOrderCard.styles";
+import type { MerchantOrderCardProps } from "./MerchantOrderCard.types";
+import { useMerchantMode } from "../context/MerchantModeContext";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import {
   computeGrandTotal,
@@ -35,41 +38,6 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-interface MerchantOrderCardProps {
-  order: Commande;
-  allOrders?: Commande[];
-  /**
-   * Commandes du groupe passées AU SEUL bottom sheet (nav multi-cmd), sans
-   * basculer la carte sur le design groupé — la carte reste celle de `order`,
-   * la commande la mieux classée du groupe.
-   */
-  sheetOrders?: Commande[];
-  /**
-   * Toutes les commandes de la boutique : sert à l'onglet Montant du sheet, qui
-   * recompose le groupe ABSOLU (même client / date / créneau ou zone) sans le
-   * filtre de statut appliqué à la liste.
-   */
-  groupPool?: Commande[];
-  onUpdateStatus: (
-    status:
-      | "processing"
-      | "finished"
-      | "delivering"
-      | "delivered"
-      | "cancelByFastFood",
-  ) => Promise<void> | void;
-  /** Délègue le groupe à un livreur (pose driverId sur les commandes). */
-  onDelegate?: (driverId: string) => Promise<void> | void;
-  /**
-   * Valide UNE commande précise (bouton dans l'onglet Commande du sheet).
-   * Sans cette prop, on retombe sur `onUpdateStatus` (toute la ligne).
-   */
-  onValidateOne?: (
-    orderId: string,
-    status: "processing" | "finished",
-  ) => Promise<void | boolean> | void;
-  isForceLaunched?: boolean;
-}
 
 export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   order,
@@ -86,6 +54,9 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLaunchedLocal, setIsLaunchedLocal] = useState(false);
   const [delegateVisible, setDelegateVisible] = useState(false);
+  // Mode personnel : boutons hors permissions du role grises (backend refuse aussi).
+  const { can } = useMerchantMode();
+  const canDeliver = can("orders.deliver");
 
   const isLaunched = isLaunchedLocal || isForceLaunched;
 
@@ -273,8 +244,8 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
               ) : isSelfDelivering ? (
                 // Le marchand livre lui-même : chip "Terminer" pour clôturer.
                 <TouchableOpacity
-                  style={styles.finishBtn}
-                  disabled={isUpdating}
+                  style={[styles.finishBtn, !canDeliver && { opacity: 0.4 }]}
+                  disabled={isUpdating || !canDeliver}
                   onPress={() => handleUpdateStatus("delivered")}
                 >
                   <Ionicons name="checkmark-done" size={14} color="white" />
@@ -282,8 +253,8 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
-                  style={styles.summaryValidateBtn}
-                  disabled={isUpdating}
+                  style={[styles.summaryValidateBtn, !canDeliver && { opacity: 0.4 }]}
+                  disabled={isUpdating || !canDeliver}
                   onPress={() => setDelegateVisible(true)}
                 >
                   <Ionicons name="bicycle-outline" size={14} color="white" />
@@ -466,8 +437,8 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
 
             {(isPending || isActive) && (
               <TouchableOpacity
-                style={styles.summaryValidateBtn}
-                disabled={isUpdating}
+                style={[styles.summaryValidateBtn, !can(isPending ? "orders.validate" : "orders.finish") && { opacity: 0.4 }]}
+                disabled={isUpdating || !can(isPending ? "orders.validate" : "orders.finish")}
                 onPress={() =>
                   handleUpdateStatus(isPending ? "processing" : "finished")
                 }
@@ -507,197 +478,3 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  wrapper: {
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: DS.gray100,
-    paddingHorizontal: 16,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    paddingLeft: 0,
-    backgroundColor: "white",
-  },
-  avatarContainer: {
-    width: 50,
-    height: 55,
-    borderRadius: 25,
-    backgroundColor: "#fee2e2",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-    position: "relative",
-  },
-  avatarImage: {
-    width: 48,
-    height: 53,
-    borderRadius: 24,
-  },
-  deliveryIcon: {
-    position: "absolute",
-    bottom: -2,
-    left: -2,
-    backgroundColor: DS.accent,
-    padding: 2,
-    borderRadius: 6,
-    zIndex: 10,
-  },
-  summaryInfo: {
-    flex: 1,
-  },
-  summaryName: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#111827",
-    flex: 1,
-  },
-  summaryPrice: {
-    fontSize: 14,
-    fontWeight: "900",
-    color: DS.accent,
-  },
-  summaryChipsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: 4,
-  },
-  smallChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    marginRight: 5,
-    marginBottom: 4,
-  },
-  // Chip sans item : gris doux (#9ca3af côté texte) plutôt que le #ccc d'origine,
-  // qui donnait un rendu sec/désactivé.
-  chipInactive: {
-    backgroundColor: DS.gray50,
-    borderWidth: 1,
-    borderColor: DS.gray100,
-  },
-  chipText: {
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  summaryTopRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  summaryTitleContainer: {
-    flexDirection: "column",
-    flex: 1,
-  },
-  rankContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: DS.gray100,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  rankBadgeRow: {
-    fontSize: 10,
-    fontWeight: "900",
-    color: "#6b7280",
-    marginLeft: 2,
-  },
-  summaryValidateBtn: {
-    backgroundColor: "black",
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  delegatedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#2563eb15",
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  delegatedText: {
-    color: "#2563eb",
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  deliveredBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#16a34a15",
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  deliveredText: {
-    color: "#16a34a",
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  finishBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#16a34a",
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 12,
-  },
-  finishBtnText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "bold",
-  },
-  summaryValidateBtnText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "bold",
-    marginLeft: 4,
-  },
-  summaryBottomRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  absoluteLoader: {
-    ...StyleSheet.absoluteFill,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 100,
-  },
-  avatarInitials: {
-    fontSize: 16,
-    fontWeight: "900",
-    color: DS.accent,
-  },
-  orderCountBadge: {
-    position: "absolute",
-    bottom: -2,
-    left: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    zIndex: 10,
-  },
-  orderCountText: {
-    color: "white",
-    fontSize: 9,
-    fontWeight: "900",
-  },
-});

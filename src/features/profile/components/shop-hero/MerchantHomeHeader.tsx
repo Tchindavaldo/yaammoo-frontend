@@ -18,7 +18,7 @@ export function MerchantHomeHeader() {
   const { setMerchantMode } = useMerchantMode();
   const { user, userData } = useAuth();
   const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || "";
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const shop = useShopIdentity(fastFoodId);
   const name = shop?.name || "";
 

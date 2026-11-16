@@ -1,3 +1,4 @@
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Config } from "@/src/api/config";
@@ -40,7 +41,7 @@ const valid = (n: number) => Number.isFinite(n) && n > 0;
  */
 export function useMenuPriceCheck(prices: DraftPrice[]) {
   const { userData } = useAuth();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const [previews, setPreviews] = useState<(MenuPricePreview | null)[]>([]);
   const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
 

@@ -19,14 +19,10 @@ import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { useActivateFastFoods } from "@/src/features/restaurants/context/FastFoodContext";
-import { MerchantModeProvider, useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 
 export default function TabLayout() {
-  return (
-    <MerchantModeProvider>
-      <TabLayoutInner />
-    </MerchantModeProvider>
-  );
+  return <TabLayoutInner />;
 }
 
 function TabLayoutInner() {

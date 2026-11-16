@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
@@ -37,6 +38,7 @@ export const useEditBoutique = ({
 }) => {
   useLanguage();
   const { userData } = useAuth();
+  const { fastFoodId } = useMerchantMode();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(70);
@@ -96,12 +98,12 @@ export const useEditBoutique = ({
 
   // Load boutique data when visible
   useEffect(() => {
-    if (!visible || !userData?.fastFoodId) return;
+    if (!visible || !fastFoodId) return;
     const loadBoutiqueData = async () => {
       setLoadingData(true);
       try {
         const response = await axios.get(
-          `${Config.apiUrl}/fastfood/${userData.fastFoodId}`,
+          `${Config.apiUrl}/fastfood/${fastFoodId}`,
           { headers: { "ngrok-skip-browser-warning": "true" } },
         );
         const data = response.data?.data;
@@ -149,7 +151,7 @@ export const useEditBoutique = ({
       }
     };
     loadBoutiqueData();
-  }, [visible, userData?.fastFoodId]);
+  }, [visible, fastFoodId]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], {
@@ -299,7 +301,7 @@ export const useEditBoutique = ({
       }
 
       const response = await axios.post(
-        `${Config.apiUrl}/fastfood/${userData?.fastFoodId}`,
+        `${Config.apiUrl}/fastfood/${fastFoodId}`,
         updateData,
       );
 

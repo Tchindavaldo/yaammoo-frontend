@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "../../auth/context/AuthContext";
 import { withdrawService, WithdrawQuote, PayoutNumbers } from "../services/withdrawService";
@@ -59,7 +60,7 @@ export const useWithdraw = (balances: WalletBalances) => {
   const stateRef = useRef<WithdrawState>(withdrawState);
   stateRef.current = withdrawState;
 
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
 
   /** Numeros de la boutique, relus a chaque ouverture (ils changent dans « Infos »). */
   const loadNumbers = useCallback(async () => {

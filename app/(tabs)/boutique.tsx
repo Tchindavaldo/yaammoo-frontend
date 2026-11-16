@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
@@ -24,6 +25,7 @@ import { t, dateLocale, useLanguage } from "@/src/i18n";
 export default function BoutiqueScreen() {
   const i18nLang = useLanguage();
   const { userData, loading: authLoading } = useAuth();
+  const { fastFoodId: activeFastFoodId } = useMerchantMode();
   const { isSignedIn } = useAuthGate();
   const { orders, loading: merchantLoading, refresh, updateStatus, delegateOrder, ensureLoaded } = useMerchant();
 
@@ -86,7 +88,7 @@ export default function BoutiqueScreen() {
     );
   }
 
-  if (!userData?.fastFoodId && !loading) {
+  if (!activeFastFoodId && !loading) {
     return (
      <View style={{ flex: 1, backgroundColor: 'white' }}>
         <NoBoutiquePanel />

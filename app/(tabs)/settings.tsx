@@ -13,6 +13,7 @@ import { SettingGridItem } from "@/src/features/profile/components/SettingGridIt
 import { ProfileListGroup, ProfileListRow } from "@/src/features/profile/components/ProfileListGroup";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { StaffShopPickerSheet } from "@/src/features/staff/components/StaffShopPickerSheet";
 import { MerchantSwitchStrip } from "@/src/features/profile/components/MerchantSwitchStrip";
 import { CreateShopStrip } from "@/src/features/profile/components/CreateShopStrip";
 import { useNotificationSwitch } from "@/src/features/profile/hooks/useNotificationSwitch";
@@ -58,9 +59,11 @@ export default function SettingsScreen() {
   const [headerHeight, setHeaderHeight] = useState(insets.top + 150);
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
-  const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
-  const { isMerchantMode, setMerchantMode } = useMerchantMode();
+  const { isMerchant, isMerchantMode, isStaffMode, shops, setMerchantMode, enterShop } = useMerchantMode();
+  const [shopPickerVisible, setShopPickerVisible] = useState(false);
   const switchMode = () => {
+    // Plusieurs boutiques (postes) : l'employe choisit.
+    if (!isMerchantMode && shops.length > 1) return setShopPickerVisible(true);
     setMerchantMode(!isMerchantMode);
     router.navigate("/(tabs)");
   };
@@ -224,12 +227,22 @@ export default function SettingsScreen() {
             boutique ou bascule de mode. */}
         <View style={styles.sectionLine} />
         {isMerchant ? (
-          <MerchantSwitchStrip isMerchantMode={isMerchantMode} onPress={switchMode} />
+          <MerchantSwitchStrip isMerchantMode={isMerchantMode} isStaff={isStaffMode || !shops.some((s) => s.isOwner)} onPress={switchMode} />
         ) : (
           <CreateShopStrip onPress={() => router.push("/shop/create")} />
         )}
 
       </ScrollView>
+      <StaffShopPickerSheet
+        visible={shopPickerVisible}
+        shops={shops}
+        onClose={() => setShopPickerVisible(false)}
+        onPick={(id) => {
+          setShopPickerVisible(false);
+          enterShop(id);
+          router.navigate("/(tabs)");
+        }}
+      />
       </BlurTarget>
       </BlurScope>
       </BlurTarget>

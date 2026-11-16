@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import {
@@ -28,7 +29,7 @@ export type BroadcastSendResult = { ok: true } | { ok: false; message: string };
 export const useBroadcast = (active: boolean, onLoadError: () => void) => {
   useLanguage();
   const { userData } = useAuth();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
 
   const [plan, setPlan] = useState<BroadcastPlan>(FREE_PLAN);
   const [cities, setCities] = useState<string[]>([]);

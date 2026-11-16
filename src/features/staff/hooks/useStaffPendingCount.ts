@@ -1,3 +1,4 @@
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import type { ApplicationEvent } from "@/src/features/driver/context/DriverContext";
@@ -16,7 +17,7 @@ import { pendingOf } from "./useStaffDrivers";
 export const useStaffPendingCount = (enabled: boolean, screenOpen: boolean) => {
   const { userData } = useAuth();
   const { registerApplicationHandler, unregisterApplicationHandler } = useDriver();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const [count, setCount] = useState(0);
   const [tick, setTick] = useState(0);
 

@@ -1,3 +1,12 @@
+/** Poste de l'utilisateur connecté, servi par `GET /staff/me`. */
+export interface StaffPost {
+  memberId: string;
+  fastFoodId: string;
+  fastFoodName: string;
+  roleName: string;
+  permissions: string[];
+}
+
 /** Permission servie par `GET /staff/permissions`. */
 export interface StaffPermission {
   key: string;

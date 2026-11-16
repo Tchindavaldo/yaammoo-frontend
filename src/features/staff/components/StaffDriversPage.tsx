@@ -2,6 +2,7 @@
 // Page « Livreurs » (Gestion → Livreurs, route app/shop/drivers.tsx) : demandes
 // recues, mes livreurs, et « Ajouter un livreur ». Ancien onglet Livreurs de
 // Personnel, sorti en page a part (logique reprise de StaffManageModal).
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useState } from "react";
@@ -45,7 +46,7 @@ export const StaffDriversPage: React.FC<{ onClose: () => void }> = ({ onClose })
   };
 
   const submit = async (draft: DriverRecruitDraft) => {
-    const fastFoodId = userData?.fastFoodId;
+    const { fastFoodId } = useMerchantMode();
     if (!fastFoodId) return false;
     setRecruiting(true);
     const error = await driverService.recruitDriver(fastFoodId, draft);

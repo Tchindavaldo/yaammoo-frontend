@@ -10,20 +10,22 @@ import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   isMerchantMode: boolean;
+  /** Boutique d'employe : libelle « mode personnel ». */
+  isStaff?: boolean;
   onPress: () => void;
 }
 
-export function MerchantSwitchStrip({ isMerchantMode, onPress }: Props) {
+export function MerchantSwitchStrip({ isMerchantMode, isStaff = false, onPress }: Props) {
   useLanguage();
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <Ionicons name="swap-horizontal" size={18} color={DS.accent} />
       <View style={styles.texts}>
         <Text style={styles.title} numberOfLines={1}>
-          {isMerchantMode ? t("Mode marchand actif") : t("Mode client actif")}
+          {isMerchantMode ? (isStaff ? t("Mode personnel actif") : t("Mode marchand actif")) : t("Mode client actif")}
         </Text>
         <Text style={styles.sub} numberOfLines={1}>
-          {isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
+          {isMerchantMode ? t("Passer en mode client") : isStaff ? t("Passer en mode personnel") : t("Passer en mode marchand")}
         </Text>
       </View>
       <View style={styles.btn}>

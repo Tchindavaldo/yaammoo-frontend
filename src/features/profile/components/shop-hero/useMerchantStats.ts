@@ -1,4 +1,5 @@
 // Stats du hero marchand : GET /fastFood/:fastFoodId/stats (backend, fonction merchant_stats).
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { Config } from "@/src/api/config";
@@ -66,7 +67,7 @@ export function useMerchantStats(
   onSettled?: () => void,
 ): { stats: MerchantStats; bucket: Bucket; version: number } {
   const { userData } = useAuth();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const bucket = bucketOf(period);
   const [stats, setStats] = useState<MerchantStats>(EMPTY_STATS);
   const [version, setVersion] = useState(0);

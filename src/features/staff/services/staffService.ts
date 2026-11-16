@@ -6,6 +6,7 @@ import type {
   StaffMemberPatch,
   StaffPermission,
   StaffPlan,
+  StaffPost,
   StaffRole,
   StaffRoleDraft,
 } from "../types/staff.types";
@@ -75,6 +76,24 @@ export const staffService = {
     const res = await axios.get(`${BASE()}/permissions`);
     return list(res.data?.data, (p) =>
       p?.key ? { key: String(p.key), label: String(p.label || p.key) } : null,
+    );
+  },
+
+  /** Postes de l'utilisateur connecté (`GET /staff/me`). */
+  async getMyPosts(): Promise<StaffPost[]> {
+    const res = await axios.get(`${BASE()}/me`);
+    return list(res.data?.data, (p) =>
+      p?.fastFoodId
+        ? {
+            memberId: String(p.memberId ?? ""),
+            fastFoodId: String(p.fastFoodId),
+            fastFoodName: String(p.fastFoodName || ""),
+            roleName: String(p.role?.name ?? p.role ?? ""),
+            permissions: Array.isArray(p.permissions)
+              ? p.permissions.filter((x: unknown) => typeof x === "string")
+              : [],
+          }
+        : null,
     );
   },
 

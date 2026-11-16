@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import React, { useEffect, useState } from "react";
 import {
@@ -49,7 +50,7 @@ export const DelegateDriverSheet: React.FC<DelegateDriverSheetProps> = ({
   useLanguage();
   const { userData } = useAuth();
   const insets = useSafeAreaInsets();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const [loading, setLoading] = useState(false);
   const [drivers, setDrivers] = useState<DriverInfo[]>([]);
   // Action en cours : "self" | driverId → affiche un spinner sur la ligne.

@@ -13,6 +13,7 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "@/src/features/auth/context/AuthContext";
 import { OrderProvider } from "@/src/features/orders/context/OrderContext";
 import { MerchantProvider } from "@/src/features/merchant/context/MerchantContext";
+import { MerchantModeProvider } from "@/src/features/merchant/context/MerchantModeContext";
 import { DriverProvider } from "@/src/features/driver/context/DriverContext";
 import { WalletProvider } from "@/src/features/wallet/context/WalletContext";
 import { MerchantWalletProvider } from "@/src/features/merchant/context/MerchantWalletContext";
@@ -264,6 +265,7 @@ function RootLayout() {
     // silencieusement inertes sur Android.
     <GestureHandlerRootView style={{ flex: 1 }}>
     <AuthProvider>
+      <MerchantModeProvider>
       <OrderProvider>
         <NotificationProvider>
           <StatusBar style="dark" />
@@ -298,6 +300,7 @@ function RootLayout() {
           </MerchantProvider>
         </NotificationProvider>
       </OrderProvider>
+      </MerchantModeProvider>
     </AuthProvider>
     </GestureHandlerRootView>
   );

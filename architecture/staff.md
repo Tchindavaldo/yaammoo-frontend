@@ -102,3 +102,12 @@ un plan.
 - **Plus d'onglet Livreurs dans Personnel** : la carte Livreurs ouvre `StaffDriversSheet` ;
   la gestion (demandes, retrait, ajout) est la page `/shop/drivers` (Gestion → Livreurs).
   `?section=drivers` redirige vers cette page.
+
+## Mode personnel (employé connecté)
+
+`src/features/merchant/context/MerchantModeContext.tsx` (monté à la racine, sous `AuthProvider`) :
+
+- Boutiques accessibles = la sienne (propriétaire, toutes permissions) + ses postes (`GET /staff/me`, `staffService.getMyPosts`).
+- Démarrage : sa boutique, sinon son poste unique, sinon mode client. Plusieurs boutiques : l'utilisateur choisit (`StaffShopPickerSheet`) en passant en mode personnel depuis le profil.
+- Mode personnel = même interface que le marchand, sur la boutique du poste. `fastFoodId` du contexte = boutique active : TOUT l'écran marchand le lit (jamais `userData.fastFoodId`).
+- `can(permission)` : actions hors rôle **grisées** (cases Gestion, boutons Valider / Lancer / Terminer de `MerchantOrderCard`, Retirer du portefeuille réservé au propriétaire). Le backend les refuse aussi.

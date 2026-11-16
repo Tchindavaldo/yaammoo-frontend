@@ -179,6 +179,18 @@ Le champ WhatsApp suit le même principe : `PayoutNumberSheet` en mode
 `whatsapp` (`PayoutOtpStep channel="whatsapp"`, « Un code vous sera envoyé sur
 WhatsApp »), appels `POST /whatsapp-number/request|verify` (WhatsApp seul).
 
+**WhatsApp d'abord, sans SMS si même numéro** (app 1.1.6, R11 backend
+`payout_number_whatsapp_min_app_version`) : sans WhatsApp validé, toucher OM ou MoMo
+affiche un toast et ouvre la sheet WhatsApp (`openPayout`). Si le numéro OM / MoMo
+saisi est le WhatsApp déjà validé du compte, `request` répond `verified: true` : pas
+d'étape code, toast de succès, le champ est rempli (aucun SMS ni frais).
+`PayoutOtpStep` saute l'étape code quand `onSubmitPhone` renvoie `{ verified: true }`.
+Même règle dans la sheet du retrait (`WithdrawSheet`). « WhatsApp validé » = connu du
+backend (`GET /whatsapp-number`, `getVerifiedWhatsappNumbers`) ; après sa validation, la
+sheet OM / MoMo demandée se rouvre, pré-remplie avec le WhatsApp (un toucher, aucun SMS).
+**Pas de sens inverse** : le WhatsApp reçoit toujours son code, même identique à un
+OM / MoMo déjà validé (un numéro OM / MoMo ne prouve pas qu'il a WhatsApp).
+
 ## Restauration d'une boutique supprimée avec le compte
 
 À l'ouverture de la création (`ShopCreateBoutiquePanel`, `CreateBoutiquePanel`),

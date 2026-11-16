@@ -3,7 +3,9 @@
 // SMS seul) ou du WhatsApp de la boutique (code sur WhatsApp seul). Cadre copie
 // de la sheet de connexion (`AuthGateContext`, R16) : hauteur FIXE
 // `AUTH_SHEET_HEIGHT` + bande safe-area, coins 28, fond blanc, voile sombre.
-// Un code valide => `onVerified(numero local)`, puis fermeture.
+// Un code valide => `onVerified(numero local)`, puis fermeture. Numero OM / MoMo deja
+// valide sur WhatsApp (app >= 1.1.6) : valide tout de suite, sans SMS ni frais ; et
+// l'inverse : WhatsApp deja valide comme numero OM / MoMo, valide sans code.
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
 import { useSheetAnimation } from "@/src/hooks/useSheetAnimation";
@@ -14,6 +16,7 @@ import { t, useLanguage } from "@/src/i18n";
 import { AUTH_SHEET_HEIGHT } from "@/src/features/auth/constants";
 import { getPayoutNumberFee, requestPayoutNumberCode, requestWhatsappNumberCode, verifyPayoutNumberCode, verifyWhatsappNumberCode } from "../../services/payoutNumberService";
 import { PayoutOtpStep } from "./PayoutOtpStep";
+import { showToast } from "@/src/services/globalToast";
 
 /** Numero touche : retrait Orange / MTN (code par SMS) ou WhatsApp (code sur WhatsApp). */
 export type PayoutNetwork = "orange" | "mtn" | "whatsapp";
@@ -56,8 +59,12 @@ export function PayoutNumberSheet({ network: open, initialPhone, onClose, onVeri
             feeEstimate={fee}
             onSubmitPhone={async phone => {
               phoneRef.current = phone;
-              if (network === "whatsapp") await requestWhatsappNumberCode(phone);
-              else await requestPayoutNumberCode(phone, network);
+              const r = network === "whatsapp" ? await requestWhatsappNumberCode(phone) : await requestPayoutNumberCode(phone, network);
+              if (!r.verified) return;
+              showToast(t("Numéro validé sans code : c'est votre numéro WhatsApp déjà vérifié."), "success");
+              onVerified(network, phone);
+              onClose();
+              return { verified: true };
             }}
             onSubmitCode={async code => {
               await (network === "whatsapp" ? verifyWhatsappNumberCode : verifyPayoutNumberCode)(phoneRef.current, code);

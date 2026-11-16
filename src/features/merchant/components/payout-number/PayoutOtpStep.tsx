@@ -38,7 +38,8 @@ import { DS } from "@/src/theme/ds";
  */
 
 interface WhatsAppAuthStepProps {
-  onSubmitPhone: (phone: string) => Promise<void> | void;
+  /** `{ verified: true }` : numero deja valide (WhatsApp), pas d'etape code ; le parent ferme. */
+  onSubmitPhone: (phone: string) => Promise<void | { verified?: boolean }> | void;
   onSubmitCode: (code: string) => Promise<void> | void;
   /** Renvoi du code — etape 2 uniquement. */
   onResend?: () => Promise<void> | void;
@@ -131,7 +132,8 @@ export const PayoutOtpStep: React.FC<WhatsAppAuthStepProps> = ({
       // ⚠️ Numero NU, sans indicatif : c'est ce qu'attend
       // `POST /auth/phone/request` (ex. « 698087460 »). Le `+237` affiche a
       // gauche du champ n'est qu'un repere visuel.
-      await onSubmitPhone(phone);
+      const r = (await onSubmitPhone(phone)) as { verified?: boolean } | undefined;
+      if (r?.verified) return;
       // Le champ du code repart vide : un code precedent encore present serait
       // envoye par erreur au premier appui sur « Verifier ».
       setCode("");

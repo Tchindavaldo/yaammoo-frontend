@@ -218,11 +218,13 @@ class HLShopRowView(
       return
     }
     val ease = DecelerateInterpolator()
+    // Grille categorie : squelette garde un peu plus longtemps (pas de flash).
+    val delay = if (design == HL_GRID) HLLayout.gridRevealDelayMs else 0L
     pairs.forEach { (c, s) ->
-      c.animate().alpha(1f).setDuration(HLLayout.revealMs).setInterpolator(ease)
-      s.animate().alpha(0f).setDuration(HLLayout.revealMs).setInterpolator(ease)
+      c.animate().alpha(1f).setStartDelay(delay).setDuration(HLLayout.revealMs).setInterpolator(ease)
+      s.animate().alpha(0f).setStartDelay(delay).setDuration(HLLayout.revealMs).setInterpolator(ease)
     }
-    mainHandler.postDelayed(done, HLLayout.revealMs)
+    mainHandler.postDelayed(done, delay + HLLayout.revealMs)
   }
 
   private fun applyRevealed(r: Boolean) {

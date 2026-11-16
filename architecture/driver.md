@@ -137,9 +137,15 @@ Composants partagés dans `src/features/orders/components/` : `DriverInfoTab` (p
 
 **Mise en page `DriverInfoTab`** : ligne haut = identité livreur (nom + note) ; bas en
 2 colonnes → **gauche** stats (`myStats` = mes cmd avec ce livreur, sinon `stats`) +
-bouton/formulaire de notation ; **droite** = **QR code** (cmd `delivering`, scanné par
-le livreur pour confirmer — encode `{ orderId, driverId, driverEmail, userEmail }`, lib
-`react-native-qrcode-svg`) OU **BikeAnimation + « Livré »** (cmd `delivered`).
+bouton/formulaire de notation ; **droite** = `DeliveryStateCard` : **QR code** (cmd
+`delivering`) OU **BikeAnimation + « Livré »** (cmd `delivered`). Côté **client**, le QR
+contient le lien WhatsApp `whatsappLink` de `GET /order/:orderId/delivery-code`
+(`services/deliveryCodeService.ts`) : message prérempli « LIVRÉ <orderId> <code> » vers le
+numéro Yaammoo, le code est affiché sous le QR. Le marchand sans app le scanne avec
+l'appareil photo et envoie : la livraison est validée. Le QR ne paie rien, il prouve la
+remise. Côté marchand (lecture seule), QR historique `{ orderId, driverId, … }`.
+Fichiers sortis de `DriverInfoTab` (R26) : `DriverInfoTab.styles.ts`, `DriverCommentModal.tsx`,
+`DeliveryStateCard.tsx`.
 
 Le bouton « Noter » s'affiche selon **`profile.canRate`** (backend : livré ≥1 fois ET pas
 encore noté) ; `profile.hasRated` → « Déjà noté ». Scope `public` fournit

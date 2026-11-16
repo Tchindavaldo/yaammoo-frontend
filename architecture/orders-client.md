@@ -448,7 +448,8 @@ sert aussi au marchand (`MerchantOrderBottomSheet`), R16.
 Visible si `status === delivering || status === delivered`.
 - Infos livreur (nom, note, stats) ou infos marchand si c'est lui qui livre
 - **Notation** : bouton « Noter » apparaît si `profile?.canRate` (scope `public` pour livreur, `client` pour marchand)
-- QR code (delivering) ou BikeAnimation + « Livré » (delivered)
+- QR code (delivering) ou BikeAnimation + « Livré » (delivered) — le QR client = lien WhatsApp
+  « LIVRÉ <orderId> <code> » (`GET /order/:orderId/delivery-code`), voir [driver.md](driver.md)
 
 ### Tab Noter (`RateMenuTab`)
 Visible si `status === delivered && menuId existe`.

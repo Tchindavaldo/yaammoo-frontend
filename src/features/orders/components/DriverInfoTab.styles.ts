@@ -1,0 +1,217 @@
+// Styles de DriverInfoTab (tab « Livreur ») et de ses sous-composants, sortis du composant (R4, R26).
+import { StyleSheet } from "react-native";
+import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
+
+// Même hauteur de référence que CheckoutContactOverlay (base du blur + container).
+const SHEET_H = 384;
+
+export const styles = StyleSheet.create({
+  container: {
+    position: "relative",
+    minHeight: 200,
+  },
+  // ── Overlay commentaire : même structure que CheckoutContactOverlay ──
+  keyboardWrapper: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 100,
+  },
+  blurOverlay: {
+    // Plein écran, rendu via l'opacity (fondu) quand le clavier est ouvert.
+    ...StyleSheet.absoluteFill,
+  },
+  commentContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SHEET_H,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+  },
+  commentModalCard: {
+    backgroundColor: "white",
+    borderRadius: 24,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: DS.slate100,
+  },
+  commentInlineHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  commentHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  keyboardSmallBtn: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  commentInlineTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#0f172a",
+  },
+  commentInlineClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: DS.slate50,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: DS.slate100,
+  },
+  commentModalInput: {
+    height: 140,
+    fontSize: 15,
+    color: "#334155",
+    textAlignVertical: "top",
+    backgroundColor: DS.slate50,
+    borderRadius: 16,
+    padding: 16,
+  },
+  commentValidateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 14,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: Theme.colors.primary,
+  },
+  commentValidateText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  centered: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    gap: 8,
+  },
+  muted: { fontSize: 13, color: "#9CA3AF" },
+  // — repris de LivraisonTab —
+  statePlaceholder: {
+    height: "100%",
+    backgroundColor: DS.gray100,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    overflow: "hidden",
+  },
+  deliveredText: { fontSize: 12, fontWeight: "600", color: "#27500A" },
+  infoCard: {
+    backgroundColor: DS.gray50,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: DS.gray100,
+  },
+  infoLabel: {
+    fontSize: 10,
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  infoVal: { fontSize: 14, fontWeight: "600", color: "#111827" },
+  infoValSm: { fontSize: 13, color: "#374151", lineHeight: 20 },
+  // Cards stats individuelles côte à côte (titre 2 lignes + chiffre + label).
+  statsCardsRow: { flexDirection: "row", gap: 8, marginTop: 12 },
+  statCard: { flex: 1, padding: 10, alignItems: "flex-start" },
+  statCardTitle: {
+    fontSize: 9,
+    color: "#9CA3AF",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    fontWeight: "700",
+    marginBottom: 4,
+    lineHeight: 12,
+  },
+  statCardVal: { fontSize: 20, fontWeight: "900", color: "#111827" },
+  statCardLbl: {
+    fontSize: 9,
+    color: "#6B7280",
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  ratedCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    padding: 14,
+  },
+  ratedText: { fontSize: 13, fontWeight: "600", color: "#166534" },
+  modifyBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginLeft: "auto",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: Theme.colors.primary + "15",
+  },
+  modifyBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Theme.colors.primary,
+  },
+  infoMsgCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    padding: 14,
+    borderColor: "#E5E7EB",
+  },
+  infoMsgText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#6B7280",
+  },
+  // Ligne notation : étoiles (gauche) + 2 boutons icônes (droite).
+  rateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  starsRow: { flexDirection: "row", gap: 4 },
+  rateActions: { flexDirection: "row", gap: 8 },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Theme.colors.primary + "15",
+  },
+  iconBtnActive: { backgroundColor: Theme.colors.primary },
+  submitDisabled: { opacity: 0.4 },
+  sendBtn: {
+    backgroundColor: Theme.colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

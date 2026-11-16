@@ -31,8 +31,8 @@ export async function getVerifiedWhatsappNumbers(): Promise<string[]> {
     return [];
   }
 }
-/** WhatsApp de la boutique : code sur WhatsApp UNIQUEMENT. App >= 1.1.6 : numero deja
- * valide comme numero de retrait => `verified: true`, aucun code (sens inverse). */
+/** WhatsApp de la boutique : code sur WhatsApp UNIQUEMENT, toujours (un numero OM / MoMo
+ * valide ne prouve pas qu'il a WhatsApp). */
 export const requestWhatsappNumberCode = (phoneNumber: string) => requestCode("/whatsapp-number/request", phoneNumber);
 export const verifyWhatsappNumberCode = (phoneNumber: string, code: string) => verifyCode("/whatsapp-number/verify", phoneNumber, code);
 

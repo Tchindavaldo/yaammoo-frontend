@@ -61,7 +61,7 @@ export function PayoutNumberSheet({ network: open, initialPhone, onClose, onVeri
               phoneRef.current = phone;
               const r = network === "whatsapp" ? await requestWhatsappNumberCode(phone) : await requestPayoutNumberCode(phone, network);
               if (!r.verified) return;
-              showToast(network === "whatsapp" ? t("WhatsApp validé sans code : c'est votre numéro Orange Money / MoMo déjà vérifié.") : t("Numéro validé sans code : c'est votre numéro WhatsApp déjà vérifié."), "success");
+              showToast(t("Numéro validé sans code : c'est votre numéro WhatsApp déjà vérifié."), "success");
               onVerified(network, phone);
               onClose();
               return { verified: true };

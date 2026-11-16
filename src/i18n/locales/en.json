@@ -1410,5 +1410,8 @@
   "remboursement": "refund",
   "coût SMS": "SMS cost",
   "Rechercher un plat ou une boutique": "Search a dish or a shop",
-  "Aucun résultat pour \"{{a}}\"": "No results for \"{{a}}\""
+  "Aucun résultat pour \"{{a}}\"": "No results for \"{{a}}\"",
+  "Nouvelles commandes": "New orders",
+  "Commandes et paiements": "Orders and payments",
+  "Annulations": "Cancellations"
 }

@@ -1,24 +1,22 @@
 import { useMemo } from "react";
 import { FastFood } from "@/src/types";
-import { matchesCategory } from "@/src/features/search/utils/searchFilters";
-import { CATEGORIES } from "../utils/homeListConfig";
+import { DESIGN_CYCLE } from "../utils/designCycle";
+import { categoryApiValue } from "./useHomeCategoryReload";
+
+/** `designIndex` qui rend la carte V7 (aeree) dans le cycle des designs. */
+const V7_INDEX = DESIGN_CYCLE.indexOf(7);
 
 /**
- * Filtre catégorie du home (tabs du header) : garde les plats dont le nom
- * correspond à la catégorie (mêmes mots-clés que la page de recherche) et
- * retire les boutiques sans plat correspondant. « Tout » = liste inchangée.
+ * Tab categorie actif : le filtre est fait par le BACKEND (`?category=`, plats
+ * de la categorie seulement, cf. useHomeCategoryReload). Ici, chaque rangee
+ * est seulement forcee sur le design V7 aere, le design item retenu pour le
+ * home filtre. « Tout » = liste inchangee (cycle normal des designs).
  */
 export const useCategoryFilteredShops = (
   fastFoods: FastFood[],
   selectedCategory: string,
 ): FastFood[] =>
   useMemo(() => {
-    const idx = CATEGORIES.findIndex((c) => c.name === selectedCategory);
-    if (idx <= 0) return fastFoods;
-    return fastFoods
-      .map((ff: any) => ({
-        ...ff,
-        menu: (ff.menu ?? []).filter((m: any) => matchesCategory(m.titre ?? "", idx)),
-      }))
-      .filter((ff: any) => ff.menu.length > 0);
+    if (!categoryApiValue(selectedCategory)) return fastFoods;
+    return fastFoods.map((ff) => ({ ...ff, designIndex: V7_INDEX }) as FastFood);
   }, [fastFoods, selectedCategory]);

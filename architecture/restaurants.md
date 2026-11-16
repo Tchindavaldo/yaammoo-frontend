@@ -368,9 +368,13 @@ première page.
 `useFastFoods` ne garde qu'un filtre : les boutiques **sans plat**, pour celles
 arrivées par socket dont le payload peut ne pas porter de menus.
 
-`selectedCategory` filtre côté client (`hooks/useCategoryFilteredShops.ts`) :
-plats gardés par mots-clés sur leur nom (`search/utils/searchFilters.ts`),
-boutiques sans plat correspondant retirées. « Tout » = liste inchangée.
+`selectedCategory` filtre côté **backend** : `hooks/useHomeCategoryReload.ts`
+pose `?category=` (valeur fixe par position de tab, `CATEGORY_API`) sur chaque
+requête de `useFastFoodFetch` et recharge le home depuis la 1re page. Le backend
+ne rend que les boutiques ayant un plat de cette catégorie (`menus.category`,
+saisie libre du marchand), avec ces seuls plats. `hooks/useCategoryFilteredShops.ts`
+force alors chaque rangée sur le design V7 aéré (liste native inchangée,
+livrable par OTA). « Tout » = liste et designs inchangés.
 
 ---
 
@@ -397,7 +401,7 @@ page), et la `value` reste mémoïsée.
 | `cancelPendingLoadMore()` | Invalide une page en vol **sans tronquer**. Appelé au début d'une remontée. |
 | `hasLoadedOnce` | `true` après le 1er fetch (succès, vide ou erreur). Ne pilote plus la navigation. |
 | `useActivateFastFoods()` | Contexte séparé, valeur stable. Appelé par `app/(tabs)/_layout.tsx` à l'arrivée dans le home : **aucun `GET /fastFood/all` ne part avant** (ni sous le splash, ni sur l'écran d'accueil). Définitif pour la session. |
-| `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie filtrée côté client). |
+| `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie filtrée côté serveur). |
 | `appleReviewMode` · `banners` | Portés par la réponse. |
 | `upsert*FromSocket` · `applyDeliveryOffer` · `clearDeliveryOfferForBonus` | Injection socket, sans refetch. |
 

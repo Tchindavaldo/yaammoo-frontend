@@ -196,6 +196,11 @@ Règles clés (chacune corrige un bug observé) :
    > est une coupure nette (`none`), pas de fondu au boot. **Comportement voulu**
    > (pas de flash possible) ; ne pas chercher à le « corriger ».
 
+   > **Réouverture Android à chaud** (activité recréée, runtime JS vivant) : le
+   > module `_layout` ne se ré-exécute pas, donc `preventAutoHideAsync` n'était
+   > pas rappelé et `splashHidden` restait vrai → le get-started apparaissait
+   > avant la home. `AppContent` appelle `rearmSplash()` (`useHideSplash.ts`)
+   > avant son 1er rendu pour re-armer le splash.
 
 ## Déconnexion
 

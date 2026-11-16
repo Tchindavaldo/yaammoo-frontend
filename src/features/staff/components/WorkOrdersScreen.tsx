@@ -6,7 +6,7 @@ import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useMerchant } from "@/src/features/merchant/hooks/useMerchant";
-import { OrderManagePanel } from "@/src/features/merchant/components/OrderManagePanel";
+import { WorkOrderPanel } from "./work-orders/WorkOrderPanel";
 import { useDriver } from "@/src/features/driver/hooks/useDriver";
 import { DriverOrderPanel, type DateOption } from "@/src/features/driver/components/DriverOrderPanel";
 import { DriverFilterSheet } from "@/src/features/driver/components/DriverFilterSheet";
@@ -88,7 +88,7 @@ function StaffStage({ stage, topOffset, filterOpen, setFilterOpen }: StageProps)
     else if (status === "finished") showToast(t("Commande terminée"), "success");
   };
   return (
-    <OrderManagePanel
+    <WorkOrderPanel
       orders={orders}
       loading={loading}
       onRefresh={refresh}
@@ -97,9 +97,9 @@ function StaffStage({ stage, topOffset, filterOpen, setFilterOpen }: StageProps)
       selectedDate={selectedDate}
       onSelectDate={setSelectedDate}
       topOffset={topOffset}
-      lockedStatus={STAFF_STATUS[stage]}
+      selectedStatus={STAFF_STATUS[stage]}
       filterOpen={filterOpen}
-      onFilterOpenChange={setFilterOpen}
+      setFilterOpen={setFilterOpen}
     />
   );
 }

@@ -119,7 +119,7 @@ Au démarrage, un employé (poste unique) ou un livreur entre directement dans c
 
 - Navbar : **Attente** (route `index`) / **En cours** (`work-progress`) / **Terminé** (`work-done`) / Notifications / Profil.
   Écran commun : `src/features/staff/components/WorkOrdersScreen.tsx`.
-  - Personnel : `OrderManagePanel` avec `lockedStatus` (pending / processing / finished+delivering+delivered), barre basse masquée.
+  - Personnel : `work-orders/WorkOrderPanel` (copie R16 de `OrderManagePanel`, découpée : `useWorkOrderData`, `WorkFinishedList`, styles), statut imposé par l'onglet (pending / processing / finished+delivering+delivered), pas de barre basse.
   - Livreur : `DriverOrderPanel` sur ses livraisons (finished / delivering / delivered).
 - Header partout (`WorkHeader`) : copie inversée de `MerchantHomeHeader` — logo à gauche, nom + rôle, icône filtres à droite (ouvre le sheet passé / futur / périodes).
 - Droits (personnel) : Attente = `orders.validate`, En cours = `orders.finish`, Terminé = `orders.deliver`. Tap d'onglet sans le droit : toast « Accès non permis », l'onglet ne s'ouvre pas ; page atteinte quand même : « Vous n'avez pas les droits d'accès à cette page ». Notifications : ouvert à tous.

@@ -411,6 +411,7 @@ une OTA ne les ajoute pas.
   `useNotificationSetup` au démarrage ; `high_priority_channel` est conservé.
 - ⚠️ Le son d'un canal Android est figé à sa création : changer un son =
   nouveau fichier ET nouveau canal (`yaammoo_order_v2`), côté app et backend.
+- **Android release** : `enableShrinkResourcesInReleaseBuilds` supprime les `res/raw` non référencés dans le code, donc les `.wav` (lus par leur nom). `plugins/withKeepNotificationSounds.js` les déclare en `tools:keep`. Nouveau son = l'ajouter aussi à sa liste `SOUNDS`.
 - **Garde build natif** : les canaux à son ne sont créés que si le build natif embarque les `.wav` (`nativeBuildHasSounds()` dans `useNotificationSetup.ts`, via `expo-application`, seuils `SOUNDS_MIN_BUILD`). Sinon un ancien build qui reçoit l'OTA créerait un canal au son par défaut, figé pour toujours ; la push tombe alors dans le canal de secours.
 - **iOS (Xcode Cloud)** : le projet `ios/` est versionné et Xcode Cloud ne relance pas `expo prebuild`. Les `.wav` sont donc copiés à la main dans `ios/yaammoo/Supporting/` et déclarés dans `project.pbxproj` (ressources de la cible `yaammoo`). Nouveau son = l'ajouter aussi là, sinon iOS joue le son par défaut.
 - **Écran de discussion** : `yaammoo_chat.wav` joué par

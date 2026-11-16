@@ -1422,5 +1422,6 @@
   "Burger": "Burger",
   "Pizza": "Pizza",
   "La catégorie ne doit pas être vide": "The category must not be empty",
-  "Autre": "Other"
+  "Autre": "Other",
+  "Code indisponible": "Code unavailable"
 }

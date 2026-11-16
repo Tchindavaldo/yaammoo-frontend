@@ -851,8 +851,8 @@ liste du home n'est jamais touchée.
 
 ```
 src/features/search/
-├── hooks/useShopSearch.ts          # GET /fastFood/all?q=&limit=50 (debounce 300 ms), boutiques aplaties en plats
-├── utils/searchFilters.ts          # Filtres = CATEGORIES du home (par position), mots-clés sur le nom du plat ; saisie sur plat OU boutique
+├── hooks/useShopSearch.ts          # Catalogue ENTIER chargé à l'ouverture (toutes les pages de GET /fastFood/all), filtre local à chaque frappe ; pas de ?q= (ne cherche que le nom des boutiques)
+├── utils/searchFilters.ts          # Filtres = CATEGORIES du home (par position), mots-clés sur le nom du plat ; chaque mot saisi (partiel, sans accents) dans le plat, sa description ou la boutique
 └── components/SearchResultRow.tsx  # Gabarit UNIQUE, hauteur fixe SEARCH_ROW_HEIGHT (getItemLayout)
 ```
 

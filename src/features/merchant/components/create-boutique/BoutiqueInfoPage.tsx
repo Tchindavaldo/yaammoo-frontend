@@ -15,6 +15,7 @@ import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { showToast } from "@/src/services/globalToast";
 import { PayoutNumberSheet, type PayoutNetwork } from "../payout-number/PayoutNumberSheet";
+import { getVerifiedWhatsappNumbers } from "../../services/payoutNumberService";
 
 /**
  * Page unique du formulaire de CREATION de boutique.
@@ -103,9 +104,14 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   // Verification OTP du numero touche : OM / MoMo (SMS) ou WhatsApp (WhatsApp).
   const [payoutSheet, setPayoutSheet] = React.useState<PayoutNetwork | null>(null);
   // WhatsApp d'abord : un OM / MoMo identique au WhatsApp deja valide est valide sans SMS ni frais.
-  const openPayout = (net: "orange" | "mtn") => {
-    if (whatsappNumber) return setPayoutSheet(net);
+  // OM / MoMo demandé avant le WhatsApp : rouvert juste après la validation du WhatsApp.
+  const pendingPayout = React.useRef<"orange" | "mtn" | null>(null);
+  const nextSheet = React.useRef<PayoutNetwork | null>(null);
+  // WhatsApp validé = connu du backend (GET /whatsapp-number), pas seulement saisi sur la boutique.
+  const openPayout = async (net: "orange" | "mtn") => {
+    if ((await getVerifiedWhatsappNumbers()).length) return setPayoutSheet(net);
     showToast(t("Validez d'abord votre numéro WhatsApp : si votre Orange Money ou MoMo est le même numéro, il sera validé sans SMS ni frais."), "info");
+    pendingPayout.current = net;
     setPayoutSheet("whatsapp");
   };
   return (
@@ -180,7 +186,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               (PayoutNumberSheet). Meme style que les autres champs. */}
           <TouchableOpacity
             style={[styles.glassInput, { borderRadius: 20, justifyContent: "center" }]}
-            onPress={() => openPayout("orange")}
+            onPress={() => void openPayout("orange")}
             activeOpacity={0.7}
           >
             <Text style={{ fontSize: 13, color: number ? "#0f172a" : "#cbd5e1" }} numberOfLines={1}>
@@ -194,7 +200,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
               (PayoutNumberSheet). Meme style que les autres champs. */}
           <TouchableOpacity
             style={[styles.glassInput, { borderRadius: 20, justifyContent: "center" }]}
-            onPress={() => openPayout("mtn")}
+            onPress={() => void openPayout("mtn")}
             activeOpacity={0.7}
           >
             <Text style={{ fontSize: 13, color: momoNumber ? "#0f172a" : "#cbd5e1" }} numberOfLines={1}>
@@ -423,9 +429,17 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
     </TouchableOpacity>
     <PayoutNumberSheet
       network={payoutSheet}
-      initialPhone={payoutSheet === "orange" ? number : payoutSheet === "mtn" ? momoNumber : whatsappNumber}
-      onClose={() => setPayoutSheet(null)}
-      onVerified={(net, phone) => (net === "orange" ? setNumber : net === "mtn" ? setMomoNumber : setWhatsappNumber)(phone)}
+      initialPhone={payoutSheet === "orange" ? number || whatsappNumber : payoutSheet === "mtn" ? momoNumber || whatsappNumber : whatsappNumber}
+      onClose={() => {
+        const next = nextSheet.current;
+        nextSheet.current = null;
+        pendingPayout.current = null;
+        setPayoutSheet(next);
+      }}
+      onVerified={(net, phone) => {
+        (net === "orange" ? setNumber : net === "mtn" ? setMomoNumber : setWhatsappNumber)(phone);
+        if (net === "whatsapp") nextSheet.current = pendingPayout.current;
+      }}
     />
   </View>
 );

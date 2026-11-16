@@ -29,6 +29,7 @@ import {
 } from "../../services/walletNetwork";
 import { WithdrawAmountCapsule } from "./WithdrawAmountCapsule";
 import { PayoutNumberSheet, type PayoutNetwork } from "../payout-number/PayoutNumberSheet";
+import { getVerifiedWhatsappNumbers } from "../../services/payoutNumberService";
 import { withdrawService } from "../../services/withdrawService";
 import { apiErrorMessage } from "@/src/api/apiError";
 import { showToast } from "@/src/services/globalToast";
@@ -65,6 +66,21 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
   const state = w.withdrawState;
   const open = state !== "idle";
   const [payoutSheet, setPayoutSheet] = React.useState<PayoutNetwork | null>(null);
+  // WhatsApp d'abord (comme a la creation de la boutique) : un OM / MoMo identique au
+  // WhatsApp deja valide est valide sans SMS ni frais. Le numero WhatsApp pre-remplit OM / MoMo.
+  const [whatsappPhone, setWhatsappPhone] = React.useState("");
+  const pendingPayout = React.useRef<"orange" | "mtn" | null>(null);
+  const nextSheet = React.useRef<PayoutNetwork | null>(null);
+  const openPayout = async (net: "orange" | "mtn") => {
+    const verified = await getVerifiedWhatsappNumbers();
+    if (verified.length) {
+      setWhatsappPhone(verified[0]);
+      return setPayoutSheet(net);
+    }
+    showToast(t("Validez d'abord votre numéro WhatsApp : si votre Orange Money ou MoMo est le même numéro, il sera validé sans SMS ni frais."), "info");
+    pendingPayout.current = net;
+    setPayoutSheet("whatsapp");
+  };
   const saveNumber = async (net: PayoutNetwork, phone: string) => {
     if (!w.fastFoodId || net === "whatsapp") return;
     try {
@@ -189,7 +205,7 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
                 numbers={w.numbers}
                 numbersLoading={w.numbersLoading}
                 percents={percents}
-                onAddNumber={(n) => setPayoutSheet(n === "MTN" ? "mtn" : "orange")}
+                onAddNumber={(n) => void openPayout(n === "MTN" ? "mtn" : "orange")}
               />
             )}
             {onRecap && (
@@ -274,9 +290,21 @@ export const WithdrawSheet: React.FC<WithdrawSheetProps> = ({ w, balances, perce
               enregistre sur la boutique et pose sur la carte. */}
           <PayoutNumberSheet
             network={payoutSheet}
-            initialPhone=""
-            onClose={() => setPayoutSheet(null)}
-            onVerified={(net, phone) => void saveNumber(net, phone)}
+            initialPhone={payoutSheet === "whatsapp" ? "" : whatsappPhone}
+            onClose={() => {
+              const next = nextSheet.current;
+              nextSheet.current = null;
+              pendingPayout.current = null;
+              setPayoutSheet(next);
+            }}
+            onVerified={(net, phone) => {
+              if (net === "whatsapp") {
+                setWhatsappPhone(phone);
+                nextSheet.current = pendingPayout.current;
+                return;
+              }
+              void saveNumber(net, phone);
+            }}
           />
           {/* Cache « en cours » / « reussi » sur TOUTE la feuille. */}
           <WithdrawStatusCover status={coverStatus} detail={coverDetail} onClose={close} />

@@ -185,7 +185,11 @@ affiche un toast et ouvre la sheet WhatsApp (`openPayout`). Si le numéro OM / M
 saisi est le WhatsApp déjà validé du compte, `request` répond `verified: true` : pas
 d'étape code, toast de succès, le champ est rempli (aucun SMS ni frais).
 `PayoutOtpStep` saute l'étape code quand `onSubmitPhone` renvoie `{ verified: true }`.
-La sheet du retrait (`WithdrawSheet`) n'impose pas le WhatsApp d'abord.
+Même règle dans la sheet du retrait (`WithdrawSheet`). « WhatsApp validé » = connu du
+backend (`GET /whatsapp-number`, `getVerifiedWhatsappNumbers`) ; après sa validation, la
+sheet OM / MoMo demandée se rouvre, pré-remplie avec le WhatsApp (un toucher, aucun SMS).
+**Sens inverse** : un WhatsApp identique à un OM / MoMo déjà validé est validé sans code
+(`/whatsapp-number/request` → `verified: true`).
 
 ## Restauration d'une boutique supprimée avec le compte
 

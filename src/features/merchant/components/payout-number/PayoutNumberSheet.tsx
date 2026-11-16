@@ -4,7 +4,8 @@
 // de la sheet de connexion (`AuthGateContext`, R16) : hauteur FIXE
 // `AUTH_SHEET_HEIGHT` + bande safe-area, coins 28, fond blanc, voile sombre.
 // Un code valide => `onVerified(numero local)`, puis fermeture. Numero OM / MoMo deja
-// valide sur WhatsApp (app >= 1.1.6) : valide tout de suite, sans SMS ni frais.
+// valide sur WhatsApp (app >= 1.1.6) : valide tout de suite, sans SMS ni frais ; et
+// l'inverse : WhatsApp deja valide comme numero OM / MoMo, valide sans code.
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
 import { useSheetAnimation } from "@/src/hooks/useSheetAnimation";
@@ -58,13 +59,9 @@ export function PayoutNumberSheet({ network: open, initialPhone, onClose, onVeri
             feeEstimate={fee}
             onSubmitPhone={async phone => {
               phoneRef.current = phone;
-              if (network === "whatsapp") {
-                await requestWhatsappNumberCode(phone);
-                return;
-              }
-              const r = await requestPayoutNumberCode(phone, network);
+              const r = network === "whatsapp" ? await requestWhatsappNumberCode(phone) : await requestPayoutNumberCode(phone, network);
               if (!r.verified) return;
-              showToast(t("Numéro validé sans code : c'est votre numéro WhatsApp déjà vérifié."), "success");
+              showToast(network === "whatsapp" ? t("WhatsApp validé sans code : c'est votre numéro Orange Money / MoMo déjà vérifié.") : t("Numéro validé sans code : c'est votre numéro WhatsApp déjà vérifié."), "success");
               onVerified(network, phone);
               onClose();
               return { verified: true };

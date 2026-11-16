@@ -22,7 +22,17 @@ export async function getPayoutNumberFee(): Promise<number | null> {
   }
 }
 export const verifyPayoutNumberCode = (phoneNumber: string, code: string) => verifyCode("/wallet/payout-number/verify", phoneNumber, code);
-/** WhatsApp de la boutique : code sur WhatsApp UNIQUEMENT. */
+/** Numeros WhatsApp verifies du compte (locaux, sans 237) ; [] si indisponible. */
+export async function getVerifiedWhatsappNumbers(): Promise<string[]> {
+  try {
+    const { data } = await axios.get(`${Config.apiUrl}/whatsapp-number`);
+    return (Array.isArray(data?.data) ? data.data : []).map((n: { phoneNumber?: string }) => String(n?.phoneNumber || "").replace(/\D/g, "").replace(/^237(?=\d{9}$)/, "")).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+/** WhatsApp de la boutique : code sur WhatsApp UNIQUEMENT. App >= 1.1.6 : numero deja
+ * valide comme numero de retrait => `verified: true`, aucun code (sens inverse). */
 export const requestWhatsappNumberCode = (phoneNumber: string) => requestCode("/whatsapp-number/request", phoneNumber);
 export const verifyWhatsappNumberCode = (phoneNumber: string, code: string) => verifyCode("/whatsapp-number/verify", phoneNumber, code);
 

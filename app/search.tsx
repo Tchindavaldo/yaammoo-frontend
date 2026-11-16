@@ -83,7 +83,6 @@ function SearchContent() {
             onChangeText={setQuery}
             placeholder={t("Rechercher un plat ou une boutique")}
             placeholderTextColor={DS.faint}
-            autoFocus
             returnKeyType="search"
             autoCorrect={false}
           />

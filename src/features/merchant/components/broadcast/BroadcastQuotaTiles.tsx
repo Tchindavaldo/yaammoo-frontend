@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { BroadcastPlan, BroadcastQuota } from "../../types/broadcast.types";
-import { untilMidnight } from "../../utils/broadcastQuota";
+import { nextReset } from "../../utils/broadcastQuota";
 import { BC, capsLabel } from "./broadcastTheme";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -16,7 +16,7 @@ interface Props {
 /** Deux tuiles : reste du jour (sombre, une capsule par envoi) et compte à rebours. */
 export const BroadcastQuotaTiles: React.FC<Props> = ({ plan, quota, now }) => {
   useLanguage();
-  const reset = untilMidnight(now);
+  const reset = nextReset(quota, now);
 
   return (
     <View style={styles.row}>
@@ -51,12 +51,8 @@ export const BroadcastQuotaTiles: React.FC<Props> = ({ plan, quota, now }) => {
             <Ionicons name="refresh-outline" size={14} color={BC.ink} />
           </View>
         </View>
-        <Text style={styles.reset}>
-          {reset.h}
-          <Text style={styles.resetUnit}>h</Text>
-          {reset.m}
-        </Text>
-        <Text style={capsLabel}>{t("SEMAINE · LUNDI")}</Text>
+        <Text style={styles.reset}>{reset.hour}</Text>
+        <Text style={capsLabel} numberOfLines={1}>{reset.day.toUpperCase()}</Text>
       </View>
     </View>
   );
@@ -106,5 +102,4 @@ const styles = StyleSheet.create({
     color: BC.ink,
     fontVariant: ["tabular-nums"],
   },
-  resetUnit: { fontSize: 15, color: BC.faint },
 });

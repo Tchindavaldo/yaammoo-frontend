@@ -52,6 +52,23 @@ const openFromPush = (router: ReturnType<typeof useRouter>, data: any) => {
   });
 };
 
+/**
+ * Premier build natif Android qui embarque les sons (res/raw) : versionCode 34
+ * (31 à 33 les perdaient au shrink des ressources).
+ * iOS : premier build Xcode Cloud avec les .wav dans le projet (après le 84).
+ * `expo-application` absent (builds plus anciens) = pas de sons.
+ */
+const SOUNDS_MIN_BUILD = { android: 34, ios: 85 } as const;
+const nativeBuildHasSounds = (): boolean => {
+  try {
+    const { nativeBuildVersion } = require("expo-application");
+    const min = SOUNDS_MIN_BUILD[Platform.OS as "android" | "ios"];
+    return !!min && Number(nativeBuildVersion) >= min;
+  } catch {
+    return false;
+  }
+};
+
 export const useNotificationSetup = () => {
   useLanguage();
   const { userData, setUserData } = useAuth();
@@ -141,13 +158,34 @@ export const useNotificationSetup = () => {
     }
 
     if (Platform.OS === "android") {
+      // Un canal par son (le son d'un canal Android est fige a sa creation).
+      // Ids et fichiers = `soundFor()` du backend (helpers/notificationSound.js).
+      // Doc : architecture/notifications.md (« Sons »).
+      const channels: [string, string][] = [
+        ["yaammoo_order", t("Nouvelles commandes")],
+        ["yaammoo_success", t("Commandes et paiements")],
+        ["yaammoo_alert", t("Annulations")],
+        ["yaammoo_message", t("Messages")],
+      ];
+      // Le son d'un canal est fige a sa creation : le creer sur un build natif
+      // SANS les .wav le laisse au son par defaut pour toujours. On ne cree
+      // donc ces canaux que sur un build qui embarque les sons.
+      const withSounds = nativeBuildHasSounds();
+      for (const [id, name] of withSounds ? channels : []) {
+        Notifications.setNotificationChannelAsync(id, {
+          name,
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+          sound: `${id}.wav`,
+        });
+      }
+      // Ancien canal unique, garde pour les push envoyees avant la mise a jour.
       Notifications.setNotificationChannelAsync("high_priority_channel", {
         name: t("Notifications importantes"),
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",
-        // Pas de `sound` : sans valeur, le canal prend le son systeme par
-        // defaut. "default" est pris pour un fichier embarque introuvable.
       });
     }
 

@@ -73,4 +73,12 @@ export const withdrawService = {
     };
     return { MTN: clean(data.momoNumber), ORANGEMONEY: clean(data.number) };
   },
+
+  /**
+   * Enregistre un numero de retrait verifie (code SMS) sur la boutique :
+   * `number` pour Orange Money, `momoNumber` pour MTN (meme route que l'edition).
+   */
+  async savePayoutNumber(fastFoodId: string, net: WalletNetwork, phone: string): Promise<void> {
+    await axios.post(`${Config.apiUrl}/fastfood/${fastFoodId}`, net === "MTN" ? { momoNumber: phone } : { number: phone });
+  },
 };

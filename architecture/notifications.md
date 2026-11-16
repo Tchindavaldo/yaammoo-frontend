@@ -390,3 +390,30 @@ frontend user : FCM reçu, tap → '/(tabs)/cart'
 6. **Helper `isRead` unifié** : `isNotifRead` centralisé dans le context gère tous les formats historiques (boolean/string/array), tous les composants UI l'utilisent via `useNotifications().isRead` — zéro duplication.
 7. **Catch-up socket-driven** : pull-to-refresh = fetch explicite utilisateur. Les fetchs automatiques (au login + à chaque reconnect socket) sont **silencieux** (pas de loader). Résultat : aucune UX-pollution par des spinners inattendus.
 8. **Deep-link par section** : query param `?section=...` sur `/(tabs)/cart` (pending/active/finished) ou `/(tabs)/settings` (bonus/my-applications) pour cibler sans créer de routes séparées.
+
+---
+
+## Sons personnalisés
+
+Fichiers `assets/sounds/yaammoo_<clé>.wav`, embarqués par le plugin
+`expo-notifications` (`sounds` dans `app.json`) : **build natif obligatoire**,
+une OTA ne les ajoute pas.
+
+| Clé | Canal Android | Notifications |
+|---|---|---|
+| `order` | `yaammoo_order` | nouvelle commande, demande de livreur |
+| `success` | `yaammoo_success` | paiement réussi, statuts, livraison, rang, bonus, annonces boutique (défaut) |
+| `alert` | `yaammoo_alert` | annulations, prix refusé, livreur retiré |
+| `message` | `yaammoo_message` | message support / boutique |
+
+- Le **backend** choisit le son par `type` (`helpers/notificationSound.js`) et
+  envoie `channelId` (Android) + `sound` (iOS). Les canaux sont créés par
+  `useNotificationSetup` au démarrage ; `high_priority_channel` est conservé.
+- ⚠️ Le son d'un canal Android est figé à sa création : changer un son =
+  nouveau fichier ET nouveau canal (`yaammoo_order_v2`), côté app et backend.
+- **Android release** : `enableShrinkResourcesInReleaseBuilds` supprime les `res/raw` non référencés dans le code, donc les `.wav` (lus par leur nom). `plugins/withKeepNotificationSounds.js` les déclare en `tools:keep`. Nouveau son = l'ajouter aussi à sa liste `SOUNDS`.
+- **Garde build natif** : les canaux à son ne sont créés que si le build natif embarque les `.wav` (`nativeBuildHasSounds()` dans `useNotificationSetup.ts`, via `expo-application`, seuils `SOUNDS_MIN_BUILD`). Sinon un ancien build qui reçoit l'OTA créerait un canal au son par défaut, figé pour toujours ; la push tombe alors dans le canal de secours.
+- **iOS (Xcode Cloud)** : le projet `ios/` est versionné et Xcode Cloud ne relance pas `expo prebuild`. Les `.wav` sont donc copiés à la main dans `ios/yaammoo/Supporting/` et déclarés dans `project.pbxproj` (ressources de la cible `yaammoo`). Nouveau son = l'ajouter aussi là, sinon iOS joue le son par défaut.
+- **Écran de discussion** : `yaammoo_chat.wav` joué par
+  `src/services/audio/chatSound.ts` (`expo-audio`) à l'arrivée d'un message de
+  l'autre partie (`useSupportConversation`, `useMerchantSupportConversation`).

@@ -32,6 +32,10 @@ interface Props {
   onAddAccount: () => void;
   /** Corbeille du compte courant : seul ce bouton ouvre la suppression. */
   onDeleteAccount: () => void;
+  /** Ouvre la lecture des conditions d'utilisation et de la confidentialité. */
+  onOpenLegal: () => void;
+  /** Version plus récente non encore ouverte : pastille sur la ligne. */
+  legalUpdate?: boolean;
 }
 
 export function AccountSheet({
@@ -41,6 +45,8 @@ export function AccountSheet({
   onSelect,
   onAddAccount,
   onDeleteAccount,
+  onOpenLegal,
+  legalUpdate,
 }: Props) {
   useLanguage();
   const insets = useSheetSafeInsets();
@@ -158,6 +164,19 @@ export function AccountSheet({
           <Text style={styles.name}>{t("Ajouter un compte")}</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={styles.row}
+          onPress={onOpenLegal}
+          disabled={isLoggingOut}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.avatar, styles.addAvatar]}>
+            <Ionicons name="document-text-outline" size={18} color={DS.muted} />
+          </View>
+          <Text style={[styles.name, { flex: 1 }]}>{t("Conditions d'utilisation et confidentialité")}</Text>
+          {legalUpdate && <View style={styles.legalDot} />}
+        </TouchableOpacity>
+
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.btn, styles.cancel]}
@@ -191,6 +210,7 @@ export function AccountSheet({
 }
 
 const styles = StyleSheet.create({
+  legalDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: DS.accent },
   // Voile plein ecran et sheet en absolu : quand la sheet glisse, le voile
   // couvre aussi la zone qu'elle libere (sinon on y voyait la page blanche).
   backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: DS.backdrop },

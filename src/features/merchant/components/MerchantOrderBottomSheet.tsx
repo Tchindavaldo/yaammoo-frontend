@@ -19,6 +19,7 @@ import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
 import { DS } from "@/src/theme/ds";
 import { t as tr, useLanguage } from "@/src/i18n";
+import { pickupLabel } from "@/src/features/checkout/utils/pickupHours";
 
 // iOS aligne sur le sheet client (450) ; Android garde 490.
 const SHEET_HEIGHT = Platform.OS === 'ios' ? 450 : 490;
@@ -149,8 +150,9 @@ function buildUser(order: Commande): DeliveryUser {
     orderCount: (order as any).rank || 1,
     rating: 4,
     phone: order.delivery?.phone || order.userData?.phoneNumber?.toString() || tr("Non fourni"),
+    // Retrait : "Sur place · sam. 15 nov. · 14:30" (jour + heure de passage).
     creneau: !order.delivery?.status
-      ? tr("Sur place")
+      ? pickupLabel(order.delivery?.date, order.delivery?.time)
       : order.delivery?.type === 'express'
         ? 'Express'
         : tr("Période ({{a}})", { a: order.delivery?.time || tr("Dès que possible") }),

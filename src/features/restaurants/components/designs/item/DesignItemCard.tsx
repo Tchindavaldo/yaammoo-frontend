@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, TouchableOpacity } from "react-native";
 import { useNextDeliveryTime } from "../../../utils/deliveryUtils";
-import { CardVariantProps, DesignItemProps, IS_AERE, deliveryFeeLabelFor } from "./config";
+import { CardVariantProps, DesignItemProps, IS_AERE } from "./config";
 import { CardV4Aere } from "./aere/CardV4Aere";
 import { CardV5Aere } from "./aere/CardV5Aere";
 import { CardV7Aere } from "./aere/CardV7Aere";
@@ -37,6 +37,7 @@ export const DesignItemCard: React.FC<DesignItemProps> = ({
   deliveryHours = [],
   orderLeadTime = 0,
   stock = 0,
+  deliveryFeeLabel = "",
 }) => {
   const deliveryTime = useNextDeliveryTime(deliveryHours, orderLeadTime);
   const Variant = VARIANTS[variant];
@@ -58,7 +59,7 @@ export const DesignItemCard: React.FC<DesignItemProps> = ({
       stock={stock}
       price={`${menu.prix1} F`}
       deliveryTime={deliveryTime}
-      deliveryFeeLabel={deliveryFeeLabelFor(index)}
+      deliveryFeeLabel={deliveryFeeLabel}
     />
   );
 };

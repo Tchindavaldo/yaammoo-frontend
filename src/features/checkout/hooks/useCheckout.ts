@@ -1,5 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { transactionErrorMessage } from "@/src/features/payment/utils/transactionErrorMessage";
 import { Menu, Commande, Embalage, Boisson, Livraison } from "../../../types";
 import { useAuth } from "../../auth/context/AuthContext";
 import axios from "axios";
@@ -9,6 +10,8 @@ import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { menuPriceOptions } from "../utils/menuPrices";
 import { computeCheckoutPrices } from "../utils/checkoutPrices";
+import { useDeliveryGrouping } from "./useDeliveryGrouping";
+import { checkStock, checkDelivery } from "../utils/checkoutValidation";
 import { t, useLanguage } from "@/src/i18n";
 
 export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChange?: (order: any) => void) => {
@@ -164,7 +167,11 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
           // livraison indéfiniment à chaque réédition. Pour en bénéficier de
           // nouveau, le user resaisit un code → POST /bonus/verify tranche.
         } else {
+          // Sur place : jour, heure de retrait et contact restaurés à la réouverture.
           d.type = 'aucune';
+          if (dData.date) d.date = dData.date;
+          if (dData.time) d.pickupTime = dData.time;
+          if (dData.phone) d.phone = dData.phone;
         }
         setDelivery(d);
       }
@@ -172,6 +179,9 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       setIsInitialized(true);
     }
   }, [initialOrder, lastOrderId, availableDrinks, availablePackaging]);
+
+  // Groupage : départ déjà payé → course offerte (loader sur la carte).
+  useDeliveryGrouping(delivery, setDelivery, (menu as any)?.fastFoodId, userData?.uid);
 
   const prices = useMemo(
     () => computeCheckoutPrices({ menu, quantity, selectedPriceIndex, selectedPackaging, selectedDrinks, drinkQuantities, delivery }),
@@ -238,6 +248,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     // Numero de contact envoye aussi en RETRAIT : exige par le backend
     // (validateOrder : `delivery.phone` requis pour une commande en retrait).
     if (delivery.phone) deliveryData.phone = delivery.phone;
+    // Sur place : heure de retrait (backend : `delivery.time` facultative en retrait).
+    if (!hasDelivery && delivery.pickupTime) deliveryData.time = delivery.pickupTime;
 
     if (hasDelivery && finalDeliveryType) {
       deliveryData.type = finalDeliveryType;
@@ -269,16 +281,6 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       email: userData?.infos?.email || user?.email || "inconnu@email.com",
       phoneNumber: Number(userData?.infos?.numero) || 0,
     };
-    // Trace des sources de clientData — décommenter pour diagnostiquer un nom
-    // ou un email manquant sur une commande.
-    // console.log("📦 [useCheckout] userData sources →", {
-    //   "infos.prenom": userData?.infos?.prenom,
-    //   "infos.nom": userData?.infos?.nom,
-    //   "infos.email": userData?.infos?.email,
-    //   "firebase.displayName": user?.displayName,
-    //   "firebase.email": user?.email,
-    // });
-    // console.log("📦 [useCheckout] clientData envoyé →", clientData);
 
     const returnedOrder: any = {
       userId: userData?.uid || "unknown_user",
@@ -305,6 +307,10 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     if (hasDelivery && delivery.bonusCode) {
       returnedOrder.bonusCode = delivery.bonusCode;
     }
+    // Regime de livraison vu (home) : refus `delivery_mode_changed` s'il a
+    // bascule avant le paiement. Une commande du panier garde le sien.
+    const seenDeliveryBy = (menu as any).deliveryBy ?? initialOrder?.deliveryBy;
+    if (seenDeliveryBy) returnedOrder.deliveryBy = seenDeliveryBy;
 
     if (initialOrder) {
       if (initialOrder.id) {
@@ -325,36 +331,8 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
     }
   }, [createOrder, onChange, menu, userData, drinkQuantities, isInitialized]);
 
-  const validateStock = useCallback((): string | null => {
-    if (!menu) return null;
-    const menuStock = (menu as any).stock;
-    if (typeof menuStock !== 'number') return null;
-    if (menuStock < quantity) return t("Stock insuffisant. Disponible : {{a}}", { a: menuStock });
-    return null;
-  }, [menu, quantity]);
-
-  const validateDelivery = useCallback((): string | null => {
-    const type = delivery.type;
-    if (!delivery.statut || type === 'aucune') return null;
-    if (!delivery.address && !delivery.note) return t("Adresse de livraison requise");
-    if (!delivery.phone) return t("Numéro de contact requis");
-    if (type === 'standard' && !delivery.hour) return t("Période de livraison requise");
-    // Express : exiger le choix d'une zone SI des zones express sont disponibles
-    // (le prix vient exclusivement de la zone choisie, pas d'un défaut).
-    if (type === 'express') {
-      const hours = (menu as any)?.deliveryHours;
-      const hasExpressZones =
-        Array.isArray(hours) &&
-        hours.some(
-          (h: any) =>
-            h && typeof h === 'object' && h.express && h.expressZones?.length > 0,
-        );
-      if (hasExpressZones && !delivery.expressLieu) {
-        return t("Zone de livraison express requise");
-      }
-    }
-    return null;
-  }, [delivery, menu]);
+  const validateStock = useCallback((): string | null => checkStock(menu, quantity), [menu, quantity]);
+  const validateDelivery = useCallback((): string | null => checkDelivery(delivery, menu), [delivery, menu]);
 
   const ussdCode = paymentNetwork === 'orange' ? '#150#' : '*126#';
 
@@ -424,16 +402,9 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
         setPaymentState('input');
       }
     } catch (error: any) {
-      const data = error.response?.data;
-      const raw = data?.message;
-      let message = Array.isArray(raw)
-        ? raw.map((e: any) => e?.message).filter(Boolean).join(' • ')
-        : raw;
-      // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
-      message = message || data?.error || (error.response ? t("Service momentanément indisponible. Réessayez dans un instant.") : t("Connexion impossible. Vérifiez votre réseau et réessayez."));
-      // Le délai d'attente est déjà inclus dans le message du backend.
-      console.log('Payment error details:', data);
-      // Erreur → afficher le Toast et revenir à l'input (overlays restent ouverts).
+      // Refus 422 du pre-check : les boutiques du panier sont rechargees.
+      const message = transactionErrorMessage(error);
+      console.log('Payment error details:', error.response?.data);
       setPaymentError(message);
       setPaymentState('input');
     }

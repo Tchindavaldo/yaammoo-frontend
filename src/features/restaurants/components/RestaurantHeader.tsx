@@ -32,10 +32,13 @@ interface RestaurantHeaderProps {
   unreadCount?: number;
   onNotifPress?: () => void;
   onProfilePress?: () => void;
-  onCartPress?: () => void;
+  /** Ouvre la page de recherche (`app/search.tsx`). Remplace l'ancien bouton panier. */
+  onSearchPress?: () => void;
   onOrdersPress?: () => void;
   /** Compte marchand en mode client : remplace la localisation par « Mode marchand ». */
   onMerchantMode?: () => void;
+  /** Appui sur la pilule de localisation : ouvre le choix de la ville. */
+  onLocationPress?: () => void;
 }
 
 export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
@@ -52,9 +55,10 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   unreadCount = 0,
   onNotifPress,
   onProfilePress,
-  onCartPress,
+  onSearchPress,
   onOrdersPress,
   onMerchantMode,
+  onLocationPress,
 }) => {
   const insets = useSafeAreaInsets();
   // Android : pas de cible de flou sur le home (la liste ne passe pas sous le
@@ -83,17 +87,17 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
               <Text style={styles.modePillText}>{t("Mode marchand")}</Text>
             </TouchableOpacity>
           ) : (
-            <LocationPill location={location} />
+            location ? <LocationPill location={location} onPress={onLocationPress} /> : null
           )}
         </View>
 
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.iconBtn}
-            onPress={onCartPress}
+            onPress={onSearchPress}
             activeOpacity={0.8}
           >
-            <Ionicons name="cart" size={16} color="#111" />
+            <Ionicons name="search" size={16} color="#111" />
           </TouchableOpacity>
 
           <TouchableOpacity

@@ -28,6 +28,7 @@ src/features/restaurants/
 ├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
 ├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
 ├── utils/deliveryUtils.ts
+├── utils/shopDeliveryFee.ts        # Libellé livraison des cartes : "gratuit" si deliveryOffer.active, sinon tarif le moins cher des zones (périodiques + express)
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
 ├── utils/homeListConfig.ts         # Home : constantes mesurées (DRAW_DISTANCE, GHOST_COUNT, seuils…), BANNER_ITEM, CATEGORIES
 ├── utils/homeClientSettings.ts     # Home : taille de page + distance de préchargement venues du serveur (`clientSettings`), valeurs de secours, copie gardée
@@ -345,6 +346,15 @@ premier créneau de demain),
   "" = rien) de `HomeListRow`, rendu par `HLMerchantHeaderView` (iOS et
   Android) ; une build native antérieure l'ignore.
 
+## Prix de livraison sur les cartes
+
+- `shopDeliveryFeeLabel(ff)` (`utils/shopDeliveryFee.ts`), passé par chaque `DesignN`
+  à `DesignItem` (`deliveryFeeLabel`), et calculé par `NativeHomeList.toRow` pour la liste native.
+- Offre active (`deliveryOffer.active`, backend) → « gratuite » ; sinon le tarif le moins
+  cher de `deliveryHours[].periodicZones` et `expressZones` ; aucune zone → rien.
+- Le backend sert dans ces champs les zones du régime actif (plateforme ou marchand) :
+  l'app ne lit jamais `platform*`.
+
 ## Recherche — SERVEUR, pas locale
 
 `searchQuery` déclenche un fetch debouncé (350 ms) avec `?q=`, qui repart de la
@@ -358,8 +368,18 @@ première page.
 `useFastFoods` ne garde qu'un filtre : les boutiques **sans plat**, pour celles
 arrivées par socket dont le payload peut ne pas porter de menus.
 
-`selectedCategory` est stocké et passé au header mais **ne filtre rien** — le
-câblage serveur est prévu, l'implémentation viendra avec les vraies catégories.
+`selectedCategory` filtre côté **backend**. Tabs : Tout / Poulet / Burger / Pizza /
+Autre (alignés sur les suggestions de la sheet menu). `hooks/useHomeCategoryReload.ts`
+pose `?category=<nom>` (ou `?categoryNot=Poulet,Burger,Pizza` pour « Autre ») sur
+chaque requête de `useFastFoodFetch` et recharge le home depuis la 1re page. Le
+backend ne rend que les boutiques ayant un plat de la catégorie, avec ces seuls plats.
+`hooks/useCategoryFilteredShops.ts` regroupe alors les plats **par N** en rangées
+`gridRow` : la liste native les rend en **grille** (design natif `HL_GRID` = 8,
+`modules/home-list` Android + iOS : pas d'en-tête, cartes V7 aérées en liste horizontale).
+N = cartes entières qui tiennent à l'écran + 1 qui dépasse (on défile), plafonné à 4
+(`perRow`, 390 dp → 3).
+Chaque plat garde sa boutique (`__shop`) pour l'appui et les frais. Code natif :
+nécessite un nouveau build (pas d'OTA). « Tout » = liste et designs inchangés.
 
 ---
 
@@ -386,7 +406,7 @@ page), et la `value` reste mémoïsée.
 | `cancelPendingLoadMore()` | Invalide une page en vol **sans tronquer**. Appelé au début d'une remontée. |
 | `hasLoadedOnce` | `true` après le 1er fetch (succès, vide ou erreur). Ne pilote plus la navigation. |
 | `useActivateFastFoods()` | Contexte séparé, valeur stable. Appelé par `app/(tabs)/_layout.tsx` à l'arrivée dans le home : **aucun `GET /fastFood/all` ne part avant** (ni sous le splash, ni sur l'écran d'accueil). Définitif pour la session. |
-| `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie inactive). |
+| `searchQuery` · `selectedCategory` | Filtres (recherche serveur ; catégorie filtrée côté serveur). |
 | `appleReviewMode` · `banners` | Portés par la réponse. |
 | `upsert*FromSocket` · `applyDeliveryOffer` · `clearDeliveryOfferForBonus` | Injection socket, sans refetch. |
 
@@ -795,3 +815,56 @@ successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toute
 - **Rétrocompatibilité** vérifiée dans les deux sens : ancien front / nouveau
   back (pas de `limit` → catalogue complet) et nouveau front / ancien back
   (pas de `nextCursor` → `hasMore` false, pas de `loadMore`).
+
+
+## Mise a jour en direct des prix et zones
+
+Voir `socket-events-client.md` (R27) : la boutique modifiee arrive complete par `fastfoodUpdated` et est appliquee sans GET ; `fastfoodsChanged { ids: null }` (reglage global) et un refus de paiement declenchent un rafraichissement silencieux (`hooks/useFastFoodRefreshByIds.ts`).
+
+## Choix de la ville (pilule de localisation)
+
+- Appui sur la pilule (`LocationPill`, `RestaurantHeader.onLocationPress`) →
+  `home/HomeCitySheet` : « Ma localisation », « Toutes les villes » (nombre total
+  de restos), puis chaque ville desservie avec son nombre de restos
+  (`GET /fastfood/cities`). Voile en fondu, sheet qui monte (R28).
+- État : `hooks/useHomeCity` (exposé par `FastFoodContext.homeCity`). Ville par
+  défaut = celle du backend (ville du client si desservie, sinon la plus proche,
+  position connue sans demander de permission). Choix manuel retenu sur
+  l'appareil (`AsyncStorage` `home_city_v1`), « Ma localisation » l'oublie.
+- Toutes les pages du home (`useFastFoodFetch`, y compris
+  `refreshLoadedSilently`) envoient `?city=` ; la 1re page attend la ville
+  (`cityReady`, 3 s max) ; un changement de ville recharge le home.
+- Pilule : TOUJOURS la ville dont le home montre les boutiques (choisie, ou par
+  défaut : ville du client si desservie, sinon la plus proche qui a des
+  boutiques, quelle que soit la distance). « Toutes les villes » si choisi ;
+  lieu du client (`useCurrentPlaceLabel`) seulement tant qu'aucune ville n'est connue.
+- Marchand en mode client : pas de choix (la pilule devient « Mode marchand »),
+  le home affiche la ville de SA boutique (`merchantCity`).
+
+### Home sans localisation
+
+Localisation non accordee, sans ville choisie a la main (et hors marchand) :
+le home n'affiche pas de boutiques mais `HomeLocationRequired` (bouton
+d'activation, ou reglages si refus definitif, et lien « Choisir une ville »
+vers `HomeCitySheet`, pour rester utilisable sans GPS, Apple 5.1.1). A
+l'acceptation, `homeCity.resetToMyLocation()` recalcule la ville par defaut
+avec la vraie position.
+
+---
+
+## Page de recherche (`app/search.tsx`)
+
+Ouverte par la **loupe** du header du home (`RestaurantHeader`, `onSearchPress`,
+à la place de l'ancien bouton panier). Indépendante du `FastFoodContext` : la
+liste du home n'est jamais touchée.
+
+```
+src/features/search/
+├── hooks/useShopSearch.ts          # Recherche SERVEUR GET /fastFood/all?q= (boutique OU plat), debounce 300 ms, pages de 50 par curseur (loadMore en bas de liste) ; filtre local = plats concernés + catégorie
+├── utils/searchFilters.ts          # Filtres = CATEGORIES du home (par position), mots-clés sur le nom du plat ; chaque mot saisi (partiel, sans accents) dans le plat, sa description ou la boutique
+└── components/SearchResultRow.tsx  # Gabarit UNIQUE, hauteur fixe SEARCH_ROW_HEIGHT (getItemLayout)
+```
+
+- Liste : `FlatList` à gabarit unique et hauteur fixe (aucune mesure au scroll).
+- Tap sur un plat : même checkout que le home (`useHomeCheckout` + `CheckoutSheet`),
+  menu enrichi des infos de livraison de la boutique ; messages par toast global.

@@ -13,6 +13,7 @@ import {
 import { styles } from "./styles";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
+import { PayoutNumberSheet, type PayoutNetwork } from "../payout-number/PayoutNumberSheet";
 
 /**
  * Page unique du formulaire de CREATION de boutique.
@@ -56,6 +57,8 @@ interface BoutiqueInfoPageProps {
   onCaptureShopPosition?: () => void;
   loading: boolean;
   onSubmit: () => void;
+  /** Formulaire d'adhesion du Marchand (Annexe 3), sous la recuperation. */
+  adhesionBlock?: React.ReactNode;
   /** Hauteur du header au-dessus (TabHeader), pour caler le KeyboardAvoidingView. */
   keyboardOffset?: number;
 }
@@ -92,9 +95,12 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   onCaptureShopPosition,
   loading,
   onSubmit,
+  adhesionBlock,
   keyboardOffset = 0,
 }) => {
   useLanguage();
+  // Verification OTP du numero touche : OM / MoMo (SMS) ou WhatsApp (WhatsApp).
+  const [payoutSheet, setPayoutSheet] = React.useState<PayoutNetwork | null>(null);
   return (
   <View style={{ flex: 1 }}>
     {/* Pas de KeyboardAvoidingView : sa hauteur animee ferait bouger le
@@ -163,36 +169,44 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
       <View style={[styles.formRow, { marginTop: 16, gap: 6 }]}>
         <View style={{ flex: 1 }}>
           <Text style={styles.floatingLabel}>OM</Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={number}
-            onChangeText={setNumber}
-            keyboardType="numeric"
-            placeholder={t("Orange Money")}
-            placeholderTextColor="#cbd5e1"
-          />
+          {/* Numero de retrait : plus saisi ici, verifie par code SMS
+              (PayoutNumberSheet). Meme style que les autres champs. */}
+          <TouchableOpacity
+            style={[styles.glassInput, { borderRadius: 20, justifyContent: "center" }]}
+            onPress={() => setPayoutSheet("orange")}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 13, color: number ? "#0f172a" : "#cbd5e1" }} numberOfLines={1}>
+              {number || t("Orange Money")}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.floatingLabel}>MOMO</Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={momoNumber}
-            onChangeText={setMomoNumber}
-            keyboardType="numeric"
-            placeholder={t("MTN Mobile Money")}
-            placeholderTextColor="#cbd5e1"
-          />
+          {/* Numero de retrait : plus saisi ici, verifie par code SMS
+              (PayoutNumberSheet). Meme style que les autres champs. */}
+          <TouchableOpacity
+            style={[styles.glassInput, { borderRadius: 20, justifyContent: "center" }]}
+            onPress={() => setPayoutSheet("mtn")}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 13, color: momoNumber ? "#0f172a" : "#cbd5e1" }} numberOfLines={1}>
+              {momoNumber || t("MTN Mobile Money")}
+            </Text>
+          </TouchableOpacity>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.floatingLabel}>WhatsApp</Text>
-          <TextInput
-            style={[styles.glassInput, { borderRadius: 20 }]}
-            value={whatsappNumber}
-            onChangeText={setWhatsappNumber}
-            keyboardType="numeric"
-            placeholder="WhatsApp"
-            placeholderTextColor="#cbd5e1"
-          />
+          {/* WhatsApp : verifie par un code envoye sur WhatsApp seul. */}
+          <TouchableOpacity
+            style={[styles.glassInput, { borderRadius: 20, justifyContent: "center" }]}
+            onPress={() => setPayoutSheet("whatsapp")}
+            activeOpacity={0.7}
+          >
+            <Text style={{ fontSize: 13, color: whatsappNumber ? "#0f172a" : "#cbd5e1" }} numberOfLines={1}>
+              {whatsappNumber || "WhatsApp"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -380,6 +394,7 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           </Text>
         </TouchableOpacity>
       </View>
+      {adhesionBlock}
     </ScrollView>
 
     {/* Bouton de validation fixe en bas */}
@@ -399,6 +414,12 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         </>
       )}
     </TouchableOpacity>
+    <PayoutNumberSheet
+      network={payoutSheet}
+      initialPhone={payoutSheet === "orange" ? number : payoutSheet === "mtn" ? momoNumber : whatsappNumber}
+      onClose={() => setPayoutSheet(null)}
+      onVerified={(net, phone) => (net === "orange" ? setNumber : net === "mtn" ? setMomoNumber : setWhatsappNumber)(phone)}
+    />
   </View>
 );
 };

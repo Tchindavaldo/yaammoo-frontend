@@ -10,6 +10,8 @@ export interface WalletDayStat {
   payout: number;   // retraits du jour
   net: number;      // payin - payout
   count: number;    // nb de transactions du jour
+  // Sorties du jour par type (withdrawal, merchant_debit, sms_fee). Absent sur un backend antérieur.
+  payoutByType?: Record<string, number>;
 }
 
 export interface WalletStats {

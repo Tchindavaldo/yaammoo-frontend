@@ -179,7 +179,8 @@ class HLAereMetaTexts(
 
 fun hlAereMeta(design: Int, m: HLMenu): HLAereMetaTexts {
   val title = HLRuns().run(m.title, 900, 13f, HLAereColor.ink).build()
-  val votes = if (design == 7) "(${m.votes})" else "(${m.votes} avis)"
+  // Sans avis : la note vaut « Nouveau » (JS), on n'affiche pas « (0 avis) ».
+  val votes = if (m.votes <= 0) "" else if (design == 7) "(${m.votes})" else "(${m.votes} avis)"
   val rating = HLRuns()
     .icon("star", if (design == 7) 11f else 12f, HLColor.starYellow).gap(4f)
     .run(m.rating, 700, 11f, HLAereColor.ink).gap(4f)

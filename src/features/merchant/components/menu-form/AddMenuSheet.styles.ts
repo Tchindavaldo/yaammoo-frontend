@@ -1,5 +1,6 @@
 import { Theme } from "@/src/theme";
 import { StyleSheet } from "react-native";
+import { DS } from "@/src/theme/ds";
 import { MODAL_HEIGHT } from "./menuFormConstants";
 
 /** Styles du formulaire menu (`AddMenuSheetMultiStep` et ses étapes), extraits (R4). */
@@ -352,4 +353,49 @@ export const styles = StyleSheet.create({
   tensChipTextActive: {
     color: "white",
   },
+  // --- Prix (D2) : description multiligne sous le prix ---
+  priceDescArea: {
+    height: 96,
+    marginTop: 8,
+    textAlignVertical: "top",
+  },
+  priceCardDesc: { marginTop: 0, height: 64, backgroundColor: "white" },
+  // --- Extras (D3) : carte d'édition ---
+  extraCard: {
+    borderWidth: 1,
+    borderColor: DS.accentAlpha(0.2),
+    backgroundColor: DS.accentAlpha(0.04),
+    borderRadius: 16,
+    padding: 10,
+    gap: 8,
+  },
+  extraCardInput: {
+    height: 42,
+    paddingVertical: 0,
+    backgroundColor: "white",
+  },
+  extraCardActions: { flexDirection: "row", gap: 8 },
+  extraCardBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  extraCardDelete: { backgroundColor: DS.dangerSoft },
+  extraCardBtnText: { fontSize: 13, fontWeight: "700" },
+  // --- Catégorie (D1) : suggestions sous l'input ---
+  catChips: { flexDirection: "row", gap: 8, marginTop: 8 },
+  catChip: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    justifyContent: "center",
+    backgroundColor: Theme.colors.gray[100],
+  },
+  catChipActive: { backgroundColor: Theme.colors.primary },
+  catChipText: { fontSize: 13, fontWeight: "600", color: Theme.colors.gray[600] },
+  catChipTextActive: { color: "white" },
 });

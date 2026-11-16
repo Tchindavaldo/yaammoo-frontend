@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 import { SHOW_PLACE_OUTSIDE_SERVICE_AREA } from "../config";
@@ -28,6 +29,22 @@ const osmReverse = async (lat: number, lon: number): Promise<OsmAddress | null> 
   return json?.address ?? null;
 };
 
+/**
+ * Dernier lieu connu, garde sur l'appareil : affiche tout de suite a
+ * l'ouverture, et le geocodage (Nominatim) n'est refait que si le client a
+ * bouge de plus de PLACE_CACHE_RADIUS_M.
+ */
+const PLACE_CACHE_KEY = "place_label_v1";
+const PLACE_CACHE_RADIUS_M = 300;
+type PlaceCache = { lat: number; lon: number; label: string; city: string };
+
+const distanceM = (a: { lat: number; lon: number }, b: { lat: number; lon: number }) => {
+  const r = Math.PI / 180;
+  const x = (b.lon - a.lon) * r * Math.cos(((a.lat + b.lat) / 2) * r);
+  const y = (b.lat - a.lat) * r;
+  return Math.sqrt(x * x + y * y) * 6371000;
+};
+
 /** Seule zone desservie pour l'instant, affichee a tous ceux qui sont ailleurs. */
 const SERVICE_AREA_LABEL = "Banganté, Cameroun";
 const SERVICE_AREA_KEY = "bangante";
@@ -43,9 +60,12 @@ const isServiceArea = (raw: string) => normalize(raw).includes(SERVICE_AREA_KEY)
  * `SHOW_PLACE_OUTSIDE_SERVICE_AREA`) : « Quartier, Arrondissement » du lieu
  * actuel. Ailleurs, sans permission ou en echec : « Banganté, Cameroun »
  * (seule zone desservie). Ne demande pas la permission.
+ * Renvoie aussi `city`, la ville reelle du geocodage (vide si inconnue).
  */
 export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
   const [label, setLabel] = useState(fallback);
+  // Ville reelle du geocodage (champ city/town/village), meme hors zone.
+  const [city, setCity] = useState("");
   // Permission accordée après le montage (bandeau du home) : libellé relu.
   const [grantTick, setGrantTick] = useState(0);
   useEffect(
@@ -59,10 +79,21 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
   useEffect(() => {
     let alive = true;
     (async () => {
+      let cache: PlaceCache | null = null;
+      try {
+        cache = JSON.parse((await AsyncStorage.getItem(PLACE_CACHE_KEY)) || "null");
+      } catch {
+        cache = null;
+      }
       try {
         const { granted } = await Location.getForegroundPermissionsAsync();
         console.log("[LIEU] permission accordee:", granted);
         if (!granted) return;
+        // Lieu deja connu : affiche tout de suite.
+        if (cache && alive) {
+          setLabel(cache.label);
+          if (cache.city) setCity(cache.city);
+        }
         const position =
           (await Location.getLastKnownPositionAsync()) ??
           (await Location.getCurrentPositionAsync({
@@ -70,9 +101,12 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
           }));
         const { latitude, longitude } = position.coords;
         console.log("[LIEU] position:", latitude, longitude);
+        // Pas bouge : on garde le lieu en cache, sans nouveau geocodage.
+        if (cache && distanceM(cache, { lat: latitude, lon: longitude }) < PLACE_CACHE_RADIUS_M) return;
 
         let text = "";
         let inZone = false;
+        let cityName = "";
         try {
           const osm = await osmReverse(latitude, longitude);
           inZone = isServiceArea(JSON.stringify(osm ?? {}));
@@ -80,6 +114,7 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
           const zone =
             osm?.city_district || osm?.district || osm?.city || osm?.town || osm?.village;
           text = [quartier, zone].filter(Boolean).join(", ");
+          cityName = osm?.city || osm?.town || osm?.village || "";
         } catch (error) {
           console.warn("[LIEU] Nominatim echec:", error);
         }
@@ -92,6 +127,7 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
           text = [place?.district || place?.street, place?.city]
             .filter(Boolean)
             .join(", ");
+          cityName = place?.city || place?.subregion || "";
         }
 
         // Hors de la zone desservie : on garde la zone en dur, pour que
@@ -100,6 +136,11 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
         if (!inZone && !SHOW_PLACE_OUTSIDE_SERVICE_AREA) text = SERVICE_AREA_LABEL;
         console.log("[LIEU] dans la zone:", inZone, "| libelle affiche:", text);
         if (alive && text) setLabel(text);
+        if (alive && cityName) setCity(cityName);
+        if (text) {
+          const next: PlaceCache = { lat: latitude, lon: longitude, label: text, city: cityName };
+          AsyncStorage.setItem(PLACE_CACHE_KEY, JSON.stringify(next)).catch(() => {});
+        }
       } catch (error) {
         console.warn("[LIEU] lieu actuel indisponible:", error);
       }
@@ -109,5 +150,5 @@ export const useCurrentPlaceLabel = (fallback = SERVICE_AREA_LABEL) => {
     };
   }, [grantTick]);
 
-  return label;
+  return { label, city };
 };

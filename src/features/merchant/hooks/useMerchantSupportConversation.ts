@@ -7,6 +7,7 @@ import type {
   MerchantSupportThread,
 } from "../types/merchantSupport.types";
 import { t, useLanguage } from "@/src/i18n";
+import { playChatSound } from "@/src/services/audio/chatSound";
 
 interface Options {
   /** Compte marchand connecté ; sans lui aucune réponse n'est possible. */
@@ -65,6 +66,7 @@ export const useMerchantSupportConversation = ({
       message?: MerchantSupportMessage;
     }) => {
       if (!data?.message || data.threadId !== thread.id) return;
+      if (data.message.author === "user") playChatSound();
       setMessages((prev) =>
         prev.some((m) => m.id === data.message!.id)
           ? prev

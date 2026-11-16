@@ -4,7 +4,7 @@ import { MerchantStickyChipsRow } from "./MerchantStickyChipsRow";
 import type { DriverInfo } from "@/src/features/driver/services/driverService";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import { Commande } from "@/src/types";
+import { Commande, OrderStatus } from "@/src/types";
 import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
@@ -42,7 +42,7 @@ const FILTER_BAR_HEIGHT = 54;
 // Hauteur réservée au rappel « autres dates » posé au-dessus de la barre.
 const NOTICE_DOCK_HEIGHT = 58;
 
-type OrderStatus = "pending" | "proccess" | "finish";
+type StatusTab = "pending" | "proccess" | "finish";
 
 export interface DateOption {
   iso: string;
@@ -115,7 +115,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const allShopOrders = orders;
   // Hauteur mesurée de la barre fixe (stats + chips) pour décaler la liste.
   const [barHeight, setBarHeight] = useState(0);
-  const [selectedStatus, setSelectedStatus] = useState<OrderStatus>("pending");
+  const [selectedStatus, setSelectedStatus] = useState<StatusTab>("pending");
   // 'express' par défaut pour le tab finished (seul tab à grouper en accordéon).
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
     "express",
@@ -203,10 +203,10 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     }
   };
 
-  const statusMap: Record<OrderStatus, string[]> = {
+  const statusMap: Record<StatusTab, OrderStatus[]> = {
     pending: ["pending"],
-    proccess: ["processing", "active", "in_progress"],
-    finish: ["completed", "finished", "done", "delivering", "delivered"],
+    proccess: ["processing"],
+    finish: ["finished", "delivering", "delivered"],
   };
 
   const filteredOrders = orders.filter((o) =>
@@ -496,7 +496,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders]);
 
-  const statusTabs: { key: OrderStatus; label: string; icon: string }[] = [
+  const statusTabs: { key: StatusTab; label: string; icon: string }[] = [
     { key: "pending", label: tr("En Attente"), icon: "time-outline" },
     { key: "proccess", label: tr("En cours"), icon: "restaurant-outline" },
     { key: "finish", label: tr("Terminées"), icon: "checkmark-done-outline" },
@@ -815,7 +815,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           activeKey={selectedStatus}
           // La date choisie dans le MerchantFilterSheet est conservée au
           // changement d'onglet de statut (pas de retour forcé à aujourd'hui).
-          onSelect={(k) => setSelectedStatus(k as OrderStatus)}
+          onSelect={(k) => setSelectedStatus(k as StatusTab)}
         />
       </View>
 
@@ -1165,7 +1165,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
           count: counts[t.key],
         }))}
         selectedStatus={selectedStatus}
-        onSelectStatus={(k) => setSelectedStatus(k as OrderStatus)}
+        onSelectStatus={(k) => setSelectedStatus(k as StatusTab)}
       />
 
       {/* Sélecteur "qui livre" pour "Lancer tout" (groupe entier). */}

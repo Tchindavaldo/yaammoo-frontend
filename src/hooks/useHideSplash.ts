@@ -20,6 +20,19 @@ export const onSplashHidden = (cb: () => void) => {
 };
 
 /**
+ * Reouverture Android a chaud : l'activite est recreee mais le runtime JS
+ * survit. Le module ne se re-execute pas → `preventAutoHideAsync` n'est pas
+ * rappele et `splashHidden` reste vrai : le splash disparait seul et l'ecran
+ * (auth) transitoire devient visible avant la home. A appeler au montage de la
+ * racine : on re-arme le splash pour que seule la home le leve, comme au boot.
+ */
+export function rearmSplash() {
+  if (!splashHidden) return;
+  splashHidden = false;
+  SplashScreen.preventAutoHideAsync().catch(() => {});
+}
+
+/**
  * Cache le splash natif UNE SEULE FOIS, depuis l'écran de destination, via son
  * `onLayout`. Garantit que l'écran cible (home / login) est réellement monté et
  * peint avant que le splash disparaisse → aucune page blanche intermédiaire.

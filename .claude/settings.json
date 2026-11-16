@@ -58,6 +58,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce-file-size.sh\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionStart": [

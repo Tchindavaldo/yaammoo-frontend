@@ -131,7 +131,7 @@ data class HLShop(
 ) {
   constructor(r: HLShopRecord) : this(
     r.id,
-    if (HLLayout.designCycle.contains(r.design)) r.design else 7,
+    if (HLLayout.designCycle.contains(r.design) || r.design == HL_GRID) r.design else 7,
     r.name,
     r.avatar ?: r.avatarFallback,
     r.orders,

@@ -6,6 +6,7 @@ import { Dimensions, StyleSheet, View } from "react-native";
 import { useRowCommitProbe } from "../../utils/useRowCommitProbe";
 import { MerchantHeader } from "../MerchantHeader";
 import { DesignItem } from "./DesignItem";
+import { shopDeliveryFeeLabel } from "../../utils/shopDeliveryFee";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const ITEM_WIDTH_6 = Math.round(SCREEN_WIDTH * 0.78) + 8; // width + gap from SKELETON_SIZES
@@ -39,6 +40,7 @@ export const Design6: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         index={index}
         isLast={index === visibleCount - 1}
         deliveryHours={(fastFood as any)?.deliveryHours}
+        deliveryFeeLabel={shopDeliveryFeeLabel(fastFood)}
         orderLeadTime={(fastFood as any)?.orderLeadTime}
         stock={(item as any)?.stock ?? 0}
       />
@@ -47,6 +49,8 @@ export const Design6: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
       fastFood.nom,
       onMenuClick,
       fastFood.deliveryHours,
+      (fastFood as any).expressZones,
+      (fastFood as any).deliveryOffer,
       fastFood.orderLeadTime,
       visibleCount,
     ],

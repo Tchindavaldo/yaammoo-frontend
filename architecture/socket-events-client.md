@@ -126,6 +126,7 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 > [`bonus.md`](bonus.md).
 | `wallet.credited` | tous champs, dont `network` (`MTN` \| `ORANGEMONEY`) | `MerchantWalletContext.applyEvent` (patch solde + solde du réseau, payin) — `socketHandlers/bonusWalletEvents.ts` |
 | `wallet.withdrawal` | tous champs, dont `fee`, `sourceNetwork`, `newBalances: { mtn, orange }` | `MerchantWalletContext.handleWithdrawalEvent` (patch soldes + overlay ; débit = `amount + fee`) — `socketHandlers/bonusWalletEvents.ts` |
+| `wallet.debited` | `amount`, `network`, `newBalance`, `newBalances`, `newBreakdown` | `MerchantWalletContext.applyEvent` (débit hors retrait : frais SMS, soldes absolus) — `socketHandlers/bonusWalletEvents.ts` |
 | `newNotification` | `{ notification }` | `NotificationContext.addFromSocket(notif)` |
 | `isRead` | `{ notificationId }` | `refreshNotifications(true)` — sync silencieux multi-device |
 | `driverLocationUpdated` | `{ data: { driverId, latitude, longitude, accuracy, speed, heading, capturedAt, orderIds[] } }` | **Hors `useSocketEvents`** : écouté par `useOrderTracking` tant que l'onglet « Suivi » est ouvert (comme `driverRatingUpdated` dans `DriverInfoTab`), filtré sur `orderIds`. Fire-and-forget : l'onglet relit `GET /driver/tracking/:orderId` à l'ouverture et au retour au premier plan |
@@ -180,3 +181,19 @@ Toutes les actions ci-dessous **injectent le payload directement** dans le conte
 ## Piège connu — backends multiples
 
 Le client se connecte à `Config.apiUrl`. En dev local (`192.168.x.x:5000`), le socket est **isolé** du backend de prod (fly.io). Tester un `POST /notification/add` via curl sur la mauvaise URL n'émettra **aucun** event vers l'app. Vérifier `Config.apiUrl` avant tout debug socket.
+
+
+## Boutiques modifiees : donnees dans le socket (R27)
+
+- `fastfoodUpdated { fastFood }` : VUE HOME complete (prix affiches, zones du regime effectif, menus, note) envoyee par le backend a chaque modification de boutique (fiche, zones / prix / creneaux / express, regime). Appliquee par `upsertFastFoodFromSocket`, sans GET. `deliveryOffer` joint seulement pour une campagne globale ; absent, le bonus du user est garde (une campagne affichee est effacee).
+- `fastfoodsHidden { ids }` : boutique modifiee devenue invisible au home -> retiree (`requestFastfoodsRemove`).
+- `fastfoodsChanged { ids: null }` : reglage GLOBAL (frais, marges, interrupteur plateforme) -> `refreshLoadedSilently`, silencieux, en arriere-plan (meme rafraichissement qu'au retour au premier plan).
+
+Bus : `src/services/fastfoodRefreshBus.ts`, ecoute par `hooks/useFastFoodRefreshByIds.ts` (FastFoodContext).
+
+Refus de paiement 422 portant `fastFoodIds` (`transactionErrorMessage`, utilise par `useCheckout` et `useCartPayment`) : `GET /fastFood/all?ids=…` en arriere-plan (l'offre du user en depend). Le panier est relu en silence au meme moment (`requestCartRefresh` -> `OrderContext.fetchOrders(true)`) : le backend l'a deja recalcule en base. Codes `price_changed` / `delivery_price_mismatch` / `delivery_mode_changed` (regime vu `order.deliveryBy`, pose par `DesignRouter` -> `useCheckout`, garde par `sanitizeOrder`, ≠ regime actuel) : message « Les prix de livraison de cette boutique viennent de changer… ».
+
+
+## Panier recalcule par le backend
+
+`userOrderUpdated { data: order }` (deja gere par OrderContext) arrive quand une boutique, un plat ou un reglage global change : prix, course et total a jour. `order.needsReview: true` = plat supprime, prix, extra/boisson coche, zone ou creneau disparus : `CartReviewNotice` affiche « Prix ou livraison changes : modifie cette commande » sur la carte (`CartOrderCard`). L'app renvoie `needsReview: false` a l'enregistrement (`sanitizeOrder`) ; le GET qui suit le remet si le probleme demeure.

@@ -50,17 +50,12 @@ export default function DriverScreen() {
     type: "success" | "error" | "info" = "info",
   ) => setToast({ message, type });
 
+  // Echec : le contexte livreur affiche lui-meme la raison (toast global).
   const handleUpdateStatus = async (id: string, status: string) => {
     const ok = await updateStatus(id, status);
-    if (status === "delivering") {
-      ok
-        ? showToast(t("🚲 Livraison lancée !"), "success")
-        : showToast(t("Erreur lors du lancement"), "error");
-    } else if (status === "delivered") {
-      ok
-        ? showToast(t("✅ Livraison terminée"), "success")
-        : showToast(t("Erreur lors de la mise à jour"), "error");
-    }
+    if (!ok) return;
+    if (status === "delivering") showToast(t("Livraison lancée"), "success");
+    else if (status === "delivered") showToast(t("Livraison terminée"), "success");
   };
 
   const loading = authLoading || driverLoading;

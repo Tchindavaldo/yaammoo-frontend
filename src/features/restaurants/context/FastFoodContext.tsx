@@ -3,10 +3,13 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
+import { categoryApiValue, useHomeCategoryReload } from "../hooks/useHomeCategoryReload";
 import { useFastFoodFetch } from "../hooks/useFastFoodFetch";
 import { useFastFoodHomeSettings } from "../hooks/useFastFoodHomeSettings";
 import { useFastFoodPagination } from "../hooks/useFastFoodPagination";
 import { useFastFoodSocketUpdates } from "../hooks/useFastFoodSocketUpdates";
+import { useFastFoodRefreshByIds } from "../hooks/useFastFoodRefreshByIds";
+import { useHomeCity, type HomeCity } from "../hooks/useHomeCity";
 import { type HomeClientSettings } from "../utils/homeClientSettings";
 import React, {
   createContext,
@@ -126,6 +129,8 @@ interface FastFoodContextType {
    * serveur (`clientSettings`). Voir `utils/homeClientSettings`.
    */
   homeSettings: HomeClientSettings;
+  /** Ville du home (pilule de localisation, sheet des villes). */
+  homeCity: HomeCity;
 }
 
 const FastFoodContext = createContext<FastFoodContextType | undefined>(
@@ -142,6 +147,8 @@ const FastFoodContext = createContext<FastFoodContextType | undefined>(
  * `FastFoodContext`.
  */
 const FastFoodActivationContext = createContext<() => void>(() => {});
+const NO_SHOPS: FastFood[] = [];
+
 export const useActivateFastFoods = () => useContext(FastFoodActivationContext);
 
 export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -172,7 +179,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     notifyPageLaidOut,
   } = pagination;
   const settings = useFastFoodHomeSettings();
+  // Ville du home : declaree AVANT le fetch, qui attend sa resolution.
+  const homeCity = useHomeCity();
   const { homeSettings } = settings;
+  const categoryRef = useRef<string | null>(null); // tab categorie -> ?category=
   const {
     loading,
     setLoading,
@@ -185,7 +195,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     errorRef,
     fetchPage,
     refreshLoadedSilently,
-  } = useFastFoodFetch({ setFastFoods, pagination, settings });
+  } = useFastFoodFetch({ setFastFoods, pagination, settings, homeCity, categoryRef });
   const {
     upsertMenuFromSocket,
     removeMenuFromSocket,
@@ -193,6 +203,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     applyDeliveryOffer,
     clearDeliveryOfferForBonus,
   } = useFastFoodSocketUpdates(setFastFoods);
+  // Signal `fastfoodsChanged` / refus de paiement : recharge ciblee du home.
+  useFastFoodRefreshByIds({ setFastFoods, upsertFastFoodFromSocket, refreshLoadedSilently });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(t("Tout"));
   // Langue changee : les noms de categories changent, on revient sur « Tout ».
@@ -214,6 +226,20 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     cursorRef.current = null;
     await fetchPage(undefined, searchRef.current.trim() || undefined);
   }, [fetchPage, cursorRef]);
+  useHomeCategoryReload({ selectedCategory, categoryRef, refresh, setLoading, setFastFoods });
+
+  // Ville changee (sheet des villes, « Ma localisation ») : home recharge.
+  // Liste videe d'abord : le loader plein ecran (« Recherche des meilleurs
+  // plats... ») recouvre banniere et boutiques le temps du chargement.
+  const shownCityRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (shownCityRef.current === undefined) { shownCityRef.current = homeCity.city; return; }
+    if (shownCityRef.current === homeCity.city) return;
+    shownCityRef.current = homeCity.city;
+    setLoading(true);
+    setFastFoods([]);
+    void refresh();
+  }, [homeCity.city, refresh, setLoading, setFastFoods]);
 
   /** Lance reellement la page suivante, une fois toutes les gardes passees. */
   const runLoadMore = useCallback(() => {
@@ -381,16 +407,15 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
   // ⚠️ `useMemo` OBLIGATOIRE — ne JAMAIS repasser un objet litteral en `value`.
-  //
-  // Un litteral est recree a chaque rendu du provider : TOUS les consommateurs
-  // du contexte se re-rendent alors, meme quand aucune donnee n'a bouge. Sur le
-  // home, cela re-rendait en vagues les cellules visibles de la `FlatList` —
-  // des cartes pourtant immobiles — avec 70 a 190 ms de blocage JS a chaque
-  // vague. C'etait la cause de la micro-saccade au scroll.
+  // Un litteral re-rend tous les consommateurs a chaque rendu (micro-saccade
+  // au scroll du home, 70 a 190 ms de blocage JS par vague).
+  // Tab change : liste de l'ancien tab masquee des ce rendu (l'effet de
+  // rechargement ne la vide qu'apres) -> pas de flash de l'ancienne page.
+  const staleTab = categoryRef.current !== categoryApiValue(selectedCategory);
   const value = useMemo(
     () => ({
-      fastFoods,
-      loading,
+      fastFoods: staleTab ? NO_SHOPS : fastFoods,
+      loading: loading || staleTab,
       loadingMore,
       hasMore,
       loadMore,
@@ -418,8 +443,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       applyDeliveryOffer,
       clearDeliveryOfferForBonus,
       homeSettings,
+      homeCity,
     }),
     [
+      staleTab,
       fastFoods,
       loading,
       loadingMore,
@@ -446,6 +473,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       applyDeliveryOffer,
       clearDeliveryOfferForBonus,
       homeSettings,
+      homeCity,
     ],
   );
 

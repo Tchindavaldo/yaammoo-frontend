@@ -60,9 +60,6 @@ export default function SettingsScreen() {
   const router = useRouter();
   const isMerchant = !!(userData?.isMarchand && userData?.fastFoodId);
   const { isMerchantMode, setMerchantMode } = useMerchantMode();
-  // Deux designs : « Signaler un problème » = bascule de mode seule dans sa
-  // section apres Aide (par defaut) ; « Mon profil » = carte compacte.
-  const [layout, setLayout] = useState<"section" | "strip">("section");
   const switchMode = () => {
     setMerchantMode(!isMerchantMode);
     router.navigate("/(tabs)");
@@ -160,9 +157,9 @@ export default function SettingsScreen() {
         </SettingGrid>
 
         {/* Compte, Préférences, Aide : listes separees par un trait (variantes
-            d'apercu, cf. `layout`). */}
+            */}
         <ProfileListGroup>
-          <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => setLayout("strip")} />
+          <ProfileListRow icon="person-outline" title={t("Mon profil")} onPress={() => handleComingSoon("Mon profil")} />
           <ProfileListRow icon="key-outline" title={t("Sécurité")} onPress={() => handleComingSoon("Sécurité")} />
           <ProfileListRow icon="gift-outline" title={t("Bonus")} onPress={() => open("userBonus")} />
         </ProfileListGroup>
@@ -218,39 +215,18 @@ export default function SettingsScreen() {
         <View style={styles.sectionLine} />
         <ProfileListGroup>
           <ProfileListRow icon="help-circle-outline" title={t("Assistance")} onPress={() => handleComingSoon("Assistance")} />
-          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => setLayout("section")} />
+          <ProfileListRow icon="chatbox-outline" title={t("Signaler un problème")} onPress={() => handleComingSoon("Signaler un problème")} />
           <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => handleComingSoon(t("Faire une suggestion"))} />
           <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
         </ProfileListGroup>
 
-        {/* Bas de page : creer sa boutique (sans boutique), ou bascule de mode
-            en carte (variante « card »). */}
-        {!isMerchant && layout === "section" && (
-          <>
-            <View style={styles.sectionLine} />
-            <ProfileListGroup>
-              <ProfileListRow icon="storefront-outline" title={t("Créer ma boutique")} onPress={() => router.push("/shop/create")} />
-            </ProfileListGroup>
-          </>
-        )}
-        {layout === "strip" && <View style={styles.sectionLine} />}
-        {!isMerchant && layout === "strip" && (
-          <CreateShopStrip onPress={() => router.push("/shop/create")} />
-        )}
-        {isMerchant && layout === "section" && (
-          <>
-            <View style={styles.sectionLine} />
-            <ProfileListGroup>
-              <ProfileListRow
-                icon="swap-horizontal"
-                title={isMerchantMode ? t("Passer en mode client") : t("Passer en mode marchand")}
-                onPress={switchMode}
-              />
-            </ProfileListGroup>
-          </>
-        )}
-        {isMerchant && layout === "strip" && (
+        {/* Bas de page (client et marchand) : mini-carte coloree, creer sa
+            boutique ou bascule de mode. */}
+        <View style={styles.sectionLine} />
+        {isMerchant ? (
           <MerchantSwitchStrip isMerchantMode={isMerchantMode} onPress={switchMode} />
+        ) : (
+          <CreateShopStrip onPress={() => router.push("/shop/create")} />
         )}
 
       </ScrollView>

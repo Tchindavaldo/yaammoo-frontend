@@ -34,7 +34,7 @@ import { useNotificationSetup } from "@/src/features/notifications/hooks/useNoti
 import { useUserLocationSync } from "@/src/features/location/hooks/useUserLocationSync";
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
-import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
+import { isSplashHidden, onSplashHidden, rearmSplash } from "@/src/hooks/useHideSplash";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { OtaUpdateCard } from "@/src/features/appVersion/components/OtaUpdateCard";
@@ -75,6 +75,9 @@ export const unstable_settings = {
 const NOTIF_SETUP_DELAY_MS = Platform.OS === "android" ? 900 : 600;
 
 function AppContent() {
+  // Avant le 1er rendu : re-arme le splash si l'activite Android a ete recreee
+  // (JS vivant) — sinon l'ecran (auth) apparait avant la home. Cf. rearmSplash.
+  useState(rearmSplash);
   // Mises a jour OTA (JS/assets). Complementaire de `useAppVersion` ci-dessous,
   // qui couvre les versions NATIVES : celles-la exigent un passage par le store
   // et ne peuvent pas etre livrees par `expo-updates`.
@@ -229,6 +232,8 @@ function AppContent() {
           {/* Pages entieres de Settings → Boutique : hors (tabs), donc sans navbar. */}
           <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="account" options={{ animation: "slide_from_right" }} />
+          {/* Recherche plats / boutiques, ouverte par la loupe du header du home. */}
+          <Stack.Screen name="search" options={{ animation: "slide_from_right" }} />
         </Stack.Protected>
         {/* (auth) reste monté tant que (tabs) n'est PAS prêt (canEnterApp false).
             On NE met PAS authResolved ici : sinon, pendant la re-vérification auth

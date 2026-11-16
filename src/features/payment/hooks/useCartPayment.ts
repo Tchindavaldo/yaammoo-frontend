@@ -7,6 +7,7 @@ import { useAuth } from "../../auth/context/AuthContext";
 import { REVIEW_STEP_MS } from "../constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { t, useLanguage } from "@/src/i18n";
+import { transactionErrorMessage } from "../utils/transactionErrorMessage";
 
 export type CartPaymentState =
   | "total"
@@ -115,13 +116,8 @@ export const useCartPayment = (amount: number) => {
           setPaymentState("input");
         }
       } catch (error: any) {
-        const data = error.response?.data;
-        const raw = data?.message;
-        let message = Array.isArray(raw)
-          ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ")
-          : raw;
-        // Réponse sans corps (serveur en redémarrage, proxy) : jamais le texte axios brut.
-      message = message || data?.error || (error.response ? t("Service momentanément indisponible. Réessayez dans un instant.") : t("Connexion impossible. Vérifiez votre réseau et réessayez."));
+        // Refus 422 du pre-check : les boutiques du panier sont rechargees.
+        const message = transactionErrorMessage(error);
         setPaymentError(message);
         setPaymentState("input");
       }

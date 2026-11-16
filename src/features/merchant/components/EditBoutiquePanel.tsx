@@ -7,7 +7,7 @@ import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { styles } from "./edit-boutique/styles";
 import { useEditBoutique } from "./edit-boutique/useEditBoutique";
-import { groupZonesByLieu } from "./edit-boutique/groupZones";
+import { groupZonesByLieu, lieuKey } from "./edit-boutique/groupZones";
 import { hourToDate } from "./edit-boutique/parseBoutique";
 import { BoutiqueInfoPage } from "./edit-boutique/BoutiqueInfoPage";
 import { ZoneFormSheet } from "./edit-boutique/ZoneFormSheet";
@@ -45,32 +45,31 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
   const groups = groupZonesByLieu(
     s.deliveryHours,
     s.periodicEnabled,
-    s.expressEnabled,
     s.periodicZonesByHour,
-    s.expressZonesByHour,
+    s.expressZones,
   );
 
   // Ouvre le bottom sheet sur une zone existante (clic sur une ligne).
+  // `entry.hour` vide = ligne EXPRESS seule (l'express n'a pas d'heure).
   const openZone = (
     lieu: string,
     entry: { hour: string; periodicPrix?: string; expressPrix?: string },
   ) => {
     s.setViewAllHours(false);
-    s.setActiveHour(entry.hour);
+    s.setActiveHour(entry.hour || null);
     s.setNewHour(entry.hour);
     s.setShowEditForm(true);
     s.setFormPeriodic(entry.periodicPrix !== undefined);
     s.setFormExpress(entry.expressPrix !== undefined);
-    s.setTempDeliveryTime(hourToDate(entry.hour));
+    if (entry.hour) s.setTempDeliveryTime(hourToDate(entry.hour));
     s.setPeriodicDraft({ lieu, prix: entry.periodicPrix || "" });
     s.setExpressDraft({ lieu, prix: entry.expressPrix || "" });
-    const pIdx =
-      s.periodicZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ??
-      -1;
-    const eIdx =
-      s.expressZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ?? -1;
+    const pIdx = entry.hour
+      ? (s.periodicZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ?? -1)
+      : -1;
+    const eIdx = s.expressZones.findIndex((z) => lieuKey(z.lieu) === lieuKey(lieu));
     s.setPeriodicEditIdx(entry.periodicPrix !== undefined ? pIdx : null);
-    s.setExpressEditIdx(entry.expressPrix !== undefined ? eIdx : null);
+    s.setExpressEditIdx(entry.expressPrix !== undefined && eIdx >= 0 ? eIdx : null);
   };
 
   // Depuis la liste : on ferme d'abord ce sheet, puis on ouvre le formulaire.
@@ -210,10 +209,7 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
         showTimePicker={s.showTimePicker}
         setShowTimePicker={s.setShowTimePicker}
         onDelete={() => {
-          if (s.activeHour) {
-            s.deletePeriodic();
-            s.deleteExpress();
-          }
+          s.deleteZoneForm();
           s.setShowEditForm(false);
           s.setViewAllHours(true);
         }}

@@ -127,7 +127,8 @@ object HLLayout {
   const val metaHeight = 44f
 
   fun rowHeight(design: Int): Float =
-    rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
+    if (design == HL_GRID) rowTop + card(design).height + metaHeight + rowBottom
+    else rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
 
   /** Banniere : marginTop 4 + diapo 210 + marginBottom 30 (puces dedans). */
   const val bannerTop = 4f
@@ -137,9 +138,21 @@ object HLLayout {
 
   /** Fondu squelette -> contenu (`REVEAL_MS`). */
   const val revealMs = 220L
+  /** Grille categorie (HL_GRID) : attente avant le fondu du squelette. */
+  const val gridRevealDelayMs = 500L
   /** Revelation forcee si une image ne repond jamais (`MAX_WAIT_MS`). */
   const val revealMaxWaitMs = 8000L
 }
+
+/**
+ Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, cartes V7
+ (taille V7) en liste horizontale. Le JS regroupe les plats par N, N calcule
+ sur la largeur d'ecran pour que la derniere carte depasse (on defile pour la voir).
+ */
+const val HL_GRID = 8
+
+/** Style visuel d'une carte : la grille reprend le V7. */
+fun hlCardStyle(type: Int): Int = if (type == HL_GRID) 7 else type
 
 /** Nombre de cartes squelettes d'un fantome (`PLACEHOLDER_MENUS`). */
 const val HL_GHOST_MENU_COUNT = 3

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Animated, Text, StyleSheet, SafeAreaView, Dimensions, PanResponder, Platform } from 'react-native';
+import { Animated, Text, StyleSheet, View, Dimensions, PanResponder, Platform } from 'react-native';
 import { FullWindowOverlay } from 'react-native-screens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DS } from '@/src/theme/ds';
 
@@ -12,6 +13,7 @@ interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, onHide }) => {
+  const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const swipeX = useRef(new Animated.Value(0)).current;
@@ -89,8 +91,10 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
     }
   };
 
+  // SafeAreaView ne decale rien sur Android : le toast touchait la barre
+  // d'etat. On prend la safe-area haute explicitement.
   const content = (
-    <SafeAreaView style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, { top: insets.top + 4 }]} pointerEvents="box-none">
       <Animated.View
         {...pan.panHandlers}
         style={[
@@ -105,7 +109,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
         <Ionicons name={getIcon()} size={20} color="white" />
         <Text style={styles.text}>{message}</Text>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 
   // iOS : FullWindowOverlay = fenêtre native au-dessus de TOUT (Modals, voiles,
@@ -115,9 +119,8 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
 
 const styles = StyleSheet.create({
   container: {
-    // Collé sous la barre d'état (SafeAreaView) : couvre l'en-tête.
+    // Collé sous la barre d'état (top = insets.top) : couvre l'en-tête.
     position: 'absolute',
-    top: 0,
     left: 0,
     right: 0,
     zIndex: 9999,

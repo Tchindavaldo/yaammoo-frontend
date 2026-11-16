@@ -13,7 +13,7 @@ import type {
   BroadcastDraft,
   BroadcastItem,
 } from "../../types/broadcast.types";
-import { computeQuota } from "../../utils/broadcastQuota";
+import { audienceLeft, computeQuota } from "../../utils/broadcastQuota";
 import { BroadcastComposer } from "./BroadcastComposer";
 import { BroadcastHistory } from "./BroadcastHistory";
 import { BroadcastQuotaTiles } from "./BroadcastQuotaTiles";
@@ -71,6 +71,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
   }, [visible]);
 
   const quota = useMemo(() => computeQuota(plan, items, now), [plan, items, now]);
+  const leftByAudience = useMemo(() => audienceLeft(plan, items, now), [plan, items, now]);
 
   const menuImages = useMemo(() => {
     const urls = new Set<string>();
@@ -173,6 +174,7 @@ export const BroadcastManageModal: React.FC<Props> = ({ visible, onClose }) => {
           menuImages={menuImages}
           audiences={plan.audiences}
           cities={cities}
+          audienceLeft={leftByAudience}
           shop={shop}
           sending={sending}
           restBottom={tabBarHeight + 10}

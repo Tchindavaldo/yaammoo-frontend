@@ -106,7 +106,7 @@ class HomeListView(context: Context, appContext: AppContext) :
     HLImage.app = context.applicationContext
     HLPerfMonitor.detect(context.applicationContext)
     setBackgroundColor(Color.WHITE)
-    for (d in HLLayout.designCycle) {
+    for (d in HLLayout.designCycle + HL_GRID) {
       cardPool.setMaxRecycledViews(d, 24)
       list.recycledViewPool.setMaxRecycledViews(HLListAdapter.rowType(d), 8)
     }

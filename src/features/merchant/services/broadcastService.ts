@@ -8,6 +8,7 @@ import type {
   BroadcastState,
 } from "../types/broadcast.types";
 import { t } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 const BASE = () => `${Config.apiUrl}/notification/broadcast`;
 const AUDIENCES: BroadcastAudience[] = ["customers", "city", "all"];
@@ -21,6 +22,19 @@ export const FREE_PLAN: BroadcastPlan = {
   audiences: AUDIENCES,
 };
 
+/** `plan.audienceLimits` du backend (migration 070) ; entrées invalides ignorées. */
+const normalizeAudienceLimits = (raw: any): BroadcastPlan["audienceLimits"] => {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out: NonNullable<BroadcastPlan["audienceLimits"]> = {};
+  for (const a of AUDIENCES) {
+    const l = raw[a];
+    if (l && Number(l.dayLimit) >= 0 && Number(l.weekLimit) >= 0) {
+      out[a] = { dayLimit: Number(l.dayLimit), weekLimit: Number(l.weekLimit) };
+    }
+  }
+  return out;
+};
+
 const isAudience = (a: unknown): a is BroadcastAudience =>
   AUDIENCES.includes(a as BroadcastAudience);
 
@@ -30,6 +44,7 @@ const normalizePlan = (raw: any): BroadcastPlan => ({
   dayLimit: Number(raw?.dayLimit) >= 0 ? Number(raw.dayLimit) : FREE_PLAN.dayLimit,
   weekLimit: Number(raw?.weekLimit) >= 0 ? Number(raw.weekLimit) : FREE_PLAN.weekLimit,
   audiences: Array.isArray(raw?.audiences) ? raw.audiences.filter(isAudience) : FREE_PLAN.audiences,
+  audienceLimits: normalizeAudienceLimits(raw?.audienceLimits),
 });
 
 const normalizeItem = (raw: any): BroadcastItem | null => {
@@ -48,7 +63,7 @@ const normalizeItem = (raw: any): BroadcastItem | null => {
 
 /** Message d'erreur du backend (quota atteint, audience hors plan…), sinon générique. */
 export const broadcastErrorMessage = (error: any, fallback: string): string => {
-  const msg = error?.response?.data?.message;
+  const msg = apiErrorMessage(error);
   return typeof msg === "string" && msg ? msg : fallback;
 };
 

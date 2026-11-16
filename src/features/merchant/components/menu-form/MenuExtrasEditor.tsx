@@ -1,5 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -126,58 +127,44 @@ export const MenuExtrasEditor: React.FC<{
               )}
             </View>
 
-            {/* Ligne d'édition : nom, prix, supprimer, valider */}
-            <View style={styles.priceDescRow}>
+            {/* D3 : carte d'édition, nom puis prix pleine largeur, puis
+                Supprimer / Valider (maquette canvas « Catégorie »). */}
+            <View style={styles.extraCard}>
               <TextInput
-                style={[
-                  styles.input,
-                  styles.itemInputCompact,
-                  styles.descCol,
-                ]}
+                style={[styles.input, styles.extraCardInput]}
                 placeholder={tr("Nom de l'extra")}
                 value={sec.draft.name}
-                onChangeText={(t) =>
-                  sec.setDraft({ ...sec.draft, name: t })
-                }
+                onChangeText={(t) => sec.setDraft({ ...sec.draft, name: t })}
               />
               <TextInput
-                style={[
-                  styles.input,
-                  styles.itemInputCompact,
-                  styles.priceCol,
-                ]}
+                style={[styles.input, styles.extraCardInput]}
                 placeholder={tr("Prix")}
                 keyboardType="numeric"
                 value={sec.draft.prix}
-                onChangeText={(t) =>
-                  sec.setDraft({ ...sec.draft, prix: t })
-                }
+                onChangeText={(t) => sec.setDraft({ ...sec.draft, prix: t })}
               />
-              {/* Supprimer : retire l'item en édition (sinon vide juste le draft) */}
-              <TouchableOpacity
-                style={styles.itemActionBtn}
-                onPress={() => {
-                  if (sec.editIdx !== null) {
-                    sec.setList(
-                      sec.list.filter((_, i) => i !== sec.editIdx),
-                    );
-                  }
-                  resetDraft();
-                }}
-              >
-                <Ionicons
-                  name="trash-outline"
-                  size={18}
-                  color={Theme.colors.danger}
-                />
-              </TouchableOpacity>
-              {/* Valider : ajoute / met à jour */}
-              <TouchableOpacity
-                style={[styles.itemActionBtn, styles.itemValidateBtn]}
-                onPress={validate}
-              >
-                <Ionicons name="checkmark" size={18} color="white" />
-              </TouchableOpacity>
+              <View style={styles.extraCardActions}>
+                {/* Supprimer : retire l'item en édition (sinon vide juste le draft) */}
+                <TouchableOpacity
+                  style={[styles.extraCardBtn, styles.extraCardDelete]}
+                  onPress={() => {
+                    if (sec.editIdx !== null) {
+                      sec.setList(sec.list.filter((_, i) => i !== sec.editIdx));
+                    }
+                    resetDraft();
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={15} color={Theme.colors.danger} />
+                  <Text style={[styles.extraCardBtnText, { color: Theme.colors.danger }]}>
+                    {tr("Supprimer")}
+                  </Text>
+                </TouchableOpacity>
+                {/* Valider : ajoute / met à jour */}
+                <TouchableOpacity style={[styles.extraCardBtn, styles.itemValidateBtn]} onPress={validate}>
+                  <Ionicons name="checkmark" size={15} color={DS.onInk} />
+                  <Text style={[styles.extraCardBtnText, { color: DS.onInk }]}>{tr("Valider")}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
         );

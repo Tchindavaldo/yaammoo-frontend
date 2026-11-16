@@ -1,5 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { showToast } from "@/src/services/globalToast";
+import { apiErrorMessage } from "@/src/api/apiError";
+import { getAuthErrorMessage } from "@/src/features/auth/utils/authErrors";
 import React, { useState } from "react";
 import {
   View,
@@ -98,10 +100,13 @@ export default function RegisterScreen() {
       await userFirestore.createUser(newUser as any, userCredential.user);
       // Redirection pilotée par le guard Stack.Protected (voir app/_layout.tsx).
       // Pas de router.replace : il devancerait le guard → écran blanc/noir.
+      showToast(t("Compte créé, bienvenue !"), "success");
       setUserData(newUser as any);
     } catch (error: any) {
       setConnect(false);
-      showToast(t("Impossible de créer le compte."), "error");
+      // Erreur Firebase (email deja utilise, mot de passe faible...) ou du backend.
+      const fb = error?.code ? getAuthErrorMessage(error.code) : "";
+      showToast((fb && fb !== t("Une erreur est survenue.") ? fb : apiErrorMessage(error)) || t("Impossible de créer le compte."), "error");
     }
   };
 

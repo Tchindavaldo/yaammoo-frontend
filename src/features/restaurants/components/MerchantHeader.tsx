@@ -35,24 +35,27 @@ interface MerchantHeaderProps {
   distanceKm?: number | null;
   /** Creneaux de la boutique : « Livraison 12h » / « Livraison express » sous la note (design aere). */
   deliveryHours?: any[];
+  /** Zones express de la boutique (`expressZones`, sans heure). */
+  expressZones?: unknown;
   orderLeadTime?: number;
 }
 
 export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   name,
   image,
-  rating = 4.5,
+  rating = 0,
   orderCount = 0,
   reviewCount = 0,
   syncWithImage,
   isOpen = true,
   distanceKm,
   deliveryHours,
+  expressZones,
   orderLeadTime = 0,
 }) => {
   useLanguage();
   const distance = formatDistanceKm(distanceKm);
-  const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime);
+  const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime, expressZones);
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec
   // les cartes) et son PROPRE avatar.
   //
@@ -209,10 +212,13 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
           <View style={styles.ratingBlock}>
             <View style={styles.aereRating}>
               <Ionicons name="star" size={13} color={DS.star} />
-              <Text style={styles.aereScore}>{rating.toFixed(1)}/5</Text>
-              <View style={styles.aereReviews}>
-                <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
-              </View>
+              {/* Sans avis : « Nouveau », jamais une note inventee. */}
+              <Text style={styles.aereScore}>{reviewCount > 0 ? `${rating.toFixed(1)}/5` : t("Nouveau")}</Text>
+              {reviewCount > 0 ? (
+                <View style={styles.aereReviews}>
+                  <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
+                </View>
+              ) : null}
             </View>
             {delivery ? (
               <Text style={styles.aereDelivery}>

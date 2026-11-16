@@ -1,18 +1,17 @@
 /**
- * Construit le payload `deliveryHours` au format attendu par le backend.
+ * Construit les payloads de livraison au format attendu par le backend.
  *
- * Transforme les états frontend éparpillés en un tableau d'objets structurés :
+ * `deliveryHours` = creneaux PERIODIQUES seuls :
  *
  * ```json
- * [
- *   {
- *     "hour": "08:00",
- *     "periodic": true,
- *     "periodicZones": [{ "lieu": "Bonanjo", "prix": "500" }],
- *     "express": false,
- *     "expressZones": []
- *   }
- * ]
+ * [{ "hour": "08:00", "periodic": true, "periodicZones": [{ "lieu": "Bonanjo", "prix": "500" }] }]
+ * ```
+ *
+ * `expressZones` = liste EXPRESS de la boutique, SANS heure (backend, migration
+ * 073) : l'express part des que la commande est prete, un seul prix par lieu.
+ *
+ * ```json
+ * [{ "lieu": "Bonanjo", "prix": "900" }]
  * ```
  */
 
@@ -25,22 +24,26 @@ interface DeliveryHourPayload {
   hour: string;
   periodic: boolean;
   periodicZones: Zone[];
-  express: boolean;
-  expressZones: Zone[];
 }
 
 export const buildDeliveryPayload = (
   hours: string[],
   periodicEnabled: Record<string, boolean>,
   periodicZonesByHour: Record<string, Zone[]>,
-  expressEnabled: Record<string, boolean>,
-  expressZonesByHour: Record<string, Zone[]>,
-): DeliveryHourPayload[] => {
-  return hours.map((hour) => ({
+): DeliveryHourPayload[] =>
+  hours.map((hour) => ({
     hour,
     periodic: periodicEnabled[hour] === true,
     periodicZones: periodicZonesByHour[hour] || [],
-    express: expressEnabled[hour] === true,
-    expressZones: expressZonesByHour[hour] || [],
   }));
+
+/** Liste express : un lieu une seule fois (le premier garde), lieu non vide. */
+export const buildExpressPayload = (expressZones: Zone[]): Zone[] => {
+  const seen = new Set<string>();
+  return expressZones.filter((z) => {
+    const key = (z.lieu || "").trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 };

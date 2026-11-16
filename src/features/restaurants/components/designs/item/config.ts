@@ -99,6 +99,8 @@ export interface DesignItemProps {
   deliveryHours?: string[];
   orderLeadTime?: number;
   stock?: number;
+  /** Livraison : "gratuit", tarif le moins cher ("300F") ou "" (`shopDeliveryFeeLabel`). */
+  deliveryFeeLabel?: string;
 }
 
 /**
@@ -116,6 +118,3 @@ export interface CardVariantProps {
   deliveryFeeLabel: string;
 }
 
-/** Frais de livraison affiches (maquette) : cycle sur l'index du menu. */
-export const deliveryFeeLabelFor = (index: number) =>
-  index % 3 === 0 ? "gratuit" : index % 3 === 1 ? "300F" : "1000F";

@@ -6,6 +6,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import type { CartZoneGroup } from "../utils/groupCartOrders";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
+import { commonPickup } from "../utils/commonPickup";
+import { pickupDayLabel } from "@/src/features/checkout/utils/pickupHours";
 
 interface CartZoneFooterBarProps {
   /** Groupes actuellement affichés : un seul si une zone est isolée. */
@@ -59,8 +61,14 @@ export const CartZoneFooterBar: React.FC<CartZoneFooterBarProps> = ({
     if (groups.length > 1)
       return { mode: "ZONES", zone: t("{{a}} zones", { a: groups.length }) };
     const g = groups[0];
-    if (g.type !== "express" && g.type !== "time")
-      return { mode: t("SUR PLACE"), zone: g.zone.toUpperCase() };
+    if (g.type !== "express" && g.type !== "time") {
+      // Meme jour et meme heure pour tout le lot : on les annonce.
+      const p = commonPickup(g.entries.map((e) => e.order));
+      return {
+        mode: t("SUR PLACE"),
+        zone: p ? `${pickupDayLabel(p.date)} · ${p.time}`.toUpperCase() : g.zone.toUpperCase(),
+      };
+    }
     return {
       mode: [t("LIVRAISON"), g.type === "express" ? "EXPRESS" : g.heure]
         .filter(Boolean)

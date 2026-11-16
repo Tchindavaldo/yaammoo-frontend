@@ -2,6 +2,7 @@ import axios from "axios";
 import { Config } from "@/src/api/config";
 import { Commande } from "@/src/types";
 import { auth } from "@/src/services/firebase";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /** En-têtes avec le token Firebase (endpoints protégés). */
 async function authHeaders() {
@@ -173,13 +174,13 @@ export const driverService = {
    */
   async recruitDriver(
     fastFoodId: string,
-    body: { mode: "create" | "add" | "invite"; phoneNumber: string; prenom?: string; nom?: string; email?: string; password?: string },
+    body: { mode: "create" | "add" | "invite"; phoneNumber?: string; prenom?: string; nom?: string; email?: string; password?: string },
   ): Promise<string | null> {
     try {
       await axios.post(`${Config.apiUrl}/driver/recruit/${fastFoodId}`, body, { headers: await authHeaders() });
       return null;
     } catch (error: any) {
-      return error?.response?.data?.message || "Erreur réseau";
+      return apiErrorMessage(error) || "Erreur réseau";
     }
   },
 

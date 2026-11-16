@@ -14,6 +14,8 @@ export interface BroadcastPlan {
   dayLimit: number;
   weekLimit: number;
   audiences: BroadcastAudience[];
+  /** Plafond propre à une audience, en plus du quota global (absent = global seul). */
+  audienceLimits?: Partial<Record<BroadcastAudience, { dayLimit: number; weekLimit: number }>>;
 }
 
 /** Une notification déjà envoyée. */

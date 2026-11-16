@@ -53,14 +53,15 @@ export const computeCheckoutPrices = ({
 
   const total = menuPrice + extrasPrice + drinksPrice + deliveryPrice;
 
-  // Livraison offerte : offre backend active OU code bonus appliqué.
+  // Livraison offerte : offre backend active, code bonus appliqué, OU groupage
+  // (départ déjà payé par le client, pas encore parti : la course est couverte).
   // Le VRAI prix de livraison reste envoyé dans `delivery.prix` (le livreur
   // doit être payé), mais le montant débité (`displayTotal`) l'exclut.
   const deliveryOffer = (menu as any)?.deliveryOffer;
   const isDeliveryFree =
     delivery.statut &&
     delivery.type !== "aucune" &&
-    (!!deliveryOffer?.active || !!delivery.bonusCode);
+    (!!deliveryOffer?.active || !!delivery.bonusCode || delivery.grouping === "grouped");
 
   const displayDeliveryPrice = isDeliveryFree ? 0 : deliveryPrice;
   const displayTotal = isDeliveryFree ? total - deliveryPrice : total;

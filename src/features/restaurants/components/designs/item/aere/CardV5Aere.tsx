@@ -76,8 +76,9 @@ export const V5AereMeta: React.FC<{
       </Text>
       <View style={styles.flex} />
       <Ionicons name="star" size={12} color={DS.star} />
-      <Text style={[styles.metaText, { color: DS.ink }]}>{rating}</Text>
-      <Text style={styles.metaMuted}>({votes} {t("avis)")}</Text>
+      {/* Sans avis : « Nouveau », jamais une note inventee. */}
+      <Text style={[styles.metaText, { color: DS.ink }]}>{votes > 0 ? rating : t("Nouveau")}</Text>
+      {votes > 0 ? <Text style={styles.metaMuted}>({votes} {t("avis)")}</Text> : null}
     </View>
     <Text style={styles.metaText} numberOfLines={1}>
       {t("Livraison")}{" "}

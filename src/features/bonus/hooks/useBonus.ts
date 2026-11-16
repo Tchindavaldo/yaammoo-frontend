@@ -19,6 +19,7 @@ import type {
 } from "../types/bonus.types";
 import { DEFAULT_BONUSES, USE_DEFAULT_BONUSES } from "../config/defaultBonuses";
 import { t, useLanguage } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 const HEADERS = { "ngrok-skip-browser-warning": "true" };
 
@@ -309,7 +310,7 @@ export const useBonus = () => {
         setClaims((c) => ({ ...c, [bonus.id]: "error" }));
         return {
           success: false,
-          message: e?.response?.data?.message || t("Échec de la demande"),
+          message: apiErrorMessage(e) || t("Échec de la demande"),
         };
       }
     },
@@ -375,7 +376,7 @@ export const useBonus = () => {
         return {
           success: false,
           message:
-            e?.response?.data?.message ||
+            apiErrorMessage(e) ||
             (next ? t("Échec de l'activation") : t("Échec de la désactivation")),
         };
       } finally {

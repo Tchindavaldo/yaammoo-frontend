@@ -79,6 +79,16 @@ struct HLCardSize {
   let radius: CGFloat
 }
 
+/**
+ Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, cartes V7
+ (taille V7) en liste horizontale. Le JS regroupe les plats par N, N calcule
+ sur la largeur d'ecran pour que la derniere carte depasse (on defile pour la voir).
+ */
+let HLGrid = 8
+
+/** Style visuel d'une carte : la grille reprend le V7. */
+func hlCardStyle(_ type: Int) -> Int { type == HLGrid ? 7 : type }
+
 enum HLLayout {
   /** Cycle des designs de rangee (`utils/designCycle.ts`). */
   static let designCycle = [7, 4, 5]
@@ -112,7 +122,8 @@ enum HLLayout {
   static let metaHeight: CGFloat = 44
 
   static func rowHeight(_ design: Int) -> CGFloat {
-    rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
+    if design == HLGrid { return rowTop + card(design).height + metaHeight + rowBottom }
+    return rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
   }
 
   /** Banniere : marginTop 4 + diapo 210 + marginBottom 30 (puces dedans). */
@@ -123,6 +134,8 @@ enum HLLayout {
 
   /** Fondu squelette → contenu (`REVEAL_MS`). */
   static let revealDuration: TimeInterval = 0.22
+  /** Grille categorie (HLGrid) : attente avant le fondu du squelette. */
+  static let gridRevealDelay: TimeInterval = 0.5
   /** Revelation forcee si une image ne repond jamais (`MAX_WAIT_MS`). */
   static let revealMaxWait: TimeInterval = 8
 }

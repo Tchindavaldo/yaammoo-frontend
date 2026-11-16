@@ -10,6 +10,8 @@ import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { useLazyFetch } from "@/src/hooks/useLazyFetch";
 import { t, useLanguage } from "@/src/i18n";
 import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
+import { onCartRefresh } from "@/src/services/fastfoodRefreshBus";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /** Cache des commandes, pour un badge panier juste des la premiere frame. */
 const ORDERS_CACHE_KEY = "orders_cache";
@@ -157,6 +159,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     !!userData,
   );
 
+  // Refus de paiement « prix changes » : panier relu en silence (recalcule en base).
+  useEffect(() => onCartRefresh(() => { fetchOrders(true); }), [fetchOrders]);
+
   const addOrder = async (orderData: any): Promise<{ success: boolean; message?: string }> => {
     try {
       setLoading(true);
@@ -169,7 +174,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: false, message: t("Erreur lors de la création.") };
     } catch (err: any) {
       console.error("Add order error:", err);
-      const backendMessage = err.response?.data?.message;
+      const backendMessage = apiErrorMessage(err);
       return {
         success: false,
         message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || t("Erreur réseau")
@@ -222,7 +227,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: true };
     } catch (err: any) {
       console.error("Save order error:", err);
-      const backendMessage = err.response?.data?.message;
+      const backendMessage = apiErrorMessage(err);
       return {
         success: false,
         message: Array.isArray(backendMessage)
@@ -283,7 +288,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return { success: false, message: t("Erreur lors de la validation des commandes") };
     } catch (err: any) {
       console.error("Buy orders error:", err);
-      const backendMessage = err.response?.data?.message;
+      const backendMessage = apiErrorMessage(err);
       return {
         success: false,
         message: Array.isArray(backendMessage) ? backendMessage.join('; ') : backendMessage || t("Erreur réseau")
@@ -293,7 +298,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
-  const rankedStatuses = ["pending", "processing", "active", "in_progress", "accept"];
+  const rankedStatuses = ["pending", "processing"];
 
   const getFilteredByStatus = useCallback((statusList: string[]) => {
     const filtered = orders.filter((o) =>
@@ -318,13 +323,13 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       counts: {
         total: orders.length,
         pending: s(["pending"]).length,
-        processing: s(["processing", "active", "in_progress", "accept"]).length,
+        processing: s(["processing"]).length,
         finished: s(["finished", "delivering"]).length,
         delivered: s(["delivered"]).length,
       },
       amounts: {
         pending: total(["pending"]),
-        processing: total(["processing", "active", "in_progress", "accept"]),
+        processing: total(["processing"]),
         finished: total(["finished", "delivering"]),
         delivered: total(["delivered"]),
       }
@@ -348,7 +353,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     saveOrder,
     pendingToBuy: getFilteredByStatus(["pendingtobuy"]),
     pending: getFilteredByStatus(["pending"]),
-    active: getFilteredByStatus(["processing", "active", "in_progress", "accept"]),
+    active: getFilteredByStatus(["processing"]),
     finished: getFilteredByStatus(["finished", "delivering"]),
     delivered: getFilteredByStatus(["delivered"]),
     stats,

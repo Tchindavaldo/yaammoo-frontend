@@ -14,4 +14,4 @@ export const SHOW_LOCATION_BANNER = false;
  * (« Quartier, Arrondissement ») partout, même hors de Banganté ; false = hors
  * de Banganté, « Banganté, Cameroun » (seule zone desservie).
  */
-export const SHOW_PLACE_OUTSIDE_SERVICE_AREA = false;
+export const SHOW_PLACE_OUTSIDE_SERVICE_AREA = true;

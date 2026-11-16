@@ -92,3 +92,11 @@ Mes activités · Compte · Boutique (marchand) · Livraison · Préférences ·
 > « Aide & Légal » a été scindée en deux : **Aide** (assistance, signalement,
 > suggestion, contactez-nous) et **Légal** (politique & conditions,
 > confidentialité).
+
+## Bas de page (client et marchand)
+
+Un seul design : la **mini-carte colorée** en bas de page. Client sans
+boutique → `CreateShopStrip` (« Créer ma boutique ») ; marchand →
+`MerchantSwitchStrip` (bascule mode client / marchand). L'ancienne variante
+en liste (`layout = "section"`) et la bascule par « Mon profil » / « Signaler
+un problème » sont supprimées ; ces deux lignes affichent « bientôt disponible ».

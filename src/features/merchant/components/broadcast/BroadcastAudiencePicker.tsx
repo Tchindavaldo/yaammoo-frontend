@@ -28,6 +28,8 @@ interface Props {
   audience: BroadcastAudience;
   city: string | null;
   onChange: (audience: BroadcastAudience, city: string | null) => void;
+  /** Envois encore possibles par audience (affiché sur la puce). */
+  left?: Partial<Record<BroadcastAudience, number>>;
 }
 
 /**
@@ -41,6 +43,7 @@ export const BroadcastAudiencePicker: React.FC<Props> = ({
   audience,
   city,
   onChange,
+  left,
 }) => {
   useLanguage();
   const options = OPTIONS.filter(
@@ -72,6 +75,11 @@ export const BroadcastAudiencePicker: React.FC<Props> = ({
             >
               <Ionicons name={o.icon} size={15} color={on ? "#fff" : BC.ink} />
               <Text style={[styles.chipText, on && styles.chipTextOn]}>{label}</Text>
+              {left?.[o.key] != null && (
+                <Text style={[styles.chipLeft, on && styles.chipTextOn, left[o.key] === 0 && styles.chipLeftNone]}>
+                  {left[o.key]}
+                </Text>
+              )}
             </Pressable>
           );
         })}
@@ -119,6 +127,8 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: BC.ink },
   chipText: { fontSize: 13, fontWeight: "600", color: BC.ink },
   chipTextOn: { color: "#fff" },
+  chipLeft: { fontSize: 12, fontWeight: "700", color: BC.muted },
+  chipLeftNone: { color: BC.accentInk },
   cityChip: {
     height: 32,
     justifyContent: "center",

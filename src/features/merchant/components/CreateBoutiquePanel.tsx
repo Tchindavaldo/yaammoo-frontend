@@ -6,7 +6,7 @@ import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { styles } from "./create-boutique/styles";
 import { useCreateBoutique } from "./create-boutique/useCreateBoutique";
-import { groupZonesByLieu } from "./create-boutique/groupZones";
+import { groupZonesByLieu, lieuKey } from "./create-boutique/groupZones";
 import { hourToDate } from "./create-boutique/parseBoutique";
 import { BoutiqueInfoPage } from "./create-boutique/BoutiqueInfoPage";
 import { ZoneFormSheet } from "./create-boutique/ZoneFormSheet";
@@ -17,6 +17,10 @@ import {
   BoutiqueToast,
 } from "./create-boutique/BoutiquePickers";
 import { t, useLanguage } from "@/src/i18n";
+import { MerchantAdhesionBlock } from "./create-boutique/MerchantAdhesionBlock";
+import { MerchantLegalSheet } from "./create-boutique/MerchantLegalSheet";
+import { RestoreShopSheet } from "./create-boutique/RestoreShopSheet";
+import { useRestorableShops } from "./create-boutique/useRestorableShops";
 
 interface CreateBoutiquePanelProps {
   onCancel: () => void;
@@ -40,37 +44,39 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
   // navbar, safe-area comprise (source unique R19).
   const tabBarHeight = useTabBarHeight();
   const s = useCreateBoutique({ onCancel });
+  // Boutiques supprimees avec le compte : restaurer ou creer une nouvelle.
+  const restorable = useRestorableShops();
   // Sheet de consultation des zones deja saisies.
   const [showZoneList, setShowZoneList] = React.useState(false);
 
   const groups = groupZonesByLieu(
     s.deliveryHours,
     s.periodicEnabled,
-    s.expressEnabled,
     s.periodicZonesByHour,
-    s.expressZonesByHour,
+    s.expressZones,
   );
 
   // Ouvre le bottom sheet sur une zone existante (clic sur une ligne).
+  // `entry.hour` vide = ligne EXPRESS seule (l'express n'a pas d'heure).
   const openZone = (
     lieu: string,
     entry: { hour: string; periodicPrix?: string; expressPrix?: string },
   ) => {
     s.setViewAllHours(false);
-    s.setActiveHour(entry.hour);
+    s.setActiveHour(entry.hour || null);
     s.setNewHour(entry.hour);
     s.setShowEditForm(true);
     s.setFormPeriodic(entry.periodicPrix !== undefined);
     s.setFormExpress(entry.expressPrix !== undefined);
-    s.setTempDeliveryTime(hourToDate(entry.hour));
+    if (entry.hour) s.setTempDeliveryTime(hourToDate(entry.hour));
     s.setPeriodicDraft({ lieu, prix: entry.periodicPrix || "" });
     s.setExpressDraft({ lieu, prix: entry.expressPrix || "" });
-    const pIdx =
-      s.periodicZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ?? -1;
-    const eIdx =
-      s.expressZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ?? -1;
+    const pIdx = entry.hour
+      ? (s.periodicZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ?? -1)
+      : -1;
+    const eIdx = s.expressZones.findIndex((z) => lieuKey(z.lieu) === lieuKey(lieu));
     s.setPeriodicEditIdx(entry.periodicPrix !== undefined ? pIdx : null);
-    s.setExpressEditIdx(entry.expressPrix !== undefined ? eIdx : null);
+    s.setExpressEditIdx(entry.expressPrix !== undefined && eIdx >= 0 ? eIdx : null);
   };
 
   // Depuis la liste : on ferme d'abord ce sheet, puis on ouvre le formulaire.
@@ -161,9 +167,36 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
             setPickupAllowed={s.setPickupAllowed}
             loading={s.loading}
             onSubmit={s.handleCreate}
+            adhesionBlock={
+              <MerchantAdhesionBlock
+                role={s.adhesion.role}
+                setRole={s.adhesion.setRole}
+                legalName={s.adhesion.legalName}
+                setLegalName={s.adhesion.setLegalName}
+                address={s.adhesion.address}
+                setAddress={s.adhesion.setAddress}
+                accepted={s.adhesion.accepted}
+                setAccepted={s.adhesion.setAccepted}
+                onOpenLegal={s.adhesion.openLegal}
+              />
+            }
           />
         </View>
       </View>
+
+      <RestoreShopSheet
+        visible={restorable.open}
+        shops={restorable.shops}
+        restoringId={restorable.restoringId}
+        onRestore={restorable.restore}
+        onCreateNew={restorable.close}
+      />
+
+      <MerchantLegalSheet
+        visible={s.adhesion.legalOpen}
+        onClose={s.adhesion.closeLegal}
+        document={s.adhesion.document}
+      />
 
       <ZoneListSheet
         visible={showZoneList}
@@ -197,10 +230,7 @@ export const CreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
         showTimePicker={s.showTimePicker}
         setShowTimePicker={s.setShowTimePicker}
         onDelete={() => {
-          if (s.activeHour) {
-            s.deletePeriodic();
-            s.deleteExpress();
-          }
+          s.deleteZoneForm();
           s.setShowEditForm(false);
           s.setViewAllHours(true);
         }}

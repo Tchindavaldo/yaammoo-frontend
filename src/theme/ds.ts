@@ -78,6 +78,8 @@ export const DS = {
   danger: "#ef4444",
   info: "#3b82f6",
   dangerInk: "#B42318",
+  /** Fond rouge doux (bouton Supprimer de la carte extra). */
+  dangerSoft: "#fee2e2",
   warning: "#F59E0B",
   backdrop: "rgba(20,20,22,0.45)",
 

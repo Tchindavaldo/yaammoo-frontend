@@ -16,6 +16,8 @@ import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
 import { AuthFieldCapsule } from "./AuthFieldCapsule";
 import { BlurScope, BlurTarget } from "@/src/components/BlurTarget";
 import { t, useLanguage } from "@/src/i18n";
+import { getAuthErrorMessage } from "../utils/authErrors";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /**
  * Connexion / inscription par email — DESIGN D'ORIGINE conserve.
@@ -92,8 +94,11 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
         // Succes : loader maintenu jusqu'au demontage par le guard, comme
         // Google/Apple (cf. architecture/auth.md).
       } catch (err: any) {
+        // Code Firebase (mot de passe incorrect, email deja utilise...) en
+        // message clair ; sinon message du backend ; sinon generique.
+        const fb = err?.code ? getAuthErrorMessage(err.code) : "";
         setError(
-          err?.message ??
+          (fb && fb !== t("Une erreur est survenue.") ? fb : apiErrorMessage(err)) ||
             (isRegister ? t("Inscription échouée.") : t("Connexion échouée.")),
         );
         setLoading(false);

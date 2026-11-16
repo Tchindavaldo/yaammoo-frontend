@@ -188,7 +188,8 @@ enum HLAereMeta {
   static func texts(design: Int, _ m: HLMenu)
     -> (NSAttributedString, NSAttributedString?, NSAttributedString, NSAttributedString?) {
     let title = HLRun(m.title, HLFont.w900(13), HLAereColor.ink)
-    let votes = design == 7 ? "(\(m.votes))" : "(\(m.votes) avis)"
+    // Sans avis : la note vaut « Nouveau » (JS), on n'affiche pas « (0 avis) ».
+    let votes = m.votes <= 0 ? "" : design == 7 ? "(\(m.votes))" : "(\(m.votes) avis)"
     let rating = HLText([
       HLKerned(HLIcons.attributed("star", size: design == 7 ? 11 : 12, color: HLColor.starYellow), 4),
       HLKerned(HLRun(m.rating, HLFont.w700(11), HLAereColor.ink), 4),

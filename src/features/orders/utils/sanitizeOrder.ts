@@ -49,6 +49,8 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
       };
       // Numero de contact garde aussi en RETRAIT (exige par le backend).
       if (d.phone) base.phone = d.phone;
+      // Sur place : heure de retrait "HH:mm" (backend : facultative en retrait).
+      if (!hasDelivery && d.time) base.time = d.time;
       if (hasDelivery) {
         if (d.type) base.type = d.type;
         if (d.location) base.location = d.location;
@@ -92,6 +94,11 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
 
   // Code bonus livraison : justifie côté backend un total sans frais de port.
   if (o.bonusCode) sanitized.bonusCode = o.bonusCode;
+  // Regime de livraison vu a la creation (compare au regime actuel au paiement).
+  if (o.deliveryBy) sanitized.deliveryBy = o.deliveryBy;
+  // Commande renvoyée par l'app = choix refait par le client : plus « à revoir »
+  // (le backend le repose au prochain recalcul si besoin).
+  sanitized.needsReview = false;
 
   if (o.createdAt) sanitized.createdAt = o.createdAt;
   if (o.updatedAt) sanitized.updatedAt = o.updatedAt;

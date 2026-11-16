@@ -61,15 +61,13 @@ export default function BoutiqueScreen() {
     setToast({ message, type });
   };
 
+  // Echec : le contexte marchand affiche lui-meme la raison (toast global).
   const handleUpdateStatus = async (id: string, status: string) => {
     const ok = await updateStatus(id, status);
-    if (status === 'delivering') {
-      ok ? showToast(t("🚲 Livraison lancée !"), 'success') : showToast(t("Erreur lors du lancement"), 'error');
-    } else if (status === 'processing') {
-      ok ? showToast(t("✅ Commande acceptée"), 'success') : showToast(t("Erreur lors de la mise à jour"), 'error');
-    } else if (status === 'finished') {
-      ok ? showToast(t("✅ Commande terminée"), 'success') : showToast(t("Erreur lors de la mise à jour"), 'error');
-    }
+    if (!ok) return;
+    if (status === 'delivering') showToast(t("Livraison lancée"), 'success');
+    else if (status === 'processing') showToast(t("Commande acceptée"), 'success');
+    else if (status === 'finished') showToast(t("Commande terminée"), 'success');
   };
 
   const loading = authLoading || merchantLoading;

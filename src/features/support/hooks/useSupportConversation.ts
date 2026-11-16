@@ -8,6 +8,7 @@ import type {
   SupportTopic,
 } from "../types/support.types";
 import { t, useLanguage } from "@/src/i18n";
+import { playChatSound } from "@/src/services/audio/chatSound";
 
 interface Options {
   userId?: string;
@@ -69,6 +70,7 @@ export const useSupportConversation = ({
     const socket = socketService.getSocket();
     const onMessage = (data: { threadId?: string; message?: SupportMessage }) => {
       if (!data?.message || data.threadId !== threadIdRef.current) return;
+      if (data.message.author === "support") playChatSound();
       setMessages((prev) =>
         prev.some((m) => m.id === data.message!.id)
           ? prev

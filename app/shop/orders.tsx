@@ -48,16 +48,13 @@ export default function ShopOrdersScreen() {
     });
   }, [selectedDate, todayISO, i18nLang]);
 
+  // Echec : le contexte marchand affiche lui-meme la raison (toast global).
   const handleUpdateStatus = async (id: string, status: string) => {
     const ok = await updateStatus(id, status);
-    const fail = { message: t("Erreur lors de la mise à jour"), type: 'error' as const };
-    if (status === 'delivering') {
-      setToast(ok ? { message: t("Livraison lancée"), type: 'success' } : fail);
-    } else if (status === 'processing') {
-      setToast(ok ? { message: t("✅ Commande acceptée"), type: 'success' } : fail);
-    } else if (status === 'finished') {
-      setToast(ok ? { message: t("✅ Commande terminée"), type: 'success' } : fail);
-    }
+    if (!ok) return;
+    if (status === 'delivering') setToast({ message: t("Livraison lancée"), type: 'success' });
+    else if (status === 'processing') setToast({ message: t("Commande acceptée"), type: 'success' });
+    else if (status === 'finished') setToast({ message: t("Commande terminée"), type: 'success' });
   };
 
   const loading = authLoading || merchantLoading;

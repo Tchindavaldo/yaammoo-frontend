@@ -22,19 +22,19 @@ peuvent diverger sans risque l'un pour l'autre.
 
 ## État global (zones de livraison)
 
-Pour chaque heure, deux ensembles de zones distincts :
+Le **périodique** est par heure ; l'**express** est une liste unique de la
+boutique, **sans heure** (un prix par lieu, migration backend 073) :
 
 ```
 deliveryHours: string[]            // ["08:00", "10:00", ...]
-activeHour: string | null          // Heure dont on édite les zones
+activeHour: string | null          // Heure dont on édite les zones (null = express)
 
 // Périodique
 periodicEnabled: Record<string, boolean>   // { "08:00": true, ... }
 periodicZonesByHour: Record<string, { lieu: string; prix: string }[]>
 
-// Express
-expressEnabled: Record<string, boolean>
-expressZonesByHour: Record<string, { lieu: string; prix: string }[]>
+// Express (boutique, sans heure) — dédoublonné par lieu (trim + minuscules)
+expressZones: { lieu: string; prix: string }[]
 
 // Drafts d'édition
 periodicDraft: { lieu: string; prix: string }
@@ -46,9 +46,9 @@ expressEditIdx: number | null
 ### Règles métier
 
 - Au moins un des deux blocs (périodique ou express) doit être coché avec des infos fournies
-- Quand on active l'express pour une heure, les zones sont **préremplies** depuis le périodique
+- Express seul : le champ heure de `ZoneFormSheet` est grisé (inutile)
+- `ZoneListSheet` : la carte express d'un lieu est cliquable (édition du prix express)
 - Les inputs ne sont modifiables que si la checkbox du bloc est cochée
-- `placeDraft.express` par défaut à `true` (checkbox express pré-cochée)
 
 ---
 
@@ -80,19 +80,19 @@ formulaire de création.
 
 ## Payload backend (deliveryHours)
 
-`deliveryHours` passe d'un tableau de strings à un tableau d'objets :
+`deliveryHours` (périodique seul, `buildDeliveryPayload`) + `expressZones`
+(liste boutique, `buildExpressPayload`) :
 
 ```json
-[
-  {
-    "hour": "08:00",
-    "periodic": true,
-    "periodicZones": [{ "lieu": "Bonanjo", "prix": "500" }],
-    "express": false,
-    "expressZones": []
-  }
-]
+{
+  "deliveryHours": [
+    { "hour": "08:00", "periodic": true, "periodicZones": [{ "lieu": "Bonanjo", "prix": "500" }] }
+  ],
+  "expressZones": [{ "lieu": "Bonanjo", "prix": "1000" }]
+}
 ```
+
+Le backend retire tout `express`/`expressZones` résiduel des heures.
 
 ---
 
@@ -163,3 +163,26 @@ Constante `CAMEROON_CITIES` (30 villes) utilisée dans les deux panneaux pour le
 | `src/features/checkout/components/tabs/DeliveryTab.tsx` | Affiche le prix sélectionné dynamiquement |
 | `src/features/restaurants/utils/deliveryUtils.ts` | `getNextDeliveryTime` (heure du prochain créneau, supporte les deux formats ; retombe sur le 1er créneau = demain quand tous ceux du jour sont passés) + `useNextDeliveryTime` (version réactive : recalcule chaque minute et au retour foreground pour ne pas rester figée) |
 | `src/features/restaurants/components/designs/item/DesignItemCard.tsx` | Affiche l'heure de prochaine livraison sur les plats du home via `useNextDeliveryTime` |
+
+## Numéros de retrait OM / MoMo vérifiés par SMS
+
+Dans `create-boutique/` et `edit-boutique/BoutiqueInfoPage`, les champs OM et
+MoMo ne sont plus des saisies : le numéro est affiché (même style arrondi) et un
+toucher ouvre `payout-number/PayoutNumberSheet` (cadre de la sheet de connexion,
+hauteur `AUTH_SHEET_HEIGHT`) avec `PayoutOtpStep`, copie de `WhatsAppAuthStep`
+(R16) : en-tête « Un code vous sera envoyé par SMS », numéro pré-rempli. Appels
+`services/payoutNumberService.ts` → `POST /wallet/payout-number/request|verify`
+(SMS seul). Code valide ⇒ le numéro remplit le champ. Le backend refuse tout
+retrait vers un numéro non vérifié (`payout_number_unverified`).
+
+Le champ WhatsApp suit le même principe : `PayoutNumberSheet` en mode
+`whatsapp` (`PayoutOtpStep channel="whatsapp"`, « Un code vous sera envoyé sur
+WhatsApp »), appels `POST /whatsapp-number/request|verify` (WhatsApp seul).
+
+## Restauration d'une boutique supprimée avec le compte
+
+À l'ouverture de la création (`ShopCreateBoutiquePanel`, `CreateBoutiquePanel`),
+`create-boutique/useRestorableShops` lit `GET /shop-restore`. S'il y a des
+boutiques, `RestoreShopSheet` propose « Restaurer » (`POST /shop-restore/:id`,
+puis `fastFoodId` posé sur le user → retour au home marchand) ou « Créer une
+nouvelle boutique » (ferme la sheet).

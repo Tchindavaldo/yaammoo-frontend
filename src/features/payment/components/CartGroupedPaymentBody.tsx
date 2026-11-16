@@ -17,6 +17,10 @@ interface CartGroupedPaymentBodyProps {
   articlesTotal: number;
   /** Frais de la course unique. */
   livraison: number;
+  /** Départ déjà payé (groupage) : course « Groupée avec ta commande ». */
+  courseGrouped?: boolean;
+  /** Card (Zone express / Créneau) dont la lecture des départs payés est en cours. */
+  courseChecking?: "express" | "period" | null;
   onSplit: () => void;
   onOpenLocation: () => void;
   onOpenContact: () => void;
@@ -29,6 +33,9 @@ interface CartGroupedPaymentBodyProps {
   isBusy: boolean;
   /** Retrait boutique autorisé (GET /fastfood/all) — gate la card « Sur place ». */
   pickupAllowed?: boolean;
+  /** Sur place : tuiles Date et Heure. */
+  onOpenPickupDate?: () => void;
+  onOpenPickupHour?: () => void;
   /**
    * PAGE affichee (1 a 5). Le sheet a une hauteur reduite : la livraison
    * groupee ne tient plus sur un seul ecran, elle se parcourt en cinq temps.
@@ -56,6 +63,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
   deliveryCount,
   articlesTotal,
   livraison,
+  courseGrouped,
+  courseChecking,
   onSplit,
   onOpenLocation,
   onOpenContact,
@@ -66,6 +75,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
   onNetworkChange,
   isBusy,
   pickupAllowed,
+  onOpenPickupDate,
+  onOpenPickupHour,
   step,
 }) => (
   <ScrollView
@@ -89,6 +100,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
       deliveryCount={deliveryCount}
       articlesTotal={articlesTotal}
       livraison={livraison}
+      courseGrouped={courseGrouped}
+      courseChecking={courseChecking}
       onGroupAll={() => {}}
       onSplit={onSplit}
       onOpenLocation={onOpenLocation}
@@ -102,6 +115,8 @@ export const CartGroupedPaymentBody: React.FC<CartGroupedPaymentBodyProps> = ({
       onNetworkChange={onNetworkChange}
       isBusy={isBusy}
       pickupAllowed={pickupAllowed}
+      onOpenPickupDate={onOpenPickupDate}
+      onOpenPickupHour={onOpenPickupHour}
       section={
         step === 1
           ? "group"

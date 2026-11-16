@@ -14,7 +14,9 @@ final class HLMenuCardCell: UICollectionViewCell {
   /** Sonde : cartes creees depuis le lancement (une neuve = calques neufs a l'ecran). */
   private(set) static var created = 0
 
+  /** Style visuel (7, 4, 5) ; une carte de grille (`HLGrid`) est une V7 plus large. */
   private(set) var design = 0
+  private var cardType = 0
   private var size = HLLayout.card(7)
 
   // Contenu reel (fondu entrant) et squelettes (fondu sortant).
@@ -73,8 +75,9 @@ final class HLMenuCardCell: UICollectionViewCell {
 
   /** Construit une fois les vues propres au design. */
   private func build(_ d: Int) {
-    guard design != d else { return }
-    design = d
+    guard cardType != d else { return }
+    cardType = d
+    design = hlCardStyle(d)
     size = HLLayout.card(d)
     card.layer.cornerRadius = size.radius
     aere = HLDesign.aere
@@ -197,7 +200,7 @@ final class HLMenuCardCell: UICollectionViewCell {
       titleRight.attributedText = HLText([
         HLKerned(HLIcons.attributed("star", size: 12, color: HLColor.starYellow), 4),
         HLKerned(HLRun(m.rating, HLFont.w700(11), .black), 4),
-        HLRun("(\(m.votes) avis)", HLFont.w600(11), HLColor.metaMuted),
+        HLRun(m.votes > 0 ? "(\(m.votes) avis)" : "", HLFont.w600(11), HLColor.metaMuted),
       ])
       lineLeft.attributedText = HLText([
         HLRun("Livraison ", HLFont.w700(11), HLColor.metaText),

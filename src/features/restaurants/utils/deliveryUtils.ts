@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { t, useLanguage } from "@/src/i18n";
+import { hasExpressZones } from "@/src/features/checkout/utils/expressZones";
 
 /**
  * Extrait le string "HH:MM" depuis un item du nouveau format ou le retourne tel quel.
@@ -173,12 +174,14 @@ export const getUpcomingDeliveryTimes = (
 /**
  * Libellé de livraison de l'en-tête boutique : prochains créneaux périodiques
  * séparés par une espace (« 12h 13h 14h », le 1er = le plus proche, délai de commande `orderLeadTime` compris, demain si tous sont
- * passés), « express » si la boutique n'a que de l'express, `null` sans
- * aucune livraison. Ancien format `string[]` = créneaux périodiques.
+ * passés), « express » si la boutique n'a que de l'express (liste
+ * `expressZones`, sans heure), `null` sans aucune livraison. Ancien format
+ * `string[]` = créneaux périodiques.
  */
 export const getShopDeliveryLabel = (
   deliveryHours?: any[],
   orderLeadTime: number = 0,
+  expressZones?: unknown,
 ): string | null => {
   const raw = Array.isArray(deliveryHours) ? deliveryHours : [];
   const periodic = raw
@@ -187,7 +190,7 @@ export const getShopDeliveryLabel = (
     .filter(Boolean)
     .sort((a, b) => toMinutes(a) - toMinutes(b));
   if (periodic.length > 0) return getUpcomingDeliveryTimes(periodic, orderLeadTime).join(" ");
-  if (raw.some((h) => h?.express === true)) return "express";
+  if (hasExpressZones(expressZones)) return "express";
   return null;
 };
 
@@ -195,14 +198,15 @@ export const getShopDeliveryLabel = (
 export const useShopDeliveryLabel = (
   deliveryHours?: any[],
   orderLeadTime: number = 0,
+  expressZones?: unknown,
 ): string | null => {
   const [label, setLabel] = useState(() =>
-    getShopDeliveryLabel(deliveryHours, orderLeadTime),
+    getShopDeliveryLabel(deliveryHours, orderLeadTime, expressZones),
   );
 
   useEffect(() => {
     const recompute = () =>
-      setLabel(getShopDeliveryLabel(deliveryHours, orderLeadTime));
+      setLabel(getShopDeliveryLabel(deliveryHours, orderLeadTime, expressZones));
 
     recompute();
     const interval = setInterval(recompute, 60_000);
@@ -215,7 +219,7 @@ export const useShopDeliveryLabel = (
       sub.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(deliveryHours), orderLeadTime]);
+  }, [JSON.stringify(deliveryHours), orderLeadTime, JSON.stringify(expressZones ?? null)]);
 
   return label;
 };

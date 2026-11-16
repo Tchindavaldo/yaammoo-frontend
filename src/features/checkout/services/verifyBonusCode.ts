@@ -2,6 +2,7 @@ import axios from "axios";
 import { Config } from "@/src/api/config";
 import { DeliveryOffer } from "@/src/types";
 import { t } from "@/src/i18n";
+import { apiErrorMessage } from "@/src/api/apiError";
 
 /**
  * Vérification d'un code bonus AVANT commande — `POST /bonus/verify`.
@@ -64,7 +65,7 @@ export const verifyBonusCode = async (
       message,
     };
   } catch (error: any) {
-    const raw = error.response?.data?.message;
+    const raw = apiErrorMessage(error);
     const message = Array.isArray(raw)
       ? raw.map((e: any) => e?.message).filter(Boolean).join(" • ")
       : raw;

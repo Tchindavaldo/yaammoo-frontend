@@ -1,5 +1,10 @@
 # Home — pause au scroll lors de l'ajout des boutiques (pagination)
 
+> **PRIORITÉ BASSE — Expo Go uniquement.** En natif (builds déployés), c'est
+> fluide : testé par l'utilisateur depuis le passage des listes en natif
+> (14/11/2026). La pause ne se voit qu'en Expo Go (outil de test), d'où la
+> priorité basse. Les étapes ci-dessous restent des pistes, sans urgence.
+
 Branche de départ : `feature/horizontal-flashlist-v5.3-reset`.
 Contexte : [architecture/home-scroll-pause.md](../../../architecture/home-scroll-pause.md).
 Les tâches se font dans l'ordre, une par une : mesurer avant et après chacune.

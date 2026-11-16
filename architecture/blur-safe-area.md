@@ -295,3 +295,11 @@ Le contenu d'une page entière **n'ajoute donc jamais** `insets.bottom` ni la
 hauteur de la tab bar (sinon la marge est doublée et un vide de la taille de la
 navbar apparaît). Les écrans qui partageaient la mise en page d'un onglet ont
 leur copie dédiée (R16) : `shop/ShopOrderManagePanel.tsx` pour « Commandes ».
+
+## Animation d'ouverture des bottom sheets (R28)
+
+`<Modal transparent animationType="none">` + `useSheetAnimation(visible)` :
+voile (`DS.backdrop`) en fondu, sheet qui monte du bas et redescend à la
+fermeture. Ni `slide` (le voile glisserait avec la sheet) ni `fade` seul (la
+sheet apparaîtrait en fondu). Une page plein
+écran non transparente peut garder `slide`.

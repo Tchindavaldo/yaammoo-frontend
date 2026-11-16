@@ -8,8 +8,12 @@ import {
   isLocalUri,
 } from "@/src/features/merchant/services/uploadImage";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { buildDeliveryPayload } from "@/src/features/merchant/services/buildDeliveryPayload";
-import { parseDeliveryHours, hourToDate } from "./parseBoutique";
+import {
+  buildDeliveryPayload,
+  buildExpressPayload,
+} from "@/src/features/merchant/services/buildDeliveryPayload";
+import { parseDeliveryHours, parseExpressZones, hourToDate, type Zone } from "./parseBoutique";
+import { lieuKey } from "./groupZones";
 import { useToast } from "./useToast";
 import { useEntryAnimation } from "./useEntryAnimation";
 import { useShopPosition } from "./useShopPosition";
@@ -62,17 +66,12 @@ export const useEditBoutique = ({
   const [periodicZonesByHour, setPeriodicZonesByHour] = useState<
     Record<string, { lieu: string; prix: string }[]>
   >({});
-  // Zones express par heure, préremplies depuis periodic
-  const [expressZonesByHour, setExpressZonesByHour] = useState<
-    Record<string, { lieu: string; prix: string }[]>
-  >({});
-  // Périodique et Express activés par heure
+  // Zones EXPRESS de la boutique : une liste, SANS heure (un prix par lieu).
+  const [expressZones, setExpressZones] = useState<Zone[]>([]);
+  // Périodique activé par heure
   const [periodicEnabled, setPeriodicEnabled] = useState<
     Record<string, boolean>
   >({});
-  const [expressEnabled, setExpressEnabled] = useState<Record<string, boolean>>(
-    {},
-  );
   // Drafts d'édition pour les deux blocs
   const [periodicDraft, setPeriodicDraft] = useState({ lieu: "", prix: "" });
   const [expressDraft, setExpressDraft] = useState({ lieu: "", prix: "" });
@@ -124,18 +123,21 @@ export const useEditBoutique = ({
         loadShopPosition(data);
 
         const parsed = parseDeliveryHours(data.deliveryHours || []);
+        const express = parseExpressZones(data.expressZones);
         setDeliveryHours(parsed.hours);
         setPeriodicEnabled(parsed.periodicEnabled);
-        setExpressEnabled(parsed.expressEnabled);
         setPeriodicZonesByHour(parsed.periodicZones);
-        setExpressZonesByHour(parsed.expressZones);
+        setExpressZones(express);
         if (parsed.firstHour) {
           setActiveHour(parsed.firstHour);
           setViewAllHours(false);
           setNewHour(parsed.firstHour);
           setTempDeliveryTime(hourToDate(parsed.firstHour));
-          if (parsed.periodicDraft) setPeriodicDraft(parsed.periodicDraft);
-          if (parsed.expressDraft) setExpressDraft(parsed.expressDraft);
+          if (parsed.periodicDraft) {
+            setPeriodicDraft(parsed.periodicDraft);
+            const e = express.find((z) => lieuKey(z.lieu) === lieuKey(parsed.periodicDraft!.lieu));
+            setExpressDraft({ lieu: parsed.periodicDraft.lieu, prix: e?.prix || "" });
+          }
         }
 
         if (data.openTime) setOpenTime(hourToDate(data.openTime));
@@ -171,29 +173,35 @@ export const useEditBoutique = ({
     setPeriodicEditIdx(null);
   };
 
-  // ── Suppression de la zone express en cours d'edition ──
+  // ── Suppression de la zone express en cours d'edition (toute la ligne du lieu) ──
   const deleteExpress = () => {
-    if (activeHour && expressEditIdx !== null) {
-      setExpressZonesByHour((prev) => ({
-        ...prev,
-        [activeHour]: (prev[activeHour] || []).filter(
-          (_, i) => i !== expressEditIdx,
-        ),
-      }));
+    if (expressEditIdx !== null) {
+      setExpressZones((prev) => prev.filter((_, i) => i !== expressEditIdx));
     }
     setExpressDraft({ lieu: "", prix: "" });
     setExpressEditIdx(null);
   };
 
+  // Corbeille du formulaire : retire le CRÉNEAU édité s'il y en a un, sinon la
+  // ligne express du lieu. Supprimer un créneau ne touche jamais l'express du
+  // lieu, qui vaut pour toutes les heures.
+  const deleteZoneForm = () => {
+    if (periodicEditIdx !== null) deletePeriodic();
+    else if (expressEditIdx !== null) deleteExpress();
+  };
+
   // Enregistre le lieu saisi dans les listes périodique et/ou express selon les cases cochées.
-  // `hour` = l'heure cible (activeHour pour une édition, ou newHour pour un ajout).
+  // `hour` = l'heure cible du PÉRIODIQUE (activeHour pour une édition, ou newHour
+  // pour un ajout). L'express n'a pas d'heure : un seul prix par lieu.
   const saveZoneForm = (hour: string) => {
-    if (!hour) return;
     const lieu = (periodicDraft.lieu || expressDraft.lieu).trim();
     if (!lieu) return;
+    // Le périodique exige une heure ; l'express seul s'en passe.
+    if (formPeriodic && !hour) return;
+    if (!formPeriodic && !formExpress) return;
 
     // Ajouter l'heure si elle n'existe pas encore (ajout depuis "+")
-    if (!deliveryHours.includes(hour)) {
+    if (formPeriodic && !deliveryHours.includes(hour)) {
       setDeliveryHours((prev) => [...prev, hour].sort());
     }
 
@@ -208,14 +216,19 @@ export const useEditBoutique = ({
       setPeriodicEnabled((prev) => ({ ...prev, [hour]: true }));
     }
     if (formExpress) {
+      // Un seul prix express par lieu : on remplace la ligne du lieu s'il est
+      // déjà servi en express, sinon on l'ajoute.
       const item = { lieu, prix: expressDraft.prix.trim() };
-      setExpressZonesByHour((prev) => {
-        const list = prev[hour] ? [...prev[hour]] : [];
-        if (expressEditIdx === null) list.push(item);
-        else list[expressEditIdx] = item;
-        return { ...prev, [hour]: list };
+      setExpressZones((prev) => {
+        const list = [...prev];
+        const idx =
+          expressEditIdx !== null
+            ? expressEditIdx
+            : list.findIndex((z) => lieuKey(z.lieu) === lieuKey(lieu));
+        if (idx >= 0 && idx < list.length) list[idx] = item;
+        else list.push(item);
+        return list;
       });
-      setExpressEnabled((prev) => ({ ...prev, [hour]: true }));
     }
 
     setPeriodicDraft({ lieu: "", prix: "" });
@@ -267,14 +280,11 @@ export const useEditBoutique = ({
         pickupAllowed,
         deliveryHours:
           deliveryHours.length > 0
-            ? buildDeliveryPayload(
-                deliveryHours,
-                periodicEnabled,
-                periodicZonesByHour,
-                expressEnabled,
-                expressZonesByHour,
-              )
+            ? buildDeliveryPayload(deliveryHours, periodicEnabled, periodicZonesByHour)
             : undefined,
+        // Toujours envoyée (même vide) : retirer le dernier lieu express doit
+        // aussi s'enregistrer.
+        expressZones: buildExpressPayload(expressZones),
         // Envoyées ensemble (le backend refuse l'une sans l'autre).
         ...(shopPosition ?? {}),
       };
@@ -369,9 +379,8 @@ export const useEditBoutique = ({
     formExpress,
     setFormExpress,
     periodicZonesByHour,
-    expressZonesByHour,
+    expressZones,
     periodicEnabled,
-    expressEnabled,
     periodicDraft,
     setPeriodicDraft,
     expressDraft,
@@ -395,6 +404,7 @@ export const useEditBoutique = ({
     formatTime,
     deletePeriodic,
     deleteExpress,
+    deleteZoneForm,
     saveZoneForm,
     pickImage,
     handleUpdate,

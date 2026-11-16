@@ -6,6 +6,7 @@ import { StyleSheet, View } from "react-native";
 import { useRowCommitProbe } from "../../utils/useRowCommitProbe";
 import { MerchantHeader } from "../MerchantHeader";
 import { DesignItem } from "./DesignItem";
+import { shopDeliveryFeeLabel } from "../../utils/shopDeliveryFee";
 
 interface DesignProps {
   fastFood: FastFood;
@@ -36,6 +37,7 @@ export const Design4: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         index={index}
         isLast={index === visibleCount - 1}
         deliveryHours={(fastFood as any)?.deliveryHours}
+        deliveryFeeLabel={shopDeliveryFeeLabel(fastFood)}
         orderLeadTime={(fastFood as any)?.orderLeadTime}
         stock={(item as any)?.stock ?? 0}
       />
@@ -44,6 +46,8 @@ export const Design4: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
       fastFood.nom,
       onMenuClick,
       fastFood.deliveryHours,
+      (fastFood as any).expressZones,
+      (fastFood as any).deliveryOffer,
       fastFood.orderLeadTime,
       visibleCount,
     ],

@@ -88,10 +88,13 @@ class HLShopRowView(
       }
     })
     addAll(header, menus)
+    // Grille : pas d'en-tete, les cartes commencent en haut de rangee.
+    if (design == HL_GRID) header.visibility = View.GONE
     onPlace = { w, _ ->
       val pad = HLLayout.sidePadding
       header.frame(pad, HLLayout.rowTop, w - 2 * pad, HLLayout.headerHeight)
-      val y = HLLayout.rowTop + HLLayout.headerHeight + HLLayout.headerGap
+      val y = if (design == HL_GRID) HLLayout.rowTop
+        else HLLayout.rowTop + HLLayout.headerHeight + HLLayout.headerGap
       menus.frame(pad, y, w - 2 * pad, cardSize.height + HLLayout.metaHeight)
     }
   }
@@ -215,11 +218,13 @@ class HLShopRowView(
       return
     }
     val ease = DecelerateInterpolator()
+    // Grille categorie : squelette garde un peu plus longtemps (pas de flash).
+    val delay = if (design == HL_GRID) HLLayout.gridRevealDelayMs else 0L
     pairs.forEach { (c, s) ->
-      c.animate().alpha(1f).setDuration(HLLayout.revealMs).setInterpolator(ease)
-      s.animate().alpha(0f).setDuration(HLLayout.revealMs).setInterpolator(ease)
+      c.animate().alpha(1f).setStartDelay(delay).setDuration(HLLayout.revealMs).setInterpolator(ease)
+      s.animate().alpha(0f).setStartDelay(delay).setDuration(HLLayout.revealMs).setInterpolator(ease)
     }
-    mainHandler.postDelayed(done, HLLayout.revealMs)
+    mainHandler.postDelayed(done, delay + HLLayout.revealMs)
   }
 
   private fun applyRevealed(r: Boolean) {
@@ -256,7 +261,7 @@ class HLShopRowView(
 
   inner class CardAdapter : RecyclerView.Adapter<CardHolder>() {
     override fun getItemCount(): Int = when (val c = content) {
-      is HLRowContent.Ghost -> HL_GHOST_MENU_COUNT
+      is HLRowContent.Ghost -> if (design == HL_GRID) 2 else HL_GHOST_MENU_COUNT
       is HLRowContent.Shop -> c.shop.menus.size
       null -> 0
     }

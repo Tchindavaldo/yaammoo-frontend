@@ -359,7 +359,7 @@ export const styles = StyleSheet.create({
     marginTop: 8,
     textAlignVertical: "top",
   },
-  priceCardDesc: { marginTop: 0, backgroundColor: "white" },
+  priceCardDesc: { marginTop: 0, height: 64, backgroundColor: "white" },
   // --- Extras (D3) : carte d'édition ---
   extraCard: {
     borderWidth: 1,

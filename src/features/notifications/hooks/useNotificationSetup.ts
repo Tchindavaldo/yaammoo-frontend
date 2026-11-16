@@ -53,11 +53,12 @@ const openFromPush = (router: ReturnType<typeof useRouter>, data: any) => {
 };
 
 /**
- * Premier build natif Android qui embarque les sons (res/raw) : versionCode 31.
+ * Premier build natif Android qui embarque les sons (res/raw) : versionCode 34
+ * (31 à 33 les perdaient au shrink des ressources).
  * iOS : premier build Xcode Cloud avec les .wav dans le projet (après le 84).
  * `expo-application` absent (builds plus anciens) = pas de sons.
  */
-const SOUNDS_MIN_BUILD = { android: 31, ios: 85 } as const;
+const SOUNDS_MIN_BUILD = { android: 34, ios: 85 } as const;
 const nativeBuildHasSounds = (): boolean => {
   try {
     const { nativeBuildVersion } = require("expo-application");

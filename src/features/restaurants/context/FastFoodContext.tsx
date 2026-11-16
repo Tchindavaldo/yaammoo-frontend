@@ -3,6 +3,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
+import { useHomeCategoryReload } from "../hooks/useHomeCategoryReload";
 import { useFastFoodFetch } from "../hooks/useFastFoodFetch";
 import { useFastFoodHomeSettings } from "../hooks/useFastFoodHomeSettings";
 import { useFastFoodPagination } from "../hooks/useFastFoodPagination";
@@ -179,6 +180,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // Ville du home : declaree AVANT le fetch, qui attend sa resolution.
   const homeCity = useHomeCity();
   const { homeSettings } = settings;
+  const categoryRef = useRef<string | null>(null); // tab categorie -> ?category=
   const {
     loading,
     setLoading,
@@ -191,7 +193,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     errorRef,
     fetchPage,
     refreshLoadedSilently,
-  } = useFastFoodFetch({ setFastFoods, pagination, settings, homeCity });
+  } = useFastFoodFetch({ setFastFoods, pagination, settings, homeCity, categoryRef });
   const {
     upsertMenuFromSocket,
     removeMenuFromSocket,
@@ -222,6 +224,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     cursorRef.current = null;
     await fetchPage(undefined, searchRef.current.trim() || undefined);
   }, [fetchPage, cursorRef]);
+  useHomeCategoryReload({ selectedCategory, categoryRef, refresh, setLoading, setFastFoods });
 
   // Ville changee (sheet des villes, « Ma localisation ») : home recharge.
   // Liste videe d'abord : le loader plein ecran (« Recherche des meilleurs

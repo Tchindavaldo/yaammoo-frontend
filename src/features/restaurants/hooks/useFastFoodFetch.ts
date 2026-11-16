@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { categoryParams } from "./useHomeCategoryReload";
 import { Config } from "@/src/api/config";
 import { trackHomePage } from "@/src/services/analytics/homePages";
 import { trackBootStep } from "@/src/services/bootTelemetry";
@@ -12,6 +13,7 @@ import {
   useRef,
   useState,
   type Dispatch,
+  type MutableRefObject,
   type SetStateAction,
 } from "react";
 import { MAX_SERVER_LIMIT } from "../utils/homeClientSettings";
@@ -41,9 +43,11 @@ interface Params {
   settings: FastFoodHomeSettings;
   /** Ville du home (`useHomeCity`) : `?city=` sur chaque page, 1re page attend sa resolution. */
   homeCity: Pick<HomeCity, "cityRef" | "cityReady">;
+  /** Tab categorie du home (`useHomeCategoryReload`) : `?category=` sur chaque page. */
+  categoryRef: MutableRefObject<string | null>;
 }
 
-export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity }: Params) {
+export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity, categoryRef }: Params) {
   useLanguage();
   const {
     fastFoodsLenRef,
@@ -165,6 +169,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity 
           ...(cursor ? { cursor } : {}),
           ...(q ? { q } : {}),
           ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
+          ...categoryParams(categoryRef.current),
         },
       });
 
@@ -373,6 +378,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity 
             limit: Math.min(loadedCount - fresh.size, MAX_SERVER_LIMIT),
             ...(cursor ? { cursor } : {}),
             ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
+          ...categoryParams(categoryRef.current),
           },
         });
 

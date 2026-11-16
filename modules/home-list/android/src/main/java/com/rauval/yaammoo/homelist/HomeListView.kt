@@ -102,11 +102,13 @@ class HomeListView(context: Context, appContext: AppContext) :
 
   init {
     HLDim.density = resources.displayMetrics.density
+    // Largeur ecran en dp : taille des cartes de la grille (`HL_GRID`).
+    HLLayout.screenWidth = resources.displayMetrics.widthPixels / resources.displayMetrics.density
     HLFont.assets = context.assets
     HLImage.app = context.applicationContext
     HLPerfMonitor.detect(context.applicationContext)
     setBackgroundColor(Color.WHITE)
-    for (d in HLLayout.designCycle) {
+    for (d in HLLayout.designCycle + HL_GRID) {
       cardPool.setMaxRecycledViews(d, 24)
       list.recycledViewPool.setMaxRecycledViews(HLListAdapter.rowType(d), 8)
     }

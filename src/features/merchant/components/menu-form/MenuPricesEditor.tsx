@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Theme } from "@/src/theme";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import React from "react";
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { DS } from "@/src/theme/ds";
@@ -13,7 +13,7 @@ import { t as tr, useLanguage } from "@/src/i18n";
 /**
  * Prix du plat en nombre VARIABLE : un onglet par prix (« Prix 1 * », « Prix 2 »…),
  * « + » pour en ajouter, poubelle pour retirer le prix sélectionné (sauf le 1er).
- * Le prix sélectionné pilote un couple prix + description sur la même ligne.
+ * Le prix sélectionné pilote un prix (ligne) puis sa description (zone multiligne).
  * Bouton de fin de ligne : ✓ (vérifie le prix côté serveur) tant que le prix
  * n'est pas validé, puis poubelle (prix 2 et suivants) une fois validé.
  */
@@ -53,8 +53,6 @@ export const MenuPricesEditor: React.FC<Props> = ({
   onRemove,
 }) => {
   useLanguage();
-  // Hauteur mesurée de l'input prix → hauteur min de la description (même ligne).
-  const [priceColH, setPriceColH] = useState(0);
   const current = prices[selectedIdx] || { price: "", description: "" };
   const [pricePh, descPh] = placeholders()[Math.min(selectedIdx, 2)];
 
@@ -78,7 +76,7 @@ export const MenuPricesEditor: React.FC<Props> = ({
 
   return (
     <>
-      <View style={[styles.priceHeaderRow, { marginTop: Theme.spacing.lg }]}>
+      <View style={styles.priceHeaderRow}>
         <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>
           {selectedIdx === 0
             ? tr("Prix 1 (obligatoire)")
@@ -113,9 +111,11 @@ export const MenuPricesEditor: React.FC<Props> = ({
         </ScrollView>
       </View>
 
+      {/* D2 : prix pleine largeur (bouton ✓ / poubelle accolé), description
+          multiligne en dessous (maquette canvas « Catégorie »). */}
       <View style={styles.priceDescRow}>
         <TextInput
-          style={[styles.input, styles.priceCol, ...fieldStyle(`prix${selectedIdx}`)]}
+          style={[styles.input, { flex: 1, height: DESC_MIN }, ...fieldStyle(`prix${selectedIdx}`)]}
           placeholder={pricePh}
           placeholderTextColor={Theme.colors.gray[300]}
           keyboardType="numeric"
@@ -124,34 +124,11 @@ export const MenuPricesEditor: React.FC<Props> = ({
             update({ price: t });
             clearError(`prix${selectedIdx}`);
           }}
-          onLayout={(e) => {
-            const h = e.nativeEvent.layout.height;
-            if (h && h !== priceColH) setPriceColH(h);
-          }}
           {...focusProps(`prix${selectedIdx}`)}
-        />
-        <TextInput
-          style={[
-            styles.input,
-            styles.descCol,
-            // Hauteur FIXE = celle de l'input prix ; le texte long défile dedans.
-            { height: priceColH || DESC_MIN },
-            ...fieldStyle(`desc${selectedIdx}`),
-          ]}
-          placeholder={descPh}
-          placeholderTextColor={Theme.colors.gray[300]}
-          value={current.description}
-          onChangeText={(t) => {
-            update({ description: t });
-            clearError(`desc${selectedIdx}`);
-          }}
-          multiline
-          scrollEnabled
-          {...focusProps(`desc${selectedIdx}`)}
         />
         {!validated ? (
           <TouchableOpacity
-            style={[styles.itemActionBtn, styles.itemValidateBtn, { height: priceColH || DESC_MIN }]}
+            style={[styles.itemActionBtn, styles.itemValidateBtn, { height: DESC_MIN }]}
             onPress={onValidate}
             disabled={checking || !current.price}
           >
@@ -163,15 +140,26 @@ export const MenuPricesEditor: React.FC<Props> = ({
           </TouchableOpacity>
         ) : (
           selectedIdx > 0 && (
-            <TouchableOpacity
-              style={[styles.itemActionBtn, { height: priceColH || DESC_MIN }]}
-              onPress={remove}
-            >
+            <TouchableOpacity style={[styles.itemActionBtn, { height: DESC_MIN }]} onPress={remove}>
               <Ionicons name="trash-outline" size={18} color={Theme.colors.danger} />
             </TouchableOpacity>
           )
         )}
       </View>
+      <TextInput
+        style={[styles.input, styles.priceDescArea, ...fieldStyle(`desc${selectedIdx}`)]}
+        placeholder={descPh}
+        placeholderTextColor={Theme.colors.gray[300]}
+        value={current.description}
+        onChangeText={(t) => {
+          update({ description: t });
+          clearError(`desc${selectedIdx}`);
+        }}
+        multiline
+        scrollEnabled
+        textAlignVertical="top"
+        {...focusProps(`desc${selectedIdx}`)}
+      />
     </>
   );
 };

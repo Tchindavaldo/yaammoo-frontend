@@ -1413,5 +1413,14 @@
   "Aucun résultat pour \"{{a}}\"": "No results for \"{{a}}\"",
   "Nouvelles commandes": "New orders",
   "Commandes et paiements": "Orders and payments",
-  "Annulations": "Cancellations"
+  "Annulations": "Cancellations",
+  "Nom, catégorie et photos": "Name, category and photos",
+  "Extras, disponibilité et stock": "Extras, availability and stock",
+  "Catégorie": "Category",
+  "Ex: Poulet": "E.g. Chicken",
+  "Poulet": "Chicken",
+  "Burger": "Burger",
+  "Pizza": "Pizza",
+  "La catégorie ne doit pas être vide": "The category must not be empty",
+  "Autre": "Other"
 }

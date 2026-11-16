@@ -107,8 +107,16 @@ object HLLayout {
   fun card(design: Int): HLCardSize = when (design) {
     4 -> HLCardSize(240f, 240f, 16f)
     5 -> HLCardSize(200f, 250f, 16f)
+    HL_GRID -> {
+      // Grille du home filtre : 2 cartes V7 par rangee, ratio de la carte V7.
+      val w = (screenWidth - 2 * sidePadding - cardGap) / 2f
+      HLCardSize(w, w * 190f / 150f, 12f)
+    }
     else -> HLCardSize(150f, 190f, 12f)
   }
+
+  /** Largeur ecran (dp), posee par `HomeListView` : taille des cartes de grille. */
+  var screenWidth = 390f
 
   /** Ecart entre deux cartes (`marginRight: 8`). */
   const val cardGap = 8f
@@ -127,7 +135,8 @@ object HLLayout {
   const val metaHeight = 44f
 
   fun rowHeight(design: Int): Float =
-    rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
+    if (design == HL_GRID) rowTop + card(design).height + metaHeight + rowBottom
+    else rowTop + headerHeight + headerGap + card(design).height + metaHeight + rowBottom
 
   /** Banniere : marginTop 4 + diapo 210 + marginBottom 30 (puces dedans). */
   const val bannerTop = 4f
@@ -140,6 +149,15 @@ object HLLayout {
   /** Revelation forcee si une image ne repond jamais (`MAX_WAIT_MS`). */
   const val revealMaxWaitMs = 8000L
 }
+
+/**
+ Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, 2 cartes
+ dans le style V7 a largeur de demi-ecran. Le JS regroupe les plats par 2.
+ */
+const val HL_GRID = 8
+
+/** Style visuel d'une carte : la grille reprend le V7. */
+fun hlCardStyle(type: Int): Int = if (type == HL_GRID) 7 else type
 
 /** Nombre de cartes squelettes d'un fantome (`PLACEHOLDER_MENUS`). */
 const val HL_GHOST_MENU_COUNT = 3

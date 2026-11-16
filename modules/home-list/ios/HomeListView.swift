@@ -163,7 +163,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     cv.prefetchDataSource = self
     cv.register(HLBannerCell.self, forCellWithReuseIdentifier: HLBannerCell.reuseId)
     cv.register(HLFooterCell.self, forCellWithReuseIdentifier: HLFooterCell.reuseId)
-    for d in HLLayout.designCycle {
+    for d in HLLayout.designCycle + [HLGrid] {
       cv.register(HLShopCell.self, forCellWithReuseIdentifier: HLShopCell.reuseId(d))
     }
     refresher.tintColor = HLColor.primary

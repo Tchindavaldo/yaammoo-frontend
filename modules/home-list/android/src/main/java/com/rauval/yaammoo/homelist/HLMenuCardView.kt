@@ -13,8 +13,10 @@ import android.view.View
  cartes commune a toutes les rangees) : la reconfigurer ne change que des
  textes et une image.
  */
-class HLMenuCardView(context: Context, val design: Int) : HLBox(context) {
-  private val size = HLLayout.card(design)
+class HLMenuCardView(context: Context, cardType: Int) : HLBox(context) {
+  /** Style visuel (7, 4, 5) ; une carte de grille (`HL_GRID`) est une V7 plus large. */
+  val design = hlCardStyle(cardType)
+  private val size = HLLayout.card(cardType)
 
   // Contenu reel (fondu entrant) et squelettes (fondu sortant).
   val content = HLBox(context)

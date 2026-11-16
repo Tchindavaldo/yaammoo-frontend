@@ -13,11 +13,13 @@ la gestion des **commandes** (feature distincte, même dossier `merchant/`).
 yaammoo/src/features/merchant/components/
 ├── MenuManagePanel.tsx             # Panel gestion des menus (stats + chips filtres Dispo/Indispo + bouton Ajouter ; item calqué sur MerchantOrderCard ; vue ajout inline)
 ├── AddMenuSheet.tsx                # Sheet ajout menu (simple)
-├── AddMenuSheetMultiStep.tsx       # Formulaire menu (Modal pour modif / inline `embedded` pour création) — 3 étapes, orchestration
+├── AddMenuSheetMultiStep.tsx       # Formulaire menu (Modal pour modif / inline `embedded` pour création) — 4 étapes, orchestration
 ├── menu-form/                      # Modules du formulaire (découpe R4)
 │   ├── AddMenuSheet.styles.ts      # Styles du formulaire et de ses étapes
 │   ├── menuFormConstants.ts        # MODAL_HEIGHT, DESC_MIN/MAX
 │   ├── useMenuImageUpload.ts       # Sélection galerie + upload `/image/upload` (progression par slot)
+│   ├── MenuNameCategoryStep.tsx    # Étape 1 : nom + catégorie (+ suggestions)
+│   ├── validateMenuStep.ts         # Contrôle de l'étape courante (`MenuStep`)
 │   ├── MenuPricesEditor.tsx        # N prix : onglets « Prix 1 * / Prix 2 / … » + « + » / poubelle
 │   ├── MenuPhotoSlots.tsx          # Les 3 emplacements photo
 │   ├── MenuExtrasEditor.tsx        # Extras (chips + ligne d'édition)
@@ -96,21 +98,21 @@ Formulaire de création/modification d'un menu.
   header masqué (seule la barre de progression reste), footer dégagé au-dessus de la tab bar.
 - défaut (modification, ouvert depuis le crayon d'un item) : `Modal` plein écran classique.
 
-**3 étapes** (`STEPS = ['nameImage', 'details', 'recap']`) :
-1. **nameImage** — nom, **N prix en onglets** (`MenuPricesEditor` : « Prix 1 * », « Prix 2 »…,
-   « + » ajoute un prix, poubelle retire le prix sélectionné sauf le 1er ; l'onglet pilote un
-   couple prix + description sur la même ligne), puis photos (`MenuPhotoSlots`).
-2. **details** — **Extras** (`MenuExtrasEditor` : chips scrollables + ligne d'édition nom/prix/
-   supprimer/valider ; items enregistrés avec `quantite: "1"`, `status: true`), puis
-   **Disponibilité** et **Stock** (`MenuStockAvailability`). Plus de section Boissons
-   (voir « Boissons de la boutique »).
-3. **recap** — délégué au composant **`MenuRecap`** (dossier `recap-designs/`) qui propose un
-   **switcher** entre plusieurs rendus du même `MenuDraft` (l'utilisateur choisit celui qu'il
-   préfère) : *Aperçu* (carte client), *Blocs* (hero + blocs), *Édito* (éditorial), *Synthèse*
-   (recap **bref** : bandeau identité + 4 stat-tuiles + lignes résumées « 3 items +N », sans
-   listage exhaustif). Le formulaire construit le `MenuDraft` (nom, prix/desc, extras, drinks,
-   availability, stock, images) et le passe en lecture seule. Suivi du bouton "Créer le menu" /
-   "Modifier".
+**4 étapes** (`STEPS = ['nameImage', 'prices', 'details', 'recap']`, maquettes D1→D4 du canvas
+« Yaammoo — Design », page « Catégorie ») :
+1. **nameImage** — nom et **catégorie** (`MenuNameCategoryStep`, chacun sur toute la ligne ;
+   suggestions Poulet / Burger / Pizza qui remplissent le champ, sinon saisie libre), puis les
+   3 photos (`MenuPhotoSlots`). Validation : nom, catégorie, 3 photos.
+2. **prices** — **N prix en onglets** (`MenuPricesEditor` : prix pleine largeur + ✓/poubelle
+   accolé, description multiligne dessous), puis `MenuPricePreviewCard`. « Suivant » vérifie
+   tous les prix côté serveur.
+3. **details** — **Extras** (`MenuExtrasEditor` : chips + carte d'édition nom / prix /
+   Supprimer / Valider), **Disponibilité** et **Stock** (`MenuStockAvailability`).
+4. **recap** — `MenuRecap` → `MenuRecapDesign1` : bandeau orange, ligne **Prix** (toujours
+   3 tuiles, « — » si absent ; au-delà de 3 : 2 prix + tuile « +N »), puis ligne **Détails**.
+
+La catégorie part dans `category` (`POST /menu`, `PUT /menu/:id`) et alimente le filtre
+catégorie du home (`GET /fastfood/all?category=`, cf. restaurants.md).
 
    > Pour ajouter un design : créer `MenuRecapDesignN.tsx` (props `{ draft: MenuDraft }`,
    > utiliser `validPrices`/`namedItems`), puis l'enregistrer dans `MenuRecap.tsx` (entrée
@@ -123,7 +125,7 @@ Formulaire de création/modification d'un menu.
 **Données** : `extra` envoyé au backend porte `name`, `prix`, `quantite`, `status` ; `drink` n'est plus envoyé.
 Helper `toItem` pour (re)charger un menu existant.
 
-**Hauteur du mode Modal** : `MODAL_HEIGHT` (px, fixe, identique sur les 3 étapes pour éviter
+**Hauteur du mode Modal** : `MODAL_HEIGHT` (px, fixe, identique sur les 4 étapes pour éviter
 un saut de taille au changement d'étape) = **540** (~62% d'un écran de référence 844px).
 
 > ⚠️ **Safe-area basse (mode Modal) : à absorber côté footer, jamais sur `sheetWrap`.**
@@ -133,9 +135,9 @@ un saut de taille au changement d'étape) = **540** (~62% d'un écran de référ
 > safe-area doit rester absorbée à l'intérieur d'un élément à fond blanc (footer ou sheet),
 > pas retranchée de la zone visible du sheet lui-même.
 
-## Aperçu du prix (étape 1) et photos (étape 2)
+## Aperçu du prix (étape 2) et photos (étape 1)
 
-- Étape 1 : sous le prix sélectionné, `MenuPricePreviewCard` (maquette B4 du canvas
+- Étape 2 : sous le prix sélectionné, `MenuPricePreviewCard` (maquette B4 du canvas
   « Yaammoo — Design », page « Menu — prix ») : « Prix affiché au client », puis
   « Prix du plat », « Frais de retrait », « Vous recevez ». Données de
   `GET /menu/price-preview/:fastFoodId` via `useMenuPriceCheck`
@@ -151,5 +153,5 @@ un saut de taille au changement d'étape) = **540** (~62% d'un écran de référ
     requête (`?prices=a,b`), spinner sur le bouton seulement ; refus =
     bascule sur le premier prix refusé + un seul toast (une ligne
     « Prix N : message » par prix refusé).
-- Étape 2 : les photos (`MenuPhotoSlots`, 3 requises) sont passées sous extras,
-  disponibilité et stock ; leur validation se fait à cette étape.
+- Étape 1 : les photos (`MenuPhotoSlots`, 3 requises) suivent le nom et la
+  catégorie ; leur validation se fait à cette étape.

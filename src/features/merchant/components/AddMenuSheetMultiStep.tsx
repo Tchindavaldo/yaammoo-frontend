@@ -32,7 +32,8 @@ import { menuPriceStepActions } from "./menu-form/menuPriceStepActions";
 import { t as tr, useLanguage } from "@/src/i18n";
 import { apiErrorMessage } from "@/src/api/apiError";
 
-type Step = "nameImage" | "details" | "recap";
+import { MenuNameCategoryStep } from "./menu-form/MenuNameCategoryStep";
+import { MenuStep as Step, validateMenuStep } from "./menu-form/validateMenuStep";
 
 interface AddMenuSheetProps {
   visible: boolean;
@@ -45,7 +46,7 @@ interface AddMenuSheetProps {
   embedded?: boolean;
 }
 
-const STEPS: Step[] = ["nameImage", "details", "recap"];
+const STEPS: Step[] = ["nameImage", "prices", "details", "recap"];
 
 // Décalage vertical du KeyboardAvoidingView (compense le footer + l'espace au-dessus
 // de la sheet). Augmenter = le contenu remonte plus ; diminuer = il colle au clavier.
@@ -100,6 +101,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     resetImages,
   } = useMenuImageUpload();
   const [nom, setNom] = useState(existingMenu?.name || "");
+  // Catégorie libre du plat (filtre du home, backend migration 088).
+  const [category, setCategory] = useState(existingMenu?.category || "");
   // N prix (plus limité à 3) : au moins une ligne, la 1re est obligatoire.
   const [prices, setPrices] = useState<DraftPrice[]>(toPrices(existingMenu));
   // Prix sélectionné dont on édite montant + description (index 0-based).
@@ -139,6 +142,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   React.useEffect(() => {
     if (visible && existingMenu) {
       setNom(existingMenu.name || existingMenu.titre || "");
+      setCategory(existingMenu.category || "");
       priceCheck.prefetchOnNextPrices();
       setPrices(toPrices(existingMenu));
       setSelectedPriceIdx(0);
@@ -164,6 +168,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     setStep("nameImage");
     resetImages();
     setNom("");
+    setCategory("");
     setPrices([{ price: "", description: "" }]);
     setSelectedPriceIdx(0);
     setExtras([]);
@@ -180,40 +185,15 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       onClose();
     });
 
-  const validate = (): { message: string; fields: string[] } | null => {
-    if (step === "nameImage") {
-      if (!nom.trim())
-        return { message: tr("Le nom ne doit pas être vide"), fields: ["nom"] };
-      // Chaque prix renseigné doit avoir sa description ; le 1er est obligatoire.
-      for (let i = 0; i < prices.length; i++) {
-        const p = prices[i];
-        if (i === 0 && !p.price)
-          return { message: tr("Le prix 1 ne doit pas être vide"), fields: ["prix0"] };
-        if (p.price && !p.description.trim())
-          return {
-            message: tr("La description du prix {{a}} ne doit pas être vide", { a: i + 1 }),
-            fields: [`desc${i}`],
-          };
-      }
-    }
-    // Page details : extras libres, stock obligatoire (numérique).
-    if (step === "details") {
-      // Obligation des 3 photos : il faut 3 images réellement uploadées (URLs).
-      // En modification, les images existantes sont déjà dans uploadedUrls/images.
-      const uploadedCount = uploadedUrls.filter(Boolean).length;
-      if (uploadedCount < 3)
-        return {
-          message: tr("Vous devez ajouter 3 photos du menu"),
-          fields: ["images"],
-        };
-      if (stock.trim() === "" || isNaN(Number(stock)))
-        return {
-          message: tr("Le stock du menu doit être un nombre"),
-          fields: ["stock"],
-        };
-    }
-    return null;
-  };
+  const validate = () =>
+    validateMenuStep({
+      step,
+      nom,
+      category,
+      prices,
+      uploadedCount: uploadedUrls.filter(Boolean).length,
+      stock,
+    });
 
   const priceActions = menuPriceStepActions({
     priceCheck,
@@ -237,8 +217,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     }
     setErrorFields([]);
 
-    // Étape 1 : tous les prix vérifiés côté serveur en une requête.
-    if (step === "nameImage" && !(await priceActions.checkAllPrices())) return;
+    // Étape prix : tous les prix vérifiés côté serveur en une requête.
+    if (step === "prices" && !(await priceActions.checkAllPrices())) return;
 
     if (step === "recap") {
       handleSubmit();
@@ -273,6 +253,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
     // (`fastfood.drinks`, géré par `ShopDrinksPage`).
     const menuData = {
       name: nom,
+      category: category.trim(),
       prices: prices
         .map((p) => ({ price: Number(p.price) || 0, description: p.description }))
         .filter((p) => p.price > 0),
@@ -300,8 +281,9 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   };
 
   const stepTitles: Record<Step, string> = {
-    nameImage: tr("Nom et prix"),
-    details: tr("Extras, stock, statut et photos"),
+    nameImage: tr("Nom, catégorie et photos"),
+    prices: tr("Prix"),
+    details: tr("Extras, disponibilité et stock"),
     recap: tr("Récapitulatif"),
   };
 
@@ -354,26 +336,35 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Étape 1 : nom + prix + description.
-            Pressable : un tap dans le vide ferme le clavier (sortie de la description). */}
+          {/* Étape 1 (D1) : nom, catégorie + suggestions, photos. */}
           {step === "nameImage" && (
             <DismissKeyboardWrapper>
-              <Text style={styles.fieldLabel}>{tr("Nom du menu")}</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.inputCompact,
-                  ...fieldStyle("nom"),
-                ]}
-                placeholder={tr("Ex: Burger Spécial Maison")}
-                value={nom}
-                onChangeText={(t) => {
+              <MenuNameCategoryStep
+                nom={nom}
+                onNomChange={(t) => {
                   setNom(t);
                   clearError("nom");
                 }}
-                {...focusProps("nom")}
+                category={category}
+                onCategoryChange={(t) => {
+                  setCategory(t);
+                  clearError("category");
+                }}
+                fieldStyle={fieldStyle}
+                focusProps={focusProps}
               />
+              <MenuPhotoSlots
+                images={images}
+                uploadProgress={uploadProgress}
+                uploadingIdx={uploadingIdx}
+                pickImage={pickImage}
+              />
+            </DismissKeyboardWrapper>
+          )}
 
+          {/* Étape 2 (D2) : prix + aperçu (prix affiché, frais, vous recevez). */}
+          {step === "prices" && (
+            <DismissKeyboardWrapper>
               <MenuPricesEditor
                 prices={prices}
                 setPrices={setPrices}
@@ -387,8 +378,6 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                 onValidate={priceActions.validateSelected}
                 onRemove={priceCheck.removeAt}
               />
-
-              {/* Apercu B4 : prix affiche, retrait, montant recu (backend). */}
               <MenuPricePreviewCard
                 preview={priceCheck.previewAt(selectedPriceIdx)}
                 loading={priceCheck.cardLoading(selectedPriceIdx)}
@@ -396,7 +385,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
             </DismissKeyboardWrapper>
           )}
 
-          {/* Étape détails : extras + stock + statut du menu */}
+          {/* Étape 3 (D3) : extras, disponibilité, stock. */}
           {step === "details" && (
             <DismissKeyboardWrapper>
               <MenuExtrasEditor extras={extras} setExtras={setExtras} />
@@ -408,13 +397,6 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
                   setStock(v);
                   clearError("stock");
                 }}
-              />
-              {/* Photos : passees a l'etape 2 (l'etape 1 montre l'apercu du prix). */}
-              <MenuPhotoSlots
-                images={images}
-                uploadProgress={uploadProgress}
-                uploadingIdx={uploadingIdx}
-                pickImage={pickImage}
               />
             </DismissKeyboardWrapper>
           )}

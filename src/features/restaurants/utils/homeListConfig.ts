@@ -92,9 +92,9 @@ export const isBannerItem = (item: any) => item?.__banner === true;
 
 export const CATEGORIES = [
   { get name() { return t("Tout"); }, icon: "grid-outline" },
-  { get name() { return t("Fast-food"); }, icon: "fast-food-outline" },
-  { name: "Pizza", icon: "pizza-outline" },
+  // Alignes sur les suggestions de la sheet menu (MenuNameCategoryStep).
+  { get name() { return t("Poulet"); }, icon: "fast-food-outline" },
   { name: "Burger", icon: "nutrition-outline" },
-  { get name() { return t("Boissons"); }, icon: "beer-outline" },
-  { get name() { return t("Riz"); }, icon: "restaurant-outline" },
+  { name: "Pizza", icon: "pizza-outline" },
+  { get name() { return t("Autre"); }, icon: "ellipsis-horizontal-circle-outline" },
 ];

@@ -1423,5 +1423,13 @@
   "Pizza": "Pizza",
   "La catégorie ne doit pas être vide": "The category must not be empty",
   "Autre": "Other",
-  "Code indisponible": "Code unavailable"
+  "Code indisponible": "Code unavailable",
+  "En attente de la réponse du marchand": "Waiting for the restaurant's answer",
+  "Le restaurant a refusé l'annulation : la commande est maintenue.": "The restaurant declined the cancellation: the order stands.",
+  "Demande d'annulation envoyée au restaurant. Vous serez prévenu de sa réponse.": "Cancellation request sent to the restaurant. You will be notified of its answer.",
+  "Renvoyer la demande": "Resend request",
+  "Demande renvoyée au restaurant.": "Request sent again to the restaurant.",
+  "Numéro validé sans code : c'est votre numéro WhatsApp déjà vérifié.": "Number verified without a code: it is your already verified WhatsApp number.",
+  "Validez d'abord votre numéro WhatsApp : si votre Orange Money ou MoMo est le même numéro, il sera validé sans SMS ni frais.": "Verify your WhatsApp number first: if your Orange Money or MoMo is the same number, it will be verified with no SMS and no fee.",
+  "WhatsApp validé sans code : c'est votre numéro Orange Money / MoMo déjà vérifié.": "WhatsApp verified without a code: it is your already verified Orange Money / MoMo number."
 }

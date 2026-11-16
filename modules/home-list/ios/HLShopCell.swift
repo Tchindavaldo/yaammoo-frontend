@@ -186,7 +186,8 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
       for case let cell as HLMenuCardCell in self.menus.visibleCells { cell.setBreathing(false) }
     }
     if animated {
-      UIView.animate(withDuration: HLLayout.revealDuration, delay: 0,
+      UIView.animate(withDuration: HLLayout.revealDuration,
+                     delay: design == HLGrid ? HLLayout.gridRevealDelay : 0,
                      options: [.curveEaseOut, .allowUserInteraction, .beginFromCurrentState],
                      animations: changes, completion: done)
     } else {

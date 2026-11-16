@@ -134,6 +134,8 @@ enum HLLayout {
 
   /** Fondu squelette → contenu (`REVEAL_MS`). */
   static let revealDuration: TimeInterval = 0.22
+  /** Grille categorie (HLGrid) : attente avant le fondu du squelette. */
+  static let gridRevealDelay: TimeInterval = 0.5
   /** Revelation forcee si une image ne repond jamais (`MAX_WAIT_MS`). */
   static let revealMaxWait: TimeInterval = 8
 }

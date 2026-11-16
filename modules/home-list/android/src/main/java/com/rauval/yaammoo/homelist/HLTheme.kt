@@ -138,6 +138,8 @@ object HLLayout {
 
   /** Fondu squelette -> contenu (`REVEAL_MS`). */
   const val revealMs = 220L
+  /** Grille categorie (HL_GRID) : attente avant le fondu du squelette. */
+  const val gridRevealDelayMs = 500L
   /** Revelation forcee si une image ne repond jamais (`MAX_WAIT_MS`). */
   const val revealMaxWaitMs = 8000L
 }

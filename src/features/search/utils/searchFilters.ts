@@ -21,9 +21,18 @@ export const matchesCategory = (title: string, categoryIndex: number): boolean =
 const normalize = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-/** Vrai si la saisie apparaît dans le plat OU dans le nom de la boutique. */
-export const matchesQuery = (title: string, shopName: string, query: string): boolean => {
-  const q = normalize(query.trim());
-  if (!q) return true;
-  return normalize(title).includes(q) || normalize(shopName).includes(q);
+/**
+ * Vrai si CHAQUE mot saisi (même partiel : « pou » pour poulet) apparaît dans
+ * le plat, sa description ou la boutique. Sans accents ni casse.
+ */
+export const matchesQuery = (
+  title: string,
+  shopName: string,
+  query: string,
+  description = "",
+): boolean => {
+  const words = normalize(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const hay = normalize(`${title} ${shopName} ${description}`);
+  return words.every((w) => hay.includes(w));
 };

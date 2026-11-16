@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +13,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameSheet";
+import { ProfileNameProvider } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
 import { CATEGORIES } from "@/src/features/restaurants/utils/homeListConfig";
@@ -28,7 +30,18 @@ import { t, useLanguage } from "@/src/i18n";
  * du home. Liste séparée du home : FlatList à gabarit unique et hauteur fixe
  * (`getItemLayout`), pas de mesure au scroll. Filtres = catégories du home.
  */
+// Hors (tabs) : le ProfileNameProvider des onglets n'est pas monté ici, sans
+// lui `useRequireName` (via useHomeCheckout) plante à l'ouverture.
 export default function SearchScreen() {
+  return (
+    <ProfileNameProvider>
+      <SearchContent />
+      <ProfileNameSheet />
+    </ProfileNameProvider>
+  );
+}
+
+function SearchContent() {
   useLanguage();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -39,10 +52,13 @@ export default function SearchScreen() {
   const checkout = useHomeCheckout();
 
   // Le toast local du checkout home est remplacé par le toast global (R22).
-  if (checkout.toast) {
-    showToast(checkout.toast.message, checkout.toast.type);
-    checkout.hideToast();
-  }
+  // Dans un effet : un setState pendant le rendu boucle / plante.
+  const { toast, hideToast } = checkout;
+  useEffect(() => {
+    if (!toast) return;
+    showToast(toast.message, toast.type);
+    hideToast();
+  }, [toast, hideToast]);
 
   const onPress = useCallback(
     (row: SearchRow) => checkout.onMenuClickStable(row.menu),

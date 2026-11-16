@@ -27,6 +27,7 @@ import { SHOW_LOCATION_BANNER } from "@/src/features/location/config";
 import { homeStyles as styles } from "@/src/features/restaurants/components/home/homeScreenStyles";
 import { useCityChangeLoader } from "@/src/features/restaurants/hooks/useCityChangeLoader";
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
+import { useCategoryFilteredShops } from "@/src/features/restaurants/hooks/useCategoryFilteredShops";
 import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListData";
 import { useHomeListRenderers } from "@/src/features/restaurants/hooks/useHomeListRenderers";
 import { useHomeListScroll } from "@/src/features/restaurants/hooks/useHomeListScroll";
@@ -115,7 +116,7 @@ function HomeScreen() {
   }, [ensureProfileRefreshed, ensureNotificationsLoaded, ensureOrdersLoaded]);
   const router = useRouter();
   const {
-    fastFoods,
+    fastFoods: allFastFoods,
     loading,
     error,
     loadingMore,
@@ -135,6 +136,7 @@ function HomeScreen() {
     setSelectedCategory,
     homeSettings,
   } = useFastFoods();
+  const fastFoods = useCategoryFilteredShops(allFastFoods, selectedCategory);
   const locationAccess = useLocationAccess();
   const { homeCity } = useFastFoodContext();
   // Sans localisation ni ville choisie a la main : pas de boutiques, ecran

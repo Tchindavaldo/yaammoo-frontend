@@ -8,24 +8,27 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { t, useLanguage } from "@/src/i18n";
 
+const MODE_ON = { merchant: () => t("Mode marchand actif"), staff: () => t("Mode personnel actif"), driver: () => t("Mode livreur actif") };
+const MODE_GO = { merchant: () => t("Passer en mode marchand"), staff: () => t("Passer en mode personnel"), driver: () => t("Passer en mode livreur") };
+
 interface Props {
   isMerchantMode: boolean;
-  /** Boutique d'employe : libelle « mode personnel ». */
-  isStaff?: boolean;
+  /** Libelle du mode : marchand, personnel (employe) ou livreur. */
+  kind?: "merchant" | "staff" | "driver";
   onPress: () => void;
 }
 
-export function MerchantSwitchStrip({ isMerchantMode, isStaff = false, onPress }: Props) {
+export function MerchantSwitchStrip({ isMerchantMode, kind = "merchant", onPress }: Props) {
   useLanguage();
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <Ionicons name="swap-horizontal" size={18} color={DS.accent} />
       <View style={styles.texts}>
         <Text style={styles.title} numberOfLines={1}>
-          {isMerchantMode ? (isStaff ? t("Mode personnel actif") : t("Mode marchand actif")) : t("Mode client actif")}
+          {isMerchantMode ? MODE_ON[kind]() : t("Mode client actif")}
         </Text>
         <Text style={styles.sub} numberOfLines={1}>
-          {isMerchantMode ? t("Passer en mode client") : isStaff ? t("Passer en mode personnel") : t("Passer en mode marchand")}
+          {isMerchantMode ? t("Passer en mode client") : MODE_GO[kind]()}
         </Text>
       </View>
       <View style={styles.btn}>

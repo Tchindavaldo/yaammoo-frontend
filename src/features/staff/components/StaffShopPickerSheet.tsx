@@ -14,10 +14,13 @@ interface Props {
   shops: ShopOption[];
   onClose: () => void;
   onPick: (fastFoodId: string) => void;
+  /** Ajoute le choix « Livreur » (compte livreur). */
+  showDriver?: boolean;
+  onPickDriver?: () => void;
 }
 
 /** Choix de la boutique au passage en mode personnel (employe de plusieurs boutiques). */
-export function StaffShopPickerSheet({ visible, shops, onClose, onPick }: Props) {
+export function StaffShopPickerSheet({ visible, shops, onClose, onPick, showDriver = false, onPickDriver }: Props) {
   useLanguage();
   const { mounted, backdropStyle, sheetStyle, onSheetLayout } = useSheetAnimation(visible);
   const { bottom } = useSheetSafeInsets();
@@ -28,7 +31,7 @@ export function StaffShopPickerSheet({ visible, shops, onClose, onPick }: Props)
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t("Fermer")} />
       </Animated.View>
       <Animated.View onLayout={onSheetLayout} style={[styles.sheet, { paddingBottom: bottom }, sheetStyle]}>
-        <Text style={styles.title}>{t("Choisir la boutique")}</Text>
+        <Text style={styles.title}>{t("Choisir le mode")}</Text>
         {shops.map((s) => (
           <Pressable key={s.fastFoodId} style={styles.row} onPress={() => onPick(s.fastFoodId)}>
             <Ionicons name="storefront-outline" size={18} color={DS.ink} />
@@ -43,6 +46,16 @@ export function StaffShopPickerSheet({ visible, shops, onClose, onPick }: Props)
             <Ionicons name="chevron-forward" size={16} color={DS.muted} />
           </Pressable>
         ))}
+        {showDriver && (
+          <Pressable style={styles.row} onPress={onPickDriver}>
+            <Ionicons name="bicycle-outline" size={18} color={DS.ink} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{t("Livreur")}</Text>
+              <Text style={styles.sub}>{t("Mes livraisons")}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={DS.muted} />
+          </Pressable>
+        )}
       </Animated.View>
       <GlobalToastHost modal />
     </Modal>

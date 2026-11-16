@@ -13,6 +13,7 @@ import { SettingGridItem } from "@/src/features/profile/components/SettingGridIt
 import { ProfileListGroup, ProfileListRow } from "@/src/features/profile/components/ProfileListGroup";
 import { SettingsHeaderProfile } from "@/src/features/profile/components/SettingsHeaderProfile";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
+import { StaffProfileSections } from "@/src/features/staff/components/StaffProfileSections";
 import { StaffShopPickerSheet } from "@/src/features/staff/components/StaffShopPickerSheet";
 import { MerchantSwitchStrip } from "@/src/features/profile/components/MerchantSwitchStrip";
 import { CreateShopStrip } from "@/src/features/profile/components/CreateShopStrip";
@@ -59,12 +60,13 @@ export default function SettingsScreen() {
   const [headerHeight, setHeaderHeight] = useState(insets.top + 150);
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
-  const { isMerchant, isMerchantMode, isStaffMode, shops, setMerchantMode, enterShop } = useMerchantMode();
+  const { isMerchant, isMerchantMode, isStaffMode, isDriverMode, choiceCount, shops, setMerchantMode, enterShop, enterDriver } = useMerchantMode();
   const [shopPickerVisible, setShopPickerVisible] = useState(false);
   const switchMode = () => {
     // Plusieurs boutiques (postes) : l'employe choisit.
-    if (!isMerchantMode && shops.length > 1) return setShopPickerVisible(true);
-    setMerchantMode(!isMerchantMode);
+    const inMode = isMerchantMode || isDriverMode;
+    if (!inMode && choiceCount > 1) return setShopPickerVisible(true);
+    setMerchantMode(!inMode);
     router.navigate("/(tabs)");
   };
 
@@ -139,6 +141,17 @@ export default function SettingsScreen() {
           paddingHorizontal: 16,
         }}
       >
+        {/* Mode personnel : profil propre au poste (StaffProfileSections). */}
+        {isStaffMode ? (
+          <StaffProfileSections
+            notifEnabled={notifEnabled}
+            onNotifToggle={handleNotifToggle}
+            darkMode={darkMode}
+            onDarkMode={setDarkMode}
+            onLanguage={() => setLanguageVisible(true)}
+          />
+        ) : (
+        <>
         {/* Mes activités (user ET marchand : un marchand passe aussi des commandes) */}
         <SettingGrid title={t("Mes activités")}>
           {/* Les commandes du client sont l'onglet « Commandes » de la navbar :
@@ -222,12 +235,18 @@ export default function SettingsScreen() {
           <ProfileListRow icon="flag-outline" title={t("Faire une suggestion")} onPress={() => handleComingSoon(t("Faire une suggestion"))} />
           <ProfileListRow icon="call-outline" title={t("Contactez-nous")} onPress={() => router.push("/account/support")} />
         </ProfileListGroup>
+        </>
+        )}
 
         {/* Bas de page (client et marchand) : mini-carte coloree, creer sa
             boutique ou bascule de mode. */}
         <View style={styles.sectionLine} />
-        {isMerchant ? (
-          <MerchantSwitchStrip isMerchantMode={isMerchantMode} isStaff={isStaffMode || !shops.some((s) => s.isOwner)} onPress={switchMode} />
+        {isMerchant || isDriver ? (
+          <MerchantSwitchStrip
+            isMerchantMode={isMerchantMode || isDriverMode}
+            kind={isDriverMode || (!isMerchantMode && !shops.length) ? "driver" : isStaffMode || !shops.some((s) => s.isOwner) ? "staff" : "merchant"}
+            onPress={switchMode}
+          />
         ) : (
           <CreateShopStrip onPress={() => router.push("/shop/create")} />
         )}
@@ -236,6 +255,12 @@ export default function SettingsScreen() {
       <StaffShopPickerSheet
         visible={shopPickerVisible}
         shops={shops}
+        showDriver={isDriver}
+        onPickDriver={() => {
+          setShopPickerVisible(false);
+          enterDriver();
+          router.navigate("/(tabs)");
+        }}
         onClose={() => setShopPickerVisible(false)}
         onPick={(id) => {
           setShopPickerVisible(false);

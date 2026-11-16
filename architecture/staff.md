@@ -111,3 +111,17 @@ un plan.
 - Démarrage : sa boutique, sinon son poste unique, sinon mode client. Plusieurs boutiques : l'utilisateur choisit (`StaffShopPickerSheet`) en passant en mode personnel depuis le profil.
 - Mode personnel = même interface que le marchand, sur la boutique du poste. `fastFoodId` du contexte = boutique active : TOUT l'écran marchand le lit (jamais `userData.fastFoodId`).
 - `can(permission)` : actions hors rôle **grisées** (cases Gestion, boutons Valider / Lancer / Terminer de `MerchantOrderCard`, Retirer du portefeuille réservé au propriétaire). Le backend les refuse aussi.
+
+## Mode travail (personnel ET livreur) — navbar dédiée
+
+`isWorkMode` (contexte) = mode personnel OU mode livreur (compte avec `driverId`, `isDriverMode`).
+Au démarrage, un employé (poste unique) ou un livreur entre directement dans ce mode.
+
+- Navbar : **Attente** (route `index`) / **En cours** (`work-progress`) / **Terminé** (`work-done`) / Notifications / Profil.
+  Écran commun : `src/features/staff/components/WorkOrdersScreen.tsx`.
+  - Personnel : `OrderManagePanel` avec `lockedStatus` (pending / processing / finished+delivering+delivered), barre basse masquée.
+  - Livreur : `DriverOrderPanel` sur ses livraisons (finished / delivering / delivered).
+- Header partout (`WorkHeader`) : copie inversée de `MerchantHomeHeader` — logo à gauche, nom + rôle, icône filtres à droite (ouvre le sheet passé / futur / périodes).
+- Droits (personnel) : Attente = `orders.validate`, En cours = `orders.finish`, Terminé = `orders.deliver`. Tap d'onglet sans le droit : toast « Accès non permis », l'onglet ne s'ouvre pas ; page atteinte quand même : « Vous n'avez pas les droits d'accès à cette page ». Notifications : ouvert à tous.
+- Profil personnel (`StaffProfileSections`) : Messages / Personnel / Livreurs, puis Gestion menu / boisson / annonce, puis Notifications / Mode sombre / Langue / Contactez-nous, puis la carte de mode. Élément sans permission : toast, pas d'ouverture.
+- Profil livreur : profil client normal + carte « Mode livreur actif ».

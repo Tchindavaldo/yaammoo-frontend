@@ -71,6 +71,11 @@ interface OrderManagePanelProps {
   /** Hauteur du header de page : la barre stats+chips s'y cale (en blur), la liste
       scrolle dessous. Défaut 0 (pas d'offset). */
   topOffset?: number;
+  /** Mode travail (personnel) : statut impose par l'onglet de la navbar, barre basse masquee. */
+  lockedStatus?: "pending" | "proccess" | "finish";
+  /** Sheet de filtres pilote par le parent (icone du header en mode travail). */
+  filterOpen?: boolean;
+  onFilterOpenChange?: (open: boolean) => void;
 }
 
 export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
@@ -84,6 +89,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   onDatesChange,
   onStatusChange,
   topOffset = 0,
+  lockedStatus,
+  filterOpen: filterOpenProp,
+  onFilterOpenChange,
 }) => {
   const i18nLang = useLanguage();
   /**
@@ -115,7 +123,8 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
   const allShopOrders = orders;
   // Hauteur mesurée de la barre fixe (stats + chips) pour décaler la liste.
   const [barHeight, setBarHeight] = useState(0);
-  const [selectedStatus, setSelectedStatus] = useState<StatusTab>("pending");
+  const [statusState, setSelectedStatus] = useState<StatusTab>(lockedStatus ?? "pending");
+  const selectedStatus: StatusTab = lockedStatus ?? statusState;
   // 'express' par défaut pour le tab finished (seul tab à grouper en accordéon).
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(
     "express",
@@ -132,7 +141,9 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
     Record<string, "en_attente" | "en_cours" | "termine">
   >({});
   // Bottom sheet de filtres (dates + périodes de livraison).
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterOpenState, setFilterOpenState] = useState(false);
+  const filterOpen = filterOpenProp ?? filterOpenState;
+  const setFilterOpen = (v: boolean) => (onFilterOpenChange ? onFilterOpenChange(v) : setFilterOpenState(v));
   // Périodes de livraison cochées (multi-sélection) ; vide = toutes.
   const [selectedPeriods, setSelectedPeriods] = useState<string[]>([]);
 
@@ -1129,7 +1140,7 @@ export const OrderManagePanel: React.FC<OrderManagePanelProps> = ({
       )}
 
       {/* Barre de filtres en bas (chips statut + icône sheet). */}
-      {filterBar}
+      {!lockedStatus && filterBar}
       </BlurScope>
 
       <MerchantFilterSheet

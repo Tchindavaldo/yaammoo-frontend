@@ -19,6 +19,8 @@ import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { useActivateFastFoods } from "@/src/features/restaurants/context/FastFoodContext";
+import { WORK_STAGE_PERMISSION, type WorkStage } from "@/src/features/staff/components/WorkOrdersScreen";
+import { showToast } from "@/src/services/globalToast";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 
 export default function TabLayout() {
@@ -28,7 +30,17 @@ export default function TabLayout() {
 function TabLayoutInner() {
   // Mode marchand : Panier et Commandes client masques ; Commandes = boutique,
   // Portefeuille = onglet. Mode client : navbar habituelle.
-  const { isMerchantMode: m } = useMerchantMode();
+  // Mode travail (personnel / livreur) : Attente / En cours / Termine /
+  // Notifications / Profil. Onglet hors permissions du role : toast, pas d'ouverture.
+  const { isMerchantMode, isWorkMode: w, isDriverMode, can } = useMerchantMode();
+  const m = isMerchantMode && !w;
+  const guard = (stage: WorkStage) => ({
+    tabPress: (e: { preventDefault: () => void }) => {
+      if (!w || isDriverMode || can(WORK_STAGE_PERMISSION[stage])) return;
+      e.preventDefault();
+      showToast(t("Accès non permis : vous n'avez pas les droits d'accès à cette page"), "error");
+    },
+  });
   useLanguage();
   const colorScheme = useColorScheme();
 
@@ -81,12 +93,13 @@ function TabLayoutInner() {
         >
           <Tabs.Screen
             name="index"
+            listeners={guard("pending")}
             options={{
-              tabBarLabel: t("Accueil"),
+              tabBarLabel: w ? t("Attente") : t("Accueil"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   size={focused ? 22 : 20}
-                  name={focused ? "grid" : "grid-outline"}
+                  name={w ? (focused ? "time" : "time-outline") : focused ? "grid" : "grid-outline"}
                   color={color}
                 />
               ),
@@ -95,7 +108,7 @@ function TabLayoutInner() {
           <Tabs.Screen
             name="cart"
             options={{
-              href: m ? null : undefined,
+              href: m || w ? null : undefined,
               tabBarLabel: t("Panier"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
@@ -113,7 +126,7 @@ function TabLayoutInner() {
           <Tabs.Screen
             name="orders"
             options={{
-              href: m ? null : undefined,
+              href: m || w ? null : undefined,
               tabBarLabel: t("Commandes"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
@@ -141,6 +154,28 @@ function TabLayoutInner() {
               tabBarLabel: t("Portefeuille"),
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons size={focused ? 22 : 20} name={focused ? "wallet" : "wallet-outline"} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="work-progress"
+            listeners={guard("progress")}
+            options={{
+              href: w ? undefined : null,
+              tabBarLabel: t("En cours"),
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons size={focused ? 22 : 20} name={focused ? "flame" : "flame-outline"} color={color} />
+              ),
+            }}
+          />
+          <Tabs.Screen
+            name="work-done"
+            listeners={guard("done")}
+            options={{
+              href: w ? undefined : null,
+              tabBarLabel: t("Terminé"),
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons size={focused ? 22 : 20} name={focused ? "checkmark-done-circle" : "checkmark-done-circle-outline"} color={color} />
               ),
             }}
           />

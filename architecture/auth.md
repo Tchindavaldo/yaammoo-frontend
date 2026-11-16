@@ -205,6 +205,12 @@ Règles clés (chacune corrige un bug observé) :
    > et `hasLoadedOnce` passe à `true` dans un `finally`, donc même une erreur
    > réseau ne peut pas figer l'app sur le splash.
 
+   > **Réouverture Android à chaud** (activité recréée, runtime JS vivant) : le
+   > module `_layout` ne se ré-exécute pas, donc `preventAutoHideAsync` n'était
+   > pas rappelé et `splashHidden` restait vrai → le get-started apparaissait
+   > avant la home. `AppContent` appelle `rearmSplash()` (`useHideSplash.ts`)
+   > avant son 1er rendu pour re-armer le splash.
+
 `FastFoodContext` expose pour cela `hasLoadedOnce` (passe à `true` dans le
 `finally` du 1er `fetchFastFoods`, reste `true` ensuite même au pull-to-refresh).
 

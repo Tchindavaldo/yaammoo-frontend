@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Animated, Text, StyleSheet, View, SafeAreaView, Dimensions } from 'react-native';
+import { Animated, Text, StyleSheet, View, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DS } from '@/src/theme/ds';
 import { Ionicons } from '@expo/vector-icons';
 
 interface ToastProps {
@@ -10,6 +12,7 @@ interface ToastProps {
 }
 
 export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration = 3000, onHide }) => {
+  const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -18,7 +21,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
       // Show animation
       Animated.parallel([
         Animated.spring(slideAnim, {
-          toValue: 20,
+          toValue: 0,
           useNativeDriver: true,
           tension: 20,
           friction: 4,
@@ -56,8 +59,8 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
 
   const getBackgroundColor = () => {
     switch (type) {
-      case 'success': return '#10b981';
-      case 'error': return '#ef4444';
+      case 'success': return DS.success;
+      case 'error': return DS.danger;
       default: return '#3b82f6';
     }
   };
@@ -71,7 +74,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
   };
 
   return (
-    <SafeAreaView style={styles.container} pointerEvents="none">
+    <View style={[styles.container, { top: insets.top + 8 }]} pointerEvents="none">
       <Animated.View
         style={[
           styles.toast,
@@ -85,14 +88,13 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
         <Ionicons name={getIcon()} size={20} color="white" />
         <Text style={styles.text}>{message}</Text>
       </Animated.View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 50,
     left: 0,
     right: 0,
     zIndex: 9999,

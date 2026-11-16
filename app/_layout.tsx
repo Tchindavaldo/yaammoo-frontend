@@ -32,7 +32,7 @@ import { useNotificationSetup } from "@/src/features/notifications/hooks/useNoti
 import { useUserLocationSync } from "@/src/features/location/hooks/useUserLocationSync";
 import { useEffect, useRef, useState } from "react";
 import * as SplashScreen from "expo-splash-screen";
-import { isSplashHidden, onSplashHidden } from "@/src/hooks/useHideSplash";
+import { isSplashHidden, onSplashHidden, rearmSplash } from "@/src/hooks/useHideSplash";
 import { OfflineBanner } from "@/src/components/OfflineBanner";
 import { OtaUpdateCard } from "@/src/features/appVersion/components/OtaUpdateCard";
 import { BackgroundLocationPromptCard } from "@/src/features/location/components/BackgroundLocationPromptCard";
@@ -72,6 +72,9 @@ export const unstable_settings = {
 const NOTIF_SETUP_DELAY_MS = Platform.OS === "android" ? 900 : 600;
 
 function AppContent() {
+  // Avant le 1er rendu : re-arme le splash si l'activite Android a ete recreee
+  // (JS vivant) — sinon l'ecran (auth) apparait avant la home. Cf. rearmSplash.
+  useState(rearmSplash);
   // Mises a jour OTA (JS/assets). Complementaire de `useAppVersion` ci-dessous,
   // qui couvre les versions NATIVES : celles-la exigent un passage par le store
   // et ne peuvent pas etre livrees par `expo-updates`.

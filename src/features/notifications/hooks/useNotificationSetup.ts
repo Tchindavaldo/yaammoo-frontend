@@ -52,6 +52,22 @@ const openFromPush = (router: ReturnType<typeof useRouter>, data: any) => {
   });
 };
 
+/**
+ * Premier build natif Android qui embarque les sons (res/raw) : versionCode 31.
+ * iOS : premier build Xcode Cloud avec les .wav dans le projet (après le 84).
+ * `expo-application` absent (builds plus anciens) = pas de sons.
+ */
+const SOUNDS_MIN_BUILD = { android: 31, ios: 85 } as const;
+const nativeBuildHasSounds = (): boolean => {
+  try {
+    const { nativeBuildVersion } = require("expo-application");
+    const min = SOUNDS_MIN_BUILD[Platform.OS as "android" | "ios"];
+    return !!min && Number(nativeBuildVersion) >= min;
+  } catch {
+    return false;
+  }
+};
+
 export const useNotificationSetup = () => {
   useLanguage();
   const { userData, setUserData } = useAuth();
@@ -150,7 +166,11 @@ export const useNotificationSetup = () => {
         ["yaammoo_alert", t("Annulations")],
         ["yaammoo_message", t("Messages")],
       ];
-      for (const [id, name] of channels) {
+      // Le son d'un canal est fige a sa creation : le creer sur un build natif
+      // SANS les .wav le laisse au son par defaut pour toujours. On ne cree
+      // donc ces canaux que sur un build qui embarque les sons.
+      const withSounds = nativeBuildHasSounds();
+      for (const [id, name] of withSounds ? channels : []) {
         Notifications.setNotificationChannelAsync(id, {
           name,
           importance: Notifications.AndroidImportance.MAX,

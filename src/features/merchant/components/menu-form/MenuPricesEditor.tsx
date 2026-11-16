@@ -7,7 +7,6 @@ import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { DS } from "@/src/theme/ds";
 import { DraftPrice } from "../recap-designs/MenuDraft.types";
 import { styles } from "./AddMenuSheet.styles";
-import { DESC_MIN } from "./menuFormConstants";
 import { t as tr, useLanguage } from "@/src/i18n";
 
 /**
@@ -111,11 +110,11 @@ export const MenuPricesEditor: React.FC<Props> = ({
         </ScrollView>
       </View>
 
-      {/* D2 : prix pleine largeur (bouton ✓ / poubelle accolé), description
-          multiligne en dessous (maquette canvas « Catégorie »). */}
-      <View style={styles.priceDescRow}>
+      {/* D2 : prix + description dans une carte (fond comme les extras),
+          boutons Supprimer / Valider en bas. Supprimer : prix 2 et suivants. */}
+      <View style={styles.extraCard}>
         <TextInput
-          style={[styles.input, { flex: 1, height: DESC_MIN }, ...fieldStyle(`prix${selectedIdx}`)]}
+          style={[styles.input, styles.extraCardInput, ...fieldStyle(`prix${selectedIdx}`)]}
           placeholder={pricePh}
           placeholderTextColor={Theme.colors.gray[300]}
           keyboardType="numeric"
@@ -126,40 +125,45 @@ export const MenuPricesEditor: React.FC<Props> = ({
           }}
           {...focusProps(`prix${selectedIdx}`)}
         />
-        {!validated ? (
+        <TextInput
+          style={[styles.input, styles.priceDescArea, styles.priceCardDesc, ...fieldStyle(`desc${selectedIdx}`)]}
+          placeholder={descPh}
+          placeholderTextColor={Theme.colors.gray[300]}
+          value={current.description}
+          onChangeText={(t) => {
+            update({ description: t });
+            clearError(`desc${selectedIdx}`);
+          }}
+          multiline
+          scrollEnabled
+          textAlignVertical="top"
+          {...focusProps(`desc${selectedIdx}`)}
+        />
+        <View style={styles.extraCardActions}>
+          {selectedIdx > 0 && (
+            <TouchableOpacity style={[styles.extraCardBtn, styles.extraCardDelete]} onPress={remove}>
+              <Ionicons name="trash-outline" size={15} color={Theme.colors.danger} />
+              <Text style={[styles.extraCardBtnText, { color: Theme.colors.danger }]}>
+                {tr("Supprimer")}
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={[styles.itemActionBtn, styles.itemValidateBtn, { height: DESC_MIN }]}
+            style={[styles.extraCardBtn, styles.itemValidateBtn]}
             onPress={onValidate}
-            disabled={checking || !current.price}
+            disabled={checking || validated || !current.price}
           >
             {checking ? (
               <ActivityIndicator size="small" color={DS.onInk} />
             ) : (
-              <Ionicons name="checkmark" size={20} color={DS.onInk} />
+              <Ionicons name="checkmark" size={15} color={DS.onInk} />
             )}
+            <Text style={[styles.extraCardBtnText, { color: DS.onInk }]}>
+              {validated ? tr("Validé") : tr("Valider")}
+            </Text>
           </TouchableOpacity>
-        ) : (
-          selectedIdx > 0 && (
-            <TouchableOpacity style={[styles.itemActionBtn, { height: DESC_MIN }]} onPress={remove}>
-              <Ionicons name="trash-outline" size={18} color={Theme.colors.danger} />
-            </TouchableOpacity>
-          )
-        )}
+        </View>
       </View>
-      <TextInput
-        style={[styles.input, styles.priceDescArea, ...fieldStyle(`desc${selectedIdx}`)]}
-        placeholder={descPh}
-        placeholderTextColor={Theme.colors.gray[300]}
-        value={current.description}
-        onChangeText={(t) => {
-          update({ description: t });
-          clearError(`desc${selectedIdx}`);
-        }}
-        multiline
-        scrollEnabled
-        textAlignVertical="top"
-        {...focusProps(`desc${selectedIdx}`)}
-      />
     </>
   );
 };

@@ -168,6 +168,10 @@ export class Commande {
 export type CancelRequest = {
   status: "pending" | "accepted" | "refused" | "closed";
   requestedAt: string;
+  sentAt?: string;
+  /** À partir de cette date, le client peut renvoyer la demande (marchand sans réponse). */
+  resendAt?: string;
+  sentCount?: number;
   resolvedAt?: string;
   reason?: string;
 };

@@ -1426,5 +1426,7 @@
   "Code indisponible": "Code unavailable",
   "En attente de la réponse du marchand": "Waiting for the restaurant's answer",
   "Le restaurant a refusé l'annulation : la commande est maintenue.": "The restaurant declined the cancellation: the order stands.",
-  "Demande d'annulation envoyée au restaurant. Vous serez prévenu de sa réponse.": "Cancellation request sent to the restaurant. You will be notified of its answer."
+  "Demande d'annulation envoyée au restaurant. Vous serez prévenu de sa réponse.": "Cancellation request sent to the restaurant. You will be notified of its answer.",
+  "Renvoyer la demande": "Resend request",
+  "Demande renvoyée au restaurant.": "Request sent again to the restaurant."
 }

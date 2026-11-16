@@ -494,7 +494,7 @@ Réponse : `data.cancelRequested = true` ; la commande porte
 | `cancelRequest.status` | `OrderCancelButton` |
 |---|---|
 | absent / `closed` | bouton « Annuler la commande » |
-| `pending` | « En attente de la réponse du marchand » (non cliquable), toast « Demande d'annulation envoyée… », le sheet reste ouvert |
+| `pending` | « En attente de la réponse du marchand », toast « Demande d'annulation envoyée… », le sheet reste ouvert. Passé `resendAt` (délai backend `cancel_request_resend_minutes`), bouton « Renvoyer la demande » à droite (même `PUT /order`, relance au marchand) |
 | `refused` | « Le restaurant a refusé l'annulation : la commande est maintenue. » |
 | `accepted` | la commande passe `cancelByUser` (bouton masqué) |
 

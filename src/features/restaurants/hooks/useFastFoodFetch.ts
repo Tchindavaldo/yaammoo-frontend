@@ -140,6 +140,9 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
     const myRun = isFirstPage ? ++runIdRef.current : runIdRef.current;
     /** Seule une recherche a un résultat à protéger d'une réponse tardive. */
     const guarded = !!q;
+    // Tab categorie de la requete : reponse jetee si le tab a change en vol
+    // (sinon l'ancien tab reapparait apres le loader du nouveau).
+    const myCat = categoryRef.current;
     const startedAt = Date.now();
     try {
       // SONDE [ROW] : un fetch premiere page hors boot = remplacement brutal
@@ -169,9 +172,10 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
           ...(cursor ? { cursor } : {}),
           ...(q ? { q } : {}),
           ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
-          ...categoryParams(categoryRef.current),
+          ...categoryParams(myCat),
         },
       });
+      if (myCat !== categoryRef.current) return;
 
       // Réponse d'une recherche périmée : l'appliquer ferait réapparaître les
       // résultats d'une frappe précédente. Hors recherche, on applique
@@ -303,7 +307,8 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
       // reste visible pendant l'attente (HOLD) et l'insertion, jusqu'au layout
       // (`notifyPageLaidOut`). Sinon l'utilisateur ne verrait rien entre la
       // fin du fetch et l'apparition des cartes.
-      if (isFirstPage) setLoading(false);
+      // Reponse d'un ancien tab : le chargement du nouveau est encore en vol.
+      if (isFirstPage && myCat === categoryRef.current) setLoading(false);
     }
   }, [
     applyServerSettings,
@@ -368,6 +373,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
       // On enchaine les pages par curseur jusqu'a couvrir tout ce qui est
       // affiche, par 50 et non par la taille de page du home : a 3 par page,
       // un catalogue de 100 boutiques demanderait 34 allers-retours au lieu de 2.
+      const silentCat = categoryRef.current;
       const fresh = new Map<string, any>();
       let cursor: string | null = null;
 
@@ -378,7 +384,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
             limit: Math.min(loadedCount - fresh.size, MAX_SERVER_LIMIT),
             ...(cursor ? { cursor } : {}),
             ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
-          ...categoryParams(categoryRef.current),
+          ...categoryParams(silentCat),
           },
         });
 
@@ -400,7 +406,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
         if (!cursor || raw.length === 0) break;
       }
 
-      if (fresh.size === 0) return;
+      if (fresh.size === 0 || silentCat !== categoryRef.current) return;
 
       setFastFoods((prev) =>
         prev.map((ff, index) => {

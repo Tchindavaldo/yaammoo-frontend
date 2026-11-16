@@ -216,7 +216,7 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
     let pad = HLLayout.sidePadding
     let w = bounds.width - 2 * pad
     header.frame = CGRect(x: pad, y: HLLayout.rowTop, width: w, height: HLLayout.headerHeight)
-    // Grille : pas d'en-tete, les 2 cartes remplissent la largeur.
+    // Grille : pas d'en-tete, les cartes commencent en haut de rangee.
     header.isHidden = design == HLGrid
     let y = design == HLGrid ? HLLayout.rowTop : HLLayout.rowTop + HLLayout.headerHeight + HLLayout.headerGap
     menus?.frame = CGRect(x: pad, y: y, width: w, height: cardSize.height + HLLayout.metaHeight)

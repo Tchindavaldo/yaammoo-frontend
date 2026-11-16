@@ -107,16 +107,8 @@ object HLLayout {
   fun card(design: Int): HLCardSize = when (design) {
     4 -> HLCardSize(240f, 240f, 16f)
     5 -> HLCardSize(200f, 250f, 16f)
-    HL_GRID -> {
-      // Grille du home filtre : 2 cartes V7 par rangee, ratio de la carte V7.
-      val w = (screenWidth - 2 * sidePadding - cardGap) / 2f
-      HLCardSize(w, w * 190f / 150f, 12f)
-    }
     else -> HLCardSize(150f, 190f, 12f)
   }
-
-  /** Largeur ecran (dp), posee par `HomeListView` : taille des cartes de grille. */
-  var screenWidth = 390f
 
   /** Ecart entre deux cartes (`marginRight: 8`). */
   const val cardGap = 8f
@@ -151,8 +143,9 @@ object HLLayout {
 }
 
 /**
- Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, 2 cartes
- dans le style V7 a largeur de demi-ecran. Le JS regroupe les plats par 2.
+ Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, cartes V7
+ (taille V7) en liste horizontale. Le JS regroupe les plats par N, N calcule
+ sur la largeur d'ecran pour que la derniere carte depasse (on defile pour la voir).
  */
 const val HL_GRID = 8
 

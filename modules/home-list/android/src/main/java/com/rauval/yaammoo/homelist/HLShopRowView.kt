@@ -88,7 +88,7 @@ class HLShopRowView(
       }
     })
     addAll(header, menus)
-    // Grille : pas d'en-tete, les 2 cartes remplissent la largeur.
+    // Grille : pas d'en-tete, les cartes commencent en haut de rangee.
     if (design == HL_GRID) header.visibility = View.GONE
     onPlace = { w, _ ->
       val pad = HLLayout.sidePadding

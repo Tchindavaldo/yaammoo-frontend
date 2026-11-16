@@ -80,8 +80,9 @@ struct HLCardSize {
 }
 
 /**
- Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, 2 cartes
- dans le style V7 a largeur de demi-ecran. Le JS regroupe les plats par 2.
+ Rangee GRILLE (home filtre par categorie) : pas d'en-tete boutique, cartes V7
+ (taille V7) en liste horizontale. Le JS regroupe les plats par N, N calcule
+ sur la largeur d'ecran pour que la derniere carte depasse (on defile pour la voir).
  */
 let HLGrid = 8
 
@@ -100,10 +101,6 @@ enum HLLayout {
     switch design {
     case 4: return HLCardSize(width: 240, height: 240, radius: 16)
     case 5: return HLCardSize(width: 200, height: 250, radius: 16)
-    case HLGrid:
-      // Grille du home filtre : 2 cartes V7 par rangee, ratio de la carte V7.
-      let w = (UIScreen.main.bounds.width - 2 * sidePadding - cardGap) / 2
-      return HLCardSize(width: w, height: w * 190 / 150, radius: 12)
     default: return HLCardSize(width: 150, height: 190, radius: 12)
     }
   }

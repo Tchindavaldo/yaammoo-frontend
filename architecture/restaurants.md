@@ -373,9 +373,11 @@ Autre (alignés sur les suggestions de la sheet menu). `hooks/useHomeCategoryRel
 pose `?category=<nom>` (ou `?categoryNot=Poulet,Burger,Pizza` pour « Autre ») sur
 chaque requête de `useFastFoodFetch` et recharge le home depuis la 1re page. Le
 backend ne rend que les boutiques ayant un plat de la catégorie, avec ces seuls plats.
-`hooks/useCategoryFilteredShops.ts` regroupe alors les plats **par 2** en rangées
+`hooks/useCategoryFilteredShops.ts` regroupe alors les plats **par N** en rangées
 `gridRow` : la liste native les rend en **grille** (design natif `HL_GRID` = 8,
-`modules/home-list` Android + iOS : pas d'en-tête, 2 cartes V7 aérées à demi-largeur).
+`modules/home-list` Android + iOS : pas d'en-tête, cartes V7 aérées en liste horizontale).
+N = cartes entières qui tiennent à l'écran + 1 qui dépasse (on défile), plafonné à 4
+(`perRow`, 390 dp → 3).
 Chaque plat garde sa boutique (`__shop`) pour l'appui et les frais. Code natif :
 nécessite un nouveau build (pas d'OTA). « Tout » = liste et designs inchangés.
 

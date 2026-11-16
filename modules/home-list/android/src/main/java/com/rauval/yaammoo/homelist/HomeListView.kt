@@ -102,8 +102,6 @@ class HomeListView(context: Context, appContext: AppContext) :
 
   init {
     HLDim.density = resources.displayMetrics.density
-    // Largeur ecran en dp : taille des cartes de la grille (`HL_GRID`).
-    HLLayout.screenWidth = resources.displayMetrics.widthPixels / resources.displayMetrics.density
     HLFont.assets = context.assets
     HLImage.app = context.applicationContext
     HLPerfMonitor.detect(context.applicationContext)

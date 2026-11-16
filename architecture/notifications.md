@@ -411,6 +411,7 @@ une OTA ne les ajoute pas.
   `useNotificationSetup` au démarrage ; `high_priority_channel` est conservé.
 - ⚠️ Le son d'un canal Android est figé à sa création : changer un son =
   nouveau fichier ET nouveau canal (`yaammoo_order_v2`), côté app et backend.
+- **iOS (Xcode Cloud)** : le projet `ios/` est versionné et Xcode Cloud ne relance pas `expo prebuild`. Les `.wav` sont donc copiés à la main dans `ios/yaammoo/Supporting/` et déclarés dans `project.pbxproj` (ressources de la cible `yaammoo`). Nouveau son = l'ajouter aussi là, sinon iOS joue le son par défaut.
 - **Écran de discussion** : `yaammoo_chat.wav` joué par
   `src/services/audio/chatSound.ts` (`expo-audio`) à l'arrivée d'un message de
   l'autre partie (`useSupportConversation`, `useMerchantSupportConversation`).

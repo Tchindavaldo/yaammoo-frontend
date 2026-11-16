@@ -82,6 +82,7 @@ export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
       {/* Ligne 1 — les prix (N), même structure que la ligne combo */}
       <Text style={styles.sectionLabel}>{t("Prix")}</Text>
       <View style={styles.tilesNoTop}>
+        {/* Toujours 3 tuiles : les prix manquants affichent « — ». */}
         {shownPrices.map((p, i) => (
           <Tile
             key={i}
@@ -90,6 +91,9 @@ export const MenuRecapDesign1: React.FC<{ draft: MenuDraft }> = ({ draft }) => {
             title={`${p.price}F`}
             sub={p.description || "—"}
           />
+        ))}
+        {Array.from({ length: Math.max(0, 3 - shownPrices.length - (prices.length > 3 ? 1 : 0)) }).map((_, i) => (
+          <Tile key={`empty${i}`} icon="pricetag" count="" title="—" sub="—" />
         ))}
         {prices.length > 3 && (
           <Tile

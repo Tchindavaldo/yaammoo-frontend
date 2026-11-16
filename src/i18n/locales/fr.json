@@ -2,5 +2,13 @@
   "Rechercher un plat ou une boutique": "Rechercher un plat ou une boutique",
   "Aucun résultat pour \"{{a}}\"": "Aucun résultat pour \"{{a}}\"",
   "Aucun plat dans cette catégorie": "Aucun plat dans cette catégorie",
-  "Indisponible": "Indisponible"
+  "Indisponible": "Indisponible",
+  "Nom, catégorie et photos": "Nom, catégorie et photos",
+  "Extras, disponibilité et stock": "Extras, disponibilité et stock",
+  "Catégorie": "Catégorie",
+  "Ex: Poulet": "Ex: Poulet",
+  "Poulet": "Poulet",
+  "Burger": "Burger",
+  "Pizza": "Pizza",
+  "La catégorie ne doit pas être vide": "La catégorie ne doit pas être vide"
 }

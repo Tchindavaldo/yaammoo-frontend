@@ -52,7 +52,7 @@ export const MenuNameCategoryStep: React.FC<Props> = ({
         onChangeText={onCategoryChange}
         {...focusProps("category")}
       />
-      <View style={styles.catChips}>
+      <View style={[styles.catChips, { marginBottom: Theme.spacing.lg }]}>
         {SUGGESTIONS.map((s) => {
           const active = category.trim().toLowerCase() === s.toLowerCase();
           return (

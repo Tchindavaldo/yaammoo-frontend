@@ -141,13 +141,30 @@ export const useNotificationSetup = () => {
     }
 
     if (Platform.OS === "android") {
+      // Un canal par son (le son d'un canal Android est fige a sa creation).
+      // Ids et fichiers = `soundFor()` du backend (helpers/notificationSound.js).
+      // Doc : architecture/notifications.md (« Sons »).
+      const channels: [string, string][] = [
+        ["yaammoo_order", t("Nouvelles commandes")],
+        ["yaammoo_success", t("Commandes et paiements")],
+        ["yaammoo_alert", t("Annulations")],
+        ["yaammoo_message", t("Messages")],
+      ];
+      for (const [id, name] of channels) {
+        Notifications.setNotificationChannelAsync(id, {
+          name,
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+          sound: `${id}.wav`,
+        });
+      }
+      // Ancien canal unique, garde pour les push envoyees avant la mise a jour.
       Notifications.setNotificationChannelAsync("high_priority_channel", {
         name: t("Notifications importantes"),
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: "#FF231F7C",
-        // Pas de `sound` : sans valeur, le canal prend le son systeme par
-        // defaut. "default" est pris pour un fichier embarque introuvable.
       });
     }
 

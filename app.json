@@ -139,7 +139,13 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/logo-notification-white.png"
+          "icon": "./assets/images/logo-notification-white.png",
+          "sounds": [
+            "./assets/sounds/yaammoo_order.wav",
+            "./assets/sounds/yaammoo_success.wav",
+            "./assets/sounds/yaammoo_alert.wav",
+            "./assets/sounds/yaammoo_message.wav"
+          ]
         }
       ],
       [

@@ -188,8 +188,8 @@ d'étape code, toast de succès, le champ est rempli (aucun SMS ni frais).
 Même règle dans la sheet du retrait (`WithdrawSheet`). « WhatsApp validé » = connu du
 backend (`GET /whatsapp-number`, `getVerifiedWhatsappNumbers`) ; après sa validation, la
 sheet OM / MoMo demandée se rouvre, pré-remplie avec le WhatsApp (un toucher, aucun SMS).
-**Sens inverse** : un WhatsApp identique à un OM / MoMo déjà validé est validé sans code
-(`/whatsapp-number/request` → `verified: true`).
+**Pas de sens inverse** : le WhatsApp reçoit toujours son code, même identique à un
+OM / MoMo déjà validé (un numéro OM / MoMo ne prouve pas qu'il a WhatsApp).
 
 ## Restauration d'une boutique supprimée avec le compte
 

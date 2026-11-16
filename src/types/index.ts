@@ -159,8 +159,18 @@ export class Commande {
     public rank?: number,
     // Driver assigned to deliver this order (per-order delegation).
     public driverId?: string,
+    // Demande d'annulation (boutique WhatsApp) : posée par le backend, cf. architecture/orders-client.md.
+    public cancelRequest?: CancelRequest,
   ) {}
 }
+
+/** Demande d'annulation du client à une boutique WhatsApp (le marchand accepte ou refuse). */
+export type CancelRequest = {
+  status: "pending" | "accepted" | "refused" | "closed";
+  requestedAt: string;
+  resolvedAt?: string;
+  reason?: string;
+};
 
 export class Users {
   constructor(

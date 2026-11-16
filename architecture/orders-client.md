@@ -50,7 +50,7 @@ yaammoo/src/features/orders/
     ├── OrderSheetHeader.tsx   # En-tête du sheet : avatar boutique, adresse ou chips « Cmd N » (+N)
     ├── OrderSheetTabBar.tsx   # Barre d'onglets (défile si trop d'onglets)
     ├── OrderLivraisonTab.tsx  # Tab « Livraison » (+ bouton d'annulation en bas)
-    ├── OrderCancelButton.tsx  # « Annuler la commande » (pending) : devis GET /order/cancel-quote, puis PUT /order cancelByUser
+    ├── OrderCancelButton.tsx  # « Annuler la commande » (pending) : devis GET /order/cancel-quote, puis PUT /order cancelByUser ; boutique WhatsApp : demande au marchand (cancelRequest)
     ├── OrderCommandesTab.tsx  # Tab « Commandes »
     ├── OrderTrackingTab.tsx   # Tab « Suivi » (carte + arrivée estimée + distance)
     └── OrderTrackingMap(.native).tsx # Carte du suivi : copie R16 de MapComponent (natif), cadre simple (web)
@@ -479,7 +479,29 @@ fermeture par swipe, tap sur l'overlay ou retour Android.
 pendingToBuy  →  pending  →  processing  →  finished  →  delivering  →  delivered
                                                                ↑
                                                (lancé par le marchand)
-cancelByUser / cancelByFastFood  (depuis n'importe quel statut)
+cancelByUser      (client : seulement depuis pending)
+cancelByFastFood  (restaurant : pending, processing ou finished)
 ```
+
+### Annulation sur demande (boutique WhatsApp)
+
+Le marchand d'une boutique WhatsApp n'a pas l'app : `PUT /order { status: cancelByUser }`
+sur une commande `pending` n'annule pas, le backend envoie une **demande** au marchand.
+Réponse : `data.cancelRequested = true` ; la commande porte
+`cancelRequest: { status: pending | accepted | refused | closed, requestedAt, resolvedAt?, reason? }`
+(type `CancelRequest`, `src/types/index.ts`).
+
+| `cancelRequest.status` | `OrderCancelButton` |
+|---|---|
+| absent / `closed` | bouton « Annuler la commande » |
+| `pending` | « En attente de la réponse du marchand » (non cliquable), toast « Demande d'annulation envoyée… », le sheet reste ouvert |
+| `refused` | « Le restaurant a refusé l'annulation : la commande est maintenue. » |
+| `accepted` | la commande passe `cancelByUser` (bouton masqué) |
+
+La décision arrive par `userOrderUpdated` (commande à jour) et une push
+`type: order_cancel_request`. Versioning R11 : sous `cancel_request_min_app_version`
+(1.1.5), le backend répond `409` avec le message à la place. Le verrou de concurrence
+du backend refuse l'annulation si le marchand a accepté entre-temps (message d'erreur
+servi tel quel).
 
 **Files avec rank** : `pending` et `processing` uniquement.

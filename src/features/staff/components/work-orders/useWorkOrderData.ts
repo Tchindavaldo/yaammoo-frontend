@@ -368,6 +368,7 @@ export function useWorkOrderData({ orders, selectedStatus, selectedDate, selecte
         userGroups: groupByUser(orders),
       })),
     };
+  }, [dateFilteredOrders, selectedStatus, i18nLang]);
 
   return {
     todayISO,

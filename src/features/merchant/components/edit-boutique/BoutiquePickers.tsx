@@ -14,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { styles } from "./styles";
-import { CAMEROON_CITIES } from "./constants";
+import { matchCity, useDeliveryCities } from "@/src/services/cities/deliveryCities";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -64,6 +64,7 @@ export const CityPickerModal: React.FC<{
   onDone: () => void;
 }> = ({ search, setSearch, selectedCities, setSelectedCities, onDone }) => {
   useLanguage();
+  const cities = useDeliveryCities();
   return (
   <Modal transparent={true} visible={true} animationType="fade">
     <View style={styles.modalOverlay}>
@@ -121,9 +122,7 @@ export const CityPickerModal: React.FC<{
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
           keyboardShouldPersistTaps="handled"
         >
-          {CAMEROON_CITIES.filter((city) =>
-            city.toLowerCase().includes(search.toLowerCase()),
-          ).map((city) => {
+          {[...new Set([...selectedCities, ...cities])].filter((city) => matchCity(city, search)).map((city) => {
             const isSelected = selectedCities.includes(city);
             return (
               <TouchableOpacity

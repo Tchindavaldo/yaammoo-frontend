@@ -61,6 +61,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
   - Expo Router n'embarque plus React Navigation : importer depuis `expo-router/react-navigation` / `expo-router/js-tabs`, jamais `@react-navigation/*`
   - `StyleSheet.absoluteFillObject` n'existe plus (RN 0.86) : `StyleSheet.absoluteFill`
   - Audio : `expo-audio` (`expo-av` retiré du SDK) — hooks `useVoiceNoteRecorder` / `useVoiceNotePlayer` (`src/services/audio/useVoiceNote.ts`)
+  - Villes de livraison (création / édition de boutique) : `GET /cities` (communes du Cameroun, table backend), cache de session et repli sur la liste fixe `create-boutique/constants.ts`, recherche sans accents (`src/services/cities/deliveryCities.ts`)
   - `ios/` régénéré par `expo prebuild` (vidé par défaut) : les retouches Xcode Cloud vivent dans `plugins/withXcodeCloud.js`
 - **State** : Contexts React (Auth, Order, Notification, Socket)
 - **Storage** : AsyncStorage

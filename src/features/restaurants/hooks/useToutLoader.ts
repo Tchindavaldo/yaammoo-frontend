@@ -1,4 +1,5 @@
 import type { HomeListHandle } from "@/modules/home-list";
+import { afterPaint } from "@/src/utils/afterPaint";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
 /** Retour sur « Tout » : squelettes au moins ce temps (images en memoire, sinon rien ne se verrait). */
@@ -83,17 +84,26 @@ export function useToutLoader({
   }, [ret, refresh]);
 
   // Une fois par loader, des que la liste native existe (elle peut monter
-  // apres le debut du chargement : ecran de localisation au lancement).
+  // apres le debut du chargement : ecran de localisation au lancement). Une
+  // fois le loader A L'ECRAN (`afterPaint`) : sinon le natif remonte la liste
+  // une image avant lui.
   const resetDoneRef = useRef(false);
+  const cancelResetRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (!wanted) {
       resetDoneRef.current = false;
+      cancelResetRef.current?.();
+      cancelResetRef.current = null;
       return;
     }
     if (resetDoneRef.current || !nativeListRef.current) return;
     resetDoneRef.current = true;
-    void nativeListRef.current.resetReveal();
+    cancelResetRef.current = afterPaint(() => {
+      cancelResetRef.current = null;
+      void nativeListRef.current?.resetReveal();
+    });
   });
+  useEffect(() => () => cancelResetRef.current?.(), []);
 
   useEffect(() => {
     if (after === "none") return;

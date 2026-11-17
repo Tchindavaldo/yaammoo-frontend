@@ -113,6 +113,12 @@ export const NativeCategoryList: React.FC<Props> = ({
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
+    // Premiere page en cours : RIEN n'est envoye, le natif garde l'ancien tab
+    // (cache sous le loader). Un appel natif part avant que React pose le
+    // loader a l'ecran : les squelettes se voyaient une image avant lui (flash
+    // au changement de tab, vu image par image). Tab neuf : squelettes natifs
+    // par defaut, montes dans le meme rendu que le loader.
+    if (loading) return;
     const prev = sentRef.current?.feedKey === feedKey ? sentRef.current : null;
     let start = 0;
     if (prev) {

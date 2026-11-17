@@ -384,8 +384,15 @@ tab catégorie : `category/useCategoryLoader.ts` + `CategoryLoadingScreen`, copi
 - Pendant une requête (premier chargement, ville, compte, changement de tab, retour
   sur « Tout ») : loader « Recherche des meilleurs plats… » PAR-DESSUS la liste,
   qui reste montée dessous et s'y prépare sans être vue (« Tout » : squelettes +
-  `resetReveal()`, liste en haut ; tab catégorie : grille en plus à opacité 0 tant
-  que le loader est là, ses squelettes se voyaient sinon avec lui à l'entrée du tab).
+  `resetReveal()`, liste en haut ; tab catégorie : grille à opacité 0 tant que le
+  loader est là).
+- ⚠️ **Un appel natif fait dans un effet part AVANT que React pose son rendu à
+  l'écran** : le natif l'applique une image plus tôt. Vu image par image (vidéo) :
+  en-tête encore sur l'ancien onglet, liste en squelettes, puis le loader = flash.
+  Donc : « Tout » envoie le passage en squelettes (`loading` + liste vide) et
+  `resetReveal` via `src/utils/afterPaint.ts` (loader déjà à l'écran) ; la grille
+  catégorie n'envoie RIEN pendant la première page (`NativeCategoryList`), elle
+  garde l'ancien tab sous le loader.
 - **Au moins une boutique / un plat** : le loader part, squelettes puis sortie en
   fondu **du haut vers le bas** (« Tout » : `holdReveal` iOS / `HLRevealGate.holding`
   Android, `pump` ; au retour d'un tab, squelettes 500 ms d'abord, les images étant

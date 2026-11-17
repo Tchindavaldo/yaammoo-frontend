@@ -324,6 +324,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   const [homeActive, setHomeActive] = useState(false);
   const activateHome = useCallback(() => setHomeActive(true), []);
   const fetchedUidRef = useRef<string | null | undefined>(null);
+  // Une reponse deja affichee (meme VIDE, sans boutique) : les premieres pages
+  // relancees en arriere-plan ci-dessous partent en `quiet`, sans loader.
+  const hasLoadedOnceRef = useRef(hasLoadedOnce);
+  hasLoadedOnceRef.current = hasLoadedOnce;
   useEffect(() => {
     if (authLoading || !homeActive) return;
     const uid = user?.uid;
@@ -334,7 +338,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
     cursorRef.current = null;
-    void fetchPage(undefined, undefined);
+    // ⚠️ Session restauree apres une premiere reponse VIDE : sans `quiet`, le
+    // loader plein ecran revenait sur la page « Aucun restaurant » (flash).
+    void fetchPage(undefined, undefined, hasLoadedOnceRef.current);
   }, [
     fetchPage,
     refreshLoadedSilently,
@@ -355,7 +361,8 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
         // Erreur affichee OU liste vide (app ouverte hors-ligne).
         if (!errorRef.current && fastFoodsLenRef.current > 0) return;
         cursorRef.current = null;
-        void fetchPage(undefined, undefined);
+        // Liste vide sans erreur (aucune boutique) : en silence, sans loader.
+        void fetchPage(undefined, undefined, hasLoadedOnceRef.current && !errorRef.current);
       }),
     [fetchPage, errorRef, cursorRef, fastFoodsLenRef],
   );

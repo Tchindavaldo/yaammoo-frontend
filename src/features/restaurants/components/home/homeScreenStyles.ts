@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import { Theme } from "@/src/theme";
+import { DS } from "@/src/theme/ds";
 import { FOOTER_LOADER_HEIGHT } from "../../utils/homeListConfig";
 
 /**
@@ -11,6 +12,10 @@ export const homeStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+  },
+  // Loader par-dessus la liste « Tout » (montee dessous).
+  loaderCover: {
+    backgroundColor: DS.bg,
   },
   centered: {
     flex: 1,

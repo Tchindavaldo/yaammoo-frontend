@@ -9,9 +9,11 @@ import { DS } from "@/src/theme/ds";
 import type { AppBanner, Menu } from "@/src/types";
 import { useFastFoodContext } from "../context/FastFoodContext";
 import { CategoryListFallback } from "./CategoryListFallback";
+import { CategoryLoadingScreen } from "./CategoryLoadingScreen";
 import { dishToMenu, type GridDish } from "./dishGrid";
 import { NativeCategoryList, type CategoryListRef } from "./NativeCategoryList";
 import { useCategoryFeed } from "./useCategoryFeed";
+import { useCategoryLoader } from "./useCategoryLoader";
 
 /** Rangees squelettes : premiere page, puis queue de la page suivante. */
 const GHOST_ROWS = 3;
@@ -20,26 +22,31 @@ interface Props {
   /** Valeur API du tab (`categoryApiValue`), jamais « Tout ». */
   category: string;
   bottomInset: number;
+  /** Hauteur de la navbar : le loader se centre au-dessus. */
+  tabBarHeight: number;
   onMenuPress: (menu: Menu) => void;
   onBannerPress: (banner: AppBanner) => void;
 }
 
 /**
  * Tabs categorie du home (Poulet, Burger, Pizza, Autre) : posee PAR-DESSUS la
- * liste « Tout », qui reste montee, intacte et a sa position (rien n'est vide
- * ni recharge en revenant sur « Tout »). Donnees propres (`useCategoryFeed`),
+ * liste « Tout », qui reste montee dessous (rechargee au retour, cf.
+ * `useToutLoader`). Donnees propres (`useCategoryFeed`),
  * liste native propre (`NativeCategoryList`) ; repli `CategoryListFallback`
  * sur une build qui ne l'embarque pas encore.
  */
 export const CategoryHomeList: React.FC<Props> = ({
   category,
   bottomInset,
+  tabBarHeight,
   onMenuPress,
   onBannerPress,
 }) => {
   useLanguage();
   const { banners, homeSettings } = useFastFoodContext();
   const feed = useCategoryFeed(category);
+  // Requete du tab : loader, puis squelettes seulement s'il y a des plats.
+  const loader = useCategoryLoader(feed.loading, feed.rows.length);
   const empty = !feed.loading && feed.rows.length === 0;
   const footerText = feed.loading
     ? null
@@ -96,6 +103,7 @@ export const CategoryHomeList: React.FC<Props> = ({
       ) : (
         <CategoryListFallback {...common} onMenuPress={onMenuPress} />
       )}
+      {loader && <CategoryLoadingScreen bottomInset={tabBarHeight} />}
     </View>
   );
 };

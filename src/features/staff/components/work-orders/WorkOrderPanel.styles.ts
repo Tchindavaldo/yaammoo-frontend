@@ -1,6 +1,7 @@
 // Styles de WorkOrderPanel (copie de OrderManagePanel, R16).
 import { StyleSheet } from "react-native";
 import { DS } from "@/src/theme/ds";
+import { Theme } from "@/src/theme";
 
 export const styles = StyleSheet.create({
   container: {

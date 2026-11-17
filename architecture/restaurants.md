@@ -27,7 +27,7 @@ src/features/restaurants/
 ├── hooks/useHomeListData.ts        # Home : listData (bannière + boutiques + fantômes), firstScreenUris, drawDistance (échauffement)
 ├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
 ├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
-├── hooks/useToutReturnReload.ts    # Retour sur « Tout » depuis un tab : « Tout » masqué pendant le tab, requête auto + squelettes au retour
+├── hooks/useToutLoader.ts          # « Tout » pendant une requête : loader, puis squelettes SEULEMENT si ≥ 1 boutique (retour d'un tab compris)
 ├── category/                       # Tabs catégorie : données, grille et liste native SÉPARÉES de « Tout » (voir « Tabs catégorie »)
 ├── utils/deliveryUtils.ts
 ├── utils/shopDeliveryFee.ts        # Libellé livraison des cartes : "gratuit" si deliveryOffer.active, sinon tarif le moins cher des zones (périodiques + express)
@@ -379,17 +379,22 @@ sheet menu). `selectedCategory` (FastFoodContext) n'est plus qu'un état
 d'affichage : **« Tout » ne porte aucun filtre** et n'est jamais vidé, rechargé ni
 bloqué par un changement de tab (il reste monté sous la liste catégorie).
 
-**Retour sur « Tout »** (`hooks/useToutReturnReload.ts`) : comme un changement de tab.
-- Tab ouvert : « Tout » est **masqué** (le home envoie à sa liste native une liste
-  vide en chargement, donc des squelettes, invisibles sous le tab) et
-  `resetReveal()` remet sa révélation à zéro, liste en haut.
-- Retour : `refresh()` (première page) ; squelettes bannière + rangées au moins
-  500 ms, puis tout ressort **en fondu, du haut vers le bas**, images en mémoire
-  comprises (`holdReveal` iOS, `HLRevealGate.holding` Android : `pump`). L'écran
-  sorti, la liste reprend son comportement normal. Jamais le loader plein écran
-  (`shownLoading` exclut le masque).
+**Loader puis squelettes, sur TOUS les tabs** (« Tout » : `hooks/useToutLoader.ts` ;
+tab catégorie : `category/useCategoryLoader.ts` + `CategoryLoadingScreen`, copie R16) :
+- Pendant une requête (premier chargement, ville, compte, changement de tab, retour
+  sur « Tout ») : loader « Recherche des meilleurs plats… » PAR-DESSUS la liste,
+  qui reste montée dessous et s'y prépare sans être vue (« Tout » : squelettes +
+  `resetReveal()`, liste en haut).
+- **Au moins une boutique / un plat** : le loader part, squelettes puis sortie en
+  fondu **du haut vers le bas** (« Tout » : `holdReveal` iOS / `HLRevealGate.holding`
+  Android, `pump` ; au retour d'un tab, squelettes 500 ms d'abord, les images étant
+  en mémoire ; tab catégorie : `revealHold` natif).
+- **Aucune boutique / aucun plat** : la page vide est posée SOUS le loader, qui part
+  350 ms après. **Aucun squelette ne se montre** (c'était le double flash : la liste
+  native montait ou repassait en squelettes avant de recevoir la page vide).
+- Pull-to-refresh et rechargements d'arrière-plan : ni loader ni squelettes.
 - ⚠️ `resetReveal` exige un build EAS ; une build antérieure (OTA) remonte seulement
-  en haut : squelettes puis affichage direct, sans fondu.
+  en haut : affichage direct, sans fondu.
 
 > ⚠️ Avant : un `?category=` sur les requêtes de « Tout » + rechargement à chaque
 > tab. Une page suivante en vol au changement de tab était jetée SANS libérer
@@ -405,6 +410,8 @@ src/features/restaurants/category/
 ├── categoryRows.ts          # Rangées -> records natifs (prix, libellés aérés, image de secours), cache par liste
 ├── NativeCategoryList.tsx   # Pont JS de la liste native catégorie (copie dédiée R16 de NativeHomeList)
 ├── CategoryListFallback.tsx # Repli : build sans liste catégorie (instance à part de NativeHomeList, recréée par tab) ou sans liste native (FlashList)
+├── CategoryLoadingScreen.tsx # Loader du tab par-dessus sa liste (copie de HomeLoadingScreen, R16)
+├── useCategoryLoader.ts    # Loader pendant la 1re page du tab, puis squelettes seulement si ≥ 1 plat
 └── CategoryHomeList.tsx     # Posée PAR-DESSUS « Tout » quand un tab est actif ; pied de liste, tap onglet Home
 modules/home-list/category.ts                       # `CategoryListView`, `isCategoryListAvailable`
 modules/home-list/ios/category/                     # CategoryListModule, HLCategoryListView, RowCell, CardCell, BannerCell, Models
@@ -450,7 +457,7 @@ page), et la `value` reste mémoïsée.
 | `loadingMore` | Page suivante uniquement. |
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |
-| `refresh()` | Repart de la première page (pull-to-refresh). ⚠️ Le home affiche `loading && !refreshing && !toutMasked` (`shownLoading`, `app/(tabs)/index.tsx`) : pendant un pull-to-refresh, la page reste telle quelle jusqu'à la réponse (sinon une page sans boutique passait au loader plein écran et aux squelettes : flash). |
+| `refresh()` | Repart de la première page (pull-to-refresh). ⚠️ Le home affiche `loading && !refreshing` (`shownLoading`, `app/(tabs)/index.tsx`) : pendant un pull-to-refresh, la page reste telle quelle jusqu'à la réponse (sinon une page sans boutique passait au loader plein écran et aux squelettes : flash). |
 | `refreshLoadedSilently()` | ⚠️ Met à jour les boutiques **déjà chargées** sans loader ni troncature — position de scroll préservée. Appelé par le catch-up socket, jamais par un geste utilisateur. Enchaîne les pages par curseur jusqu'à couvrir tout ce qui est affiché — ⚠️ `limit` est plafonné à 50 par le backend, qui rabote **silencieusement** : une seule requête laisserait les boutiques au-delà du 50e avec leurs anciens prix. Une boutique absente de la réponse est conservée. `designIndex` est recalculé à la position, sinon une boutique changerait d'apparence. Détail : [socket-events-client.md](./socket-events-client.md). |
 | `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
 | `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |

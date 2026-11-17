@@ -231,7 +231,7 @@ src/features/
 │   ├── hooks/useFastFood*.ts            # Découpe du contexte : Pagination, Fetch, SocketUpdates, HomeSettings
 │   ├── hooks/useHome*.ts(x)             # Écran home découpé : scroll, données, rendu des cellules,
 │   │                                    #   commande, sonde [HB] ; + usePageRevealLock (verrou de page)
-│   ├── hooks/useToutReturnReload.ts     # Retour sur « Tout » depuis un tab : requête auto + squelettes
+│   ├── hooks/useToutLoader.ts           # « Tout » pendant une requête : loader, squelettes seulement si ≥ 1 boutique
 │   ├── utils/normalizeFastFood.ts       # Normalisation boutique / menu (HTTP + socket)
 │   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
 │   ├── utils/homeClientSettings.ts      # Taille de page / préchargement venus du serveur (`settings_client`)

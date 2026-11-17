@@ -121,7 +121,7 @@ Au démarrage, un employé (poste unique) ou un livreur entre directement dans c
   Écran commun : `src/features/staff/components/WorkOrdersScreen.tsx`.
   - Personnel : `work-orders/WorkOrderPanel` (copie R16 de `OrderManagePanel`, découpée : `useWorkOrderData`, `WorkFinishedList`, styles), statut imposé par l'onglet (pending / processing / finished+delivering+delivered), pas de barre basse.
   - Livreur : `DriverOrderPanel` sur ses livraisons (finished / delivering / delivered).
-- Header partout (`WorkHeader`) : copie inversée de `MerchantHomeHeader` — logo à gauche, nom + rôle, icône filtres à droite (ouvre le sheet passé / futur / périodes).
+- Header partout (`WorkHeader`) : `MerchantHomeHeader` en miroir — avatar et textes de la boutique inchangés (avatar à gauche), bouton filtres à droite à la place de « Mode client » (ouvre le sheet passé / futur / périodes).
 - Droits (personnel) : Attente, En cours et Terminé s'ouvrent si le rôle a AU MOINS UNE de `orders.validate` / `orders.finish` / `orders.deliver` ; chaque action (Valider, Terminer, Lancer, Lancer tout) reste grisée sans sa propre permission. Tap d'onglet sans le droit : toast « Accès non permis », l'onglet ne s'ouvre pas ; page atteinte quand même : « Vous n'avez pas les droits d'accès à cette page ». Notifications : ouvert à tous.
 - Profil personnel (`StaffProfileSections`) : Messages / Personnel / Livreurs, puis Gestion menu / boisson / annonce, puis Notifications / Mode sombre / Langue / Contactez-nous, puis la carte de mode. Élément sans permission : toast, pas d'ouverture.
 - Profil livreur : profil client normal + carte « Mode livreur actif ».

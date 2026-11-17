@@ -436,7 +436,7 @@ page), et la `value` reste mémoïsée.
 | `loadingMore` | Page suivante uniquement. |
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |
-| `refresh()` | Repart de la première page (pull-to-refresh). |
+| `refresh()` | Repart de la première page (pull-to-refresh). ⚠️ Le home affiche `loading && !refreshing` (`shownLoading`, `app/(tabs)/index.tsx`) : pendant un pull-to-refresh, la page reste telle quelle jusqu'à la réponse (sinon une page sans boutique passait au loader plein écran et aux squelettes : flash). |
 | `refreshLoadedSilently()` | ⚠️ Met à jour les boutiques **déjà chargées** sans loader ni troncature — position de scroll préservée. Appelé par le catch-up socket, jamais par un geste utilisateur. Enchaîne les pages par curseur jusqu'à couvrir tout ce qui est affiché — ⚠️ `limit` est plafonné à 50 par le backend, qui rabote **silencieusement** : une seule requête laisserait les boutiques au-delà du 50e avec leurs anciens prix. Une boutique absente de la réponse est conservée. `designIndex` est recalculé à la position, sinon une boutique changerait d'apparence. Détail : [socket-events-client.md](./socket-events-client.md). |
 | `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
 | `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |

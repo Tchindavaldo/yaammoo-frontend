@@ -179,6 +179,11 @@ function HomeScreen() {
     await refresh();
     setRefreshing(false);
   };
+  // ⚠️ Pull-to-refresh : `refresh()` repasse `loading` a true. L'afficher
+  // remplacait la page vide (« Aucun restaurant… ») par le loader plein ecran
+  // et les squelettes (banniere + rangees) le temps de la reponse : flash.
+  // Comme sur les tabs categorie, le contenu affiche reste jusqu'a la reponse.
+  const shownLoading = loading && !refreshing;
 
   // Verrou de page (FlashList) puis defilement : cet ordre garde celui des
   // effets d'avant le decoupage.
@@ -251,13 +256,13 @@ function HomeScreen() {
     fastFoods,
     banners,
     hasMore,
-    loading,
+    loading: shownLoading,
   });
   listLengthRef.current = listData.length;
   const { listFooter, renderItem, keyExtractor, getItemType } =
     useHomeListRenderers({
       banners,
-      loading,
+      loading: shownLoading,
       hasMore,
       fastFoodsCount: fastFoods.length,
       searchQuery,
@@ -271,7 +276,7 @@ function HomeScreen() {
   // home et ferait disparaître la barre de recherche, empêchant l'utilisateur
   // de corriger sa saisie.
   const fullLoading =
-    (loading && fastFoods.length === 0 && !searchQuery) || forceLoading;
+    (shownLoading && fastFoods.length === 0 && !searchQuery) || forceLoading;
 
   // En-tete et navbar restent visibles pendant le chargement plein : seul le
   // contenu (sous l'en-tete) est remplace par le loader.
@@ -362,21 +367,21 @@ function HomeScreen() {
               listRef={nativeListRef}
               fastFoods={fastFoods}
               banners={banners}
-              loading={loading}
+              loading={shownLoading}
               hasMore={hasMore}
               refreshing={refreshing}
               bottomInset={tabBarHeight + 60}
               sidePadding={Theme.design.horizontalPadding}
               footerText={
-                fastFoods.length === 0 && !loading
+                fastFoods.length === 0 && !shownLoading
                   ? searchQuery
                     ? t("Aucun restaurant trouvé pour \"{{a}}\"", { a: searchQuery })
                     : t("Aucun restaurant disponible pour le moment")
-                  : !hasMore && !loading && fastFoods.length > 0
+                  : !hasMore && !shownLoading && fastFoods.length > 0
                     ? t("Vous avez vu toutes les boutiques")
                     : null
               }
-              footerIsEmpty={fastFoods.length === 0 && !loading}
+              footerIsEmpty={fastFoods.length === 0 && !shownLoading}
               ghostCount={homeSettings.pageSize}
               prefetchDistance={homeSettings.prefetchDistance}
               onRefresh={onManualRefresh}

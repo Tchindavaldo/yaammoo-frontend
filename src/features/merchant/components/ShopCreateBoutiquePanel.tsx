@@ -20,8 +20,6 @@ import {
   BoutiqueToast,
 } from "./create-boutique/BoutiquePickers";
 import { t, useLanguage } from "@/src/i18n";
-import { MerchantAdhesionBlock } from "./create-boutique/MerchantAdhesionBlock";
-import { MerchantLegalSheet } from "./create-boutique/MerchantLegalSheet";
 import { RestoreShopSheet } from "./create-boutique/RestoreShopSheet";
 import { useRestorableShops } from "./create-boutique/useRestorableShops";
 
@@ -174,19 +172,6 @@ export const ShopCreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
             onCaptureShopPosition={s.captureShopPosition}
             loading={s.loading}
             onSubmit={s.handleCreate}
-            adhesionBlock={
-              <MerchantAdhesionBlock
-                role={s.adhesion.role}
-                setRole={s.adhesion.setRole}
-                legalName={s.adhesion.legalName}
-                setLegalName={s.adhesion.setLegalName}
-                address={s.adhesion.address}
-                setAddress={s.adhesion.setAddress}
-                accepted={s.adhesion.accepted}
-                setAccepted={s.adhesion.setAccepted}
-                onOpenLegal={s.adhesion.openLegal}
-              />
-            }
           />
         </View>
       </View>
@@ -197,12 +182,6 @@ export const ShopCreateBoutiquePanel: React.FC<CreateBoutiquePanelProps> = ({
         restoringId={restorable.restoringId}
         onRestore={restorable.restore}
         onCreateNew={restorable.close}
-      />
-
-      <MerchantLegalSheet
-        visible={s.adhesion.legalOpen}
-        onClose={s.adhesion.closeLegal}
-        document={s.adhesion.document}
       />
 
       <ZoneListSheet

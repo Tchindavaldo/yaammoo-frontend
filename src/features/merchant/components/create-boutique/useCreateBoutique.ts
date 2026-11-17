@@ -16,7 +16,6 @@ import type { Zone } from "./parseBoutique";
 import { lieuKey } from "./groupZones";
 import { useToast } from "./useToast";
 import { showToast } from "@/src/services/globalToast";
-import { useMerchantAdhesion } from "./useMerchantAdhesion";
 import { useShopPosition } from "../edit-boutique/useShopPosition";
 import { t, useLanguage } from "@/src/i18n";
 
@@ -60,8 +59,6 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
   const [orderLeadTime, setOrderLeadTime] = useState("");
   const [advanceDays, setAdvanceDays] = useState("");
   const [pickupAllowed, setPickupAllowed] = useState(false);
-  // Annexe 3 (formulaire d'adhesion du Marchand), cf. MerchantAdhesionBlock.
-  const adhesion = useMerchantAdhesion();
 
   // Livraison
   const [deliveryHours, setDeliveryHours] = useState<string[]>([]);
@@ -204,11 +201,6 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
       showToast(t("Le champ \"Nom Boutique\" n'est pas rempli"), "error");
       return;
     }
-    const adhesionError = adhesion.validate();
-    if (adhesionError) {
-      showToast(adhesionError, "error");
-      return;
-    }
 
     setLoading(true);
     try {
@@ -239,7 +231,6 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
       });
 
       if (response.data && response.data.success) {
-        await adhesion.save(response.data.data.id);
         // Position : enregistree par l'endpoint d'edition, qui l'accepte
         // (latitude + longitude ensemble). Un echec ne bloque pas la creation.
         if (shopPosition) {
@@ -344,7 +335,6 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
     saveZoneForm,
     pickImage,
     handleCreate,
-    adhesion,
     closeModal: onCancel,
     shopPosition,
     locating,

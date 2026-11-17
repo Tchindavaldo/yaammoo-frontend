@@ -59,8 +59,6 @@ interface BoutiqueInfoPageProps {
   onCaptureShopPosition?: () => void;
   loading: boolean;
   onSubmit: () => void;
-  /** Formulaire d'adhesion du Marchand (Annexe 3), sous la recuperation. */
-  adhesionBlock?: React.ReactNode;
   /** Hauteur du header au-dessus (TabHeader), pour caler le KeyboardAvoidingView. */
   keyboardOffset?: number;
 }
@@ -97,7 +95,6 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   onCaptureShopPosition,
   loading,
   onSubmit,
-  adhesionBlock,
   keyboardOffset = 0,
 }) => {
   useLanguage();
@@ -407,7 +404,6 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
           </Text>
         </TouchableOpacity>
       </View>
-      {adhesionBlock}
     </ScrollView>
 
     {/* Bouton de validation fixe en bas */}

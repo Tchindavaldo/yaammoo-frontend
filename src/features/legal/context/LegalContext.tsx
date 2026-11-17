@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
-import { acceptLegal, fetchLegalDocument, fetchLegalStatus, LegalDocument, LegalStatus } from "../services/legalService";
+import { acceptLegal, fetchLegalDocument, fetchLegalStatus, LegalDocument, LegalStatus, saveMerchantAdhesion } from "../services/legalService";
 
 // Dernière version OUVERTE dans le Profil (confort par appareil) : pastille
 // « mise à jour » sur la ligne du menu tant qu'une version plus récente n'a
@@ -15,6 +15,8 @@ interface LegalContextValue {
   hasUpdate: boolean;
   loadDocument: () => Promise<LegalDocument | null>;
   accept: () => Promise<boolean>;
+  /** Annexe 3 : qualite (texte libre) + denomination facultative. */
+  submitAdhesion: (representativeRole: string, legalName: string) => Promise<boolean>;
   markSeen: () => void;
 }
 
@@ -26,8 +28,10 @@ const LegalContext = createContext<LegalContextValue | null>(null);
  * vérité pour l'écran d'acceptation et la ligne du menu compte (R6).
  */
 export function LegalProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const uid = user?.uid;
+  // Boutique creee : le statut est relu (merchantAdhesionPending).
+  const shopId = userData?.fastFoodId;
   const [status, setStatus] = useState<LegalStatus | null>(null);
   const [document, setDocument] = useState<LegalDocument | null>(null);
   const [seen, setSeen] = useState<number | null>(null);
@@ -39,7 +43,7 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem(SEEN_KEY)
       .then(v => setSeen(v ? Number(v) : null))
       .catch(() => {});
-  }, [uid]);
+  }, [uid, shopId]);
 
   const loadDocument = useCallback(async () => {
     try {
@@ -67,6 +71,22 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
     }
   }, [document, loadDocument]);
 
+  const submitAdhesion = useCallback(
+    async (representativeRole: string, legalName: string) => {
+      const fastFoodId = status?.merchantAdhesionPending;
+      const doc = document ?? (await loadDocument());
+      if (!fastFoodId || !doc) return false;
+      try {
+        setStatus(await saveMerchantAdhesion({ fastFoodId, version: doc.version, representativeRole, legalName }));
+        return true;
+      } catch {
+        await loadDocument();
+        return false;
+      }
+    },
+    [status?.merchantAdhesionPending, document, loadDocument],
+  );
+
   const markSeen = useCallback(() => {
     const v = status?.latestVersion;
     if (v == null) return;
@@ -79,7 +99,7 @@ export function LegalProvider({ children }: { children: React.ReactNode }) {
   const hasUpdate = latest != null && !status?.mustAccept && latest > known;
 
   return (
-    <LegalContext.Provider value={{ status, document, hasUpdate, loadDocument, accept, markSeen }}>
+    <LegalContext.Provider value={{ status, document, hasUpdate, loadDocument, accept, submitAdhesion, markSeen }}>
       {children}
     </LegalContext.Provider>
   );

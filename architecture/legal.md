@@ -16,12 +16,14 @@ backend depuis la base (`GET /legal/current`, migration 077).
   Profil). Pastille orange sur la ligne si `hasUpdate`.
 - `components/LegalText.tsx` : rendu du texte brut (titres en gras).
 
-## Adhésion du Marchand à la création de boutique (Annexe 3)
+## Adhésion du Marchand après la création de boutique (Annexe 3, 17/11/2026)
 
-`create-boutique/MerchantAdhesionBlock` (qualité, dénomination légale facultative,
-adresse, case d'acceptation, lien « Lire les conditions » → `MerchantLegalSheet`,
-copie de `LegalReadSheet`, la page `app/shop/create` étant hors du `LegalProvider`).
-État : `create-boutique/useMerchantAdhesion` (branché dans `useCreateBoutique`) :
-`validate()` bloque « Créer ma boutique » tant que qualité, adresse et case
-manquent ; `save(fastFoodId)` appelle `POST /legal/merchant-adhesion` juste après
-`POST /fastFood`. Monté dans `ShopCreateBoutiquePanel` et `CreateBoutiquePanel`.
+La création de boutique ne demande plus rien de légal. Une fois la boutique créée,
+`LegalContext` relit `GET /legal/status` (dépendance `userData.fastFoodId`) ;
+tant que `merchantAdhesionPending` vaut l'id de la boutique (et `mustAccept` est
+faux), `components/MerchantAdhesionSheet` (monté dans `app/(tabs)/_layout.tsx`)
+s'affiche en bottom sheet OBLIGATOIRE, sans fermeture : qualité en texte libre
+(suggestions Gérant / Directeur / Propriétaire qui pré-remplissent le champ),
+dénomination légale facultative, case d'acceptation, lien « Lire les conditions »
+(`LegalReadSheet`). « Valider » → `submitAdhesion` → `POST /legal/merchant-adhesion`
+(l'adresse est déduite par le backend de la position GPS de la boutique).

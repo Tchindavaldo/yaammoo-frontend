@@ -17,6 +17,8 @@ export interface LegalStatus {
   acceptedVersion: number | null;
   acceptedAt: string | null;
   mustAccept: boolean;
+  /** Id de la boutique du compte sans formulaire d'adhesion (Annexe 3) : bottom sheet obligatoire. */
+  merchantAdhesionPending?: string | null;
 }
 
 export const fetchLegalDocument = async (): Promise<LegalDocument> => {
@@ -31,5 +33,11 @@ export const fetchLegalStatus = async (): Promise<LegalStatus> => {
 
 export const acceptLegal = async (version: number): Promise<LegalStatus> => {
   const { data } = await axios.post(`${Config.apiUrl}/legal/accept`, { version });
+  return data.data;
+};
+
+/** Formulaire d'adhesion du Marchand (Annexe 3), renvoie le nouveau statut. */
+export const saveMerchantAdhesion = async (body: { fastFoodId: string; version: number; representativeRole: string; legalName: string }): Promise<LegalStatus> => {
+  const { data } = await axios.post(`${Config.apiUrl}/legal/merchant-adhesion`, body);
   return data.data;
 };

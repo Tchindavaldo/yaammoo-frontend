@@ -6,6 +6,7 @@ import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameS
 import { ProfileNameProvider } from "@/src/features/profile/hooks/useProfileNameSheet";
 import { LegalProvider } from "@/src/features/legal/context/LegalContext";
 import { LegalAcceptanceModal } from "@/src/features/legal/components/LegalAcceptanceModal";
+import { MerchantAdhesionSheet } from "@/src/features/legal/components/MerchantAdhesionSheet";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
 import { AppBlurView as BlurView } from "@/src/components/AppBlurView";
@@ -219,6 +220,8 @@ function TabLayoutInner() {
         <ProfileNameSheet />
         {/* Conditions d'utilisation : bloquant tant que non acceptées. */}
         <LegalAcceptanceModal />
+        {/* Annexe 3 : apres la creation de la boutique, obligatoire. */}
+        <MerchantAdhesionSheet />
       </View>
     </ProfileNameProvider>
     </LegalProvider>

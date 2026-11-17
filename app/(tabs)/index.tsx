@@ -33,7 +33,7 @@ import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListDat
 import { useHomeListRenderers } from "@/src/features/restaurants/hooks/useHomeListRenderers";
 import { useHomeListScroll } from "@/src/features/restaurants/hooks/useHomeListScroll";
 import { usePageRevealLock } from "@/src/features/restaurants/hooks/usePageRevealLock";
-import { useToutReturnReload } from "@/src/features/restaurants/hooks/useToutReturnReload";
+import { useToutLoader } from "@/src/features/restaurants/hooks/useToutLoader";
 import { AppBanner, FastFood } from "@/src/types";
 import { NativeHomeList } from "@/src/features/restaurants/components/NativeHomeList";
 import { isHomeListAvailable } from "@/modules/home-list";
@@ -57,7 +57,7 @@ import { t, useLanguage } from "@/src/i18n";
 import { trackBoot } from "@/src/services/netTelemetry";
 
 const seenBanners = new Set<string>();
-// « Tout » masque pendant un tab categorie (squelettes) : references stables.
+// « Tout » en squelettes sous le loader (cf. useToutLoader) : references stables.
 const NO_SHOPS: FastFood[] = [];
 const NO_BANNERS: AppBanner[] = [];
 
@@ -139,7 +139,7 @@ function HomeScreen() {
     homeSettings,
   } = useFastFoods();
   // Tab categorie : liste A PART posee sur « Tout » (CategoryHomeList), qui
-  // reste montee et intacte. Boutiques de « Tout » recouvertes : non comptees.
+  // reste montee dessous. Boutiques de « Tout » recouvertes : non comptees.
   const category = categoryApiValue(selectedCategory);
   const { isMerchantMode: shopMode, isWorkMode } = useMerchantMode();
   const isMerchantMode = shopMode || isWorkMode;
@@ -211,15 +211,25 @@ function HomeScreen() {
     resetToFirstPage,
   });
 
-  // Retour sur « Tout » depuis un tab categorie : requete automatique, en
-  // squelettes puis sortie du haut vers le bas (cf. useToutReturnReload).
-  const toutMasked = useToutReturnReload({ category, refresh, nativeListRef });
   // ⚠️ `refresh()` repasse `loading` a true. L'afficher pendant un
   // pull-to-refresh remplacait la page vide (« Aucun restaurant… ») par le
-  // loader plein ecran et les squelettes : flash. Le contenu reste donc jusqu'a
-  // la reponse ; au retour sur « Tout », ce sont les squelettes de la liste
-  // native (`toutMasked`), jamais le loader plein ecran.
-  const shownLoading = loading && !refreshing && !toutMasked;
+  // loader et les squelettes : flash. Le contenu reste jusqu'a la reponse.
+  const shownLoading = loading && !refreshing;
+  // Premier chargement, ville ou compte change (loader).
+  // ⚠️ `!searchQuery` est indispensable : une recherche vide la liste et
+  // repasse `loading` à true. Sans cette garde, le loader recouvrirait la
+  // liste pendant la saisie.
+  const firstLoading =
+    (shownLoading && fastFoods.length === 0 && !searchQuery) || forceLoading;
+  // Requete (dont le retour depuis un tab categorie) : loader par-dessus, puis
+  // squelettes SEULEMENT si au moins une boutique est revenue (useToutLoader).
+  const tout = useToutLoader({
+    category,
+    firstLoading,
+    shopCount: fastFoods.length,
+    refresh,
+    nativeListRef,
+  });
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
@@ -279,16 +289,8 @@ function HomeScreen() {
       onMenuClick: checkout.onMenuClickStable,
     });
 
-  // Écran de chargement plein — RÉSERVÉ au tout premier affichage.
-  // ⚠️ `!searchQuery` est indispensable : une recherche vide la liste et
-  // repasse `loading` à true. Sans cette garde, l'écran plein remplacerait la
-  // home et ferait disparaître la barre de recherche, empêchant l'utilisateur
-  // de corriger sa saisie.
-  const fullLoading =
-    (shownLoading && fastFoods.length === 0 && !searchQuery) || forceLoading;
-
-  // En-tete et navbar restent visibles pendant le chargement plein : seul le
-  // contenu (sous l'en-tete) est remplace par le loader.
+  // En-tete et navbar restent visibles pendant le chargement : seule la liste
+  // est recouverte par le loader.
   useEffect(() => {
     navigation.setOptions({ tabBarStyle });
   }, [navigation, tabBarStyle]);
@@ -320,17 +322,6 @@ function HomeScreen() {
           ) : (
             <HomeLoadingScreen />
           )}
-        </View>
-      </View>
-    );
-  }
-
-  if (fullLoading) {
-    return (
-      <View style={styles.container} onLayout={onLayoutRootView}>
-        {header}
-        <View style={{ flex: 1, paddingTop: HEADER_HEIGHT, paddingBottom: tabBarHeight }}>
-          <HomeLoadingScreen />
         </View>
       </View>
     );
@@ -374,15 +365,15 @@ function HomeScreen() {
           {isHomeListAvailable ? (
             <NativeHomeList
               listRef={nativeListRef}
-              fastFoods={toutMasked ? NO_SHOPS : fastFoods}
-              banners={toutMasked ? NO_BANNERS : banners}
-              loading={toutMasked || shownLoading}
+              fastFoods={tout.skeleton ? NO_SHOPS : fastFoods}
+              banners={tout.skeleton ? NO_BANNERS : banners}
+              loading={tout.skeleton || shownLoading}
               hasMore={hasMore}
               refreshing={refreshing}
               bottomInset={tabBarHeight + 60}
               sidePadding={Theme.design.horizontalPadding}
               footerText={
-                toutMasked
+                tout.skeleton
                   ? null
                   : fastFoods.length === 0 && !shownLoading
                     ? searchQuery
@@ -392,7 +383,7 @@ function HomeScreen() {
                       ? t("Vous avez vu toutes les boutiques")
                       : null
               }
-              footerIsEmpty={!toutMasked && fastFoods.length === 0 && !shownLoading}
+              footerIsEmpty={!tout.skeleton && fastFoods.length === 0 && !shownLoading}
               ghostCount={homeSettings.pageSize}
               prefetchDistance={homeSettings.prefetchDistance}
               onRefresh={onManualRefresh}
@@ -420,10 +411,18 @@ function HomeScreen() {
               listFooter={listFooter}
             />
           )}
+          {/* Liste montee dessous (jamais demontee) : elle se prepare sans
+              etre vue, d'ou aucun squelette sans boutique. */}
+          {tout.loader && (
+            <View style={[StyleSheet.absoluteFill, styles.loaderCover, { paddingBottom: tabBarHeight }]}>
+              <HomeLoadingScreen />
+            </View>
+          )}
           {category && (
             <CategoryHomeList
               category={category}
               bottomInset={tabBarHeight + 60}
+              tabBarHeight={tabBarHeight}
               onMenuPress={checkout.onMenuClickStable}
               onBannerPress={handleBannerPress}
             />

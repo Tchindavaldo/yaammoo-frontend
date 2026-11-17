@@ -6,11 +6,11 @@
 // facultative, case d'acceptation. L'adresse est deduite de la boutique (backend).
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
-import { useSheetAnimation } from "@/src/hooks/useSheetAnimation";
 import { showToast } from "@/src/services/globalToast";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
+import { useAdhesionSheetAnimation } from "./useAdhesionSheetAnimation";
 import { ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { t, useLanguage } from "@/src/i18n";
 import { useLegal } from "../context/LegalContext";
@@ -27,7 +27,7 @@ export function MerchantAdhesionSheet() {
   const insets = useSheetSafeInsets();
   const { status, document, loadDocument, submitAdhesion } = useLegal();
   const visible = !!status?.merchantAdhesionPending && !status?.mustAccept;
-  const anim = useSheetAnimation(visible);
+  const anim = useAdhesionSheetAnimation(visible);
   const [role, setRole] = useState("");
   const [legalName, setLegalName] = useState("");
   const [accepted, setAccepted] = useState(false);
@@ -49,10 +49,11 @@ export function MerchantAdhesionSheet() {
 
   if (!anim.mounted) return null;
   return (
-    <Modal visible transparent animationType="none" onRequestClose={() => {}} statusBarTranslucent>
+    <Modal visible transparent animationType="none" onRequestClose={() => {}} onShow={anim.onShow} statusBarTranslucent>
       <Animated.View style={[styles.backdrop, anim.backdropStyle]} />
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.wrap}>
         <Animated.View style={[styles.sheet, { paddingBottom: insets.bottom }, anim.sheetStyle]} onLayout={anim.onSheetLayout}>
+          <View style={styles.grabber} />
           <Text style={styles.title}>{t("Finaliser votre boutique")}</Text>
           <Text style={styles.sub}>{t("Formulaire d'adhésion du Marchand, à remplir une seule fois.")}</Text>
 
@@ -95,7 +96,12 @@ export function MerchantAdhesionSheet() {
 const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: DS.backdrop },
   wrap: { flex: 1, justifyContent: "flex-end" },
-  sheet: { backgroundColor: DS.bg, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 16, paddingTop: 18, gap: 8 },
+  // Arrondis marques + ombre vers le haut : la sheet se detache du home (blanc lui aussi).
+  sheet: {
+    backgroundColor: DS.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 16, paddingTop: 10, gap: 8,
+    shadowColor: DS.ink, shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: -6 }, elevation: 24,
+  },
+  grabber: { alignSelf: "center", width: 40, height: 5, borderRadius: 3, backgroundColor: DS.slate300, marginBottom: 10 },
   title: { fontSize: 19, fontWeight: "700", color: DS.ink },
   sub: { fontSize: 13, color: DS.text2, marginBottom: 6 },
   label: { fontSize: 13, fontWeight: "600", color: DS.ink, marginTop: 4 },

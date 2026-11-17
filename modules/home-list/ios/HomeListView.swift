@@ -30,7 +30,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   /** Statistiques : boutiques visibles a >= 50 %, envoyees quand l'ensemble change. */
   let onVisibleShops = EventDispatcher()
   private var visibleShopIds: [String] = []
-  private let perf = HLPerfMonitor()
+  let perf = HLPerfMonitor()
   /** Rangees creees au repos avant le premier scroll (prop `preheatScreens`). */
   let preheater = HLPreheater()
 
@@ -61,15 +61,15 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   var bottomInset: CGFloat = 0 { didSet { updateInsets() } }
   var refreshing = false { didSet { if !refreshing && refresher.isRefreshing { refresher.endRefreshing() } } }
 
-  private var collection: UICollectionView!
+  var collection: UICollectionView!
   private var dataSource: UICollectionViewDiffableDataSource<Section, Item>!
   private let refresher = UIRefreshControl()
 
-  private var rows: [HLRowContent] = []
-  private var shownBanners: [HLBanner] = []
+  var rows: [HLRowContent] = []
+  var shownBanners: [HLBanner] = []
   private var shownBannerLoading = false
-  private var revealedShops = Set<String>()
-  private var menuOffsets: [String: CGFloat] = [:]
+  var revealedShops = Set<String>()
+  var menuOffsets: [String: CGFloat] = [:]
 
   /** Rangees recues au dernier `updateRows` et cout de leur pose (sonde). */
   private var lastPatch: (rows: Int, ms: Double)?
@@ -78,12 +78,15 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
   private var atTop = true
   private var nearBottom = false
 
-  // Revelation commune banniere + premiere boutique (une seule fois).
-  private var firstGateOpen = false
-  private var bannerReady = false
-  private var firstShopReady = false
-  private weak var bannerCell: HLBannerCell?
-  private weak var firstShopCell: HLShopCell?
+  // Revelation commune banniere + premiere boutique (une fois, puis a chaque
+  // retour sur « Tout ») : `HomeListView+Reveal.swift`.
+  var firstGateOpen = false
+  var bannerReady = false
+  var firstShopReady = false
+  weak var bannerCell: HLBannerCell?
+  weak var firstShopCell: HLShopCell?
+  /** Retour sur « Tout » (`resetReveal`) : sortie ordonnee en fondu, jusqu'a l'ecran sorti. */
+  var holdReveal = false
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -337,6 +340,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     }
     checkEndReached()
     checkVisibleShops()
+    if holdReveal { pump() }
   }
 
   /**
@@ -398,6 +402,7 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
     c.layoutIfNeeded()
     perf.mark("in\(c.position)d\(c.design)\(c.displays == 0 ? "n" : "")/\(HLPerfMonitor.ms(since: t0))")
     c.displays += 1
+    revealIfWaiting(c)
   }
 
   func collectionView(_ cv: UICollectionView, didEndDisplaying cell: UICollectionViewCell,
@@ -462,66 +467,5 @@ final class HomeListView: ExpoView, UICollectionViewDelegateFlowLayout,
       for m in s.menus.prefix(3) { items.append((m.image, CGSize(width: size.width, height: size.height))) }
     }
     HLImage.prefetch(items)
-  }
-
-  // MARK: - HLShopCellDelegate
-
-  func shopCell(_ cell: HLShopCell, didTapMenu menuId: String, shopId: String) {
-    onMenuPress(["shopId": shopId, "menuId": menuId])
-  }
-
-  func isShopRevealed(_ shopId: String) -> Bool { revealedShops.contains(shopId) }
-
-  func shopCellIsReady(_ cell: HLShopCell) {
-    if cell.position == 0 && !firstGateOpen {
-      firstShopReady = true
-      firstShopCell = cell
-      tryOpenFirstGate()
-      return
-    }
-    revealShop(cell)
-  }
-
-  private func revealShop(_ cell: HLShopCell) {
-    if case .shop(let s)? = cell.content { revealedShops.insert(s.id) }
-    if !cell.revealed { perf.mark("reveal\(cell.position)") }
-    cell.reveal(animated: true)
-  }
-
-  func savedMenuOffset(_ shopId: String) -> CGFloat { menuOffsets[shopId] ?? 0 }
-  func saveMenuOffset(_ x: CGFloat, shopId: String) { menuOffsets[shopId] = x }
-
-  // MARK: - HLBannerCellDelegate
-
-  func bannerTapped(_ bannerId: String) {
-    onBannerPress(["id": bannerId])
-  }
-
-  func bannerAutoplay(_ cell: HLBannerCell) {
-    perf.mark("banner")
-  }
-
-  func bannerIsReady(_ cell: HLBannerCell) {
-    bannerReady = true
-    bannerCell = cell
-    if firstGateOpen { cell.reveal(animated: true) } else { tryOpenFirstGate() }
-  }
-
-  /**
-   La banniere sort AVEC la premiere boutique, dans la meme animation (comme le
-   groupe partage du home RN). Sans boutique, elle sort seule.
-   */
-  private func tryOpenFirstGate() {
-    guard !firstGateOpen else { return }
-    let hasShop = rows.contains { if case .shop = $0 { return true } else { return false } }
-    let needsBanner = !shownBanners.isEmpty
-    // Sans boutique ET sans chargement seulement : sinon la banniere sortirait
-    // avant que la premiere boutique (et ses images) soit arrivee.
-    guard (firstShopReady || (!hasShop && !listLoading)) && (bannerReady || !needsBanner) else { return }
-    firstGateOpen = true
-    if let c = firstShopCell { revealShop(c) }
-    bannerCell?.reveal(animated: true)
-    // Rangees sous l'ecran creees au repos, une fois le fondu termine.
-    preheater.schedule(after: HLLayout.revealDuration + 0.1)
   }
 }

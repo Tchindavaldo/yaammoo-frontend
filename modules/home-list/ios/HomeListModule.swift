@@ -89,6 +89,12 @@ public final class HomeListModule: Module {
       AsyncFunction("updateRows") { (view: HomeListView, update: HLRowsUpdateRecord) in
         view.updateRows(update)
       }
+
+      // Tab categorie ouvert : revelation remise a zero, liste en haut. Au
+      // retour sur « Tout », tout ressort en fondu du haut vers le bas.
+      AsyncFunction("resetReveal") { (view: HomeListView) in
+        view.resetReveal()
+      }
     }
   }
 }

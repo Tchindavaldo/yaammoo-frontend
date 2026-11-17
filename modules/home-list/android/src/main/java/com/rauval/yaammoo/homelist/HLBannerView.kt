@@ -23,6 +23,8 @@ interface HLBannerDelegate {
   fun bannerIsReady(banner: HLBannerView)
   /** Avance auto faite (sonde des premiers gestes). */
   fun bannerAutoplay(banner: HLBannerView)
+  /** Retour sur « Tout » : meme en memoire, la banniere attend la porte (fondu). */
+  fun holdsReveal(): Boolean
 }
 
 /**
@@ -140,7 +142,7 @@ class HLBannerView(context: Context) : HLBox(context) {
         if (issuing) readyNow = true else delegate?.bannerIsReady(this)
       }
       issuing = false
-      setRevealed(readyNow)
+      setRevealed(readyNow && delegate?.holdsReveal() != true)
       if (readyNow) delegate?.bannerIsReady(this)
     }
     startAutoplay()

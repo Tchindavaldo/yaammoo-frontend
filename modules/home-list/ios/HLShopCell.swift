@@ -7,6 +7,11 @@ protocol HLShopCellDelegate: AnyObject {
   func isShopRevealed(_ shopId: String) -> Bool
   /** La boutique est prete. Le delegue revele tout de suite, ou plus tard (banniere). */
   func shopCellIsReady(_ cell: HLShopCell)
+  /**
+   Retour sur « Tout » (`resetReveal`) : meme images en memoire, la boutique
+   garde son squelette et attend son tour (fondu, du haut vers le bas).
+   */
+  var holdsReveal: Bool { get }
   func savedMenuOffset(_ shopId: String) -> CGFloat
   func saveMenuOffset(_ x: CGFloat, shopId: String)
 }
@@ -33,6 +38,9 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
   private(set) var content: HLRowContent?
   private(set) var position = 0
   private(set) var revealed = false
+  /** Images attendues arrivees (ou delai depasse) : peut sortir quand le delegue le dit. */
+  private(set) var ready = false
+  var isShop: Bool { shop != nil }
   /** Sonde : 0 = cellule neuve, jamais configuree / jamais affichee. */
   private(set) var configures = 0
   var displays = 0
@@ -88,6 +96,7 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
     cancelLoads()
     content = c
     position = pos
+    ready = false
 
     switch c {
     case .ghost:
@@ -101,11 +110,11 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
       let pendingUrls = revealUrls(s)
       let already = delegate?.isShopRevealed(s.id) ?? false
       let inMemory = pendingUrls.allSatisfy { HLImage.isInMemory($0.0, size: $0.1) }
-      applyRevealed(already || inMemory)
+      applyRevealed(already || (inMemory && !(delegate?.holdsReveal ?? false)))
       menus.reloadData()
       menus.setContentOffset(CGPoint(x: delegate?.savedMenuOffset(s.id) ?? 0, y: 0), animated: false)
       if already || inMemory {
-        delegate?.shopCellIsReady(self)
+        markReady()
       } else {
         waitFor(pendingUrls)
       }
@@ -130,7 +139,7 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
     let gen = generation
     pending = Set(urls.map { $0.0 })
     if pending.isEmpty {
-      delegate?.shopCellIsReady(self)
+      markReady()
       return
     }
     for (u, size) in urls {
@@ -155,6 +164,11 @@ final class HLShopCell: UICollectionViewCell, UICollectionViewDataSource, UIColl
     timeout?.cancel()
     timeout = nil
     pending.removeAll()
+    markReady()
+  }
+
+  private func markReady() {
+    ready = true
     delegate?.shopCellIsReady(self)
   }
 

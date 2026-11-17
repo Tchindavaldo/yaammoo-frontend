@@ -7,6 +7,8 @@ protocol HLBannerCellDelegate: AnyObject {
   func bannerIsReady(_ cell: HLBannerCell)
   /** Avance auto faite (sonde des premiers gestes). */
   func bannerAutoplay(_ cell: HLBannerCell)
+  /** Retour sur « Tout » : meme en memoire, la banniere attend la porte (fondu). */
+  var holdsReveal: Bool { get }
 }
 
 /**
@@ -111,7 +113,7 @@ final class HLBannerCell: UICollectionViewCell, UIScrollViewDelegate {
     }
     let first = banners[0].imageUrl
     let size = slideSize
-    if revealed || HLImage.isInMemory(first, size: size) {
+    if revealed || (HLImage.isInMemory(first, size: size) && !(delegate?.holdsReveal ?? false)) {
       setRevealed(true)
       delegate?.bannerIsReady(self)
     } else {

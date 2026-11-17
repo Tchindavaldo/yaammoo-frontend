@@ -86,9 +86,14 @@ const defaultActive = (shops: ShopOption[], driverIds: string[]): string | null 
 };
 
 export function MerchantModeProvider({ children }: { children: React.ReactNode }) {
-  const { userData } = useAuth();
+  const { user, userData } = useAuth();
   const uid = userData?.uid;
-  const isDriver = !!(userData as any)?.driverId;
+  const driverId: string | undefined = (userData as any)?.driverId;
+  const isDriver = !!driverId;
+  // ⚠️ `userData` vient du cache AVANT que Firebase restaure la session : un
+  // appel lance a ce moment part sans jeton (401) et n'etait jamais relance,
+  // l'app restait en mode client. On attend donc la session Firebase.
+  const authUid = user ? uid : undefined;
   const ownId = userData?.isMarchand && userData?.fastFoodId ? userData.fastFoodId : null;
   const [posts, setPosts] = useState<ShopOption[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -96,21 +101,21 @@ export function MerchantModeProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     setDriverShops([]);
-    if (!uid || !isDriver) return;
+    if (!authUid || !driverId) return;
     let alive = true;
-    driverService.getMyStores(uid).then(
+    driverService.getMyStores(driverId).then(
       (list) => alive && setDriverShops(list.map((x) => ({ fastFoodId: x.id, name: x.nom }))),
       (e) => console.error("Error fetching driver stores:", e),
     );
     return () => {
       alive = false;
     };
-  }, [uid, isDriver]);
+  }, [authUid, driverId]);
   const driverIds = driverShops.map((d) => d.fastFoodId);
 
   useEffect(() => {
     setPosts([]);
-    if (!uid) return;
+    if (!authUid) return;
     let alive = true;
     staffService.getMyPosts().then(
       (list) =>
@@ -129,7 +134,7 @@ export function MerchantModeProvider({ children }: { children: React.ReactNode }
     return () => {
       alive = false;
     };
-  }, [uid]);
+  }, [authUid]);
 
   const shops = useMemo<ShopOption[]>(() => {
     const own: ShopOption[] = ownId

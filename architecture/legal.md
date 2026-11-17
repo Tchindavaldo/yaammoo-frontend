@@ -22,8 +22,8 @@ La création de boutique ne demande plus rien de légal. Une fois la boutique cr
 `LegalContext` relit `GET /legal/status` (dépendance `userData.fastFoodId`) ;
 tant que `merchantAdhesionPending` vaut l'id de la boutique (et `mustAccept` est
 faux), `components/MerchantAdhesionSheet` (monté dans `app/(tabs)/_layout.tsx`)
-s'affiche en bottom sheet OBLIGATOIRE, sans fermeture : qualité en texte libre
-(suggestions Gérant / Directeur / Propriétaire qui pré-remplissent le champ),
+s'affiche en bottom sheet OBLIGATOIRE, sans fermeture : qualité au choix (Gérant /
+Directeur / Propriétaire),
 dénomination légale facultative, case d'acceptation, lien « Lire les conditions »
 (`LegalReadSheet`). « Valider » → `submitAdhesion` → `POST /legal/merchant-adhesion`
 (l'adresse est déduite par le backend de la position GPS de la boutique).

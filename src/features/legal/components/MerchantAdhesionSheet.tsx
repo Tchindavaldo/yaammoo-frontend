@@ -2,7 +2,7 @@
 // Formulaire d'adhesion du Marchand (Annexe 3 des CGU), en bottom sheet
 // OBLIGATOIRE sur l'accueil apres la creation de la boutique : affiche tant que
 // `GET /legal/status` renvoie `merchantAdhesionPending`, impossible a fermer.
-// Qualite en texte libre (les suggestions pre-remplissent le champ), denomination
+// Qualite au choix (gerant / directeur / proprietaire), denomination
 // facultative, case d'acceptation. L'adresse est deduite de la boutique (backend).
 import { GlobalToastHost } from "@/src/components/GlobalToastHost";
 import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
@@ -16,7 +16,11 @@ import { t, useLanguage } from "@/src/i18n";
 import { useLegal } from "../context/LegalContext";
 import { LegalReadSheet } from "./LegalReadSheet";
 
-const SUGGESTIONS = ["Gérant", "Directeur", "Propriétaire"];
+const ROLES = [
+  { key: "gerant", label: "Gérant" },
+  { key: "directeur", label: "Directeur" },
+  { key: "proprietaire", label: "Propriétaire" },
+];
 
 export function MerchantAdhesionSheet() {
   useLanguage();
@@ -34,11 +38,11 @@ export function MerchantAdhesionSheet() {
     if (visible && !document) loadDocument();
   }, [visible, document, loadDocument]);
 
-  const ready = !!role.trim() && accepted && !sending;
+  const ready = !!role && accepted && !sending;
   const submit = async () => {
     if (!ready) return;
     setSending(true);
-    const ok = await submitAdhesion(role.trim(), legalName.trim());
+    const ok = await submitAdhesion(role, legalName.trim());
     setSending(false);
     if (!ok) showToast(t("Envoi impossible, réessayez dans un instant"), "error");
   };
@@ -54,16 +58,15 @@ export function MerchantAdhesionSheet() {
 
           <Text style={styles.label}>{t("Votre qualité")}</Text>
           <View style={styles.chips}>
-            {SUGGESTIONS.map(s => {
-              const on = role.trim() === t(s);
+            {ROLES.map(r => {
+              const on = role === r.key;
               return (
-                <TouchableOpacity key={s} style={[styles.chip, on && styles.chipOn]} onPress={() => setRole(t(s))} activeOpacity={0.8}>
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{t(s)}</Text>
+                <TouchableOpacity key={r.key} style={[styles.chip, on && styles.chipOn]} onPress={() => setRole(r.key)} activeOpacity={0.8}>
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>{t(r.label)}</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-          <TextInput style={styles.input} value={role} onChangeText={setRole} placeholder={t("Ex. : Manager")} placeholderTextColor={DS.muted} maxLength={60} />
 
           <Text style={styles.label}>{t("Dénomination légale de l'entreprise (facultatif)")}</Text>
           <TextInput style={styles.input} value={legalName} onChangeText={setLegalName} placeholder={t("Ex. : RAUVAL SARL")} placeholderTextColor={DS.muted} />

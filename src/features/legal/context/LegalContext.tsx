@@ -15,7 +15,7 @@ interface LegalContextValue {
   hasUpdate: boolean;
   loadDocument: () => Promise<LegalDocument | null>;
   accept: () => Promise<boolean>;
-  /** Annexe 3 : qualite (texte libre) + denomination facultative. */
+  /** Annexe 3 : qualite (gerant|directeur|proprietaire) + denomination facultative. */
   submitAdhesion: (representativeRole: string, legalName: string) => Promise<boolean>;
   markSeen: () => void;
 }

@@ -28,6 +28,8 @@ export interface Notification {
   /** Boutique émettrice d'un `boutique_broadcast`. */
   shopId?: string;
   shopName?: string;
+  /** Plat concerne : le tap ouvre la Recherche sur ce nom. */
+  menuName?: string;
 }
 
 interface NotificationContextType {

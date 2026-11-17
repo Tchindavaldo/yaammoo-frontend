@@ -3,7 +3,6 @@ import { ActivityIndicator } from "@/src/components/CustomActivityIndicator";
 import { Toast } from "@/src/components/Toast";
 import { useOrders } from "@/src/features/orders/hooks/useOrders";
 import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
-import { useShopSearchDeepLink } from "@/src/features/restaurants/hooks/useShopSearchDeepLink";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
 import React, { useCallback, useEffect, useState } from "react";
@@ -168,8 +167,6 @@ function HomeScreen() {
   const HEADER_HEIGHT = 100 + insets.top;
 
   const [searchOpen, setSearchOpen] = useState(false);
-  // Tap sur une annonce de boutique : recherche ouverte sur son nom.
-  useShopSearchDeepLink(() => setSearchOpen(true));
   const checkout = useHomeCheckout();
 
   // For testing: force loader to persist

@@ -14,8 +14,16 @@ export const getNotificationRoute = (notif: Partial<Notification> | null | undef
   return route;
 };
 
+/** Page Recherche pre-remplie (plat ou boutique). Jamais le home : y
+ * selectionner une boutique depuis une notif cassait la liste. */
+const searchRoute = (q: string) => `/search?q=${encodeURIComponent(q)}`;
+
 const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
   if (!notif) return "/(tabs)/notifications";
+  // Notif liee a un plat ou une boutique : recherche sur le plat en priorite.
+  const n = notif as any;
+  const dish = n.menuName ?? n.dishName ?? n.menuTitle;
+  if (dish) return searchRoute(String(dish));
   // `route` porté par la notif (backend). Peut être partiel ("settings?section=…")
   // → on préfixe "/(tabs)/" si ce n'est pas déjà un chemin absolu.
   const rawRoute = (notif as any).route;
@@ -29,6 +37,9 @@ const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
     // Nouvelle commande (→ marchand) : page Commandes de la boutique (Profil),
     // pas l'onglet Commandes du client.
     if (/boutique/.test(String(rawRoute))) return "/(tabs)/boutique";
+    // Ancienne route home `?shop=<nom>` : redirigee vers la page Recherche.
+    const shop = String(rawRoute).match(/[?&]shop=([^&]+)/);
+    if (shop) return searchRoute(decodeURIComponent(shop[1]));
     return rawRoute.startsWith("/") ? rawRoute : `/(tabs)/${rawRoute}`;
   }
   // Minuscules : le push `bonus.activation_changed` envoie `type: "Bonus"`.
@@ -53,11 +64,9 @@ const baseRoute = (notif: Partial<Notification> | null | undefined): string => {
     // Bonus éligible / mis à jour → ouvre le modal Bonus (Settings).
     case "bonus":
       return "/(tabs)/settings?section=bonus";
-    // Annonce d'une boutique → le home ouvre sa recherche sur la boutique.
+    // Annonce d'une boutique → page Recherche sur le nom de la boutique.
     case "boutique_broadcast":
-      return notif.shopName
-        ? `/(tabs)?shop=${encodeURIComponent(notif.shopName)}`
-        : "/(tabs)/notifications";
+      return notif.shopName ? searchRoute(notif.shopName) : "/(tabs)/notifications";
     default:
       return "/(tabs)/notifications";
   }

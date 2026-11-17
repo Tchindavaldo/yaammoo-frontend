@@ -109,6 +109,6 @@ Bearer requis (ajouté par `setupHttp`) ; propriétaire, admin ou employé ayant
 
 Type `boutique_broadcast` : image dans la liste (`NotificationItem`) et la
 fiche (`NotificationDetailSheet`, chip « Voir la boutique »). Le tap ouvre
-`/(tabs)?shop=<nom>` : le home ouvre sa recherche sur la boutique
-(`restaurants/hooks/useShopSearchDeepLink.ts`). Voir
+la page Recherche `/search?q=<nom>` sur la boutique (jamais le home : y
+selectionner la boutique cassait la liste). Voir
 [notifications.md](./notifications.md).

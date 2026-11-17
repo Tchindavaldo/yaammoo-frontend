@@ -289,11 +289,19 @@ export const NativeHomeList: React.FC<Props> = ({
     [fastFoods, minute, i18nLang],
   );
 
-  // Vue native : `updateRows` en interne, seul `scrollToTop` expose au home.
+  // Vue native : `updateRows` en interne, `scrollToTop` et `resetReveal`
+  // exposes au home. Build sans `resetReveal` : simple retour en haut.
   const viewRef = useRef<HomeListNativeHandle>(null);
   useImperativeHandle(
     listRef,
-    () => ({ scrollToTop: () => viewRef.current?.scrollToTop() ?? Promise.resolve() }),
+    () => ({
+      scrollToTop: () => viewRef.current?.scrollToTop() ?? Promise.resolve(),
+      resetReveal: () => {
+        const view = viewRef.current;
+        if (!view) return Promise.resolve();
+        return view.resetReveal ? view.resetReveal() : view.scrollToTop();
+      },
+    }),
     [],
   );
 

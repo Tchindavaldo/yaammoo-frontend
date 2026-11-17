@@ -98,7 +98,7 @@ export function MerchantAdhesionSheet() {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: DS.backdrop },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: Platform.OS === "android" ? DS.backdropStrong : DS.backdrop },
   wrap: { flex: 1, justifyContent: "flex-end" },
   // Arrondis marques + ombre vers le haut : la sheet se detache du home (blanc lui aussi).
   sheet: {

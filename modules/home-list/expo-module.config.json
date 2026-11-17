@@ -1,9 +1,12 @@
 {
   "platforms": ["apple", "android"],
   "apple": {
-    "modules": ["HomeListModule"]
+    "modules": ["HomeListModule", "CategoryListModule"]
   },
   "android": {
-    "modules": ["com.rauval.yaammoo.homelist.HomeListModule"]
+    "modules": [
+      "com.rauval.yaammoo.homelist.HomeListModule",
+      "com.rauval.yaammoo.homelist.category.CategoryListModule"
+    ]
   }
 }

@@ -34,7 +34,7 @@ Documentation d'architecture de l'app mobile (client + marchand).
 | [support.md](./support.md) | Contactez-nous — chat support client (écran plein écran, chips d'objet, historique, HTTP + socket) |
 | [boutique-delivery-zones.md](./boutique-delivery-zones.md) | Formulaire boutique (création/édition), zones périodiques/express, villes Cameroun |
 | [home-banners.md](./home-banners.md) | Bannière pub du home — carrousel dynamique, images via `/fastfood/all`, fallback statique |
-| [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement**, **distance** de chaque boutique (`distanceKm`) ; **page de recherche** `app/search.tsx` (loupe du header, filtres par catégorie) |
+| [restaurants.md](./restaurants.md) | Home client — liste **paginée** des boutiques (curseur, recherche serveur), designs, préchargement images, **scroll figé en bas pendant le chargement**, **distance** de chaque boutique (`distanceKm`) ; **tabs catégorie** : données et liste native SÉPARÉES de « Tout » (`category/`, module `CategoryList`) ; **page de recherche** `app/search.tsx` (loupe du header, filtres par catégorie) |
 | [home-scroll-pause.md](./home-scroll-pause.md) | ⚠️ **EN COURS** — micro-pause au scroll du home : mesures, sonde `[ROW]`, `windowSize={15}` (fonctionne, OTA) et tentative FlashList (non résolue) |
 | — (profil, header) | Pastille comptes `AccountSwitcherPill` à droite de `SettingsHeaderProfile` → `AccountSheet` (comptes, ajouter, déconnexion). Liste via `useAccounts` (compte courant seul tant que le multi-compte n'est pas stocké) |
 | [profile-name-sheet.md](./profile-name-sheet.md) | Sheet « nom / prénom manquant » — home à l'arrivée + garde `requireName` avant toute commande (home, panier), voile, clavier |
@@ -95,7 +95,7 @@ yaammoo/
 │   ├── components/           # Composants partagés (Toast, AppBlurView…) + molecules/ (TabHeader, HeaderPill, DatePill, SectionSwitcher)
 │   └── services/             # socket.ts (singleton socketService) + useSocketEvents.ts + sentry.ts (crash reporting)
 │
-├── modules/                  # Modules Expo locaux (autolinking) : home-list/ = liste native du home, iOS (UICollectionView) et Android (RecyclerView) (voir restaurants.md) ; bonus-pager/ = carrousel natif iOS de la sheet Bonus (voir bonus.md) ; notification-style/ = notifications Android d'une boutique en conversation, logo en avatar (voir notifications.md)
+├── modules/                  # Modules Expo locaux (autolinking) : home-list/ = liste native du home, iOS (UICollectionView) et Android (RecyclerView), + module `CategoryList` (tabs catégorie, dossiers `category/`) (voir restaurants.md) ; bonus-pager/ = carrousel natif iOS de la sheet Bonus (voir bonus.md) ; notification-style/ = notifications Android d'une boutique en conversation, logo en avatar (voir notifications.md)
 ├── assets/                   # Images, fonts
 ├── architecture/             # Ce dossier
 └── app.json, package.json

@@ -234,7 +234,8 @@ src/features/
 │   ├── utils/normalizeFastFood.ts       # Normalisation boutique / menu (HTTP + socket)
 │   ├── utils/homeListConfig.ts          # Constantes mesurées de la liste du home
 │   ├── utils/homeClientSettings.ts      # Taille de page / préchargement venus du serveur (`settings_client`)
-│   └── components/home/                 # HomeHeader, HomeFullScreenStates, HomeLocationBanner, homeScreenStyles
+│   ├── category/                        # Tabs catégorie : useCategoryFeed, grille, NativeCategoryList (liste native à part)
+│   └── components/home/                 # HomeHeader, HomeFullScreenStates, HomeLocationBanner, HomeFlashList (repli « Tout »), homeScreenStyles
 │
 └── menu/
 ```

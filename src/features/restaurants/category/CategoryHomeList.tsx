@@ -1,6 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { useNavigation } from "expo-router";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { isCategoryListAvailable } from "@/modules/home-list/category";
 import { t, useLanguage } from "@/src/i18n";
@@ -46,7 +46,21 @@ export const CategoryHomeList: React.FC<Props> = ({
   const { banners, homeSettings } = useFastFoodContext();
   const feed = useCategoryFeed(category);
   // Requete du tab : loader, puis squelettes seulement s'il y a des plats.
-  const loader = useCategoryLoader(feed.loading, feed.rows.length);
+  const baseLoader = useCategoryLoader(feed.loading, feed.rows.length);
+  // Liste native : le loader reste tant qu'elle n'a pas confirme avoir pose
+  // les plats du tab (`onApplied`) ; filet de securite `APPLY_TIMEOUT_MS`.
+  const [appliedKey, setAppliedKey] = useState<string | null>(null);
+  // Nouvelle requete (meme tab revisite) : confirmation a refaire.
+  if (feed.loading && appliedKey !== null) setAppliedKey(null);
+  const waitingNative =
+    isCategoryListAvailable && !feed.loading && feed.rows.length > 0 && appliedKey !== feed.feedKey;
+  useEffect(() => {
+    if (!waitingNative) return;
+    const key = feed.feedKey;
+    const timer = setTimeout(() => setAppliedKey(key), APPLY_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [waitingNative, feed.feedKey]);
+  const loader = baseLoader || waitingNative;
   const empty = !feed.loading && feed.rows.length === 0;
   const footerText = feed.loading
     ? null
@@ -103,6 +117,7 @@ export const CategoryHomeList: React.FC<Props> = ({
             {...common}
             sidePadding={Theme.design.horizontalPadding}
             onDishPress={handleDishPress}
+            onApplied={setAppliedKey}
           />
         ) : (
           <CategoryListFallback {...common} onMenuPress={onMenuPress} />
@@ -112,6 +127,9 @@ export const CategoryHomeList: React.FC<Props> = ({
     </View>
   );
 };
+
+/** Confirmation native absente : le loader part quand meme apres ce delai. */
+const APPLY_TIMEOUT_MS = 800;
 
 const styles = StyleSheet.create({
   // Fond plein : « Tout », dessous, ne transparait jamais.

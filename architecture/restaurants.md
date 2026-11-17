@@ -392,7 +392,9 @@ tab catégorie : `category/useCategoryLoader.ts` + `CategoryLoadingScreen`, copi
   Donc : « Tout » envoie le passage en squelettes (`loading` + liste vide) et
   `resetReveal` via `src/utils/afterPaint.ts` (loader déjà à l'écran) ; la grille
   catégorie n'envoie RIEN pendant la première page (`NativeCategoryList`), elle
-  garde l'ancien tab sous le loader.
+  garde l'ancien tab sous le loader. À l'inverse, le natif peut poser les plats
+  APRÈS le retrait du loader (gros tab, « Autres ») : `CategoryHomeList` garde
+  le loader jusqu'à `onApplied` (promesse `updateRows` + `afterPaint`), filet 800 ms.
 - **Au moins une boutique / un plat** : le loader part, squelettes puis sortie en
   fondu **du haut vers le bas** (« Tout » : `holdReveal` iOS / `HLRevealGate.holding`
   Android, `pump` ; au retour d'un tab, squelettes 500 ms d'abord, les images étant

@@ -28,6 +28,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { onPendingPushTap, takePendingPushTap } from "@/src/features/notifications/services/pendingPushTap";
 import { t, useLanguage } from "@/src/i18n";
+import { WorkHeader } from "@/src/features/staff/components/WorkHeader";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { isMerchantNotification } from "@/src/features/notifications/utils/notificationAudience";
 
@@ -53,7 +54,7 @@ export default function NotificationsScreen() {
 
   // Mode marchand : notifications marchand seules. Mode client : toutes (une
   // notification marchand ouverte depuis le mode client bascule en marchand).
-  const { isMerchantMode, setMerchantMode } = useMerchantMode();
+  const { isMerchantMode, isWorkMode, setMerchantMode } = useMerchantMode();
   const notifications = useMemo(
     () => (isMerchantMode ? allNotifications.filter(isMerchantNotification) : allNotifications),
     [allNotifications, isMerchantMode],
@@ -127,7 +128,10 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       <BlurScope>
-      {/* Header */}
+      {/* Header (mode travail : meme header que les autres onglets). */}
+      {isWorkMode ? (
+        <TabHeader><WorkHeader /></TabHeader>
+      ) : (
       <TabHeader
         title="Notifications"
         subtitle={
@@ -145,6 +149,7 @@ export default function NotificationsScreen() {
           ) : null
         }
       />
+      )}
 
       {/* Cible du flou du header (Android). */}
       <BlurTarget style={styles.blurTarget}>

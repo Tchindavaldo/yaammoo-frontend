@@ -6,19 +6,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 
 /**
  * « Nouveau design » : section Gestion (maquette S1D) — grille 3x2 puis une
  * ligne Portefeuille. DESIGN SEUL : rien n'est branche, montant = EXEMPLE.
  */
 type Ion = React.ComponentProps<typeof Ionicons>["name"];
-const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: BackTone; href: string }[] = [
-  { icon: "restaurant-outline", label: "Menu", href: "/shop/menu", info: "18 plats", tone: "plain" },
-  { icon: "wine-outline", label: "Boissons", href: "/shop/drinks", info: "6 boissons", tone: "black" },
-  { icon: "people-outline", label: "Personnel", href: "/shop/staff", info: "3 membres", tone: "grey" },
-  { icon: "megaphone-outline", label: "Annonces", href: "/shop/notifications", info: "8 restantes" },
-  { icon: "chatbubbles-outline", label: "Messages", href: "/shop/messages", info: "2 non lus", hot: true },
-  { icon: "bicycle-outline", label: "Livreurs", href: "/shop/drivers", info: "Demandes et équipe" },
+const TILES: { icon: Ion; label: string; info: string; hot?: boolean; tone?: BackTone; href: string; perm?: string }[] = [
+  { icon: "restaurant-outline", label: "Menu", perm: "menus.manage", href: "/shop/menu", info: "18 plats", tone: "plain" },
+  { icon: "wine-outline", label: "Boissons", perm: "menus.manage", href: "/shop/drinks", info: "6 boissons", tone: "black" },
+  { icon: "people-outline", label: "Personnel", perm: "staff.manage", href: "/shop/staff", info: "3 membres", tone: "grey" },
+  { icon: "megaphone-outline", label: "Annonces", perm: "notifications.send", href: "/shop/notifications", info: "8 restantes" },
+  { icon: "chatbubbles-outline", label: "Messages", perm: "support.reply", href: "/shop/messages", info: "2 non lus", hot: true },
+  { icon: "bicycle-outline", label: "Livreurs", perm: "staff.manage", href: "/shop/drivers", info: "Demandes et équipe" },
 ];
 
 /** Essai : Menu / Boissons / Personnel changent le bouton retour du header. */
@@ -27,12 +28,14 @@ export type GridVariant = "S1D" | "S1C" | "S1A";
 
 export function ShopManageGrid({ onTone, variant = "S1D" }: { onTone?: (t: BackTone) => void; variant?: GridVariant }) {
   useLanguage();
+  // Mode personnel : case hors permissions du role = grisee et inactive.
+  const { can } = useMerchantMode();
   return (
     <View style={{ gap: 10 }}>
       <Text style={{ paddingHorizontal: 6, fontSize: 16, fontWeight: "600", color: DS.ink }}>{t("Gestion")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {TILES.map((x) => (
-          <Pressable key={x.label} onPress={() => (onTone ? x.tone && onTone(x.tone) : router.push(x.href as any))} style={{ flexBasis: "31%", flexGrow: 1, padding: variant === "S1A" ? 8 : 10, borderRadius: 18, backgroundColor: DS.surface, gap: variant === "S1C" ? 4 : 5 }}>
+          <Pressable key={x.label} disabled={!!x.perm && !can(x.perm)} onPress={() => (onTone ? x.tone && onTone(x.tone) : router.push(x.href as any))} style={{ flexBasis: "31%", flexGrow: 1, padding: variant === "S1A" ? 8 : 10, borderRadius: 18, backgroundColor: DS.surface, gap: variant === "S1C" ? 4 : 5, opacity: x.perm && !can(x.perm) ? 0.4 : 1 }}>
             {variant === "S1C" ? (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                 <Text numberOfLines={1} style={{ flex: 1, fontSize: 12, fontWeight: "600", color: DS.ink }}>{t(x.label)}</Text>

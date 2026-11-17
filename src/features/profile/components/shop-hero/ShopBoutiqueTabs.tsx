@@ -6,6 +6,7 @@ import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { showToast } from "@/src/services/globalToast";
 import { t, useLanguage } from "@/src/i18n";
 import { DS } from "@/src/theme/ds";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 
 /**
  * « Nouveau design » : section Boutique en chips (maquette B1). Chaque chip
@@ -87,6 +88,8 @@ const NETS = [
 ];
 
 function WalletTab() {
+  // Retrait : proprietaire seul (aucune permission employe), grise en mode personnel.
+  const { isStaffMode } = useMerchantMode();
   return (
     <View style={{ flex: 1, justifyContent: "space-between", gap: 10 }}>
       <View style={{ flexDirection: "row", gap: 6 }}>
@@ -110,9 +113,10 @@ function WalletTab() {
         ))}
       </View>
       <Pressable
+        disabled={isStaffMode}
         onPress={() => showToast(t("Bientôt disponible"), "info")}
         accessibilityRole="button"
-        style={{ height: 44, borderRadius: 22, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" }}
+        style={{ opacity: isStaffMode ? 0.4 : 1, height: 44, borderRadius: 22, backgroundColor: DS.ink, alignItems: "center", justifyContent: "center" }}
       >
         <Text style={{ fontSize: 14, fontWeight: "600", color: DS.onInk }}>{t("Retirer")}</Text>
       </Pressable>

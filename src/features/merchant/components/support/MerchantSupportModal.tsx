@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { HeaderPill } from "@/src/components/molecules/HeaderPill";
 import { TabHeader } from "@/src/components/molecules/TabHeader";
 import { Theme } from "@/src/theme";
@@ -36,8 +37,9 @@ export const MerchantSupportModal: React.FC<Props> = ({ visible, onClose }) => {
   const [headerHeight, setHeaderHeight] = useState(70);
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const { userData } = useAuth();
+  const { fastFoodId } = useMerchantMode();
   const { threads, loading, upsert } = useMerchantSupportThreads(
-    userData?.fastFoodId,
+    fastFoodId ?? undefined,
     visible
   );
 

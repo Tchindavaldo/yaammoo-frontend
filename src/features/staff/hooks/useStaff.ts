@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { staffErrorMessage, staffService } from "../services/staffService";
@@ -22,7 +23,7 @@ import { t, useLanguage } from "@/src/i18n";
 export const useStaff = (active: boolean, onLoadError: () => void) => {
   useLanguage();
   const { userData } = useAuth();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
 
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [roles, setRoles] = useState<StaffRole[]>([]);

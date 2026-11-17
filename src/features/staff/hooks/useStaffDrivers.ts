@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import type { ApplicationEvent } from "@/src/features/driver/context/DriverContext";
@@ -52,7 +53,7 @@ export const useStaffDrivers = (active: boolean, onLoadError: () => void) => {
   useLanguage();
   const { userData } = useAuth();
   const { registerApplicationHandler, unregisterApplicationHandler } = useDriver();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
 
   const [applications, setApplications] = useState<DriverApplication[]>([]);
   const [drivers, setDrivers] = useState<DriverInfo[]>([]);

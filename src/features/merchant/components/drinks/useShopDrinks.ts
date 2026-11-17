@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { showToast } from "@/src/services/globalToast";
 import { Config } from "@/src/api/config";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
@@ -26,7 +27,7 @@ export interface ShopDrink {
 export const useShopDrinks = () => {
   useLanguage();
   const { userData } = useAuth();
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const [drinks, setDrinks] = useState<ShopDrink[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

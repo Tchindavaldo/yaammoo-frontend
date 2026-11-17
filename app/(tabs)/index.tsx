@@ -40,6 +40,7 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { WorkOrdersScreen } from "@/src/features/staff/components/WorkOrdersScreen";
 import { MerchantHome } from "@/src/features/profile/components/shop-hero/MerchantHome";
 import { useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useTabBarStyle } from "@/src/hooks/useTabBarStyle";
@@ -67,14 +68,14 @@ const seenBanners = new Set<string>();
  * Voir architecture/restaurants.md.
  */
 export default function HomeTab() {
-  const { isMerchant, isMerchantMode } = useMerchantMode();
+  const { isMerchant, isMerchantMode: shopMode, isWorkMode } = useMerchantMode();
+  // Home client recouvert en mode marchand ET en mode travail (personnel / livreur).
+  const isMerchantMode = shopMode || isWorkMode;
   useEffect(() => {
     setShopImpressionsPaused(isMerchantMode);
   }, [isMerchantMode]);
-  // Home client TOUJOURS monte et mis en page en plein ecran, meme en mode
-  // marchand (recouvert par le home marchand). Le demonter / le masquer a
-  // chaque bascule laissait la liste native des boutiques sans images
-  // (squelettes figes jusqu'au pull-to-refresh).
+  // Home client TOUJOURS monte (recouvert en mode marchand / travail) : le
+  // demonter laissait la liste native sans images jusqu'au pull-to-refresh.
   return (
     <View style={{ flex: 1 }}>
       <View
@@ -87,11 +88,12 @@ export default function HomeTab() {
       </View>
       {/* Home marchand garde monte lui aussi (masque en mode client) : header
           et sections stables d'une bascule a l'autre. */}
-      {isMerchant && (
-        <View style={[StyleSheet.absoluteFill, { display: isMerchantMode ? "flex" : "none" }]}>
+      {isMerchant && !isWorkMode && (
+        <View style={[StyleSheet.absoluteFill, { display: shopMode ? "flex" : "none" }]}>
           <MerchantHome />
         </View>
       )}
+      {isWorkMode && <View style={StyleSheet.absoluteFill}><WorkOrdersScreen stage="pending" /></View>}
     </View>
   );
 }

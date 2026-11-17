@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { merchantService } from '../services/merchantService';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -54,7 +55,7 @@ export const MerchantProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const userId = userData?.uid;
 
   const fetchData = useCallback(async (showLoading = true) => {

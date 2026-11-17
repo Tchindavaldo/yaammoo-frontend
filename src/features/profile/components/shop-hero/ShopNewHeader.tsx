@@ -3,6 +3,7 @@
 // a gauche rond noir retour (vers l'accueil), a droite nom de la boutique + e-mail + logo/initiale
 // avec pastille. Home -> accueil ; nom + photo = vraie boutique (GET /fastfood/:id).
 // La pastille (bottom sheet) n'est pas encore branchee.
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,7 +21,7 @@ export function ShopNewHeader({ tone = "plain" }: { tone?: BackTone }) {
   useLanguage();
   const { user, userData } = useAuth();
   const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || "";
-  const fastFoodId = userData?.fastFoodId;
+  const { fastFoodId } = useMerchantMode();
   const [shop, setShop] = useState<{ name: string; imageUrl: string | null } | null>(null);
   useEffect(() => {
     if (!fastFoodId) return;

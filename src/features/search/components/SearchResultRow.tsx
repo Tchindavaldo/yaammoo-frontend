@@ -32,7 +32,10 @@ export const SearchResultRow = memo(({ row, onPress }: Props) => (
     )}
     <View style={styles.body}>
       <Text style={styles.title} numberOfLines={1}>{row.title}</Text>
-      <Text style={styles.shop} numberOfLines={1}>{row.shopName}</Text>
+      <View style={styles.shopLine}>
+        <Ionicons name="storefront-outline" size={13} color={DS.text2} />
+        <Text style={styles.shop} numberOfLines={1}>{row.shopName}</Text>
+      </View>
       <Text style={[styles.price, !row.available && styles.off]} numberOfLines={1}>
         {row.available ? `${row.price} F` : t("Indisponible")}
       </Text>
@@ -56,7 +59,8 @@ const styles = StyleSheet.create({
   thumbEmpty: { alignItems: "center", justifyContent: "center" },
   body: { flex: 1, gap: 2 },
   title: { fontSize: 14.5, fontWeight: "700", color: DS.ink },
-  shop: { fontSize: 12.5, color: DS.muted },
+  shopLine: { flexDirection: "row", alignItems: "center", gap: 4 },
+  shop: { flexShrink: 1, fontSize: 12.5, fontWeight: "600", color: DS.text2 },
   price: { fontSize: 13, fontWeight: "700", color: DS.accent },
   off: { color: DS.faint },
 });

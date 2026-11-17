@@ -33,7 +33,8 @@ import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListDat
 import { useHomeListRenderers } from "@/src/features/restaurants/hooks/useHomeListRenderers";
 import { useHomeListScroll } from "@/src/features/restaurants/hooks/useHomeListScroll";
 import { usePageRevealLock } from "@/src/features/restaurants/hooks/usePageRevealLock";
-import { AppBanner } from "@/src/types";
+import { useToutReturnReload } from "@/src/features/restaurants/hooks/useToutReturnReload";
+import { AppBanner, FastFood } from "@/src/types";
 import { NativeHomeList } from "@/src/features/restaurants/components/NativeHomeList";
 import { isHomeListAvailable } from "@/modules/home-list";
 
@@ -56,6 +57,9 @@ import { t, useLanguage } from "@/src/i18n";
 import { trackBoot } from "@/src/services/netTelemetry";
 
 const seenBanners = new Set<string>();
+// « Tout » masque pendant un tab categorie (squelettes) : references stables.
+const NO_SHOPS: FastFood[] = [];
+const NO_BANNERS: AppBanner[] = [];
 
 /**
  * Home client : en-tete, banniere + boutiques paginees (liste NATIVE iOS quand
@@ -179,11 +183,6 @@ function HomeScreen() {
     await refresh();
     setRefreshing(false);
   };
-  // ⚠️ Pull-to-refresh : `refresh()` repasse `loading` a true. L'afficher
-  // remplacait la page vide (« Aucun restaurant… ») par le loader plein ecran
-  // et les squelettes (banniere + rangees) le temps de la reponse : flash.
-  // Comme sur les tabs categorie, le contenu affiche reste jusqu'a la reponse.
-  const shownLoading = loading && !refreshing;
 
   // Verrou de page (FlashList) puis defilement : cet ordre garde celui des
   // effets d'avant le decoupage.
@@ -211,6 +210,16 @@ function HomeScreen() {
     cancelPendingLoadMore,
     resetToFirstPage,
   });
+
+  // Retour sur « Tout » depuis un tab categorie : requete automatique, en
+  // squelettes puis sortie du haut vers le bas (cf. useToutReturnReload).
+  const toutMasked = useToutReturnReload({ category, refresh, nativeListRef });
+  // ⚠️ `refresh()` repasse `loading` a true. L'afficher pendant un
+  // pull-to-refresh remplacait la page vide (« Aucun restaurant… ») par le
+  // loader plein ecran et les squelettes : flash. Le contenu reste donc jusqu'a
+  // la reponse ; au retour sur « Tout », ce sont les squelettes de la liste
+  // native (`toutMasked`), jamais le loader plein ecran.
+  const shownLoading = loading && !refreshing && !toutMasked;
 
   const handleBannerPress = useCallback(
     (banner: AppBanner) => {
@@ -365,23 +374,25 @@ function HomeScreen() {
           {isHomeListAvailable ? (
             <NativeHomeList
               listRef={nativeListRef}
-              fastFoods={fastFoods}
-              banners={banners}
-              loading={shownLoading}
+              fastFoods={toutMasked ? NO_SHOPS : fastFoods}
+              banners={toutMasked ? NO_BANNERS : banners}
+              loading={toutMasked || shownLoading}
               hasMore={hasMore}
               refreshing={refreshing}
               bottomInset={tabBarHeight + 60}
               sidePadding={Theme.design.horizontalPadding}
               footerText={
-                fastFoods.length === 0 && !shownLoading
-                  ? searchQuery
-                    ? t("Aucun restaurant trouvé pour \"{{a}}\"", { a: searchQuery })
-                    : t("Aucun restaurant disponible pour le moment")
-                  : !hasMore && !shownLoading && fastFoods.length > 0
-                    ? t("Vous avez vu toutes les boutiques")
-                    : null
+                toutMasked
+                  ? null
+                  : fastFoods.length === 0 && !shownLoading
+                    ? searchQuery
+                      ? t("Aucun restaurant trouvé pour \"{{a}}\"", { a: searchQuery })
+                      : t("Aucun restaurant disponible pour le moment")
+                    : !hasMore && !shownLoading && fastFoods.length > 0
+                      ? t("Vous avez vu toutes les boutiques")
+                      : null
               }
-              footerIsEmpty={fastFoods.length === 0 && !shownLoading}
+              footerIsEmpty={!toutMasked && fastFoods.length === 0 && !shownLoading}
               ghostCount={homeSettings.pageSize}
               prefetchDistance={homeSettings.prefetchDistance}
               onRefresh={onManualRefresh}

@@ -20,6 +20,11 @@ interface HLShopRowDelegate {
   fun isShopRevealed(shopId: String): Boolean
   /** La boutique est prete. Le delegue revele tout de suite, ou plus tard (banniere). */
   fun shopRowIsReady(row: HLShopRowView)
+  /**
+   Retour sur « Tout » (`resetReveal`) : meme images en memoire, la boutique
+   garde son squelette et attend son tour (fondu, du haut vers le bas).
+   */
+  fun holdsReveal(): Boolean
   /** Position de la liste de cartes (premiere carte, decalage px). */
   fun savedMenuOffset(shopId: String): Pair<Int, Int>?
   fun saveMenuOffset(shopId: String, position: Int, offsetPx: Int)
@@ -58,6 +63,9 @@ class HLShopRowView(
   var position = 0
     private set
   var revealed = false
+    private set
+  /** Images attendues arrivees (ou delai depasse) : peut sortir quand le delegue le dit. */
+  var ready = false
     private set
   /** Sonde : 0 = rangee neuve, jamais configuree / jamais affichee. */
   var configures = 0
@@ -107,6 +115,7 @@ class HLShopRowView(
     cancelLoads()
     content = c
     position = pos
+    ready = false
 
     when (c) {
       is HLRowContent.Ghost -> {
@@ -122,14 +131,14 @@ class HLShopRowView(
         val already = delegate?.isShopRevealed(s.id) ?: false
         // Images deja en memoire : Glide repond pendant la demande (`waitFor`
         // renvoie vrai), la boutique s'affiche directement, sans squelette.
-        val ready = already || waitFor(revealUrls(s))
-        applyRevealed(ready)
+        val loaded = already || waitFor(revealUrls(s))
+        applyRevealed(already || (loaded && delegate?.holdsReveal() != true))
         cards.notifyDataSetChanged()
         val saved = delegate?.savedMenuOffset(s.id)
         lm.scrollToPositionWithOffset(saved?.first ?: 0, saved?.second ?: 0)
-        if (ready) {
+        if (loaded) {
           cancelLoads()
-          delegate?.shopRowIsReady(this)
+          markReady()
         }
       }
     }
@@ -177,6 +186,11 @@ class HLShopRowView(
     timeout?.let { mainHandler.removeCallbacks(it) }
     timeout = null
     pending.clear()
+    markReady()
+  }
+
+  private fun markReady() {
+    ready = true
     delegate?.shopRowIsReady(this)
   }
 

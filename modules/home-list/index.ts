@@ -153,6 +153,11 @@ export type HomeListViewProps = ViewProps & {
 
 export type HomeListHandle = {
   scrollToTop: () => Promise<void>;
+  /**
+   * Tab categorie ouvert : revelation remise a zero, liste en haut. Au retour
+   * sur « Tout », banniere et boutiques ressortent en fondu du haut vers le bas.
+   */
+  resetReveal: () => Promise<void>;
 };
 
 /**
@@ -160,8 +165,11 @@ export type HomeListHandle = {
  * par une prop : une prop renvoie toute la liste a chaque page et le natif la
  * decode sur le fil de l'ecran (accrocs croissants avec la longueur de liste).
  */
-export type HomeListNativeHandle = HomeListHandle & {
+export type HomeListNativeHandle = {
+  scrollToTop: () => Promise<void>;
   updateRows: (update: HomeListRowsUpdate) => Promise<void>;
+  /** Absente des builds d'avant le retour sur « Tout » (OTA) : appel optionnel. */
+  resetReveal?: () => Promise<void>;
 };
 
 export const isHomeListAvailable =

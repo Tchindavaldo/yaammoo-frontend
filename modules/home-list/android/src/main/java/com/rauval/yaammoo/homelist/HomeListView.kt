@@ -75,9 +75,9 @@ class HomeListView(context: Context, appContext: AppContext) :
 
   internal var rows: List<HLRowContent> = emptyList()
     private set
-  private var shownBanners: List<HLBanner> = emptyList()
+  internal var shownBanners: List<HLBanner> = emptyList()
+    private set
   private var shownBannerLoading = false
-  private val revealedShops = HashSet<String>()
   private val menuOffsets = HashMap<String, Pair<Int, Int>>()
   private val prefetched = HashSet<String>()
   /** Haut de chaque element (px), plus la hauteur totale en dernier. */
@@ -90,12 +90,8 @@ class HomeListView(context: Context, appContext: AppContext) :
   private var nearBottom = false
   private var dragging = false
 
-  // Revelation commune banniere + premiere boutique (une seule fois).
-  private var firstGateOpen = false
-  private var bannerReady = false
-  private var firstShopReady = false
-  private var bannerView: HLBannerView? = null
-  private var firstShopRow: HLShopRowView? = null
+  /** Revelation : banniere + premiere boutique, et retour sur « Tout » (`HLRevealGate`). */
+  private val gate = HLRevealGate(this)
 
   private var layoutRunnable: Runnable? = null
   private var layoutPosted = false
@@ -127,6 +123,7 @@ class HomeListView(context: Context, appContext: AppContext) :
         val row = view as? HLShopRowView ?: return
         perf.mark { "in${row.position}d${row.design}${if (row.displays == 0) "n" else ""}" }
         row.displays++
+        gate.onAttached(row)
       }
 
       override fun onChildViewDetachedFromWindow(view: View) {
@@ -187,6 +184,7 @@ class HomeListView(context: Context, appContext: AppContext) :
   }
 
   fun markEvent(what: String) = perf.mark { what }
+  internal fun mark(what: () -> String) = perf.mark(what)
 
   // Configuration des vues (appelee par l'adaptateur)
 
@@ -194,7 +192,7 @@ class HomeListView(context: Context, appContext: AppContext) :
     when (holder) {
       is HLListAdapter.BannerHolder -> {
         holder.banner.delegate = this
-        bannerView = holder.banner
+        gate.bannerView = holder.banner
         holder.banner.configure(shownBanners, shownBannerLoading)
       }
       is HLListAdapter.RowHolder -> {
@@ -301,7 +299,7 @@ class HomeListView(context: Context, appContext: AppContext) :
     }
     lastPatch = null
     // Fin du chargement sans boutique : la banniere attendait peut-etre la liste.
-    tryOpenFirstGate()
+    gate.tryOpen()
     post {
       checkEndReached()
       // Fantomes remplis sur place, sans scroll : de nouvelles boutiques a l'ecran.
@@ -350,6 +348,7 @@ class HomeListView(context: Context, appContext: AppContext) :
     checkEndReached()
     prefetchAhead()
     checkVisibleShops()
+    if (gate.holding) gate.pump()
   }
 
   /**
@@ -451,23 +450,11 @@ class HomeListView(context: Context, appContext: AppContext) :
     onMenuPress(mapOf("shopId" to shopId, "menuId" to menuId))
   }
 
-  override fun isShopRevealed(shopId: String): Boolean = revealedShops.contains(shopId)
+  override fun isShopRevealed(shopId: String): Boolean = gate.revealedShops.contains(shopId)
 
-  override fun shopRowIsReady(row: HLShopRowView) {
-    if (row.position == 0 && !firstGateOpen) {
-      firstShopReady = true
-      firstShopRow = row
-      tryOpenFirstGate()
-      return
-    }
-    revealShop(row)
-  }
+  override fun shopRowIsReady(row: HLShopRowView) = gate.onShopReady(row)
 
-  private fun revealShop(row: HLShopRowView) {
-    (row.content as? HLRowContent.Shop)?.let { revealedShops.add(it.shop.id) }
-    if (!row.revealed) perf.mark { "reveal${row.position}" }
-    row.reveal(true)
-  }
+  override fun holdsReveal(): Boolean = gate.holding
 
   override fun savedMenuOffset(shopId: String): Pair<Int, Int>? = menuOffsets[shopId]
 
@@ -483,27 +470,17 @@ class HomeListView(context: Context, appContext: AppContext) :
 
   override fun bannerAutoplay(banner: HLBannerView) = perf.mark { "banner" }
 
-  override fun bannerIsReady(banner: HLBannerView) {
-    bannerReady = true
-    bannerView = banner
-    if (firstGateOpen) banner.reveal(true) else tryOpenFirstGate()
-  }
+  override fun bannerIsReady(banner: HLBannerView) = gate.onBannerReady(banner)
+
+  // Retour sur « Tout »
 
   /**
-   La banniere sort AVEC la premiere boutique, dans la meme animation. Sans
-   boutique, elle sort seule.
+   Tab categorie ouvert : revelation remise a zero, liste en haut (masquee
+   dessous). Les squelettes viennent des donnees masquees envoyees par JS.
    */
-  private fun tryOpenFirstGate() {
-    if (firstGateOpen) return
-    val hasShop = rows.any { it is HLRowContent.Shop }
-    val needsBanner = shownBanners.isNotEmpty()
-    // Sans boutique ET sans chargement seulement : sinon la banniere sortirait
-    // avant que la premiere boutique (et ses images) soit arrivee.
-    if (!((firstShopReady || (!hasShop && !listLoading)) && (bannerReady || !needsBanner))) return
-    firstGateOpen = true
-    firstShopRow?.takeIf { it.position == 0 }?.let { revealShop(it) }
-    bannerView?.reveal(true)
-    // Rangees sous l'ecran creees au repos, une fois le fondu termine.
-    preheater.schedule(HLLayout.revealMs + 100)
+  fun resetReveal() {
+    gate.reset()
+    preheater.stop("reset")
+    list.scrollToPosition(0)
   }
 }

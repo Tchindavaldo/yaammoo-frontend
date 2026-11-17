@@ -27,6 +27,7 @@ src/features/restaurants/
 ├── hooks/useHomeListData.ts        # Home : listData (bannière + boutiques + fantômes), firstScreenUris, drawDistance (échauffement)
 ├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
 ├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
+├── hooks/useToutReturnReload.ts    # Retour sur « Tout » depuis un tab : « Tout » masqué pendant le tab, requête auto + squelettes au retour
 ├── category/                       # Tabs catégorie : données, grille et liste native SÉPARÉES de « Tout » (voir « Tabs catégorie »)
 ├── utils/deliveryUtils.ts
 ├── utils/shopDeliveryFee.ts        # Libellé livraison des cartes : "gratuit" si deliveryOffer.active, sinon tarif le moins cher des zones (périodiques + express)
@@ -82,6 +83,7 @@ modules/home-list/                  # Module Expo local (autolinking : ./modules
     ├── HomeList.podspec            # ExpoModulesCore + SDWebImage (meme cache qu'expo-image)
     ├── HomeListModule.swift        # Props visuelles, evenements, updateRows, scrollToTop
     ├── HomeListView.swift          # UICollectionView + diffable (identite = position + design), fetch, bords
+    ├── HomeListView+Reveal.swift   # Révélation : délégués des cellules, porte bannière + 1re boutique, `resetReveal` / `pump` (retour sur « Tout »)
     ├── HLShopCell.swift            # Rangee : en-tete + cartes horizontales, revelation groupee (8 s max)
     ├── HLMenuCardCell.swift        # Carte 7/4/5 + les 2 lignes SOUS la carte (ItemMeta) + squelettes
     ├── HLMerchantHeaderView.swift  # Avatar, nom, « Ouvert », chips, etoiles
@@ -221,6 +223,7 @@ modules/home-list/android/
 └── src/main/java/com/rauval/yaammoo/homelist/
     ├── HomeListModule.kt           # Props, evenements, updateRows (decode hors fil ecran), scrollToTop
     ├── HomeListView.kt             # RecyclerView + SwipeRefreshLayout, DiffUtil (identite = position + design), fetch, bords
+    ├── HLRevealGate.kt             # Révélation : porte bannière + 1re boutique, `reset` / `pump` (retour sur « Tout »)
     ├── HLListAdapter.kt            # Elements (banniere, rangee, pied), types de vue, pied de liste
     ├── HLShopRowView.kt            # Rangee : en-tete + RecyclerView horizontal de cartes, revelation groupee (8 s max)
     ├── HLMenuCardView.kt           # Carte 7/4/5 + ItemMeta + squelettes
@@ -374,8 +377,19 @@ arrivées par socket dont le payload peut ne pas porter de menus.
 Tabs : Tout / Poulet / Burger / Pizza / Autre (alignés sur les suggestions de la
 sheet menu). `selectedCategory` (FastFoodContext) n'est plus qu'un état
 d'affichage : **« Tout » ne porte aucun filtre** et n'est jamais vidé, rechargé ni
-bloqué par un changement de tab (il reste monté, à sa position, sous la liste
-catégorie).
+bloqué par un changement de tab (il reste monté sous la liste catégorie).
+
+**Retour sur « Tout »** (`hooks/useToutReturnReload.ts`) : comme un changement de tab.
+- Tab ouvert : « Tout » est **masqué** (le home envoie à sa liste native une liste
+  vide en chargement, donc des squelettes, invisibles sous le tab) et
+  `resetReveal()` remet sa révélation à zéro, liste en haut.
+- Retour : `refresh()` (première page) ; squelettes bannière + rangées au moins
+  500 ms, puis tout ressort **en fondu, du haut vers le bas**, images en mémoire
+  comprises (`holdReveal` iOS, `HLRevealGate.holding` Android : `pump`). L'écran
+  sorti, la liste reprend son comportement normal. Jamais le loader plein écran
+  (`shownLoading` exclut le masque).
+- ⚠️ `resetReveal` exige un build EAS ; une build antérieure (OTA) remonte seulement
+  en haut : squelettes puis affichage direct, sans fondu.
 
 > ⚠️ Avant : un `?category=` sur les requêtes de « Tout » + rechargement à chaque
 > tab. Une page suivante en vol au changement de tab était jetée SANS libérer
@@ -436,7 +450,7 @@ page), et la `value` reste mémoïsée.
 | `loadingMore` | Page suivante uniquement. |
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |
-| `refresh()` | Repart de la première page (pull-to-refresh). ⚠️ Le home affiche `loading && !refreshing` (`shownLoading`, `app/(tabs)/index.tsx`) : pendant un pull-to-refresh, la page reste telle quelle jusqu'à la réponse (sinon une page sans boutique passait au loader plein écran et aux squelettes : flash). |
+| `refresh()` | Repart de la première page (pull-to-refresh). ⚠️ Le home affiche `loading && !refreshing && !toutMasked` (`shownLoading`, `app/(tabs)/index.tsx`) : pendant un pull-to-refresh, la page reste telle quelle jusqu'à la réponse (sinon une page sans boutique passait au loader plein écran et aux squelettes : flash). |
 | `refreshLoadedSilently()` | ⚠️ Met à jour les boutiques **déjà chargées** sans loader ni troncature — position de scroll préservée. Appelé par le catch-up socket, jamais par un geste utilisateur. Enchaîne les pages par curseur jusqu'à couvrir tout ce qui est affiché — ⚠️ `limit` est plafonné à 50 par le backend, qui rabote **silencieusement** : une seule requête laisserait les boutiques au-delà du 50e avec leurs anciens prix. Une boutique absente de la réponse est conservée. `designIndex` est recalculé à la position, sinon une boutique changerait d'apparence. Détail : [socket-events-client.md](./socket-events-client.md). |
 | `resetToFirstPage()` | Tronque la liste à la première page, **sans requête**. Appelé au retour en haut du home. Éteint aussi `loadingMore` et invalide la page en vol. |
 | `notifyUserScroll()` | Signale un scroll réel : lève le verrou posé par la troncature. Appelé par l'écran sur `onScroll`. |

@@ -87,6 +87,13 @@ class HomeListModule : Module() {
         val u = HLRowsUpdate(update)
         view.post { view.updateRows(u) }
       }
+
+      // Tab categorie ouvert : revelation remise a zero, liste en haut. Au
+      // retour sur « Tout », tout ressort en fondu du haut vers le bas. Poste
+      // comme `updateRows` : l'ordre des deux appels est garde.
+      AsyncFunction("resetReveal") { view: HomeListView ->
+        view.post { view.resetReveal() }
+      }
     }
   }
 }

@@ -9,6 +9,7 @@ import { useSheetSafeInsets } from "@/src/hooks/usePageBottomInset";
 import { showToast } from "@/src/services/globalToast";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 import React, { useEffect, useState } from "react";
 import { useAdhesionSheetAnimation } from "./useAdhesionSheetAnimation";
 import { ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -50,7 +51,10 @@ export function MerchantAdhesionSheet() {
   if (!anim.mounted) return null;
   return (
     <Modal visible transparent animationType="none" onRequestClose={() => {}} onShow={anim.onShow} statusBarTranslucent>
-      <Animated.View style={[styles.backdrop, anim.backdropStyle]} />
+      <Animated.View style={[styles.backdrop, anim.backdropStyle]}>
+        {/* iPhone : voile flou sous le voile sombre (fondu avec lui). */}
+        {Platform.OS === "ios" && <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />}
+      </Animated.View>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.wrap}>
         <Animated.View style={[styles.sheet, { paddingBottom: insets.bottom }, anim.sheetStyle]} onLayout={anim.onSheetLayout}>
           <View style={styles.grabber} />

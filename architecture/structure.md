@@ -260,6 +260,7 @@ src/
 │   ├── fonts.ts                 # Police globale OTA (`FONT_THEME`), noms PostScript par graisse
 │   └── appFont.tsx              # Text/TextInput a police du theme + useAppFont (chargement)
 ├── types/                       # Commande, Menu, Livraison, User…
+├── utils/afterPaint.ts          # Appel natif differe apres affichage du rendu React (flash des squelettes)
 ├── utils/formatDistance.ts      # « 850 m » / « 1,2 km » (home + suivi livraison)
 └── services/
     ├── socket.ts               # Singleton socketService (socket.io-client, connexion, payment handler)

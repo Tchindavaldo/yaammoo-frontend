@@ -32,6 +32,7 @@ import {
 import { fontFor } from "@/src/theme/fonts";
 import { designNumberFor } from "../utils/designCycle";
 import { getNextDeliveryTime, getShopDeliveryLabel } from "../utils/deliveryUtils";
+import { afterPaint } from "@/src/utils/afterPaint";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import {
   announceNativeList,
@@ -327,34 +328,40 @@ export const NativeHomeList: React.FC<Props> = ({
       prev.footerIsEmpty === footerIsEmpty &&
       prev.loading === loading;
     if (sameRows && sameEnd) return;
-
-    sentRef.current = { rows, ghostCount, hasMore, footerText, footerIsEmpty, loading };
-    trackHome("updateRows", {
-      start,
-      sent: rows.length - start,
-      total: rows.length,
-      hasMore,
-      ghostCount,
-      loading,
-      banners: (banners ?? []).length,
-      firstReplaced: start === 0 && !!prev,
-    });
-    view
-      .updateRows({
+    const send = () => {
+      sentRef.current = { rows, ghostCount, hasMore, footerText, footerIsEmpty, loading };
+      trackHome("updateRows", {
         start,
-        rows: rows.slice(start),
+        sent: rows.length - start,
         total: rows.length,
         hasMore,
         ghostCount,
-        footerText,
-        footerIsEmpty,
         loading,
-      })
-      .catch((error) => {
-        // Etat natif inconnu : le prochain envoi repartira de zero (liste entiere).
-        sentRef.current = null;
-        console.warn("[NATIVE] updateRows a echoue", error);
+        banners: (banners ?? []).length,
+        firstReplaced: start === 0 && !!prev,
       });
+      view
+        .updateRows({
+          start,
+          rows: rows.slice(start),
+          total: rows.length,
+          hasMore,
+          ghostCount,
+          footerText,
+          footerIsEmpty,
+          loading,
+        })
+        .catch((error) => {
+          // Etat natif inconnu : le prochain envoi repartira de zero (liste entiere).
+          sentRef.current = null;
+          console.warn("[NATIVE] updateRows a echoue", error);
+        });
+    };
+    // Passage en squelettes (liste vide en chargement) : toujours sous un
+    // loader, rendu dans le MEME commit. Envoye une fois ce loader a l'ecran,
+    // sinon le natif montre les squelettes une image avant lui (flash).
+    if (loading && rows.length === 0) return afterPaint(send);
+    send();
   }, [rows, ghostCount, hasMore, footerText, footerIsEmpty, loading]);
 
   const nativeBanners = useMemo<HomeListBanner[]>(

@@ -10,6 +10,7 @@ import { showToast } from "@/src/services/globalToast";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { trackBoot } from "@/src/services/netTelemetry";
 import React, { useEffect, useState } from "react";
 import { useAdhesionSheetAnimation } from "./useAdhesionSheetAnimation";
 import { ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -50,8 +51,11 @@ export function MerchantAdhesionSheet() {
 
   if (!anim.mounted) return null;
   return (
-    <Modal visible transparent animationType="none" onRequestClose={() => {}} onShow={anim.onShow} statusBarTranslucent>
-      <Animated.View style={[styles.backdrop, anim.backdropStyle]}>
+    <Modal visible transparent animationType="none" onRequestClose={() => {}} onShow={() => { trackBoot("adhesion onShow"); anim.onShow(); }} statusBarTranslucent>
+      <Animated.View
+        style={[styles.backdrop, anim.backdropStyle]}
+        onLayout={e => trackBoot("adhesion voile layout", e.nativeEvent.layout)}
+      >
         {/* iPhone : voile flou sous le voile sombre (fondu avec lui). */}
         {Platform.OS === "ios" && <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />}
       </Animated.View>

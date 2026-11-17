@@ -1430,5 +1430,6 @@
   "Renvoyer la demande": "Resend request",
   "Demande renvoyée au restaurant.": "Request sent again to the restaurant.",
   "Numéro validé sans code : c'est votre numéro WhatsApp déjà vérifié.": "Number verified without a code: it is your already verified WhatsApp number.",
-  "Validez d'abord votre numéro WhatsApp : si votre Orange Money ou MoMo est le même numéro, il sera validé sans SMS ni frais.": "Verify your WhatsApp number first: if your Orange Money or MoMo is the same number, it will be verified with no SMS and no fee."
+  "Validez d'abord votre numéro WhatsApp : si votre Orange Money ou MoMo est le même numéro, il sera validé sans SMS ni frais.": "Verify your WhatsApp number first: if your Orange Money or MoMo is the same number, it will be verified with no SMS and no fee.",
+  "Vous avez vu tous les plats": "You have seen all the dishes"
 }

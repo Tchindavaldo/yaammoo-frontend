@@ -6,9 +6,8 @@ import { useFastFoods } from "@/src/features/restaurants/hooks/useFastFoods";
 import { useShopSearchDeepLink } from "@/src/features/restaurants/hooks/useShopSearchDeepLink";
 import { useTabBarHeight } from "@/src/hooks/useTabBarHeight";
 import { Theme } from "@/src/theme";
-import { FlashList } from "@shopify/flash-list";
 import React, { useCallback, useEffect, useState } from "react";
-import { Animated, RefreshControl, StyleSheet, View } from "react-native";
+import { Animated, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet";
@@ -22,12 +21,14 @@ import {
 import { HomeLocationRequired } from "@/src/features/restaurants/components/home/HomeLocationRequired";
 import { useFastFoodContext } from "@/src/features/restaurants/context/FastFoodContext";
 import { HomeLocationBanner } from "@/src/features/restaurants/components/home/HomeLocationBanner";
+import { HomeFlashList } from "@/src/features/restaurants/components/home/HomeFlashList";
 import { useLocationAccess } from "@/src/features/location/hooks/useLocationAccess";
 import { SHOW_LOCATION_BANNER } from "@/src/features/location/config";
 import { homeStyles as styles } from "@/src/features/restaurants/components/home/homeScreenStyles";
 import { useCityChangeLoader } from "@/src/features/restaurants/hooks/useCityChangeLoader";
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
-import { useCategoryFilteredShops } from "@/src/features/restaurants/hooks/useCategoryFilteredShops";
+import { categoryApiValue } from "@/src/features/restaurants/category/categoryApi";
+import { CategoryHomeList } from "@/src/features/restaurants/category/CategoryHomeList";
 import { useHomeListData } from "@/src/features/restaurants/hooks/useHomeListData";
 import { useHomeListRenderers } from "@/src/features/restaurants/hooks/useHomeListRenderers";
 import { useHomeListScroll } from "@/src/features/restaurants/hooks/useHomeListScroll";
@@ -53,8 +54,6 @@ import { track } from "@/src/services/analytics/analytics";
 import { t, useLanguage } from "@/src/i18n";
 import { trackBoot } from "@/src/services/netTelemetry";
 
-/** Boutique « vue » : visible a 50 % au moins (meme seuil que la liste native). */
-const SHOP_VIEWABILITY = { itemVisiblePercentThreshold: 50 };
 const seenBanners = new Set<string>();
 
 /**
@@ -68,9 +67,6 @@ const seenBanners = new Set<string>();
  */
 export default function HomeTab() {
   const { isMerchant, isMerchantMode } = useMerchantMode();
-  useEffect(() => {
-    setShopImpressionsPaused(isMerchantMode);
-  }, [isMerchantMode]);
   // Home client TOUJOURS monte et mis en page en plein ecran, meme en mode
   // marchand (recouvert par le home marchand). Le demonter / le masquer a
   // chaque bascule laissait la liste native des boutiques sans images
@@ -116,7 +112,7 @@ function HomeScreen() {
   }, [ensureProfileRefreshed, ensureNotificationsLoaded, ensureOrdersLoaded]);
   const router = useRouter();
   const {
-    fastFoods: allFastFoods,
+    fastFoods,
     loading,
     error,
     loadingMore,
@@ -136,7 +132,13 @@ function HomeScreen() {
     setSelectedCategory,
     homeSettings,
   } = useFastFoods();
-  const fastFoods = useCategoryFilteredShops(allFastFoods, selectedCategory);
+  // Tab categorie : liste A PART posee sur « Tout » (CategoryHomeList), qui
+  // reste montee et intacte. Boutiques de « Tout » recouvertes : non comptees.
+  const category = categoryApiValue(selectedCategory);
+  const { isMerchantMode } = useMerchantMode();
+  useEffect(() => {
+    setShopImpressionsPaused(isMerchantMode || !!category);
+  }, [isMerchantMode, category]);
   const locationAccess = useLocationAccess();
   const { homeCity } = useFastFoodContext();
   // Sans localisation ni ville choisie a la main : pas de boutiques, ecran
@@ -349,13 +351,9 @@ function HomeScreen() {
               onEnable={locationAccess.enable}
             />
           )}
-          {/* ⚠️ FlashList, pas FlatList : elle RECYCLE les vues natives au lieu
-              de les detruire en sortie d'ecran et d'en recreer en entree. C'est
-              ce qui supprime definitivement la micro-pause au scroll (63-90 ms
-              de commit natif repayes a chaque remontage, cf. sonde `[ROW]` et
-              `architecture/restaurants.md`). Le recyclage est pilote par
-              `getItemType` : sans lui, une rangee serait reutilisee vers une
-              variante de hauteur differente. */}
+          {/* Liste « Tout » (native, ou FlashList en repli), TOUJOURS montee ;
+              un tab categorie pose sa propre liste par-dessus. */}
+          <View style={{ flex: 1 }}>
           {isHomeListAvailable ? (
             <NativeHomeList
               listRef={nativeListRef}
@@ -385,83 +383,33 @@ function HomeScreen() {
               onEdgeChange={(top, near) => handleNativeEdgeChange(top, near)}
             />
           ) : (
-          <FlashList
-            ref={listRef}
-            data={listData}
-            renderItem={renderItem}
-            keyExtractor={keyExtractor}
-            getItemType={getItemType}
-            onScroll={handleScroll}
-            scrollEventThrottle={64}
-            onMomentumScrollEnd={handleMomentumEnd}
-            viewabilityConfig={SHOP_VIEWABILITY}
-            onViewableItemsChanged={handleViewableShops}
-            contentContainerStyle={[
-              styles.listContent,
-              {
-                // Marge large : le loader independant flotte au-dessus de la
-                // navbar, il ne doit coller ni la masquer la derniere rangee.
-                paddingBottom: tabBarHeight + 60,
-                paddingHorizontal: Theme.design.horizontalPadding,
-              },
-            ]}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onManualRefresh}
-                tintColor={Theme.colors.primary}
-                colors={[Theme.colors.primary]}
-              />
-            }
-            // ⚠️ `initialNumToRender`, `maxToRenderPerBatch` et `windowSize` ont
-            // ete RETIRES : ce sont des reglages propres a FlatList, ignores par
-            // FlashList, qui dimensionne sa fenetre elle-meme a partir des tailles
-            // reellement mesurees.
-            //
-            // Ils reglaient un probleme que le recyclage supprime a la racine :
-            // a `windowSize={5}` les rangees sortant de l'ecran etaient detruites
-            // puis recreees au retour (63-90 ms de commit natif repayes a chaque
-            // passage, cf. sonde `[ROW]`). Elargir a 15 ne faisait que repousser
-            // le seuil au prix de la memoire. FlashList, elle, REUTILISE la vue :
-            // le cout n'est plus paye qu'une fois par type de cellule.
-            //
-            // ⚠️ Ne pas les reintroduire en pensant « regler » un souci de scroll :
-            // sur FlashList ils n'ont aucun effet.
-            // ⚠️ Pas de `onEndReached` : il partait en avance (seuil 0.1), fetch
-            // termine avant l'arrivee, ni loader ni gel visibles. Le fetch est
-            // declenche par la transition `atBottom` dans `handleScroll`.
-            onEndReached={undefined}
-            // Libere le verrou de page quand le contenu GRANDIT vraiment
-            // (commit + layout), pas a l'insertion logique.
-            onContentSizeChange={handleContentSizeChange}
-            // Pre-rendu modere : les rangees proches se montent en avance, mais
-            // une page ajoutee pendant qu'on lit le haut ne se monte pas (pas
-            // de pause d'insertion). 3200 montait tout, y compris hors regard.
-            drawDistance={drawDistance}
-            // ⚠️ SCROLL FIGE une fois le bas atteint, tant que la page suivante
-            // charge. On ne bride pas le rebond (ni `bounces`, ni
-            // `contentInset` negatif, ni reclampage depuis `onScroll`) : ces
-            // trois pistes ont ete testees et laissaient toutes le defilement
-            // continuer, le reclampage JS produisant en plus un saut visuel au
-            // contact du bas (a `scrollEventThrottle={64}`, le doigt a deja
-            // tire bien au-dela quand JS reagit).
-            //
-            // Ici la liste est simplement rendue non defilante le temps du
-            // chargement : plus aucun mouvement possible vers le bas, le loader
-            // reste ou il est. Le geste en cours s'arrete net, ce qui est
-            // exactement l'effet voulu.
-            //
-            // La condition porte `atBottom` : figer des le depart de la requete
-            // bloquerait aussi un chargement declenche AVANT le bas
-            // (`onEndReachedThreshold`), alors que l'utilisateur defile encore
-            // normalement au milieu de la liste.
-            // Verrou d'insertion : scroll fige pendant le montage + layout des
-            // nouvelles rangees, libere par `notifyPageLaidOut` (ou securite
-            // 2 s). Jamais de scroll sur des cellules en cours de montage.
-            scrollEnabled={!insertLock}
-            ListFooterComponent={listFooter}
-          />
+            <HomeFlashList
+              listRef={listRef}
+              data={listData}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              getItemType={getItemType}
+              onScroll={handleScroll}
+              onMomentumScrollEnd={handleMomentumEnd}
+              onViewableItemsChanged={handleViewableShops}
+              bottomPadding={tabBarHeight + 60}
+              refreshing={refreshing}
+              onRefresh={onManualRefresh}
+              onContentSizeChange={handleContentSizeChange}
+              drawDistance={drawDistance}
+              scrollEnabled={!insertLock}
+              listFooter={listFooter}
+            />
           )}
+          {category && (
+            <CategoryHomeList
+              category={category}
+              bottomInset={tabBarHeight + 60}
+              onMenuPress={checkout.onMenuClickStable}
+              onBannerPress={handleBannerPress}
+            />
+          )}
+          </View>
           <Animated.View
             pointerEvents="none"
             style={[

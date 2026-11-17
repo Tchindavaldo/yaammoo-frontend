@@ -1,5 +1,4 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-import { categoryParams } from "./useHomeCategoryReload";
 import { Config } from "@/src/api/config";
 import { trackHomePage } from "@/src/services/analytics/homePages";
 import { trackBootStep } from "@/src/services/bootTelemetry";
@@ -13,7 +12,6 @@ import {
   useRef,
   useState,
   type Dispatch,
-  type MutableRefObject,
   type SetStateAction,
 } from "react";
 import { MAX_SERVER_LIMIT } from "../utils/homeClientSettings";
@@ -43,11 +41,16 @@ interface Params {
   settings: FastFoodHomeSettings;
   /** Ville du home (`useHomeCity`) : `?city=` sur chaque page, 1re page attend sa resolution. */
   homeCity: Pick<HomeCity, "cityRef" | "cityReady">;
-  /** Tab categorie du home (`useHomeCategoryReload`) : `?category=` sur chaque page. */
-  categoryRef: MutableRefObject<string | null>;
 }
 
-export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity, categoryRef }: Params) {
+/**
+ * ⚠️ « Tout » SEULEMENT : aucun filtre de categorie ici. Les tabs categorie ont
+ * leurs propres requetes (`category/useCategoryFeed`). Un `?category=` pose sur
+ * ces requetes faisait jeter, au changement de tab, une page en vol SANS
+ * liberer son verrou : la pagination de « Tout » restait bloquee (squelettes
+ * figes en bas de liste).
+ */
+export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity }: Params) {
   useLanguage();
   const {
     fastFoodsLenRef,
@@ -140,9 +143,6 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
     const myRun = isFirstPage ? ++runIdRef.current : runIdRef.current;
     /** Seule une recherche a un résultat à protéger d'une réponse tardive. */
     const guarded = !!q;
-    // Tab categorie de la requete : reponse jetee si le tab a change en vol
-    // (sinon l'ancien tab reapparait apres le loader du nouveau).
-    const myCat = categoryRef.current;
     const startedAt = Date.now();
     try {
       // SONDE [ROW] : un fetch premiere page hors boot = remplacement brutal
@@ -172,10 +172,8 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
           ...(cursor ? { cursor } : {}),
           ...(q ? { q } : {}),
           ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
-          ...categoryParams(myCat),
         },
       });
-      if (myCat !== categoryRef.current) return;
 
       // Réponse d'une recherche périmée : l'appliquer ferait réapparaître les
       // résultats d'une frappe précédente. Hors recherche, on applique
@@ -307,8 +305,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
       // reste visible pendant l'attente (HOLD) et l'insertion, jusqu'au layout
       // (`notifyPageLaidOut`). Sinon l'utilisateur ne verrait rien entre la
       // fin du fetch et l'apparition des cartes.
-      // Reponse d'un ancien tab : le chargement du nouveau est encore en vol.
-      if (isFirstPage && myCat === categoryRef.current) setLoading(false);
+      if (isFirstPage) setLoading(false);
     }
   }, [
     applyServerSettings,
@@ -373,7 +370,6 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
       // On enchaine les pages par curseur jusqu'a couvrir tout ce qui est
       // affiche, par 50 et non par la taille de page du home : a 3 par page,
       // un catalogue de 100 boutiques demanderait 34 allers-retours au lieu de 2.
-      const silentCat = categoryRef.current;
       const fresh = new Map<string, any>();
       let cursor: string | null = null;
 
@@ -384,7 +380,6 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
             limit: Math.min(loadedCount - fresh.size, MAX_SERVER_LIMIT),
             ...(cursor ? { cursor } : {}),
             ...(homeCity.cityRef.current ? { city: homeCity.cityRef.current } : {}),
-          ...categoryParams(silentCat),
           },
         });
 
@@ -406,7 +401,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity,
         if (!cursor || raw.length === 0) break;
       }
 
-      if (fresh.size === 0 || silentCat !== categoryRef.current) return;
+      if (fresh.size === 0) return;
 
       setFastFoods((prev) =>
         prev.map((ff, index) => {

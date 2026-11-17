@@ -3,7 +3,6 @@ import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useResetOnUserChange } from "@/src/hooks/useResetOnUserChange";
 import { onNetworkRestored } from "@/src/services/network";
 import { AppBanner, DeliveryOffer, FastFood } from "@/src/types";
-import { categoryApiValue, useHomeCategoryReload } from "../hooks/useHomeCategoryReload";
 import { useFastFoodFetch } from "../hooks/useFastFoodFetch";
 import { useFastFoodHomeSettings } from "../hooks/useFastFoodHomeSettings";
 import { useFastFoodPagination } from "../hooks/useFastFoodPagination";
@@ -147,7 +146,6 @@ const FastFoodContext = createContext<FastFoodContextType | undefined>(
  * `FastFoodContext`.
  */
 const FastFoodActivationContext = createContext<() => void>(() => {});
-const NO_SHOPS: FastFood[] = [];
 
 export const useActivateFastFoods = () => useContext(FastFoodActivationContext);
 
@@ -182,7 +180,6 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // Ville du home : declaree AVANT le fetch, qui attend sa resolution.
   const homeCity = useHomeCity();
   const { homeSettings } = settings;
-  const categoryRef = useRef<string | null>(null); // tab categorie -> ?category=
   const {
     loading,
     setLoading,
@@ -195,7 +192,7 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     errorRef,
     fetchPage,
     refreshLoadedSilently,
-  } = useFastFoodFetch({ setFastFoods, pagination, settings, homeCity, categoryRef });
+  } = useFastFoodFetch({ setFastFoods, pagination, settings, homeCity });
   const {
     upsertMenuFromSocket,
     removeMenuFromSocket,
@@ -206,6 +203,9 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // Signal `fastfoodsChanged` / refus de paiement : recharge ciblee du home.
   useFastFoodRefreshByIds({ setFastFoods, upsertFastFoodFromSocket, refreshLoadedSilently });
   const [searchQuery, setSearchQuery] = useState("");
+  // Tab categorie du home : etat d'affichage SEUL. Les tabs ont leurs propres
+  // donnees (`category/useCategoryFeed`) : « Tout » n'est jamais vide ni
+  // recharge par un changement de tab.
   const [selectedCategory, setSelectedCategory] = useState(t("Tout"));
   // Langue changee : les noms de categories changent, on revient sur « Tout ».
   const [categoryLang, setCategoryLang] = useState(i18nLang);
@@ -226,7 +226,6 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
     cursorRef.current = null;
     await fetchPage(undefined, searchRef.current.trim() || undefined);
   }, [fetchPage, cursorRef]);
-  useHomeCategoryReload({ selectedCategory, categoryRef, refresh, setLoading, setFastFoods });
 
   // Ville changee (sheet des villes, « Ma localisation ») : home recharge.
   // Liste videe d'abord : le loader plein ecran (« Recherche des meilleurs
@@ -409,13 +408,10 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
   // ⚠️ `useMemo` OBLIGATOIRE — ne JAMAIS repasser un objet litteral en `value`.
   // Un litteral re-rend tous les consommateurs a chaque rendu (micro-saccade
   // au scroll du home, 70 a 190 ms de blocage JS par vague).
-  // Tab change : liste de l'ancien tab masquee des ce rendu (l'effet de
-  // rechargement ne la vide qu'apres) -> pas de flash de l'ancienne page.
-  const staleTab = categoryRef.current !== categoryApiValue(selectedCategory);
   const value = useMemo(
     () => ({
-      fastFoods: staleTab ? NO_SHOPS : fastFoods,
-      loading: loading || staleTab,
+      fastFoods,
+      loading,
       loadingMore,
       hasMore,
       loadMore,
@@ -446,7 +442,6 @@ export const FastFoodProvider: React.FC<{ children: React.ReactNode }> = ({
       homeCity,
     }),
     [
-      staleTab,
       fastFoods,
       loading,
       loadingMore,

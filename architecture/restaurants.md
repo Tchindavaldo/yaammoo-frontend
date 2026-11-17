@@ -27,6 +27,7 @@ src/features/restaurants/
 ├── hooks/useHomeListData.ts        # Home : listData (bannière + boutiques + fantômes), firstScreenUris, drawDistance (échauffement)
 ├── hooks/useHomeListRenderers.tsx  # Home : renderItem / keyExtractor / getItemType / pied de liste — STABLES
 ├── hooks/useHomeCheckout.ts        # Home : menu choisi, CheckoutSheet, toast, onMenuClickStable (ref figée)
+├── category/                       # Tabs catégorie : données, grille et liste native SÉPARÉES de « Tout » (voir « Tabs catégorie »)
 ├── utils/deliveryUtils.ts
 ├── utils/shopDeliveryFee.ts        # Libellé livraison des cartes : "gratuit" si deliveryOffer.active, sinon tarif le moins cher des zones (périodiques + express)
 ├── utils/designCycle.ts            # Table UNIQUE designIndex → DesignN (DesignRouter + getItemType du home)
@@ -368,18 +369,54 @@ première page.
 `useFastFoods` ne garde qu'un filtre : les boutiques **sans plat**, pour celles
 arrivées par socket dont le payload peut ne pas porter de menus.
 
-`selectedCategory` filtre côté **backend**. Tabs : Tout / Poulet / Burger / Pizza /
-Autre (alignés sur les suggestions de la sheet menu). `hooks/useHomeCategoryReload.ts`
-pose `?category=<nom>` (ou `?categoryNot=Poulet,Burger,Pizza` pour « Autre ») sur
-chaque requête de `useFastFoodFetch` et recharge le home depuis la 1re page. Le
-backend ne rend que les boutiques ayant un plat de la catégorie, avec ces seuls plats.
-`hooks/useCategoryFilteredShops.ts` regroupe alors les plats **par N** en rangées
-`gridRow` : la liste native les rend en **grille** (design natif `HL_GRID` = 8,
-`modules/home-list` Android + iOS : pas d'en-tête, cartes V7 aérées en liste horizontale).
-N = cartes entières qui tiennent à l'écran + 1 qui dépasse (on défile), plafonné à 4
-(`perRow`, 390 dp → 3).
-Chaque plat garde sa boutique (`__shop`) pour l'appui et les frais. Code natif :
-nécessite un nouveau build (pas d'OTA). « Tout » = liste et designs inchangés.
+## Tabs catégorie — liste SÉPARÉE de « Tout »
+
+Tabs : Tout / Poulet / Burger / Pizza / Autre (alignés sur les suggestions de la
+sheet menu). `selectedCategory` (FastFoodContext) n'est plus qu'un état
+d'affichage : **« Tout » ne porte aucun filtre** et n'est jamais vidé, rechargé ni
+bloqué par un changement de tab (il reste monté, à sa position, sous la liste
+catégorie).
+
+> ⚠️ Avant : un `?category=` sur les requêtes de « Tout » + rechargement à chaque
+> tab. Une page suivante en vol au changement de tab était jetée SANS libérer
+> `pendingPageRef` / `loadingMore` : la pagination de « Tout » restait bloquée
+> (squelettes figés en bas de liste). Et la liste native partagée gardait
+> `revealedShops` : au 2e passage sur un tab, plus d'attente avant le fondu (flash).
+
+```
+src/features/restaurants/category/
+├── categoryApi.ts           # Tab -> `?category=<nom>` / `?categoryNot=Poulet,Burger,Pizza` (« Autre »)
+├── useCategoryFeed.ts       # Requêtes + pagination PROPRES (`GET /fastFood/all?category=`), état par clé tab|ville|compte
+├── dishGrid.ts              # Plats regroupés par N (`dishesPerRow`), plat = menu + SA boutique ; repli `toLegacyGridRows`
+├── categoryRows.ts          # Rangées -> records natifs (prix, libellés aérés, image de secours), cache par liste
+├── NativeCategoryList.tsx   # Pont JS de la liste native catégorie (copie dédiée R16 de NativeHomeList)
+├── CategoryListFallback.tsx # Repli : build sans liste catégorie (instance à part de NativeHomeList, recréée par tab) ou sans liste native (FlashList)
+└── CategoryHomeList.tsx     # Posée PAR-DESSUS « Tout » quand un tab est actif ; pied de liste, tap onglet Home
+modules/home-list/category.ts                       # `CategoryListView`, `isCategoryListAvailable`
+modules/home-list/ios/category/                     # CategoryListModule, HLCategoryListView, RowCell, CardCell, BannerCell, Models
+modules/home-list/android/.../homelist/category/    # mêmes fichiers (Kotlin)
+```
+
+- **Données** : `useCategoryFeed(category)` — clé `tab|ville|compte` ; au rendu où
+  la clé change, l'ancien tab n'est déjà plus servi. `genRef` ignore les réponses
+  d'un tab précédent et libère tout de suite leurs verrous. Pull-to-refresh : contenu
+  gardé jusqu'à la réponse. Grille : N = cartes entières à l'écran + 1 qui dépasse,
+  max 4 (390 dp → 3).
+- **Liste native dédiée** (`CategoryList`, module Expo distinct de `HomeList` dans
+  le même dossier, utilitaires sans état partagés : `HLImage`, squelettes, textes,
+  couleurs) : bannière + rangées de cartes V7 aérées (150 × 190), sans en-tête.
+- **Révélation, à CHAQUE changement de tab** (`feedKey`) : bannière ET rangées
+  repassent en squelette, liste en haut ; porte ouverte quand bannière + 1re rangée
+  sont prêtes, puis `revealHold` (500 ms) ; ensuite les rangées sortent **dans
+  l'ordre, du haut vers le bas** (une rangée prête attend celle du dessus, une rangée
+  passée au-dessus de l'écran ne bloque pas). Retour par le scroll sur le même tab :
+  affichage direct.
+- **Appui** : `onMenuPress { rowId, dishId }` → `dishToMenu` (livraison de la
+  boutique du plat).
+- **Statistiques** : impressions de « Tout » en pause pendant un tab (`setShopImpressionsPaused`).
+- ⚠️ **Build** : la liste native catégorie exige un build EAS. Une build antérieure
+  (OTA) prend `CategoryListFallback` : données séparées aussi, mais rendu par une
+  instance à part de l'ancienne liste (grille `HL_GRID` = 8).
 
 ---
 

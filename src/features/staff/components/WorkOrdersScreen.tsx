@@ -107,13 +107,18 @@ function StaffStage({ stage, topOffset, filterOpen, setFilterOpen }: StageProps)
 
 function DriverStage({ stage, topOffset, filterOpen, setFilterOpen }: StageProps) {
   const { orders, loading, refresh, updateStatus } = useDriver();
+  // Mode livreur : une boutique a la fois (celle du header).
+  const { driverShopId } = useMerchantMode();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dateOptions, setDateOptions] = useState<DateOption[]>([]);
   const [storeFilter, setStoreFilter] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<string | null>(null);
   const todayISO = new Date().toISOString().substring(0, 10);
 
-  const stageOrders = useMemo(() => orders.filter((o) => o.status === DRIVER_STATUS[stage]), [orders, stage]);
+  const stageOrders = useMemo(
+    () => orders.filter((o) => o.status === DRIVER_STATUS[stage] && (!driverShopId || o.fastFoodId === driverShopId)),
+    [orders, stage, driverShopId],
+  );
   const stores = useMemo(
     () =>
       [...new Set(stageOrders.map((o) => o.fastFoodId).filter(Boolean))].map((id) => ({

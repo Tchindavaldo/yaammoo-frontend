@@ -2,7 +2,8 @@
 // Header du mode travail, copie de MerchantHomeHeader (R16) en miroir :
 // avatar de la boutique (+ pastille) a GAUCHE, nom de la boutique + contact,
 // et a DROITE le bouton filtres a la place de la pastille « Mode client ».
-// Avatar et textes identiques a l'original (boutique).
+// Avatar et textes identiques a l'original (boutique) ; livreur = la boutique
+// pour laquelle il livre (choisie en entrant en mode livreur).
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,12 +19,10 @@ import { t, useLanguage } from "@/src/i18n";
 export function WorkHeader({ onFilter }: { onFilter?: () => void }) {
   useLanguage();
   const { user, userData } = useAuth();
-  const { fastFoodId, isDriverMode, can } = useMerchantMode();
+  const { fastFoodId, isDriverMode, driverShopId, can } = useMerchantMode();
   const contact = userData?.infos.email || user?.email || userData?.infos.numero?.toString() || "";
-  const shop = useShopIdentity(isDriverMode ? null : fastFoodId);
-  // Livreur : pas de boutique, son nom a la place.
-  const person = [userData?.infos.prenom, userData?.infos.nom].filter(Boolean).join(" ");
-  const name = isDriverMode ? person : shop?.name || "";
+  const shop = useShopIdentity(isDriverMode ? driverShopId : fastFoodId);
+  const name = shop?.name || "";
   const openShop = () => {
     if (isDriverMode) return;
     if (!can("fastfood.update")) return showToast(t("Vous n'avez pas les droits pour accéder à cela"), "error");
@@ -34,7 +33,7 @@ export function WorkHeader({ onFilter }: { onFilter?: () => void }) {
     <View style={styles.row}>
       {/* Avatar : ouvre les infos de la boutique (modification). */}
       <Pressable onPress={openShop} hitSlop={6} accessibilityRole="button" accessibilityLabel={t("Informations de la boutique")} style={styles.avatar}>
-        {!isDriverMode && shop?.imageUrl ? (
+        {shop?.imageUrl ? (
           <Image source={{ uri: shop.imageUrl }} style={styles.logo} cachePolicy="memory-disk" transition={0} />
         ) : (
           <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>

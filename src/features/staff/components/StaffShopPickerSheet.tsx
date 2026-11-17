@@ -14,13 +14,13 @@ interface Props {
   shops: ShopOption[];
   onClose: () => void;
   onPick: (fastFoodId: string) => void;
-  /** Ajoute le choix « Livreur » (compte livreur). */
-  showDriver?: boolean;
-  onPickDriver?: () => void;
+  /** Boutiques ou le compte est livreur (une ligne chacune). */
+  driverShops?: { fastFoodId: string; name: string }[];
+  onPickDriver?: (fastFoodId: string) => void;
 }
 
 /** Choix de la boutique au passage en mode personnel (employe de plusieurs boutiques). */
-export function StaffShopPickerSheet({ visible, shops, onClose, onPick, showDriver = false, onPickDriver }: Props) {
+export function StaffShopPickerSheet({ visible, shops, onClose, onPick, driverShops = [], onPickDriver }: Props) {
   useLanguage();
   const { mounted, backdropStyle, sheetStyle, onSheetLayout } = useSheetAnimation(visible);
   const { bottom } = useSheetSafeInsets();
@@ -46,16 +46,16 @@ export function StaffShopPickerSheet({ visible, shops, onClose, onPick, showDriv
             <Ionicons name="chevron-forward" size={16} color={DS.muted} />
           </Pressable>
         ))}
-        {showDriver && (
-          <Pressable style={styles.row} onPress={onPickDriver}>
+        {driverShops.map((d) => (
+          <Pressable key={"driver-" + d.fastFoodId} style={styles.row} onPress={() => onPickDriver?.(d.fastFoodId)}>
             <Ionicons name="bicycle-outline" size={18} color={DS.ink} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{t("Livreur")}</Text>
-              <Text style={styles.sub}>{t("Mes livraisons")}</Text>
+              <Text style={styles.name} numberOfLines={1}>{d.name || t("Boutique")}</Text>
+              <Text style={styles.sub}>{t("Livreur")}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={DS.muted} />
           </Pressable>
-        )}
+        ))}
       </Animated.View>
       <GlobalToastHost modal />
     </Modal>

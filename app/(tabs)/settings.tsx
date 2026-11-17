@@ -60,7 +60,7 @@ export default function SettingsScreen() {
   const [headerHeight, setHeaderHeight] = useState(insets.top + 150);
   const tabBarHeight = useTabBarHeight();
   const router = useRouter();
-  const { isMerchant, isMerchantMode, isStaffMode, isDriverMode, choiceCount, shops, setMerchantMode, enterShop, enterDriver } = useMerchantMode();
+  const { isMerchant, isMerchantMode, isStaffMode, isDriverMode, choiceCount, shops, driverShops, setMerchantMode, enterShop, enterDriver } = useMerchantMode();
   const [shopPickerVisible, setShopPickerVisible] = useState(false);
   const switchMode = () => {
     // Plusieurs boutiques (postes) : l'employe choisit.
@@ -255,10 +255,10 @@ export default function SettingsScreen() {
       <StaffShopPickerSheet
         visible={shopPickerVisible}
         shops={shops}
-        showDriver={isDriver}
-        onPickDriver={() => {
+        driverShops={driverShops}
+        onPickDriver={(id) => {
           setShopPickerVisible(false);
-          enterDriver();
+          enterDriver(id);
           router.navigate("/(tabs)");
         }}
         onClose={() => setShopPickerVisible(false)}

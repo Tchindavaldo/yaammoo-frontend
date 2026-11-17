@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { staffService } from "@/src/features/staff/services/staffService";
+import { driverService } from "@/src/features/driver/services/driverService";
 
 /**
  * Mode boutique / mode client, et boutique ACTIVE.
@@ -10,7 +11,9 @@ import { staffService } from "@/src/features/staff/services/staffService";
  * - Mode marchand : boutique possedee active.
  * - Mode personnel : poste d'employe actif ; meme interface que le marchand,
  *   les actions hors permissions sont grisees (`can`). Le backend les refuse aussi.
- * - Mode livreur : compte avec `driverId`, onglets = ses livraisons.
+ * - Mode livreur : compte avec `driverId`, rattache a une ou plusieurs
+ *   boutiques (`GET /driver/stores/:driverId`). Une boutique active a la fois :
+ *   header = cette boutique, onglets = ses livraisons pour elle.
  * - Mode client : aucune boutique active.
  * Demarrage : sa boutique, sinon son poste s'il n'en a qu'un, sinon mode
  * livreur s'il est livreur, sinon mode client (plusieurs choix : il choisit
@@ -45,7 +48,10 @@ interface Value {
   /** Passe en mode client (`false`) ou sur une boutique. */
   setMerchantMode: (on: boolean) => void;
   enterShop: (fastFoodId: string) => void;
-  enterDriver: () => void;
+  /** Boutiques du livreur ; `enterDriver(id)` = mode livreur pour cette boutique. */
+  driverShops: { fastFoodId: string; name: string }[];
+  driverShopId: string | null;
+  enterDriver: (fastFoodId: string) => void;
   /** Nombre de modes de travail possibles (boutiques + livreur). */
   choiceCount: number;
 }
@@ -59,6 +65,8 @@ const Ctx = createContext<Value>({
   isWorkMode: false,
   choiceCount: 0,
   enterDriver: () => {},
+  driverShops: [],
+  driverShopId: null,
   shops: [],
   activeShop: null,
   fastFoodId: null,
@@ -67,15 +75,14 @@ const Ctx = createContext<Value>({
   enterShop: () => {},
 });
 
-/** Mode actif : id de boutique, DRIVER, ou null (client). */
-const DRIVER = "__driver__";
+/** Mode actif : id de boutique, `driver:<fastFoodId>`, ou null (client). */
+const DRIVER = "driver:";
 
-const defaultActive = (shops: ShopOption[], isDriver: boolean): string | null => {
+const defaultActive = (shops: ShopOption[], driverIds: string[]): string | null => {
   const own = shops.find((s) => s.isOwner);
   if (own) return own.fastFoodId;
-  const choices = shops.length + (isDriver ? 1 : 0);
-  if (choices !== 1) return null;
-  return shops[0]?.fastFoodId ?? DRIVER;
+  if (shops.length + driverIds.length !== 1) return null;
+  return shops[0]?.fastFoodId ?? DRIVER + driverIds[0];
 };
 
 export function MerchantModeProvider({ children }: { children: React.ReactNode }) {
@@ -85,6 +92,21 @@ export function MerchantModeProvider({ children }: { children: React.ReactNode }
   const ownId = userData?.isMarchand && userData?.fastFoodId ? userData.fastFoodId : null;
   const [posts, setPosts] = useState<ShopOption[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [driverShops, setDriverShops] = useState<{ fastFoodId: string; name: string }[]>([]);
+
+  useEffect(() => {
+    setDriverShops([]);
+    if (!uid || !isDriver) return;
+    let alive = true;
+    driverService.getMyStores(uid).then(
+      (list) => alive && setDriverShops(list.map((x) => ({ fastFoodId: x.id, name: x.nom }))),
+      (e) => console.error("Error fetching driver stores:", e),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [uid, isDriver]);
+  const driverIds = driverShops.map((d) => d.fastFoodId);
 
   useEffect(() => {
     setPosts([]);
@@ -118,7 +140,8 @@ export function MerchantModeProvider({ children }: { children: React.ReactNode }
 
   // Changement de compte / de postes : on repart sur la boutique par defaut.
   const shopsKey = shops.map((s) => s.fastFoodId).join(",");
-  useEffect(() => setActiveId(defaultActive(shops, isDriver)), [uid, shopsKey, isDriver]); // eslint-disable-line react-hooks/exhaustive-deps
+  const driverKey = driverIds.join(",");
+  useEffect(() => setActiveId(defaultActive(shops, driverIds)), [uid, shopsKey, driverKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeShop = shops.find((s) => s.fastFoodId === activeId) ?? null;
 
@@ -128,8 +151,8 @@ export function MerchantModeProvider({ children }: { children: React.ReactNode }
   );
 
   const setMerchantMode = useCallback(
-    (on: boolean) => setActiveId(on ? defaultActive(shops, isDriver) : null),
-    [shops, isDriver],
+    (on: boolean) => setActiveId(on ? defaultActive(shops, driverIds) : null),
+    [shops, driverKey], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const value = useMemo<Value>(
@@ -138,10 +161,12 @@ export function MerchantModeProvider({ children }: { children: React.ReactNode }
       isMerchantMode: !!activeShop,
       isStaffMode: !!activeShop && !activeShop.isOwner,
       isDriver,
-      isDriverMode: activeId === DRIVER,
-      isWorkMode: activeId === DRIVER || (!!activeShop && !activeShop.isOwner),
-      choiceCount: shops.length + (isDriver ? 1 : 0),
-      enterDriver: () => setActiveId(DRIVER),
+      isDriverMode: !!activeId?.startsWith(DRIVER),
+      isWorkMode: !!activeId?.startsWith(DRIVER) || (!!activeShop && !activeShop.isOwner),
+      choiceCount: shops.length + driverShops.length,
+      driverShops,
+      driverShopId: activeId?.startsWith(DRIVER) ? activeId.slice(DRIVER.length) : null,
+      enterDriver: (id: string) => setActiveId(DRIVER + id),
       shops,
       activeShop,
       fastFoodId: activeShop?.fastFoodId ?? ownId,
@@ -149,7 +174,7 @@ export function MerchantModeProvider({ children }: { children: React.ReactNode }
       setMerchantMode,
       enterShop: setActiveId,
     }),
-    [shops, activeShop, activeId, isDriver, ownId, can, setMerchantMode],
+    [shops, activeShop, activeId, isDriver, driverShops, ownId, can, setMerchantMode],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **28 règles numérotées R1 → R28.** Toute nouvelle règle ajoutée à ce fichier
+> **29 règles numérotées R1 → R29.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -430,3 +430,20 @@ la fermeture (comme `AccountSheet`). Modal en `animationType="none"` + hook
 avec la sheet : interdit ; `"fade"` seul fait apparaître la sheet en fondu :
 interdit aussi. Seule une page plein écran (Modal non transparente, ex.
 `LegalReadSheet`) peut glisser. Détail : `architecture/blur-safe-area.md`.
+
+## R29 — Fin de travail : DEMANDE de fusion dans `dev` (OBLIGATOIRE)
+
+Dès qu'un travail est fini sur une branche de travail (`feature/…`, `debug/…`,
+branche de session), on **ne s'arrête pas** sur cette branche en silence :
+
+1. **Une seule branche de travail par session** : on continue sur la branche
+   courante, on n'en crée pas de nouvelles à chaque demande.
+2. **Demander la fusion avec l'outil `AskUserQuestion`** (boutons Valider /
+   Refuser), jamais par un simple message texte : l'utilisateur clique, on agit.
+3. **Valider** = fusion de la branche dans `dev` + push de `dev`, une seule fois.
+   **Refuser** = rien n'est fusionné, et on le dit en 1 phrase.
+4. Ne jamais laisser croire qu'un travail est dans `dev` s'il n'y est pas.
+
+**Appliqué par le harness** : `.claude/hooks/ask-merge-before-stop.sh` (hook
+`Stop`) bloque la fin du tour tant que la branche a des commits absents de
+`origin/dev`, et exige la demande `AskUserQuestion`. Règle identique côté backend (R25).

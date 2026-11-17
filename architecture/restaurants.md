@@ -391,8 +391,10 @@ tab catégorie : `category/useCategoryLoader.ts` + `CategoryLoadingScreen`, copi
   en-tête encore sur l'ancien onglet, liste en squelettes, puis le loader = flash.
   Donc : « Tout » envoie le passage en squelettes (`loading` + liste vide) et
   `resetReveal` via `src/utils/afterPaint.ts` (loader déjà à l'écran) ; la grille
-  catégorie n'envoie RIEN pendant la première page (`NativeCategoryList`), elle
-  garde l'ancien tab sous le loader.
+  catégorie envoie ses squelettes de première page de la même façon
+  (`afterPaint`, `NativeCategoryList`). Ne RIEN envoyer laissait l'ancien tab
+  sous le loader : il réapparaissait une image au départ du loader (vu sur
+  Poulet / Autre).
 - **Au moins une boutique / un plat** : le loader part, squelettes puis sortie en
   fondu **du haut vers le bas** (« Tout » : `holdReveal` iOS / `HLRevealGate.holding`
   Android, `pump` ; au retour d'un tab, squelettes 500 ms d'abord, les images étant

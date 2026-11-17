@@ -12,6 +12,7 @@ import {
 import { useLanguage } from "@/src/i18n";
 import { fontFor } from "@/src/theme/fonts";
 import type { AppBanner } from "@/src/types";
+import { afterPaint } from "@/src/utils/afterPaint";
 import { createCategoryRowCache } from "./categoryRows";
 import { dishIdOf, type DishGridRow, type GridDish } from "./dishGrid";
 
@@ -113,12 +114,6 @@ export const NativeCategoryList: React.FC<Props> = ({
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    // Premiere page en cours : RIEN n'est envoye, le natif garde l'ancien tab
-    // (cache sous le loader). Un appel natif part avant que React pose le
-    // loader a l'ecran : les squelettes se voyaient une image avant lui (flash
-    // au changement de tab, vu image par image). Tab neuf : squelettes natifs
-    // par defaut, montes dans le meme rendu que le loader.
-    if (loading) return;
     const prev = sentRef.current?.feedKey === feedKey ? sentRef.current : null;
     let start = 0;
     if (prev) {
@@ -135,24 +130,33 @@ export const NativeCategoryList: React.FC<Props> = ({
       prev.footerIsEmpty === footerIsEmpty &&
       prev.loading === loading;
     if (same) return;
-    sentRef.current = { feedKey, rows: records, ghostCount, hasMore, footerText, footerIsEmpty, loading };
-    view
-      .updateRows({
-        feedKey,
-        start,
-        rows: records.slice(start),
-        total: records.length,
-        hasMore,
-        ghostCount,
-        footerText,
-        footerIsEmpty,
-        loading,
-      })
-      .catch((error) => {
-        // Etat natif inconnu : le prochain envoi repartira de la rangee 0.
-        sentRef.current = null;
-        console.warn("[NATIVE] categorie : updateRows a echoue", error);
-      });
+    const send = () => {
+      sentRef.current = { feedKey, rows: records, ghostCount, hasMore, footerText, footerIsEmpty, loading };
+      view
+        .updateRows({
+          feedKey,
+          start,
+          rows: records.slice(start),
+          total: records.length,
+          hasMore,
+          ghostCount,
+          footerText,
+          footerIsEmpty,
+          loading,
+        })
+        .catch((error) => {
+          // Etat natif inconnu : le prochain envoi repartira de la rangee 0.
+          sentRef.current = null;
+          console.warn("[NATIVE] categorie : updateRows a echoue", error);
+        });
+    };
+    // Premiere page en cours : le passage en squelettes du NOUVEAU tab part une
+    // fois le loader A L'ECRAN (`afterPaint`). Envoye tout de suite, le natif
+    // l'appliquait une image avant le loader (flash des squelettes, 0 plat).
+    // Pas envoye du tout, l'ANCIEN tab restait dessous et reapparaissait une
+    // image au depart du loader (flash vu image par image sur Poulet / Autre).
+    if (loading) return afterPaint(send);
+    send();
   }, [feedKey, records, ghostCount, hasMore, footerText, footerIsEmpty, loading]);
 
   const nativeBanners = useMemo<CategoryListBanner[]>(

@@ -4,6 +4,7 @@
 // (sheet affichee des l'ouverture du home), l'animation partait avant que la
 // Modal soit a l'ecran : voile absent, sheet blanche confondue avec le home.
 import { useEffect, useRef, useState } from "react";
+import { trackBoot } from "@/src/services/netTelemetry";
 import { Animated, Easing, LayoutChangeEvent } from "react-native";
 
 export function useAdhesionSheetAnimation(visible: boolean) {
@@ -28,7 +29,9 @@ export function useAdhesionSheetAnimation(visible: boolean) {
   const onShow = () => {
     progress.setValue(0);
     veil.setValue(0);
-    Animated.timing(veil, { toValue: 1, duration: 320, useNativeDriver: false }).start();
+    Animated.timing(veil, { toValue: 1, duration: 320, useNativeDriver: false }).start(r =>
+      trackBoot("adhesion voile fin", { finished: r.finished, veil: (veil as any).__getValue?.() }),
+    );
     Animated.timing(progress, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   };
 

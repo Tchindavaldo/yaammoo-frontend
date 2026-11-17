@@ -12,7 +12,6 @@ import {
 import { useLanguage } from "@/src/i18n";
 import { fontFor } from "@/src/theme/fonts";
 import type { AppBanner } from "@/src/types";
-import { afterPaint } from "@/src/utils/afterPaint";
 import { createCategoryRowCache } from "./categoryRows";
 import { dishIdOf, type DishGridRow, type GridDish } from "./dishGrid";
 
@@ -66,8 +65,6 @@ interface Props {
   onEndReached: () => void;
   onDishPress: (dish: GridDish) => void;
   onBannerPress: (banner: AppBanner) => void;
-  /** Rangees du tab `feedKey` posees a l'ecran par le natif (le loader peut partir). */
-  onApplied?: (feedKey: string) => void;
 }
 
 export const NativeCategoryList: React.FC<Props> = ({
@@ -88,7 +85,6 @@ export const NativeCategoryList: React.FC<Props> = ({
   onEndReached,
   onDishPress,
   onBannerPress,
-  onApplied,
 }) => {
   const lang = useLanguage();
   const cacheRef = useRef(createCategoryRowCache());
@@ -114,8 +110,6 @@ export const NativeCategoryList: React.FC<Props> = ({
   // Envoi PARTIEL : a partir de la premiere rangee qui differe de ce que le
   // natif a deja. Nouveau tab (`feedKey`) : tout repart de la rangee 0.
   const sentRef = useRef<SentState | null>(null);
-  const onAppliedRef = useRef(onApplied);
-  onAppliedRef.current = onApplied;
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
@@ -154,15 +148,10 @@ export const NativeCategoryList: React.FC<Props> = ({
         footerIsEmpty,
         loading,
       })
-      // Le natif peut poser les rangees APRES que React retire le loader
-      // (gros tab, ex. « Autres ») : l'ancien tab se voyait une image. Le
-      // loader attend donc cette confirmation, plus une image a l'ecran.
-      .then(() => afterPaint(() => onAppliedRef.current?.(feedKey)))
       .catch((error) => {
         // Etat natif inconnu : le prochain envoi repartira de la rangee 0.
         sentRef.current = null;
         console.warn("[NATIVE] categorie : updateRows a echoue", error);
-        onAppliedRef.current?.(feedKey);
       });
   }, [feedKey, records, ghostCount, hasMore, footerText, footerIsEmpty, loading]);
 

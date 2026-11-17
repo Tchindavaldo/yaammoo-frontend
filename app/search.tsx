@@ -1,6 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -46,7 +46,9 @@ function SearchContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const bottomInset = usePageBottomInset();
-  const [query, setQuery] = useState("");
+  // `?q=` : ouverte depuis une notification (nom du plat ou de la boutique).
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const [query, setQuery] = useState(q ? String(q) : "");
   const [category, setCategory] = useState(0);
   const { results, loading, error, loadMore } = useShopSearch(query, category);
   const checkout = useHomeCheckout();

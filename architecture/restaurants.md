@@ -21,7 +21,7 @@ src/features/restaurants/
 ├── hooks/useFastFoodHomeSettings.ts  # Contexte : `homeSettings` serveur + copie gardée du lancement précédent
 ├── hooks/useFastFoods.ts           # Wrapper context (filtre « boutique sans plat »)
 ├── hooks/useBannerLoop.ts          # Boucle infinie du carrousel (clones, téléport, autoplay, scrollX)
-├── hooks/useShopSearchDeepLink.ts  # `/(tabs)?shop=<nom>` (annonce de boutique) → recherche ouverte sur la boutique
+
 ├── hooks/useHomeListScroll.ts      # Home : loader bas (Animated, sans rendu), fetch à l'entrée des fantômes, tap onglet Home, bords de la liste native
 ├── hooks/usePageRevealLock.ts      # Home : verrou de page (PageRevealGate), déblocage au calme, onContentSizeChange
 ├── hooks/useHomeListData.ts        # Home : listData (bannière + boutiques + fantômes), firstScreenUris, drawDistance (échauffement)
@@ -391,8 +391,10 @@ tab catégorie : `category/useCategoryLoader.ts` + `CategoryLoadingScreen`, copi
   en-tête encore sur l'ancien onglet, liste en squelettes, puis le loader = flash.
   Donc : « Tout » envoie le passage en squelettes (`loading` + liste vide) et
   `resetReveal` via `src/utils/afterPaint.ts` (loader déjà à l'écran) ; la grille
-  catégorie n'envoie RIEN pendant la première page (`NativeCategoryList`), elle
-  garde l'ancien tab sous le loader.
+  catégorie envoie ses squelettes de première page de la même façon
+  (`afterPaint`, `NativeCategoryList`). Ne RIEN envoyer laissait l'ancien tab
+  sous le loader : il réapparaissait une image au départ du loader (vu sur
+  Poulet / Autre).
 - **Au moins une boutique / un plat** : le loader part, squelettes puis sortie en
   fondu **du haut vers le bas** (« Tout » : `holdReveal` iOS / `HLRevealGate.holding`
   Android, `pump` ; au retour d'un tab, squelettes 500 ms d'abord, les images étant
@@ -881,7 +883,6 @@ successives (coût des cartes, virtualisation, footer, `onEndReached`) ont toute
 - **Rétrocompatibilité** vérifiée dans les deux sens : ancien front / nouveau
   back (pas de `limit` → catalogue complet) et nouveau front / ancien back
   (pas de `nextCursor` → `hasMore` false, pas de `loadMore`).
-
 
 ## Mise a jour en direct des prix et zones
 

@@ -147,8 +147,11 @@ Wrapper simple autour de `useNotificationContext()`. Exporté pour compat.
 | `order_cancel_by_user` | `/(tabs)/notifications` | Marchand — annulation client |
 | `order_cancel_by_merchant` | `/(tabs)/notifications` | User — annulation marchand |
 | `bonus` | `/(tabs)/settings?section=bonus` | User — bonus éligible (ouvre UserBonusSheet) |
-| `boutique_broadcast` | `/(tabs)?shop=<shopName>` | User — annonce d'une boutique (image, chip « Voir la boutique », le home ouvre sa recherche) — voir [merchant-broadcast.md](./merchant-broadcast.md) |
+| `boutique_broadcast` | `/search?q=<shopName>` | User — annonce d'une boutique (image, chip « Voir la boutique », page Recherche sur la boutique) — voir [merchant-broadcast.md](./merchant-broadcast.md) |
 | *(inconnu)* | `/(tabs)/notifications` | Fallback |
+
+> Toute notif portant `menuName` (plat) ouvre `/search?q=<plat>` en priorite ;
+> une ancienne route backend `…?shop=<nom>` est redirigee vers `/search?q=<nom>`.
 
 ### Routes réelles émises par le backend (override via `notif.route`)
 

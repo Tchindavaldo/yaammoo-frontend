@@ -115,7 +115,7 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity 
   const firstPageInFlightRef = useRef<Promise<void> | null>(null);
 
 
-  const fetchPageOnce = useCallback(async (cursor?: string, q?: string) => {
+  const fetchPageOnce = useCallback(async (cursor?: string, q?: string, quiet = false) => {
     const isFirstPage = !cursor;
     /**
      * Numero de troncature au moment du DEPART de cette requete.
@@ -148,8 +148,12 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity 
       // SONDE [ROW] : un fetch premiere page hors boot = remplacement brutal
       // de la liste (meme effet qu'une troncature). A retirer avec la sonde.
       if (isFirstPage) console.log(`[ROW] FETCH-P1 q=${q ?? ""}`);
-      if (isFirstPage) setLoading(true);
-      else setLoadingMore(true);
+      // `quiet` : premiere page relancee en ARRIERE-PLAN (session restauree,
+      // retour du reseau) alors qu'une reponse est deja affichee. Sans
+      // boutique, `loading` faisait revenir le loader plein ecran : flash.
+      // Le `finally` l'eteint quand meme (un reset de compte l'a peut-etre allume).
+      if (isFirstPage && !quiet) setLoading(true);
+      else if (!isFirstPage) setLoadingMore(true);
       setError(null);
 
       // Route PUBLIQUE mais à auth OPTIONNELLE : sans Bearer, le backend ne sait
@@ -326,10 +330,10 @@ export function useFastFoodFetch({ setFastFoods, pagination, settings, homeCity 
     pendingPageRef,
   ]);
 
-  const fetchPage = useCallback(async (cursor?: string, q?: string) => {
+  const fetchPage = useCallback(async (cursor?: string, q?: string, quiet = false) => {
     if (!cursor && !q) {
       if (firstPageInFlightRef.current) return firstPageInFlightRef.current;
-      const run = fetchPageOnce(cursor, q).finally(() => {
+      const run = fetchPageOnce(cursor, q, quiet).finally(() => {
         firstPageInFlightRef.current = null;
       });
       firstPageInFlightRef.current = run;

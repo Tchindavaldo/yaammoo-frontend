@@ -446,7 +446,7 @@ page), et la `value` reste mémoïsée.
 | Clé | Rôle |
 |---|---|
 | `fastFoods` | Boutiques chargées (pages cumulées). |
-| `loading` | Première page / refresh / recherche. |
+| `loading` | Première page / refresh / recherche. ⚠️ PAS pour une première page relancée en arrière-plan après une réponse déjà affichée (session restaurée, retour du réseau) : `fetchPage(cursor, q, quiet)`. Sans boutique, le loader plein écran revenait sur la page vide (flash au lancement / au premier retour sur « Tout »). |
 | `loadingMore` | Page suivante uniquement. |
 | `hasMore` | `false` quand tout est chargé. |
 | `loadMore()` | Page suivante. Sans effet si déjà en cours ou fin atteinte. |

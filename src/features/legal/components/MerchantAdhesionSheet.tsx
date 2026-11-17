@@ -10,10 +10,9 @@ import { showToast } from "@/src/services/globalToast";
 import { DS } from "@/src/theme/ds";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { trackBoot } from "@/src/services/netTelemetry";
 import React, { useEffect, useState } from "react";
 import { useAdhesionSheetAnimation } from "./useAdhesionSheetAnimation";
-import { ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { t, useLanguage } from "@/src/i18n";
 import { useLegal } from "../context/LegalContext";
 import { LegalReadSheet } from "./LegalReadSheet";
@@ -27,6 +26,9 @@ const ROLES = [
 export function MerchantAdhesionSheet() {
   useLanguage();
   const insets = useSheetSafeInsets();
+  // Hauteur ecran EXPLICITE : sous Fabric iOS, le contenu de la Modal a une
+  // hauteur 0 (mesure Sentry : voile 390x0), le voile en absoluteFill etait invisible.
+  const screen = useWindowDimensions();
   const { status, document, loadDocument, submitAdhesion } = useLegal();
   const visible = !!status?.merchantAdhesionPending && !status?.mustAccept;
   const anim = useAdhesionSheetAnimation(visible);
@@ -51,11 +53,8 @@ export function MerchantAdhesionSheet() {
 
   if (!anim.mounted) return null;
   return (
-    <Modal visible transparent animationType="none" onRequestClose={() => {}} onShow={() => { trackBoot("adhesion onShow"); anim.onShow(); }} statusBarTranslucent>
-      <Animated.View
-        style={[styles.backdrop, anim.backdropStyle]}
-        onLayout={e => trackBoot("adhesion voile layout", e.nativeEvent.layout)}
-      >
+    <Modal visible transparent animationType="none" onRequestClose={() => {}} onShow={anim.onShow} statusBarTranslucent>
+      <Animated.View style={[styles.backdrop, { width: screen.width, height: screen.height }, anim.backdropStyle]}>
         {/* iPhone : voile flou sous le voile sombre (fondu avec lui). */}
         {Platform.OS === "ios" && <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />}
       </Animated.View>
@@ -102,7 +101,7 @@ export function MerchantAdhesionSheet() {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: Platform.OS === "android" ? DS.backdropStrong : DS.backdrop },
+  backdrop: { position: "absolute", top: 0, left: 0, backgroundColor: Platform.OS === "android" ? DS.backdropStrong : DS.backdrop },
   wrap: { flex: 1, justifyContent: "flex-end" },
   // Arrondis marques + ombre vers le haut : la sheet se detache du home (blanc lui aussi).
   sheet: {

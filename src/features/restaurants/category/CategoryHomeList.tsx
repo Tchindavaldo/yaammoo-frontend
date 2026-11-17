@@ -94,15 +94,20 @@ export const CategoryHomeList: React.FC<Props> = ({
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.cover]}>
-      {isCategoryListAvailable ? (
-        <NativeCategoryList
-          {...common}
-          sidePadding={Theme.design.horizontalPadding}
-          onDishPress={handleDishPress}
-        />
-      ) : (
-        <CategoryListFallback {...common} onMenuPress={onMenuPress} />
-      )}
+      {/* Grille MASQUEE (opacite 0) tant que le loader est la : ses squelettes
+          se voyaient avec lui a l'entree du tab (flash). `collapsable`
+          garde la meme vue native (pas d'aplatissement a chaque bascule). */}
+      <View collapsable={false} style={[styles.fill, loader && styles.hidden]}>
+        {isCategoryListAvailable ? (
+          <NativeCategoryList
+            {...common}
+            sidePadding={Theme.design.horizontalPadding}
+            onDishPress={handleDishPress}
+          />
+        ) : (
+          <CategoryListFallback {...common} onMenuPress={onMenuPress} />
+        )}
+      </View>
       {loader && <CategoryLoadingScreen bottomInset={tabBarHeight} />}
     </View>
   );
@@ -111,4 +116,6 @@ export const CategoryHomeList: React.FC<Props> = ({
 const styles = StyleSheet.create({
   // Fond plein : « Tout », dessous, ne transparait jamais.
   cover: { backgroundColor: DS.bg },
+  fill: { flex: 1 },
+  hidden: { opacity: 0 },
 });

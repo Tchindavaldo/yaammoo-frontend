@@ -384,7 +384,8 @@ tab catégorie : `category/useCategoryLoader.ts` + `CategoryLoadingScreen`, copi
 - Pendant une requête (premier chargement, ville, compte, changement de tab, retour
   sur « Tout ») : loader « Recherche des meilleurs plats… » PAR-DESSUS la liste,
   qui reste montée dessous et s'y prépare sans être vue (« Tout » : squelettes +
-  `resetReveal()`, liste en haut).
+  `resetReveal()`, liste en haut ; tab catégorie : grille en plus à opacité 0 tant
+  que le loader est là, ses squelettes se voyaient sinon avec lui à l'entrée du tab).
 - **Au moins une boutique / un plat** : le loader part, squelettes puis sortie en
   fondu **du haut vers le bas** (« Tout » : `holdReveal` iOS / `HLRevealGate.holding`
   Android, `pump` ; au retour d'un tab, squelettes 500 ms d'abord, les images étant

@@ -82,6 +82,8 @@ export const DS = {
   dangerSoft: "#fee2e2",
   warning: "#F59E0B",
   backdrop: "rgba(20,20,22,0.45)",
+  /** Voile plus sombre (Android : pas de flou derriere). */
+  backdropStrong: "rgba(20,20,22,0.62)",
 
   // --- Cartes menu aerees sur photo (HOME_DESIGN = "aere") ---
   star: "#f5a623",

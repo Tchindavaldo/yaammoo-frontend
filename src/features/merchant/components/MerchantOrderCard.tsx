@@ -423,7 +423,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
           <View style={styles.summaryBottomRow}>
             {cancelTarget ? (
               // Demande d'annulation du client : a la place des chips, decision avant toute validation.
-              <TouchableOpacity style={[styles.summaryValidateBtn, { backgroundColor: DS.ink }, !can("orders.cancel") && { opacity: 0.4 }]} disabled={!can("orders.cancel")} onPress={() => setCancelVisible(true)}>
+              <TouchableOpacity style={[styles.summaryValidateBtn, { backgroundColor: DS.danger }, !can("orders.cancel") && { opacity: 0.4 }]} disabled={!can("orders.cancel")} onPress={() => setCancelVisible(true)}>
                 <Ionicons name="alert-circle-outline" size={16} color="white" />
                 <Text style={styles.summaryValidateBtnText}>{t("Demande d'annulation")}</Text>
               </TouchableOpacity>

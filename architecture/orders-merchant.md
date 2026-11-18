@@ -281,9 +281,11 @@ déléguée (`order.driverId` posé, pas encore en `delivering`) affiche un badg
 ## Demande d'annulation (MerchantCancelRequestSheet.tsx)
 
 Toute boutique (par défaut) : le client ne peut plus annuler seul, il demande (cf. [orders-client.md](./orders-client.md)).
-Une commande `pending` qui porte `cancelRequest.status === "pending"` remplace le bouton
-« Valider » de `MerchantOrderCard` (variante standard, ligne groupée comprise) par un
-bouton **« Annulation »** (droit `orders.cancel`). Il ouvre la sheet (R28) :
+Une commande `pending` qui porte `cancelRequest.status === "pending"` remplace les chips
+Extras/Boisson de `MerchantOrderCard` (variante standard, ligne groupée comprise) par un
+bouton **« Demande d'annulation »** (droit `orders.cancel`) ; « Valider » reste affiché
+mais **grisé et inactif** (carte et sheet, `canValidate` à false) tant que le marchand n'a
+pas répondu. Le bouton ouvre la sheet (R28) :
 
 | Choix | Appel | Effet |
 |---|---|---|

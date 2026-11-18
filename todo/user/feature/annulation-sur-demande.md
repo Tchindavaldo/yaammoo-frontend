@@ -2,30 +2,26 @@
 
 **Gravité : ÉLEVÉE — à régler rapidement.**
 
-Aujourd'hui le client annule seul (`cancelByUser` passe tel quel côté backend).
-Les marchands qui travaillent par WhatsApp (module WhatsApp de rauval-backend)
-ne peuvent pas suivre une annulation imposée : l'annulation devient une
-**demande** que le marchand accepte ou refuse. Pendant de la tâche backend
+L'annulation par le client devient une **demande** que le marchand accepte ou
+refuse. Pendant de la tâche backend
 `yaammoo-backend/todo/user/feature/annulation-sur-demande.md`.
 
-## Côté client
+## Fait (boutique WhatsApp uniquement)
 
-[ ] Remplacer « Annuler » par « Demander l'annulation »
-    - possible seulement tant que la commande n'est pas commencée (`pending`)
-    - dès `processing` (préparation commencée) : bouton masqué, message clair
-      « La boutique a déjà commencé votre commande, elle ne peut plus être annulée »
-[ ] Afficher l'état « Annulation demandée » en attendant la réponse du marchand
-[ ] Toast global (R22) quand le marchand accepte ou refuse
+[x] Client : demande d'annulation (`cancelRequest`), état « En attente de la réponse
+    du marchand », « Renvoyer la demande », refus affiché (`OrderCancelButton`)
+[x] Marchand WhatsApp : demande reçue avec deux boutons (backend)
+[x] Versioning R11 (`cancel_request_min_app_version`), verrou de concurrence
 
-## Côté marchand (app)
+## Reste à faire : marchand qui utilise l'APP
 
-[ ] Recevoir la demande avec deux choix : « Accepter l'annulation » / « Refuser, déjà commencée »
-[ ] Le marchand qui passe par WhatsApp reçoit la même demande avec deux boutons
-    (template `yam_demande_annulation` du module WhatsApp)
+Aujourd'hui une boutique gérée dans l'app est annulée directement par le client
+(`cancelByUser`). Elle doit passer par la même demande.
 
-## Points d'attention
-
-[ ] Nouveau statut (ex. `cancelRequested`) : versioning R11 côté backend pour les
-    apps déjà publiées
+[ ] Backend : appliquer la demande à TOUTES les boutiques, pas seulement WhatsApp
+[ ] App marchand : recevoir la demande (push + socket) avec deux choix
+    « Accepter l'annulation » / « Refuser, déjà commencée »
+[ ] App marchand : la commande affiche « Annulation demandée » tant qu'il n'a pas répondu
+[ ] Client : toast global (R22) quand le marchand accepte ou refuse
 [ ] Remboursement à l'acceptation : règles d'argent (R23)
 [ ] Délai sans réponse du marchand : à décider

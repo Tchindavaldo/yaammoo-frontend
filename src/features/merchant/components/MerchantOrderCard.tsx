@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { DelegateDriverSheet } from "./DelegateDriverSheet";
+import { MerchantCancelRequestSheet } from "./MerchantCancelRequestSheet";
 import { styles } from "./MerchantOrderCard.styles";
 import type { MerchantOrderCardProps } from "./MerchantOrderCard.types";
 import { useMerchantMode } from "../context/MerchantModeContext";
@@ -54,6 +55,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isLaunchedLocal, setIsLaunchedLocal] = useState(false);
   const [delegateVisible, setDelegateVisible] = useState(false);
+  const [cancelVisible, setCancelVisible] = useState(false);
   // Mode personnel : boutons hors permissions du role grises (backend refuse aussi).
   const { can } = useMerchantMode();
   const canDeliver = can("orders.deliver");
@@ -365,6 +367,8 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
     ? drinks.filter(isRealItem).length
     : 0;
   const pickedCount = extrasCount + drinksCount;
+  // Commande de la ligne dont le client demande l'annulation (une seule traitée a la fois).
+  const cancelTarget = (groupedOrders ?? [order]).find((o) => o.cancelRequest?.status === "pending" && o.status === "pending");
 
   return (
     <View style={styles.wrapper}>
@@ -435,7 +439,13 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
               </View>
             </View>
 
-            {(isPending || isActive) && (
+            {cancelTarget ? (
+              // Demande d'annulation du client en attente : decision avant toute validation.
+              <TouchableOpacity style={[styles.summaryValidateBtn, { backgroundColor: DS.ink }, !can("orders.cancel") && { opacity: 0.4 }]} disabled={!can("orders.cancel")} onPress={() => setCancelVisible(true)}>
+                <Ionicons name="alert-circle-outline" size={16} color="white" />
+                <Text style={styles.summaryValidateBtnText}>{t("Annulation")}</Text>
+              </TouchableOpacity>
+            ) : (isPending || isActive) && (
               <TouchableOpacity
                 style={[styles.summaryValidateBtn, !can(isPending ? "orders.validate" : "orders.finish") && { opacity: 0.4 }]}
                 disabled={isUpdating || !can(isPending ? "orders.validate" : "orders.finish")}
@@ -475,6 +485,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
         canValidate={isPending || isActive}
         onValidate={(target) => handleValidateOne(target)}
       />
+      <MerchantCancelRequestSheet visible={cancelVisible} orderId={cancelTarget?.id ?? null} onClose={() => setCancelVisible(false)} />
     </View>
   );
 };

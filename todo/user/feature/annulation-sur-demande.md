@@ -6,22 +6,19 @@ L'annulation par le client devient une **demande** que le marchand accepte ou
 refuse. Pendant de la tâche backend
 `yaammoo-backend/todo/user/feature/annulation-sur-demande.md`.
 
-## Fait (boutique WhatsApp uniquement)
+## Fait
 
-[x] Client : demande d'annulation (`cancelRequest`), état « En attente de la réponse
-    du marchand », « Renvoyer la demande », refus affiché (`OrderCancelButton`)
+[x] Client : demande d'annulation (`cancelRequest`), « En attente de la réponse du
+    marchand », « Renvoyer la demande », refus affiché (`OrderCancelButton`)
 [x] Marchand WhatsApp : demande reçue avec deux boutons (backend)
 [x] Versioning R11 (`cancel_request_min_app_version`), verrou de concurrence
+[x] Backend : demande étendue à toutes les boutiques (`cancel_request_all_shops`,
+    migration 096), push au marchand, `POST /order/:orderId/cancel-request/accept|refuse`
+[x] App marchand : bouton « Annulation » sur la carte + sheet Accepter / Refuser
+[x] Client : toast global (R22) à la décision du marchand
 
-## Reste à faire : marchand qui utilise l'APP
+## Reste à faire
 
-Aujourd'hui une boutique gérée dans l'app est annulée directement par le client
-(`cancelByUser`). Elle doit passer par la même demande.
-
-[ ] Backend : appliquer la demande à TOUTES les boutiques, pas seulement WhatsApp
-[ ] App marchand : recevoir la demande (push + socket) avec deux choix
-    « Accepter l'annulation » / « Refuser, déjà commencée »
-[ ] App marchand : la commande affiche « Annulation demandée » tant qu'il n'a pas répondu
-[ ] Client : toast global (R22) quand le marchand accepte ou refuse
-[ ] Remboursement à l'acceptation : règles d'argent (R23)
+[ ] Appliquer la migration 096 (test puis prod), déployer le backend
+[ ] Passer `cancel_request_all_shops` à `true` quand les marchands ont l'app 1.1.7
 [ ] Délai sans réponse du marchand : à décider

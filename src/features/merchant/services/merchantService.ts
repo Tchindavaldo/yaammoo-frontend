@@ -42,6 +42,12 @@ export const merchantService = {
         }
     },
 
+    // Réponse du marchand à la demande d'annulation du client (409 + message si plus rien en attente).
+    async answerCancelRequest(orderId: string, decision: 'accept' | 'refuse'): Promise<Commande> {
+        const response = await axios.post(`${Config.apiUrl}/order/${orderId}/cancel-request/${decision}`);
+        return response.data.data;
+    },
+
     async getMenus(fastFoodId: string): Promise<Menu[]> {
         try {
             const response = await axios.get(`${Config.apiUrl}/menu/${fastFoodId}`);

@@ -483,10 +483,14 @@ cancelByUser      (client : seulement depuis pending)
 cancelByFastFood  (restaurant : pending, processing ou finished)
 ```
 
-### Annulation sur demande (boutique WhatsApp)
+### Annulation sur demande (boutique WhatsApp, ou toutes)
 
-Le marchand d'une boutique WhatsApp n'a pas l'app : `PUT /order { status: cancelByUser }`
-sur une commande `pending` n'annule pas, le backend envoie une **demande** au marchand.
+Boutique WhatsApp, ou toute boutique si le backend active `cancel_request_all_shops` :
+`PUT /order { status: cancelByUser }` sur une commande `pending` n'annule pas, le backend
+envoie une **demande** au marchand (WhatsApp, ou dans l'app : voir
+[orders-merchant.md](./orders-merchant.md), « Demande d'annulation »). À la décision,
+`userOrderUpdated` déclenche un toast global (`socketHandlers/cancelRequestToast.ts`,
+décision de moins d'une minute).
 Réponse : `data.cancelRequested = true` ; la commande porte
 `cancelRequest: { status: pending | accepted | refused | closed, requestedAt, resolvedAt?, reason? }`
 (type `CancelRequest`, `src/types/index.ts`).

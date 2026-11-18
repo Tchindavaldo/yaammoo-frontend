@@ -17,6 +17,7 @@ import { useWallet } from "../features/wallet/context/WalletContext";
 import { useFastFoods } from "../features/restaurants/hooks/useFastFoods";
 import { useBonusContext } from "../features/bonus/context/BonusContext";
 import { logEvent } from "./socketHandlers/logEvent";
+import { cancelRequestToast } from "./socketHandlers/cancelRequestToast";
 import { registerCatalogEvents } from "./socketHandlers/catalogEvents";
 import { registerBonusWalletEvents } from "./socketHandlers/bonusWalletEvents";
 
@@ -278,6 +279,7 @@ export const useSocketEvents = () => {
     socket.on("userOrderUpdated", withAck((data: any) => {
       logEvent("userOrderUpdated:", data);
       if (data?.data) upsertClientOrder(data.data);
+      cancelRequestToast(data?.data);
     }));
     // userOrdersUpdated { orders: order[] } → upsert lot
     socket.on("userOrdersUpdated", withAck((data: any) => {

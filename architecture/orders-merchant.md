@@ -62,6 +62,7 @@ yaammoo/src/features/merchant/
     │   └── WithdrawStatusCover.tsx     # Cache « en cours » / « réussi » (flou iOS, blanc Android)
     ├── WalletDayStatItem.tsx           # Ligne d'une journée dans l'historique portefeuille
     ├── DelegateDriverSheet.tsx         # Feuille "Qui livre ?" (Moi-même / déléguer à un livreur)
+    ├── MerchantCancelRequestSheet.tsx  # Demande d'annulation du client : Accepter / Refuser (voir section dédiée)
     ├── NoBoutiquePanel.tsx             # Écran si pas encore de boutique créée
     ├── BikeAnimation.tsx               # Animation vélo (livraison en cours)
     └── TransactionItem.tsx             # Ligne d'une transaction
@@ -274,6 +275,25 @@ où `<livraison>` vaut `livrée à <heure>`, `livraison express` ou `pas de livr
 **Bouton "Lancer"** : ouvre le `DelegateDriverSheet` (`setDelegateVisible(true)`) → **Moi-même**
 (`onUpdateStatus("delivering")`) ou **déléguer** (`onDelegate(driver.driverId)`). Une commande déjà
 déléguée (`order.driverId` posé, pas encore en `delivering`) affiche un badge **« Délégué »**.
+
+---
+
+## Demande d'annulation (MerchantCancelRequestSheet.tsx)
+
+Boutique gérée dans l'app, backend `settings_app.cancel_request_all_shops = true` : le
+client ne peut plus annuler seul, il demande (cf. [orders-client.md](./orders-client.md)).
+Une commande `pending` qui porte `cancelRequest.status === "pending"` remplace le bouton
+« Valider » de `MerchantOrderCard` (variante standard, ligne groupée comprise) par un
+bouton **« Annulation »** (droit `orders.cancel`). Il ouvre la sheet (R28) :
+
+| Choix | Appel | Effet |
+|---|---|---|
+| Accepter l'annulation | `POST /order/:orderId/cancel-request/accept` | commande `cancelByUser`, client remboursé (backend) |
+| Refuser, déjà commencée | `POST /order/:orderId/cancel-request/refuse` | commande maintenue `pending` |
+
+`merchantService.answerCancelRequest`. Refus 409 (plus rien en attente) : message du
+backend en toast. La commande à jour revient par `fastFoodOrderUpdated`. Le marchand
+reçoit aussi une push `type: order_cancel_request` (route `/(tabs)/boutique`).
 
 ---
 

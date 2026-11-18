@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import { OrderItem } from './MerchantOrderBottomSheet';
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
+import { useCancelRequestAction } from "../context/CancelRequestContext";
 
 // Ic\u00F4nes align\u00E9es sur le bottom sheet du home (checkout/tabs/DetailTab).
 const ITEM_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -63,6 +64,7 @@ export function CommandesTab({
   validating = false,
 }: Props) {
   useLanguage();
+  const onCancelRequest = useCancelRequestAction();
   const hasDelivery = deliveryPrice > 0 || !!zone || deliveryOffered || deliveryGrouped;
   // Offert prime sur le groupé : le client ne paie rien dans les deux cas, mais
   // « Offert » porte l'info commerciale (bonus / campagne).
@@ -231,7 +233,12 @@ export function CommandesTab({
             <Text style={styles.totalVal}>{total} {CURRENCY}</Text>
           </View>
 
-          {canValidate && (
+          {onCancelRequest ? (
+            <TouchableOpacity onPress={onCancelRequest} style={[styles.validateBtn, { backgroundColor: DS.danger }]}>
+              <Ionicons name="alert-circle-outline" size={15} color="#fff" />
+              <Text style={styles.validateBtnText}>{t("Demande d'annulation")}</Text>
+            </TouchableOpacity>
+          ) : canValidate && (
             <TouchableOpacity
               onPress={onValidate}
               disabled={validating}

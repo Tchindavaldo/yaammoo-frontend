@@ -20,6 +20,7 @@ import { MerchantCancelRequestSheet } from "./MerchantCancelRequestSheet";
 import { styles } from "./MerchantOrderCard.styles";
 import type { MerchantOrderCardProps } from "./MerchantOrderCard.types";
 import { useMerchantMode } from "../context/MerchantModeContext";
+import { CancelRequestContext } from "../context/CancelRequestContext";
 import MerchantOrderBottomSheet from "./MerchantOrderBottomSheet";
 import {
   computeGrandTotal,
@@ -477,6 +478,8 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
       )}
       </BlurScope>
 
+      {/* Demande en attente : l'onglet Commande affiche « Demande d'annulation » a la place de Valider. */}
+      <CancelRequestContext.Provider value={cancelTarget && can("orders.cancel") ? () => setCancelVisible(true) : null}>
       <MerchantOrderBottomSheet
         order={order}
         allOrders={
@@ -488,6 +491,7 @@ export const MerchantOrderCard: React.FC<MerchantOrderCardProps> = ({
         canValidate={(isPending || isActive) && !cancelTarget}
         onValidate={(target) => handleValidateOne(target)}
       />
+      </CancelRequestContext.Provider>
       <MerchantCancelRequestSheet visible={cancelVisible} orderId={cancelTarget?.id ?? null} onClose={() => setCancelVisible(false)} />
     </View>
   );

@@ -5,9 +5,9 @@ import { storage } from "@/src/utils/storage";
 /**
  * Signaux de la carte de mise a jour OTA (`OtaUpdateCard`).
  *
- * - `downloaded` : une mise a jour vient d'etre telechargee alors que l'app
- *   est deja affichee. Elle ne s'appliquera qu'au prochain lancement
- *   (`useOtaUpdates` ne redemarre jamais une app deja peinte).
+ * - `downloaded` : une mise a jour vient d'etre telechargee (splash ou home).
+ *   Elle ne s'appliquera qu'au prochain lancement (`useOtaUpdates` ne
+ *   redemarre jamais l'app).
  * - `applied` : ce lancement tourne sur une mise a jour que l'appareil n'avait
  *   encore jamais executee.
  *

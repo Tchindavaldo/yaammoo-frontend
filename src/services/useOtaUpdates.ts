@@ -3,7 +3,6 @@ import { AppState, type AppStateStatus } from "react-native";
 import * as Updates from "expo-updates";
 
 import { notifyUpdateDownloaded } from "@/src/features/appVersion/services/otaNotice";
-import { isSplashHidden } from "@/src/hooks/useHideSplash";
 import {
   startFetchHeartbeat,
   tagCurrentUpdate,
@@ -17,14 +16,10 @@ import {
  * ne l'applique qu'au lancement SUIVANT : l'utilisateur reste une session
  * entiere sur l'ancien code. On force donc l'application des qu'elle est prete.
  *
- * ⚠️ On ne redemarre JAMAIS une app deja peinte. Un `reloadAsync` apres le
- * splash rejoue tout le boot A NU (le splash natif est deja consomme) :
- * l'utilisateur voyait l'app se relancer, puis le get-started de `(auth)`
- * apparaitre avant la home, le temps que l'auth se re-resolve. Deux cas
- * seulement :
- *   - splash encore affiche → reload immediat, invisible pour l'utilisateur ;
- *   - app deja visible      → la mise a jour reste telechargee et s'appliquera
- *                             au prochain lancement.
+ * ⚠️ On ne redemarre JAMAIS l'app, ni au splash ni apres : un `reloadAsync`
+ * creait un flash / loader au demarrage. La mise a jour est seulement
+ * telechargee (sans jamais bloquer le splash) ; la carte « Mise a jour
+ * telechargee » s'affiche sur la home et l'utilisateur relance l'app.
  *
  * ⚠️ Ne fait rien en developpement : `__DEV__` court-circuite tout, sinon chaque
  * rechargement Metro declencherait une requete inutile.
@@ -72,17 +67,11 @@ export function useOtaUpdates() {
           stopHeartbeat();
         }
         pendingRef.current = true;
-        // Le splash a pu etre leve pendant le telechargement : on re-teste ICI,
-        // juste avant de redemarrer, pas au debut du check.
-        if (isSplashHidden()) {
-          trackUpdateFetch("deferred", Date.now() - startedAt);
-          // Carte « Mise a jour telechargee » : l'utilisateur sait qu'il doit
-          // relancer l'app pour en profiter.
-          notifyUpdateDownloaded();
-          return;
-        }
-        trackUpdateFetch("applied", Date.now() - startedAt);
-        await Updates.reloadAsync();
+        trackUpdateFetch("deferred", Date.now() - startedAt);
+        // JAMAIS de reload, meme splash encore affiche : un reload au splash
+        // creait un flash / loader. On telecharge seulement, puis la carte
+        // « Mise a jour telechargee » s'affiche sur la home.
+        notifyUpdateDownloaded();
       } catch (error) {
         // Reseau indisponible ou canal absent : l'app continue sur le bundle
         // embarque. Une mise a jour ratee ne doit jamais bloquer le demarrage.

@@ -237,11 +237,20 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  /**
+   * Edition locale d'une commande du PANIER (sheet d'edition). Ne touche
+   * qu'une commande encore `pendingToBuy`, et jamais son statut : le sheet
+   * reste monte apres un paiement et reemet sa copie perimee ; sans cette garde
+   * la commande payee redevenait `pendingToBuy` (fantome dans le panier).
+   */
   const updateLocalOrder = useCallback((updatedOrder: any) => {
     setOrders((prev) =>
-      prev.map((o) =>
-        o.id === updatedOrder.id ? { ...o, ...updatedOrder } : o
-      )
+      prev.map((o) => {
+        if (o.id !== updatedOrder?.id) return o;
+        if ((o.status || "").toLowerCase() !== "pendingtobuy") return o;
+        const { status: _ignored, ...patch } = updatedOrder;
+        return { ...o, ...patch };
+      })
     );
   }, []);
 

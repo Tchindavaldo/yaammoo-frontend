@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     borderColor: DS.dangerInk,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
+    marginTop: 10,
   },
   text: { fontSize: 14, fontWeight: "700", color: DS.dangerInk },
   state: { borderColor: DS.slate300, backgroundColor: DS.slate50, paddingHorizontal: 16 },

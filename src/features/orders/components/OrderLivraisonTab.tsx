@@ -66,7 +66,7 @@ export function OrderLivraisonTab({ order, onCancelled }: { order: Commande; onC
         </View>
       </View>
 
-      <View style={[styles.infoCard, { marginTop: 12, padding: 12 }]}>
+      <View style={[styles.infoCard, { marginTop: 8, padding: 12 }]}>
         <Text style={styles.infoLabel}>{t("Note de livraison")}</Text>
         <Text style={styles.infoValSm}>
           {order.delivery?.note || t("Aucune note.")}
@@ -100,7 +100,7 @@ export function OrderLivraisonTab({ order, onCancelled }: { order: Commande; onC
         <View
           style={[
             styles.infoCard,
-            { marginTop: 12, padding: 12, opacity: 0.5 },
+            { marginTop: 8, padding: 12, opacity: 0.5 },
           ]}
         >
           <Text style={styles.infoLabel}>{t("Message vocal")}</Text>

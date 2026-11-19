@@ -1,7 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import axios from "axios";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Config } from "@/src/api/config";
 import { Commande } from "@/src/types";
 import { DS } from "@/src/theme/ds";
@@ -27,6 +27,8 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
   useLanguage();
   const { refresh } = useOrders();
   const [busy, setBusy] = useState(false);
+  // Confirmation INLINE (jamais d'alerte native, R22) : texte du devis + Non / Oui.
+  const [confirmText, setConfirmText] = useState<string | null>(null);
   const request = order.cancelRequest?.status;
   const resendAt = request === "pending" ? order.cancelRequest?.resendAt : undefined;
   // Re-rendu à l'échéance de `resendAt` : le bouton « Renvoyer » apparaît sans action du client.
@@ -99,11 +101,25 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
       : quote?.phone
         ? t("Tu recevras {{a}} F sur le {{p}}, le numéro qui a payé (frais de paiement retenus : {{b}} F).", { a: quote?.refund ?? 0, b: quote?.feesKept ?? 0, p: quote.phone })
         : t("Tu recevras {{a}} F (frais de paiement retenus : {{b}} F).", { a: quote?.refund ?? 0, b: quote?.feesKept ?? 0 });
-    Alert.alert(t("Annuler la commande ?"), detail, [
-      { text: t("Non"), style: "cancel" },
-      { text: t("Oui, annuler"), style: "destructive", onPress: () => cancel() },
-    ]);
+    setConfirmText(detail);
   };
+
+  if (confirmText) {
+    return (
+      <View style={styles.confirm}>
+        <Text style={styles.confirmTitle}>{t("Annuler la commande ?")}</Text>
+        <Text style={styles.confirmText}>{confirmText}</Text>
+        <View style={styles.confirmRow}>
+          <TouchableOpacity style={[styles.choice, styles.choiceNo]} onPress={() => setConfirmText(null)} disabled={busy} activeOpacity={0.8}>
+            <Text style={styles.choiceNoText}>{t("Non")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.choice, styles.choiceYes]} onPress={() => cancel()} disabled={busy} activeOpacity={0.8}>
+            {busy ? <ActivityIndicator size="small" color={DS.dangerInk} /> : <Text style={styles.text}>{t("Oui, annuler")}</Text>}
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <TouchableOpacity style={styles.btn} onPress={ask} disabled={busy} activeOpacity={0.8}>
@@ -128,5 +144,13 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 8, paddingRight: 6 },
   stateGrow: { flex: 1, textAlign: "left" },
   resend: { height: 36, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: DS.dangerInk, alignItems: "center", justifyContent: "center" },
+  confirm: { marginTop: 16, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: DS.slate300, backgroundColor: DS.slate50, gap: 8 },
+  confirmTitle: { fontSize: 15, fontWeight: "700", color: DS.slate900 },
+  confirmText: { fontSize: 13, color: DS.slate600 },
+  confirmRow: { flexDirection: "row", gap: 10, marginTop: 4 },
+  choice: { flex: 1, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 1 },
+  choiceNo: { borderColor: DS.slate300 },
+  choiceNoText: { fontSize: 14, fontWeight: "700", color: DS.slate600 },
+  choiceYes: { borderColor: DS.dangerInk },
   resendText: { fontSize: 13, fontWeight: "700", color: DS.dangerInk },
 });

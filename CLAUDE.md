@@ -338,9 +338,9 @@ toast global : `showToast(message, "success" | "error" | "info")`
 (`src/services/globalToast.ts`, rendu par `GlobalToastHost` dans `app/_layout.tsx`,
 composant `src/components/Toast.tsx` : en haut, premier plan, fermeture par glissement).
 
-- **INTERDIT** : `Alert.alert(...)` (modal natif) pour afficher un message.
-- Seule exception : une vraie **confirmation à choix** (boutons Annuler / Confirmer),
-  qui n'est pas un message.
+- **INTERDIT** : `Alert.alert(...)` (modal natif), pour un message **comme pour une
+  confirmation à choix** (Annuler / Confirmer) : la confirmation se fait dans l'UI
+  de l'app (bloc inline ou sheet custom), jamais par une alerte native.
 - Un écran qui a déjà son `<Toast>` local peut le garder ; tout nouveau code appelle `showToast`.
 - **Tout `<Modal>`** pose `<GlobalToastHost modal />` en dernier enfant : sur Android
   une Modal est une fenêtre au-dessus de l'app, sans cet hôte le toast passerait dessous

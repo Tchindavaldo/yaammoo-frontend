@@ -92,8 +92,18 @@ export const useShopSearch = (query: string, categoryIndex: number, shopId?: str
     [q, shopId],
   );
 
+  const prevShopRef = useRef<string | null | undefined>(shopId);
+
   useEffect(() => {
     const run = ++runRef.current;
+    // Autre boutique scannee : on vide TOUT de suite l'ancien resultat (plats et
+    // nom) et on affiche le loader, sans attendre la reponse.
+    if (prevShopRef.current !== shopId) {
+      prevShopRef.current = shopId;
+      setShops([]);
+      setShopName("");
+      setLoading(true);
+    }
     const timer = setTimeout(async () => {
       setLoading(true);
       setError(false);
@@ -111,7 +121,7 @@ export const useShopSearch = (query: string, categoryIndex: number, shopId?: str
       }
     }, q ? DEBOUNCE_MS : 0);
     return () => clearTimeout(timer);
-  }, [q, fetchPage]);
+  }, [q, shopId, fetchPage]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !cursorRef.current) return;

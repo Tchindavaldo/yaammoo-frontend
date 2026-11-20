@@ -927,6 +927,8 @@ liste du home n'est jamais touchée.
 
 **Scan QR boutique** : icône caméra à droite de l'input → `ShopQrScanner` (expo-camera, Modal plein écran) → `parseShopQr` extrait l'id de boutique (id seul, `yaammoo://shop/<id>` ou lien `.../shop/<id>`) → `useShopSearch(query, cat, shopId)` charge `GET /fastFood/all?ids=<id>` (une boutique + ses plats) et n'affiche que ses plats ; pastille de la boutique en haut de liste (tap = retire le filtre).
 
+**Lien profond QR (appareil photo)** : `app/+native-intent.tsx` réécrit `yaammoo://shop/<id>` en `/search?shopId=<id>` et mémorise l'id (`pendingShopLink`). Démarrage à froid connecté : la route protégée est perdue, `app/(tabs)/_layout.tsx` consomme l'id et pousse `/search` (400 ms, sauf si la recherche l'a déjà pris). App ouverte : `search.tsx` suit le param `shopId`. Le home ne lève pas le splash tant qu'un lien est en attente : la recherche (`onLayout`) le lève, donc pas de passage visible par le home. Icône scan du header du home (remplace le raccourci commandes) = `ShopQrScanner` direct, puis `/search?shopId=`. Retour de la recherche = `router.back()` (repli `replace("/")`).
+
 ```
 src/features/search/
 ├── hooks/useShopSearch.ts          # Recherche SERVEUR GET /fastFood/all?q= (boutique OU plat), debounce 300 ms, pages de 50 par curseur (loadMore en bas de liste) ; filtre local = plats concernés + catégorie

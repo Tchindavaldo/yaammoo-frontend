@@ -63,7 +63,7 @@ const listOf = (data: any): any[] =>
  * local ne fait que ne garder, dans ces boutiques, que les plats concernés
  * (et la catégorie choisie).
  */
-export const useShopSearch = (query: string, categoryIndex: number) => {
+export const useShopSearch = (query: string, categoryIndex: number, shopId?: string | null) => {
   const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -75,6 +75,16 @@ export const useShopSearch = (query: string, categoryIndex: number) => {
   const fetchPage = useCallback(
     async (run: number, cursor: string | null) => {
       const idToken = await getOptionalIdToken();
+      // Boutique scannee (QR) : une seule boutique, sans pagination.
+      if (shopId) {
+        const one: any = await axios.get(`${Config.apiUrl}/fastFood/${shopId}`, {
+          headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+        });
+        if (run !== runRef.current) return null;
+        cursorRef.current = null;
+        const d = one.data?.data ?? one.data;
+        return d ? [normalizeFastFood({ ...d, id: d.id ?? shopId, nom: d.nom ?? d.name })] : [];
+      }
       const res: any = await axios.get(`${Config.apiUrl}/fastFood/all`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
         params: { limit: LIMIT, ...(q ? { q } : {}), ...(cursor ? { cursor } : {}) },
@@ -83,7 +93,7 @@ export const useShopSearch = (query: string, categoryIndex: number) => {
       cursorRef.current = res.data?.nextCursor ?? null;
       return listOf(res.data).map((ff: any) => normalizeFastFood(ff));
     },
-    [q],
+    [q, shopId],
   );
 
   useEffect(() => {

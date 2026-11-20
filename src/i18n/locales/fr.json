@@ -16,5 +16,9 @@
   "Pizza": "Pizza",
   "La catégorie ne doit pas être vide": "La catégorie ne doit pas être vide",
   "Autre": "Autre",
-  "Vous avez vu tous les plats": "Vous avez vu tous les plats"
+  "Vous avez vu tous les plats": "Vous avez vu tous les plats",
+  "QR code non reconnu": "QR code non reconnu",
+  "Autorisez la caméra pour scanner le QR code d'une boutique.": "Autorisez la caméra pour scanner le QR code d'une boutique.",
+  "Scannez le QR code d'une boutique": "Scannez le QR code d'une boutique",
+  "Boutique scannée": "Boutique scannée"
 }

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Config } from "@/src/api/config";
+import { useRefetchOnReconnect } from "@/src/hooks/useRefetchOnReconnect";
 import { getOptionalIdToken } from "@/src/services/idToken";
 import { normalizeFastFood } from "@/src/features/restaurants/utils/normalizeFastFood";
 import { Menu } from "@/src/types";
@@ -93,6 +94,9 @@ export const useShopSearch = (query: string, categoryIndex: number, shopId?: str
   );
 
   const prevShopRef = useRef<string | null | undefined>(shopId);
+  // Retour du reseau : relance la recherche en cours (loader habituel), sans action de l'utilisateur.
+  const [reloadKey, setReloadKey] = useState(0);
+  useRefetchOnReconnect(() => setReloadKey((k) => k + 1));
 
   useEffect(() => {
     const run = ++runRef.current;
@@ -121,7 +125,7 @@ export const useShopSearch = (query: string, categoryIndex: number, shopId?: str
       }
     }, q ? DEBOUNCE_MS : 0);
     return () => clearTimeout(timer);
-  }, [q, shopId, fetchPage]);
+  }, [q, shopId, fetchPage, reloadKey]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !cursorRef.current) return;

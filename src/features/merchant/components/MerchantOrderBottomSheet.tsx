@@ -20,7 +20,7 @@ import { buildUser } from '../utils/merchantOrderSheetData';
 import { CMD_BAR_HEIGHT, SHEET_HEIGHT, styles } from './MerchantOrderBottomSheet.styles';
 import { MerchantOrderDeleteConfirm } from './MerchantOrderDeleteConfirm';
 import { MerchantOrderSheetHeader } from './MerchantOrderSheetHeader';
-import { showToast } from '@/src/services/globalToast';
+import { useMerchantOrderCancel } from '../hooks/useMerchantOrderCancel';
 
 // Distance de sortie des animations d'ouverture/fermeture. On translate d'un
 // ÉCRAN ENTIER et non de `SHEET_HEIGHT` : avec plusieurs zones le sheet mesure
@@ -60,8 +60,6 @@ export default function MerchantOrderBottomSheet({
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const [validating, setValidating] = useState(false);
-  // Corbeille du header : confirmation d'annulation de la Cmd SELECTIONNEE, qui remplace le contenu de tout onglet.
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const translateY = useRef(new Animated.Value(OFFSCREEN_Y)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -69,6 +67,11 @@ export default function MerchantOrderBottomSheet({
   // Commande sélectionnée (globale : pilote Livraison ET Commande)
   const currentOrder = allOrders ? (allOrders[selectedOrderIdx] ?? order) : order;
   const user = currentOrder ? buildUser(currentOrder) : null;
+  // Corbeille du header : annulation de la Cmd SELECTIONNEE ; la confirmation remplace le contenu de tout onglet.
+  const cancel = useMerchantOrderCancel(currentOrder?.id, () => {
+    // Derniere commande du sheet : on le ferme ; sinon la liste se met a jour par socket.
+    if (orderList.length <= 1) handleDismiss();
+  });
 
   // ─── Garde de consultation ──────────────────────────────────────────────────
   // Une commande contenant des extras/boissons doit avoir son onglet Commande
@@ -261,7 +264,7 @@ export default function MerchantOrderBottomSheet({
   }, [visible, orderId]);
 
   // Changer de Cmd ou de zone ferme la confirmation.
-  useEffect(() => { setConfirmDelete(false); }, [selectedOrderIdx, selectedZone, visible]);
+  useEffect(() => { cancel.dismiss(); }, [selectedOrderIdx, selectedZone, visible]);
 
   // Revenir à Livraison si la commande courante n'a plus de tab Livreur.
   useEffect(() => {
@@ -316,7 +319,7 @@ export default function MerchantOrderBottomSheet({
             selectedOrderIdx={selectedOrderIdx}
             onSelectOrder={setSelectedOrderIdx}
             panHandlers={panResponder.panHandlers}
-            onDelete={() => setConfirmDelete(true)}
+            onDelete={cancel.ask}
           />
 
           {/* Top tabs : Livraison | Commande | (Livreur) */}
@@ -379,15 +382,13 @@ export default function MerchantOrderBottomSheet({
           )}
 
           {/* Contenu (change avec le tab, réactif à selectedOrderIdx) */}
-          {confirmDelete ? (
+          {cancel.message ? (
             <MerchantOrderDeleteConfirm
               rank={(currentOrder as any)?.rank ?? selectedOrderIdx + 1}
-              onNo={() => setConfirmDelete(false)}
-              onYes={() => {
-                // Maquette : pas encore branche au backend.
-                setConfirmDelete(false);
-                showToast(tr("Annulation côté marchand : pas encore branchée."), 'info');
-              }}
+              detail={cancel.message}
+              busy={cancel.busy}
+              onNo={cancel.dismiss}
+              onYes={cancel.confirm}
             />
           ) : tab === 'livreur' && showDriverTab ? (
             <ScrollView

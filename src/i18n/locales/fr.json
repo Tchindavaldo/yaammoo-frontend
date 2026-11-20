@@ -22,5 +22,8 @@
   "Scannez le QR code d'une boutique": "Scannez le QR code d'une boutique",
   "Boutique scannée": "Boutique scannée",
   "La commande Cmd {{a}} sera annulée et le client sera prévenu. Les autres commandes ne changent pas.": "La commande Cmd {{a}} sera annulée et le client sera prévenu. Les autres commandes ne changent pas.",
-  "Annulation côté marchand : pas encore branchée.": "Annulation côté marchand : pas encore branchée."
+  "Annulation côté marchand : pas encore branchée.": "Annulation côté marchand : pas encore branchée.",
+  "Le remboursement du client sera traité par notre équipe. Frais d'annulation : {{b}} F, à votre charge.": "Le remboursement du client sera traité par notre équipe. Frais d'annulation : {{b}} F, à votre charge.",
+  "Le client recevra {{a}} F. Frais d'annulation : {{b}} F, à votre charge.": "Le client recevra {{a}} F. Frais d'annulation : {{b}} F, à votre charge.",
+  "Commande annulée. Le client est remboursé.": "Commande annulée. Le client est remboursé."
 }

@@ -1445,5 +1445,8 @@
   "Scannez le QR code d'une boutique": "Scan a shop's QR code",
   "Boutique scannée": "Scanned shop",
   "La commande Cmd {{a}} sera annulée et le client sera prévenu. Les autres commandes ne changent pas.": "Order Cmd {{a}} will be cancelled and the customer will be notified. Other orders are unchanged.",
-  "Annulation côté marchand : pas encore branchée.": "Merchant cancellation: not connected yet."
+  "Annulation côté marchand : pas encore branchée.": "Merchant cancellation: not connected yet.",
+  "Le remboursement du client sera traité par notre équipe. Frais d'annulation : {{b}} F, à votre charge.": "The customer's refund will be handled by our team. Cancellation fees: {{b}} F, at your expense.",
+  "Le client recevra {{a}} F. Frais d'annulation : {{b}} F, à votre charge.": "The customer will receive {{a}} F. Cancellation fees: {{b}} F, at your expense.",
+  "Commande annulée. Le client est remboursé.": "Order cancelled. The customer is refunded."
 }

@@ -31,6 +31,12 @@ export const merchantService = {
         }
     },
 
+    /** Devis d'annulation par la boutique : `refund` rendu au client, `fees` frais réels debites du marchand. */
+    async cancelQuote(orderId: string): Promise<{ refund: number; fees: number; manual?: boolean; phone?: string | null }> {
+        const { data } = await axios.get(`${Config.apiUrl}/order/${orderId}/merchant-cancel-quote`);
+        return data?.data;
+    },
+
     // Délègue une commande à un livreur (pose driverId sans changer le statut :
     // la commande reste "finished" = en attente de livraison, mais assignée).
     async delegateOrder(orderId: string, driverId: string): Promise<void> {

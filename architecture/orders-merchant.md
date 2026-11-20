@@ -34,7 +34,7 @@ yaammoo/src/features/merchant/
     ├── MerchantOrderBottomSheet.tsx    # Bottom sheet détail commande marchand (mobile) — shell + état + nav globale
     ├── MerchantOrderBottomSheet.styles.ts  # Styles + SHEET_HEIGHT du sheet (extrait, R26)
     ├── MerchantOrderSheetHeader.tsx    # En-tête du sheet : avatar, chips zones/Cmd, corbeille à droite
-    ├── MerchantOrderDeleteConfirm.tsx  # Confirmation « Annuler la commande ? » (maquette, non branchée) : remplace le contenu de tout onglet pour la Cmd sélectionnée
+    ├── MerchantOrderDeleteConfirm.tsx  # Confirmation « Annuler la commande ? » (devis GET /order/:id/merchant-cancel-quote puis PUT /order cancelByFastFood, hook useMerchantOrderCancel ; message : montant rendu au client + frais à la charge du marchand) : remplace le contenu de tout onglet pour la Cmd sélectionnée
     ├── MerchantOrderLivraisonTab.tsx   # Tab Livraison + helpers (InfoCard, Waveform) extraits du sheet
     ├── MerchantOrderCommandesTab.tsx   # Tab Commande : menu/extras/boissons, icônes Ionicons, prix en XAF
     ├── MerchantOrderMontantTab.tsx     # Tab Montant : récap prix par groupe de livraison (deliveryGroupId)

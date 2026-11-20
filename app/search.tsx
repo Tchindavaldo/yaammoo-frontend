@@ -1,6 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { takePendingShopLink } from "@/src/features/search/utils/pendingShopLink";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -54,6 +55,15 @@ function SearchContent() {
   const [scanOpen, setScanOpen] = useState(false);
   // Boutique choisie par QR code : n'affiche que ses plats.
   const [shopId, setShopId] = useState<string | null>(shopIdParam ? String(shopIdParam) : null);
+  // Nouveau scan externe pendant que la page est deja ouverte : change de boutique.
+  useEffect(() => {
+    if (shopIdParam) {
+      setShopId(String(shopIdParam));
+      setQuery("");
+      setCategory(0);
+      takePendingShopLink();
+    }
+  }, [shopIdParam]);
   const { results, loading, error, loadMore, shopName } = useShopSearch(query, category, shopId);
   const checkout = useHomeCheckout();
 
@@ -78,7 +88,7 @@ function SearchContent() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.bar}>
-        <TouchableOpacity style={styles.back} onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.back} onPress={() => router.dismissTo("/")} activeOpacity={0.8}>
           <Ionicons name="chevron-back" size={20} color={DS.ink} />
         </TouchableOpacity>
         <View style={styles.inputWrap}>

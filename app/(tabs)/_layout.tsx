@@ -1,5 +1,6 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
+import { takePendingShopLink } from "@/src/features/search/utils/pendingShopLink";
 import React, { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameSheet";
@@ -56,6 +57,17 @@ function TabLayoutInner() {
   useEffect(() => {
     activateHome();
   }, [activateHome]);
+
+  // Lien QR boutique recu au demarrage a froid : ouvre la recherche des la home.
+  const router = useRouter();
+  useEffect(() => {
+    // Delai : si la route /search a ete restauree par l'URL, elle a deja pris l'id.
+    const timer = setTimeout(() => {
+      const id = takePendingShopLink();
+      if (id) router.push({ pathname: "/search", params: { shopId: id } });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
     <LegalProvider>

@@ -1,0 +1,21 @@
+// Memorise l'id de boutique d'un lien `yaammoo://shop/<id>` (QR scanne depuis
+// l'appareil photo) quand l'app demarre a froid : la route est alors protegee
+// (auth pas encore resolue) et expo-router la perd. Ecrit par +native-intent,
+// consomme par le layout des onglets une fois connecte.
+let pending: string | null = null;
+
+export const setPendingShopLink = (id: string | null) => {
+  pending = id;
+};
+
+export const takePendingShopLink = (): string | null => {
+  const id = pending;
+  pending = null;
+  return id;
+};
+
+/** Extrait l'id d'un chemin `/shop/<id>` ou `yaammoo://shop/<id>`, sinon null. */
+export const shopIdFromPath = (path: string): string | null => {
+  const m = /(?:^|\/)shop\/([A-Za-z0-9_-]{6,})\/?(?:[?#].*)?$/.exec(path);
+  return m ? m[1] : null;
+};

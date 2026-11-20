@@ -50,7 +50,7 @@ yaammoo/src/features/orders/
     ├── OrderSheetHeader.tsx   # En-tête du sheet : avatar boutique, adresse ou chips « Cmd N » (+N)
     ├── OrderSheetTabBar.tsx   # Barre d'onglets (défile si trop d'onglets)
     ├── OrderLivraisonTab.tsx  # Tab « Livraison » (+ bouton d'annulation en bas)
-    ├── OrderCancelButton.tsx  # « Annuler la commande » (pending) : devis GET /order/cancel-quote, puis PUT /order cancelByUser ; boutique WhatsApp : demande au marchand (cancelRequest) ; bouton colle sous le contenu, confirmation inline plein espace au design StaffConfirmDialog (icone, titre, 2 pilules Non / Oui, annuler)
+    ├── OrderCancelButton.tsx  # « Annuler la commande » (pending) : devis GET /order/cancel-quote, puis PUT /order cancelByUser ; boutique WhatsApp : demande au marchand (cancelRequest) ; bouton colle sous le contenu ; la confirmation (`OrderCancelConfirm`, design StaffConfirmDialog, état dans `hooks/useOrderCancel`) remplace TOUT le contenu de l onglet Livraison
     ├── OrderCommandesTab.tsx  # Tab « Commandes »
     ├── OrderTrackingTab.tsx   # Tab « Suivi » (carte + arrivée estimée + distance)
     └── OrderTrackingMap(.native).tsx # Carte du suivi : copie R16 de MapComponent (natif), cadre simple (web)

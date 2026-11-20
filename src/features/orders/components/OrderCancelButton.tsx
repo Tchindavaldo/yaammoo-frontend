@@ -1,15 +1,10 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
-import { Ionicons } from "@expo/vector-icons";
-import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Config } from "@/src/api/config";
 import { Commande } from "@/src/types";
 import { DS } from "@/src/theme/ds";
-import { showToast } from "@/src/services/globalToast";
 import { t, useLanguage } from "@/src/i18n";
-import { useOrders } from "../hooks/useOrders";
-import { apiErrorMessage } from "@/src/api/apiError";
+import { OrderCancel } from "../hooks/useOrderCancel";
 
 /**
  * « Annuler la commande » (onglet Livraison du détail client). Seulement tant
@@ -24,12 +19,9 @@ import { apiErrorMessage } from "@/src/api/apiError";
  * demande » apparaît à droite : même appel, le marchand reçoit une relance.
  * La décision arrive par le socket `userOrderUpdated` (commande à jour).
  */
-export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?: () => void }) {
+export function OrderCancelButton({ order, cancelState }: { order: Commande; cancelState: OrderCancel }) {
   useLanguage();
-  const { refresh } = useOrders();
-  const [busy, setBusy] = useState(false);
-  // Confirmation INLINE (jamais d'alerte native, R22) : texte du devis + Non / Oui.
-  const [confirmText, setConfirmText] = useState<string | null>(null);
+  const { busy, ask, cancel } = cancelState;
   const request = order.cancelRequest?.status;
   const resendAt = request === "pending" ? order.cancelRequest?.resendAt : undefined;
   // Re-rendu à l'échéance de `resendAt` : le bouton « Renvoyer » apparaît sans action du client.
@@ -42,26 +34,6 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
     return () => clearTimeout(id);
   }, [resendAt]);
   if ((order as any)?.status !== "pending") return null;
-
-  const cancel = async (resend = false) => {
-    setBusy(true);
-    try {
-      const res = await axios.put(`${Config.apiUrl}/order`, { id: order.id, status: "cancelByUser", fastFoodId: (order as any).fastFoodId });
-      if (res.data?.data?.cancelRequested) {
-        // Boutique WhatsApp : demande transmise, le sheet reste ouvert sur « En attente… ».
-        showToast(resend ? t("Demande renvoyée au restaurant.") : t("Demande d'annulation envoyée au restaurant. Vous serez prévenu de sa réponse."), "info");
-        await refresh(true);
-        return;
-      }
-      showToast(t("Commande annulée. Le remboursement est en cours."), "success");
-      await refresh(true);
-      onDone?.();
-    } catch (e: any) {
-      showToast(apiErrorMessage(e) || t("Annulation impossible. Réessayez."), "error");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   if (request === "refused") {
     return (
@@ -81,48 +53,6 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
             {busy ? <ActivityIndicator size="small" color={DS.dangerInk} /> : <Text style={styles.resendText}>{t("Renvoyer la demande")}</Text>}
           </TouchableOpacity>
         ) : null}
-      </View>
-    );
-  }
-
-  const ask = async () => {
-    setBusy(true);
-    let quote: any = null;
-    try {
-      const { data } = await axios.get(`${Config.apiUrl}/order/cancel-quote/${(order as any).userId}/${order.id}`);
-      quote = data?.data;
-    } catch (e: any) {
-      setBusy(false);
-      showToast(apiErrorMessage(e) || t("Annulation impossible. Réessayez."), "error");
-      return;
-    }
-    setBusy(false);
-    const detail = quote?.manual
-      ? t("Le remboursement sera traité par notre équipe.")
-      : quote?.phone
-        ? t("Tu recevras {{a}} F sur le {{p}}, le numéro qui a payé (frais de paiement retenus : {{b}} F).", { a: quote?.refund ?? 0, b: quote?.feesKept ?? 0, p: quote.phone })
-        : t("Tu recevras {{a}} F (frais de paiement retenus : {{b}} F).", { a: quote?.refund ?? 0, b: quote?.feesKept ?? 0 });
-    setConfirmText(detail);
-  };
-
-  if (confirmText) {
-    // Design de StaffConfirmDialog (R16 : copie), affiche INLINE dans toute la
-    // zone libre sous le contenu du detail (a la place du bouton).
-    return (
-      <View style={styles.confirmZone}>
-        <View style={styles.confirmIcon}>
-          <Ionicons name="close-circle-outline" size={26} color={DS.dangerInk} />
-        </View>
-        <Text style={styles.confirmTitle}>{t("Annuler la commande ?")}</Text>
-        <Text style={styles.confirmText}>{confirmText}</Text>
-        <View style={styles.confirmRow}>
-          <TouchableOpacity style={[styles.choice, styles.choiceNo]} onPress={() => setConfirmText(null)} disabled={busy} activeOpacity={0.8}>
-            <Text style={styles.choiceNoText}>{t("Non")}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.choice, styles.choiceYes]} onPress={() => cancel()} disabled={busy} activeOpacity={0.8}>
-            {busy ? <ActivityIndicator size="small" color={DS.onInk} /> : <Text style={styles.choiceYesText}>{t("Oui, annuler")}</Text>}
-          </TouchableOpacity>
-        </View>
       </View>
     );
   }
@@ -150,15 +80,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 8, paddingRight: 6 },
   stateGrow: { flex: 1, textAlign: "left" },
   resend: { height: 36, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: DS.dangerInk, alignItems: "center", justifyContent: "center" },
-  confirmZone: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
-  confirmIcon: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", marginBottom: 12, backgroundColor: DS.dangerSoft },
-  confirmTitle: { fontSize: 17, fontWeight: "800", color: DS.ink, marginBottom: 6, textAlign: "center" },
-  confirmText: { fontSize: 14, lineHeight: 20, color: DS.muted, textAlign: "center", marginBottom: 20 },
-  confirmRow: { flexDirection: "row", gap: 10, width: "100%" },
-  choice: { flex: 1, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
-  choiceNo: { backgroundColor: DS.surface },
-  choiceNoText: { fontSize: 15, fontWeight: "700", color: DS.ink },
-  choiceYes: { backgroundColor: DS.dangerInk },
-  choiceYesText: { fontSize: 15, fontWeight: "700", color: DS.onInk },
   resendText: { fontSize: 13, fontWeight: "700", color: DS.dangerInk },
 });

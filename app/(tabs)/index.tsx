@@ -39,7 +39,7 @@ import { isHomeListAvailable } from "@/modules/home-list";
 
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useNotifications } from "@/src/features/notifications/hooks/useNotifications";
-import { hasPendingShopLink } from "@/src/features/search/utils/pendingShopLink";
+import { isLinkLaunch, releaseSplashForLink } from "@/src/features/search/utils/pendingShopLink";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { WorkOrdersScreen } from "@/src/features/staff/components/WorkOrdersScreen";
@@ -103,7 +103,8 @@ function HomeScreen() {
   const hideSplash = useHideSplash();
   // Lien QR en attente (demarrage a froid) : la recherche leve le splash, pas le home.
   const onLayoutRootView = () => {
-    if (!hasPendingShopLink()) hideSplash();
+    if (isLinkLaunch()) releaseSplashForLink("home", hideSplash);
+    else hideSplash();
   };
   const { ensureProfileRefreshed } = useAuth();
   const { unreadCount, ensureLoaded: ensureNotificationsLoaded } =

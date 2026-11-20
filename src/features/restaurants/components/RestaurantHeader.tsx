@@ -34,7 +34,8 @@ interface RestaurantHeaderProps {
   onProfilePress?: () => void;
   /** Ouvre la page de recherche (`app/search.tsx`). Remplace l'ancien bouton panier. */
   onSearchPress?: () => void;
-  onOrdersPress?: () => void;
+  /** Ouvre directement le scanner de QR code boutique (remplace l'ancien raccourci commandes). */
+  onScanPress?: () => void;
   /** Compte marchand en mode client : remplace la localisation par « Mode marchand ». */
   onMerchantMode?: () => void;
   /** Appui sur la pilule de localisation : ouvre le choix de la ville. */
@@ -56,7 +57,7 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
   onNotifPress,
   onProfilePress,
   onSearchPress,
-  onOrdersPress,
+  onScanPress,
   onMerchantMode,
   onLocationPress,
 }) => {
@@ -102,10 +103,10 @@ export const RestaurantHeader: React.FC<RestaurantHeaderProps> = ({
 
           <TouchableOpacity
             style={styles.iconBtn}
-            onPress={onOrdersPress}
+            onPress={onScanPress}
             activeOpacity={0.8}
           >
-            <Ionicons name="receipt" size={16} color="#111" />
+            <Ionicons name="scan-outline" size={16} color="#111" />
           </TouchableOpacity>
 
           <TouchableOpacity

@@ -1,6 +1,9 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { trackQr } from "@/src/features/search/utils/qrLinkTelemetry";
+import { releaseSplashForLink, takePendingShopLink } from "@/src/features/search/utils/pendingShopLink";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -54,7 +57,17 @@ function SearchContent() {
   const [scanOpen, setScanOpen] = useState(false);
   // Boutique choisie par QR code : n'affiche que ses plats.
   const [shopId, setShopId] = useState<string | null>(shopIdParam ? String(shopIdParam) : null);
+  // Nouveau scan externe pendant que la page est deja ouverte : change de boutique.
+  useEffect(() => {
+    if (shopIdParam) {
+      setShopId(String(shopIdParam));
+      setQuery("");
+      setCategory(0);
+      takePendingShopLink();
+    }
+  }, [shopIdParam]);
   const { results, loading, error, loadMore, shopName } = useShopSearch(query, category, shopId);
+  const hideSplash = useHideSplash(); // ouverture par QR a froid : le home n'a pas leve le splash
   const checkout = useHomeCheckout();
 
   // Le toast local du checkout home est remplacé par le toast global (R22).
@@ -76,7 +89,10 @@ function SearchContent() {
   );
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View style={[styles.screen, { paddingTop: insets.top }]} onLayout={() => {
+        trackQr("search-layout", { shopId });
+        releaseSplashForLink("search", hideSplash);
+      }}>
       <View style={styles.bar}>
         <TouchableOpacity style={styles.back} onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} activeOpacity={0.8}>
           <Ionicons name="chevron-back" size={20} color={DS.ink} />
@@ -98,7 +114,7 @@ function SearchContent() {
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={() => setScanOpen(true)} hitSlop={10}>
-            <Ionicons name="camera-outline" size={20} color={DS.ink} />
+            <Ionicons name="scan-outline" size={20} color={DS.ink} />
           </TouchableOpacity>
         </View>
       </View>

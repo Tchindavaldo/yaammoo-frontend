@@ -48,14 +48,13 @@ function SearchContent() {
   const insets = useSafeAreaInsets();
   const bottomInset = usePageBottomInset();
   // `?q=` : ouverte depuis une notification (nom du plat ou de la boutique).
-  const { q } = useLocalSearchParams<{ q?: string }>();
+  const { q, shopId: shopIdParam } = useLocalSearchParams<{ q?: string; shopId?: string }>();
   const [query, setQuery] = useState(q ? String(q) : "");
   const [category, setCategory] = useState(0);
   const [scanOpen, setScanOpen] = useState(false);
   // Boutique choisie par QR code : n'affiche que ses plats.
-  const [shopId, setShopId] = useState<string | null>(null);
-  const { results, loading, error, loadMore } = useShopSearch(query, category, shopId);
-  const scannedShopName = shopId ? results[0]?.shopName : undefined;
+  const [shopId, setShopId] = useState<string | null>(shopIdParam ? String(shopIdParam) : null);
+  const { results, loading, error, loadMore, shopName } = useShopSearch(query, category, shopId);
   const checkout = useHomeCheckout();
 
   // Le toast local du checkout home est remplacé par le toast global (R22).
@@ -79,7 +78,7 @@ function SearchContent() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.bar}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.back} onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} activeOpacity={0.8}>
           <Ionicons name="chevron-back" size={20} color={DS.ink} />
         </TouchableOpacity>
         <View style={styles.inputWrap}>
@@ -109,7 +108,7 @@ function SearchContent() {
           <TouchableOpacity style={styles.shopTag} onPress={() => setShopId(null)} activeOpacity={0.8}>
             <Ionicons name="storefront-outline" size={14} color={DS.onInk} />
             <Text style={styles.shopTagText} numberOfLines={1}>
-              {scannedShopName || t("Boutique scannée")}
+              {shopName || t("Boutique scannée")}
             </Text>
             <Ionicons name="close" size={14} color={DS.onInk} />
           </TouchableOpacity>

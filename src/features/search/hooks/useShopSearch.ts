@@ -70,28 +70,40 @@ export const useShopSearch = (query: string, categoryIndex: number, shopId?: str
   const [error, setError] = useState(false);
   const cursorRef = useRef<string | null>(null);
   const runRef = useRef(0);
+  const shopNameRef = useRef("");
+  const [shopName, setShopName] = useState("");
   const q = query.trim();
+  // Nouvelle boutique scannee (ou filtre retire) : le nom en cache n'est plus bon.
+  useEffect(() => {
+    shopNameRef.current = "";
+    setShopName("");
+  }, [shopId]);
 
   const fetchPage = useCallback(
     async (run: number, cursor: string | null) => {
       const idToken = await getOptionalIdToken();
-      // Boutique scannee (QR) : une seule boutique, sans pagination.
+      // Boutique scannee (QR) : GET /fastFood/:id ne renvoie pas les plats ;
+      // on lit son nom puis on cherche par nom et on garde la boutique par id.
+      let name = q;
       if (shopId) {
-        const one: any = await axios.get(`${Config.apiUrl}/fastFood/${shopId}`, {
-          headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
-        });
-        if (run !== runRef.current) return null;
-        cursorRef.current = null;
-        const d = one.data?.data ?? one.data;
-        return d ? [normalizeFastFood({ ...d, id: d.id ?? shopId, nom: d.nom ?? d.name })] : [];
+        if (!shopNameRef.current) {
+          const one: any = await axios.get(`${Config.apiUrl}/fastFood/${shopId}`, {
+            headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+          });
+          const d = one.data?.data ?? one.data;
+          shopNameRef.current = String(d?.name ?? d?.nom ?? "");
+          setShopName(shopNameRef.current);
+        }
+        name = shopNameRef.current;
       }
       const res: any = await axios.get(`${Config.apiUrl}/fastFood/all`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
-        params: { limit: LIMIT, ...(q ? { q } : {}), ...(cursor ? { cursor } : {}) },
+        params: { limit: LIMIT, ...(name ? { q: name } : {}), ...(cursor ? { cursor } : {}) },
       });
       if (run !== runRef.current) return null;
       cursorRef.current = res.data?.nextCursor ?? null;
-      return listOf(res.data).map((ff: any) => normalizeFastFood(ff));
+      const list = listOf(res.data).map((ff: any) => normalizeFastFood(ff));
+      return shopId ? list.filter((ff: any) => String(ff.id) === shopId) : list;
     },
     [q, shopId],
   );
@@ -141,5 +153,5 @@ export const useShopSearch = (query: string, categoryIndex: number, shopId?: str
     [shops, categoryIndex, query],
   );
 
-  return { results, loading, loadingMore, error, loadMore };
+  return { results, loading, loadingMore, error, loadMore, shopName };
 };

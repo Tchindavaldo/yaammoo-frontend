@@ -1,21 +1,23 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 // Confirmation d'annulation d'UNE commande, cote marchand : remplace le contenu
 // de l'onglet affiche. Design de StaffConfirmDialog (R16 : copie), INLINE.
-// MAQUETTE : « Oui » n'est pas encore branche au backend.
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 
 interface Props {
   /** Numero de la commande selectionnee (« Cmd N »). */
   rank: number;
+  /** Detail du devis : montant rendu au client et frais d'annulation. */
+  detail: string;
+  busy?: boolean;
   onNo: () => void;
   onYes: () => void;
 }
 
-export function MerchantOrderDeleteConfirm({ rank, onNo, onYes }: Props) {
+export function MerchantOrderDeleteConfirm({ rank, detail, busy, onNo, onYes }: Props) {
   useLanguage();
   return (
     <View style={styles.zone}>
@@ -24,14 +26,14 @@ export function MerchantOrderDeleteConfirm({ rank, onNo, onYes }: Props) {
       </View>
       <Text style={styles.title}>{t("Annuler la commande ?")}</Text>
       <Text style={styles.message}>
-        {t("La commande Cmd {{a}} sera annulée et le client sera prévenu. Les autres commandes ne changent pas.", { a: rank })}
+        {t("La commande Cmd {{a}} sera annulée et le client sera prévenu. Les autres commandes ne changent pas.", { a: rank })} {detail}
       </Text>
       <View style={styles.row}>
-        <TouchableOpacity style={[styles.btn, styles.no]} onPress={onNo} activeOpacity={0.8}>
+        <TouchableOpacity style={[styles.btn, styles.no]} onPress={onNo} disabled={busy} activeOpacity={0.8}>
           <Text style={styles.noText}>{t("Non")}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.btn, styles.yes]} onPress={onYes} activeOpacity={0.8}>
-          <Text style={styles.yesText}>{t("Oui, annuler")}</Text>
+        <TouchableOpacity style={[styles.btn, styles.yes]} onPress={onYes} disabled={busy} activeOpacity={0.8}>
+          {busy ? <ActivityIndicator size="small" color={DS.onInk} /> : <Text style={styles.yesText}>{t("Oui, annuler")}</Text>}
         </TouchableOpacity>
       </View>
     </View>

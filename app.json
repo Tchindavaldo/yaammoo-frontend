@@ -106,6 +106,14 @@
         }
       ],
       "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Yaammoo utilise la caméra pour scanner le QR code d'une boutique.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-secure-store",
       "expo-sharing",
       "expo-status-bar",

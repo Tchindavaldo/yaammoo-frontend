@@ -19,6 +19,7 @@ import { CheckoutSheet } from "@/src/features/checkout/components/CheckoutSheet"
 import { useHomeCheckout } from "@/src/features/restaurants/hooks/useHomeCheckout";
 import { CATEGORIES } from "@/src/features/restaurants/utils/homeListConfig";
 import { SearchResultRow, SEARCH_ROW_HEIGHT } from "@/src/features/search/components/SearchResultRow";
+import { ShopQrScanner } from "@/src/features/search/components/ShopQrScanner";
 import { SearchRow, useShopSearch } from "@/src/features/search/hooks/useShopSearch";
 import { usePageBottomInset } from "@/src/hooks/usePageBottomInset";
 import { showToast } from "@/src/services/globalToast";
@@ -47,10 +48,13 @@ function SearchContent() {
   const insets = useSafeAreaInsets();
   const bottomInset = usePageBottomInset();
   // `?q=` : ouverte depuis une notification (nom du plat ou de la boutique).
-  const { q } = useLocalSearchParams<{ q?: string }>();
+  const { q, shopId: shopIdParam } = useLocalSearchParams<{ q?: string; shopId?: string }>();
   const [query, setQuery] = useState(q ? String(q) : "");
   const [category, setCategory] = useState(0);
-  const { results, loading, error, loadMore } = useShopSearch(query, category);
+  const [scanOpen, setScanOpen] = useState(false);
+  // Boutique choisie par QR code : n'affiche que ses plats.
+  const [shopId, setShopId] = useState<string | null>(shopIdParam ? String(shopIdParam) : null);
+  const { results, loading, error, loadMore, shopName } = useShopSearch(query, category, shopId);
   const checkout = useHomeCheckout();
 
   // Le toast local du checkout home est remplacé par le toast global (R22).
@@ -74,7 +78,7 @@ function SearchContent() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.bar}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.back} onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} activeOpacity={0.8}>
           <Ionicons name="chevron-back" size={20} color={DS.ink} />
         </TouchableOpacity>
         <View style={styles.inputWrap}>
@@ -93,8 +97,23 @@ function SearchContent() {
               <Ionicons name="close-circle" size={17} color={DS.faint} />
             </TouchableOpacity>
           )}
+          <TouchableOpacity onPress={() => setScanOpen(true)} hitSlop={10}>
+            <Ionicons name="camera-outline" size={20} color={DS.ink} />
+          </TouchableOpacity>
         </View>
       </View>
+
+      {shopId && (
+        <View style={styles.shopTagRow}>
+          <TouchableOpacity style={styles.shopTag} onPress={() => setShopId(null)} activeOpacity={0.8}>
+            <Ionicons name="storefront-outline" size={14} color={DS.onInk} />
+            <Text style={styles.shopTagText} numberOfLines={1}>
+              {shopName || t("Boutique scannée")}
+            </Text>
+            <Ionicons name="close" size={14} color={DS.onInk} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       <View>
         <ScrollView
@@ -154,6 +173,17 @@ function SearchContent() {
         }
       />
 
+      <ShopQrScanner
+        visible={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onScanned={(id) => {
+          setShopId(id);
+          setQuery("");
+          setCategory(0);
+          setScanOpen(false);
+        }}
+      />
+
       <CheckoutSheet
         key={checkout.selectedMenu?.id || "checkout"}
         visible={checkout.checkoutVisible}
@@ -188,6 +218,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   input: { flex: 1, fontSize: 14, color: DS.ink, paddingVertical: 0 },
+  shopTagRow: { paddingHorizontal: 12, flexDirection: "row" },
+  shopTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 32,
+    maxWidth: "100%",
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: DS.accent,
+  },
+  shopTagText: { fontSize: 12, fontWeight: "700", color: DS.onInk, flexShrink: 1 },
   chips: { paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
   chip: {
     flexDirection: "row",

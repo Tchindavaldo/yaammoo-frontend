@@ -15,7 +15,8 @@ import { useAppVersion } from "@/src/features/appVersion/context/AppVersionConte
 import { GoogleIcon, WhatsAppIcon } from "@/src/features/auth/components/AuthProviderIcons";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { useAuthGate } from "@/src/features/auth/context/AuthGateContext";
-import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { trackQr } from "@/src/features/search/utils/qrLinkTelemetry";
+import { isSplashHidden, useHideSplash } from "@/src/hooks/useHideSplash";
 import { DS } from "@/src/theme/ds";
 import { useBottomSafeArea } from "@/src/hooks/usePageBottomInset";
 import { SafeAreaDebugBand } from "@/src/components/SafeAreaDebugBand";
@@ -107,6 +108,10 @@ export default function WelcomeScreen() {
 
   // Apres le premier rendu peint (polices chargees) : `useHideSplash` laisse
   // encore une frame avant de cacher le splash.
+  useEffect(() => {
+    trackQr("auth-screen", { loading, isSignedIn, versionChecked, isDestination, splashHidden: isSplashHidden() });
+  }, [loading, isSignedIn, versionChecked, isDestination]);
+
   useEffect(() => {
     if (fontsLoaded && isDestination) hideSplash();
   }, [fontsLoaded, isDestination, hideSplash]);

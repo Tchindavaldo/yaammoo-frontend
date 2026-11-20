@@ -1,6 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Tabs, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { trackQr } from "@/src/features/search/utils/qrLinkTelemetry";
 import { claimPendingShopLinkForOpen } from "@/src/features/search/utils/pendingShopLink";
 import React, { useEffect } from "react";
 import { Platform, View } from "react-native";
@@ -66,8 +67,12 @@ function TabLayoutInner() {
     // s'ouvre dessous et le leve. Repli : leve le splash si elle ne vient pas.
     const id = claimPendingShopLinkForOpen();
     if (!id) return;
+    trackQr("tabs-push-search", { id });
     router.push({ pathname: "/search", params: { shopId: id } });
-    const timer = setTimeout(() => SplashScreen.hideAsync().catch(() => {}), 3000);
+    const timer = setTimeout(() => {
+      trackQr("fallback-3s");
+      SplashScreen.hideAsync().catch(() => {});
+    }, 3000);
     return () => clearTimeout(timer);
   }, [router]);
 

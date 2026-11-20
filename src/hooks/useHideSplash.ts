@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
 import * as SplashScreen from "expo-splash-screen";
+import { trackQr } from "@/src/features/search/utils/qrLinkTelemetry";
 import { trackSplashHidden } from "@/src/services/netTelemetry";
 
 // Vrai une fois que le splash natif a été caché (1re fois). Sert à savoir si on
@@ -49,6 +50,7 @@ export function useHideSplash() {
     hidden.current = true;
     // Laisse une frame supplémentaire pour que le contenu soit dessiné, puis cache.
     requestAnimationFrame(() => {
+      trackQr("splash-hidden");
       splashHidden = true;
       SplashScreen.hideAsync().catch(() => {});
       trackSplashHidden();

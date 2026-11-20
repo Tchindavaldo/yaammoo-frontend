@@ -1,4 +1,5 @@
 import "@/src/services/webTitleFix";
+import { trackQr } from "@/src/features/search/utils/qrLinkTelemetry";
 import { useAppFont } from "@/src/theme/appFont";
 import {
   DefaultTheme,
@@ -145,6 +146,9 @@ function AppContent() {
     prevGroupRef.current !== null && prevGroupRef.current !== currentGroup;
   prevGroupRef.current = currentGroup;
   const screenAnimation = splashGone && groupChanged ? "fade" : "none";
+  useEffect(() => {
+    trackQr("root-group", { currentGroup, loading, isSignedIn, versionChecked, splashGone });
+  }, [currentGroup, loading, isSignedIn, versionChecked, splashGone]);
 
   // Setup notifications (get token push + synchro états) après connexion.
   // Se rejoue à chaque nouvelle connexion : on compare l'uid connecté au dernier

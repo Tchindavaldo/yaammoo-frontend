@@ -2,6 +2,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useHideSplash } from "@/src/hooks/useHideSplash";
+import { trackQr } from "@/src/features/search/utils/qrLinkTelemetry";
 import { releaseSplashForLink, takePendingShopLink } from "@/src/features/search/utils/pendingShopLink";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -88,7 +89,10 @@ function SearchContent() {
   );
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]} onLayout={() => releaseSplashForLink("search", hideSplash)}>
+    <View style={[styles.screen, { paddingTop: insets.top }]} onLayout={() => {
+        trackQr("search-layout", { shopId });
+        releaseSplashForLink("search", hideSplash);
+      }}>
       <View style={styles.bar}>
         <TouchableOpacity style={styles.back} onPress={() => (router.canGoBack() ? router.back() : router.replace("/"))} activeOpacity={0.8}>
           <Ionicons name="chevron-back" size={20} color={DS.ink} />

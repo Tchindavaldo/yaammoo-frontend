@@ -108,8 +108,8 @@ export function OrderLivraisonTab({ order, onCancelled }: { order: Commande; onC
         </View>
       )}
 
-      {/* Bas du sheet, contre la safe-area : annulation (commande en attente). */}
-      <View style={{ flex: 1 }} />
+      {/* Annulation (commande en attente), juste sous le contenu ; sa confirmation
+          occupe toute la zone libre en dessous. */}
       <OrderCancelButton order={order} onDone={onCancelled} />
     </>
   );

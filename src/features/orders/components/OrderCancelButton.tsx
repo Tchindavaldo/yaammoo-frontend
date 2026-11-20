@@ -1,4 +1,5 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
+import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -105,8 +106,13 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
   };
 
   if (confirmText) {
+    // Design de StaffConfirmDialog (R16 : copie), affiche INLINE dans toute la
+    // zone libre sous le contenu du detail (a la place du bouton).
     return (
-      <View style={styles.confirm}>
+      <View style={styles.confirmZone}>
+        <View style={styles.confirmIcon}>
+          <Ionicons name="close-circle-outline" size={26} color={DS.dangerInk} />
+        </View>
         <Text style={styles.confirmTitle}>{t("Annuler la commande ?")}</Text>
         <Text style={styles.confirmText}>{confirmText}</Text>
         <View style={styles.confirmRow}>
@@ -114,7 +120,7 @@ export function OrderCancelButton({ order, onDone }: { order: Commande; onDone?:
             <Text style={styles.choiceNoText}>{t("Non")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.choice, styles.choiceYes]} onPress={() => cancel()} disabled={busy} activeOpacity={0.8}>
-            {busy ? <ActivityIndicator size="small" color={DS.dangerInk} /> : <Text style={styles.text}>{t("Oui, annuler")}</Text>}
+            {busy ? <ActivityIndicator size="small" color={DS.onInk} /> : <Text style={styles.choiceYesText}>{t("Oui, annuler")}</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -136,7 +142,7 @@ const styles = StyleSheet.create({
     borderColor: DS.dangerInk,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
+    marginTop: 12,
   },
   text: { fontSize: 14, fontWeight: "700", color: DS.dangerInk },
   state: { borderColor: DS.slate300, backgroundColor: DS.slate50, paddingHorizontal: 16 },
@@ -144,13 +150,15 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", gap: 8, paddingRight: 6 },
   stateGrow: { flex: 1, textAlign: "left" },
   resend: { height: 36, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: DS.dangerInk, alignItems: "center", justifyContent: "center" },
-  confirm: { marginTop: 16, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: DS.slate300, backgroundColor: DS.slate50, gap: 8 },
-  confirmTitle: { fontSize: 15, fontWeight: "700", color: DS.slate900 },
-  confirmText: { fontSize: 13, color: DS.slate600 },
-  confirmRow: { flexDirection: "row", gap: 10, marginTop: 4 },
-  choice: { flex: 1, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center", borderWidth: 1 },
-  choiceNo: { borderColor: DS.slate300 },
-  choiceNoText: { fontSize: 14, fontWeight: "700", color: DS.slate600 },
-  choiceYes: { borderColor: DS.dangerInk },
+  confirmZone: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
+  confirmIcon: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", marginBottom: 12, backgroundColor: DS.dangerSoft },
+  confirmTitle: { fontSize: 17, fontWeight: "800", color: DS.ink, marginBottom: 6, textAlign: "center" },
+  confirmText: { fontSize: 14, lineHeight: 20, color: DS.muted, textAlign: "center", marginBottom: 20 },
+  confirmRow: { flexDirection: "row", gap: 10, width: "100%" },
+  choice: { flex: 1, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
+  choiceNo: { backgroundColor: DS.surface },
+  choiceNoText: { fontSize: 15, fontWeight: "700", color: DS.ink },
+  choiceYes: { backgroundColor: DS.dangerInk },
+  choiceYesText: { fontSize: 15, fontWeight: "700", color: DS.onInk },
   resendText: { fontSize: 13, fontWeight: "700", color: DS.dangerInk },
 });

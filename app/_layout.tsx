@@ -238,7 +238,8 @@ function AppContent() {
           <Stack.Screen name="shop" options={{ animation: "slide_from_right" }} />
           <Stack.Screen name="account" options={{ animation: "slide_from_right" }} />
           {/* Recherche plats / boutiques, ouverte par la loupe du header du home. */}
-          <Stack.Screen name="search" options={{ animation: "slide_from_right" }} />
+          {/* Sans animation sous le splash (ouverture a froid par QR) : le slide laissait voir la page d'auth qui part dessous. */}
+          <Stack.Screen name="search" options={{ animation: splashGone ? "slide_from_right" : "none" }} />
         </Stack.Protected>
         {/* (auth) reste monté tant que (tabs) n'est PAS prêt (canEnterApp false).
             On NE met PAS authResolved ici : sinon, pendant la re-vérification auth

@@ -214,11 +214,9 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
               <Ionicons name="star" size={13} color={DS.star} />
               {/* Sans avis : « Nouveau », jamais une note inventee. */}
               <Text style={styles.aereScore}>{reviewCount > 0 ? `${rating.toFixed(1)}/5` : t("Nouveau")}</Text>
-              {reviewCount > 0 ? (
-                <View style={styles.aereReviews}>
-                  <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
-                </View>
-              ) : null}
+              <View style={styles.aereReviews}>
+                <Text style={styles.aereReviewsText}>{reviewCount} {t("avis")}</Text>
+              </View>
             </View>
             {delivery ? (
               <Text style={styles.aereDelivery}>

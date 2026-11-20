@@ -9,6 +9,8 @@ import { DS } from "@/src/theme/ds";
 import { t, useLanguage } from "@/src/i18n";
 import { pickupLabel } from "@/src/features/checkout/utils/pickupHours";
 import { OrderCancelButton } from "./OrderCancelButton";
+import { OrderCancelConfirm } from "./OrderCancelConfirm";
+import { useOrderCancel } from "../hooks/useOrderCancel";
 
 /**
  * Onglet « Livraison » du détail client (`OrderBottomSheet`) : créneau,
@@ -23,6 +25,8 @@ export function OrderLivraisonTab({ order, onCancelled }: { order: Commande; onC
   // En fin de lecture, la barre repart a zero (comme avant la migration).
   const playbackProgress = voice.finished ? 0 : voice.progress;
 
+  const cancelState = useOrderCancel(order, onCancelled);
+
   async function playSound() {
     if (!order.delivery?.voiceNoteUri) return;
     try {
@@ -31,6 +35,9 @@ export function OrderLivraisonTab({ order, onCancelled }: { order: Commande; onC
       console.log(error);
     }
   }
+
+  // Confirmation d'annulation : remplace TOUT le contenu de l'onglet.
+  if (cancelState.confirmText) return <OrderCancelConfirm cancel={cancelState} />;
 
   return (
     <>
@@ -108,9 +115,9 @@ export function OrderLivraisonTab({ order, onCancelled }: { order: Commande; onC
         </View>
       )}
 
-      {/* Bas du sheet, contre la safe-area : annulation (commande en attente). */}
-      <View style={{ flex: 1 }} />
-      <OrderCancelButton order={order} onDone={onCancelled} />
+      {/* Annulation (commande en attente), juste sous le contenu ; sa confirmation
+          occupe toute la zone libre en dessous. */}
+      <OrderCancelButton order={order} cancelState={cancelState} />
     </>
   );
 }

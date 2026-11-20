@@ -4,12 +4,10 @@ import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Animated, Dimensions, Easing, PanResponder, Pressable, Modal,
-  NativeSyntheticEvent, NativeScrollEvent, Platform,
 } from 'react-native';
 // Safe-area basse au ratio par OS (iOS 0.5 / Android 1), cf. blur-safe-area.md §4.
 import { useSheetSafeInsets as useSafeAreaInsets } from '@/src/hooks/usePageBottomInset';
 import { SafeAreaDebugBand } from '@/src/components/SafeAreaDebugBand';
-import { Ionicons } from '@expo/vector-icons';
 import { Commande } from '@/src/types';
 import { Toast } from '@/src/components/Toast';
 import { LivraisonTab } from './MerchantOrderLivraisonTab';
@@ -17,15 +15,13 @@ import { CommandesTab } from './MerchantOrderCommandesTab';
 import { MontantTab } from './MerchantOrderMontantTab';
 import { orderGroupKey } from '../utils/orderGroupKey';
 import { DriverInfoTab } from '@/src/features/orders/components/DriverInfoTab';
-import { DS } from "@/src/theme/ds";
 import { t as tr, useLanguage } from "@/src/i18n";
-import { pickupLabel } from "@/src/features/checkout/utils/pickupHours";
+import { buildUser } from '../utils/merchantOrderSheetData';
+import { CMD_BAR_HEIGHT, SHEET_HEIGHT, styles } from './MerchantOrderBottomSheet.styles';
+import { MerchantOrderDeleteConfirm } from './MerchantOrderDeleteConfirm';
+import { MerchantOrderSheetHeader } from './MerchantOrderSheetHeader';
+import { showToast } from '@/src/services/globalToast';
 
-// iOS aligne sur le sheet client (450) ; Android garde 490.
-const SHEET_HEIGHT = Platform.OS === 'ios' ? 450 : 490;
-// Hauteur de la barre de chips « Cmd » (chip 24 + paddings 8/8 + trait) : le
-// sheet grandit d'autant quand elle est affichée, pour ne rien rogner en bas.
-const CMD_BAR_HEIGHT = 41;
 // Distance de sortie des animations d'ouverture/fermeture. On translate d'un
 // ÉCRAN ENTIER et non de `SHEET_HEIGHT` : avec plusieurs zones le sheet mesure
 // `SHEET_HEIGHT + CMD_BAR_HEIGHT` (barre de chips « Cmd »), si bien qu'une
@@ -33,36 +29,7 @@ const CMD_BAR_HEIGHT = 41;
 // jusqu'au démontage du Modal.
 const OFFSCREEN_Y = Dimensions.get('window').height;
 
-// ─── Types publics (réexportés pour les sous-composants) ──────────────────────
-export type OrderItem = {
-  name: string;
-  qty: number;
-  price: string;
-  unitPrice?: number;
-  hasQty?: boolean;
-  type?: 'menu' | 'extra' | 'drink';
-  /** Visuel du plat (type `menu` uniquement) : affiché à la place de l'icône. */
-  image?: string;
-};
-
-export type DeliveryUser = {
-  initials: string;
-  name: string;
-  addr: string;
-  avColor: string;
-  avTextColor: string;
-  badgeColor: string;
-  orderCount: number;
-  rating: number;
-  phone: string;
-  creneau: string;
-  duration: string;
-  note: string;
-  voiceNoteUri: string;
-  zone: string;
-  deliveryPrice: number;
-  orders: OrderItem[];
-};
+export type { OrderItem, DeliveryUser } from '../utils/merchantOrderSheetData';
 
 type Tab = 'livraison' | 'commandes' | 'montant' | 'livreur';
 
@@ -84,89 +51,6 @@ type Props = {
   canValidate?: boolean;
 };
 
-// ─── Couleurs avatar ──────────────────────────────────────────────────────────
-const COLORS = [
-  { bg: '#EAF3DE', text: '#4B7C16', badge: '#7CB342' },
-  { bg: DS.accentCream, text: '#A04000', badge: '#E67E22' },
-  { bg: '#D6EAF8', text: '#1B4F72', badge: '#3498DB' },
-  { bg: '#E8DAEF', text: '#512E5F', badge: '#8E44AD' },
-];
-
-// ─── Construit la liste des articles d'une commande ───────────────────────────
-function buildItems(order: Commande): OrderItem[] {
-  const items: OrderItem[] = [];
-
-  // Menu principal
-  const priceIdx = ((order as any).selectedPriceIndex || 1) - 1;
-  const menuPrice =
-    order.menu?.prices?.[priceIdx]?.price ||
-    order.menu?.prices?.[0]?.price ||
-    (order.menu as any)?.prix1 ||
-    0;
-  items.push({
-    name: order.menu?.titre || order.menu?.name || tr("Menu principal"),
-    qty: order.quantity || 1,
-    price: `${menuPrice * (order.quantity || 1)} XAF`,
-    unitPrice: menuPrice,
-    hasQty: true,
-    type: 'menu',
-    image: (order.menu as any)?.coverImage || (order.menu as any)?.image,
-  });
-
-  // Extras — uniquement ceux sélectionnés (status === true)
-  (order.extra || []).forEach((ex: any) => {
-    if (ex.status === true && ex.name && ex.name !== 'Aucun' && ex.name !== 'Aucune') {
-      const p = ex.prix || ex.price || 0;
-      items.push({ name: ex.name, qty: 1, price: `${p} XAF`, unitPrice: p, hasQty: false, type: 'extra' });
-    }
-  });
-
-  // Boissons — uniquement celles sélectionnées (status === true)
-  (order.drink || []).forEach((dr: any) => {
-    if (dr.status === true && dr.name && dr.name !== 'Aucune' && dr.name !== 'Aucun') {
-      const p = dr.prix || dr.price || 0;
-      const q = dr.quantite || 1;
-      items.push({ name: dr.name, qty: q, price: `${p * q} XAF`, unitPrice: p, hasQty: q > 1, type: 'drink' });
-    }
-  });
-
-  return items;
-}
-
-// ─── Construit le DeliveryUser à partir d'une Commande ───────────────────────
-function buildUser(order: Commande): DeliveryUser {
-  const first = order.userData?.firstName || 'Client';
-  const last = order.userData?.lastName || '';
-  const initials = `${first[0]}${last ? last[0] : ''}`.toUpperCase();
-  const theme = COLORS[initials.charCodeAt(0) % COLORS.length];
-
-  return {
-    initials,
-    name: `${first} ${last}`.trim(),
-    addr: order.delivery?.location || tr("Adresse non spécifiée"),
-    avColor: theme.bg,
-    avTextColor: theme.text,
-    badgeColor: theme.badge,
-    orderCount: (order as any).rank || 1,
-    rating: 4,
-    phone: order.delivery?.phone || order.userData?.phoneNumber?.toString() || tr("Non fourni"),
-    // Retrait : "Sur place · sam. 15 nov. · 14:30" (jour + heure de passage).
-    creneau: !order.delivery?.status
-      ? pickupLabel(order.delivery?.date, order.delivery?.time)
-      : order.delivery?.type === 'express'
-        ? 'Express'
-        : tr("Période ({{a}})", { a: order.delivery?.time || tr("Dès que possible") }),
-    duration: !order.delivery?.status
-      ? tr("Immédiat")
-      : order.delivery?.type === 'express' ? '15-20 min' : '30-45 min',
-    note: order.delivery?.note || tr("Aucune note de livraison."),
-    voiceNoteUri: order.delivery?.voiceNoteUri || '',
-    zone: (order.delivery as any)?.zone || '',
-    deliveryPrice: Number((order.delivery as any)?.prix) || 0,
-    orders: buildItems(order),
-  };
-}
-
 // ─── Composant principal ──────────────────────────────────────────────────────
 export default function MerchantOrderBottomSheet({
   order, visible, onClose, allOrders, groupPool, onValidate, canValidate = false,
@@ -176,6 +60,8 @@ export default function MerchantOrderBottomSheet({
   const [tab, setTab] = useState<Tab>('livraison');
   const [selectedOrderIdx, setSelectedOrderIdx] = useState(0);
   const [validating, setValidating] = useState(false);
+  // Corbeille du header : confirmation d'annulation de la Cmd SELECTIONNEE, qui remplace le contenu de tout onglet.
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const translateY = useRef(new Animated.Value(OFFSCREEN_Y)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -282,29 +168,6 @@ export default function MerchantOrderBottomSheet({
     return tr("{{a}}{{b}} non vérifiés — faites défiler la liste", { a: prefix, b: label });
   };
 
-  // ─── Chips « Cmd » du header : compteur de débordement « +N » ───────────────
-  // Largeur d'un chip + gap : sert à convertir des pixels masqués en nb de chips.
-  const CMD_CHIP_W = 58;
-  const [cmdViewportW, setCmdViewportW] = useState(0);
-  const [cmdContentW, setCmdContentW] = useState(0);
-  const [cmdScrollX, setCmdScrollX] = useState(0);
-
-  const handleCmdLayout = useCallback(
-    (e: { nativeEvent: { layout: { width: number } } }) => setCmdViewportW(e.nativeEvent.layout.width),
-    [],
-  );
-  const handleCmdContentSize = useCallback((w: number) => setCmdContentW(w), []);
-  const handleCmdScroll = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => setCmdScrollX(e.nativeEvent.contentOffset.x),
-    [],
-  );
-
-  // Pixels encore masqués à droite → nombre de chips restants. Un chip n'est
-  // compté que s'il est masqué à plus de moitié : à peine rogné, il reste lisible
-  // et ne doit pas gonfler le compteur.
-  const hiddenPx = Math.max(0, cmdContentW - cmdViewportW - cmdScrollX);
-  const hiddenCount = Math.floor(hiddenPx / CMD_CHIP_W + 0.5);
-
   const handleValidate = async () => {
     if (validating) return;
     if (!currentChecked) {
@@ -397,6 +260,9 @@ export default function MerchantOrderBottomSheet({
     ]).start();
   }, [visible, orderId]);
 
+  // Changer de Cmd ou de zone ferme la confirmation.
+  useEffect(() => { setConfirmDelete(false); }, [selectedOrderIdx, selectedZone, visible]);
+
   // Revenir à Livraison si la commande courante n'a plus de tab Livreur.
   useEffect(() => {
     if (tab === 'livreur' && !showDriverTab) setTab('livraison');
@@ -440,100 +306,18 @@ export default function MerchantOrderBottomSheet({
             { transform: [{ translateY }] },
           ]}
         >
-          {/* Header : avatar + nom + chips Cmd (fermeture : swipe ou tap overlay) */}
-          <View {...panResponder.panHandlers} style={styles.header}>
-            <View style={styles.userRow}>
-              <View style={[styles.avatar, { backgroundColor: user.avColor }]}>
-                <Text style={[styles.avatarText, { color: user.avTextColor }]}>{user.initials}</Text>
-                <View style={[styles.badge, { backgroundColor: user.badgeColor }]}>
-                  <Text style={styles.badgeText}>{user.orderCount}</Text>
-                </View>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.userName}>{user.name}</Text>
-                {hasMultiple && zones.length > 1 ? (
-                  /* Multi-zones : chips de ZONES (les Cmd sont sous les onglets). */
-                  <View style={styles.cmdRow}>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.cmdScroll}
-                      style={{ flexShrink: 1 }}
-                      onScroll={handleCmdScroll}
-                      scrollEventThrottle={16}
-                      onLayout={handleCmdLayout}
-                      onContentSizeChange={handleCmdContentSize}
-                    >
-                      {zones.map((z) => (
-                        <TouchableOpacity
-                          key={z}
-                          style={[styles.cmdChip, selectedZone === z && styles.cmdChipActive]}
-                          onPress={() => selectZone(z)}
-                        >
-                          <Text
-                            style={[
-                              styles.cmdChipText,
-                              selectedZone === z && styles.cmdChipTextActive,
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {z}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                    {/* Débordement : « +N » tant que la liste n'a pas été scrollée. */}
-                    {hiddenCount > 0 && (
-                      <View style={styles.cmdMore}>
-                        <Text style={styles.cmdMoreText}>+{hiddenCount}</Text>
-                      </View>
-                    )}
-                  </View>
-                ) : hasMultiple ? (
-                  /* Zone unique (livraison ou sur place) : chips Cmd 1/2/3…
-                     dans le header, comme avant. */
-                  <View style={styles.cmdRow}>
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.cmdScroll}
-                      style={{ flexShrink: 1 }}
-                      onScroll={handleCmdScroll}
-                      scrollEventThrottle={16}
-                      onLayout={handleCmdLayout}
-                      onContentSizeChange={handleCmdContentSize}
-                    >
-                      {orderList.map((o, idx) => (
-                        <TouchableOpacity
-                          key={idx}
-                          style={[styles.cmdChip, selectedOrderIdx === idx && styles.cmdChipActive]}
-                          onPress={() => setSelectedOrderIdx(idx)}
-                        >
-                          <Text
-                            style={[
-                              styles.cmdChipText,
-                              selectedOrderIdx === idx && styles.cmdChipTextActive,
-                            ]}
-                          >
-                            Cmd {(o as any).rank ?? idx + 1}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                    {hiddenCount > 0 && (
-                      <View style={styles.cmdMore}>
-                        <Text style={styles.cmdMoreText}>+{hiddenCount}</Text>
-                      </View>
-                    )}
-                  </View>
-                ) : (
-                  <Text style={styles.userAddr} numberOfLines={1}>
-                    {user.zone ? tr("Zone de livraison : {{a}}", { a: user.zone }) : user.addr}
-                  </Text>
-                )}
-              </View>
-            </View>
-          </View>
+          <MerchantOrderSheetHeader
+            user={user}
+            hasMultiple={!!hasMultiple}
+            zones={zones}
+            selectedZone={selectedZone}
+            onSelectZone={selectZone}
+            orderList={orderList}
+            selectedOrderIdx={selectedOrderIdx}
+            onSelectOrder={setSelectedOrderIdx}
+            panHandlers={panResponder.panHandlers}
+            onDelete={() => setConfirmDelete(true)}
+          />
 
           {/* Top tabs : Livraison | Commande | (Livreur) */}
           <View style={styles.tabBar}>
@@ -595,7 +379,17 @@ export default function MerchantOrderBottomSheet({
           )}
 
           {/* Contenu (change avec le tab, réactif à selectedOrderIdx) */}
-          {tab === 'livreur' && showDriverTab ? (
+          {confirmDelete ? (
+            <MerchantOrderDeleteConfirm
+              rank={(currentOrder as any)?.rank ?? selectedOrderIdx + 1}
+              onNo={() => setConfirmDelete(false)}
+              onYes={() => {
+                // Maquette : pas encore branche au backend.
+                setConfirmDelete(false);
+                showToast(tr("Annulation côté marchand : pas encore branchée."), 'info');
+              }}
+            />
+          ) : tab === 'livreur' && showDriverTab ? (
             <ScrollView
               style={styles.content}
               contentContainerStyle={{ paddingTop: 16, paddingBottom: 0 }}
@@ -654,71 +448,3 @@ export default function MerchantOrderBottomSheet({
     </Modal>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    height: SHEET_HEIGHT, backgroundColor: '#fff',
-    borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    shadowColor: '#000', shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.12, shadowRadius: 15, elevation: 20,
-  },
-  header: {
-    flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16,
-  },
-  userRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  avatar: {
-    width: 44, height: 44, borderRadius: 22,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: '#fff',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 4,
-  },
-  avatarText: { fontSize: 14, fontWeight: '700' },
-  badge: {
-    position: 'absolute', bottom: -2, right: -4,
-    borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2,
-    borderWidth: 2, borderColor: '#fff',
-  },
-  badgeText: { fontSize: 9, color: '#fff', fontWeight: '800' },
-  userName: { fontSize: 16, fontWeight: '700', color: '#111827' },
-  userAddr: { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  // Chips « Cmd » dans le header (multi-commandes)
-  cmdRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  cmdScroll: { flexDirection: 'row', gap: 6, paddingRight: 2 },
-  cmdChip: {
-    minWidth: 28, height: 24, paddingHorizontal: 8, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: DS.gray100, borderWidth: 1, borderColor: '#E5E7EB',
-  },
-  cmdChipActive: { backgroundColor: '#111827', borderColor: '#111827' },
-  // Barre des « Cmd » de la zone, juste sous les onglets.
-  // Le contenu de l'onglet a déjà son propre padding haut : on remonte la barre
-  // dessus (marge négative) pour resserrer l'écart, sans toucher aux chips.
-  zoneCmdBar: {
-    flexGrow: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: DS.gray100,
-    marginBottom: -10,
-  },
-  zoneCmdScroll: {
-    flexDirection: 'row', gap: 6, paddingHorizontal: 16, paddingVertical: 8,
-  },
-  cmdChipText: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
-  cmdChipTextActive: { color: '#FFFFFF' },
-  cmdMore: {
-    height: 24, paddingHorizontal: 7, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: '#E5E7EB',
-  },
-  cmdMoreText: { fontSize: 10, fontWeight: '800', color: '#4B5563' },
-  // Top tabs
-  tabBar: { flexDirection: 'row', paddingHorizontal: 20, borderBottomWidth: 1, borderColor: DS.gray100 },
-  tab: { marginRight: 24, paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive: { borderBottomColor: '#111827' },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#9CA3AF' },
-  tabTextActive: { color: '#111827' },
-  content: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
-});

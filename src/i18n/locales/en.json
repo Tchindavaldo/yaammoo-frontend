@@ -1443,5 +1443,7 @@
   "QR code non reconnu": "Unrecognized QR code",
   "Autorisez la caméra pour scanner le QR code d'une boutique.": "Allow camera access to scan a shop's QR code.",
   "Scannez le QR code d'une boutique": "Scan a shop's QR code",
-  "Boutique scannée": "Scanned shop"
+  "Boutique scannée": "Scanned shop",
+  "La commande Cmd {{a}} sera annulée et le client sera prévenu. Les autres commandes ne changent pas.": "Order Cmd {{a}} will be cancelled and the customer will be notified. Other orders are unchanged.",
+  "Annulation côté marchand : pas encore branchée.": "Merchant cancellation: not connected yet."
 }

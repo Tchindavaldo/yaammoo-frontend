@@ -44,5 +44,7 @@ let searchReady = false;
 export const releaseSplashForLink = (who: "home" | "search", hide: () => void) => {
   if (who === "home") homeReady = true;
   else searchReady = true;
-  if (homeReady && searchReady) hide();
+  // Court delai : au demarrage rapide (tout en cache) le groupe auth -> tabs et la
+  // levee du splash tombent dans la meme image, la page d'auth part encore dessous.
+  if (homeReady && searchReady) setTimeout(hide, 400);
 };

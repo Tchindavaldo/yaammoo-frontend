@@ -1,6 +1,7 @@
 "use no memo"; // langue a chaud : le React Compiler figerait les textes t() (cf. architecture/i18n.md)
 import { Tabs, useRouter } from "expo-router";
-import { takePendingShopLink } from "@/src/features/search/utils/pendingShopLink";
+import * as SplashScreen from "expo-splash-screen";
+import { claimPendingShopLinkForOpen } from "@/src/features/search/utils/pendingShopLink";
 import React, { useEffect } from "react";
 import { Platform, View } from "react-native";
 import { ProfileNameSheet } from "@/src/features/profile/components/ProfileNameSheet";
@@ -61,11 +62,12 @@ function TabLayoutInner() {
   // Lien QR boutique recu au demarrage a froid : ouvre la recherche des la home.
   const router = useRouter();
   useEffect(() => {
-    // Delai : si la route /search a ete restauree par l'URL, elle a deja pris l'id.
-    const timer = setTimeout(() => {
-      const id = takePendingShopLink();
-      if (id) router.push({ pathname: "/search", params: { shopId: id } });
-    }, 400);
+    // Le home ne leve pas le splash tant qu'un lien est en attente : la recherche
+    // s'ouvre dessous et le leve. Repli : leve le splash si elle ne vient pas.
+    const id = claimPendingShopLinkForOpen();
+    if (!id) return;
+    router.push({ pathname: "/search", params: { shopId: id } });
+    const timer = setTimeout(() => SplashScreen.hideAsync().catch(() => {}), 3000);
     return () => clearTimeout(timer);
   }, [router]);
 

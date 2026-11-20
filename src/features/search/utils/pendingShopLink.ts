@@ -8,10 +8,22 @@ export const setPendingShopLink = (id: string | null) => {
   pending = id;
 };
 
+export const hasPendingShopLink = (): boolean => pending !== null;
+
 export const takePendingShopLink = (): string | null => {
   const id = pending;
   pending = null;
+  opened = false;
   return id;
+};
+
+// Le layout des onglets ouvre la recherche SANS vider l'id : le home sait ainsi
+// qu'il ne doit pas lever le splash (la recherche le leve et vide l'id).
+let opened = false;
+export const claimPendingShopLinkForOpen = (): string | null => {
+  if (pending === null || opened) return null;
+  opened = true;
+  return pending;
 };
 
 /** Extrait l'id d'un chemin `/shop/<id>` ou `yaammoo://shop/<id>`, sinon null. */

@@ -9,6 +9,7 @@ import { t, useLanguage } from "@/src/i18n";
 import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
 import { useFastFoodContext } from "../../context/FastFoodContext";
 import { HomeCitySheet } from "./HomeCitySheet";
+import { ShopQrScanner } from "@/src/features/search/components/ShopQrScanner";
 
 interface Props {
   unreadCount: number;
@@ -41,6 +42,7 @@ export const HomeHeader: React.FC<Props> = ({
   const { isMerchant, setMerchantMode } = useMerchantMode();
   const { homeCity } = useFastFoodContext();
   const [citySheet, setCitySheet] = React.useState(false);
+  const [scanOpen, setScanOpen] = React.useState(false);
   // Ville choisie a la main : son nom (ou « Toutes les villes »). Sinon
   // (« Ma localisation ») : le lieu PRECIS du client (quartier, arrondissement).
   // Avant le lieu precis : la ville deja connue, sinon rien (plus de
@@ -65,7 +67,7 @@ export const HomeHeader: React.FC<Props> = ({
       onNotifPress={() => router.push("/(tabs)/notifications")}
       onProfilePress={() => router.push("/(tabs)/settings")}
       onSearchPress={() => router.push("/search")}
-      onOrdersPress={() => router.push("/(tabs)/orders?section=pending")}
+      onScanPress={() => setScanOpen(true)}
       searchVisible={searchOpen}
       onSearchToggle={onSearchToggle}
       searchQuery={searchQuery}
@@ -73,6 +75,14 @@ export const HomeHeader: React.FC<Props> = ({
       categories={CATEGORIES}
       selectedCategory={selectedCategory}
       onCategorySelect={onCategorySelect}
+    />
+    <ShopQrScanner
+      visible={scanOpen}
+      onClose={() => setScanOpen(false)}
+      onScanned={(id) => {
+        setScanOpen(false);
+        router.push({ pathname: "/search", params: { shopId: id } });
+      }}
     />
     <HomeCitySheet visible={citySheet} homeCity={homeCity} placeLabel={placeLabel} placeCity={placeCity} onClose={() => setCitySheet(false)} />
     </>

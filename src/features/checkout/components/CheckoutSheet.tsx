@@ -313,12 +313,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     else setIsContactPopupVisible(true);
   };
   const h_onAddToCart = async () => {
-    if (needsPickupPhone()) return askPhoneThen("cart");
-    const deliveryErr = validateDelivery();
-    if (deliveryErr) {
-      showError(deliveryErr);
-      return;
-    }
+    // Panier : numéro, jour du retrait et livraison facultatifs, demandés au
+    // paiement (h_onBuy et le sheet du panier les valident).
     try {
       setIsSubmitting(true);
       const result = await (onConfirm(

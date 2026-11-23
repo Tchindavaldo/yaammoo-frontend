@@ -61,16 +61,17 @@ export const MenuPricePreviewCard: React.FC<{
 const styles = StyleSheet.create({
   wrap: { marginTop: 18, gap: 10 },
   hero: {
-    minHeight: 64,
-    borderRadius: 18,
+    minHeight: 46,
+    borderRadius: 16,
     backgroundColor: DS.slate100,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   heroLabel: { fontSize: 13, color: DS.slate500 },
-  heroValue: { fontSize: 24, fontWeight: "800", color: DS.ink },
+  heroValue: { fontSize: 20, fontWeight: "800", color: DS.ink },
   row: { flexDirection: "row", gap: 8 },
   tile: {
     flex: 1,

@@ -134,6 +134,18 @@ export function useMenuPriceCheck(prices: DraftPrice[]) {
     [prices, previews, fastFoodId, url],
   );
 
+  // Changer « Qui paie les frais ? » sur un prix saisi relance son aperçu
+  // tout seul (pas besoin de re-cliquer sur Valider).
+  const lastPayers = useRef<string[]>([]);
+  useEffect(() => {
+    const payers = prices.map((p) => payerOf(p));
+    payers.forEach((fp, i) => {
+      const before = lastPayers.current[i];
+      if (before && before !== fp && valid(num(prices[i]?.price))) checkOne(i);
+    });
+    lastPayers.current = payers;
+  }, [prices]);
+
   // Menu existant ouvert : ses prix sont vérifiés dès qu'ils sont posés.
   const prefetch = useRef(false);
   const prefetchOnNextPrices = () => {

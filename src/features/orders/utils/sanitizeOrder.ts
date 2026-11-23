@@ -86,6 +86,8 @@ export const sanitizeOrder = (o: any, userId?: string): any => {
             price: Number(p.price) || 0,
             description: p.description || "",
             ...(p.rawPrice != null && { rawPrice: Number(p.rawPrice) || 0 }),
+            // Qui paie les frais (backend, money-rules.md §2 bis).
+            ...(p.feePayer && { feePayer: p.feePayer }),
           }))
         : [],
       status: o.menu.status || "available",

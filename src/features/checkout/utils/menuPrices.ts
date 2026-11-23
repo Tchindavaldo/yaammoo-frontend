@@ -14,12 +14,18 @@ export interface MenuPriceOption {
   price: number;
   description: string;
   rawPrice?: number;
+  /** Qui paie les frais de ce prix (backend, money-rules.md §2 bis). Absent = client. */
+  feePayer?: string;
 }
+
+/** Vrai si le MARCHAND paie les frais de ce prix : prix brut, extras au brut. */
+export const isMerchantFeePayer = (feePayer?: string) =>
+  feePayer === "merchant" || feePayer === "merchant_no_margin";
 
 export const menuPriceOptions = (menu: Menu | null | undefined): MenuPriceOption[] => {
   if (!menu) return [];
   const m = menu as any;
-  const raw: { price?: number; description?: string; rawPrice?: number }[] =
+  const raw: { price?: number; description?: string; rawPrice?: number; feePayer?: string }[] =
     Array.isArray(m.prices) && m.prices.length > 0
       ? m.prices
       : [
@@ -33,6 +39,7 @@ export const menuPriceOptions = (menu: Menu | null | undefined): MenuPriceOption
       price: Number(p?.price) || 0,
       description: p?.description || "",
       ...(p?.rawPrice != null && { rawPrice: p.rawPrice }),
+      ...(p?.feePayer && { feePayer: p.feePayer }),
     }))
     .filter((p) => p.index === 1 || p.price > 0);
 };

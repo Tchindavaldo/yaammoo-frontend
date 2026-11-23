@@ -9,6 +9,7 @@ import { socketService } from "../../../services/socket";
 import { REVIEW_STEP_MS } from "../../payment/constants/reviewPayment";
 import { track } from "../../../services/analytics/analytics";
 import { menuPriceOptions } from "../utils/menuPrices";
+import { useCheckoutOptions } from "./useCheckoutOptions";
 import { computeCheckoutPrices } from "../utils/checkoutPrices";
 import { useDeliveryGrouping } from "./useDeliveryGrouping";
 import { checkStock, checkDelivery } from "../utils/checkoutValidation";
@@ -57,36 +58,7 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
   }, []);
   useEffect(() => clearReviewTimers, [clearReviewTimers]);
 
-  // Utiliser les extras/drinks du menu si disponibles
-  const availablePackaging = useMemo(
-    () => {
-      if (menu && (menu as any).extra && Array.isArray((menu as any).extra)) {
-        return (menu as any).extra
-          .filter((e: any) => e.name && e.name !== 'Aucun')
-          .map((e: any) => new Embalage(e.name, e.prix || 0, e.rawPrice));
-      }
-      return [new Embalage("Sac plastique", 100), new Embalage("Gamelle", 150)];
-    },
-    [menu],
-  );
-
-  const availableDrinks = useMemo(
-    () => {
-      if (menu && (menu as any).drink && Array.isArray((menu as any).drink)) {
-        return (menu as any).drink
-          .filter((d: any) => d.name && d.name !== 'Aucune')
-          .map((d: any) => new Boisson(d.name, d.prix || 0, d.rawPrice));
-      }
-      return [
-        new Boisson("Coca Cola", 600),
-        new Boisson("Djino", 700),
-        new Boisson("Top Pamplemousse", 500),
-        new Boisson("Planete Cocktail", 600),
-        new Boisson("Vinto", 700),
-      ];
-    },
-    [menu],
-  );
+  const { availablePackaging, availableDrinks } = useCheckoutOptions(menu, selectedPriceIndex, setSelectedPackaging);
 
   // Heures par défaut si la boutique n'en a pas configuré
   const defaultHours = ["12:00", "13:00", "14:00", "18:00", "19:00", "20:00"];
@@ -225,10 +197,11 @@ export const useCheckout =(menu: Menu | null, initialOrder?: any | null, onChang
       // backend l'a fourni sur le menu. `menu.extra`/`menu.drink` ne sont plus
       // envoyés : le backend les a rendus optionnels et détient déjà le menu.
       // N prix (prices[]) : l'ordre est conservé, `selectedPriceIndex` y renvoie.
-      prices: menuPriceOptions(menu).map(({ price, description, rawPrice }) => ({
+      prices: menuPriceOptions(menu).map(({ price, description, rawPrice, feePayer }) => ({
         price,
         description,
         ...(rawPrice != null && { rawPrice }),
+        ...(feePayer && { feePayer }),
       })),
       status: menu.disponibilite === "active" || menu.disponibilite === "Disponible" ? "available" : "unavailable",
     };

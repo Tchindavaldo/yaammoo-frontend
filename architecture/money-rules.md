@@ -35,6 +35,7 @@
 | Règlement (cascade, `order_settlements`) | `src/services/order/settleDelivery.service.js` |
 | Simulation avant USSD | `src/services/order/settlementPrecheck.service.js` |
 | Contrôle du montant payé | `src/utils/validator/validatePaymentAmount.js` |
+| Qui paie les frais (`feePayer`) | `src/services/pricing/feePayer.js` |
 | Crédit marchand / livreur | `src/services/transaction/creditMerchant.service.js`, `creditDriver.service.js` |
 | Solde, retrait, frais interréseau | `src/services/wallet/*`, `src/repositories/supabase/transactions.repo.js` |
 
@@ -107,6 +108,8 @@ marchand annule (avant livraison): rendu = base ; frais réels débités du marc
 reprise marchand = merchant_debit (solde peut devenir négatif)
 ```
 
+Devis boutique (`GET /order/:orderId/merchant-cancel-quote`) : même calcul (`quoteCancel`), renvoie `refund` (base complète) et `fees` (débités du marchand).
+
 Devis client (`GET /order/cancel-quote`) : renvoie aussi `phone`, le numéro qui a
 payé, seul destinataire du remboursement. **Annulation d'office** : commande
 payée **par pawaPay** non livrée après `settings_app.order_auto_cancel_days` jours (anciennes commandes sans vrai paiement, commandes sans trace de paiement
@@ -117,6 +120,64 @@ sans trace : alerte `app_errors`) (7, migration
 `merchant_debit` ⇒ `settlementPrecheck` refuse toute commande de la boutique
 (`merchant_debt`, 422) et pousse au marchand la raison, à chaque tentative
 (`merchantDebtGuard`). Pas de seuil de montant : c'est la cause du négatif.
+
+## 2 bis. Qui paie les frais (`feePayer`)
+
+Validé par le propriétaire le 23/11/2026. Code : `src/services/pricing/feePayer.js`
+(règles, contrôle, `orderFeeSplit`), affichage `deliveryPricing.applyDisplayPricingToMenu`,
+panier/precheck `repriceCart.repriceOrder`, règlement `settleDelivery.service`,
+aperçu `menuPricePreview` (`?feePayer=` / `?feePayers=`). Le `feePayer` du
+règlement est relu EN BASE (menu, `fastfoods.drinks`), jamais sur la commande.
+
+Champ `feePayer` sur **chaque prix** d'un plat (`menu.prices[].feePayer`) et sur
+**chaque boisson** de la boutique (`fastfoods.drinks[].feePayer`). Les extras
+d'une commande suivent le `feePayer` du **prix choisi** (`selectedPriceIndex`).
+Absent = `client` (comportement actuel, aucune donnée existante ne change).
+
+| Valeur | Qui le propose | Prix affiché | Marchand crédité |
+|---|---|---|---|
+| `client` | app (défaut) | inchangé : `withAllFees(brut + marge)` ↑ pas | brut + kiosque (inchangé) |
+| `merchant` | app | **brut**, sans marge, sans frais, sans arrondi | brut − frais de paiement − marge |
+| `merchant_no_margin` | backend seul (paiement au restaurant, plus tard) | **brut** | brut − frais de paiement ; marge = 0 |
+
+- **Régime plateforme** : `merchant*` refusé à l'enregistrement, et lu comme
+  `client` si la boutique bascule en plateforme (régime effectif).
+- **Course facturée à part** (régime fastfood) d'une commande dont le prix est
+  `merchant*` : ses frais de paiement sont aussi pris au marchand
+  (course versée = tarif − frais de paiement sur ce tarif). Course offerte
+  (bonus, campagne, groupage) : rien n'est encaissé, rien n'est retenu.
+- **Kiosque** : la part `merchant*` n'est pas compensée (le marchand paie
+  lui-même l'agent quand il retire en espèces). Le kiosque crédité est
+  calculé sur la seule part `client` (+ course d'une commande `client`).
+- **Frais de paiement d'une ligne `merchant*`** : `paymentFeeOf(brut)`, au
+  barème du paiement réel (réseau le plus cher pour l'affichage). Chaque
+  composante arrondie à l'excès séparément, donc la somme des parts est ≥ au
+  frais réel sur le total : l'écart (≤ quelques F) reste à la plateforme.
+
+Règlement d'une commande (A = lignes `client`, B = lignes `merchant*`) :
+
+```
+itemsCharged = Σ affichés(A) + Σ bruts(B) + course facturée
+itemsReal    = Σ bruts(A) + Σ [ brut(B) − frais(brut B) − marge(B) ]
+driverAmount = course                         (prix client)
+             = course − frais(course)          (prix merchant*)
+withdrawalFee = kiosque( bruts(A) + course d'une commande client )
+platformMargin = net − itemsReal − driverAmount   (résidu, ≥ 0 : contrôle inchangé)
+```
+
+`marge(B)` = `marginForBrut(brut) × qté` pour `merchant`, 0 pour
+`merchant_no_margin` ; extras et boissons ne portent jamais de marge.
+
+- **Marge négative** : toujours refusée (`negative_margin`, contrainte
+  `order_settlements_margin_chk`), jamais assouplie.
+- **Garde-fou à l'enregistrement** : un prix `merchant*` est refusé si le
+  marchand recevrait ≤ 0 (brut − frais − marge). `merchant_no_margin` ne peut
+  pas être posé par l'app (seulement conservé s'il l'était déjà en base).
+  Le contrôle `fastfood_min_covered_course` est sauté pour un prix `merchant*`
+  (aucun arrondi à exiger).
+- **Aperçu « Vous recevez »** (step prix, `merchant` seul) : brut − frais −
+  marge + course la MOINS chère de la boutique − ses frais. Mode `client` :
+  inchangé (brut + kiosque, hors course).
 
 ## 3. Les frais — ne jamais les confondre
 
@@ -217,14 +278,3 @@ Régime fastfood, Orange, pawaPay (1,77 % / 0,1 % / 1,0 %), kiosque 1,2 % + 4.
   `withdrawals` sans l'accord explicite de l'utilisateur, et sans `app_errors`
   pour tracer une régularisation.
 - Modifier une formule sans mettre à jour CE fichier et la doc détaillée.
-
-## 8. Côté FRONTEND
-
-- Le frontend **n'est jamais la vérité de l'argent** : il affiche les prix et
-  soldes renvoyés par le backend, et le `amount` qu'il envoie est **recalculé
-  côté serveur** (`validatePaymentAmount` + `settlementPrecheck`).
-- Ne jamais recoder une formule de frais ou de marge dans l'app : lire ce que
-  le backend renvoie (prix affiché, `deliveryOffer`, `/wallet/balance`,
-  `/wallet/withdraw/quote`).
-- Un écart entre ce que l'app affiche et ce que le backend encaisse est un bug
-  grave : le signaler, ne jamais le « corriger » côté app.

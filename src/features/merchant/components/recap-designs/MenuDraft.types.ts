@@ -21,6 +21,8 @@ export interface DraftPrice {
   price: string;
   /** Description du format (ex: "Petit format", "Format moyen"). */
   description: string;
+  /** Qui paie les frais de ce prix (backend, money-rules.md §2 bis). Absent = client. */
+  feePayer?: "client" | "merchant" | "merchant_no_margin";
 }
 
 /**

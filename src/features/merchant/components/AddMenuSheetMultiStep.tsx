@@ -76,6 +76,7 @@ const toPrices = (menu: any): DraftPrice[] => {
   const list: DraftPrice[] = (menu?.prices || []).map((p: any) => ({
     price: p?.price ? String(p.price) : "",
     description: p?.description || "",
+    ...(p?.feePayer && { feePayer: p.feePayer }),
   }));
   return list.length > 0 ? list : [{ price: "", description: "" }];
 };
@@ -255,7 +256,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
       name: nom,
       category: category.trim(),
       prices: prices
-        .map((p) => ({ price: Number(p.price) || 0, description: p.description }))
+        .map((p) => ({ price: Number(p.price) || 0, description: p.description, feePayer: p.feePayer || "client" }))
         .filter((p) => p.price > 0),
       status: availability,
       images: finalImages.filter((i) => i),

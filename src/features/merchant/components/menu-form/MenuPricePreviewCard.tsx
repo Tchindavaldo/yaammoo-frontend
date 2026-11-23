@@ -21,6 +21,9 @@ export const MenuPricePreviewCard: React.FC<{
   useLanguage();
   // Prix refusé par le backend : aucun montant affiché (cases « — »).
   const preview = raw?.accepted ? raw : null;
+  // Mode marchand (feePayer) : mêmes cases ; « Frais » = total retenu par le
+  // backend (frais + marge), « Vous recevez » inclut la course la moins chère.
+  const merchantMode = preview?.feePayer === "merchant" || preview?.feePayer === "merchant_no_margin";
   // Carte toujours visible : cases vides (« — ») tant qu'aucun montant n'est saisi.
   const value = (n?: number | null) =>
     preview && n != null ? fmt(n) : loading ? "…" : "—";
@@ -41,7 +44,7 @@ export const MenuPricePreviewCard: React.FC<{
           <Text style={styles.tileValue}>{value(preview?.price)}</Text>
         </View>
         <View style={styles.tile}>
-          <Text style={styles.tileLabel}>{tr("Frais de retrait")}</Text>
+          <Text style={styles.tileLabel}>{merchantMode ? tr("Frais") : tr("Frais de retrait")}</Text>
           <Text style={styles.tileValue}>{value(preview?.withdrawalFee)}</Text>
         </View>
         <View style={[styles.tile, styles.tileWide]}>

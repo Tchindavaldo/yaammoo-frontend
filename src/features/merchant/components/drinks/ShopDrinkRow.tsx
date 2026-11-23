@@ -54,6 +54,27 @@ export const ShopDrinkRow: React.FC<Props> = ({ drink, menus, onChange, onEdit, 
         </TouchableOpacity>
       </View>
 
+      {/* Qui paie les frais : la boisson payée par le marchand est vendue au prix
+          brut, les frais sont retenus sur ce qu'il reçoit (calcul backend). */}
+      <View style={styles.scopeRow}>
+        <Ionicons name="card-outline" size={14} color={DS.muted} />
+        <Text style={[styles.scopeText, { flex: 1 }]}>{t("Qui paie les frais ?")}</Text>
+        {drink.feePayer === "merchant_no_margin" ? (
+          <View style={[styles.chip, styles.chipOn]}>
+            <Text style={[styles.chipText, styles.chipTextOn]}>{t("Sans marge")}</Text>
+          </View>
+        ) : (
+          (["client", "merchant"] as const).map((fp) => {
+            const on = (drink.feePayer || "client") === fp;
+            return (
+              <TouchableOpacity key={fp} style={[styles.chip, on && styles.chipOn]} onPress={() => onChange({ ...drink, feePayer: fp })}>
+                <Text style={[styles.chipText, on && styles.chipTextOn]}>{fp === "client" ? t("Client") : t("Marchand")}</Text>
+              </TouchableOpacity>
+            );
+          })
+        )}
+      </View>
+
       <TouchableOpacity style={styles.scopeRow} onPress={() => setOpen((o) => !o)}>
         <Ionicons name="restaurant-outline" size={14} color={DS.muted} />
         <Text style={styles.scopeText}>{scopeLabel}</Text>

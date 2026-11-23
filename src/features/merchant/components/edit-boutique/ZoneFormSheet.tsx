@@ -213,9 +213,13 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                 </View>
               </View>
 
-              {/* Localisation + boutons delete/valider */}
+              {/* Localisation + durée (maquette Zone B) + boutons delete/valider */}
               <View style={[styles.inputGroup, { marginTop: 14 }]}>
-                <Text style={styles.floatingLabel}>{tr("Localisation")}</Text>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <Text style={[styles.floatingLabel, { flex: 1 }]}>{tr("Localisation")}</Text>
+                  <Text style={[styles.floatingLabel, { width: 70 }]}>{tr("Durée (min)")}</Text>
+                  <View style={{ width: 2 * 46 + 8 }} />
+                </View>
                 <View style={styles.editRow}>
                   <TextInput
                     style={[
@@ -229,6 +233,23 @@ export const ZoneFormSheet: React.FC<ZoneFormSheetProps> = ({
                       setExpressDraft({ ...expressDraft, lieu: t });
                     }}
                     placeholder={tr("Zone / quartier")}
+                    placeholderTextColor="#cbd5e1"
+                  />
+                  {/* Durée de livraison du lieu, affichée au home selon la zone du client. */}
+                  <TextInput
+                    style={[
+                      styles.glassInput,
+                      styles.editInput,
+                      { width: 70, borderRadius: 20, paddingHorizontal: 8, textAlign: "center" },
+                    ]}
+                    value={String(periodicDraft.duree ?? expressDraft.duree ?? "")}
+                    onChangeText={(t) => {
+                      const v = t.replace(/[^0-9]/g, "");
+                      setPeriodicDraft({ ...periodicDraft, duree: v });
+                      setExpressDraft({ ...expressDraft, duree: v });
+                    }}
+                    keyboardType="numeric"
+                    placeholder="30"
                     placeholderTextColor="#cbd5e1"
                   />
                   <TouchableOpacity style={styles.actionBtn} onPress={onDelete}>

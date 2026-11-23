@@ -75,8 +75,8 @@ export const useEditBoutique = ({
     Record<string, boolean>
   >({});
   // Drafts d'édition pour les deux blocs
-  const [periodicDraft, setPeriodicDraft] = useState({ lieu: "", prix: "" });
-  const [expressDraft, setExpressDraft] = useState({ lieu: "", prix: "" });
+  const [periodicDraft, setPeriodicDraft] = useState<Zone>({ lieu: "", prix: "" });
+  const [expressDraft, setExpressDraft] = useState<Zone>({ lieu: "", prix: "" });
   const [periodicEditIdx, setPeriodicEditIdx] = useState<number | null>(null);
   const [expressEditIdx, setExpressEditIdx] = useState<number | null>(null);
   const [image, setImage] = useState<string>("");
@@ -198,6 +198,9 @@ export const useEditBoutique = ({
   const saveZoneForm = (hour: string) => {
     const lieu = (periodicDraft.lieu || expressDraft.lieu).trim();
     if (!lieu) return;
+    // Durée de livraison (minutes) : une par lieu, portée par les deux listes.
+    const minutes = parseInt(String(periodicDraft.duree ?? expressDraft.duree ?? ""), 10);
+    const duree = Number.isFinite(minutes) && minutes > 0 ? { duree: minutes } : {};
     // Le périodique exige une heure ; l'express seul s'en passe.
     if (formPeriodic && !hour) return;
     if (!formPeriodic && !formExpress) return;
@@ -208,7 +211,7 @@ export const useEditBoutique = ({
     }
 
     if (formPeriodic) {
-      const item = { lieu, prix: periodicDraft.prix.trim() };
+      const item = { lieu, prix: periodicDraft.prix.trim(), ...duree };
       setPeriodicZonesByHour((prev) => {
         const list = prev[hour] ? [...prev[hour]] : [];
         if (periodicEditIdx === null) list.push(item);
@@ -220,7 +223,7 @@ export const useEditBoutique = ({
     if (formExpress) {
       // Un seul prix express par lieu : on remplace la ligne du lieu s'il est
       // déjà servi en express, sinon on l'ajoute.
-      const item = { lieu, prix: expressDraft.prix.trim() };
+      const item = { lieu, prix: expressDraft.prix.trim(), ...duree };
       setExpressZones((prev) => {
         const list = [...prev];
         const idx =

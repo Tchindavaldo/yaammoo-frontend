@@ -3,7 +3,7 @@
 Ce fichier est **versionné** : ses règles s'appliquent automatiquement sur tout
 PC où le projet est cloné/pull, dans n'importe quelle session Claude Code.
 
-> **29 règles numérotées R1 → R29.** Toute nouvelle règle ajoutée à ce fichier
+> **30 règles numérotées R1 → R30.** Toute nouvelle règle ajoutée à ce fichier
 > DOIT recevoir le numéro suivant (R18, R19, …) et le total ci-dessus doit être
 > mis à jour. On cite une règle par son numéro (ex. « R1 » pour le style de réponse).
 
@@ -451,3 +451,14 @@ branche de session), on **ne s'arrête pas** sur cette branche en silence :
 **Appliqué par le harness** : `.claude/hooks/ask-merge-before-stop.sh` (hook
 `Stop`) bloque la fin du tour tant que la branche a des commits absents de
 `origin/dev`, et exige la demande `AskUserQuestion`. Règle identique côté backend (R25).
+
+## R30 — Language: English + correction of the user's message (MANDATORY)
+
+The owner is learning English. Every reply is written **in simple English**.
+Each reply starts with a block quoting the owner's last message rewritten in
+correct English (the corrected sentence only, no grammar lesson):
+
+> **Correct sentence:** <owner's message, corrected>
+
+R1 still applies to the rest of the reply. Code, commits and `architecture/`
+docs keep their current language.

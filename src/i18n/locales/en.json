@@ -1461,5 +1461,6 @@
   "Client": "Customer",
   "Sans marge": "No margin",
   "Frais": "Fees",
-  "Durée (min)": "Duration (min)"
+  "Durée (min)": "Duration (min)",
+  "{{a}} min": "{{a}} min"
 }

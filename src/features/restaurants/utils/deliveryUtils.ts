@@ -257,3 +257,19 @@ export const useNextDeliveryTime = (
 
   return time;
 };
+
+/**
+ * Durée de livraison la PLUS COURTE de la boutique (minutes), toutes zones
+ * confondues : créneaux périodiques et express. Affichée au home : les
+ * boutiques y sont déjà filtrées par la ville du client. `null` si aucune zone
+ * ne porte de durée (`duree`, saisie par le marchand).
+ */
+export const shortestDeliveryMinutes = (deliveryHours?: any[], expressZones?: unknown): number | null => {
+  const zones: any[] = [];
+  (Array.isArray(deliveryHours) ? deliveryHours : []).forEach((h) => {
+    if (h && typeof h === "object" && Array.isArray(h.periodicZones)) zones.push(...h.periodicZones);
+  });
+  if (Array.isArray(expressZones)) zones.push(...expressZones);
+  const mins = zones.map((z) => Number(z?.duree)).filter((n) => Number.isFinite(n) && n > 0);
+  return mins.length ? Math.min(...mins) : null;
+};

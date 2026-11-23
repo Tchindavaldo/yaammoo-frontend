@@ -9,7 +9,7 @@ import { useShopReveal, REVEAL_MS } from '../context/ShopRevealContext';
 import { DS } from "@/src/theme/ds";
 import { formatDistanceKm } from "@/src/utils/formatDistance";
 import { IS_AERE } from "./designs/item/config";
-import { useShopDeliveryLabel } from "../utils/deliveryUtils";
+import { useShopDeliveryLabel, shortestDeliveryMinutes } from "../utils/deliveryUtils";
 import { t, useLanguage } from "@/src/i18n";
 
 interface MerchantHeaderProps {
@@ -56,6 +56,8 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
   useLanguage();
   const distance = formatDistanceKm(distanceKm);
   const delivery = useShopDeliveryLabel(deliveryHours, orderLeadTime, expressZones);
+  // Durée de livraison la plus courte de la boutique (zones `duree`), après la distance.
+  const minutes = shortestDeliveryMinutes(deliveryHours, expressZones);
   // Le header attend DEUX images : celle du menu (pour rester synchrone avec
   // les cartes) et son PROPRE avatar.
   //
@@ -202,6 +204,9 @@ export const MerchantHeader: React.FC<MerchantHeaderProps> = ({
               </Text>
               {distance ? (
                 <Text style={styles.distanceText}>· {distance}</Text>
+              ) : null}
+              {minutes ? (
+                <Text style={styles.distanceText}>· {t("{{a}} min", { a: minutes })}</Text>
               ) : null}
             </View>
           </View>

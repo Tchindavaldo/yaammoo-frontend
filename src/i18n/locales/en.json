@@ -1448,5 +1448,11 @@
   "Annulation côté marchand : pas encore branchée.": "Merchant cancellation: not connected yet.",
   "Le remboursement du client sera traité par notre équipe. Frais d'annulation : {{b}} F, à votre charge.": "The customer's refund will be handled by our team. Cancellation fees: {{b}} F, at your expense.",
   "Le client recevra {{a}} F. Frais d'annulation : {{b}} F, à votre charge.": "The customer will receive {{a}} F. Cancellation fees: {{b}} F, at your expense.",
-  "Commande annulée. Le client est remboursé.": "Order cancelled. The customer is refunded."
+  "Commande annulée. Le client est remboursé.": "Order cancelled. The customer is refunded.",
+  "extra": "extra",
+  "extras": "extras",
+  "boisson": "drink",
+  "QR code de la boutique": "Shop QR code",
+  "Partager": "Share",
+  "Les clients scannent ce code : l'app ouvre votre boutique, ou le store si l'app n'est pas installée.": "Customers scan this code: the app opens your shop, or the store if the app is not installed."
 }

@@ -16,6 +16,8 @@ import { t, useLanguage } from "@/src/i18n";
 import { showToast } from "@/src/services/globalToast";
 import { PayoutNumberSheet, type PayoutNetwork } from "../payout-number/PayoutNumberSheet";
 import { getVerifiedWhatsappNumbers } from "../../services/payoutNumberService";
+import { useMerchantMode } from "@/src/features/merchant/context/MerchantModeContext";
+import { ShopQrSheet } from "./ShopQrSheet";
 
 interface BoutiqueInfoPageProps {
   image: string;
@@ -93,6 +95,9 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
   useLanguage();
   // Verification OTP du numero touche : OM / MoMo (SMS) ou WhatsApp (WhatsApp).
   const [payoutSheet, setPayoutSheet] = React.useState<PayoutNetwork | null>(null);
+  // QR code de la boutique (bouton à droite du nom, maquette AjQrEntry).
+  const { fastFoodId } = useMerchantMode();
+  const [qrOpen, setQrOpen] = React.useState(false);
   // WhatsApp d'abord : un OM / MoMo identique au WhatsApp deja valide est valide sans SMS ni frais.
   // OM / MoMo demandé avant le WhatsApp : rouvert juste après la validation du WhatsApp.
   const pendingPayout = React.useRef<"orange" | "mtn" | null>(null);
@@ -145,6 +150,25 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
             placeholderTextColor="#cbd5e1"
           />
         </View>
+        {!!fastFoodId && (
+          <TouchableOpacity
+            onPress={() => setQrOpen(true)}
+            accessibilityLabel={t("QR code de la boutique")}
+            style={{
+              width: 50,
+              height: 50,
+              marginTop: 14,
+              borderRadius: 20,
+              borderWidth: 2,
+              borderColor: DS.accent,
+              backgroundColor: DS.accentAlpha(0.06),
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="qr-code-outline" size={22} color={DS.accent} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Heures ouverture/fermeture sur une ligne */}
@@ -425,6 +449,13 @@ export const BoutiqueInfoPage: React.FC<BoutiqueInfoPageProps> = ({
         </>
       )}
     </TouchableOpacity>
+    <ShopQrSheet
+      visible={qrOpen}
+      onClose={() => setQrOpen(false)}
+      shopId={fastFoodId || ""}
+      shopName={name}
+      logoUri={image || undefined}
+    />
     <PayoutNumberSheet
       network={payoutSheet}
       initialPhone={payoutSheet === "orange" ? number || whatsappNumber : payoutSheet === "mtn" ? momoNumber || whatsappNumber : whatsappNumber}

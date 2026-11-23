@@ -1454,5 +1454,7 @@
   "boisson": "drink",
   "QR code de la boutique": "Shop QR code",
   "Partager": "Share",
-  "Les clients scannent ce code : l'app ouvre votre boutique, ou le store si l'app n'est pas installée.": "Customers scan this code: the app opens your shop, or the store if the app is not installed."
+  "Les clients scannent ce code : l'app ouvre votre boutique, ou le store si l'app n'est pas installée.": "Customers scan this code: the app opens your shop, or the store if the app is not installed.",
+  "Ajoutez au moins 3 menus pour que votre boutique soit visible par les clients": "Add at least 3 menus so customers can see your shop",
+  "Impossible d'exporter le QR code": "Could not export the QR code"
 }

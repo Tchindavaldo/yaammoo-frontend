@@ -472,6 +472,16 @@ ajouté explicitement ici **et** dans `useCheckout.createOrder()`.
 
 ---
 
+## Extras d'un prix payé par le marchand (`feePayer`)
+
+`useCheckoutOptions` (sorti de `useCheckout`, R26) construit extras et boissons.
+Prix choisi avec `feePayer` marchand (`menuPriceAt(...).feePayer`,
+`isMerchantFeePayer`) : les extras sont facturés au `rawPrice`, et les extras
+déjà cochés reprennent le nouveau prix quand le client change de prix. Les
+boissons arrivent déjà au bon prix (vue home du backend). `feePayer` est
+renvoyé dans `menu.prices[]` (`createOrder`, `sanitizeOrder`). Panier : ajout
+sans numéro, jour de retrait ni livraison (demandés au paiement).
+
 ## `rawPrice` — prix brut hors marge
 
 Le backend sert un **prix brut** sur chaque prix de menu, extra et boisson

@@ -78,6 +78,14 @@ formulaire de création.
 
 ---
 
+## Durée de livraison par zone (`duree`)
+
+Sheet zone (`ZoneFormSheet`, maquette Zone B) : champ « Durée (min) » sur la
+ligne Localisation, écrit dans les deux brouillons (`Zone.duree`). Enregistré
+sur la zone périodique ET express du lieu (`saveZoneForm`), relu à l'édition
+(`EditBoutiquePanel.openZone`, `parseExpressZones`). Le home affiche la durée la
+plus courte de la boutique (`shortestDeliveryMinutes`, restaurants.md).
+
 ## Payload backend (deliveryHours)
 
 `deliveryHours` (périodique seul, `buildDeliveryPayload`) + `expressZones`

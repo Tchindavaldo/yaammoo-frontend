@@ -32,6 +32,7 @@ import { menuPriceStepActions } from "./menu-form/menuPriceStepActions";
 import { t as tr, useLanguage } from "@/src/i18n";
 import { apiErrorMessage } from "@/src/api/apiError";
 
+import { useKeyboardOpen } from "./menu-form/useKeyboardOpen";
 import { MenuNameCategoryStep } from "./menu-form/MenuNameCategoryStep";
 import { MenuStep as Step, validateMenuStep } from "./menu-form/validateMenuStep";
 
@@ -120,6 +121,8 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
   const [submitting, setSubmitting] = useState(false);
   // Ref du ScrollView : pour remonter l'input description au-dessus du clavier au focus.
   const scrollRef = React.useRef<ScrollView>(null);
+  // Clavier fermé : tout tient dans la sheet, centré, sans défilement.
+  const keyboardOpen = useKeyboardOpen();
   // Champ actuellement focus (bordure orange) et champs en erreur (bordure rouge).
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [errorFields, setErrorFields] = useState<string[]>([]);
@@ -333,7 +336,7 @@ export const AddMenuSheetMultiStep: React.FC<AddMenuSheetProps> = ({
         <ScrollView
           ref={scrollRef}
           style={styles.content}
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[styles.contentContainer, !keyboardOpen && styles.contentFit]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

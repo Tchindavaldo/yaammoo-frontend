@@ -76,6 +76,13 @@ export const styles = StyleSheet.create({
     // Débattement bas pour que le champ focus puisse remonter au-dessus du clavier.
     paddingBottom: Theme.spacing.lg + 40,
   },
+  // Clavier fermé : pas de débattement bas, contenu centré dans la hauteur.
+  contentFit: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingTop: Theme.spacing.md,
+    paddingBottom: Theme.spacing.md,
+  },
   fieldLabel: {
     fontSize: 14,
     fontWeight: "600",

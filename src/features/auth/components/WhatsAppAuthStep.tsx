@@ -3,11 +3,13 @@ import React from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { NumericKeypad } from "./NumericKeypad";
 import {
   isInvalidCode,
@@ -200,6 +202,21 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
     onBack();
   };
 
+  /**
+   * Appui long sur les cases : colle le code copie (ex. depuis WhatsApp).
+   * Seuls les chiffres sont gardes, tronques a CODE_LENGTH.
+   */
+  const pasteCode = async () => {
+    const text = await Clipboard.getStringAsync().catch(() => "");
+    const digits = (text || "").replace(/\D/g, "").slice(0, CODE_LENGTH);
+    if (!digits) {
+      setError(t("Aucun code à coller."));
+      return;
+    }
+    setError(null);
+    setCode(digits);
+  };
+
   /** Cases du code : une par chiffre attendu, remplies au fur et a mesure. */
   const codeBoxes = Array.from({ length: CODE_LENGTH }, (_, i) => (
     <View
@@ -234,7 +251,9 @@ export const WhatsAppAuthStep: React.FC<WhatsAppAuthStepProps> = ({
             </Text>
           </View>
         ) : (
-          <View style={styles.codeRow}>{codeBoxes}</View>
+          <Pressable onLongPress={pasteCode} delayLongPress={350}>
+            <View style={styles.codeRow}>{codeBoxes}</View>
+          </Pressable>
         )}
       </View>
 

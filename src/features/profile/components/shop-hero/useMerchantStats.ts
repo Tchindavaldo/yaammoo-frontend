@@ -65,12 +65,14 @@ export function useMerchantStats(
   period: ShopPeriod,
   refreshTick = 0,
   onSettled?: () => void,
-): { stats: MerchantStats; bucket: Bucket; version: number } {
+): { stats: MerchantStats; bucket: Bucket; version: number; loaded: boolean } {
   const { userData } = useAuth();
   const { fastFoodId } = useMerchantMode();
   const bucket = bucketOf(period);
   const [stats, setStats] = useState<MerchantStats>(EMPTY_STATS);
   const [version, setVersion] = useState(0);
+  // `false` tant qu'aucune reponse n'est arrivee (backend eteint compris) : le hero affiche un squelette.
+  const [loaded, setLoaded] = useState(false);
   const [reconnectTick, setReconnectTick] = useState(0);
   useRefetchOnReconnect(() => setReconnectTick((n) => n + 1));
   const settledRef = useRef(onSettled);
@@ -89,6 +91,7 @@ export function useMerchantStats(
         if (!alive) return;
         setStats({ ...EMPTY_STATS, ...res.data.data });
         setVersion((v) => v + 1);
+        setLoaded(true);
       } catch {
         if (alive) showToast(t("Impossible de charger les statistiques"), "error");
       } finally {
@@ -100,5 +103,5 @@ export function useMerchantStats(
     };
   }, [fastFoodId, period.from, period.to, bucket, refreshTick, reconnectTick]);
 
-  return { stats, bucket, version };
+  return { stats, bucket, version, loaded };
 }

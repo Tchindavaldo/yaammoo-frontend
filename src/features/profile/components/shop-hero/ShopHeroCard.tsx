@@ -13,6 +13,7 @@ import { HeatmapSlide } from "./slides/HeatmapSlide";
 import { LoyaltySlide } from "./slides/LoyaltySlide";
 import { DelaySlide } from "./slides/DelaySlide";
 import { DS } from "@/src/theme/ds";
+import { CardSkeleton } from "@/src/components/CardSkeleton";
 import { t, useLanguage } from "@/src/i18n";
 
 /**
@@ -28,7 +29,7 @@ export const ShopHeroCard: React.FC<{ refreshTick?: number; onRefreshed?: () => 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [width, setWidth] = useState(0);
   const [index, setIndex] = useState(0);
-  const { stats, bucket, version } = useMerchantStats(period, refreshTick, onRefreshed);
+  const { stats, bucket, version, loaded } = useMerchantStats(period, refreshTick, onRefreshed);
 
   // Titre de chaque slide ; le chiffre cle s'affiche a cote quand la slide n'a pas de cases.
   const titles: [string, string?][] = [["Ventes"], ["Conversion", conversionRate(stats.funnel)], ["Classements"], ["Statuts", cancelRate(stats)], ["Affluence"], ["Fidélité"], ["Délais"]];
@@ -62,7 +63,9 @@ export const ShopHeroCard: React.FC<{ refreshTick?: number; onRefreshed?: () => 
         </View>
       </View>
 
-      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {/* Squelette tant que les stats ne sont pas arrivees : les slides gardent la hauteur, masquees. */}
+      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={!loaded && { minHeight: 220 }}>
+        {!loaded && <View style={styles.skel}><CardSkeleton radius={20} /></View>}
         {width > 0 && (
           <ScrollView
             horizontal
@@ -71,6 +74,8 @@ export const ShopHeroCard: React.FC<{ refreshTick?: number; onRefreshed?: () => 
             onScroll={onScroll}
             scrollEventThrottle={32}
             nestedScrollEnabled
+            scrollEnabled={loaded}
+            style={!loaded && { opacity: 0 }}
           >
             {slides.map((s, i) => (
               <View key={i} style={{ width }}>{s}</View>
@@ -99,6 +104,7 @@ const styles = StyleSheet.create({
   name: { flexShrink: 1, fontSize: 14, fontWeight: "600", color: DS.ink, letterSpacing: -0.2 },
   chip: { flexDirection: "row", alignItems: "center", gap: 6, height: 28, paddingHorizontal: 12, borderRadius: 14, backgroundColor: DS.bg },
   chipText: { fontSize: 12, fontWeight: "600", color: DS.ink },
+  skel: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1, borderRadius: 20, overflow: "hidden" },
   dots: { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 5 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: DS.idle },
   dotOn: { width: 16, backgroundColor: DS.ink },

@@ -13,15 +13,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/src/features/auth/context/AuthContext";
 import { handleGoogleSignIn } from "@/src/features/auth/services/googleAuthService";
 import { handleAppleSignIn } from "@/src/features/auth/services/appleAuthService";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { authService } from "@/src/features/auth/services/authService";
 import { userFirestore } from "@/src/features/auth/services/userFirestore";
 import { Users, UsersInfos } from "@/src/types";
 import { WhatsAppAuthStep } from "./WhatsAppAuthStep";
 import { EmailAuthStep } from "./EmailAuthStep";
-import { EmailCodeStep } from "./EmailCodeStep";
-import { requestEmailCode, verifyEmailCode } from "@/src/features/auth/services/emailAuthService";
 import { AppleIcon, GoogleIcon, WhatsAppIcon } from "./AuthProviderIcons";
 import {
   requestPhoneCode,
@@ -34,8 +37,6 @@ export default function AuthSheetContent() {
   const { user, userData, setUserData } = useAuth();
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
-  // Inscription e-mail en attente du code recu par e-mail (null = formulaire).
-  const [emailCodeFor, setEmailCodeFor] = useState<{ email: string; password: string } | null>(null);
   // Sous-flux email (`EmailAuthStep`) : `isRegister` distingue connexion et
   // creation de compte. La SAISIE elle-meme appartient a ce composant dedie —
   // la sheet ne garde plus ni email, ni mot de passe, ni loader.
@@ -118,6 +119,13 @@ export default function AuthSheetContent() {
   const onLoginWith = async (mail: string, pwd: string) => {
     const cred = await signInWithEmailAndPassword(auth, mail, pwd);
     let data = await authService.getUserById(cred.user.uid);
+    // Nouveau compte (sans profil) dont l'adresse n'est pas activee : refus,
+    // lien renvoye. Les anciens comptes (profil present) ne sont pas bloques.
+    if (!data && !cred.user.emailVerified) {
+      await sendEmailVerification(cred.user).catch(() => {});
+      await signOut(auth);
+      throw new Error(t("Adresse non activée. Un nouveau lien vous a été envoyé : cliquez dessus, puis reconnectez-vous."));
+    }
     // Compte Firebase SANS profil (ancienne inscription interrompue) : le
     // profil est cree ici, sinon le loader tournait sans fin.
     if (!data) {
@@ -132,11 +140,17 @@ export default function AuthSheetContent() {
     setUserData(data);
   };
 
-  // Inscription : le backend envoie d'abord un code a l'adresse
-  // (`EmailCodeStep`) ; le compte n'est cree qu'apres validation du code.
+  // Inscription : Firebase envoie un LIEN d'activation a l'adresse. Pas de
+  // session ouverte : on revient a l'ecran de connexion. Le profil backend est
+  // cree a la premiere connexion, une fois l'adresse activee (`onLoginWith`).
+  // Renvoie "stay" : `EmailAuthStep` coupe alors son loader.
   const onRegisterWith = async (mail: string, pwd: string) => {
-    await requestEmailCode(mail);
-    setEmailCodeFor({ email: mail, password: pwd });
+    const cred = await createUserWithEmailAndPassword(auth, mail, pwd);
+    await sendEmailVerification(cred.user);
+    await signOut(auth);
+    showToast(t("Lien d'activation envoyé à {{a}}. Cliquez dessus, puis connectez-vous.", { a: mail }), "success");
+    setIsRegister(false);
+    return "stay" as const;
   };
 
   // ⚠️ Le sous-flux WhatsApp remplace TOUT le contenu de la sheet (titre et
@@ -146,21 +160,6 @@ export default function AuthSheetContent() {
   // ⚠️ Meme principe que WhatsApp : l'ecran email remplace TOUT le contenu de
   // la sheet. Il porte son propre clavier custom, son retour et son bascule
   // connexion/inscription.
-  if (emailMode && emailCodeFor) {
-    return (
-      <EmailCodeStep
-        email={emailCodeFor.email}
-        onSubmitCode={async (code) => {
-          const data = await verifyEmailCode(emailCodeFor.email, code, emailCodeFor.password);
-          showToast(t("Compte créé, bienvenue !"), "success");
-          setUserData(data);
-        }}
-        onResend={() => requestEmailCode(emailCodeFor.email)}
-        onBack={() => setEmailCodeFor(null)}
-      />
-    );
-  }
-
   if (emailMode) {
     return (
       <EmailAuthStep

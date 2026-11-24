@@ -1464,5 +1464,6 @@
   "Durée (min)": "Duration (min)",
   "{{a}} min": "{{a}} min",
   "Aucun code à coller.": "No code to paste.",
-  "Code à {{a}} chiffres envoyé à {{b}}": "{{a}}-digit code sent to {{b}}"
+  "Lien d'activation envoyé à {{a}}. Cliquez dessus, puis connectez-vous.": "Activation link sent to {{a}}. Click it, then log in.",
+  "Adresse non activée. Un nouveau lien vous a été envoyé : cliquez dessus, puis reconnectez-vous.": "Email not activated. A new link was sent: click it, then log in again."
 }

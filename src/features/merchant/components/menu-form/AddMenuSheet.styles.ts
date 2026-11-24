@@ -80,14 +80,14 @@ export const styles = StyleSheet.create({
   contentFit: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingTop: Theme.spacing.md,
-    paddingBottom: Theme.spacing.md,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   fieldLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: Theme.colors.gray[700],
-    marginBottom: Theme.spacing.md,
+    marginBottom: 10,
   },
   imageRow: {
     flexDirection: "row",

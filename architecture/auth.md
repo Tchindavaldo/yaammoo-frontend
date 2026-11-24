@@ -316,3 +316,11 @@ automatiquement vers `(auth)`**. Mêmes règles que la déconnexion :
 | `auth/account-exists-with-different-credential` | Compte existant avec une autre méthode |
 | `SIGN_IN_CANCELLED` | Connexion annulée (silencieux) |
 | `PLAY_SERVICES_NOT_AVAILABLE` | Google Play Services requis |
+
+## Inscription e-mail avec code
+
+- `EmailAuthStep` (inscription) → `requestEmailCode` (`POST /auth/email/request`) → `EmailCodeStep`
+  (copie de l'etape code WhatsApp : cases, `NumericKeypad`, collage par appui long, renvoi 429).
+- `verifyEmailCode` (`POST /auth/email/verify` `{ email, code, password }`) → `signInWithCustomToken` → profil.
+- Connexion e-mail inchangee (Firebase). Compte Firebase sans profil : profil cree a la connexion.
+- Services : `services/emailAuthService.ts` ; temps limite 20 s sur les requetes (`userFirestore` compris).

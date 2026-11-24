@@ -10,6 +10,7 @@ export const userFirestore = {
     try {
       const idToken = await firebaseUser.getIdToken();
       const response = await axios.get(`${Config.apiUrl}/user/${firebaseUser.uid}`, {
+        timeout: 20000,
         headers: {
           "ngrok-skip-browser-warning": "true",
           "Authorization": `Bearer ${idToken}`,
@@ -76,6 +77,7 @@ export const userFirestore = {
         `${Config.apiUrl}/user`,
         { ...user, uid: firebaseUser.uid },
         {
+          timeout: 20000,
           headers: {
             "ngrok-skip-browser-warning": "true",
             "Content-Type": "application/json",
@@ -101,6 +103,7 @@ export const userFirestore = {
     try {
       const idToken = await firebaseUser.getIdToken();
       await axios.put(`${Config.apiUrl}/user/${firebaseUser.uid}`, user, {
+        timeout: 20000,
         headers: {
           "ngrok-skip-browser-warning": "true",
           "Content-Type": "application/json",

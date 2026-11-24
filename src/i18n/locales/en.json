@@ -1463,5 +1463,6 @@
   "Frais": "Fees",
   "Durée (min)": "Duration (min)",
   "{{a}} min": "{{a}} min",
-  "Aucun code à coller.": "No code to paste."
+  "Aucun code à coller.": "No code to paste.",
+  "Code à {{a}} chiffres envoyé à {{b}}": "{{a}}-digit code sent to {{b}}"
 }

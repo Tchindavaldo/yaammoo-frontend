@@ -53,6 +53,20 @@ Un plat a **N prix** (`prices[]`, au moins un). Client : toujours lire les prix 
 
 ---
 
+## Qui paie les frais (`feePayer`)
+
+Étape Prix (`MenuPricesEditor`) : « Qui paie les frais ? Client / Marchand » sous
+chaque prix (`DraftPrice.feePayer`, envoyé dans `prices[].feePayer`). Boissons
+(`ShopDrinkRow`) : le même choix par boisson (`ShopDrink.feePayer`). Les extras
+suivent le prix choisi par le client. `merchant_no_margin` (backend seul) est
+affiché « Sans marge », non modifiable. Aperçu : `useMenuPriceCheck` envoie
+`feePayer` / `feePayers` ; en mode marchand la case « Frais de retrait » devient
+« Frais » (total retenu) et « Vous recevez » inclut la course la moins chère.
+Aucun calcul dans l'app : règles dans `money-rules.md` §2 bis. Liste des plats :
+bandeau « Ajoutez au moins 3 menus… » sous 3 plats disponibles
+(`MenuManagePanel`, carte sortie dans `MenuManageCard`, styles dans
+`MenuManagePanel.styles.ts`).
+
 ## MenuManagePanel.tsx
 
 **Chemin** : `yaammoo/src/features/merchant/components/MenuManagePanel.tsx`

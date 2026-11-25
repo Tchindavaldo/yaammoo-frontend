@@ -316,3 +316,11 @@ automatiquement vers `(auth)`**. Mêmes règles que la déconnexion :
 | `auth/account-exists-with-different-credential` | Compte existant avec une autre méthode |
 | `SIGN_IN_CANCELLED` | Connexion annulée (silencieux) |
 | `PLAY_SERVICES_NOT_AVAILABLE` | Google Play Services requis |
+
+## Inscription e-mail : lien d'activation Firebase
+
+- Inscription : `createUserWithEmailAndPassword` → `sendEmailVerification` → `signOut`,
+  toast « lien envoye », retour en mode connexion (`onSubmit` renvoie `"stay"`).
+- Connexion : compte SANS profil et adresse non activee → refus + lien renvoye.
+  Adresse activee et pas de profil → profil cree (`POST /user`). Anciens comptes (profil present) non bloques.
+- Temps limite 20 s sur les requetes `userFirestore`.

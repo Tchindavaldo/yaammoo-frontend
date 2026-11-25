@@ -40,7 +40,7 @@ export function MerchantHome() {
       >
         <ShopHeroCard refreshTick={refreshTick} onRefreshed={onRefreshed} />
         <ShopOrdersSection />
-        <ShopManageGrid />
+        <ShopManageGrid refreshTick={refreshTick} />
       </ScrollView>
     </View>
   );

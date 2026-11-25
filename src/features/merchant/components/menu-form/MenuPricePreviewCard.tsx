@@ -21,6 +21,9 @@ export const MenuPricePreviewCard: React.FC<{
   useLanguage();
   // Prix refusé par le backend : aucun montant affiché (cases « — »).
   const preview = raw?.accepted ? raw : null;
+  // Mode marchand (feePayer) : mêmes cases ; « Frais » = total retenu par le
+  // backend (frais + marge), « Vous recevez » inclut la course la moins chère.
+  const merchantMode = preview?.feePayer === "merchant" || preview?.feePayer === "merchant_no_margin";
   // Carte toujours visible : cases vides (« — ») tant qu'aucun montant n'est saisi.
   const value = (n?: number | null) =>
     preview && n != null ? fmt(n) : loading ? "…" : "—";
@@ -41,7 +44,7 @@ export const MenuPricePreviewCard: React.FC<{
           <Text style={styles.tileValue}>{value(preview?.price)}</Text>
         </View>
         <View style={styles.tile}>
-          <Text style={styles.tileLabel}>{tr("Frais de retrait")}</Text>
+          <Text style={styles.tileLabel}>{merchantMode ? tr("Frais") : tr("Frais de retrait")}</Text>
           <Text style={styles.tileValue}>{value(preview?.withdrawalFee)}</Text>
         </View>
         <View style={[styles.tile, styles.tileWide]}>
@@ -58,16 +61,17 @@ export const MenuPricePreviewCard: React.FC<{
 const styles = StyleSheet.create({
   wrap: { marginTop: 18, gap: 10 },
   hero: {
-    minHeight: 64,
-    borderRadius: 18,
+    minHeight: 46,
+    borderRadius: 16,
     backgroundColor: DS.slate100,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
   heroLabel: { fontSize: 13, color: DS.slate500 },
-  heroValue: { fontSize: 24, fontWeight: "800", color: DS.ink },
+  heroValue: { fontSize: 20, fontWeight: "800", color: DS.ink },
   row: { flexDirection: "row", gap: 8 },
   tile: {
     flex: 1,

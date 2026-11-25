@@ -1,4 +1,5 @@
-export type Zone = { lieu: string; prix: string };
+/** `duree` : durée de livraison de la zone en minutes (backend, facultative). */
+export type Zone = { lieu: string; prix: string; duree?: string | number };
 
 export interface ParsedDelivery {
   hours: string[];

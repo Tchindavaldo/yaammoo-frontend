@@ -62,12 +62,15 @@ export const EditBoutiquePanel: React.FC<EditBoutiquePanelProps> = ({
     s.setFormPeriodic(entry.periodicPrix !== undefined);
     s.setFormExpress(entry.expressPrix !== undefined);
     if (entry.hour) s.setTempDeliveryTime(hourToDate(entry.hour));
-    s.setPeriodicDraft({ lieu, prix: entry.periodicPrix || "" });
-    s.setExpressDraft({ lieu, prix: entry.expressPrix || "" });
     const pIdx = entry.hour
       ? (s.periodicZonesByHour[entry.hour]?.findIndex((z) => z.lieu === lieu) ?? -1)
       : -1;
     const eIdx = s.expressZones.findIndex((z) => lieuKey(z.lieu) === lieuKey(lieu));
+    // Durée de livraison du lieu : celle du créneau, sinon celle de l'express.
+    const dur = (pIdx >= 0 ? s.periodicZonesByHour[entry.hour]?.[pIdx]?.duree : undefined) ?? (eIdx >= 0 ? s.expressZones[eIdx]?.duree : undefined);
+    const duree = dur != null ? String(dur) : "";
+    s.setPeriodicDraft({ lieu, prix: entry.periodicPrix || "", duree });
+    s.setExpressDraft({ lieu, prix: entry.expressPrix || "", duree });
     s.setPeriodicEditIdx(entry.periodicPrix !== undefined ? pIdx : null);
     s.setExpressEditIdx(entry.expressPrix !== undefined && eIdx >= 0 ? eIdx : null);
   };

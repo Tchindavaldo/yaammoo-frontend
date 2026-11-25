@@ -18,6 +18,8 @@
 interface Zone {
   lieu: string;
   prix: string;
+  /** Durée de livraison (minutes), facultative. */
+  duree?: string | number;
 }
 
 interface DeliveryHourPayload {

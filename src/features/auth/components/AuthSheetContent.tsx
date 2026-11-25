@@ -15,7 +15,9 @@ import { handleGoogleSignIn } from "@/src/features/auth/services/googleAuthServi
 import { handleAppleSignIn } from "@/src/features/auth/services/appleAuthService";
 import {
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 import { auth } from "@/src/services/firebase";
 import { authService } from "@/src/features/auth/services/authService";
@@ -116,33 +118,39 @@ export default function AuthSheetContent() {
   // incoherente avec le reste du flux.
   const onLoginWith = async (mail: string, pwd: string) => {
     const cred = await signInWithEmailAndPassword(auth, mail, pwd);
-    const data = await authService.getUserById(cred.user.uid);
-    // Loader maintenu jusqu'au montage de la home (voir onGoogle).
-    if (data) {
-      showToast(t("Connecté avec succès"), "success");
-      setUserData(data);
+    let data = await authService.getUserById(cred.user.uid);
+    // Nouveau compte (sans profil) dont l'adresse n'est pas activee : refus,
+    // lien renvoye. Les anciens comptes (profil present) ne sont pas bloques.
+    if (!data && !cred.user.emailVerified) {
+      await sendEmailVerification(cred.user).catch(() => {});
+      await signOut(auth);
+      throw new Error(t("Adresse non activée. Un nouveau lien vous a été envoyé : cliquez dessus, puis reconnectez-vous."));
     }
+    // Compte Firebase SANS profil (ancienne inscription interrompue) : le
+    // profil est cree ici, sinon le loader tournait sans fin.
+    if (!data) {
+      const nom = mail.split("@")[0] || "Utilisateur";
+      const newUser = new Users(cred.user.uid, cred.user.uid, new UsersInfos(nom, "", 0, 0, mail, ""), false, 100, [], undefined);
+      await userFirestore.createUser(newUser, cred.user);
+      data = await userFirestore.getUser(cred.user);
+    }
+    if (!data) throw new Error(t("Connexion échouée."));
+    // Loader maintenu jusqu'au montage de la home (voir onGoogle).
+    showToast(t("Connecté avec succès"), "success");
+    setUserData(data);
   };
 
+  // Inscription : Firebase envoie un LIEN d'activation a l'adresse. Pas de
+  // session ouverte : on revient a l'ecran de connexion. Le profil backend est
+  // cree a la premiere connexion, une fois l'adresse activee (`onLoginWith`).
+  // Renvoie "stay" : `EmailAuthStep` coupe alors son loader.
   const onRegisterWith = async (mail: string, pwd: string) => {
     const cred = await createUserWithEmailAndPassword(auth, mail, pwd);
-    const firebaseUser = cred.user;
-    // Nom par défaut depuis l'email (le profil pourra être complété plus tard).
-    const nom = mail.split("@")[0] || "Utilisateur";
-    const newUser = new Users(
-      firebaseUser.uid,
-      firebaseUser.uid,
-      new UsersInfos(nom, "", 0, 0, mail, ""),
-      false,
-      100,
-      [],
-      undefined,
-    );
-    await userFirestore.createUser(newUser, firebaseUser);
-    const data = await userFirestore.getUser(firebaseUser);
-    // Loader maintenu jusqu'au montage de la home (voir onGoogle).
-    showToast(t("Compte créé, bienvenue !"), "success");
-    setUserData(data ?? newUser);
+    await sendEmailVerification(cred.user);
+    await signOut(auth);
+    showToast(t("Lien d'activation envoyé à {{a}}. Cliquez dessus, puis connectez-vous.", { a: mail }), "success");
+    setIsRegister(false);
+    return "stay" as const;
   };
 
   // ⚠️ Le sous-flux WhatsApp remplace TOUT le contenu de la sheet (titre et

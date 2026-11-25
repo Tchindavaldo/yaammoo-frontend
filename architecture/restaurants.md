@@ -350,6 +350,13 @@ premier créneau de demain),
   "" = rien) de `HomeListRow`, rendu par `HLMerchantHeaderView` (iOS et
   Android) ; une build native antérieure l'ignore.
 
+### Durée de livraison (en-tête boutique)
+
+`MerchantHeader` affiche « · N min » après la distance : la durée la plus courte
+des zones de la boutique (`shortestDeliveryMinutes`, `deliveryUtils.ts`,
+périodique et express). Rien si aucune zone n'a de durée. Durée par zone dans
+l'overlay Période : `todo/user/ui-update/duree-par-zone-overlay-periode.md`.
+
 ## Prix de livraison sur les cartes
 
 - `shopDeliveryFeeLabel(ff)` (`utils/shopDeliveryFee.ts`), passé par chaque `DesignN`

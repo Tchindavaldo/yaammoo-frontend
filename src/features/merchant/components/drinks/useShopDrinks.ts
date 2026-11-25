@@ -18,6 +18,8 @@ export interface ShopDrink {
   prix: number;
   status: boolean;
   menuIds: string[] | null;
+  /** Qui paie les frais de la boisson (backend, money-rules.md §2 bis). Absent = client. */
+  feePayer?: "client" | "merchant" | "merchant_no_margin";
 }
 
 /**

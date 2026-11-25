@@ -135,6 +135,9 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
   const saveZoneForm = (hour: string) => {
     const lieu = (periodicDraft.lieu || expressDraft.lieu).trim();
     if (!lieu) return;
+    // Durée de livraison (minutes) : une par lieu, portée par les deux listes.
+    const minutes = parseInt(String(periodicDraft.duree ?? expressDraft.duree ?? ""), 10);
+    const duree = Number.isFinite(minutes) && minutes > 0 ? { duree: minutes } : {};
     // Le periodique exige une heure ; l'express seul s'en passe.
     if (formPeriodic && !hour) return;
     if (!formPeriodic && !formExpress) return;
@@ -144,7 +147,7 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
     }
 
     if (formPeriodic) {
-      const item = { lieu, prix: periodicDraft.prix.trim() };
+      const item = { lieu, prix: periodicDraft.prix.trim(), ...duree };
       setPeriodicZonesByHour((prev) => {
         const list = prev[hour] ? [...prev[hour]] : [];
         if (periodicEditIdx === null) list.push(item);
@@ -156,7 +159,7 @@ export const useCreateBoutique = ({ onCancel }: { onCancel: () => void }) => {
     if (formExpress) {
       // Un seul prix express par lieu : on remplace la ligne du lieu s'il est
       // deja servi en express, sinon on l'ajoute.
-      const item = { lieu, prix: expressDraft.prix.trim() };
+      const item = { lieu, prix: expressDraft.prix.trim(), ...duree };
       setExpressZones((prev) => {
         const list = [...prev];
         const idx =

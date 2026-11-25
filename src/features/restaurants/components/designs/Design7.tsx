@@ -79,6 +79,7 @@ export const Design7: React.FC<DesignProps> = ({ fastFood, onMenuClick }) => {
         syncWithImage={fastFood.menu?.[0]?.image}
         distanceKm={(fastFood as any)?.distanceKm}
         deliveryHours={(fastFood as any)?.deliveryHours}
+        expressZones={(fastFood as any)?.expressZones}
         orderLeadTime={(fastFood as any)?.orderLeadTime}
       />
       <View style={styles.scrollWrapper}>

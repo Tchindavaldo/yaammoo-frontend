@@ -164,6 +164,35 @@ export const MenuPricesEditor: React.FC<Props> = ({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Qui paie les frais de CE prix (maquette AjFrais) : Client = prix
+          affiché avec frais et marge ; Marchand = prix brut, frais retenus sur
+          ce qu'il reçoit (money-rules.md §2 bis, calcul 100 % backend). */}
+      <View style={[styles.priceHeaderRow, { marginTop: 14 }]}>
+        <Text style={[styles.fieldLabel, { marginBottom: 0 }]}>{tr("Qui paie les frais ?")}</Text>
+        {current.feePayer === "merchant_no_margin" ? (
+          <View style={[styles.priceTab, styles.priceTabActive]}>
+            <Text style={[styles.priceTabText, styles.priceTabTextActive]}>{tr("Sans marge")}</Text>
+          </View>
+        ) : (
+          <View style={styles.priceTabs}>
+            {(["client", "merchant"] as const).map((fp) => {
+              const active = (current.feePayer || "client") === fp;
+              return (
+                <TouchableOpacity
+                  key={fp}
+                  style={[styles.priceTab, active && styles.priceTabActive, { paddingHorizontal: 14 }]}
+                  onPress={() => update({ feePayer: fp })}
+                >
+                  <Text style={[styles.priceTabText, active && styles.priceTabTextActive]}>
+                    {fp === "client" ? tr("Client") : tr("Marchand")}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+      </View>
     </>
   );
 };

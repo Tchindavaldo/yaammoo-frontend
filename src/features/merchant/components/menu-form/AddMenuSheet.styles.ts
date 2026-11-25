@@ -76,11 +76,18 @@ export const styles = StyleSheet.create({
     // Débattement bas pour que le champ focus puisse remonter au-dessus du clavier.
     paddingBottom: Theme.spacing.lg + 40,
   },
+  // Clavier fermé : pas de débattement bas, contenu centré dans la hauteur.
+  contentFit: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
   fieldLabel: {
     fontSize: 14,
     fontWeight: "600",
     color: Theme.colors.gray[700],
-    marginBottom: Theme.spacing.md,
+    marginBottom: 10,
   },
   imageRow: {
     flexDirection: "row",
@@ -359,7 +366,7 @@ export const styles = StyleSheet.create({
     marginTop: 8,
     textAlignVertical: "top",
   },
-  priceCardDesc: { marginTop: 0, height: 64, backgroundColor: "white" },
+  priceCardDesc: { marginTop: 0, height: 46, paddingTop: 6, paddingBottom: 6, backgroundColor: "white" },
   // --- Extras (D3) : carte d'édition ---
   extraCard: {
     borderWidth: 1,

@@ -1,4 +1,5 @@
-export type Zone = { lieu: string; prix: string };
+/** `duree` : durée de livraison de la zone en minutes (backend, facultative). */
+export type Zone = { lieu: string; prix: string; duree?: string | number };
 
 export interface ParsedDelivery {
   hours: string[];
@@ -50,12 +51,12 @@ export const parseDeliveryHours = (rawHours: any): ParsedDelivery => {
   return result;
 };
 
-/** Zones EXPRESS de la boutique (`expressZones`) : `{ lieu, prix }` en chaines. */
+/** Zones EXPRESS de la boutique (`expressZones`) : `{ lieu, prix }` en chaines (+ `duree`). */
 export const parseExpressZones = (raw: any): Zone[] =>
   Array.isArray(raw)
     ? raw
         .filter((z: any) => z && typeof z.lieu === "string" && z.lieu.trim())
-        .map((z: any) => ({ lieu: z.lieu, prix: String(z.prix ?? "") }))
+        .map((z: any) => ({ lieu: z.lieu, prix: String(z.prix ?? ""), ...(z.duree != null && { duree: z.duree }) }))
     : [];
 
 /** "HH:mm" -> Date d'aujourd'hui a cette heure. */

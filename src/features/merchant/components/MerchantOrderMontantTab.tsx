@@ -41,6 +41,36 @@ export function computeItemsTotal(order: Commande): number {
   return sum;
 }
 
+const isRealItem = (x: any) =>
+  x?.status === true && x.name && x.name !== "Aucun" && x.name !== "Aucune";
+
+/** Nombre de plats, d'extras et de boissons d'une commande (0 compris). */
+export function countItems(order: Commande) {
+  return {
+    menus: order.quantity || 1,
+    extras: (order.extra || []).filter(isRealItem).length,
+    drinks: (order.drink || [])
+      .filter(isRealItem)
+      .reduce((n: number, d: any) => n + (d.quantite || 1), 0),
+  };
+}
+
+/** « N plat + N extra + N boisson », N en orange (0 compris). */
+function ItemCounts({ order }: { order: Commande }) {
+  const c = countItems(order);
+  const part = (n: number, one: string, many: string) => (
+    <>
+      <Text style={styles.countN}>{n}</Text> {n > 1 ? many : one}
+    </>
+  );
+  return (
+    <Text style={styles.itemSub}>
+      {part(c.menus, t("plat"), t("plats"))} + {part(c.extras, t("extra"), t("extras"))} +{" "}
+      {part(c.drinks, t("boisson"), t("boissons"))}
+    </Text>
+  );
+}
+
 /** Libellé du mode de livraison d'un groupe : heure (période) ou Express. */
 export function deliveryLabel(order: Commande): string {
   const d = order.delivery as any;
@@ -247,9 +277,7 @@ export function MontantTab({ orders }: Props) {
                           </View>
                         )}
                       </View>
-                      <Text style={styles.itemSub}>
-                        {t("Plat + extras + boissons")}
-                      </Text>
+                      <ItemCounts order={o} />
                     </View>
                     <Text style={styles.itemPrice}>
                       {computeItemsTotal(o)} {CURRENCY}
@@ -361,6 +389,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
     fontWeight: "600",
   },
+  countN: { color: DS.accent, fontWeight: "800" },
   itemPrice: { fontSize: 13, fontWeight: "700", color: "#111827" },
   itemPriceOffered: { color: "#16A34A", fontSize: 12 },
   // Total en tête de groupe : c'est le bloc lui-même qui porte le trait de séparation.

@@ -14,6 +14,9 @@ export interface MenuPricePreview {
   merchantReceives: number | null;
   accepted: boolean;
   message: string | null;
+  /** Mode marchand : qui paie, et course la moins chère prise pour l'aperçu. */
+  feePayer?: string;
+  course?: number | null;
 }
 
 /** Résultat de la vérification groupée (bouton « Suivant »). */
@@ -26,6 +29,8 @@ export interface PriceCheckResult {
 }
 
 const num = (raw?: string) => Number(raw);
+/** Qui paie les frais d'un prix saisi ; absent = client. */
+const payerOf = (p?: DraftPrice) => p?.feePayer || "client";
 /** `loadingIdx` : index du prix (bouton ✓), ou vérification groupée. */
 export const LOADING_NEXT = -1;
 export const LOADING_INIT = -2;
@@ -50,7 +55,8 @@ export function useMenuPriceCheck(prices: DraftPrice[]) {
   /** Aperçu encore valable pour le montant saisi (sinon null). */
   const previewAt = (idx: number): MenuPricePreview | null => {
     const p = previews[idx];
-    return p && p.price === num(prices[idx]?.price) ? p : null;
+    // Changer le montant OU qui paie les frais dévalide l'aperçu.
+    return p && p.price === num(prices[idx]?.price) && (p.feePayer || "client") === payerOf(prices[idx]) ? p : null;
   };
 
   const isValidated = (idx: number) => !!previewAt(idx)?.accepted;
@@ -68,7 +74,7 @@ export function useMenuPriceCheck(prices: DraftPrice[]) {
       if (!valid(price) || !fastFoodId) return null;
       setLoadingIdx(idx);
       try {
-        const res = await axios.get(url, { params: { price } });
+        const res = await axios.get(url, { params: { price, feePayer: payerOf(prices[idx]) } });
         const p: MenuPricePreview | null = res.data?.data ?? null;
         store([[idx, p]]);
         return p;
@@ -100,7 +106,10 @@ export function useMenuPriceCheck(prices: DraftPrice[]) {
         setLoadingIdx(mode === "init" ? LOADING_INIT : LOADING_NEXT);
         try {
           const res = await axios.get(url, {
-            params: { prices: missing.map((i) => num(prices[i].price)).join(",") },
+            params: {
+              prices: missing.map((i) => num(prices[i].price)).join(","),
+              feePayers: missing.map((i) => payerOf(prices[i])).join(","),
+            },
           });
           const items: (MenuPricePreview | null)[] = res.data?.items ?? [];
           store(missing.map((i, k) => [i, items[k] ?? null]));
@@ -124,6 +133,18 @@ export function useMenuPriceCheck(prices: DraftPrice[]) {
     },
     [prices, previews, fastFoodId, url],
   );
+
+  // Changer « Qui paie les frais ? » sur un prix saisi relance son aperçu
+  // tout seul (pas besoin de re-cliquer sur Valider).
+  const lastPayers = useRef<string[]>([]);
+  useEffect(() => {
+    const payers = prices.map((p) => payerOf(p));
+    payers.forEach((fp, i) => {
+      const before = lastPayers.current[i];
+      if (before && before !== fp && valid(num(prices[i]?.price))) checkOne(i);
+    });
+    lastPayers.current = payers;
+  }, [prices]);
 
   // Menu existant ouvert : ses prix sont vérifiés dès qu'ils sont posés.
   const prefetch = useRef(false);

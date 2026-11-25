@@ -2,7 +2,7 @@
   "expo": {
     "name": "yaammoo",
     "slug": "yaammoo",
-    "version": "1.1.7",
+    "version": "1.1.8",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "yaammoo",
@@ -56,7 +56,10 @@
         "NSCameraUsageDescription": "Yaammoo utilise l'appareil photo pour photographier vos plats et votre boutique.",
         "NSMicrophoneUsageDescription": "Yaammoo utilise le micro pour vos notes vocales destinées aux livreurs.",
         "NSFaceIDUsageDescription": "Yaammoo utilise Face ID pour protéger l'accès à votre portefeuille."
-      }
+      },
+      "associatedDomains": [
+        "applinks:yaammoo.rauval.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -76,7 +79,24 @@
         "googleMaps": {
           "apiKey": "AIzaSyBO2b5OxgzRk1ayuQpma1MXU7sNM_zdN1s"
         }
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "yaammoo.rauval.com",
+              "pathPrefix": "/shop"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "output": "static",

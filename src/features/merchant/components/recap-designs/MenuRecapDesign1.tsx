@@ -147,7 +147,7 @@ const Tile: React.FC<{
 );
 
 const styles = StyleSheet.create({
-  wrap: { paddingBottom: Theme.spacing.lg },
+  wrap: {},
   banner: {
     flexDirection: "row",
     alignItems: "center",
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
     color: Theme.colors.gray[600],
-    marginTop: Theme.spacing.lg,
+    marginTop: Theme.spacing.md,
     marginBottom: Theme.spacing.sm,
   },
   tile: {

@@ -35,7 +35,8 @@ import { apiErrorMessage } from "@/src/api/apiError";
 interface EmailAuthStepProps {
   /** `true` = creation de compte, `false` = connexion. */
   isRegister: boolean;
-  onSubmit: (email: string, password: string) => Promise<void> | void;
+  /** Renvoie "stay" quand l'ecran reste affiche (inscription : lien envoye). */
+  onSubmit: (email: string, password: string) => Promise<"stay" | void> | void;
   /** Bascule connexion <-> inscription (lien de bas de sheet). */
   onToggleMode: () => void;
   /** Retour aux boutons sociaux (ligne d'icones Apple/Google). */
@@ -90,9 +91,10 @@ export const EmailAuthStep: React.FC<EmailAuthStepProps> = ({
       setLoading(true);
       setError(null);
       try {
-        await onSubmit(mail, pwd);
+        const res = await onSubmit(mail, pwd);
         // Succes : loader maintenu jusqu'au demontage par le guard, comme
-        // Google/Apple (cf. architecture/auth.md).
+        // Google/Apple (cf. architecture/auth.md). Sauf "stay" (lien envoye).
+        if (res === "stay") setLoading(false);
       } catch (err: any) {
         // Code Firebase (mot de passe incorrect, email deja utilise...) en
         // message clair ; sinon message du backend ; sinon generique.

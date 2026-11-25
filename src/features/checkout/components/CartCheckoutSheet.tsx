@@ -492,12 +492,8 @@ export const CartCheckoutSheet: React.FC<CheckoutSheetProps> = ({
                  confirme par un toast pour que l'user puisse continuer à
                  éditer. */
               onAddToCart={onSave && (actionsRef.current.cart = async () => {
-                if (needsPickupPhone()) return askPhoneThen("cart");
-                const deliveryErr = validateDelivery();
-                if (deliveryErr) {
-                  showError(deliveryErr);
-                  return;
-                }
+                // Panier : numéro, jour du retrait et livraison facultatifs,
+                // demandés au paiement (onBuy les valide).
                 try {
                   setIsSaving(true);
                   const result: any = await onSave(

@@ -27,25 +27,36 @@ export interface ShopManageInfo {
 
 const LOADING: Omit<ShopManageInfo, "menus"> = { drinks: null, members: null, broadcastsLeft: null, unread: null, driverRequests: null };
 
+const RETRY_MS = 4000;
+
 export function useShopManageInfo(refreshTick = 0): ShopManageInfo {
   const { fastFoodId } = useMerchantMode();
   const { menus, loaded, ensureLoaded } = useMerchant();
   const [info, setInfo] = useState(LOADING);
   const [reconnectTick, setReconnectTick] = useState(0);
   useRefetchOnReconnect(() => setReconnectTick((n) => n + 1));
+  // Backend en demarrage : un echec relance tout seul apres RETRY_MS.
+  const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
     ensureLoaded();
-  }, [ensureLoaded]);
+  }, [ensureLoaded, retryTick]);
 
   useEffect(() => {
     if (!fastFoodId) return;
     let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const retry = () => {
+      if (alive && !timer) timer = setTimeout(() => setRetryTick((n) => n + 1), RETRY_MS);
+    };
     // Chaque case se remplit des que SA requete repond ; un echec garde la valeur precedente.
     const put = <K extends keyof typeof LOADING>(key: K, p: Promise<number>) =>
       p.then(
         (v) => alive && setInfo((s) => ({ ...s, [key]: v })),
-        (e) => console.error(`[useShopManageInfo] ${key}:`, e?.message || e),
+        (e) => {
+          console.error(`[useShopManageInfo] ${key}:`, e?.message || e);
+          retry();
+        },
       );
     put("drinks", axios.get(`${Config.apiUrl}/fastfood/${fastFoodId}`).then((r) => (r.data?.data?.drinks || []).length));
     put("members", staffService.getMembers(fastFoodId).then((m) => m.length));
@@ -54,8 +65,9 @@ export function useShopManageInfo(refreshTick = 0): ShopManageInfo {
     put("driverRequests", driverService.getApplications(fastFoodId).then((a) => pendingOf(a).length));
     return () => {
       alive = false;
+      if (timer) clearTimeout(timer);
     };
-  }, [fastFoodId, refreshTick, reconnectTick]);
+  }, [fastFoodId, refreshTick, reconnectTick, retryTick]);
 
   return { ...info, menus: loaded ? menus.length : null };
 }

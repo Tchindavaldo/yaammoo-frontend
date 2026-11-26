@@ -58,9 +58,9 @@ export function ShopManageGrid({ onTone, variant = "S1D", refreshTick = 0 }: { o
               const label = x.info(info);
               const hot = !!x.hot?.(info);
               return label === null ? (
-                <View style={{ height: 14, width: "60%", borderRadius: 7, overflow: "hidden" }}><CardSkeleton radius={7} /></View>
+                <View style={{ height: 13, width: "60%", borderRadius: 6, overflow: "hidden" }}><CardSkeleton radius={6} /></View>
               ) : (
-                <Text numberOfLines={1} style={{ fontSize: 11, fontWeight: hot ? "600" : "500", color: hot ? DS.accentInk : DS.muted }}>{label}</Text>
+                <Text numberOfLines={1} style={{ fontSize: 11, lineHeight: 13, fontWeight: hot ? "600" : "500", color: hot ? DS.accentInk : DS.muted }}>{label}</Text>
               );
             })()}
           </Pressable>

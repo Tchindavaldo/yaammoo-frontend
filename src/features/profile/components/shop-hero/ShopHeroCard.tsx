@@ -64,7 +64,7 @@ export const ShopHeroCard: React.FC<{ refreshTick?: number; onRefreshed?: () => 
       </View>
 
       {/* Squelette tant que les stats ne sont pas arrivees : les slides gardent la hauteur, masquees. */}
-      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} style={!loaded && { minHeight: 220 }}>
+      <View onLayout={(e) => setWidth(e.nativeEvent.layout.width)} >
         {!loaded && <View style={styles.skel}><CardSkeleton radius={20} /></View>}
         {width > 0 && (
           <ScrollView

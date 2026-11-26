@@ -27,6 +27,7 @@ type ToastState = { message: string; type: "success" | "error" } | null;
 export const StaffDriversPage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   useLanguage();
   const { userData } = useAuth();
+  const { fastFoodId } = useMerchantMode();
   const [toast, setToast] = useState<ToastState>(null);
   const onLoadError = useCallback(() => setToast({ message: t("Impossible de charger les livreurs"), type: "error" }), []);
   const drv = useStaffDrivers(true, onLoadError);
@@ -46,7 +47,6 @@ export const StaffDriversPage: React.FC<{ onClose: () => void }> = ({ onClose })
   };
 
   const submit = async (draft: DriverRecruitDraft) => {
-    const { fastFoodId } = useMerchantMode();
     if (!fastFoodId) return false;
     setRecruiting(true);
     const error = await driverService.recruitDriver(fastFoodId, draft);
